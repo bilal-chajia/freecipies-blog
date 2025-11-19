@@ -1,0 +1,390 @@
+---
+const currentPath = Astro.url.pathname;
+---
+
+<header class="site-header">
+  <div class="header-container">
+    <div class="header-content">
+      <!-- Logo -->
+      <a href="/" class="logo">
+        <span class="logo-text">Freecipies</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav">
+        <a
+          href="/categories"
+          class:list={[
+            "nav-link",
+            { active: currentPath.startsWith("/categories") },
+          ]}
+        >
+          Categories
+        </a>
+        <a
+          href="/recipes"
+          class:list={[
+            "nav-link",
+            { active: currentPath.startsWith("/recipes") },
+          ]}
+        >
+          Explore
+        </a>
+        <a
+          href="/about"
+          class:list={["nav-link", { active: currentPath === "/about" }]}
+        >
+          About
+        </a>
+        <a
+          href="/contact"
+          class:list={["nav-link", { active: currentPath === "/contact" }]}
+        >
+          Contact
+        </a>
+      </nav>
+
+      <!-- Search & Mobile Menu -->
+      <div class="header-actions">
+        <button
+          class="search-btn"
+          aria-label="Search"
+          title="Quick and easy search"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </button>
+        <button class="mobile-menu-btn" aria-label="Show menu">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Navigation -->
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="/categories" class="mobile-nav-link">Categories</a>
+    <a href="/recipes" class="mobile-nav-link">Explore</a>
+    <a href="/about" class="mobile-nav-link">About</a>
+    <a href="/contact" class="mobile-nav-link">Contact</a>
+  </nav>
+
+  <!-- Search Modal -->
+  <div class="search-modal" id="search-modal">
+    <div class="search-modal-content">
+      <div class="search-header">
+        <h2>Search Recipes</h2>
+        <button class="close-search" aria-label="Close search">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form action="/search" method="GET" class="search-form">
+        <input
+          type="search"
+          name="q"
+          placeholder="Search for recipes..."
+          autocomplete="off"
+          class="search-input"
+        />
+        <button type="submit" class="search-submit">Search</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .header-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+  }
+
+  .logo {
+    text-decoration: none;
+  }
+
+  .logo-text {
+    font-size: 1.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .desktop-nav {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .nav-link {
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .nav-link:hover,
+  .nav-link.active {
+    background: #fff3e0;
+    color: #ff6b35;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .search-btn,
+  .mobile-menu-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .search-btn:hover,
+  .mobile-menu-btn:hover {
+    background: #f0f0f0;
+    color: #333;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+  }
+
+  .mobile-nav {
+    display: none;
+    flex-direction: column;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .mobile-nav.active {
+    max-height: 300px;
+  }
+
+  .mobile-nav-link {
+    padding: 1rem 1.5rem;
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s ease;
+  }
+
+  .mobile-nav-link:hover {
+    background: #f8f9fa;
+  }
+
+  .search-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+    z-index: 1000;
+  }
+
+  .search-modal.active {
+    display: flex;
+  }
+
+  .search-modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  .search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .search-header h2 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #1a1a1a;
+  }
+
+  .close-search {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .close-search:hover {
+    background: #f0f0f0;
+    color: #333;
+  }
+
+  .search-form {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.875rem 1.25rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: #ff6b35;
+  }
+
+  .search-submit {
+    padding: 0.875rem 2rem;
+    background: #ff6b35;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .search-submit:hover {
+    background: #ff5722;
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 768px) {
+    .desktop-nav {
+      display: none;
+    }
+
+    .mobile-menu-btn {
+      display: flex;
+    }
+
+    .mobile-nav {
+      display: flex;
+    }
+
+    .search-modal-content {
+      width: 95%;
+      padding: 1.5rem;
+    }
+
+    .search-form {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<script>
+  // Mobile menu toggle
+  const mobileMenuBtn = document.querySelector(".mobile-menu-btn");
+  const mobileNav = document.querySelector("#mobile-nav");
+
+  mobileMenuBtn?.addEventListener("click", () => {
+    mobileNav?.classList.toggle("active");
+  });
+
+  // Search modal
+  const searchBtn = document.querySelector(".search-btn");
+  const searchModal = document.querySelector("#search-modal");
+  const closeSearch = document.querySelector(".close-search");
+
+  searchBtn?.addEventListener("click", () => {
+    searchModal?.classList.add("active");
+    (document.querySelector(".search-input") as HTMLElement)?.focus();
+  });
+
+  closeSearch?.addEventListener("click", () => {
+    searchModal?.classList.remove("active");
+  });
+
+  searchModal?.addEventListener("click", (e) => {
+    if (e.target === searchModal) {
+      searchModal.classList.remove("active");
+    }
+  });
+
+  // Close on escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      searchModal?.classList.remove("active");
+      mobileNav?.classList.remove("active");
+    }
+  });
+</script>

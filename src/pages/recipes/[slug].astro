@@ -1,0 +1,136 @@
+---
+import RecipeLayout from "../../layouts/RecipeLayout.astro";
+import SEO from "../../components/SEO.astro";
+import { getArticleBySlug } from "../../lib/db";
+import {
+  AppError,
+  ErrorCodes,
+  formatErrorResponse,
+} from "../../lib/error-handler";
+import type { Article, RecipeDetails } from "../../types";
+
+/**
+ * In SSR mode, Astro doesn't require getStaticPaths.
+ * It renders pages on-demand. We get the slug from Astro.params.
+ */
+
+const { slug } = Astro.params;
+const { runtime } = Astro.locals;
+
+if (!slug) {
+  return formatErrorResponse(
+    new AppError(ErrorCodes.BAD_REQUEST, "Slug is missing."),
+  );
+}
+
+let recipe: Article | null = null;
+let recipeDetails: RecipeDetails | undefined = undefined;
+
+try {
+  // The D1 binding is available on `runtime.env.DB`
+  recipe = await getArticleBySlug(runtime.env.DB, slug, "recipe");
+
+  // If no recipe is found for the slug, return a 404 page.
+  if (!recipe) {
+    return formatErrorResponse(
+      new AppError(ErrorCodes.NOT_FOUND, "Recipe not found."),
+    );
+  }
+
+  // The recipeJson field is already parsed by getArticleBySlug
+  recipeDetails = recipe.recipeJson;
+} catch (e: any) {
+  console.error(`Error processing recipe for slug "${slug}":`, e);
+  // Use the centralized error handler for a consistent response
+  if (e instanceof AppError) {
+    return formatErrorResponse(e);
+  }
+  return formatErrorResponse(
+    new AppError(
+      ErrorCodes.INTERNAL_ERROR,
+      "An unexpected error occurred while fetching the recipe.",
+    ),
+  );
+}
+
+// This line will only be reached if recipe is not null
+const pageTitle = recipe.metaTitle || recipe.headline;
+const pageDescription = recipe.metaDescription || recipe.shortDescription;
+---
+
+<RecipeLayout recipe={recipe}>
+  <SEO
+    slot="seo"
+    title={pageTitle}
+    description={pageDescription}
+    type="recipe"
+    publishedTime={recipe.publishedAt}
+    author={{ name: recipe.authorName || "Freecipies Team" }}
+    image={recipe.image?.url || ""}
+    imageAlt={recipe.image?.alt}
+    recipe={recipeDetails
+      ? {
+          name: recipe.headline,
+          description: recipe.shortDescription,
+          image: recipe.image?.url || "",
+          prepTime: recipeDetails.prepTime,
+          cookTime: recipeDetails.cookTime,
+          totalTime: undefined,
+          recipeYield: recipeDetails.servings,
+          recipeCategory: recipe.categoryLabel,
+          recipeIngredient:
+            recipeDetails.ingredients?.map((i) => i.items).flat() || [],
+          recipeInstructions:
+            recipeDetails.instructions?.map((i) => i.steps).flat() || [],
+          nutrition: recipeDetails.nutrition,
+        }
+      : undefined}
+  />
+
+  <!-- Main Recipe Content -->
+  <article>
+    <h1 class="text-4xl font-bold mb-4">{recipe.headline}</h1>
+    <p class="text-lg text-gray-600 mb-8">{recipe.shortDescription}</p>
+
+    {
+      recipeDetails ? (
+        <div class="prose prose-lg max-w-none">
+          <div class="mb-8">
+            <h2 class="text-2xl font-semibold border-b pb-2 mb-4">
+              Ingredients
+            </h2>
+            <ul>
+              {recipeDetails.ingredients?.map((group) => (
+                <>
+                  {group.group && <h3 class="font-bold mt-2">{group.group}</h3>}
+                  {group.items.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h2 class="text-2xl font-semibold border-b pb-2 mb-4">
+              Instructions
+            </h2>
+            <ol>
+              {recipeDetails.instructions?.map((group) => (
+                <>
+                  {group.group && <h3 class="font-bold mt-2">{group.group}</h3>}
+                  {group.steps.map((step) => (
+                    <li>{step}</li>
+                  ))}
+                </>
+              ))}
+            </ol>
+          </div>
+        </div>
+      ) : (
+        <p class="text-center text-gray-500 italic mt-12">
+          This article does not contain detailed recipe information.
+        </p>
+      )
+    }
+  </article>
+</RecipeLayout>

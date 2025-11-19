@@ -1,0 +1,152 @@
+---
+import Layout from './Layout.astro';
+import type { Article, FaqItem } from '../types';
+import { formatTime } from '../lib/utils';
+
+interface Props {
+  recipe: Article;
+}
+
+const { recipe } = Astro.props;
+const recipeJson = recipe.recipeJson;
+---
+
+<Layout title={recipe.metaTitle} description={recipe.metaDescription} image={recipe.image?.url}>
+  <article class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Recipe Header -->
+    <header class="mb-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+        {recipe.label}
+      </h1>
+      <p class="text-xl text-gray-600 dark:text-gray-300 mb-6">
+        {recipe.headline}
+      </p>
+      
+      <!-- Recipe Meta Info -->
+      {recipeJson && <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+        {recipeJson.prepTime && <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Prep: {recipeJson.prepTime}</span>
+        </div>}
+        {recipeJson.cookTime && <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+          </svg>
+          <span>Cook: {recipeJson.cookTime}</span>
+        </div>}
+        {recipeJson.servings && <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <span>Servings: {recipeJson.servings}</span>
+        </div>}
+      </div>}
+    </header>
+
+    <!-- Recipe Image -->
+    {recipe.image && (
+      <div class="mb-8 rounded-xl overflow-hidden">
+        <img 
+          src={recipe.image.url} 
+          alt={recipe.image.alt}
+          width={recipe.image.width}
+          height={recipe.image.height}
+          class="w-full h-auto object-cover"
+        />
+      </div>
+    )}
+
+    <!-- Recipe Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Main Content -->
+      <div class="lg:col-span-2 space-y-8">
+        <!-- TLDR -->
+        {recipe.tldr && (
+          <section class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Quick Overview</h2>
+            <div class="prose dark:prose-invert max-w-none" set:html={recipe.tldr} />
+          </section>
+        )}
+
+        <!-- Ingredients -->
+        {recipeJson && recipeJson.ingredients && <section>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Ingredients</h2>
+          {recipeJson.ingredients.map((group: { group: string; items: string[] }) => (
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">{group.group}</h3>
+              <ul class="space-y-2">
+                {group.items.map((item: string) => (
+                  <li class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-gray-700 dark:text-gray-300">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>}
+
+        <!-- Instructions -->
+        {recipeJson && recipeJson.instructions && <section>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Instructions</h2>
+          {recipeJson.instructions.map((group: { group: string; steps: string[] }) => (
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">{group.group}</h3>
+              <ol class="space-y-6">
+                {group.steps.map((step: string, index: number) => (
+                  <li class="flex gap-4">
+                    <span class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
+                      {index + 1}
+                    </span>
+                    <p class="text-gray-700 dark:text-gray-300">{step}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </section>}
+
+        <!-- FAQs -->
+        {recipe.faqsJson && recipe.faqsJson.length > 0 && (
+          <section>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Frequently Asked Questions</h2>
+            <div class="space-y-4">
+              {recipe.faqsJson.map((faq: FaqItem) => (
+                <details class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <summary class="font-semibold text-gray-900 dark:text-white cursor-pointer">
+                    {faq.question}
+                  </summary>
+                  <div class="mt-2 text-gray-700 dark:text-gray-300 prose dark:prose-invert" set:html={faq.answer} />
+                </details>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-1">
+        <div class="sticky top-8 space-y-6">
+          <!-- Nutrition Facts -->
+          {recipeJson && recipeJson.nutrition && <div class="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-900 dark:border-gray-700 p-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 border-b-8 border-gray-900 dark:border-gray-700 pb-2">
+              Nutrition Facts
+            </h3>
+            <div class="space-y-2">
+              {Object.entries(recipeJson.nutrition).map(([key, value]) => (
+                <div class="flex justify-between border-b border-gray-300 dark:border-gray-600 py-2">
+                  <span class="font-semibold capitalize">{key}</span>
+                  <span>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>}
+        </div>
+      </div>
+    </div>
+  </article>
+</Layout>

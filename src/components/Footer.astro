@@ -1,0 +1,171 @@
+---
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-grid">
+      <!-- Column 1 -->
+      <div class="footer-column">
+        <h3>Main Pages</h3>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/authors">Writers</a></li>
+          <li><a href="/categories">Topics</a></li>
+          <li><a href="/tags">Keywords</a></li>
+          <li><a href="/favorites">Favorites</a></li>
+        </ul>
+      </div>
+
+      <!-- Column 2 -->
+      <div class="footer-column">
+        <h3>Content</h3>
+        <ul>
+          <li><a href="/recipes">Discover</a></li>
+          <li><a href="/blog">Posts</a></li>
+          <li><a href="/recipes">Recipes</a></li>
+          <li><a href="/about">About Us</a></li>
+          <li><a href="/privacy">Privacy</a></li>
+        </ul>
+      </div>
+
+      <!-- Column 3 -->
+      <div class="footer-column">
+        <h3>Support</h3>
+        <ul>
+          <li><a href="/faq">FAQs</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/search">Search</a></li>
+          <li><a href="/sitemap.xml">Sitemap</a></li>
+          <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Social -->
+    <div class="footer-social">
+      <a href="https://facebook.com" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+      </a>
+      <a href="https://pinterest.com" target="_blank" rel="noopener" aria-label="Pinterest">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/>
+        </svg>
+      </a>
+      <a href="mailto:contact@freecipies.com" aria-label="Email">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+          <polyline points="22,6 12,13 2,6"></polyline>
+        </svg>
+      </a>
+    </div>
+
+    <!-- Copyright -->
+    <div class="footer-bottom">
+      <p>&copy; {currentYear} Freecipies. All rights reserved. <span class="version">V6.0</span></p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: #1a1a1a;
+    color: #e0e0e0;
+    padding: 3rem 0 1.5rem;
+    margin-top: 4rem;
+  }
+
+  .footer-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .footer-column h3 {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .footer-column ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .footer-column li {
+    margin-bottom: 0.75rem;
+  }
+
+  .footer-column a {
+    color: #b0b0b0;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    font-size: 0.95rem;
+  }
+
+  .footer-column a:hover {
+    color: #ff6b35;
+  }
+
+  .footer-social {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 2rem 0;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+  }
+
+  .footer-social a {
+    color: #b0b0b0;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #2a2a2a;
+  }
+
+  .footer-social a:hover {
+    color: #ff6b35;
+    background: #333;
+    transform: translateY(-2px);
+  }
+
+  .footer-bottom {
+    text-align: center;
+    padding-top: 2rem;
+  }
+
+  .footer-bottom p {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .version {
+    color: #555;
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 768px) {
+    .footer-grid {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 2rem;
+    }
+  }
+</style>
+

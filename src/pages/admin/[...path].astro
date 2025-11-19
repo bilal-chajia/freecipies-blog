@@ -1,0 +1,29 @@
+---
+import AdminApp from "../../components/admin/AdminApp";
+
+export const prerender = false;
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Admin Panel - Freecipies</title>
+    </head>
+    <body>
+        <div id="admin-root">
+            <AdminApp client:only="react" />
+        </div>
+    </body>
+</html>
+
+<style>
+    html,
+    body,
+    #admin-root {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+</style>

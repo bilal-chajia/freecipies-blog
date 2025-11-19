@@ -1,0 +1,31 @@
+name = "freecipies-blog"
+compatibility_date = "2024-10-01"
+pages_build_output_dir = "dist"
+
+# Note: Les liaisons KV ont été supprimées car le projet utilise maintenant D1 comme source de données principale.
+# Si vous avez besoin de KV pour d'autres fonctionnalités (ex: sessions, cache), vous pouvez les rajouter ici.
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "freecipies-db"
+database_id = "6ba09ee5-5c03-479c-995e-68d43d72bc05" # <-- REMPLACEZ CECI
+preview_database_id = "6ba09ee5-5c03-479c-995e-68d43d72bc05" # <-- REMPLACEZ CECI
+
+# R2 Buckets
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "freecipies-images"
+preview_bucket_name = "freecipies-images-preview" # Ce nom est conventionnel et correct
+
+# Environment Variables
+[vars]
+ENVIRONMENT = "production"
+R2_PUBLIC_URL = "https://images.freecipies.com"
+
+# Build configuration
+[build]
+command = "pnpm build"
+
+[build.upload]
+format = "service-worker"

@@ -1,0 +1,293 @@
+---
+interface Props {
+  articleId: number;
+  articleTitle: string;
+  articleUrl: string;
+}
+
+const { articleId, articleTitle, articleUrl } = Astro.props;
+
+interface Pin {
+  id: number;
+  title: string;
+  description: string;
+  image_url: string;
+  image_alt?: string;
+  image_width: number;
+  image_height: number;
+  is_primary: boolean;
+}
+
+// Fetch pins for this article
+let pins: Pin[] = [];
+try {
+  const response = await fetch(
+    `${Astro.url.origin}/api/pins?article_id=${articleId}`,
+  );
+  const data = await response.json();
+  pins = data.pins || [];
+} catch (error) {
+  console.error("Error fetching pins:", error);
+}
+
+// Get primary pin or first pin
+const primaryPin = pins.find((p) => p.is_primary) || pins[0];
+---
+
+{
+  pins.length > 0 && (
+    <div class="pinterest-pins-container">
+      {/* Primary Pin - Large Display */}
+      {primaryPin && (
+        <div class="primary-pin">
+          <a
+            href={`https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(articleUrl)}&media=${encodeURIComponent(primaryPin.image_url)}&description=${encodeURIComponent(primaryPin.description)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="pin-link"
+            data-pin-do="buttonPin"
+          >
+            <img
+              src={primaryPin.image_url}
+              alt={primaryPin.image_alt || primaryPin.title}
+              width={primaryPin.image_width}
+              height={primaryPin.image_height}
+              loading="lazy"
+              class="pin-image"
+            />
+            <div class="pin-overlay">
+              <svg
+                class="pin-icon"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12C2 16.42 4.87 20.17 8.84 21.5C8.76 20.74 8.69 19.55 8.87 18.72L9.93 14.37C9.93 14.37 9.64 13.79 9.64 12.92C9.64 11.56 10.45 10.54 11.45 10.54C12.31 10.54 12.73 11.18 12.73 11.95C12.73 12.81 12.19 14.08 11.91 15.26C11.68 16.24 12.39 17.04 13.36 17.04C15.11 17.04 16.47 15.19 16.47 12.54C16.47 10.19 14.79 8.57 11.95 8.57C8.73 8.57 6.85 10.95 6.85 13.36C6.85 14.22 7.17 15.14 7.58 15.65C7.66 15.75 7.67 15.84 7.65 15.94L7.33 17.25C7.29 17.43 7.19 17.47 7.01 17.39C5.75 16.81 4.97 15.02 4.97 13.32C4.97 9.91 7.42 6.8 12.23 6.8C16.08 6.8 19.05 9.5 19.05 12.49C19.05 16.64 16.64 19.96 13.18 19.96C12.16 19.96 11.19 19.43 10.86 18.79L10.04 21.72C9.76 22.76 9.04 24.05 8.54 24.91C9.65 25.26 10.81 25.45 12 25.45C17.52 25.45 22 20.97 22 15.45C22 9.93 17.52 5.45 12 5.45V2Z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span class="pin-text">Pin</span>
+            </div>
+          </a>
+          <div class="pin-info">
+            <h3 class="pin-title">{primaryPin.title}</h3>
+            <p class="pin-description">{primaryPin.description}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Additional Pins - Gallery */}
+      {pins.length > 1 && (
+        <div class="additional-pins">
+          <h3 class="section-title">More Pins for This Recipe</h3>
+          <div class="pins-grid">
+            {pins
+              .filter((p) => !p.is_primary)
+              .map((pin) => (
+                <div class="pin-card">
+                  <a
+                    href={`https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(articleUrl)}&media=${encodeURIComponent(pin.image_url)}&description=${encodeURIComponent(pin.description)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="pin-link-small"
+                    data-pin-do="buttonPin"
+                  >
+                    <img
+                      src={pin.image_url}
+                      alt={pin.image_alt || pin.title}
+                      width={pin.image_width}
+                      height={pin.image_height}
+                      loading="lazy"
+                      class="pin-image-small"
+                    />
+                    <div class="pin-overlay-small">
+                      <svg
+                        class="pin-icon-small"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M12 2C6.48 2 2 6.48 2 12C2 16.42 4.87 20.17 8.84 21.5C8.76 20.74 8.69 19.55 8.87 18.72L9.93 14.37C9.93 14.37 9.64 13.79 9.64 12.92C9.64 11.56 10.45 10.54 11.45 10.54C12.31 10.54 12.73 11.18 12.73 11.95C12.73 12.81 12.19 14.08 11.91 15.26C11.68 16.24 12.39 17.04 13.36 17.04C15.11 17.04 16.47 15.19 16.47 12.54C16.47 10.19 14.79 8.57 11.95 8.57C8.73 8.57 6.85 10.95 6.85 13.36C6.85 14.22 7.17 15.14 7.58 15.65C7.66 15.75 7.67 15.84 7.65 15.94L7.33 17.25C7.29 17.43 7.19 17.47 7.01 17.39C5.75 16.81 4.97 15.02 4.97 13.32C4.97 9.91 7.42 6.8 12.23 6.8C16.08 6.8 19.05 9.5 19.05 12.49C19.05 16.64 16.64 19.96 13.18 19.96C12.16 19.96 11.19 19.43 10.86 18.79L10.04 21.72C9.76 22.76 9.04 24.05 8.54 24.91C9.65 25.26 10.81 25.45 12 25.45C17.52 25.45 22 20.97 22 15.45C22 9.93 17.52 5.45 12 5.45V2Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </div>
+                  </a>
+                  <p class="pin-title-small">{pin.title}</p>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+<style>
+  .pinterest-pins-container {
+    margin: 2rem 0;
+  }
+
+  .primary-pin {
+    margin-bottom: 2rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .pin-link {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .pin-link:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .pin-link:hover .pin-overlay {
+    opacity: 1;
+  }
+
+  .pin-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .pin-overlay {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #e60023;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .pin-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .pin-info {
+    padding: 1rem 0;
+  }
+
+  .pin-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #1a1a1a;
+  }
+
+  .pin-description {
+    font-size: 0.95rem;
+    color: #666;
+    line-height: 1.6;
+  }
+
+  .additional-pins {
+    margin-top: 3rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #1a1a1a;
+  }
+
+  .pins-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .pin-card {
+    position: relative;
+  }
+
+  .pin-link-small {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .pin-link-small:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .pin-link-small:hover .pin-overlay-small {
+    opacity: 1;
+  }
+
+  .pin-image-small {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .pin-overlay-small {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #e60023;
+    color: white;
+    padding: 6px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .pin-icon-small {
+    width: 16px;
+    height: 16px;
+  }
+
+  .pin-title-small {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 768px) {
+    .pins-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+  }
+</style>
+
+<!-- Pinterest SDK -->
+<script async defer src="//assets.pinterest.com/js/pinit.js"></script>

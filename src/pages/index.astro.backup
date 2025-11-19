@@ -1,0 +1,181 @@
+---
+import Layout from '../layouts/Layout.astro';
+import RecipeCard from '../components/RecipeCard.astro';
+import CategoryCard from '../components/CategoryCard.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+// Mock data for demonstration - will be replaced with actual API calls
+const featuredRecipes: any[] = [];
+const categories: any[] = [];
+---
+
+<Layout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+  <!-- Hero Section -->
+  <section class="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center">
+        <h1 class="text-5xl md:text-6xl font-bold mb-6">
+          Welcome to Freecipies
+        </h1>
+        <p class="text-xl md:text-2xl mb-8 text-gray-100 max-w-3xl mx-auto">
+          Discover delicious recipes from around the world. From quick weeknight dinners to impressive desserts, find your next favorite dish.
+        </p>
+        
+        <!-- Search Bar -->
+        <div class="max-w-2xl mx-auto">
+          <form action="/search" method="get" class="flex gap-2">
+            <input 
+              type="text" 
+              name="q" 
+              placeholder="Search for recipes, ingredients, or categories..." 
+              class="flex-1 px-6 py-4 rounded-lg text-gray-900 focus:outline-none focus:ring-4 focus:ring-white/50"
+            />
+            <button 
+              type="submit" 
+              class="px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-4 focus:ring-white/50"
+            >
+              Search
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Decorative Elements -->
+    <div class="absolute bottom-0 left-0 right-0">
+      <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full">
+        <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white" class="dark:fill-gray-900"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Categories Section -->
+  <section class="py-16 bg-white dark:bg-gray-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Explore Categories
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400">
+            Browse recipes by your favorite categories
+          </p>
+        </div>
+        <a 
+          href="/categories" 
+          class="hidden md:flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+        >
+          <span>View All</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </a>
+      </div>
+
+      {categories.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {categories.slice(0, 6).map((category) => (
+            <CategoryCard category={category} />
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-12">
+          <p class="text-gray-500 dark:text-gray-400 text-lg">
+            No categories available yet. Check back soon!
+          </p>
+        </div>
+      )}
+
+      <div class="mt-8 text-center md:hidden">
+        <a 
+          href="/categories" 
+          class="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+        >
+          <span>View All Categories</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Recipes Section -->
+  <section class="py-16 bg-gray-50 dark:bg-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Featured Recipes
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400">
+            Hand-picked recipes you'll love
+          </p>
+        </div>
+        <a 
+          href="/recipes" 
+          class="hidden md:flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+        >
+          <span>View All</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </a>
+      </div>
+
+      {featuredRecipes.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {featuredRecipes.slice(0, 8).map((recipe) => (
+            <RecipeCard recipe={recipe} />
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-12">
+          <p class="text-gray-500 dark:text-gray-400 text-lg">
+            No recipes available yet. Check back soon!
+          </p>
+        </div>
+      )}
+
+      <div class="mt-8 text-center md:hidden">
+        <a 
+          href="/recipes" 
+          class="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+        >
+          <span>View All Recipes</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Newsletter Section -->
+  <section class="py-16 bg-blue-600 dark:bg-blue-700">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-3xl font-bold text-white mb-4">
+        Get Weekly Recipe Ideas
+      </h2>
+      <p class="text-xl text-blue-100 mb-8">
+        Subscribe to our newsletter and never miss a delicious recipe
+      </p>
+      
+      <form class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+        <input 
+          type="email" 
+          placeholder="Enter your email" 
+          class="flex-1 px-6 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-4 focus:ring-white/50"
+          required
+        />
+        <button 
+          type="submit" 
+          class="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-4 focus:ring-white/50"
+        >
+          Subscribe
+        </button>
+      </form>
+    </div>
+  </section>
+</Layout>
+

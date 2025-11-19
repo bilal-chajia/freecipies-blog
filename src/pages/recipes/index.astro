@@ -1,0 +1,35 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import RecipeCard from '../../components/RecipeCard.astro';
+import { fetchArticles } from '../../lib/api';
+import type { Article } from '../../types';
+
+const siteTitle = "All Recipes - Freecipies";
+const siteDescription = "Browse all our delicious and easy-to-follow recipes.";
+
+let recipes: Article[] = [];
+
+try {
+  const response = await fetchArticles({ type: 'recipe', limit: 100 }, Astro.site); // Fetch up to 100 recipes
+  if (response.success && response.data) {
+    recipes = response.data;
+  }
+} catch (error) {
+  console.error('Error fetching recipes:', error);
+}
+---
+
+<Layout title={siteTitle} description={siteDescription}>
+  <main class="min-h-screen">
+    <section class="py-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-4xl font-bold mb-8">All Recipes</h1>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          {recipes.map((recipe) => (
+            <RecipeCard recipe={recipe} />
+          ))}
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>
