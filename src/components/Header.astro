@@ -31,6 +31,15 @@ const currentPath = Astro.url.pathname;
           Explore
         </a>
         <a
+          href="/authors"
+          class:list={[
+            "nav-link",
+            { active: currentPath.startsWith("/authors") },
+          ]}
+        >
+          Authors
+        </a>
+        <a
           href="/about"
           class:list={["nav-link", { active: currentPath === "/about" }]}
         >
@@ -85,6 +94,7 @@ const currentPath = Astro.url.pathname;
   <nav class="mobile-nav" id="mobile-nav">
     <a href="/categories" class="mobile-nav-link">Categories</a>
     <a href="/recipes" class="mobile-nav-link">Explore</a>
+    <a href="/authors" class="mobile-nav-link">Authors</a>
     <a href="/about" class="mobile-nav-link">About</a>
     <a href="/contact" class="mobile-nav-link">Contact</a>
   </nav>

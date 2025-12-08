@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Plus,
   Eye,
@@ -12,6 +12,7 @@ import {
   Filter,
   X,
   Calendar,
+  ImagePlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
@@ -33,8 +34,10 @@ import DataTable from '@/components/ui/data-table.jsx';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../services/api';
 import { formatDate, formatNumber, truncate, debounce } from '../../utils/helpers';
 import { useArticlesStore, useCategoriesStore, useAuthorsStore, useTagsStore } from '../../store/useStore';
+import PinCreator from '../../components/pins/PinCreator';
 
 const ArticlesList = () => {
+  const navigate = useNavigate();
   const { articles, filters, pagination, setArticles, setFilters, setPagination } = useArticlesStore();
   const { categories, setCategories } = useCategoriesStore();
   const { authors, setAuthors } = useAuthorsStore();
@@ -52,6 +55,10 @@ const ArticlesList = () => {
     dateTo: '',
   });
   const [showFilters, setShowFilters] = useState(false);
+
+  // Pin Creator state
+  const [showPinCreator, setShowPinCreator] = useState(false);
+  const [selectedArticleForPin, setSelectedArticleForPin] = useState(null);
 
   useEffect(() => {
     loadCategories();
@@ -352,85 +359,49 @@ const ArticlesList = () => {
     try {
       setLoading(true);
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Build query params for API
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
 
-      // Get sample data
-      let sampleArticles = getSampleArticles();
-
-      // Apply filters
-      if (filters.type !== 'all') {
-        sampleArticles = sampleArticles.filter(article => article.type === filters.type);
+      if (filters.type && filters.type !== 'all') {
+        params.type = filters.type;
       }
-
-      if (filters.category !== 'all') {
-        sampleArticles = sampleArticles.filter(article => article.categorySlug === filters.category);
+      if (filters.category && filters.category !== 'all') {
+        params.category = filters.category;
       }
-
-      if (filters.author !== 'all') {
-        sampleArticles = sampleArticles.filter(article => article.authorSlug === filters.author);
+      if (filters.author && filters.author !== 'all') {
+        params.author = filters.author;
       }
-
-      if (filters.status !== 'all') {
-        const isOnline = filters.status === 'online';
-        sampleArticles = sampleArticles.filter(article => article.isOnline === isOnline);
+      if (filters.status && filters.status !== 'all') {
+        params.status = filters.status;
       }
-
       if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        sampleArticles = sampleArticles.filter(article =>
-          article.label.toLowerCase().includes(searchTerm) ||
-          article.shortDescription.toLowerCase().includes(searchTerm) ||
-          article.authorName.toLowerCase().includes(searchTerm)
-        );
+        params.search = filters.search;
       }
 
-      // Apply date filters if provided
-      if (localFilters.dateFrom) {
-        const fromDate = new Date(localFilters.dateFrom);
-        sampleArticles = sampleArticles.filter(article => {
-          const articleDate = new Date(article.publishedAt || article.createdAt);
-          return articleDate >= fromDate;
+      // Call the API
+      const response = await articlesAPI.getAll(params);
+
+      if (response.data.success) {
+        const articlesData = response.data.data || [];
+        const paginationData = response.data.pagination || {};
+
+        // Update store
+        setArticles(articlesData);
+        setPagination({
+          ...pagination,
+          total: paginationData.total || articlesData.length,
+          totalPages: paginationData.totalPages || Math.ceil(articlesData.length / pagination.limit),
         });
+      } else {
+        console.error('Failed to load articles:', response.data.message);
+        setArticles([]);
       }
-
-      if (localFilters.dateTo) {
-        const toDate = new Date(localFilters.dateTo);
-        toDate.setHours(23, 59, 59, 999); // End of day
-        sampleArticles = sampleArticles.filter(article => {
-          const articleDate = new Date(article.publishedAt || article.createdAt);
-          return articleDate <= toDate;
-        });
-      }
-
-      // Apply tag filters if provided
-      if (localFilters.tags && localFilters.tags.length > 0) {
-        sampleArticles = sampleArticles.filter(article =>
-          localFilters.tags.some(tagId =>
-            article.tags.some(tag => tag.id === tagId)
-          )
-        );
-      }
-
-      // Sort articles (default by created date descending)
-      sampleArticles.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-      // Apply pagination
-      const totalArticles = sampleArticles.length;
-      const startIndex = (pagination.page - 1) * pagination.limit;
-      const endIndex = startIndex + pagination.limit;
-      const paginatedArticles = sampleArticles.slice(startIndex, endIndex);
-
-      // Update store
-      setArticles(paginatedArticles);
-      setPagination({
-        ...pagination,
-        total: totalArticles,
-        totalPages: Math.ceil(totalArticles / pagination.limit),
-      });
-
     } catch (error) {
       console.error('Failed to load articles:', error);
+      setArticles([]);
     } finally {
       setLoading(false);
     }
@@ -602,12 +573,15 @@ const ArticlesList = () => {
             )}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <Link
-                  to={`/articles/${article.slug}`}
-                  className="font-medium hover:text-primary truncate"
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = `/admin/articles/${article.slug}`;
+                  }}
+                  className="font-medium hover:text-primary truncate cursor-pointer"
                 >
                   {article.label}
-                </Link>
+                </span>
                 {article.isFavorite && (
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                 )}
@@ -666,45 +640,62 @@ const ArticlesList = () => {
       cell: ({ row }) => {
         const article = row.original;
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link to={`/articles/${article.slug}`} className="flex items-center gap-2">
-                  <Edit className="w-4 h-4" />
-                  Edit
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleToggleOnline(article.slug)}>
-                {article.isOnline ? (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-2" />
-                    Set Offline
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    Set Online
-                  </>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleToggleFavorite(article.slug)}>
-                <Star className="w-4 h-4 mr-2" />
-                {article.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleDelete(article.slug)}
-                className="text-destructive"
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Edit"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = `/admin/articles/${article.slug}`;
+              }}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex items-center justify-center rounded-md p-2 hover:bg-accent hover:text-accent-foreground focus:outline-none"
+                onClick={(e) => e.stopPropagation()}
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <MoreVertical className="w-4 h-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleToggleOnline(article.slug)}>
+                  {article.isOnline ? (
+                    <>
+                      <EyeOff className="w-4 h-4 mr-2" />
+                      Set Offline
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Set Online
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleToggleFavorite(article.slug)}>
+                  <Star className="w-4 h-4 mr-2" />
+                  {article.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleDelete(article.slug)}
+                  className="text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedArticleForPin(article);
+                    setShowPinCreator(true);
+                  }}
+                >
+                  <ImagePlus className="w-4 h-4 mr-2" />
+                  Create Pin
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         );
       },
     },
@@ -956,6 +947,17 @@ const ArticlesList = () => {
         searchPlaceholder="Search articles..."
         emptyMessage="No articles found. Create your first one!"
         onRowSelectionChange={handleRowSelectionChange}
+      />
+
+      {/* Pin Creator Dialog */}
+      <PinCreator
+        open={showPinCreator}
+        onOpenChange={setShowPinCreator}
+        article={selectedArticleForPin}
+        onPinCreated={() => {
+          setShowPinCreator(false);
+          setSelectedArticleForPin(null);
+        }}
       />
 
     </div>

@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const authors = await getAuthors(db);
 
     const { body, status, headers } = formatSuccessResponse(authors, {
-      cacheControl: 'public, max-age=3600'
+      cacheControl: 'no-cache, no-store, must-revalidate'
     });
     return new Response(body, { status, headers });
   } catch (error) {

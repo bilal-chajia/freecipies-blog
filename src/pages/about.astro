@@ -1,63 +1,433 @@
 ---
-import AboutHeroImage from '../assets/blog-placeholder-about.jpg';
-import Layout from '../layouts/BlogPost.astro';
+import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout
-	title="About Me"
-	description="Lorem ipsum dolor sit amet"
-	pubDate={new Date('August 08 2021')}
-	heroImage={AboutHeroImage}
+	title="About Us | FreeCipies"
+	description="Learn about FreeCipies - your destination for delicious, easy-to-follow recipes from around the world."
 >
-	<p>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-		labore et dolore magna aliqua. Vitae ultricies leo integer malesuada nunc vel risus commodo
-		viverra. Adipiscing enim eu turpis egestas pretium. Euismod elementum nisi quis eleifend quam
-		adipiscing. In hac habitasse platea dictumst vestibulum. Sagittis purus sit amet volutpat. Netus
-		et malesuada fames ac turpis egestas. Eget magna fermentum iaculis eu non diam phasellus
-		vestibulum lorem. Varius sit amet mattis vulputate enim. Habitasse platea dictumst quisque
-		sagittis. Integer quis auctor elit sed vulputate mi. Dictumst quisque sagittis purus sit amet.
-	</p>
+	<main class="about-page">
+		<!-- Hero Section -->
+		<section class="hero">
+			<div class="hero-content">
+				<h1>About <span class="highlight">FreeCipies</span></h1>
+				<p class="tagline">Where passion meets flavor</p>
+			</div>
+		</section>
 
-	<p>
-		Morbi tristique senectus et netus. Id semper risus in hendrerit gravida rutrum quisque non
-		tellus. Habitasse platea dictumst quisque sagittis purus sit amet. Tellus molestie nunc non
-		blandit massa. Cursus vitae congue mauris rhoncus. Accumsan tortor posuere ac ut. Fringilla urna
-		porttitor rhoncus dolor. Elit ullamcorper dignissim cras tincidunt lobortis. In cursus turpis
-		massa tincidunt dui ut ornare lectus. Integer feugiat scelerisque varius morbi enim nunc.
-		Bibendum neque egestas congue quisque egestas diam. Cras ornare arcu dui vivamus arcu felis
-		bibendum. Dignissim suspendisse in est ante in nibh mauris. Sed tempus urna et pharetra pharetra
-		massa massa ultricies mi.
-	</p>
+		<!-- Mission Section -->
+		<section class="mission">
+			<div class="container">
+				<div class="mission-content">
+					<div class="mission-icon">🍳</div>
+					<h2>Our Mission</h2>
+					<p>
+						At FreeCipies, we believe that great food should be
+						accessible to everyone. Our mission is to inspire home
+						cooks around the world with delicious, easy-to-follow
+						recipes that bring joy to the kitchen and smiles to the
+						table.
+					</p>
+				</div>
+			</div>
+		</section>
 
-	<p>
-		Mollis nunc sed id semper risus in. Convallis a cras semper auctor neque. Diam sit amet nisl
-		suscipit. Lacus viverra vitae congue eu consequat ac felis donec. Egestas integer eget aliquet
-		nibh praesent tristique magna sit amet. Eget magna fermentum iaculis eu non diam. In vitae
-		turpis massa sed elementum. Tristique et egestas quis ipsum suspendisse ultrices. Eget lorem
-		dolor sed viverra ipsum. Vel turpis nunc eget lorem dolor sed viverra. Posuere ac ut consequat
-		semper viverra nam. Laoreet suspendisse interdum consectetur libero id faucibus. Diam phasellus
-		vestibulum lorem sed risus ultricies tristique. Rhoncus dolor purus non enim praesent elementum
-		facilisis. Ultrices tincidunt arcu non sodales neque. Tempus egestas sed sed risus pretium quam
-		vulputate. Viverra suspendisse potenti nullam ac tortor vitae purus faucibus ornare. Fringilla
-		urna porttitor rhoncus dolor purus non. Amet dictum sit amet justo donec enim.
-	</p>
+		<!-- Story Section -->
+		<section class="story">
+			<div class="container">
+				<div class="story-grid">
+					<div class="story-image">
+						<div class="image-placeholder">
+							<span>🥘</span>
+						</div>
+					</div>
+					<div class="story-text">
+						<h2>Our Story</h2>
+						<p>
+							FreeCipies started with a simple idea: sharing the
+							recipes we love with the world. What began as a
+							small collection of family favorites has grown into
+							a vibrant community of food lovers.
+						</p>
+						<p>
+							Every recipe on our site is carefully tested and
+							crafted to ensure success in your kitchen. From
+							quick weeknight dinners to impressive weekend
+							feasts, we've got you covered.
+						</p>
+						<p>
+							We're passionate about celebrating diverse cuisines,
+							supporting local ingredients, and making cooking an
+							enjoyable experience for everyone—whether you're a
+							beginner or a seasoned chef.
+						</p>
+					</div>
+				</div>
+			</div>
+		</section>
 
-	<p>
-		Mattis ullamcorper velit sed ullamcorper morbi tincidunt. Tortor posuere ac ut consequat semper
-		viverra. Tellus mauris a diam maecenas sed enim ut sem viverra. Venenatis urna cursus eget nunc
-		scelerisque viverra mauris in. Arcu ac tortor dignissim convallis aenean et tortor at. Curabitur
-		gravida arcu ac tortor dignissim convallis aenean et tortor. Egestas tellus rutrum tellus
-		pellentesque eu. Fusce ut placerat orci nulla pellentesque dignissim enim sit amet. Ut enim
-		blandit volutpat maecenas volutpat blandit aliquam etiam. Id donec ultrices tincidunt arcu. Id
-		cursus metus aliquam eleifend mi.
-	</p>
+		<!-- Values Section -->
+		<section class="values">
+			<div class="container">
+				<h2>What We Stand For</h2>
+				<div class="values-grid">
+					<div class="value-card">
+						<div class="value-icon">✨</div>
+						<h3>Quality</h3>
+						<p>
+							Every recipe is tested multiple times to ensure
+							perfect results every time.
+						</p>
+					</div>
+					<div class="value-card">
+						<div class="value-icon">🌍</div>
+						<h3>Diversity</h3>
+						<p>
+							We celebrate cuisines from around the world,
+							bringing global flavors to your kitchen.
+						</p>
+					</div>
+					<div class="value-card">
+						<div class="value-icon">💚</div>
+						<h3>Sustainability</h3>
+						<p>
+							We promote seasonal ingredients and sustainable
+							cooking practices.
+						</p>
+					</div>
+					<div class="value-card">
+						<div class="value-icon">👨‍👩‍👧‍👦</div>
+						<h3>Community</h3>
+						<p>
+							We're building a community where food lovers can
+							share, learn, and grow together.
+						</p>
+					</div>
+				</div>
+			</div>
+		</section>
 
-	<p>
-		Tempus quam pellentesque nec nam aliquam sem. Risus at ultrices mi tempus imperdiet. Id porta
-		nibh venenatis cras sed felis eget velit. Ipsum a arcu cursus vitae. Facilisis magna etiam
-		tempor orci eu lobortis elementum. Tincidunt dui ut ornare lectus sit. Quisque non tellus orci
-		ac. Blandit libero volutpat sed cras. Nec tincidunt praesent semper feugiat nibh sed pulvinar
-		proin gravida. Egestas integer eget aliquet nibh praesent tristique magna.
-	</p>
+		<!-- Stats Section -->
+		<section class="stats">
+			<div class="container">
+				<div class="stats-grid">
+					<div class="stat-item">
+						<span class="stat-number">1000+</span>
+						<span class="stat-label">Recipes</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-number">50K+</span>
+						<span class="stat-label">Happy Cooks</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-number">25+</span>
+						<span class="stat-label">Cuisines</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-number">100%</span>
+						<span class="stat-label">Free Forever</span>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- CTA Section -->
+		<section class="cta">
+			<div class="container">
+				<h2>Ready to Start Cooking?</h2>
+				<p>
+					Explore our collection of delicious recipes and find your
+					next favorite dish.
+				</p>
+				<a href="/recipes" class="cta-button">Browse Recipes</a>
+			</div>
+		</section>
+	</main>
 </Layout>
+
+<style>
+	.about-page {
+		--primary-color: #ff6600;
+		--text-dark: #1a1a2e;
+		--text-light: #666;
+		--bg-light: #fafafa;
+	}
+
+	.container {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 0 24px;
+	}
+
+	/* Hero Section */
+	.hero {
+		background: linear-gradient(
+			135deg,
+			#ff6600 0%,
+			#ff8533 50%,
+			#ffad33 100%
+		);
+		padding: 100px 24px;
+		text-align: center;
+		color: #fff;
+	}
+
+	.hero h1 {
+		font-size: clamp(2.5rem, 6vw, 4rem);
+		font-weight: 800;
+		margin: 0 0 16px;
+	}
+
+	.hero .highlight {
+		display: block;
+	}
+
+	.tagline {
+		font-size: 1.25rem;
+		opacity: 0.9;
+		margin: 0;
+	}
+
+	/* Mission Section */
+	.mission {
+		padding: 80px 0;
+		background: #fff;
+	}
+
+	.mission-content {
+		max-width: 700px;
+		margin: 0 auto;
+		text-align: center;
+	}
+
+	.mission-icon {
+		font-size: 4rem;
+		margin-bottom: 24px;
+	}
+
+	.mission h2 {
+		font-size: 2rem;
+		color: var(--text-dark);
+		margin: 0 0 20px;
+	}
+
+	.mission p {
+		font-size: 1.125rem;
+		line-height: 1.8;
+		color: var(--text-light);
+		margin: 0;
+	}
+
+	/* Story Section */
+	.story {
+		padding: 80px 0;
+		background: var(--bg-light);
+	}
+
+	.story-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 60px;
+		align-items: center;
+	}
+
+	.story-image {
+		aspect-ratio: 1;
+		border-radius: 20px;
+		overflow: hidden;
+	}
+
+	.image-placeholder {
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(135deg, #ffe4cc, #ffcc99);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 8rem;
+	}
+
+	.story-text h2 {
+		font-size: 2rem;
+		color: var(--text-dark);
+		margin: 0 0 24px;
+	}
+
+	.story-text p {
+		font-size: 1.0625rem;
+		line-height: 1.8;
+		color: var(--text-light);
+		margin: 0 0 16px;
+	}
+
+	.story-text p:last-child {
+		margin-bottom: 0;
+	}
+
+	/* Values Section */
+	.values {
+		padding: 80px 0;
+		background: #fff;
+		text-align: center;
+	}
+
+	.values h2 {
+		font-size: 2rem;
+		color: var(--text-dark);
+		margin: 0 0 48px;
+	}
+
+	.values-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 32px;
+	}
+
+	.value-card {
+		padding: 32px 24px;
+		background: var(--bg-light);
+		border-radius: 16px;
+		transition:
+			transform 0.3s,
+			box-shadow 0.3s;
+	}
+
+	.value-card:hover {
+		transform: translateY(-8px);
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+	}
+
+	.value-icon {
+		font-size: 3rem;
+		margin-bottom: 16px;
+	}
+
+	.value-card h3 {
+		font-size: 1.25rem;
+		color: var(--text-dark);
+		margin: 0 0 12px;
+	}
+
+	.value-card p {
+		font-size: 0.9375rem;
+		line-height: 1.6;
+		color: var(--text-light);
+		margin: 0;
+	}
+
+	/* Stats Section */
+	.stats {
+		padding: 60px 0;
+		background: linear-gradient(135deg, #1a1a2e, #2d2d44);
+		color: #fff;
+	}
+
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 32px;
+		text-align: center;
+	}
+
+	.stat-item {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.stat-number {
+		font-size: 2.5rem;
+		font-weight: 800;
+		color: var(--primary-color);
+	}
+
+	.stat-label {
+		font-size: 1rem;
+		opacity: 0.8;
+	}
+
+	/* CTA Section */
+	.cta {
+		padding: 80px 0;
+		background: var(--bg-light);
+		text-align: center;
+	}
+
+	.cta h2 {
+		font-size: 2rem;
+		color: var(--text-dark);
+		margin: 0 0 16px;
+	}
+
+	.cta p {
+		font-size: 1.125rem;
+		color: var(--text-light);
+		margin: 0 0 32px;
+	}
+
+	.cta-button {
+		display: inline-block;
+		padding: 16px 40px;
+		background: linear-gradient(135deg, #ff6600, #ff8533);
+		color: #fff;
+		text-decoration: none;
+		font-weight: 700;
+		font-size: 1.0625rem;
+		border-radius: 50px;
+		transition:
+			transform 0.2s,
+			box-shadow 0.2s;
+	}
+
+	.cta-button:hover {
+		transform: translateY(-3px);
+		box-shadow: 0 10px 30px rgba(255, 102, 0, 0.4);
+	}
+
+	/* Responsive */
+	@media (max-width: 900px) {
+		.story-grid {
+			grid-template-columns: 1fr;
+			gap: 40px;
+		}
+
+		.story-image {
+			max-width: 400px;
+			margin: 0 auto;
+		}
+
+		.values-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (max-width: 600px) {
+		.hero {
+			padding: 60px 24px;
+		}
+
+		.mission,
+		.story,
+		.values,
+		.cta {
+			padding: 60px 0;
+		}
+
+		.values-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 24px;
+		}
+
+		.stat-number {
+			font-size: 2rem;
+		}
+	}
+</style>

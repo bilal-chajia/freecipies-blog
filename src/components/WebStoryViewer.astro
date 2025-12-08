@@ -1,0 +1,565 @@
+---
+// WebStoryViewer.astro - Full-screen story viewer component
+---
+
+<div id="web-story-viewer" class="story-viewer">
+    <div class="story-container">
+        <!-- Close button -->
+        <button class="story-close" aria-label="Close story">
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+
+        <!-- Story content container -->
+        <div class="story-content" data-story-content>
+            <!-- Pages will be injected here by client script -->
+        </div>
+
+        <!-- Navigation Buttons -->
+        <button
+            class="story-nav-btn story-nav-prev"
+            aria-label="Previous"
+            data-story-prev
+        >
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+        <button
+            class="story-nav-btn story-nav-next"
+            aria-label="Next"
+            data-story-next
+        >
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </button>
+
+        <!-- Progress bars -->
+        <div class="story-progress">
+            <div class="progress-bar" data-story-progress></div>
+        </div>
+    </div>
+</div>
+
+<script is:inline>
+    (function () {
+        class WebStoryViewer {
+            constructor() {
+                this.viewer = document.getElementById("web-story-viewer");
+                this.content = this.viewer?.querySelector(
+                    "[data-story-content]",
+                );
+                this.closeBtn = this.viewer?.querySelector(".story-close");
+                this.prevBtn = this.viewer?.querySelector("[data-story-prev]");
+                this.nextBtn = this.viewer?.querySelector("[data-story-next]");
+
+                this.currentStory = null;
+                this.currentPage = 0;
+
+                console.log("WebStoryViewer initialized");
+                this.init();
+            }
+
+            init() {
+                if (!this.viewer) return;
+
+                this.closeBtn?.addEventListener("click", () => this.close());
+                this.prevBtn?.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    this.previousPage();
+                });
+                this.nextBtn?.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    this.nextPage();
+                });
+
+                document.addEventListener("keydown", (e) => {
+                    if (!this.viewer?.classList.contains("active")) return;
+                    if (e.key === "ArrowLeft") this.previousPage();
+                    if (e.key === "ArrowRight") this.nextPage();
+                    if (e.key === "Escape") this.close();
+                });
+
+                let touchStartX = 0;
+                this.viewer.addEventListener("touchstart", (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                });
+                this.viewer.addEventListener("touchend", (e) => {
+                    const diff = touchStartX - e.changedTouches[0].screenX;
+                    if (Math.abs(diff) > 50) {
+                        diff > 0 ? this.nextPage() : this.previousPage();
+                    }
+                });
+            }
+
+            open(story, pages) {
+                console.log("=== OPENING STORY ===");
+                console.log("Story object:", JSON.stringify(story));
+                console.log("Pages array:", JSON.stringify(pages));
+
+                this.currentStory = story;
+                this.currentPage = 0;
+                this.renderPages(pages);
+                this.viewer?.classList.add("active");
+                document.body.style.overflow = "hidden";
+                this.showPage(0);
+            }
+
+            close() {
+                // Clear auto-advance timer
+                if (this.autoAdvanceTimer) {
+                    clearTimeout(this.autoAdvanceTimer);
+                    this.autoAdvanceTimer = null;
+                }
+                this.viewer?.classList.remove("active");
+                document.body.style.overflow = "";
+                this.currentStory = null;
+                this.currentPage = 0;
+            }
+
+            renderPages(pages) {
+                if (!this.content) {
+                    console.error("Content element not found!");
+                    return;
+                }
+
+                console.log("Rendering", pages.length, "pages");
+
+                // Render progress bars with INLINE styles for visibility
+                const progressContainer =
+                    this.viewer?.querySelector(".story-progress");
+                if (progressContainer) {
+                    // Force container styles
+                    progressContainer.style.cssText =
+                        "position:absolute;top:20px;left:16px;right:60px;display:flex;gap:8px;z-index:99999;pointer-events:none;";
+
+                    progressContainer.innerHTML = pages
+                        .map(
+                            (_, i) => `
+                            <div class="progress-bar" style="flex:1;height:6px;background:#555;border-radius:3px;overflow:hidden;">
+                                <div class="progress-fill" data-progress="${i}" style="height:100%;width:0%;background:#ff6600;transition:width 5s linear;"></div>
+                            </div>
+                        `,
+                        )
+                        .join("");
+                    console.log(
+                        "Progress bars rendered with inline styles:",
+                        pages.length,
+                    );
+                }
+
+                // IMPORTANT: Capture story reference before map
+                const storyData = this.currentStory;
+                const numPages = pages.length;
+
+                console.log("Story data for CTA:", storyData);
+
+                // Build pages HTML with INLINE STYLES
+                let pagesHtml = "";
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    const isLastPage = i === numPages - 1;
+
+                    console.log(
+                        `Building page ${i}: title="${page.title}", text="${page.text}", isLast=${isLastPage}`,
+                    );
+
+                    let ctaHtml = "";
+                    if (isLastPage && storyData) {
+                        const href =
+                            storyData.route || "/recipes/" + storyData.slug;
+                        console.log("Adding CTA with href:", href);
+                        ctaHtml = `
+                            <a href="${href}" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#ff6600,#ff8800);color:#fff;padding:16px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:17px;box-shadow:0 4px 15px rgba(255,102,0,0.4);margin-top:16px;z-index:99999;position:relative;">
+                                Read Full Recipe
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        `;
+                    }
+
+                    const imageUrl = page.image?.url || "";
+                    const imageAlt = page.image?.alt || "";
+                    const title = page.title || "";
+                    const text = page.text || "";
+
+                    // Overlay with inline gradient
+                    const overlayStyle =
+                        "position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.5) 0%,transparent 25%,transparent 50%,rgba(0,0,0,0.9) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:60px 24px 40px;color:#fff;z-index:10;";
+
+                    // Title style
+                    const titleStyle =
+                        "font-size:26px;font-weight:700;margin:0 0 12px;line-height:1.3;text-shadow:0 2px 4px rgba(0,0,0,0.8);color:#fff;";
+
+                    // Text style
+                    const textStyle =
+                        "font-size:16px;line-height:1.5;margin:0 0 20px;text-shadow:0 1px 3px rgba(0,0,0,0.8);color:#fff;opacity:0.95;";
+
+                    pagesHtml += `
+                        <div class="story-page" data-page="${i}" style="position:absolute;inset:0;opacity:0;visibility:hidden;">
+                            <div style="position:absolute;inset:0;">
+                                <img src="${imageUrl}" alt="${imageAlt}" style="width:100%;height:100%;object-fit:cover;" />
+                            </div>
+                            <div style="${overlayStyle}">
+                                <h2 style="${titleStyle}">${title}</h2>
+                                <p style="${textStyle}">${text}</p>
+                                ${ctaHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                this.content.innerHTML = pagesHtml;
+                console.log("Pages HTML injected into content");
+            }
+
+            showPage(index) {
+                const pages = this.content?.querySelectorAll(".story-page");
+                if (!pages || index < 0 || index >= pages.length) return;
+
+                // Hide all pages with inline styles
+                pages.forEach((p) => {
+                    p.style.opacity = "0";
+                    p.style.visibility = "hidden";
+                });
+
+                // Show current page with inline styles
+                pages[index].style.opacity = "1";
+                pages[index].style.visibility = "visible";
+
+                this.updateProgress(index, pages.length);
+                this.currentPage = index;
+                console.log("Showing page", index);
+            }
+
+            updateProgress(current, total) {
+                // Clear any existing auto-advance timer
+                if (this.autoAdvanceTimer) {
+                    clearTimeout(this.autoAdvanceTimer);
+                }
+
+                const fills = this.viewer?.querySelectorAll("[data-progress]");
+                fills?.forEach((fill, i) => {
+                    if (i < current) {
+                        // Previous bars: immediately full (no transition)
+                        fill.style.transition = "none";
+                        fill.style.width = "100%";
+                    } else if (i === current) {
+                        // Current bar: start empty, then fill with 10s animation
+                        fill.style.transition = "none";
+                        fill.style.width = "0%";
+                        // Force reflow then animate
+                        fill.offsetHeight;
+                        fill.style.transition = "width 10s linear";
+                        setTimeout(() => {
+                            fill.style.width = "100%";
+                        }, 10);
+                    } else {
+                        // Future bars: empty (no transition)
+                        fill.style.transition = "none";
+                        fill.style.width = "0%";
+                    }
+                });
+
+                // Auto-advance after 10 seconds
+                this.autoAdvanceTimer = setTimeout(() => {
+                    const totalPages =
+                        this.content?.querySelectorAll(".story-page").length ||
+                        0;
+                    if (this.currentPage < totalPages - 1) {
+                        // Go to next page
+                        this.showPage(this.currentPage + 1);
+                    } else {
+                        // Last page - close the viewer
+                        this.close();
+                    }
+                }, 10000);
+            }
+
+            nextPage() {
+                const totalPages =
+                    this.content?.querySelectorAll(".story-page").length || 0;
+                if (this.currentPage < totalPages - 1) {
+                    this.showPage(this.currentPage + 1);
+                }
+            }
+
+            previousPage() {
+                if (this.currentPage > 0) {
+                    this.showPage(this.currentPage - 1);
+                }
+            }
+        }
+
+        const storyViewer = new WebStoryViewer();
+        window.openWebStory = function (story, pages) {
+            storyViewer.open(story, pages);
+        };
+    })();
+</script>
+
+<style>
+    .story-viewer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        background: #000;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .story-viewer.active {
+        display: flex;
+        opacity: 1;
+    }
+
+    .story-container {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        height: 100%;
+        margin: 0 auto;
+        background: #000;
+    }
+
+    /* Progress bars - BRIGHT ORANGE for visibility */
+    .story-progress {
+        position: absolute;
+        top: 20px;
+        left: 16px;
+        right: 60px;
+        display: flex;
+        gap: 8px;
+        z-index: 9999;
+        pointer-events: none;
+    }
+
+    .progress-bar {
+        flex: 1;
+        height: 6px;
+        background: rgba(255, 165, 0, 0.5); /* Orange background */
+        border-radius: 3px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #ff6600; /* Bright orange fill */
+        width: 0%;
+        transition: width 5s linear;
+    }
+
+    /* Close button */
+    .story-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 10000;
+        background: rgba(0, 0, 0, 0.6);
+        border: 2px solid white;
+        color: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .story-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Story content */
+    .story-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    .story-page {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease;
+    }
+
+    .story-page.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .story-background {
+        position: absolute;
+        inset: 0;
+    }
+
+    .story-background img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .story-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.6) 0%,
+            transparent 25%,
+            transparent 55%,
+            rgba(0, 0, 0, 0.85) 100%
+        );
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 60px 24px 40px;
+        color: #fff;
+        pointer-events: none;
+    }
+
+    .story-overlay * {
+        pointer-events: auto;
+    }
+
+    .story-title {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0 0 12px;
+        line-height: 1.3;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .story-text {
+        font-size: 16px;
+        line-height: 1.5;
+        margin: 0 0 20px;
+        opacity: 0.95;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .story-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(135deg, #ff6600, #ff8800);
+        color: #fff;
+        padding: 16px 28px;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 17px;
+        transition:
+            transform 0.2s,
+            box-shadow 0.2s;
+        align-self: flex-start;
+        box-shadow: 0 4px 15px rgba(255, 102, 0, 0.4);
+        border: none;
+    }
+
+    .story-cta:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(255, 102, 0, 0.5);
+    }
+
+    /* Navigation Buttons */
+    .story-nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.25);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 100;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+
+    .story-nav-btn:hover {
+        background: rgba(255, 255, 255, 0.4);
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .story-nav-prev {
+        left: 12px;
+    }
+
+    .story-nav-next {
+        right: 12px;
+    }
+
+    @media (max-width: 768px) {
+        .story-nav-btn {
+            background: transparent;
+            border: none;
+            color: transparent;
+            width: 30%;
+            height: 100%;
+            top: 0;
+            transform: none;
+            border-radius: 0;
+        }
+
+        .story-nav-btn:hover {
+            background: transparent;
+            transform: none;
+        }
+
+        .story-nav-prev {
+            left: 0;
+        }
+
+        .story-nav-next {
+            right: 0;
+            width: 70%;
+        }
+
+        .story-container {
+            max-width: 100%;
+        }
+
+        .story-title {
+            font-size: 22px;
+        }
+    }
+</style>

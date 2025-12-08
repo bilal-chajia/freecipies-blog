@@ -1,6 +1,5 @@
 // @ts-check
 
-import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
 
 import cloudflare from '@astrojs/cloudflare';
@@ -10,20 +9,21 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://freecipies.com',
-  integrations: [sitemap(), react()],
+  site: 'https://localhost:4321',
+  integrations: [react()],
   adapter: cloudflare({
     platformProxy: {
       enabled: true,
     },
-    routes: {
-      extend: {
-        include: [{ pattern: '/api/*' }],
-      }
-    }
   }),
   output: 'server',
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      watch: {
+        // Ignore .wrangler directory to prevent SQLite WAL changes from triggering reloads
+        ignored: ['**/.wrangler/**', '**/node_modules/**'],
+      },
+    },
   },
 });

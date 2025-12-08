@@ -1,0 +1,130 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import TagCard from "../../components/TagCard.astro";
+import { getTags, getArticles } from "../../lib/db";
+
+const { env } = Astro.locals.runtime;
+const tags = await getTags(env.DB, { isOnline: true });
+
+// Get article counts for each tag
+const tagArticleCounts = new Map<string, number>();
+for (const tag of tags) {
+    const { total } = await getArticles(env.DB, { tagSlug: tag.slug });
+    tagArticleCounts.set(tag.slug, total);
+}
+
+// Sort tags by article count (most popular first)
+const sortedTags = [...tags].sort((a, b) => {
+    return (
+        (tagArticleCounts.get(b.slug) || 0) -
+        (tagArticleCounts.get(a.slug) || 0)
+    );
+});
+
+const pageTitle = "Recipe Tags - Freecipies";
+const pageDescription =
+    "Browse recipes by tags. Find exactly what you're looking for with our organized recipe tags.";
+---
+
+<Layout title={pageTitle} description={pageDescription}>
+    <main class="tags-page">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-container">
+                <h1 class="hero-title">Browse by Tags</h1>
+                <p class="hero-subtitle">
+                    Find recipes organized by ingredients, cooking methods, and
+                    dietary preferences
+                </p>
+            </div>
+        </section>
+
+        <!-- Tags Grid -->
+        <section class="tags-section">
+            <div class="section-container">
+                {
+                    sortedTags.length > 0 ? (
+                        <div class="tags-grid">
+                            {sortedTags.map((tag) => (
+                                <TagCard
+                                    tag={tag}
+                                    showArticleCount={true}
+                                    articleCount={
+                                        tagArticleCounts.get(tag.slug) || 0
+                                    }
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div class="empty-state">
+                            <p>No tags found.</p>
+                        </div>
+                    )
+                }
+            </div>
+        </section>
+    </main>
+</Layout>
+
+<style>
+    .tags-page {
+        min-height: 100vh;
+    }
+
+    .hero-section {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        padding: clamp(3rem, 8vw, 5rem) 0;
+        text-align: center;
+    }
+
+    .hero-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 clamp(1rem, 3vw, 1.5rem);
+    }
+
+    .hero-title {
+        font-size: clamp(2rem, 5vw, 3rem);
+        font-weight: 800;
+        margin: 0 0 1rem 0;
+        color: #1a1a1a;
+        letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+        font-size: clamp(1rem, 2vw, 1.125rem);
+        line-height: 1.6;
+        color: #555;
+        margin: 0;
+    }
+
+    .tags-section {
+        padding: clamp(3rem, 8vw, 5rem) 0;
+        background: #fafafa;
+    }
+
+    .section-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 clamp(1rem, 3vw, 1.5rem);
+    }
+
+    .tags-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 0;
+        color: #666;
+    }
+
+    @media (max-width: 768px) {
+        .tags-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+    }
+</style>

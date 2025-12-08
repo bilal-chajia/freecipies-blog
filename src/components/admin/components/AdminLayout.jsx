@@ -1,4 +1,4 @@
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileText,
@@ -15,12 +15,15 @@ import {
   ChefHat,
   Pin,
   Home,
+  LayoutTemplate,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { useUIStore, useAuthStore } from '../store/useStore';
+import SessionMonitor from './SessionMonitor';
 
 const AdminLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { sidebarOpen, toggleSidebar, theme, toggleTheme } = useUIStore();
   const { user, clearAuth } = useAuthStore();
 
@@ -32,6 +35,7 @@ const AdminLayout = () => {
     { name: 'Authors', href: '/authors', icon: Users },
     { name: 'Tags', href: '/tags', icon: Tags },
     { name: 'Pinterest Boards', href: '/pinterest/boards', icon: Pin },
+    { name: 'Pin Templates', href: '/templates', icon: LayoutTemplate },
     { name: 'Media', href: '/media', icon: Image },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
@@ -39,16 +43,15 @@ const AdminLayout = () => {
   const handleLogout = () => {
     clearAuth();
     localStorage.removeItem('admin_token');
-    window.location.href = '/login';
+    navigate('/login', { replace: true });
   };
 
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-0'
-        } transition-all duration-300 bg-card border-r border-border overflow-hidden`}
+        className={`${sidebarOpen ? 'w-64' : 'w-0'
+          } transition-all duration-300 bg-card border-r border-border overflow-hidden`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -64,16 +67,15 @@ const AdminLayout = () => {
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               const Icon = item.icon;
-              
+
               return (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span className="font-medium">{item.name}</span>
@@ -155,6 +157,7 @@ const AdminLayout = () => {
           <Outlet />
         </main>
       </div>
+      <SessionMonitor />
     </div>
   );
 };

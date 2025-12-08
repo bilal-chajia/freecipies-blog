@@ -1,14 +1,15 @@
 ---
-import { Image } from 'astro:assets';
-import type { CollectionEntry } from 'astro:content';
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import FormattedDate from '../components/FormattedDate.astro';
-import Header from '../components/Header.astro';
+import { Image } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+import BaseHead from "../components/BaseHead.astro";
+import Footer from "../components/Footer.astro";
+import FormattedDate from "../components/FormattedDate.astro";
+import Header from "../components/Header.astro";
 
-type Props = CollectionEntry<'blog'>['data'];
+type Props = CollectionEntry<"blog">["data"] & { slug?: string };
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, slug } =
+	Astro.props;
 ---
 
 <html lang="en">
@@ -60,7 +61,16 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 		<main>
 			<article>
 				<div class="hero-image">
-					{heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
+					{
+						heroImage && (
+							<Image
+								width={1020}
+								height={510}
+								src={heroImage}
+								alt=""
+							/>
+						)
+					}
 				</div>
 				<div class="prose">
 					<div class="title">
@@ -69,10 +79,12 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 							{
 								updatedDate && (
 									<div class="last-updated-on">
-										Last updated on <FormattedDate date={updatedDate} />
+										Last updated on{" "}
+										<FormattedDate date={updatedDate} />
 									</div>
 								)
 							}
+							<span id="view-count" class="view-count"></span>
 						</div>
 						<h1>{title}</h1>
 						<hr />
@@ -82,5 +94,28 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 			</article>
 		</main>
 		<Footer />
-	</body>
+	</body><script define:vars={{ slug }}>
+		if (slug) {
+			// Track view
+			const track = async () => {
+				try {
+					await fetch(`/api/views/${slug}`, { method: "POST" });
+				} catch (e) {}
+			};
+
+			if (document.readyState === "complete") track();
+			else window.addEventListener("load", track);
+
+			// Fetch count to display
+			fetch(`/api/views/${slug}`)
+				.then((res) => res.json())
+				.then((data) => {
+					const el = document.getElementById("view-count");
+					if (el && data.viewCount !== undefined) {
+						el.textContent = ` • ${new Intl.NumberFormat("en-US", { notation: "compact", compactDisplay: "short" }).format(data.viewCount)} views`;
+					}
+				})
+				.catch(() => {});
+		}
+	</script>
 </html>

@@ -16,7 +16,7 @@ const TagEditor = () => {
   const [formData, setFormData] = useState({
     slug: '',
     name: '',
-    color: '#FF6B6B',
+    color: '#ff6600',
   });
 
   useEffect(() => {
@@ -25,8 +25,8 @@ const TagEditor = () => {
       if (tag) {
         setFormData({
           slug: tag.slug,
-          name: tag.name,
-          color: tag.color,
+          name: tag.label || tag.name, // Support both label (from API) and name
+          color: tag.color || '#ff6600',
         });
       }
     }
@@ -41,21 +41,25 @@ const TagEditor = () => {
     try {
       setSaving(true);
 
+      // Call API to persist changes - map 'name' to 'label' for API
+      const { tagsAPI } = await import('../../services/api');
+
+      const tagData = {
+        slug: formData.slug,
+        label: formData.name, // API expects 'label'
+        color: formData.color,
+      };
+
       if (isEditMode) {
-        // Update existing tag
-        const updatedTags = tags.map(tag =>
-          tag.slug === slug ? { ...tag, ...formData } : tag
-        );
-        setTags(updatedTags);
+        await tagsAPI.update(slug, tagData);
       } else {
-        // Add new tag
-        const newTag = { ...formData };
-        setTags([...tags, newTag]);
+        await tagsAPI.create(tagData);
       }
 
       navigate('/tags');
-    } catch {
-      alert('Failed to save tag');
+    } catch (err) {
+      console.error('Failed to save tag:', err);
+      alert('Failed to save tag: ' + (err.response?.data?.error || err.message));
     } finally {
       setSaving(false);
     }

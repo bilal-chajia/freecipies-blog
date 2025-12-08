@@ -1,5 +1,5 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
-import type { Article, Category, Author, Tag } from '../types';
+import type { Article, Category, Author, Tag, Media } from '../types';
 
 export interface Env {
   DB: D1Database;
@@ -25,10 +25,22 @@ export async function getArticles(
     limit?: number;
     offset?: number;
     type?: 'recipe' | 'blog';
+    publishedAfter?: Date;
+    isOnline?: boolean; // true = online only, false = offline only, undefined = all
+    search?: string;
   }
 ): Promise<PaginatedArticles> {
-  const whereClauses: string[] = ['r.is_online = 1'];
+  const whereClauses: string[] = [];
   const params: any[] = [];
+
+  // Handle isOnline filter
+  // true = only online, false = only offline, undefined = all articles
+  if (options?.isOnline === true) {
+    whereClauses.push('r.is_online = 1');
+  } else if (options?.isOnline === false) {
+    whereClauses.push('r.is_online = 0');
+  }
+  // If undefined, no filter is applied (show all)
 
   if (options?.type) {
     whereClauses.push(`r.type = ?${params.length + 1}`);
@@ -54,7 +66,22 @@ export async function getArticles(
     params.push(options.tagSlug);
   }
 
-  const whereString = whereClauses.join(' AND ');
+  if (options?.publishedAfter) {
+    whereClauses.push(`r.published_at > ?${params.length + 1}`);
+    params.push(options.publishedAfter.toISOString());
+  }
+
+  if (options?.search) {
+    // Search in label, short_description, and author_name
+    const searchParam = `%${options.search}%`;
+    const p1 = params.length + 1;
+    const p2 = params.length + 2;
+    const p3 = params.length + 3;
+    whereClauses.push(`(r.label LIKE ?${p1} OR r.short_description LIKE ?${p2} OR r.author_name LIKE ?${p3})`);
+    params.push(searchParam, searchParam, searchParam);
+  }
+
+  const whereString = whereClauses.length > 0 ? whereClauses.join(' AND ') : '1=1';
 
   // Main query to get the paginated items
   let query = `SELECT * FROM v_articles_full r WHERE ${whereString} ORDER BY r.published_at DESC`;
@@ -280,6 +307,16 @@ export async function deleteArticle(
   return result.success;
 }
 
+export async function incrementViewCount(
+  db: D1Database,
+  slug: string
+): Promise<boolean> {
+  const result = await db.prepare(
+    'UPDATE articles SET view_count = COALESCE(view_count, 0) + 1 WHERE slug = ?'
+  ).bind(slug).run();
+  return result.success;
+}
+
 // Tag Database Operations
 export async function createTag(
   db: D1Database,
@@ -288,7 +325,7 @@ export async function createTag(
   const {
     slug, label, headline, metaTitle, metaDescription,
     shortDescription, tldr, image, collectionTitle,
-    numEntriesPerPage, isOnline, isFavorite
+    numEntriesPerPage, isOnline, isFavorite, color
   } = tag;
 
   if (!slug || !label) throw new Error('Missing required fields');
@@ -297,14 +334,14 @@ export async function createTag(
     INSERT INTO tags (
       slug, label, headline, meta_title, meta_description,
       short_description, tldr, image_url, image_alt,
-      collection_title, num_entries_per_page, is_online, is_favorite
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      collection_title, num_entries_per_page, is_online, is_favorite, color
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     slug, label, headline || label, metaTitle || label, metaDescription || '',
     shortDescription || '', tldr || '',
     image?.url, image?.alt,
     collectionTitle || label, numEntriesPerPage || 12,
-    isOnline ? 1 : 0, isFavorite ? 1 : 0
+    isOnline ? 1 : 0, isFavorite ? 1 : 0, color || '#ff6600'
   ).run();
 
   // We don't have getTagBySlug yet, but we can implement it or assume it exists?
@@ -338,7 +375,8 @@ export async function updateTag(
     collection_title: tag.collectionTitle,
     num_entries_per_page: tag.numEntriesPerPage,
     is_online: tag.isOnline !== undefined ? (tag.isOnline ? 1 : 0) : undefined,
-    is_favorite: tag.isFavorite !== undefined ? (tag.isFavorite ? 1 : 0) : undefined
+    is_favorite: tag.isFavorite !== undefined ? (tag.isFavorite ? 1 : 0) : undefined,
+    color: tag.color
   };
 
   for (const [key, value] of Object.entries(fields)) {
@@ -411,7 +449,7 @@ export async function createCategory(
   const {
     slug, label, headline, metaTitle, metaDescription,
     shortDescription, tldr, image, collectionTitle,
-    numEntriesPerPage, isOnline, isFavorite, sortOrder
+    numEntriesPerPage, isOnline, isFavorite, sortOrder, color
   } = category;
 
   if (!slug || !label) throw new Error('Missing required fields');
@@ -420,14 +458,14 @@ export async function createCategory(
     INSERT INTO categories (
       slug, label, headline, meta_title, meta_description,
       short_description, tldr, image_url, image_alt, image_width, image_height,
-      collection_title, num_entries_per_page, is_online, is_favorite, sort_order
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      collection_title, num_entries_per_page, is_online, is_favorite, sort_order, color
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     slug, label, headline || label, metaTitle || label, metaDescription || '',
     shortDescription || '', tldr || '',
     image?.url, image?.alt, image?.width, image?.height,
     collectionTitle || label, numEntriesPerPage || 12,
-    isOnline ? 1 : 0, isFavorite ? 1 : 0, sortOrder || 0
+    isOnline ? 1 : 0, isFavorite ? 1 : 0, sortOrder || 0, color || '#ff6600'
   ).run();
 
   return getCategoryBySlug(db, slug);
@@ -448,18 +486,22 @@ export async function updateCategory(
     meta_description: category.metaDescription,
     short_description: category.shortDescription,
     tldr: category.tldr,
-    image_url: category.image?.url,
-    image_alt: category.image?.alt,
-    image_width: category.image?.width,
-    image_height: category.image?.height,
+    // Handle image fields: if image is explicitly null, set all to null
+    // If image is undefined, don't update. If image exists, use its values.
+    image_url: category.image === null ? null : category.image?.url,
+    image_alt: category.image === null ? null : category.image?.alt,
+    image_width: category.image === null ? null : category.image?.width,
+    image_height: category.image === null ? null : category.image?.height,
     collection_title: category.collectionTitle,
     num_entries_per_page: category.numEntriesPerPage,
     is_online: category.isOnline !== undefined ? (category.isOnline ? 1 : 0) : undefined,
     is_favorite: category.isFavorite !== undefined ? (category.isFavorite ? 1 : 0) : undefined,
-    sort_order: category.sortOrder
+    sort_order: category.sortOrder,
+    color: category.color
   };
 
   for (const [key, value] of Object.entries(fields)) {
+    // Include null values (to clear fields) but skip undefined (to not update)
     if (value !== undefined) {
       updates.push(`${key} = ?`);
       params.push(value);
@@ -625,6 +667,140 @@ export async function getAuthorBySlug(
   return mapRowToAuthor(results[0]);
 }
 
+// Media Database Operations
+export async function getMedia(
+  db: D1Database,
+  options?: {
+    type?: string; // 'image', 'video', etc. or specific mime type
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    limit?: number;
+    offset?: number;
+  }
+): Promise<Media[]> {
+  let query = 'SELECT * FROM media';
+  const params: any[] = [];
+  const clauses: string[] = [];
+
+  if (options?.type) {
+    if (options.type === 'image') {
+      clauses.push("mime_type LIKE 'image/%'");
+    } else if (options.type === 'video') {
+      clauses.push("mime_type LIKE 'video/%'");
+    } else if (options.type === 'audio') {
+      clauses.push("mime_type LIKE 'audio/%'");
+    } else if (options.type === 'document') {
+      clauses.push("(mime_type = 'application/pdf' OR mime_type LIKE 'application/msword%' OR mime_type LIKE 'application/vnd%')");
+    } else if (options.type !== 'all') {
+      clauses.push("mime_type = ?");
+      params.push(options.type);
+    }
+  }
+
+  if (options?.search) {
+    clauses.push("(filename LIKE ? OR alt_text LIKE ?)");
+    params.push(`%${options.search}%`);
+    params.push(`%${options.search}%`);
+  }
+
+  if (clauses.length > 0) {
+    query += ` WHERE ${clauses.join(' AND ')}`;
+  }
+
+  // Sorting
+  const allowedSortCols = ['filename', 'size_bytes', 'uploaded_at'];
+  let orderBy = 'uploaded_at';
+
+  if (options?.sortBy) {
+    if (options.sortBy === 'created_at' || options.sortBy === 'uploaded_at') {
+      orderBy = 'uploaded_at';
+    } else if (options.sortBy === 'size' || options.sortBy === 'size_bytes') {
+      orderBy = 'size_bytes';
+    } else if (options.sortBy === 'name' || options.sortBy === 'filename') {
+      orderBy = 'filename';
+    }
+  }
+
+  const order = options?.order === 'asc' ? 'ASC' : 'DESC';
+  query += ` ORDER BY ${orderBy} ${order}`;
+
+  if (options?.limit) {
+    query += ' LIMIT ?';
+    params.push(options.limit);
+    if (options?.offset) {
+      query += ' OFFSET ?';
+      params.push(options.offset);
+    }
+  }
+
+  const { results } = await db.prepare(query).bind(...params).all();
+
+  return results.map(row => mapRowToMedia(row));
+}
+
+export async function getMediaById(
+  db: D1Database,
+  id: number
+): Promise<Media | null> {
+  const { results } = await db.prepare('SELECT * FROM media WHERE id = ?').bind(id).all();
+  if (results.length === 0) return null;
+  return mapRowToMedia(results[0]);
+}
+
+export async function deleteMedia(
+  db: D1Database,
+  id: number
+): Promise<boolean> {
+  const result = await db.prepare('DELETE FROM media WHERE id = ?').bind(id).run();
+  return result.success;
+}
+
+export async function updateMedia(
+  db: D1Database,
+  id: number,
+  updates: {
+    r2Key?: string;
+    url?: string;
+    filename?: string;
+    mimeType?: string;
+    sizeBytes?: number;
+  }
+): Promise<boolean> {
+  const setClauses: string[] = [];
+  const params: any[] = [];
+
+  if (updates.r2Key !== undefined) {
+    setClauses.push('r2_key = ?');
+    params.push(updates.r2Key);
+  }
+  if (updates.url !== undefined) {
+    setClauses.push('url = ?');
+    params.push(updates.url);
+  }
+  if (updates.filename !== undefined) {
+    setClauses.push('filename = ?');
+    params.push(updates.filename);
+  }
+  if (updates.mimeType !== undefined) {
+    setClauses.push('mime_type = ?');
+    params.push(updates.mimeType);
+  }
+  if (updates.sizeBytes !== undefined) {
+    setClauses.push('size_bytes = ?');
+    params.push(updates.sizeBytes);
+  }
+
+  if (setClauses.length === 0) return true;
+
+  params.push(id);
+  const result = await db.prepare(
+    `UPDATE media SET ${setClauses.join(', ')} WHERE id = ?`
+  ).bind(...params).run();
+
+  return result.success;
+}
+
 // Helper functions to map database rows to TypeScript types
 function mapRowToArticle(row: any): Article {
   return {
@@ -661,9 +837,9 @@ function mapRowToArticle(row: any): Article {
     referencesJson: row.references_json ? JSON.parse(row.references_json) : undefined,
     mediaJson: row.media_json ? JSON.parse(row.media_json) : undefined,
     isOnline: Boolean(row.is_online),
+    viewCount: row.view_count || 0,
     isFavorite: Boolean(row.is_favorite),
     publishedAt: row.published_at,
-    viewCount: row.view_count,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     categoryLabel: row.category_label,
@@ -695,6 +871,7 @@ function mapRowToCategory(row: any): Category {
     numEntriesPerPage: row.num_entries_per_page,
     createdAt: row.created_at,
     sortOrder: row.sort_order,
+    color: row.color || '#ff6600',
     updatedAt: row.updated_at,
     route: `/categories/${row.slug}`
   };
@@ -744,8 +921,26 @@ function mapRowToTag(row: any): Tag {
     numEntriesPerPage: row.num_entries_per_page,
     isOnline: Boolean(row.is_online),
     isFavorite: Boolean(row.is_favorite),
+    color: row.color || '#ff6600',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     route: `/tags/${row.slug}`
+  };
+}
+
+function mapRowToMedia(row: any): Media {
+  return {
+    id: row.id,
+    filename: row.filename,
+    r2Key: row.r2_key,
+    url: row.url,
+    mimeType: row.mime_type,
+    sizeBytes: row.size_bytes,
+    width: row.width,
+    height: row.height,
+    altText: row.alt_text,
+    attribution: row.attribution,
+    uploadedBy: row.uploaded_by,
+    uploadedAt: row.uploaded_at
   };
 }

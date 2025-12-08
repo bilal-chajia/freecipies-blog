@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Eye, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
@@ -17,6 +17,9 @@ import {
 import Editor from '@monaco-editor/react';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../services/api';
 import { generateSlug, isValidJSON } from '../../utils/helpers';
+import MediaDialog from '../../components/MediaDialog';
+import TagSelector from '../../components/TagSelector';
+import RecipeBuilder from '../../components/RecipeBuilder';
 
 const ArticleEditor = () => {
   const { slug } = useParams();
@@ -27,6 +30,7 @@ const ArticleEditor = () => {
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState([]);
   const [authors, setAuthors] = useState([]);
+  const [tags, setTags] = useState([]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -64,14 +68,22 @@ const ArticleEditor = () => {
   // JSON validation errors
   const [jsonErrors, setJsonErrors] = useState({});
 
+  // Media Dialog State
+  const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
+  const [activeMediaField, setActiveMediaField] = useState(null); // 'image' | 'cover'
+
+  // Track if article has been loaded to prevent duplicate API calls
+  const articleLoadedRef = useRef(false);
+
   useEffect(() => {
     loadCategories();
     loadAuthors();
     loadTags();
-    if (isEditMode) {
+    if (isEditMode && !articleLoadedRef.current) {
+      articleLoadedRef.current = true;
       loadArticle();
     }
-  }, [slug, isEditMode]);
+  }, [slug]);
 
   const loadCategories = async () => {
     try {
@@ -143,10 +155,20 @@ const ArticleEditor = () => {
         setKeywordsJson(JSON.stringify(article.keywords || [], null, 2));
         setReferencesJson(JSON.stringify(article.references || [], null, 2));
         setMediaJson(JSON.stringify(article.media || {}, null, 2));
+      } else {
+        // Article not found or invalid response
+        alert(`Article "${slug}" not found. Redirecting to articles list.`);
+        navigate('/articles');
       }
     } catch (error) {
       console.error('Failed to load article:', error);
-      alert('Failed to load article');
+      // On 404 or other errors, show message and navigate back to articles list
+      if (error.response?.status === 404) {
+        alert(`Article "${slug}" not found. Redirecting to articles list.`);
+        navigate('/articles');
+      } else {
+        alert('Failed to load article: ' + (error.response?.data?.message || error.message));
+      }
     } finally {
       setLoading(false);
     }
@@ -154,11 +176,32 @@ const ArticleEditor = () => {
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Auto-generate slug from label
     if (field === 'label' && !isEditMode) {
       setFormData(prev => ({ ...prev, slug: generateSlug(value) }));
     }
+  };
+
+  const handleMediaSelect = (item) => {
+    if (activeMediaField === 'image') {
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: item.url,
+        imageAlt: item.altText || prev.imageAlt
+      }));
+    } else if (activeMediaField === 'cover') {
+      setFormData(prev => ({
+        ...prev,
+        coverUrl: item.url,
+        coverAlt: item.altText || prev.coverAlt
+      }));
+    }
+  };
+
+  const openMediaDialog = (field) => {
+    setActiveMediaField(field);
+    setMediaDialogOpen(true);
   };
 
   const validateJSON = (field, value) => {
@@ -367,6 +410,15 @@ const ArticleEditor = () => {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="tags">Tags</Label>
+            <TagSelector
+              tags={tags}
+              selectedTags={formData.selectedTags}
+              onTagsChange={(newTags) => handleInputChange('selectedTags', newTags)}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="shortDescription">Short Description *</Label>
             <Textarea
               id="shortDescription"
@@ -391,12 +443,21 @@ const ArticleEditor = () => {
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="imageUrl">Featured Image URL</Label>
-              <Input
-                id="imageUrl"
-                value={formData.imageUrl}
-                onChange={(e) => handleInputChange('imageUrl', e.target.value)}
-                placeholder="https://..."
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={(e) => handleInputChange('imageUrl', e.target.value)}
+                  placeholder="https://..."
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => openMediaDialog('image')}
+                >
+                  Select
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -427,6 +488,37 @@ const ArticleEditor = () => {
                 onCheckedChange={(checked) => handleInputChange('isFavorite', checked)}
               />
               <Label htmlFor="isFavorite">Favorite</Label>
+            </div>
+          </div>
+
+          {/* Cover Image Input (if needed, though hidden in earlier screenshot logic, assuming consistency) */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="coverUrl">Cover Image URL (Optional)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="coverUrl"
+                  value={formData.coverUrl}
+                  onChange={(e) => handleInputChange('coverUrl', e.target.value)}
+                  placeholder="https://..."
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => openMediaDialog('cover')}
+                >
+                  Select
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="coverAlt">Cover Image Alt</Label>
+              <Input
+                id="coverAlt"
+                value={formData.coverAlt}
+                onChange={(e) => handleInputChange('coverAlt', e.target.value)}
+                placeholder="Cover image description"
+              />
             </div>
           </div>
         </TabsContent>
@@ -521,19 +613,19 @@ const ArticleEditor = () => {
                 <span className="text-sm text-destructive">{jsonErrors.recipe}</span>
               )}
             </div>
-            <div className="border rounded-lg overflow-hidden">
-              <Editor
-                height="500px"
-                language="json"
-                theme="vs-dark"
+            <div className="border rounded-lg overflow-hidden bg-background p-4">
+              <RecipeBuilder
                 value={recipeJson}
-                onChange={(value) => {
-                  setRecipeJson(value);
-                  validateJSON('recipe', value);
-                }}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
+                onChange={(newValue) => {
+                  setRecipeJson(newValue);
+                  // Clear error if valid
+                  if (isValidJSON(newValue)) {
+                    setJsonErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.recipe;
+                      return newErrors;
+                    });
+                  }
                 }}
               />
             </div>
@@ -668,6 +760,12 @@ const ArticleEditor = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <MediaDialog
+        open={mediaDialogOpen}
+        onOpenChange={setMediaDialogOpen}
+        onSelect={handleMediaSelect}
+      />
     </div>
   );
 };

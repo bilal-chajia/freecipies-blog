@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
@@ -15,6 +15,8 @@ const BoardEditor = () => {
   const navigate = useNavigate();
   const isEditMode = !!id;
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(isEditMode);
+  const loadedRef = useRef(false);
   const [formData, setFormData] = useState({
     slug: '',
     name: '',
@@ -24,11 +26,15 @@ const BoardEditor = () => {
   });
 
   useEffect(() => {
-    if (isEditMode) loadBoard();
-  }, [id, isEditMode, loadBoard]);
+    if (isEditMode && !loadedRef.current) {
+      loadedRef.current = true;
+      loadBoard();
+    }
+  }, [id]);
 
   const loadBoard = async () => {
     try {
+      setLoading(true);
       const response = await pinterestBoardsAPI.getBySlug(id);
       const board = response.data.board;
       setFormData({
@@ -41,6 +47,8 @@ const BoardEditor = () => {
     } catch {
       alert('Failed to load board');
       navigate('/pinterest/boards');
+    } finally {
+      setLoading(false);
     }
   };
 

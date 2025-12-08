@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS categories (
     is_online BOOLEAN DEFAULT 0,
     is_favorite BOOLEAN DEFAULT 0,
     sort_order INTEGER DEFAULT 0,
+    color TEXT DEFAULT '#ff6600ff',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -63,6 +64,7 @@ CREATE TABLE IF NOT EXISTS tags (
     num_entries_per_page INTEGER DEFAULT 12,
     is_online BOOLEAN DEFAULT 0,
     is_favorite BOOLEAN DEFAULT 0,
+    color TEXT DEFAULT '#ff6600',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -230,6 +232,42 @@ CREATE INDEX IF NOT EXISTS idx_pins_primary ON pinterest_pins(is_primary);
 CREATE INDEX IF NOT EXISTS idx_pins_order ON pinterest_pins(sort_order);
 CREATE INDEX IF NOT EXISTS idx_pins_created ON pinterest_pins(created_at);
 
+-- Pinterest Pin Templates Table (Canva-like template designs)
+CREATE TABLE IF NOT EXISTS pin_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    thumbnail_url TEXT,
+    
+    -- Canvas settings
+    canvas_width INTEGER DEFAULT 1000,
+    canvas_height INTEGER DEFAULT 1500,
+    background_color TEXT DEFAULT '#ffffff',
+    
+    -- Template definition (JSON array of elements)
+    elements_json TEXT NOT NULL,
+    
+    -- Metadata
+    is_default BOOLEAN DEFAULT 0,
+    is_active BOOLEAN DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Pin Templates Indexes
+CREATE INDEX IF NOT EXISTS idx_pin_templates_active ON pin_templates(is_active);
+CREATE INDEX IF NOT EXISTS idx_pin_templates_default ON pin_templates(is_default);
+CREATE INDEX IF NOT EXISTS idx_pin_templates_order ON pin_templates(sort_order);
+
+-- Trigger for pin_templates timestamp
+CREATE TRIGGER IF NOT EXISTS update_pin_templates_timestamp 
+AFTER UPDATE ON pin_templates
+BEGIN
+    UPDATE pin_templates SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
 -- Triggers for automatic timestamp updates
 CREATE TRIGGER IF NOT EXISTS update_categories_timestamp 
 AFTER UPDATE ON categories
@@ -272,6 +310,7 @@ CREATE VIEW IF NOT EXISTS v_articles_full AS
 SELECT 
     a.*,
     c.label as category_label,
+    c.slug as category_slug,
     c.image_url as category_image,
     au.name as author_name,
     au.image_url as author_image,

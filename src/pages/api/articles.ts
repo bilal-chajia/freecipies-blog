@@ -18,6 +18,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const author = url.searchParams.get('author');
   const tag = url.searchParams.get('tag');
   const type = url.searchParams.get('type') as 'recipe' | 'blog' | null;
+  const statusFilter = url.searchParams.get('status'); // 'online', 'offline', or 'all'
+  const search = url.searchParams.get('search');
 
   // Validate pagination parameters
   const paginationValidation = validatePaginationParams(
@@ -50,11 +52,27 @@ export const GET: APIRoute = async ({ request, locals }) => {
       return new Response(body, { status, headers });
     }
 
+    // Determine isOnline filter based on status param
+    // 'online' = only online (isOnline: true)
+    // 'offline' = only offline (isOnline: false)
+    // 'all' or undefined = show all articles (isOnline: undefined)
+    let isOnlineFilter: boolean | undefined;
+    if (statusFilter === 'online') {
+      isOnlineFilter = true;
+    } else if (statusFilter === 'offline') {
+      isOnlineFilter = false;
+    } else {
+      // 'all' or not specified - show all articles
+      isOnlineFilter = undefined;
+    }
+
     const articles = await getArticles(db, {
       type: type || undefined,
       categorySlug: category || undefined,
       authorSlug: author || undefined,
       tagSlug: tag || undefined,
+      isOnline: isOnlineFilter,
+      search: search || undefined,
       limit,
       offset
     });

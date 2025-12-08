@@ -1,13 +1,12 @@
 ---
 import RecipeLayout from "../../layouts/RecipeLayout.astro";
 import SEO from "../../components/SEO.astro";
-import { getArticleBySlug } from "../../lib/db";
 import {
-  AppError,
-  ErrorCodes,
-  formatErrorResponse,
-} from "../../lib/error-handler";
-import type { Article, RecipeDetails } from "../../types";
+  getArticleBySlug,
+  getAuthorBySlug,
+  getCategoryBySlug,
+} from "../../lib/db";
+import type { Article, Author, RecipeDetails, Category } from "../../types";
 
 /**
  * In SSR mode, Astro doesn't require getStaticPaths.
@@ -18,12 +17,12 @@ const { slug } = Astro.params;
 const { runtime } = Astro.locals;
 
 if (!slug) {
-  return formatErrorResponse(
-    new AppError(ErrorCodes.BAD_REQUEST, "Slug is missing."),
-  );
+  return new Response("Slug is missing", { status: 400 });
 }
 
 let recipe: Article | null = null;
+let author: Author | null = null;
+let category: Category | null = null;
 let recipeDetails: RecipeDetails | undefined = undefined;
 
 try {
@@ -32,25 +31,24 @@ try {
 
   // If no recipe is found for the slug, return a 404 page.
   if (!recipe) {
-    return formatErrorResponse(
-      new AppError(ErrorCodes.NOT_FOUND, "Recipe not found."),
-    );
+    return new Response("Recipe not found", { status: 404 });
+  }
+
+  // Fetch author data to get the author's image
+  if (recipe.authorSlug) {
+    author = await getAuthorBySlug(runtime.env.DB, recipe.authorSlug);
+  }
+
+  // Fetch category data to get category color
+  if (recipe.categorySlug) {
+    category = await getCategoryBySlug(runtime.env.DB, recipe.categorySlug);
   }
 
   // The recipeJson field is already parsed by getArticleBySlug
   recipeDetails = recipe.recipeJson;
 } catch (e: any) {
   console.error(`Error processing recipe for slug "${slug}":`, e);
-  // Use the centralized error handler for a consistent response
-  if (e instanceof AppError) {
-    return formatErrorResponse(e);
-  }
-  return formatErrorResponse(
-    new AppError(
-      ErrorCodes.INTERNAL_ERROR,
-      "An unexpected error occurred while fetching the recipe.",
-    ),
-  );
+  return new Response("An unexpected error occurred", { status: 500 });
 }
 
 // This line will only be reached if recipe is not null
@@ -58,7 +56,7 @@ const pageTitle = recipe.metaTitle || recipe.headline;
 const pageDescription = recipe.metaDescription || recipe.shortDescription;
 ---
 
-<RecipeLayout recipe={recipe}>
+<RecipeLayout recipe={recipe} author={author} category={category}>
   <SEO
     slot="seo"
     title={pageTitle}
@@ -79,9 +77,9 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
           recipeYield: recipeDetails.servings,
           recipeCategory: recipe.categoryLabel,
           recipeIngredient:
-            recipeDetails.ingredients?.map((i) => i.items).flat() || [],
+            recipeDetails.ingredients?.flatMap((i) => i.items || []) || [],
           recipeInstructions:
-            recipeDetails.instructions?.map((i) => i.steps).flat() || [],
+            recipeDetails.instructions?.flatMap((i) => i.steps || []) || [],
           nutrition: recipeDetails.nutrition,
         }
       : undefined}
@@ -103,9 +101,7 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
               {recipeDetails.ingredients?.map((group) => (
                 <>
                   {group.group && <h3 class="font-bold mt-2">{group.group}</h3>}
-                  {group.items.map((item) => (
-                    <li>{item}</li>
-                  ))}
+                  {group.items && group.items.map((item) => <li>{item}</li>)}
                 </>
               ))}
             </ul>
@@ -118,9 +114,7 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
               {recipeDetails.instructions?.map((group) => (
                 <>
                   {group.group && <h3 class="font-bold mt-2">{group.group}</h3>}
-                  {group.steps.map((step) => (
-                    <li>{step}</li>
-                  ))}
+                  {group.steps && group.steps.map((step) => <li>{step}</li>)}
                 </>
               ))}
             </ol>

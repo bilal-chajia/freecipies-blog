@@ -1,0 +1,611 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const siteTitle = "Contact Us - Freecipies";
+const siteDescription =
+    "Get in touch with the Freecipies team. We'd love to hear from you!";
+---
+
+<Layout title={siteTitle} description={siteDescription}>
+    <main class="contact-page">
+        <!-- Hero Section -->
+        <section class="contact-hero">
+            <div class="container">
+                <h1 class="page-title">
+                    <span class="title-dot"></span>
+                    Get In Touch
+                </h1>
+                <p class="page-subtitle">
+                    Have a question, suggestion, or just want to say hello? We'd
+                    love to hear from you!
+                </p>
+            </div>
+        </section>
+
+        <!-- Contact Content -->
+        <section class="contact-content">
+            <div class="container">
+                <div class="contact-grid">
+                    <!-- Contact Form -->
+                    <div class="contact-form-wrapper">
+                        <h2>Send Us a Message</h2>
+                        <form id="contactForm" class="contact-form">
+                            <div class="form-group">
+                                <label for="name">Your Name</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    placeholder="John Doe"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    placeholder="john@example.com"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="subject">Subject</label>
+                                <select id="subject" name="subject" required>
+                                    <option value="">Select a topic...</option>
+                                    <option value="general"
+                                        >General Inquiry</option
+                                    >
+                                    <option value="recipe"
+                                        >Recipe Question</option
+                                    >
+                                    <option value="collaboration"
+                                        >Collaboration / Partnership</option
+                                    >
+                                    <option value="feedback"
+                                        >Feedback / Suggestions</option
+                                    >
+                                    <option value="bug">Report an Issue</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="message">Your Message</label>
+                                <textarea
+                                    id="message"
+                                    name="message"
+                                    rows="6"
+                                    placeholder="Tell us what's on your mind..."
+                                    required></textarea>
+                            </div>
+                            <button type="submit" class="submit-btn">
+                                <span class="btn-text">Send Message</span>
+                                <span class="btn-icon">→</span>
+                            </button>
+                        </form>
+                        <div id="formStatus" class="form-status"></div>
+                    </div>
+
+                    <!-- Contact Info -->
+                    <div class="contact-info">
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path
+                                        d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                                    ></path>
+                                    <polyline points="22,6 12,13 2,6"
+                                    ></polyline>
+                                </svg>
+                            </div>
+                            <h3>Email Us</h3>
+                            <p>For general inquiries and support</p>
+                            <a href="mailto:hello@freecipies.com"
+                                >hello@freecipies.com</a
+                            >
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12,6 12,12 16,14"
+                                    ></polyline>
+                                </svg>
+                            </div>
+                            <h3>Response Time</h3>
+                            <p>We typically respond within</p>
+                            <span class="highlight">24-48 hours</span>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path
+                                        d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"
+                                    ></path>
+                                </svg>
+                            </div>
+                            <h3>Follow Us</h3>
+                            <p>Stay connected on social media</p>
+                            <div class="social-links">
+                                <a href="#" aria-label="Pinterest">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M12 0a12 12 0 0 0-4.37 23.17c-.1-.94-.2-2.4.04-3.44l1.4-5.96s-.35-.71-.35-1.76c0-1.64.95-2.87 2.14-2.87 1 0 1.49.76 1.49 1.67 0 1.02-.65 2.54-.99 3.95-.28 1.18.59 2.15 1.76 2.15 2.11 0 3.74-2.23 3.74-5.44 0-2.85-2.05-4.84-4.97-4.84-3.39 0-5.38 2.54-5.38 5.17 0 1.02.39 2.12.88 2.72a.35.35 0 0 1 .08.34l-.33 1.34c-.05.22-.17.27-.4.16-1.49-.69-2.42-2.87-2.42-4.62 0-3.76 2.73-7.21 7.88-7.21 4.14 0 7.35 2.95 7.35 6.88 0 4.11-2.59 7.42-6.19 7.42-1.21 0-2.35-.63-2.74-1.37l-.74 2.83c-.27 1.04-1 2.35-1.49 3.14A12 12 0 1 0 12 0z"
+                                        ></path>
+                                    </svg>
+                                </a>
+                                <a href="#" aria-label="Instagram">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <rect
+                                            x="2"
+                                            y="2"
+                                            width="20"
+                                            height="20"
+                                            rx="5"
+                                            ry="5"></rect>
+                                        <path
+                                            d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"
+                                        ></path>
+                                        <line
+                                            x1="17.5"
+                                            y1="6.5"
+                                            x2="17.51"
+                                            y2="6.5"></line>
+                                    </svg>
+                                </a>
+                                <a href="#" aria-label="Facebook">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
+                                        ></path>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="info-card highlight-card">
+                            <h3>🍳 Recipe Submissions</h3>
+                            <p>
+                                Want to share your recipe with our community?
+                                We're always looking for talented home cooks!
+                            </p>
+                            <a
+                                href="mailto:recipes@freecipies.com"
+                                class="link-btn">Submit a Recipe</a
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq-section">
+            <div class="container">
+                <h2>Frequently Asked Questions</h2>
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <h3>Can I submit my own recipes?</h3>
+                        <p>
+                            Absolutely! We love featuring recipes from our
+                            community. Send us your recipe at
+                            recipes@freecipies.com and we'll review it for
+                            publication.
+                        </p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>How do I print a recipe?</h3>
+                        <p>
+                            On any recipe page, you'll find a print button in
+                            the sharing section. This will give you a clean,
+                            printer-friendly version.
+                        </p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>Can I save recipes to my collection?</h3>
+                        <p>
+                            We're working on this feature! In the meantime, you
+                            can bookmark pages or subscribe to our newsletter
+                            for weekly recipe roundups.
+                        </p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>Do you offer nutritional information?</h3>
+                        <p>
+                            Yes! Most of our recipes include estimated
+                            nutritional information. You'll find it at the
+                            bottom of each recipe card.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</Layout>
+
+<style>
+    .contact-page {
+        background: #fafafa;
+        min-height: 100vh;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 clamp(1rem, 3vw, 2rem);
+    }
+
+    /* Hero */
+    .contact-hero {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 5rem 0;
+        text-align: center;
+        color: white;
+    }
+
+    .page-title {
+        font-size: clamp(2.5rem, 5vw, 3.5rem);
+        font-weight: 800;
+        margin: 0 0 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .title-dot {
+        width: 14px;
+        height: 14px;
+        background: #ff3366;
+        border-radius: 50%;
+    }
+
+    .page-subtitle {
+        font-size: 1.125rem;
+        opacity: 0.85;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.7;
+    }
+
+    /* Contact Content */
+    .contact-content {
+        padding: 4rem 0;
+    }
+
+    .contact-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+    }
+
+    @media (max-width: 900px) {
+        .contact-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Contact Form */
+    .contact-form-wrapper {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .contact-form-wrapper h2 {
+        font-size: 1.5rem;
+        margin: 0 0 1.5rem;
+        color: #111;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #333;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid #eee;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #ff3366;
+        box-shadow: 0 0 0 4px rgba(255, 51, 102, 0.1);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 150px;
+    }
+
+    .submit-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 2rem;
+        background: linear-gradient(135deg, #ff3366 0%, #ff6b4a 100%);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(255, 51, 102, 0.3);
+    }
+
+    .btn-icon {
+        transition: transform 0.2s ease;
+    }
+
+    .submit-btn:hover .btn-icon {
+        transform: translateX(4px);
+    }
+
+    .form-status {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        display: none;
+    }
+
+    .form-status.success {
+        display: block;
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .form-status.error {
+        display: block;
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    /* Contact Info */
+    .contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .info-card {
+        background: white;
+        padding: 1.75rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .info-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #ff3366 0%, #ff6b4a 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .info-icon svg {
+        width: 24px;
+        height: 24px;
+        color: white;
+        stroke: white;
+    }
+
+    .info-card h3 {
+        font-size: 1.125rem;
+        margin: 0 0 0.5rem;
+        color: #111;
+    }
+
+    .info-card p {
+        font-size: 0.875rem;
+        color: #666;
+        margin: 0 0 0.5rem;
+    }
+
+    .info-card a {
+        color: #ff3366;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .info-card a:hover {
+        text-decoration: underline;
+    }
+
+    .info-card .highlight {
+        color: #ff3366;
+        font-weight: 700;
+        font-size: 1.25rem;
+    }
+
+    .social-links {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .social-links a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: #f5f5f5;
+        border-radius: 50%;
+        color: #333;
+        transition: all 0.2s ease;
+    }
+
+    .social-links a:hover {
+        background: #ff3366;
+        color: white;
+    }
+
+    .social-links svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .highlight-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+    }
+
+    .highlight-card h3 {
+        color: white;
+    }
+
+    .highlight-card p {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .link-btn {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background: #ff3366;
+        color: white !important;
+        border-radius: 8px;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .link-btn:hover {
+        text-decoration: none !important;
+        background: #e62e5c;
+    }
+
+    /* FAQ Section */
+    .faq-section {
+        padding: 4rem 0;
+        background: white;
+    }
+
+    .faq-section h2 {
+        text-align: center;
+        font-size: 2rem;
+        margin: 0 0 2.5rem;
+        color: #111;
+    }
+
+    .faq-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+
+    @media (max-width: 700px) {
+        .faq-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .faq-item {
+        padding: 1.5rem;
+        background: #f9f9f9;
+        border-radius: 12px;
+    }
+
+    .faq-item h3 {
+        font-size: 1rem;
+        margin: 0 0 0.75rem;
+        color: #111;
+    }
+
+    .faq-item p {
+        font-size: 0.9375rem;
+        color: #555;
+        margin: 0;
+        line-height: 1.6;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("contactForm") as HTMLFormElement;
+        const status = document.getElementById("formStatus") as HTMLDivElement;
+
+        form?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Simulate form submission
+            status.textContent = "Sending message...";
+            status.className = "form-status";
+            status.style.display = "block";
+
+            // Simulate delay
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+
+            // Show success message
+            status.textContent =
+                "✓ Message sent successfully! We'll get back to you soon.";
+            status.className = "form-status success";
+            form.reset();
+
+            // Hide after 5 seconds
+            setTimeout(() => {
+                status.style.display = "none";
+            }, 5000);
+        });
+    });
+</script>

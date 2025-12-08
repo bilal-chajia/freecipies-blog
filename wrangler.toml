@@ -20,12 +20,15 @@ preview_bucket_name = "freecipies-images-preview" # Ce nom est conventionnel et 
 
 # Environment Variables
 [vars]
-ENVIRONMENT = "production"
+ENVIRONMENT = "development"
 R2_PUBLIC_URL = "https://images.freecipies.com"
+# Auth secrets - for local development only. In production, use wrangler secrets.
+JWT_SECRET = "Bildev2025"
+ADMIN_USERNAME = "admin@freecipies.com"
+ADMIN_PASSWORD = "admin123"
 
-# Build configuration
-[build]
-command = "pnpm build"
-
-[build.upload]
-format = "service-worker"
+# KV Namespaces
+[[kv_namespaces]]
+binding = "SESSION"
+id = "session-id-preview"
+preview_id = "session-id-preview"

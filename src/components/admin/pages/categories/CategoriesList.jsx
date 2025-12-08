@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { categoriesAPI } from '../../services/api';
 import ConfirmationModal from '@/components/ui/confirmation-modal.jsx';
+import CategoryCard from './CategoryCard';
 
 const CategoriesList = () => {
+  const location = useLocation();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,10 +19,10 @@ const CategoriesList = () => {
     categoryToDelete: null
   });
 
-  // Load categories from API
+  // Load categories from API on mount and when navigating back with refresh state
   useEffect(() => {
     loadCategories();
-  }, []);
+  }, [location.state?.refresh]);  // Reload when refresh timestamp changes
 
   const loadCategories = async () => {
     try {
@@ -69,6 +71,20 @@ const CategoriesList = () => {
     }
   };
 
+  const handleUpdate = async (slug, data) => {
+    try {
+      await categoriesAPI.update(slug, data);
+
+      // Update local state
+      setCategories(categories.map(cat =>
+        cat.slug === slug ? { ...cat, ...data } : cat
+      ));
+    } catch (err) {
+      console.error('Failed to update category:', err);
+      // Revert optimistic update or show error toast (optional)
+    }
+  };
+
   const handleDeleteCancel = () => {
     setDeleteModal({ isOpen: false, categoryToDelete: null });
   };
@@ -112,7 +128,7 @@ const CategoriesList = () => {
       </div>
 
       {/* Categories Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {filteredCategories.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-muted-foreground">
@@ -121,39 +137,12 @@ const CategoriesList = () => {
           </div>
         ) : (
           filteredCategories.map((category) => (
-            <div key={category.slug} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-              {category.image?.url && (
-                <img
-                  src={category.image.url}
-                  alt={category.image.alt || category.label}
-                  className="w-full h-32 object-cover rounded-md mb-3"
-                />
-              )}
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-bold text-lg">{category.label}</h3>
-                <Badge variant={category.isOnline ? 'default' : 'secondary'}>
-                  {category.isOnline ? 'Online' : 'Offline'}
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">{category.shortDescription}</p>
-              <div className="flex gap-2">
-                <Link to={`/categories/${category.slug}`}>
-                  <Button size="sm" variant="outline">
-                    <Edit className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive"
-                  onClick={() => handleDeleteClick(category)}
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
-                </Button>
-              </div>
-            </div>
+            <CategoryCard
+              key={category.slug}
+              category={category}
+              onDelete={handleDeleteClick}
+              onUpdate={handleUpdate}
+            />
           ))
         )}
       </div>

@@ -1,31 +1,43 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Search, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
-import { usePinterestBoardsStore } from '../../store/useStore';
+import { pinterestBoardsAPI } from '../../services/api';
 import ConfirmationModal from '@/components/ui/confirmation-modal.jsx';
+import { toast } from 'sonner';
 
 const BoardsList = () => {
-  const { boards, loading, error, setBoards } = usePinterestBoardsStore();
+  const [boards, setBoards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     boardToDelete: null
   });
 
-  // Load mock Pinterest boards on mount
+  // Load boards from API on mount
   useEffect(() => {
-    const mockBoards = [
-      { id: 1, name: 'Quick Recipes', slug: 'quick-recipes', description: 'Fast and easy recipes for busy days', is_active: true, pin_count: 45 },
-      { id: 2, name: 'Healthy Eating', slug: 'healthy-eating', description: 'Nutritious meals and healthy alternatives', is_active: true, pin_count: 32 },
-      { id: 3, name: 'Dessert Ideas', slug: 'dessert-ideas', description: 'Sweet treats and dessert recipes', is_active: false, pin_count: 28 },
-      { id: 4, name: 'Meal Prep', slug: 'meal-prep', description: 'Weekly meal planning and preparation', is_active: true, pin_count: 19 },
-      { id: 5, name: 'Vegetarian Dishes', slug: 'vegetarian-dishes', description: 'Plant-based recipes and vegetarian options', is_active: true, pin_count: 37 },
-    ];
-    setBoards(mockBoards);
-  }, [setBoards]);
+    loadBoards();
+  }, []);
+
+  const loadBoards = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await pinterestBoardsAPI.getAll();
+      const data = response.data?.boards || response.data || [];
+      setBoards(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load boards:', err);
+      setError('Failed to load boards');
+      toast.error('Failed to load boards');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter boards based on search term
   const filteredBoards = boards.filter(board =>
@@ -40,10 +52,16 @@ const BoardsList = () => {
     });
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteModal.boardToDelete) {
-      const updatedBoards = boards.filter(board => board.id !== deleteModal.boardToDelete.id);
-      setBoards(updatedBoards);
+      try {
+        await pinterestBoardsAPI.delete(deleteModal.boardToDelete.id);
+        toast.success('Board deleted successfully');
+        loadBoards(); // Reload boards from API
+      } catch (err) {
+        console.error('Failed to delete board:', err);
+        toast.error('Failed to delete board');
+      }
       setDeleteModal({ isOpen: false, boardToDelete: null });
     }
   };
@@ -64,6 +82,10 @@ const BoardsList = () => {
     return (
       <div className="bg-destructive/10 text-destructive p-4 rounded-md">
         <p>Error: {error}</p>
+        <Button variant="outline" onClick={loadBoards} className="mt-2">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Retry
+        </Button>
       </div>
     );
   }
@@ -72,12 +94,18 @@ const BoardsList = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold">Pinterest Boards</h2>
-        <Link to="/pinterest/boards/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            New Board
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={loadBoards}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
           </Button>
-        </Link>
+          <Link to="/pinterest/boards/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              New Board
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -96,7 +124,9 @@ const BoardsList = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredBoards.length === 0 ? (
           <div className="col-span-full text-center py-12">
-            <p className="text-muted-foreground">No boards found</p>
+            <p className="text-muted-foreground">
+              {boards.length === 0 ? 'No boards yet. Create your first one!' : 'No boards found'}
+            </p>
           </div>
         ) : (
           filteredBoards.map((board) => (
@@ -107,17 +137,14 @@ const BoardsList = () => {
                   {board.is_active ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">{board.description}</p>
+              <p className="text-sm text-muted-foreground mb-3">{board.description || 'No description'}</p>
               <div className="flex items-center gap-4 mb-4">
-                <span className="text-sm text-muted-foreground">
-                  {board.pin_count} pins
-                </span>
                 <span className="text-sm text-muted-foreground">
                   Slug: {board.slug}
                 </span>
               </div>
               <div className="flex gap-2">
-                <Link to={`/pinterest/boards/${board.id}`}>
+                <Link to={`/pinterest/boards/${board.slug}`}>
                   <Button size="sm" variant="outline">
                     <Edit className="w-4 h-4 mr-1" />
                     Edit
@@ -132,11 +159,13 @@ const BoardsList = () => {
                   <Trash2 className="w-4 h-4 mr-1" />
                   Delete
                 </Button>
-                {board.is_active && (
-                  <Button size="sm" variant="ghost">
-                    <ExternalLink className="w-4 h-4 mr-1" />
-                    View
-                  </Button>
+                {board.board_url && (
+                  <a href={board.board_url} target="_blank" rel="noopener noreferrer">
+                    <Button size="sm" variant="ghost">
+                      <ExternalLink className="w-4 h-4 mr-1" />
+                      View
+                    </Button>
+                  </a>
                 )}
               </div>
             </div>
@@ -150,7 +179,7 @@ const BoardsList = () => {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Delete Board"
-        description={`Are you sure you want to delete "${deleteModal.boardToDelete?.name}"? This will also delete all associated pins.`}
+        description={`Are you sure you want to delete "${deleteModal.boardToDelete?.name}"? This will also unassign all pins from this board.`}
         confirmText="Delete"
         cancelText="Cancel"
       />

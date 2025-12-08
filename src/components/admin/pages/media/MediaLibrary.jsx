@@ -1,30 +1,27 @@
 import { useEffect, useState, useRef } from 'react';
+import ImageEditor from '../../components/ImageEditor.jsx';
 import {
   Upload,
   Search,
-  Filter,
   Grid,
   List,
+  Edit2,
   Image as ImageIcon,
-  File,
+  File as FileIcon,
   Video,
   Music,
   Archive,
-  X,
-  Download,
   Copy,
   Trash2,
   Eye,
-  Plus,
   MoreVertical,
+  X,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Textarea } from '@/components/ui/textarea.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
+import { Card } from '@/components/ui/card.jsx';
 import {
   Dialog,
   DialogContent,
@@ -34,24 +31,21 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog.jsx';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.jsx';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.jsx';
-import { mediaAPI } from '../../services/api';
-import { formatFileSize, formatDate, isImageFile } from '../../utils/helpers';
+import { Slider } from '@/components/ui/slider.jsx';
+import { mediaAPI, authorsAPI } from '../../services/api';
+import { formatFileSize, isImageFile } from '../../utils/helpers';
 import { useMediaStore } from '../../store/useStore';
+import ConfirmationModal from '../../components/ui/confirmation-modal.jsx';
+import { compressImage, QUALITY_PRESETS, formatBytes } from '../../../../utils/imageCompression.js';
 
-const MediaLibrary = () => {
-  const { media, selectedMedia, loading, error, setMedia, setSelectedMedia, toggleMediaSelection, clearSelection } = useMediaStore();
+const MediaLibrary = ({ onSelect, isDialog }) => {
+  const { media, selectedMedia, loading, setMedia, toggleMediaSelection, clearSelection } = useMediaStore();
   const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list'
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'image', 'video', 'audio', 'document'
@@ -62,7 +56,33 @@ const MediaLibrary = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, isBulk: false });
+  const [editingImage, setEditingImage] = useState(null);
+  const [customFileName, setCustomFileName] = useState('');
+  const [altText, setAltText] = useState('');
+  const [selectedAuthor, setSelectedAuthor] = useState('');
+  const [authors, setAuthors] = useState([]);
+  const [compressionQuality, setCompressionQuality] = useState('high'); // 'low', 'medium', 'high', 'original'
+  const [compressionStats, setCompressionStats] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Fetch authors when dialog opens
+  useEffect(() => {
+    if (showUploadDialog) {
+      loadAuthors();
+    }
+  }, [showUploadDialog]);
+
+  const loadAuthors = async () => {
+    try {
+      const response = await authorsAPI.getAll();
+      if (response.data.success) {
+        setAuthors(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load authors:', error);
+    }
+  };
 
   useEffect(() => {
     loadMedia();
@@ -90,6 +110,9 @@ const MediaLibrary = () => {
     const file = event.target.files[0];
     if (file) {
       setSelectedFile(file);
+      // Initialize custom filename with original name (without extension)
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+      setCustomFileName(nameWithoutExt);
       if (isImageFile(file.name)) {
         const url = URL.createObjectURL(file);
         setPreviewUrl(url);
@@ -104,15 +127,54 @@ const MediaLibrary = () => {
       setUploading(true);
       setUploadProgress(0);
 
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+      let fileToUpload = selectedFile;
 
-      const response = await mediaAPI.upload(formData);
+      // Compress image if it's an image file
+      if (isImageFile(selectedFile.name)) {
+        setUploadProgress(10);
+        const qualityValue = QUALITY_PRESETS[compressionQuality]?.quality || 0.85;
+
+        const { file: compressedFile, stats } = await compressImage(selectedFile, {
+          quality: qualityValue,
+          maxWidth: 1920,
+          maxHeight: 1920,
+        });
+
+        fileToUpload = compressedFile;
+        setCompressionStats(stats);
+        setUploadProgress(50);
+      }
+
+      // Apply custom filename if set
+      if (customFileName) {
+        const currentExt = fileToUpload.name.split('.').pop();
+        const newFileName = `${customFileName}.${currentExt}`;
+        if (newFileName !== fileToUpload.name) {
+          fileToUpload = new File([fileToUpload], newFileName, { type: fileToUpload.type });
+        }
+      }
+
+      // Build attribution string from selected author
+      const attribution = selectedAuthor && selectedAuthor !== 'none'
+        ? `${authors.find(a => a.slug === selectedAuthor)?.name || selectedAuthor} / Freecipies`
+        : '';
+
+      setUploadProgress(75);
+
+      // mediaAPI.upload handles FormData creation internally
+      const response = await mediaAPI.upload(fileToUpload, {
+        alt: altText,
+        attribution: attribution,
+      });
 
       if (response.data.success) {
         setShowUploadDialog(false);
         setSelectedFile(null);
         setPreviewUrl('');
+        setCustomFileName('');
+        setAltText('');
+        setSelectedAuthor('');
+        setCompressionStats(null);
         loadMedia();
       }
     } catch (error) {
@@ -124,16 +186,44 @@ const MediaLibrary = () => {
     }
   };
 
-  const handleDelete = async (mediaId) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+  const handleDelete = (mediaId) => {
+    setDeleteModal({ isOpen: true, id: mediaId, isBulk: false });
+  };
 
-    try {
-      await mediaAPI.delete(mediaId);
-      loadMedia();
-    } catch (error) {
-      console.error('Failed to delete media:', error);
-      alert('Failed to delete file');
+  const handleBulkDelete = () => {
+    setDeleteModal({ isOpen: true, id: null, isBulk: true });
+  };
+
+  const confirmDelete = async () => {
+    const { id, isBulk } = deleteModal;
+
+    if (isBulk) {
+      // Process deletions sequentially
+      let hasError = false;
+      for (const mediaId of selectedMedia) {
+        try {
+          await mediaAPI.delete(mediaId);
+        } catch (error) {
+          console.error(`Failed to delete media ${mediaId}:`, error);
+          hasError = true;
+        }
+      }
+
+      if (hasError) {
+        alert('Some files could not be deleted. Check console for details.');
+      }
+      clearSelection();
+    } else {
+      try {
+        await mediaAPI.delete(id);
+      } catch (error) {
+        console.error('Failed to delete media:', error);
+        alert('Failed to delete file');
+      }
     }
+
+    loadMedia();
+    setDeleteModal({ isOpen: false, id: null, isBulk: false });
   };
 
   const handleCopyUrl = async (url) => {
@@ -145,7 +235,37 @@ const MediaLibrary = () => {
     }
   };
 
+  const handleEditorSave = async (file) => {
+    if (editingImage?.context === 'upload') {
+      // For new uploads, just update the preview
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setEditingImage(null);
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // In-place replacement for existing library images
+      const mediaItem = editingImage?.source;
+      if (mediaItem?.id) {
+        const response = await mediaAPI.replaceImage(mediaItem.id, file);
+        if (response.data.success) {
+          setEditingImage(null);
+          loadMedia();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save edited image:', error);
+      alert('Failed to save image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const getFileIcon = (filename) => {
+    if (!filename) return <FileIcon className="w-8 h-8 text-gray-500" />;
     const ext = filename.split('.').pop().toLowerCase();
 
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
@@ -157,14 +277,14 @@ const MediaLibrary = () => {
     } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
       return <Archive className="w-8 h-8 text-yellow-500" />;
     } else {
-      return <File className="w-8 h-8 text-gray-500" />;
+      return <FileIcon className="w-8 h-8 text-gray-500" />;
     }
   };
 
   const filteredMedia = media.filter(item => {
     const matchesSearch = !searchQuery ||
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.alt?.toLowerCase().includes(searchQuery.toLowerCase());
+      item.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.altText?.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesSearch;
   });
@@ -174,32 +294,102 @@ const MediaLibrary = () => {
       {filteredMedia.map((item) => (
         <Card
           key={item.id}
-          className={`cursor-pointer transition-all hover:shadow-md ${
-            selectedMedia.includes(item.id) ? 'ring-2 ring-primary' : ''
-          }`}
-          onClick={() => toggleMediaSelection(item.id)}
+          className={`group relative overflow-hidden border-0 bg-card shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl rounded-xl h-full flex flex-col aspect-square cursor-pointer p-0 gap-0 ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary ring-offset-2' : ''
+            }`}
+          onClick={() => {
+            if (onSelect) {
+              onSelect(item);
+            } else {
+              toggleMediaSelection(item.id);
+            }
+          }}
         >
-          <CardContent className="p-4">
-            <div className="aspect-square bg-muted rounded-lg flex items-center justify-center mb-3 overflow-hidden">
-              {isImageFile(item.name) ? (
-                <img
-                  src={item.url}
-                  alt={item.alt || item.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                getFileIcon(item.name)
-              )}
+          {/* Image/Icon Layer */}
+          <div className="absolute inset-0 z-0">
+            {isImageFile(item.filename) ? (
+              <img
+                src={item.url}
+                alt={item.altText || item.filename}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground group-hover:scale-110 transition-transform duration-500">
+                {getFileIcon(item.filename)}
+              </div>
+            )}
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+          </div>
+
+          {/* Content Layer */}
+          <div className="relative z-10 flex flex-col h-full p-4 text-white">
+            <div className="mt-auto space-y-2">
+              <div>
+                <p className="font-bold text-lg tracking-tight text-white mb-1 truncate" title={item.filename}>
+                  {item.filename}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
+                <span className="text-xs text-gray-300 font-medium pl-1">
+                  {formatFileSize(item.sizeBytes)}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-7 w-7 bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm rounded-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(item.url, '_blank');
+                    }}
+                    title="View"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                  {isImageFile(item.filename) && (
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="h-7 w-7 bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingImage({ source: item, context: 'library' });
+                      }}
+                      title="Edit"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-7 w-7 bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm rounded-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyUrl(item.url);
+                    }}
+                    title="Copy URL"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="h-7 w-7 bg-red-500/80 hover:bg-red-600/90 backdrop-blur-sm rounded-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item.id);
+                    }}
+                    title="Delete"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium truncate" title={item.name}>
-                {item.name}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatFileSize(item.size)}
-              </p>
-            </div>
-          </CardContent>
+          </div>
         </Card>
       ))}
     </div>
@@ -208,74 +398,82 @@ const MediaLibrary = () => {
   const renderListView = () => (
     <div className="space-y-2">
       {filteredMedia.map((item) => (
-        <Card
+        <div
           key={item.id}
-          className={`cursor-pointer transition-all hover:shadow-md ${
-            selectedMedia.includes(item.id) ? 'ring-2 ring-primary' : ''
-          }`}
-          onClick={() => toggleMediaSelection(item.id)}
+          className={`flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary' : ''
+            }`}
+          onClick={() => {
+            if (onSelect) {
+              onSelect(item);
+            } else {
+              toggleMediaSelection(item.id);
+            }
+          }}
         >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                {isImageFile(item.name) ? (
-                  <img
-                    src={item.url}
-                    alt={item.alt || item.name}
-                    className="w-full h-full object-cover rounded"
-                  />
-                ) : (
-                  getFileIcon(item.name)
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate" title={item.name}>
-                  {item.name}
-                </p>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>{formatFileSize(item.size)}</span>
-                  <span>{formatDate(item.created_at)}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(item.url, '_blank');
-                  }}
-                >
-                  <Eye className="w-4 h-4" />
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleCopyUrl(item.url)}>
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy URL
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.open(item.url, '_blank')}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Download
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(item.id)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+          <div className="w-12 h-12 rounded overflow-hidden bg-muted flex items-center justify-center shrink-0">
+            {isImageFile(item.filename) ? (
+              <img
+                src={item.url}
+                alt={item.altText || item.filename}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              getFileIcon(item.filename)
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{item.filename}</p>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>{formatFileSize(item.sizeBytes)}</span>
+              <span>{formatDate(item.created_at)}</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(item.url, '_blank');
+              }}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+            {isImageFile(item.filename) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingImage({ source: item, context: 'library' });
+                }}
+              >
+                <Edit2 className="w-4 h-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopyUrl(item.url);
+              }}
+            >
+              <Copy className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(item.id);
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -333,18 +531,78 @@ const MediaLibrary = () => {
                         className="max-w-full max-h-48 mx-auto rounded"
                       />
                     )}
-                    <div>
-                      <p className="font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatFileSize(selectedFile.size)}
-                      </p>
+                    <div className="space-y-3">
+                      {/* Filename */}
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={customFileName}
+                          onChange={(e) => setCustomFileName(e.target.value)}
+                          className="flex-1 text-center font-medium"
+                          placeholder="Enter filename"
+                        />
+                        <span className="text-muted-foreground text-sm">
+                          .{selectedFile.name.split('.').pop()}
+                        </span>
+                      </div>
+
+                      {/* Alt Text */}
+                      <div>
+                        <Input
+                          value={altText}
+                          onChange={(e) => setAltText(e.target.value)}
+                          placeholder="Alt text (for SEO & accessibility)"
+                          className="text-sm"
+                        />
+                      </div>
+
+                      {/* Author / Attribution */}
+                      <div>
+                        <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Attribution (select author)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No attribution</SelectItem>
+                            {authors.map((author) => (
+                              <SelectItem key={author.slug} value={author.slug}>
+                                {author.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Quality Selector - only for images */}
+                      {isImageFile(selectedFile.name) && (
+                        <div>
+                          <Select value={compressionQuality} onValueChange={setCompressionQuality}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Compression quality" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(QUALITY_PRESETS).map(([key, preset]) => (
+                                <SelectItem key={key} value={key}>
+                                  {preset.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* File Size Info */}
+                      <div className="text-center space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                          Original: {formatFileSize(selectedFile.size)}
+                        </p>
+                        {compressionStats && !compressionStats.skipped && (
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            Compressed: {formatBytes(compressionStats.compressedSize)}
+                            ({compressionStats.compressionRatio} smaller)
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Choose Different File
-                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -380,23 +638,61 @@ const MediaLibrary = () => {
                 </div>
               )}
 
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowUploadDialog(false);
-                    setSelectedFile(null);
-                    setPreviewUrl('');
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleUpload}
-                  disabled={!selectedFile || uploading}
-                >
-                  {uploading ? 'Uploading...' : 'Upload'}
-                </Button>
+              <div className="flex justify-between items-center gap-2">
+                <div className="flex gap-1">
+                  {selectedFile && (
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-7 w-7 bg-muted/80 hover:bg-muted text-foreground border-0 rounded-full"
+                      title="Replace File"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {selectedFile && isImageFile(selectedFile.name) && (
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      onClick={() => setEditingImage({ source: selectedFile, context: 'upload' })}
+                      className="h-7 w-7 bg-muted/80 hover:bg-muted text-foreground border-0 rounded-full"
+                      title="Edit Image"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    onClick={() => {
+                      setShowUploadDialog(false);
+                      setSelectedFile(null);
+                      setPreviewUrl('');
+                      setCustomFileName('');
+                    }}
+                    className="h-7 w-7 bg-red-500/80 hover:bg-red-600/90 text-white rounded-full"
+                    title="Cancel"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    onClick={handleUpload}
+                    disabled={!selectedFile || uploading || !customFileName.trim()}
+                    className="h-7 w-7 bg-primary/80 hover:bg-primary text-primary-foreground rounded-full disabled:opacity-50"
+                    title="Upload"
+                  >
+                    {uploading ? (
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </DialogContent>
@@ -473,10 +769,7 @@ const MediaLibrary = () => {
               variant="destructive"
               size="sm"
               onClick={() => {
-                if (confirm(`Delete ${selectedMedia.length} selected file${selectedMedia.length !== 1 ? 's' : ''}?`)) {
-                  selectedMedia.forEach(id => handleDelete(id));
-                  clearSelection();
-                }
+                handleBulkDelete();
               }}
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -516,9 +809,32 @@ const MediaLibrary = () => {
           Showing {filteredMedia.length} of {media.length} files
         </span>
         <span>
-          {media.reduce((total, item) => total + item.size, 0).toLocaleString()} bytes total
+          {media.reduce((total, item) => total + item.sizeBytes, 0).toLocaleString()} bytes total
         </span>
       </div>
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, id: null, isBulk: false })}
+        onConfirm={confirmDelete}
+        title={deleteModal.isBulk ? "Delete Selected Files" : "Delete Media File"}
+        description={deleteModal.isBulk
+          ? `Are you sure you want to delete ${selectedMedia.length} files? This action cannot be undone.`
+          : "Are you sure you want to delete this file? This action cannot be undone."}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      <ImageEditor
+        isOpen={!!editingImage}
+        image={editingImage?.context === 'library' ? editingImage?.source?.url : editingImage?.source}
+        originalFilename={
+          editingImage?.context === 'library'
+            ? editingImage?.source?.filename
+            : editingImage?.source?.name || null
+        }
+        onSave={handleEditorSave}
+        onCancel={() => setEditingImage(null)}
+      />
     </div>
   );
 };

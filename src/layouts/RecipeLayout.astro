@@ -1,152 +1,896 @@
 ---
-import Layout from './Layout.astro';
-import type { Article, FaqItem } from '../types';
-import { formatTime } from '../lib/utils';
+import Layout from "./Layout.astro";
+import type { Article, Author, FaqItem, Category } from "../types";
+import SocialShareBar from "../components/SocialShareBar.astro";
+import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
+import PopularRecipes from "../components/PopularRecipes.astro";
+import NewsletterWidget from "../components/NewsletterWidget.astro";
 
 interface Props {
   recipe: Article;
+  author?: Author | null;
+  category?: Category | null;
 }
 
-const { recipe } = Astro.props;
+const { recipe, author, category } = Astro.props;
+const categoryColor = category?.color || "#ff6600";
 const recipeJson = recipe.recipeJson;
+
+// Calculate estimated reading time (approx 200 words per minute)
+const wordCount = [
+  recipe.shortDescription,
+  recipe.tldr,
+  recipe.introduction,
+  JSON.stringify(recipeJson?.ingredients || []),
+  JSON.stringify(recipeJson?.instructions || []),
+]
+  .filter(Boolean)
+  .join(" ")
+  .split(/\s+/).length;
+
+const readingTime = Math.max(5, Math.ceil(wordCount / 200));
 ---
 
-<Layout title={recipe.metaTitle} description={recipe.metaDescription} image={recipe.image?.url}>
-  <article class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Recipe Header -->
-    <header class="mb-8">
-      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-        {recipe.label}
-      </h1>
-      <p class="text-xl text-gray-600 dark:text-gray-300 mb-6">
-        {recipe.headline}
-      </p>
-      
-      <!-- Recipe Meta Info -->
-      {recipeJson && <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-        {recipeJson.prepTime && <div class="flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Prep: {recipeJson.prepTime}</span>
-        </div>}
-        {recipeJson.cookTime && <div class="flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-          </svg>
-          <span>Cook: {recipeJson.cookTime}</span>
-        </div>}
-        {recipeJson.servings && <div class="flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <span>Servings: {recipeJson.servings}</span>
-        </div>}
-      </div>}
-    </header>
+<Layout
+  title={recipe.metaTitle || recipe.label}
+  description={recipe.metaDescription || recipe.shortDescription}
+  image={recipe.image?.url}
+>
+  {
+    recipe.image && (
+      <link slot="head" rel="preload" as="image" href={recipe.image.url} />
+    )
+  }
+  <article class="recipe-page">
+    <div class="recipe-container">
+      <!-- Main Content Column -->
+      <div class="main-content">
+        <!-- Category Badge -->
+        {
+          recipe.categoryLabel && (
+            <a
+              href={`/categories/${recipe.categorySlug}`}
+              class="category-badge"
+              style={`--badge-color: ${categoryColor};`}
+            >
+              {recipe.categoryLabel}
+            </a>
+          )
+        }
 
-    <!-- Recipe Image -->
-    {recipe.image && (
-      <div class="mb-8 rounded-xl overflow-hidden">
-        <img 
-          src={recipe.image.url} 
-          alt={recipe.image.alt}
-          width={recipe.image.width}
-          height={recipe.image.height}
-          class="w-full h-auto object-cover"
+        <!-- Recipe Title -->
+        <h1 class="recipe-title">{recipe.label}</h1>
+
+        <!-- Short Description -->
+        {
+          recipe.shortDescription && (
+            <p class="recipe-description">{recipe.shortDescription}</p>
+          )
+        }
+
+        <!-- Social Share Bar -->
+        <SocialShareBar
+          title={recipe.label}
+          readingTime={`${readingTime} Min Read`}
         />
-      </div>
-    )}
 
-    <!-- Recipe Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- Main Content -->
-      <div class="lg:col-span-2 space-y-8">
-        <!-- TLDR -->
-        {recipe.tldr && (
-          <section class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Quick Overview</h2>
-            <div class="prose dark:prose-invert max-w-none" set:html={recipe.tldr} />
-          </section>
-        )}
+        <!-- Author Card -->
+        <RecipeAuthorCard
+          authorName={author?.name || recipe.authorName}
+          authorImage={author?.image?.url}
+          authorRole={author?.job || "Blogger"}
+          lastUpdated={recipe.publishedAt}
+          viewCount={recipe.viewCount}
+        />
+
+        <!-- Disclosure Notice -->
+        <div class="disclosure-notice">
+          <strong>Disclosure:</strong> This website may contain affiliate links,
+          which means I may earn a commission if you click on the link and make a
+          purchase. I only recommend products or services that I personally use and
+          believe will add value to my readers. Your support is appreciated!
+        </div>
+
+        <!-- Hero Image -->
+        {
+          recipe.image && (
+            <div class="hero-image">
+              <img
+                src={recipe.image.url}
+                alt={recipe.image.alt || recipe.label}
+                width={recipe.image.width}
+                height={recipe.image.height}
+                loading="eager"
+                fetchpriority="high"
+              />
+            </div>
+          )
+        }
+
+        <!-- Recipe Meta Info Pills -->
+        {
+          recipeJson && (
+            <div class="recipe-meta-pills">
+              {recipeJson.prepTime && (
+                <div class="meta-pill">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <span class="label">Prep</span>
+                  <span class="value">{recipeJson.prepTime}</span>
+                </div>
+              )}
+              {recipeJson.cookTime && (
+                <div class="meta-pill">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                  <span class="label">Cook</span>
+                  <span class="value">{recipeJson.cookTime}</span>
+                </div>
+              )}
+              {recipeJson.servings && (
+                <div class="meta-pill">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  <span class="label">Servings</span>
+                  <span class="value">{recipeJson.servings}</span>
+                </div>
+              )}
+              {recipeJson.difficulty && (
+                <div class="meta-pill">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span class="label">Level</span>
+                  <span class="value">{recipeJson.difficulty}</span>
+                </div>
+              )}
+            </div>
+          )
+        }
+
+        <!-- TLDR / Quick Overview -->
+        {
+          recipe.tldr && (
+            <section class="content-section tldr-section">
+              <h2>Quick Overview</h2>
+              <div class="prose" set:html={recipe.tldr} />
+            </section>
+          )
+        }
 
         <!-- Ingredients -->
-        {recipeJson && recipeJson.ingredients && <section>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Ingredients</h2>
-          {recipeJson.ingredients.map((group: { group: string; items: string[] }) => (
-            <div class="mb-6">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">{group.group}</h3>
-              <ul class="space-y-2">
-                {group.items.map((item: string) => (
-                  <li class="flex items-start gap-2">
-                    <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                    <span class="text-gray-700 dark:text-gray-300">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>}
+        {
+          recipeJson?.ingredients &&
+            Array.isArray(recipeJson.ingredients) &&
+            recipeJson.ingredients.length > 0 && (
+              <section class="content-section ingredients-section">
+                <h2>Ingredients</h2>
+                {recipeJson.ingredients.map(
+                  (group: { group: string; items: string[] }) => (
+                    <div class="ingredient-group">
+                      {group.group && <h3>{group.group}</h3>}
+                      <ul class="ingredient-list">
+                        {group.items &&
+                          Array.isArray(group.items) &&
+                          group.items.map((item: string) => (
+                            <li>
+                              <span class="checkbox" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  ),
+                )}
+              </section>
+            )
+        }
 
         <!-- Instructions -->
-        {recipeJson && recipeJson.instructions && <section>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Instructions</h2>
-          {recipeJson.instructions.map((group: { group: string; steps: string[] }) => (
-            <div class="mb-6">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">{group.group}</h3>
-              <ol class="space-y-6">
-                {group.steps.map((step: string, index: number) => (
-                  <li class="flex gap-4">
-                    <span class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
-                      {index + 1}
-                    </span>
-                    <p class="text-gray-700 dark:text-gray-300">{step}</p>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ))}
-        </section>}
+        {
+          recipeJson?.instructions &&
+            Array.isArray(recipeJson.instructions) &&
+            recipeJson.instructions.length > 0 && (
+              <section class="content-section instructions-section">
+                <h2>Instructions</h2>
+                {recipeJson.instructions.map(
+                  (group: { group: string; steps: string[] }) => (
+                    <div class="instruction-group">
+                      {group.group && <h3>{group.group}</h3>}
+                      <ol class="instruction-list">
+                        {group.steps &&
+                          Array.isArray(group.steps) &&
+                          group.steps.map((step: string, index: number) => (
+                            <li>
+                              <span class="step-number">{index + 1}</span>
+                              <p>{step}</p>
+                            </li>
+                          ))}
+                      </ol>
+                    </div>
+                  ),
+                )}
+              </section>
+            )
+        }
+
+        <!-- Nutrition Facts (inline for mobile) -->
+        {
+          recipeJson?.nutrition &&
+            Object.keys(recipeJson.nutrition).length > 0 && (
+              <section class="content-section nutrition-section mobile-only">
+                <h2>Nutrition Facts</h2>
+                <div class="nutrition-grid">
+                  {Object.entries(recipeJson.nutrition).map(([key, value]) => (
+                    <div class="nutrition-item">
+                      <span class="nutrition-value">{value}</span>
+                      <span class="nutrition-label">{key}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )
+        }
 
         <!-- FAQs -->
-        {recipe.faqsJson && recipe.faqsJson.length > 0 && (
-          <section>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Frequently Asked Questions</h2>
-            <div class="space-y-4">
-              {recipe.faqsJson.map((faq: FaqItem) => (
-                <details class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                  <summary class="font-semibold text-gray-900 dark:text-white cursor-pointer">
-                    {faq.question}
-                  </summary>
-                  <div class="mt-2 text-gray-700 dark:text-gray-300 prose dark:prose-invert" set:html={faq.answer} />
-                </details>
-              ))}
-            </div>
-          </section>
-        )}
+        {
+          recipe.faqsJson &&
+            Array.isArray(recipe.faqsJson) &&
+            recipe.faqsJson.length > 0 && (
+              <section class="content-section faqs-section">
+                <h2>Frequently Asked Questions</h2>
+                <div class="faq-list">
+                  {recipe.faqsJson.map((faq: FaqItem) => (
+                    <details class="faq-item">
+                      <summary>{faq.question}</summary>
+                      <div class="faq-answer" set:html={faq.answer} />
+                    </details>
+                  ))}
+                </div>
+              </section>
+            )
+        }
       </div>
 
       <!-- Sidebar -->
-      <div class="lg:col-span-1">
-        <div class="sticky top-8 space-y-6">
-          <!-- Nutrition Facts -->
-          {recipeJson && recipeJson.nutrition && <div class="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-900 dark:border-gray-700 p-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 border-b-8 border-gray-900 dark:border-gray-700 pb-2">
-              Nutrition Facts
-            </h3>
-            <div class="space-y-2">
-              {Object.entries(recipeJson.nutrition).map(([key, value]) => (
-                <div class="flex justify-between border-b border-gray-300 dark:border-gray-600 py-2">
-                  <span class="font-semibold capitalize">{key}</span>
-                  <span>{value}</span>
+      <aside class="sidebar">
+        <div class="sidebar-sticky">
+          <!-- Nutrition Facts (desktop) -->
+          {
+            recipeJson?.nutrition &&
+              Object.keys(recipeJson.nutrition).length > 0 && (
+                <div class="sidebar-widget nutrition-widget desktop-only">
+                  <h3>Nutrition Facts</h3>
+                  <div class="nutrition-list">
+                    {Object.entries(recipeJson.nutrition).map(
+                      ([key, value]) => (
+                        <div class="nutrition-row">
+                          <span class="nutrition-key">{key}</span>
+                          <span class="nutrition-val">{value}</span>
+                        </div>
+                      ),
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>}
+              )
+          }
+
+          <!-- Popular Recipes -->
+          <PopularRecipes currentSlug={recipe.slug} limit={5} />
+
+          <!-- Newsletter Widget -->
+          <NewsletterWidget />
         </div>
-      </div>
+      </aside>
     </div>
   </article>
 </Layout>
+
+<script define:vars={{ slug: recipe.slug }}>
+  // Simple view tracking
+  const trackView = async () => {
+    try {
+      await fetch(`/api/views/${slug}`, { method: "POST" });
+    } catch (e) {
+      // Ignore errors silently (e.g. ad blockers)
+    }
+  };
+
+  // Run when the page is ready
+  if (document.readyState === "complete") {
+    trackView();
+  } else {
+    window.addEventListener("load", trackView);
+  }
+</script>
+
+<style>
+  .recipe-page {
+    background: #fafafa;
+    min-height: 100vh;
+    padding-bottom: 4rem;
+  }
+
+  .recipe-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem clamp(1rem, 3vw, 2rem);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 1024px) {
+    .recipe-container {
+      grid-template-columns: 1fr 360px;
+    }
+  }
+
+  /* Main Content */
+  .main-content {
+    background: #fff;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Category Badge */
+  .category-badge {
+    display: inline-block;
+    background: var(--badge-color, #ff6600);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.375rem 0.875rem;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-bottom: 1rem;
+    transition: filter 0.2s;
+  }
+
+  .category-badge:hover {
+    filter: brightness(0.9);
+  }
+
+  /* Title */
+  .recipe-title {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 800;
+    color: #111;
+    line-height: 1.2;
+    margin: 0 0 1rem;
+  }
+
+  /* Description */
+  .recipe-description {
+    font-size: 1.125rem;
+    color: #555;
+    line-height: 1.6;
+    margin: 0 0 1.5rem;
+  }
+
+  /* Disclosure Notice */
+  .disclosure-notice {
+    background: #f8f8f8;
+    border-left: 3px solid #ddd;
+    padding: 1rem 1.25rem;
+    font-size: 0.8125rem;
+    color: #666;
+    line-height: 1.6;
+    margin: 1.5rem 0;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .disclosure-notice strong {
+    color: #333;
+  }
+
+  /* Hero Image */
+  .hero-image {
+    margin: 1.5rem 0;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  .hero-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+  }
+
+  /* Recipe Meta Pills */
+  .recipe-meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 2rem;
+  }
+
+  .meta-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f5f5f5;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .meta-pill .icon {
+    width: 20px;
+    height: 20px;
+    color: #ff3366;
+    flex-shrink: 0;
+  }
+
+  .meta-pill .label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+  }
+
+  .meta-pill .value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  /* Content Sections */
+  .content-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .content-section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #111;
+  }
+
+  .content-section h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #333;
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  /* TLDR */
+  .tldr-section {
+    background: #fff8e6;
+    margin: 0 -2rem 2.5rem;
+    padding: 1.5rem 2rem;
+    border-left: 4px solid #f59e0b;
+  }
+
+  .tldr-section h2 {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  .prose {
+    color: #444;
+    line-height: 1.7;
+  }
+
+  /* Ingredients */
+  .ingredient-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .ingredient-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+  }
+
+  .checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #10b981;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ingredient-list li:hover .checkbox {
+    background: #10b981;
+  }
+
+  /* Instructions */
+  .instruction-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: step;
+  }
+
+  .instruction-list li {
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #ff3366;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.875rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .instruction-list p {
+    margin: 0;
+    color: #333;
+    line-height: 1.7;
+  }
+
+  /* Nutrition Grid (Mobile) */
+  .mobile-only {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .mobile-only {
+      display: none;
+    }
+
+    .desktop-only {
+      display: block;
+    }
+  }
+
+  .nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+  }
+
+  .nutrition-item {
+    background: #f5f5f5;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .nutrition-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111;
+  }
+
+  .nutrition-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: capitalize;
+    margin-top: 0.25rem;
+  }
+
+  /* FAQs */
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .faq-item {
+    background: #f8f8f8;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .faq-item summary {
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: #222;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-item summary::after {
+    content: "+";
+    font-size: 1.25rem;
+    color: #999;
+  }
+
+  .faq-item[open] summary::after {
+    content: "−";
+  }
+
+  .faq-answer {
+    padding: 0 1.25rem 1rem;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sidebar-sticky {
+    position: sticky;
+    top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sidebar-widget {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .sidebar-widget h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0 0 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid #111;
+  }
+
+  .nutrition-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nutrition-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9375rem;
+  }
+
+  .nutrition-key {
+    color: #333;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .nutrition-val {
+    color: #666;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .recipe-container {
+      padding: 0;
+    }
+
+    .main-content {
+      padding: 1rem;
+      border-radius: 0;
+    }
+
+    .recipe-title {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .recipe-description {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero-image {
+      margin: 1rem 0;
+      border-radius: 0;
+    }
+
+    .hero-image img {
+      border-radius: 0;
+    }
+
+    .disclosure-notice {
+      padding: 0.875rem 1rem;
+      font-size: 0.75rem;
+      margin: 1rem 0;
+      border-radius: 0;
+    }
+
+    .recipe-meta-pills {
+      gap: 0.5rem;
+      padding: 1rem 0;
+    }
+
+    .meta-pill {
+      padding: 0.5rem 0.75rem;
+      min-width: auto;
+      flex: none;
+    }
+
+    .meta-pill .label {
+      display: none;
+    }
+
+    .meta-pill .icon {
+      width: 16px;
+      height: 16px;
+    }
+
+    .content-section h2 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .content-section h3 {
+      font-size: 1rem;
+    }
+
+    .tldr-section {
+      margin: 0 -1rem 2rem;
+      padding: 1rem;
+      border-radius: 0;
+    }
+
+    .ingredient-list li {
+      padding: 0.5rem 0;
+      font-size: 0.9375rem;
+    }
+
+    .checkbox {
+      width: 18px;
+      height: 18px;
+    }
+
+    .instruction-list li {
+      padding: 1rem 0;
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      font-size: 0.75rem;
+    }
+
+    .instruction-list p {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    .faq-item summary {
+      padding: 0.875rem 1rem;
+      font-size: 0.9375rem;
+    }
+
+    .faq-answer {
+      padding: 0 1rem 0.875rem;
+      font-size: 0.875rem;
+    }
+
+    .sidebar {
+      margin-top: 0;
+      gap: 0;
+    }
+
+    .sidebar-sticky {
+      position: static;
+      gap: 0;
+    }
+
+    .sidebar-widget {
+      border-radius: 0;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-content {
+      padding: 1rem;
+    }
+
+    .category-badge {
+      font-size: 0.6875rem;
+      padding: 0.3rem 0.625rem;
+    }
+
+    .recipe-title {
+      font-size: 1.375rem;
+    }
+
+    .recipe-meta-pills {
+      flex-wrap: wrap;
+    }
+
+    .meta-pill {
+      flex: 1 1 45%;
+    }
+
+    .tldr-section {
+      margin: 0 -1rem 1.5rem;
+      padding: 0.875rem 1rem;
+    }
+  }
+</style>
+
+<script>
+  // Interactive checkboxes for ingredients
+  document.querySelectorAll(".ingredient-list li").forEach((item) => {
+    item.addEventListener("click", () => {
+      const checkbox = item.querySelector(".checkbox") as HTMLElement;
+      if (checkbox) {
+        const isChecked = checkbox.style.background === "rgb(16, 185, 129)";
+        if (isChecked) {
+          checkbox.style.background = "";
+          (item as HTMLElement).style.opacity = "1";
+          (item as HTMLElement).style.textDecoration = "none";
+        } else {
+          checkbox.style.background = "#10b981";
+          (item as HTMLElement).style.opacity = "0.6";
+          (item as HTMLElement).style.textDecoration = "line-through";
+        }
+      }
+    });
+  });
+</script>

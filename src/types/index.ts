@@ -17,7 +17,13 @@ export interface AuthorBio {
 export interface RecipeDetails {
   prepTime?: string;
   cookTime?: string;
+  totalTime?: string;
   servings?: string;
+  difficulty?: string;
+  calories?: string;
+  cuisine?: string;
+  course?: string;
+  rating?: number;
   ingredients: { group: string; items: string[] }[];
   instructions: { group: string; steps: string[] }[];
   nutrition?: Record<string, string>;
@@ -44,6 +50,7 @@ export interface Category {
   isOnline: boolean;
   isFavorite: boolean;
   sortOrder: number;
+  color?: string;
   createdAt: string;
   updatedAt: string; // ISO 8601 string
   route?: string; // Derived property
@@ -82,6 +89,7 @@ export interface Tag {
   numEntriesPerPage: number;
   isOnline: boolean;
   isFavorite: boolean;
+  color?: string;
   createdAt: string;
   updatedAt: string; // ISO 8601 string
   route?: string; // Derived property
@@ -138,4 +146,18 @@ export interface PaginatedResponse<T> {
     total: number;
     totalPages: number;
   };
+}
+export interface Media {
+  id: number;
+  filename: string;
+  r2Key: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  width?: number;
+  height?: number;
+  altText?: string;
+  attribution?: string;
+  uploadedBy?: string;
+  uploadedAt: string;
 }

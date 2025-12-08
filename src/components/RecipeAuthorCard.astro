@@ -1,0 +1,183 @@
+---
+interface Props {
+    authorName?: string;
+    authorImage?: string;
+    authorRole?: string;
+    lastUpdated?: string | Date;
+    viewCount?: number;
+}
+
+const {
+    authorName = "Freecipies Team",
+    authorImage,
+    authorRole = "Blogger",
+    lastUpdated,
+    viewCount,
+} = Astro.props;
+
+// Check if image is valid (not undefined, null, or empty string)
+const hasValidImage = authorImage && authorImage.trim() !== '';
+
+// Format date
+let formattedDate = "";
+if (lastUpdated) {
+    const date =
+        typeof lastUpdated === "string" ? new Date(lastUpdated) : lastUpdated;
+    if (!isNaN(date.getTime())) {
+        formattedDate = date.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        });
+    }
+}
+
+// Get initials for fallback avatar
+const initials = authorName
+    .split(' ')
+    .map(word => word.charAt(0))
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+---
+
+<div class="recipe-author-card">
+    <a
+        href={`/authors/${authorName.toLowerCase().replace(/\s+/g, "-")}`}
+        class="author-avatar"
+    >
+        {hasValidImage ? (
+            <img
+                src={authorImage}
+                alt={authorName}
+                width="48"
+                height="48"
+                loading="lazy"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+            <div class="avatar-fallback" style="display: none;">
+                {initials}
+            </div>
+        ) : (
+            <div class="avatar-fallback">
+                {initials}
+            </div>
+        )}
+    </a>
+    <div class="author-info">
+        <div class="author-meta">
+            <span class="by-text">By</span>
+            <a
+                href={`/authors/${authorName.toLowerCase().replace(/\s+/g, "-")}`}
+                class="author-name"
+            >
+                {authorName}
+            </a>
+            <span class="separator">-</span>
+            <span class="author-role">{authorRole}</span>
+        </div>
+        {
+            formattedDate && (
+                <div class="last-updated">
+                    Last updated: {formattedDate}
+                    {viewCount !== undefined && viewCount !== null && (
+                        <>
+                            <span class="separator">•</span>
+                            <span class="view-count">{new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(viewCount)} views</span>
+                        </>
+                    )}
+                </div>
+            )
+        }
+    </div>
+</div>
+
+<style>
+    .recipe-author-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 0;
+    }
+
+    .author-avatar {
+        flex-shrink: 0;
+    }
+
+    .author-avatar img {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #e5e5e5;
+    }
+
+    .avatar-fallback {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff3366, #ff6b35);
+        color: white;
+        font-size: 1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #e5e5e5;
+    }
+
+    .author-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .author-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        font-size: 0.9375rem;
+        color: #333;
+    }
+
+    .by-text {
+        color: #666;
+    }
+
+    .author-name {
+        color: #111;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .author-name:hover {
+        text-decoration: underline;
+    }
+
+    .separator {
+        color: #999;
+    }
+
+    .author-role {
+        color: #666;
+    }
+
+    .last-updated {
+        font-size: 0.8125rem;
+        color: #888;
+    }
+
+    @media (max-width: 480px) {
+        .author-meta {
+            font-size: 0.875rem;
+        }
+
+        .last-updated {
+            font-size: 0.75rem;
+        }
+    }
+</style>

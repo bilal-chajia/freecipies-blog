@@ -1,0 +1,467 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const siteTitle = "Frequently Asked Questions - Freecipies";
+const siteDescription =
+    "Find answers to common questions about Freecipies, our recipes, and how to use our platform.";
+
+const faqCategories = [
+    {
+        title: "General Questions",
+        icon: "💡",
+        faqs: [
+            {
+                question: "What is Freecipies?",
+                answer: "Freecipies is a free recipe platform where you can discover delicious, easy-to-follow recipes for every skill level. From quick weeknight dinners to impressive desserts, we make cooking fun and accessible for everyone.",
+            },
+            {
+                question: "Is Freecipies really free?",
+                answer: "Yes! All our recipes are completely free to access. No subscriptions, no hidden fees. We believe great recipes should be available to everyone.",
+            },
+            {
+                question: "How often do you add new recipes?",
+                answer: "We add new recipes weekly! Subscribe to our newsletter to get notified when new recipes are published.",
+            },
+            {
+                question: "Do I need to create an account?",
+                answer: "No account is required to browse and use our recipes. We're working on optional accounts for saving favorites - stay tuned!",
+            },
+        ],
+    },
+    {
+        title: "Using Recipes",
+        icon: "🍳",
+        faqs: [
+            {
+                question: "How do I print a recipe?",
+                answer: "On any recipe page, you'll find a print button in the sharing section near the top. This creates a clean, printer-friendly version without ads or extra content.",
+            },
+            {
+                question: "Can I adjust the serving size?",
+                answer: "Currently, our recipes show fixed serving sizes. We recommend using a recipe calculator to adjust quantities. This feature is on our roadmap for future updates!",
+            },
+            {
+                question: "Are nutritional values accurate?",
+                answer: "Nutritional information is estimated and may vary based on specific ingredients and brands used. For precise dietary needs, we recommend calculating with your exact ingredients.",
+            },
+            {
+                question: "What if I'm missing an ingredient?",
+                answer: "Many recipes include substitution tips in the notes section. If not, feel free to contact us - we're happy to suggest alternatives!",
+            },
+        ],
+    },
+    {
+        title: "Dietary & Allergies",
+        icon: "🥗",
+        faqs: [
+            {
+                question: "How do I find vegan or vegetarian recipes?",
+                answer: "Use our filter system on the recipes page. Click on tags like 'Vegan' or 'Vegetarian' to see only those recipes. You can also browse our dedicated category pages.",
+            },
+            {
+                question: "Do you have gluten-free recipes?",
+                answer: "Yes! We have a growing collection of gluten-free recipes. Look for the 'Gluten-Free' tag on recipe cards or filter by this tag on the recipes page.",
+            },
+            {
+                question: "Are allergens listed in recipes?",
+                answer: "We try to highlight common allergens in our ingredient lists, but always check ingredient labels if you have severe allergies. When in doubt, consult with a healthcare professional.",
+            },
+        ],
+    },
+    {
+        title: "Submissions & Collaboration",
+        icon: "✨",
+        faqs: [
+            {
+                question: "Can I submit my own recipe?",
+                answer: "Absolutely! We love featuring community recipes. Send your recipe to recipes@freecipies.com with photos, ingredients, and instructions. Our team will review and may feature it on the site.",
+            },
+            {
+                question: "Do you work with brands or sponsors?",
+                answer: "We're open to collaborations that align with our values. Contact us at hello@freecipies.com with partnership inquiries.",
+            },
+            {
+                question: "Can I share your recipes on social media?",
+                answer: "Yes! We encourage sharing. Please link back to the original recipe and credit Freecipies. You can use our built-in share buttons for easy sharing.",
+            },
+            {
+                question: "How do I report an error in a recipe?",
+                answer: "If you spot an error, please let us know via our contact page or email. We appreciate your help in keeping our recipes accurate!",
+            },
+        ],
+    },
+    {
+        title: "Technical Support",
+        icon: "🔧",
+        faqs: [
+            {
+                question:
+                    "The website isn't loading properly. What should I do?",
+                answer: "Try refreshing the page or clearing your browser cache. If the problem persists, try a different browser. Still having issues? Contact us with details about your browser and device.",
+            },
+            {
+                question: "How do I subscribe to the newsletter?",
+                answer: "You can subscribe using the newsletter signup form at the bottom of most pages. Just enter your email and click subscribe!",
+            },
+            {
+                question: "How can I unsubscribe from emails?",
+                answer: "Every email we send includes an unsubscribe link at the bottom. Click it to immediately unsubscribe.",
+            },
+        ],
+    },
+];
+---
+
+<Layout title={siteTitle} description={siteDescription}>
+    <main class="faq-page">
+        <!-- Hero Section -->
+        <section class="faq-hero">
+            <div class="container">
+                <h1 class="page-title">
+                    <span class="title-dot"></span>
+                    Frequently Asked Questions
+                </h1>
+                <p class="page-subtitle">
+                    Everything you need to know about Freecipies. Can't find
+                    your answer? <a href="/contact">Contact us</a>
+                </p>
+            </div>
+        </section>
+
+        <!-- Quick Jump Navigation -->
+        <section class="quick-nav">
+            <div class="container">
+                <div class="nav-pills">
+                    {
+                        faqCategories.map((category, index) => (
+                            <a href={`#category-${index}`} class="nav-pill">
+                                <span class="pill-icon">{category.icon}</span>
+                                <span>{category.title}</span>
+                            </a>
+                        ))
+                    }
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Content -->
+        <section class="faq-content">
+            <div class="container">
+                {
+                    faqCategories.map((category, catIndex) => (
+                        <div class="faq-category" id={`category-${catIndex}`}>
+                            <h2 class="category-title">
+                                <span class="category-icon">
+                                    {category.icon}
+                                </span>
+                                {category.title}
+                            </h2>
+                            <div class="faq-list">
+                                {category.faqs.map((faq, faqIndex) => (
+                                    <details class="faq-item">
+                                        <summary class="faq-question">
+                                            <span class="question-text">
+                                                {faq.question}
+                                            </span>
+                                            <span class="toggle-icon">
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                >
+                                                    <path d="M6 9l6 6 6-6" />
+                                                </svg>
+                                            </span>
+                                        </summary>
+                                        <div class="faq-answer">
+                                            <p>{faq.answer}</p>
+                                        </div>
+                                    </details>
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </section>
+
+        <!-- Still Have Questions -->
+        <section class="contact-cta">
+            <div class="container">
+                <div class="cta-card">
+                    <h2>Still Have Questions?</h2>
+                    <p>
+                        We're here to help! Reach out to our team and we'll get
+                        back to you within 24-48 hours.
+                    </p>
+                    <a href="/contact" class="cta-btn">Contact Us</a>
+                </div>
+            </div>
+        </section>
+    </main>
+</Layout>
+
+<style>
+    .faq-page {
+        background: #fafafa;
+        min-height: 100vh;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 clamp(1rem, 3vw, 2rem);
+    }
+
+    /* Hero */
+    .faq-hero {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 5rem 0;
+        text-align: center;
+        color: white;
+    }
+
+    .page-title {
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 800;
+        margin: 0 0 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .title-dot {
+        width: 14px;
+        height: 14px;
+        background: #ff3366;
+        border-radius: 50%;
+    }
+
+    .page-subtitle {
+        font-size: 1.125rem;
+        opacity: 0.85;
+        margin: 0;
+    }
+
+    .page-subtitle a {
+        color: #ff6b8a;
+        text-decoration: none;
+    }
+
+    .page-subtitle a:hover {
+        text-decoration: underline;
+    }
+
+    /* Quick Nav */
+    .quick-nav {
+        background: white;
+        padding: 1.5rem 0;
+        border-bottom: 1px solid #eee;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .nav-pills {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .nav-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1rem;
+        background: #f5f5f5;
+        border-radius: 50px;
+        text-decoration: none;
+        color: #333;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .nav-pill:hover {
+        background: #111;
+        color: white;
+    }
+
+    .pill-icon {
+        font-size: 1rem;
+    }
+
+    /* FAQ Content */
+    .faq-content {
+        padding: 3rem 0;
+    }
+
+    .faq-category {
+        margin-bottom: 3rem;
+        scroll-margin-top: 100px;
+    }
+
+    .category-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #111;
+        margin: 0 0 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #eee;
+    }
+
+    .category-icon {
+        font-size: 1.5rem;
+    }
+
+    .faq-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .faq-item {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+    }
+
+    .faq-question {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        cursor: pointer;
+        list-style: none;
+        transition: background 0.2s ease;
+    }
+
+    .faq-question::-webkit-details-marker {
+        display: none;
+    }
+
+    .faq-question:hover {
+        background: #f9f9f9;
+    }
+
+    .question-text {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #111;
+        padding-right: 1rem;
+    }
+
+    .toggle-icon {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        transition: transform 0.3s ease;
+    }
+
+    .toggle-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .faq-item[open] .toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    .faq-answer {
+        padding: 0 1.5rem 1.5rem;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .faq-answer p {
+        font-size: 0.9375rem;
+        line-height: 1.7;
+        color: #555;
+        margin: 0;
+    }
+
+    /* Contact CTA */
+    .contact-cta {
+        padding: 3rem 0 5rem;
+    }
+
+    .cta-card {
+        background: linear-gradient(135deg, #ff3366 0%, #ff6b4a 100%);
+        border-radius: 20px;
+        padding: 3rem;
+        text-align: center;
+        color: white;
+    }
+
+    .cta-card h2 {
+        font-size: 1.75rem;
+        margin: 0 0 1rem;
+    }
+
+    .cta-card p {
+        font-size: 1.0625rem;
+        opacity: 0.9;
+        margin: 0 0 1.5rem;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .cta-btn {
+        display: inline-block;
+        padding: 1rem 2.5rem;
+        background: white;
+        color: #ff3366;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 1rem;
+        transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .cta-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    @media (max-width: 600px) {
+        .nav-pills {
+            justify-content: flex-start;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 0.5rem;
+        }
+
+        .nav-pill {
+            flex-shrink: 0;
+        }
+
+        .cta-card {
+            padding: 2rem 1.5rem;
+        }
+    }
+</style>

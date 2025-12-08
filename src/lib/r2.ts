@@ -5,6 +5,8 @@ export interface ImageUploadOptions {
   filename: string;
   contentType?: string;
   metadata?: Record<string, string>;
+  folder?: string;      // e.g., 'categories', 'authors', 'articles'
+  contextSlug?: string; // e.g., 'healthy-recipes', 'john-doe'
 }
 
 export interface ImageUploadResult {
@@ -24,11 +26,25 @@ export async function uploadImage(
   options: ImageUploadOptions,
   publicUrl: string
 ): Promise<ImageUploadResult> {
-  const { file, filename, contentType, metadata } = options;
+  const { file, filename, contentType, metadata, folder, contextSlug } = options;
 
-  // Generate unique key with timestamp
+  // Generate unique key with timestamp and optional folder/slug
   const timestamp = Date.now();
-  const key = `images/${timestamp}-${filename}`;
+
+  // Build the key path (without 'images/' prefix - publicUrl handles that)
+  let key: string;
+  if (folder && contextSlug) {
+    // Organized naming: categories/healthy-recipes-1733468682123.webp
+    const cleanSlug = contextSlug.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+    const ext = filename.split('.').pop() || 'webp';
+    key = `${folder}/${cleanSlug}-${timestamp}.${ext}`;
+  } else if (folder) {
+    // Just folder: categories/1733468682123-filename.webp
+    key = `${folder}/${timestamp}-${filename}`;
+  } else {
+    // Default: 1733468682123-filename.webp
+    key = `${timestamp}-${filename}`;
+  }
 
   // Convert File/Blob to ArrayBuffer
   const arrayBuffer = await file.arrayBuffer();

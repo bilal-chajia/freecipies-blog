@@ -1,0 +1,121 @@
+---
+import type { Tag } from "../types";
+
+interface Props {
+    tag: Tag;
+    showArticleCount?: boolean;
+    articleCount?: number;
+}
+
+const { tag, showArticleCount = false, articleCount = 0 } = Astro.props;
+const tagUrl = `/tags/${tag.slug}`;
+---
+
+<a href={tagUrl} class="tag-card">
+    <div class="tag-content">
+        {
+            tag.image?.url && (
+                <div class="tag-image">
+                    <img
+                        src={tag.image.url}
+                        alt={tag.image.alt || tag.label}
+                        loading="lazy"
+                    />
+                </div>
+            )
+        }
+
+        <div class="tag-info">
+            <h3 class="tag-label">{tag.label}</h3>
+            {tag.headline && <p class="tag-headline">{tag.headline}</p>}
+
+            {
+                showArticleCount && (
+                    <span class="article-count">
+                        {articleCount}{" "}
+                        {articleCount === 1 ? "recipe" : "recipes"}
+                    </span>
+                )
+            }
+        </div>
+    </div>
+</a>
+
+<style>
+    .tag-card {
+        display: block;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s ease;
+        border: 1px solid #eee;
+    }
+
+    .tag-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        border-color: #ff6b35;
+    }
+
+    .tag-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .tag-image {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .tag-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .tag-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .tag-label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin: 0;
+        transition: color 0.2s ease;
+    }
+
+    .tag-card:hover .tag-label {
+        color: #ff6b35;
+    }
+
+    .tag-headline {
+        font-size: 0.8rem;
+        color: #666;
+        margin: 0.25rem 0 0 0;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .article-count {
+        display: inline-block;
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: #888;
+        background: #f5f5f5;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+</style>

@@ -9,15 +9,25 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and cache-busting
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('admin_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Add timestamp to prevent caching for GET requests
+    if (config.method === 'get') {
+      config.params = {
+        ...config.params,
+        _t: Date.now(),
+      };
     }
     return config;
   },
@@ -29,10 +39,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear auth state and redirect to login
+      // Unauthorized - clear auth state and dispatch event for React Router to handle
       useAuthStore.getState().clearAuth();
       localStorage.removeItem('admin_token');
-      window.location.href = '/admin/login'; // Ensure redirect is correct
+      // Dispatch custom event for auth redirect - React components can listen to this
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
     }
     return Promise.reject(error);
   }
@@ -45,22 +56,22 @@ api.interceptors.response.use(
 export const articlesAPI = {
   // Get all articles with pagination and filters
   getAll: (params = {}) => api.get('/articles', { params }),
-  
+
   // Get single article by slug
   getBySlug: (slug) => api.get(`/articles/${slug}`),
-  
+
   // Create new article
   create: (data) => api.post('/articles', data),
-  
+
   // Update article
   update: (slug, data) => api.put(`/articles/${slug}`, data),
-  
+
   // Delete article
   delete: (slug) => api.delete(`/articles/${slug}`),
-  
+
   // Toggle online status
   toggleOnline: (slug) => api.patch(`/articles/${slug}/toggle-online`),
-  
+
   // Toggle favorite status
   toggleFavorite: (slug) => api.patch(`/articles/${slug}/toggle-favorite`),
 };
@@ -108,21 +119,48 @@ export const tagsAPI = {
 export const mediaAPI = {
   // Get all media files
   getAll: (params = {}) => api.get('/media', { params }),
-  
+
   // Upload file to R2
-  upload: (file) => {
+  upload: (file, options = {}) => {
     const formData = new FormData();
     formData.append('file', file);
-    
+    if (options.folder) formData.append('folder', options.folder);
+    if (options.contextSlug) formData.append('contextSlug', options.contextSlug);
+    if (options.alt) formData.append('alt', options.alt);
+    if (options.attribution) formData.append('attribution', options.attribution);
+
     return api.post('/upload-image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
   },
-  
+
+  // Upload image from URL
+  uploadFromUrl: (url, options = {}) => {
+    return api.post('/upload-from-url', {
+      url,
+      alt: options.alt || '',
+      attribution: options.attribution || '',
+      convertToWebp: options.convertToWebp !== false,
+      folder: options.folder || '',
+      contextSlug: options.contextSlug || '',
+    });
+  },
+
   // Delete media file
   delete: (id) => api.delete(`/media/${id}`),
+
+  // Replace image file (in-place)
+  replaceImage: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.put(`/media/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 // ============================================
@@ -143,6 +181,7 @@ export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   logout: () => api.post('/auth/logout'),
   verify: () => api.get('/auth/verify'),
+  refreshToken: () => api.post('/auth/refresh'),
 };
 
 // ============================================
@@ -167,6 +206,19 @@ export const pinterestPinsAPI = {
   create: (data) => api.post('/pins', data),
   update: (id, data) => api.put('/pins', { id, ...data }),
   delete: (id) => api.delete(`/pins?id=${id}`),
+};
+
+// ============================================
+// PIN TEMPLATES API
+// ============================================
+
+export const templatesAPI = {
+  getAll: (params = {}) => api.get('/templates', { params }),
+  getBySlug: (slug) => api.get(`/templates/${slug}`),
+  create: (data) => api.post('/templates', data),
+  update: (slug, data) => api.put(`/templates/${slug}`, data),
+  delete: (slug) => api.delete(`/templates/${slug}`),
+  getDefault: () => api.get('/templates?is_default=true'),
 };
 
 // ============================================

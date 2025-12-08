@@ -55,6 +55,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Get metadata from form
     const alt = formData.get('alt') as string || '';
     const attribution = formData.get('attribution') as string || '';
+    const folder = formData.get('folder') as string || '';
+    const contextSlug = formData.get('contextSlug') as string || '';
 
     // Upload to R2
     const result = await uploadImage(
@@ -66,7 +68,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
         metadata: {
           alt,
           attribution
-        }
+        },
+        folder: folder || undefined,
+        contextSlug: contextSlug || undefined
       },
       publicUrl
     );
