@@ -50,18 +50,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const body = await request.json();
-    const category = await createCategory(env.DB, body);
+    const reqBody = await request.json();
+    const category = await createCategory(env.DB, reqBody);
 
-    return new Response(JSON.stringify(category), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatSuccessResponse(category);
+    return new Response(body, { status: 201, headers });
   } catch (error) {
     console.error('Error creating category:', error);
-    return new Response(JSON.stringify({ error: 'Failed to create category' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatErrorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to create category', 500)
+    );
+    return new Response(body, { status, headers });
   }
 };

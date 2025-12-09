@@ -49,18 +49,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const body = await request.json();
-    const tag = await createTag(env.DB, body);
+    const reqBody = await request.json();
+    const tag = await createTag(env.DB, reqBody);
 
-    return new Response(JSON.stringify(tag), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatSuccessResponse(tag);
+    return new Response(body, { status: 201, headers });
   } catch (error) {
     console.error('Error creating tag:', error);
-    return new Response(JSON.stringify({ error: 'Failed to create tag' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatErrorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to create tag', 500)
+    );
+    return new Response(body, { status, headers });
   }
 };

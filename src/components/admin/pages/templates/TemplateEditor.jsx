@@ -32,10 +32,11 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import PinCanvas, { CANVAS_WIDTH, CANVAS_HEIGHT } from '../../components/canvas/PinCanvas';
-import { ElementPanel, AddElementPanel } from '../../components/canvas/ElementPanel';
+import { ElementPanel, AddElementPanel, FONTS } from '../../components/canvas/ElementPanel';
 import CanvasToolbar from '../../components/canvas/CanvasToolbar';
 import DraggableLayersList from '../../components/canvas/DraggableLayersList';
-import { templatesAPI } from '../../services/api';
+import { templatesAPI, mediaAPI } from '../../services/api';
+import { useFontLoader } from '../../utils/FontLoader';
 
 // Generate unique ID for elements
 const generateId = () => `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -87,6 +88,11 @@ const TemplateEditor = () => {
     const navigate = useNavigate();
     const isNewTemplate = !slug || slug === 'new';
 
+    // Load fonts used in editor
+    // Extract unique font families from elements + default fonts
+    const defaultFonts = FONTS.map(f => f.name);
+    useFontLoader(defaultFonts);
+
     // Template state
     const [template, setTemplate] = useState({
         name: 'New Template',
@@ -96,6 +102,7 @@ const TemplateEditor = () => {
         canvas_height: CANVAS_HEIGHT,
         background_color: '#1a1a2e',
         elements_json: [],
+        thumbnail_url: '',
         is_default: false,
         is_active: true,
     });
@@ -115,6 +122,7 @@ const TemplateEditor = () => {
     const [selectedElement, setSelectedElement] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(!isNewTemplate);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     // Canvas controls
     const [zoom, setZoom] = useState(100);
@@ -180,7 +188,14 @@ const TemplateEditor = () => {
             ? newElements(elements)
             : newElements;
         dispatchHistory({ type: 'SET', value });
+        setHasUnsavedChanges(true);
     }, [elements]);
+
+    // Update template metadata with dirty flag
+    const updateTemplate = useCallback((updates) => {
+        setTemplate(prev => ({ ...prev, ...updates }));
+        setHasUnsavedChanges(true);
+    }, []);
 
     // Handle element selection from canvas
     const handleElementSelect = (element) => {
@@ -252,6 +267,38 @@ const TemplateEditor = () => {
         }
     };
 
+    // Generate and upload thumbnail
+    const uploadThumbnail = async (slugName) => {
+        if (!exportFnRef.current) return null;
+
+        try {
+            // Export canvas as low quality jpeg for thumbnail
+            const blob = await exportFnRef.current('jpeg', 0.8);
+            if (!blob) return null;
+
+            const filename = `template-thumb-${slugName}-${Date.now()}.jpg`;
+            const file = new File([blob], filename, { type: 'image/jpeg' });
+
+            // Upload via Media API
+            const response = await mediaAPI.upload(file, {
+                folder: 'thumbnails',
+                alt: `Thumbnail for template ${slugName}`,
+                contextSlug: slugName
+            });
+
+            // Handle both response formats: direct or wrapped in 'data'
+            const thumbnailUrl = response.data?.data?.url || response.data?.url;
+            if (thumbnailUrl) {
+                return thumbnailUrl;
+            }
+            console.warn('Thumbnail upload response missing URL:', response.data);
+            return null;
+        } catch (error) {
+            console.warn('Failed to generate/upload thumbnail:', error);
+            return null;
+        }
+    };
+
     // Handle template save
     const handleSave = async () => {
         try {
@@ -266,10 +313,15 @@ const TemplateEditor = () => {
                     .replace(/^-|-$/g, '');
             }
 
+            // Attempt to generate thumbnail
+            const thumbnailUrl = await uploadThumbnail(templateSlug);
+
             const templateData = {
                 ...template,
                 slug: templateSlug,
                 elements_json: JSON.stringify(elements),
+                // Update thumbnail only if generated, otherwise keep existing
+                thumbnail_url: thumbnailUrl || template.thumbnail_url
             };
 
             let response;
@@ -278,6 +330,7 @@ const TemplateEditor = () => {
                 const success = response.data?.success !== false;
                 if (success) {
                     toast.success('Template created!');
+                    setHasUnsavedChanges(false);
                     navigate(`/templates/${templateSlug}`);
                 }
             } else {
@@ -285,6 +338,8 @@ const TemplateEditor = () => {
                 const success = response.data?.success !== false;
                 if (success) {
                     toast.success('Template saved!');
+                    setHasUnsavedChanges(false);
+                    setTemplate(prev => ({ ...prev, thumbnail_url: templateData.thumbnail_url }));
                 }
             }
         } catch (error) {
@@ -363,7 +418,7 @@ const TemplateEditor = () => {
                 <Label>Template Name</Label>
                 <Input
                     value={template.name}
-                    onChange={(e) => setTemplate(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => updateTemplate({ name: e.target.value })}
                     placeholder="My Template"
                 />
             </div>
@@ -372,7 +427,7 @@ const TemplateEditor = () => {
                 <Label>Slug (URL)</Label>
                 <Input
                     value={template.slug}
-                    onChange={(e) => setTemplate(prev => ({ ...prev, slug: e.target.value }))}
+                    onChange={(e) => updateTemplate({ slug: e.target.value })}
                     placeholder="auto-generated"
                     className="font-mono text-sm"
                 />
@@ -382,7 +437,7 @@ const TemplateEditor = () => {
                 <Label>Description</Label>
                 <Textarea
                     value={template.description || ''}
-                    onChange={(e) => setTemplate(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) => updateTemplate({ description: e.target.value })}
                     placeholder="Template description..."
                     rows={3}
                 />
@@ -394,16 +449,29 @@ const TemplateEditor = () => {
                     <input
                         type="color"
                         value={template.background_color}
-                        onChange={(e) => setTemplate(prev => ({ ...prev, background_color: e.target.value }))}
+                        onChange={(e) => updateTemplate({ background_color: e.target.value })}
                         className="w-10 h-10 rounded border cursor-pointer"
                     />
                     <Input
                         value={template.background_color}
-                        onChange={(e) => setTemplate(prev => ({ ...prev, background_color: e.target.value }))}
+                        onChange={(e) => updateTemplate({ background_color: e.target.value })}
                         className="font-mono"
                     />
                 </div>
             </div>
+
+            {template.thumbnail_url && (
+                <div className="space-y-2">
+                    <Label>Thumbnail</Label>
+                    <div className="aspect-[2/3] w-24 rounded border border-zinc-700 overflow-hidden bg-muted">
+                        <img
+                            src={template.thumbnail_url}
+                            alt="Template Thumbnail"
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 
@@ -428,23 +496,33 @@ const TemplateEditor = () => {
     return (
         <div className="template-editor h-full flex flex-col bg-background">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b">
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/templates')}>
                         <ArrowLeft className="w-4 h-4" />
                     </Button>
-                    <div>
-                        <h1 className="font-semibold">
-                            {isNewTemplate ? 'New Template' : template.name}
-                        </h1>
-                        <p className="text-xs text-muted-foreground">
-                            {CANVAS_WIDTH} × {CANVAS_HEIGHT}px • Pinterest Pin
-                        </p>
+                    <div className="flex items-center gap-2">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h1 className="font-semibold">
+                                    {isNewTemplate ? 'New Template' : template.name}
+                                </h1>
+                                {hasUnsavedChanges && (
+                                    <span className="w-2 h-2 bg-yellow-500 rounded-full" title="Unsaved changes" />
+                                )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {CANVAS_WIDTH} × {CANVAS_HEIGHT}px • Pinterest Pin
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button onClick={handleSave} disabled={isSaving}>
+                    {hasUnsavedChanges && (
+                        <span className="text-xs text-muted-foreground mr-2">Unsaved changes</span>
+                    )}
+                    <Button onClick={handleSave} disabled={isSaving} className={hasUnsavedChanges ? 'animate-pulse' : ''}>
                         {isSaving ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
@@ -488,7 +566,6 @@ const TemplateEditor = () => {
                     </Tabs>
                 </div>
 
-                {/* Canvas Area */}
                 {/* Canvas Area */}
                 <div className="flex-1 relative bg-[#0a0a14] overflow-hidden">
                     {/* Canvas Scroll Container */}

@@ -1,51 +1,37 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Cropper from 'react-easy-crop';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
-    DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import {
     Crop as CropIcon,
     SlidersHorizontal,
     Stamp,
     Undo2,
     Redo2,
-    Image as ImageIcon,
     X,
     Save,
-    Grid3X3,
-    Square,
     RotateCcw,
     Eye,
     EyeOff,
     Info,
-    FlipHorizontal2,
-    FlipVertical2,
     Type,
     FileSearch
 } from 'lucide-react';
 import getCroppedImg from '../../../utils/canvasUtils';
 import { authorsAPI } from '../services/api';
 
-// Import from modular structure
-import { FILTERS, ASPECT_RATIO_GROUPS, parseAspectValue, DEFAULT_STATE } from './ImageEditor/constants';
-import { CropPanel, AdjustPanel, TextPanel, WatermarkPanel, SEOPanel, QUALITY_PRESETS } from './ImageEditor/panels';
+// Imports from modular structure
+import { FILTERS, QUALITY_PRESETS } from './ImageEditor/constants';
+import { CropPanel, AdjustPanel, TextPanel, WatermarkPanel, SEOPanel } from './ImageEditor/panels';
+import { useImageEditorState } from './ImageEditor/hooks/useImageEditorState';
+import { useImageHistory } from './ImageEditor/hooks/useImageHistory';
+import WatermarkOverlay from './ImageEditor/overlays/WatermarkOverlay';
+import VignetteOverlay from './ImageEditor/overlays/VignetteOverlay';
+import TextOverlay from './ImageEditor/overlays/TextOverlay';
 
 const TOOLS = [
     { id: 'crop', label: 'Crop', icon: CropIcon },
@@ -55,71 +41,76 @@ const TOOLS = [
     { id: 'seo', label: 'SEO', icon: FileSearch },
 ];
 
-
 const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
-    // Active Tool
-    const [activeTool, setActiveTool] = useState('crop');
+    // 1. Core State
+    const {
+        activeTool, setActiveTool,
+        crop, setCrop,
+        zoom, setZoom,
+        rotation, setRotation,
+        aspect, setAspect,
+        croppedAreaPixels, setCroppedAreaPixels,
+        croppedArea, setCroppedArea,
+        flipH, setFlipH,
+        flipV, setFlipV,
+        activeFilter, setActiveFilter,
+        brightness, setBrightness,
+        contrast, setContrast,
+        saturation, setSaturation,
+        temperature, setTemperature,
+        blur, setBlur,
+        vignetteEnabled, setVignetteEnabled,
+        vignetteIntensity, setVignetteIntensity,
+        textOverlay, setTextOverlay,
+        watermarkType, setWatermarkType,
+        watermarkOpacity, setWatermarkOpacity,
+        watermarkPosition, setWatermarkPosition,
+        watermarkScale, setWatermarkScale,
+        watermarkRepeat, setWatermarkRepeat,
+        watermarkPattern, setWatermarkPattern,
+        watermarkSpacingH, setWatermarkSpacingH,
+        watermarkSpacingV, setWatermarkSpacingV,
+        watermarkRotation, setWatermarkRotation,
+        watermarkDensity, setWatermarkDensity,
+        customWatermark, setCustomWatermark,
+        workingImage, setWorkingImage,
+        originalImage, setOriginalImage,
+        showOriginal, setShowOriginal,
+        showInfo, setShowInfo,
+        processing, setProcessing,
+        getSnapshot,
+        applySnapshot,
+        resetState
+    } = useImageEditorState();
 
-    // Crop State
-    const [crop, setCrop] = useState({ x: 0, y: 0 });
-    const [zoom, setZoom] = useState(1);
-    const [rotation, setRotation] = useState(0);
-    const [aspect, setAspect] = useState(1);
-    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-    const [croppedArea, setCroppedArea] = useState(null); // Percentage-based crop area for overlay positioning
+    // 2. SEO State (Managed Separately, not in Undo/Redo)
+    const [altText, setAltText] = React.useState('');
+    const [selectedAuthor, setSelectedAuthor] = React.useState('none');
+    const [compressionQuality, setCompressionQuality] = React.useState('high');
+    const [authors, setAuthors] = React.useState([]);
 
-    // Flip State
-    const [flipH, setFlipH] = useState(false);
-    const [flipV, setFlipV] = useState(false);
-
-    // Filter State
-    const [activeFilter, setActiveFilter] = useState('normal');
-
-    // Adjustment Sliders (manual fine-tuning)
-    const [brightness, setBrightness] = useState(1);
-    const [contrast, setContrast] = useState(1);
-    const [saturation, setSaturation] = useState(1);
-    const [temperature, setTemperature] = useState(0); // -100 to 100
-    const [blur, setBlur] = useState(0); // 0-10px
-
-    // Vignette
-    const [vignetteEnabled, setVignetteEnabled] = useState(false);
-    const [vignetteIntensity, setVignetteIntensity] = useState(0.5);
-
-    // Text Overlay
-    const [textOverlay, setTextOverlay] = useState({
-        enabled: false,
-        text: '',
-        font: 'sans-serif',
-        size: 48,
-        color: '#ffffff',
-        position: 'center',
-        shadow: true
-    });
-
-    // Watermark State
-    const [watermarkType, setWatermarkType] = useState('none');
-    const [watermarkOpacity, setWatermarkOpacity] = useState(0.5);
-    const [watermarkPosition, setWatermarkPosition] = useState('BR');
-    const [watermarkScale, setWatermarkScale] = useState(0.15); // 0.05 to 0.5 (5% to 50% of image)
-    const [watermarkRepeat, setWatermarkRepeat] = useState('single');
-    const [watermarkPattern, setWatermarkPattern] = useState('diagonal'); // 'grid', 'diagonal', 'horizontal', 'vertical'
-    const [watermarkSpacingH, setWatermarkSpacingH] = useState(100); // Horizontal spacing in px
-    const [watermarkSpacingV, setWatermarkSpacingV] = useState(80); // Vertical spacing in px
-    const [watermarkRotation, setWatermarkRotation] = useState(-30); // Rotation angle for diagonal
-    const [watermarkDensity, setWatermarkDensity] = useState(3); // 1-5 scale for tiled watermark density
-    const [customWatermark, setCustomWatermark] = useState(null);
     const fileInputRef = useRef(null);
 
-    // SEO State
-    const [altText, setAltText] = useState('');
-    const [selectedAuthor, setSelectedAuthor] = useState('none');
-    const [compressionQuality, setCompressionQuality] = useState('high');
-    const [authors, setAuthors] = useState([]);
+    // 3. History Management
+    const {
+        saveToHistory,
+        initializeHistory,
+        getPreviousState,
+        getNextState,
+        decrementHistoryIndex,
+        incrementHistoryIndex,
+        historyIndex, // We might need this to disable buttons, checking usage below
+        canUndo,
+        canRedo,
+        history
+    } = useImageHistory(getSnapshot);
 
-    // Fetch authors on mount
+    // 4. Effects
+
+    // Fetch authors
     useEffect(() => {
         const loadAuthors = async () => {
+            if (!isOpen) return;
             try {
                 const response = await authorsAPI.getAll();
                 if (response.data.success) {
@@ -129,233 +120,95 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                 console.error('Failed to load authors:', error);
             }
         };
-        if (isOpen) {
-            loadAuthors();
-        }
+        loadAuthors();
     }, [isOpen]);
 
-    // Load saved watermark settings from localStorage on mount
+    // Load/Save Watermark details from localStorage
     useEffect(() => {
         const savedSettings = localStorage.getItem('imageEditor_watermarkSettings');
         if (savedSettings) {
             try {
                 const settings = JSON.parse(savedSettings);
-                if (settings.watermarkOpacity) setWatermarkOpacity(settings.watermarkOpacity);
-                if (settings.watermarkPosition) setWatermarkPosition(settings.watermarkPosition);
-                if (settings.watermarkScale) setWatermarkScale(settings.watermarkScale);
-                if (settings.watermarkRepeat) setWatermarkRepeat(settings.watermarkRepeat);
-                if (settings.watermarkPattern) setWatermarkPattern(settings.watermarkPattern);
-                if (settings.watermarkSpacingH) setWatermarkSpacingH(settings.watermarkSpacingH);
-                if (settings.watermarkSpacingV) setWatermarkSpacingV(settings.watermarkSpacingV);
+                if (settings.watermarkOpacity !== undefined) setWatermarkOpacity(settings.watermarkOpacity);
+                if (settings.watermarkPosition !== undefined) setWatermarkPosition(settings.watermarkPosition);
+                if (settings.watermarkScale !== undefined) setWatermarkScale(settings.watermarkScale);
+                if (settings.watermarkRepeat !== undefined) setWatermarkRepeat(settings.watermarkRepeat);
+                if (settings.watermarkPattern !== undefined) setWatermarkPattern(settings.watermarkPattern);
+                if (settings.watermarkSpacingH !== undefined) setWatermarkSpacingH(settings.watermarkSpacingH);
+                if (settings.watermarkSpacingV !== undefined) setWatermarkSpacingV(settings.watermarkSpacingV);
                 if (settings.watermarkRotation !== undefined) setWatermarkRotation(settings.watermarkRotation);
-                if (settings.watermarkDensity) setWatermarkDensity(settings.watermarkDensity);
+                if (settings.watermarkDensity !== undefined) setWatermarkDensity(settings.watermarkDensity);
             } catch (e) {
                 console.warn('Failed to load saved watermark settings:', e);
             }
         }
-    }, []);
+    }, [setWatermarkOpacity, setWatermarkPosition, setWatermarkScale, setWatermarkRepeat, setWatermarkPattern, setWatermarkSpacingH, setWatermarkSpacingV, setWatermarkRotation, setWatermarkDensity]);
 
-    // Save watermark settings to localStorage when they change
     useEffect(() => {
         const settings = {
-            watermarkOpacity,
-            watermarkPosition,
-            watermarkScale,
-            watermarkRepeat,
-            watermarkPattern,
-            watermarkSpacingH,
-            watermarkSpacingV,
-            watermarkRotation,
-            watermarkDensity
+            watermarkOpacity, watermarkPosition, watermarkScale, watermarkRepeat,
+            watermarkPattern, watermarkSpacingH, watermarkSpacingV, watermarkRotation, watermarkDensity
         };
         localStorage.setItem('imageEditor_watermarkSettings', JSON.stringify(settings));
     }, [watermarkOpacity, watermarkPosition, watermarkScale, watermarkRepeat, watermarkPattern, watermarkSpacingH, watermarkSpacingV, watermarkRotation, watermarkDensity]);
 
-    // UI State
-    const [showOriginal, setShowOriginal] = useState(false);
-    const [showInfo, setShowInfo] = useState(false);
-
-    // Working Image (changes when crop is applied)
-    const [workingImage, setWorkingImage] = useState(null);
-    const [originalImage, setOriginalImage] = useState(null);
-
-    // Undo/Redo State
-    const [history, setHistory] = useState([]);
-    const [historyIndex, setHistoryIndex] = useState(-1);
-
-    const [processing, setProcessing] = useState(false);
-
-    // Get current state as snapshot
-    const getStateSnapshot = useCallback(() => ({
-        crop, zoom, rotation, aspect, activeFilter,
-        flipH, flipV,
-        brightness, contrast, saturation, temperature, blur,
-        vignetteEnabled, vignetteIntensity,
-        watermarkType, watermarkOpacity, watermarkPosition, watermarkScale, watermarkRepeat, watermarkDensity,
-        textOverlay,
-        workingImage
-    }), [crop, zoom, rotation, aspect, activeFilter, flipH, flipV, brightness, contrast, saturation, temperature, blur, vignetteEnabled, vignetteIntensity, watermarkType, watermarkOpacity, watermarkPosition, watermarkScale, watermarkRepeat, watermarkDensity, textOverlay, workingImage]);
-
-    // Save state to history
-    const saveToHistory = useCallback(() => {
-        const snapshot = getStateSnapshot();
-        setHistory(prev => {
-            const newHistory = prev.slice(0, historyIndex + 1);
-            return [...newHistory, snapshot];
-        });
-        setHistoryIndex(prev => prev + 1);
-    }, [getStateSnapshot, historyIndex]);
-
-    // Reset editor state when a new image is opened
+    // Initialization when opening
     useEffect(() => {
         if (isOpen && image) {
-            // Reset crop/transform state
-            setCrop({ x: 0, y: 0 });
-            setZoom(1);
-            setRotation(0);
-            setAspect(1);
-            setCroppedAreaPixels(null);
-            setCroppedArea(null);
-            setFlipH(false);
-            setFlipV(false);
+            resetState();
+            // initializeHistory is called via the hook's own effect if we implemented it right, 
+            // OR we call it here.
+            // Let's check useImageHistory. It expects us to call initializeHistory.
 
-            // Reset filter/adjustment state
-            setActiveFilter('normal');
-            setBrightness(1);
-            setContrast(1);
-            setSaturation(1);
-            setTemperature(0);
-            setBlur(0);
+            // Set initial image
+            const initialSrc = typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null);
+            if (initialSrc) {
+                setOriginalImage(initialSrc);
+                // We need to wait for state to settle before initializing history?
+                // Actually resetState sets defaults. 
+                // We can initialize history slightly later or just rely on the fact that resetState updates state 
+                // and we want that initial state.
+            }
 
-            // Reset vignette
-            setVignetteEnabled(false);
-            setVignetteIntensity(0.5);
-
-            // Reset text overlay
-            setTextOverlay({
-                enabled: false,
-                text: '',
-                font: 'sans-serif',
-                size: 48,
-                color: '#ffffff',
-                position: 'center',
-                shadow: true
-            });
-
-            // Reset watermark type (keep saved settings from localStorage)
-            setWatermarkType('none');
-            setCustomWatermark(null);
-
-            // Reset working image and history
-            setWorkingImage(null);
-            setOriginalImage(null);
-            setHistory([]);
-            setHistoryIndex(-1);
-
-            // Reset UI state
-            setShowOriginal(false);
-            setShowInfo(false);
-            setProcessing(false);
-            setActiveTool('crop');
+            // Force history init after state reset
+            setTimeout(() => initializeHistory(), 0);
         }
-    }, [image, isOpen]);
+    }, [image, isOpen, resetState, setOriginalImage, initializeHistory]);
 
-    // Initialize history on mount
-    useEffect(() => {
-        if (isOpen && history.length === 0) {
-            const initial = getStateSnapshot();
-            setHistory([initial]);
-            setHistoryIndex(0);
+
+    // 5. Handlers
+
+    const handleUndo = () => {
+        if (canUndo) {
+            const prevState = getPreviousState();
+            if (prevState) applySnapshot(prevState);
+            decrementHistoryIndex();
         }
-    }, [isOpen, history.length, getStateSnapshot]);
+    };
 
-    // Undo
-    const handleUndo = useCallback(() => {
-        if (historyIndex > 0) {
-            const prevState = history[historyIndex - 1];
-            setCrop(prevState.crop);
-            setZoom(prevState.zoom);
-            setRotation(prevState.rotation);
-            setAspect(prevState.aspect);
-            setActiveFilter(prevState.activeFilter);
-            setFlipH(prevState.flipH);
-            setFlipV(prevState.flipV);
-            setBrightness(prevState.brightness);
-            setContrast(prevState.contrast);
-            setSaturation(prevState.saturation);
-            setTemperature(prevState.temperature);
-            setBlur(prevState.blur);
-            setVignetteEnabled(prevState.vignetteEnabled);
-            setVignetteIntensity(prevState.vignetteIntensity);
-            setWatermarkType(prevState.watermarkType);
-            setWatermarkOpacity(prevState.watermarkOpacity);
-            setWatermarkPosition(prevState.watermarkPosition);
-            setWatermarkScale(prevState.watermarkScale);
-            setWatermarkRepeat(prevState.watermarkRepeat);
-            if (prevState.watermarkDensity !== undefined) setWatermarkDensity(prevState.watermarkDensity);
-            setTextOverlay(prevState.textOverlay);
-            if (prevState.workingImage !== undefined) setWorkingImage(prevState.workingImage);
-            setHistoryIndex(prev => prev - 1);
+    const handleRedo = () => {
+        if (canRedo) {
+            const nextState = getNextState();
+            if (nextState) applySnapshot(nextState);
+            incrementHistoryIndex();
         }
-    }, [history, historyIndex]);
+    };
 
-    // Redo
-    const handleRedo = useCallback(() => {
-        if (historyIndex < history.length - 1) {
-            const nextState = history[historyIndex + 1];
-            setCrop(nextState.crop);
-            setZoom(nextState.zoom);
-            setRotation(nextState.rotation);
-            setAspect(nextState.aspect);
-            setActiveFilter(nextState.activeFilter);
-            setFlipH(nextState.flipH);
-            setFlipV(nextState.flipV);
-            setBrightness(nextState.brightness);
-            setContrast(nextState.contrast);
-            setSaturation(nextState.saturation);
-            setTemperature(nextState.temperature);
-            setBlur(nextState.blur);
-            setVignetteEnabled(nextState.vignetteEnabled);
-            setVignetteIntensity(nextState.vignetteIntensity);
-            setWatermarkType(nextState.watermarkType);
-            setWatermarkOpacity(nextState.watermarkOpacity);
-            setWatermarkPosition(nextState.watermarkPosition);
-            setWatermarkScale(nextState.watermarkScale);
-            setWatermarkRepeat(nextState.watermarkRepeat);
-            if (nextState.watermarkDensity !== undefined) setWatermarkDensity(nextState.watermarkDensity);
-            setTextOverlay(nextState.textOverlay);
-            if (nextState.workingImage !== undefined) setWorkingImage(nextState.workingImage);
-            setHistoryIndex(prev => prev + 1);
-        }
-    }, [history, historyIndex]);
+    const handleReset = () => {
+        resetState();
+        setTimeout(() => saveToHistory(), 0);
+    };
 
-    // Reset All
-    const handleReset = useCallback(() => {
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-        setRotation(0);
-        setAspect(1);
-        setFlipH(false);
-        setFlipV(false);
-        setActiveFilter('normal');
-        setBrightness(1);
-        setContrast(1);
-        setSaturation(1);
-        setTemperature(0);
-        setBlur(0);
-        setVignetteEnabled(false);
-        setVignetteIntensity(0.5);
-        setWatermarkType('none');
-        setWatermarkOpacity(0.5);
-        setWatermarkPosition('BR');
-        setWatermarkScale(0.2);
-        setWatermarkRepeat('single');
-        setWatermarkDensity(3);
-        setTextOverlay({ enabled: false, text: '', font: 'sans-serif', size: 48, color: '#ffffff', position: 'center', shadow: true });
+    const handleFilterChange = (filter) => {
+        setActiveFilter(filter);
         saveToHistory();
-    }, [saveToHistory]);
+    };
 
-    // Watermark upload handler
+    const handleAspectChange = (value) => {
+        setAspect(value);
+        saveToHistory();
+    };
+
     const handleWatermarkUpload = (e) => {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
@@ -369,47 +222,37 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
         }
     };
 
-    const onCropComplete = useCallback((croppedAreaPercent, croppedAreaPixelsVal) => {
+    const onCropComplete = (croppedAreaPercent, croppedAreaPixelsVal) => {
         setCroppedAreaPixels(croppedAreaPixelsVal);
-        setCroppedArea(croppedAreaPercent); // Save percentage-based area for overlay positioning
-    }, []);
+        setCroppedArea(croppedAreaPercent);
+    };
 
-    // Apply Crop - crops the image and continues editing on the cropped version
-    const handleApplyCrop = useCallback(async () => {
+    const handleApplyCrop = async () => {
         if (!croppedAreaPixels) return;
 
         try {
             setProcessing(true);
-
-            // Get current working image source
             const currentSrc = workingImage || (typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null));
 
-            // Generate cropped image with current adjustments
             const croppedBlob = await getCroppedImg(
                 currentSrc,
                 croppedAreaPixels,
                 rotation,
                 { horizontal: flipH, vertical: flipV },
-                '', // No filters in the crop - they'll be applied in preview
-                null, // No watermark
-                null, // No vignette
-                null  // No text overlay
+                '', // No filters in the crop
+                null, null, null
             );
 
-            // Create new object URL for the cropped image
             const newImageUrl = URL.createObjectURL(croppedBlob);
-
-            // Update working image
             setWorkingImage(newImageUrl);
 
-            // Reset crop-related states
+            // Reset crop UI
             setCrop({ x: 0, y: 0 });
             setZoom(1);
             setRotation(0);
             setFlipH(false);
             setFlipV(false);
 
-            // Save to history (this will include the new workingImage)
             setTimeout(() => saveToHistory(), 0);
 
         } catch (e) {
@@ -418,28 +261,6 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
         } finally {
             setProcessing(false);
         }
-    }, [croppedAreaPixels, workingImage, image, rotation, flipH, flipV, saveToHistory]);
-
-    // Initialize working image when dialog opens
-    useEffect(() => {
-        if (isOpen && image) {
-            const initialSrc = typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null);
-            if (initialSrc && !originalImage) {
-                setOriginalImage(initialSrc);
-                setWorkingImage(null); // Use original via fallback
-            }
-        }
-    }, [isOpen, image, originalImage]);
-
-    // Handle changes that should save to history
-    const handleFilterChange = (filter) => {
-        setActiveFilter(filter);
-        saveToHistory();
-    };
-
-    const handleAspectChange = (value) => {
-        setAspect(value);
-        saveToHistory();
     };
 
     const handleSave = async () => {
@@ -460,7 +281,6 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                 rotation: watermarkRotation
             } : null;
 
-            // Build combined filter string
             const combinedFilter = [
                 FILTERS[activeFilter].css,
                 `brightness(${brightness})`,
@@ -475,10 +295,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                 intensity: vignetteIntensity
             } : null;
 
-            // Use working image if crop has been applied, otherwise use original
             const saveImageSrc = workingImage || (typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null));
-
-            // Get quality value from preset
             const qualityValue = QUALITY_PRESETS[compressionQuality]?.quality || 0.85;
 
             const croppedImageBlob = await getCroppedImg(
@@ -493,10 +310,8 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                 qualityValue
             );
 
-            // Create a File object with .webp extension - preserve original name if provided
             let fileName;
             if (originalFilename) {
-                // Replace extension with .webp
                 const baseName = originalFilename.replace(/\.[^/.]+$/, '');
                 fileName = `${baseName}.webp`;
             } else {
@@ -513,13 +328,13 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
         }
     };
 
-    // Ensure image source is valid string - use workingImage if crop has been applied
+    // 6. Rendering
+
     const baseImageSrc = typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null);
     const imageSrc = workingImage || baseImageSrc;
 
     if (!isOpen || !imageSrc) return null;
 
-    // Render Right Panel content based on active tool
     const renderToolPanel = () => {
         switch (activeTool) {
             case 'crop':
@@ -540,7 +355,6 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                         saveToHistory={saveToHistory}
                     />
                 );
-
             case 'adjust':
                 return (
                     <AdjustPanel
@@ -564,7 +378,6 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                         saveToHistory={saveToHistory}
                     />
                 );
-
             case 'text':
                 return (
                     <TextPanel
@@ -573,7 +386,6 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                         saveToHistory={saveToHistory}
                     />
                 );
-
             case 'watermark':
                 return (
                     <WatermarkPanel
@@ -598,7 +410,6 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                         saveToHistory={saveToHistory}
                     />
                 );
-
             case 'seo':
                 return (
                     <SEOPanel
@@ -611,7 +422,6 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                         onCompressionQualityChange={setCompressionQuality}
                     />
                 );
-
             default:
                 return null;
         }
@@ -644,7 +454,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                         size="icon"
                         className="w-12 h-12 text-muted-foreground hover:text-foreground"
                         onClick={handleUndo}
-                        disabled={historyIndex <= 0}
+                        disabled={!canUndo}
                         title="Undo"
                     >
                         <Undo2 className="w-5 h-5" />
@@ -654,7 +464,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                         size="icon"
                         className="w-12 h-12 text-muted-foreground hover:text-foreground"
                         onClick={handleRedo}
-                        disabled={historyIndex >= history.length - 1}
+                        disabled={!canRedo}
                         title="Redo"
                     >
                         <Redo2 className="w-5 h-5" />
@@ -774,182 +584,33 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                             </div>
                         )}
 
-                        {/* Watermark Preview Overlay - matches react-easy-crop's centered crop box */}
-                        {watermarkType !== 'none' && !showOriginal && (
-                            <div
-                                className="absolute pointer-events-none z-10"
-                                style={{
-                                    // React-easy-crop centers the crop box, so we center the overlay too
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    // Match the crop area's aspect ratio and max dimensions
-                                    width: aspect >= 1 ? 'auto' : `calc(min(100%, 100vh * ${aspect}))`,
-                                    height: aspect >= 1 ? `calc(min(100%, 100vw / ${aspect}))` : 'auto',
-                                    aspectRatio: aspect || 1,
-                                    maxWidth: '100%',
-                                    maxHeight: '100%',
-                                    opacity: watermarkOpacity,
-                                    overflow: 'hidden'
-                                }}
-                            >
-                                {/* Single Watermark */}
-                                {watermarkRepeat === 'single' && (
-                                    <div className={`absolute ${watermarkPosition === 'TL' ? 'top-[5%] left-[5%]' :
-                                        watermarkPosition === 'T' ? 'top-[5%] left-1/2 -translate-x-1/2' :
-                                            watermarkPosition === 'TR' ? 'top-[5%] right-[5%]' :
-                                                watermarkPosition === 'L' ? 'top-1/2 left-[5%] -translate-y-1/2' :
-                                                    watermarkPosition === 'C' ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' :
-                                                        watermarkPosition === 'R' ? 'top-1/2 right-[5%] -translate-y-1/2' :
-                                                            watermarkPosition === 'BL' ? 'bottom-[5%] left-[5%]' :
-                                                                watermarkPosition === 'B' ? 'bottom-[5%] left-1/2 -translate-x-1/2' :
-                                                                    'bottom-[5%] right-[5%]' /* BR is default */
-                                        }`}>
-                                        {watermarkType === 'text' ? (
-                                            <span
-                                                className="font-bold"
-                                                style={{
-                                                    fontSize: `${watermarkScale * 200}px`,
-                                                    background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
-                                                    WebkitBackgroundClip: 'text',
-                                                    WebkitTextFillColor: 'transparent',
-                                                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                                                }}
-                                            >
-                                                Freecipies
-                                            </span>
-                                        ) : customWatermark ? (
-                                            <img
-                                                src={customWatermark.src}
-                                                alt="Watermark"
-                                                style={{ maxWidth: `${watermarkScale * 400}px` }}
-                                            />
-                                        ) : null}
-                                    </div>
-                                )}
+                        {/* Overlays */}
+                        {!showOriginal && (
+                            <>
+                                <WatermarkOverlay
+                                    watermarkType={watermarkType}
+                                    watermarkOpacity={watermarkOpacity}
+                                    watermarkRepeat={watermarkRepeat}
+                                    watermarkPosition={watermarkPosition}
+                                    watermarkScale={watermarkScale}
+                                    watermarkRotation={watermarkRotation}
+                                    watermarkSpacingH={watermarkSpacingH}
+                                    watermarkSpacingV={watermarkSpacingV}
+                                    customWatermark={customWatermark}
+                                    aspect={aspect}
+                                />
 
-                                {/* Tiled Watermark Pattern */}
-                                {watermarkRepeat === 'tiled' && (() => {
-                                    const baseSize = watermarkType === 'text' ? 100 : 80;
-                                    const effectiveSpacingH = Math.max(watermarkSpacingH, 20);
-                                    const effectiveSpacingV = Math.max(watermarkSpacingV, 20);
-                                    const cols = Math.max(8, Math.ceil(1200 / (effectiveSpacingH + baseSize * watermarkScale)) + 4);
-                                    const rows = Math.max(8, Math.ceil(1200 / (effectiveSpacingV + baseSize * watermarkScale)) + 4);
-                                    const totalWatermarks = cols * rows;
+                                <VignetteOverlay
+                                    enabled={vignetteEnabled}
+                                    intensity={vignetteIntensity}
+                                    aspect={aspect}
+                                />
 
-                                    return (
-                                        <div
-                                            className="absolute inset-0"
-                                            style={{
-                                                transform: `rotate(${watermarkRotation}deg)`,
-                                                transformOrigin: 'center center'
-                                            }}
-                                        >
-                                            <div
-                                                style={{
-                                                    display: 'grid',
-                                                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                                                    gap: `${effectiveSpacingV}px ${effectiveSpacingH}px`,
-                                                    position: 'absolute',
-                                                    top: '-150%',
-                                                    left: '-150%',
-                                                    width: '400%',
-                                                    height: '400%',
-                                                    justifyItems: 'center',
-                                                    alignItems: 'center'
-                                                }}
-                                            >
-                                                {Array.from({ length: totalWatermarks }).map((_, i) => (
-                                                    <div key={i} className="flex-shrink-0">
-                                                        {watermarkType === 'text' ? (
-                                                            <span
-                                                                className="font-bold whitespace-nowrap"
-                                                                style={{
-                                                                    fontSize: `${watermarkScale * 100}px`,
-                                                                    background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
-                                                                    WebkitBackgroundClip: 'text',
-                                                                    WebkitTextFillColor: 'transparent',
-                                                                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                                                                }}
-                                                            >
-                                                                Freecipies
-                                                            </span>
-                                                        ) : customWatermark ? (
-                                                            <img
-                                                                src={customWatermark.src}
-                                                                alt="Watermark"
-                                                                style={{ maxWidth: `${watermarkScale * 200}px` }}
-                                                            />
-                                                        ) : null}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-                        )}
-
-                        {/* Vignette Preview Overlay - matches react-easy-crop's centered crop box */}
-                        {vignetteEnabled && !showOriginal && (
-                            <div
-                                className="absolute pointer-events-none z-10"
-                                style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    width: aspect >= 1 ? 'auto' : `calc(min(100%, 100vh * ${aspect}))`,
-                                    height: aspect >= 1 ? `calc(min(100%, 100vw / ${aspect}))` : 'auto',
-                                    aspectRatio: aspect || 1,
-                                    maxWidth: '100%',
-                                    maxHeight: '100%',
-                                    background: `radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,${vignetteIntensity}) 100%)`
-                                }}
-                            />
-                        )}
-
-                        {/* Text Overlay Preview - matches react-easy-crop's centered crop box */}
-                        {textOverlay.enabled && textOverlay.text && !showOriginal && (
-                            <div
-                                className="absolute pointer-events-none z-20"
-                                style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    width: aspect >= 1 ? 'auto' : `calc(min(100%, 100vh * ${aspect}))`,
-                                    height: aspect >= 1 ? `calc(min(100%, 100vw / ${aspect}))` : 'auto',
-                                    aspectRatio: aspect || 1,
-                                    maxWidth: '100%',
-                                    maxHeight: '100%',
-                                }}
-                            >
-                                <div
-                                    className={`absolute ${textOverlay.position === 'TL' ? 'top-[5%] left-[5%]' :
-                                        textOverlay.position === 'top' ? 'top-[5%] left-1/2 -translate-x-1/2' :
-                                            textOverlay.position === 'TR' ? 'top-[5%] right-[5%]' :
-                                                textOverlay.position === 'left' ? 'top-1/2 left-[5%] -translate-y-1/2' :
-                                                    textOverlay.position === 'center' ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' :
-                                                        textOverlay.position === 'right' ? 'top-1/2 right-[5%] -translate-y-1/2' :
-                                                            textOverlay.position === 'BL' ? 'bottom-[5%] left-[5%]' :
-                                                                textOverlay.position === 'bottom' ? 'bottom-[5%] left-1/2 -translate-x-1/2' :
-                                                                    textOverlay.position === 'BR' ? 'bottom-[5%] right-[5%]' :
-                                                                        'bottom-[5%] left-1/2 -translate-x-1/2'
-                                        }`}
-                                    style={{
-                                        fontFamily: textOverlay.font,
-                                        fontSize: `${textOverlay.size}px`,
-                                        fontWeight: 'bold',
-                                        color: textOverlay.color,
-                                        textShadow: textOverlay.shadow ? '2px 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5)' : 'none',
-                                        whiteSpace: 'nowrap'
-                                    }}
-                                >
-                                    {textOverlay.text}
-                                </div>
-                            </div>
+                                <TextOverlay
+                                    textOverlay={textOverlay}
+                                    aspect={aspect}
+                                />
+                            </>
                         )}
                     </div>
                 </div >

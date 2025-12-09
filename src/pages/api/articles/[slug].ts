@@ -13,7 +13,10 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
     const { slug } = params;
 
     if (!slug) {
-        return new Response(JSON.stringify({ error: 'Slug is required' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     try {
@@ -56,7 +59,10 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
     const { slug } = params;
 
     if (!slug) {
-        return new Response(JSON.stringify({ error: 'Slug is required' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     try {
@@ -114,19 +120,22 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
         const article = await updateArticle(env.DB, slug, transformedData);
 
         if (!article) {
-            return new Response(JSON.stringify({ error: 'Article not found' }), { status: 404 });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Article not found', 404)
+            );
+            return new Response(body, { status, headers });
         }
 
-        return new Response(JSON.stringify({ success: true, data: article }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const { body, status, headers } = formatSuccessResponse(article);
+        return new Response(body, { status, headers });
     } catch (error) {
         console.error('Error updating article:', error);
-        return new Response(JSON.stringify({ error: 'Failed to update article' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const { body, status, headers } = formatErrorResponse(
+            error instanceof AppError
+                ? error
+                : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to update article', 500)
+        );
+        return new Response(body, { status, headers });
     }
 };
 
@@ -134,7 +143,10 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
     const { slug } = params;
 
     if (!slug) {
-        return new Response(JSON.stringify({ error: 'Slug is required' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     try {
@@ -149,18 +161,21 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
         const success = await deleteArticle(env.DB, slug);
 
         if (!success) {
-            return new Response(JSON.stringify({ error: 'Article not found or failed to delete' }), { status: 404 });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Article not found or failed to delete', 404)
+            );
+            return new Response(body, { status, headers });
         }
 
-        return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const { body, status, headers } = formatSuccessResponse({ deleted: true });
+        return new Response(body, { status, headers });
     } catch (error) {
         console.error('Error deleting article:', error);
-        return new Response(JSON.stringify({ error: 'Failed to delete article' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const { body, status, headers } = formatErrorResponse(
+            error instanceof AppError
+                ? error
+                : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to delete article', 500)
+        );
+        return new Response(body, { status, headers });
     }
 };

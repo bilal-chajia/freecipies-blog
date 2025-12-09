@@ -113,19 +113,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const body = await request.json();
-    const article = await createArticle(env.DB, body);
+    const reqBody = await request.json();
+    const article = await createArticle(env.DB, reqBody);
 
-    return new Response(JSON.stringify(article), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatSuccessResponse(article);
+    return new Response(body, { status: 201, headers });
   } catch (error) {
     console.error('Error creating article:', error);
-    return new Response(JSON.stringify({ error: 'Failed to create article' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatErrorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to create article', 500)
+    );
+    return new Response(body, { status, headers });
   }
 };
 
@@ -159,8 +159,14 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     // However, for now I will implement POST here.
     // I will create `[slug].ts` separately for PUT/DELETE.
 
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+    const { body, status, headers } = formatErrorResponse(
+      new AppError(ErrorCodes.VALIDATION_ERROR, 'Method not allowed - use /api/articles/:slug for updates', 405)
+    );
+    return new Response(body, { status, headers });
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Internal Error' }), { status: 500 });
+    const { body, status, headers } = formatErrorResponse(
+      new AppError(ErrorCodes.INTERNAL_ERROR, 'Internal Error', 500)
+    );
+    return new Response(body, { status, headers });
   }
 };

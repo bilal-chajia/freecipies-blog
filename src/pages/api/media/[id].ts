@@ -9,12 +9,18 @@ export const prerender = false;
 export const PUT: APIRoute = async ({ request, locals, params }) => {
     const idStr = params.id;
     if (!idStr) {
-        return new Response(JSON.stringify({ error: 'Media ID is required' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Media ID is required', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     const id = parseInt(idStr);
     if (isNaN(id)) {
-        return new Response(JSON.stringify({ error: 'Invalid ID format' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid ID format', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     try {
@@ -30,14 +36,20 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
         // Get the original media record
         const media = await getMediaById(env.DB, id);
         if (!media) {
-            return new Response(JSON.stringify({ error: 'Media file not found' }), { status: 404 });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Media file not found', 404)
+            );
+            return new Response(body, { status, headers });
         }
 
         // Get the new file from form data
         const formData = await request.formData();
         const file = formData.get('file') as File;
         if (!file) {
-            return new Response(JSON.stringify({ error: 'No file provided' }), { status: 400 });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.VALIDATION_ERROR, 'No file provided', 400)
+            );
+            return new Response(body, { status, headers });
         }
 
         // Determine new path (change extension to .webp if needed)
@@ -101,12 +113,18 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
 export const DELETE: APIRoute = async ({ request, locals, params }) => {
     const idStr = params.id;
     if (!idStr) {
-        return new Response(JSON.stringify({ error: 'Media ID is required' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Media ID is required', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     const id = parseInt(idStr);
     if (isNaN(id)) {
-        return new Response(JSON.stringify({ error: 'Invalid ID format' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid ID format', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     try {
@@ -122,7 +140,10 @@ export const DELETE: APIRoute = async ({ request, locals, params }) => {
         // Get the media file first to find the R2 key
         const media = await getMediaById(env.DB, id);
         if (!media) {
-            return new Response(JSON.stringify({ error: 'Media file not found' }), { status: 404 });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Media file not found', 404)
+            );
+            return new Response(body, { status, headers });
         }
 
         // Delete from R2

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,6 +26,8 @@ import {
     AlignRight,
     Bold,
     Italic,
+    Underline,
+    Strikethrough,
     Trash2,
     Copy,
     ChevronUp,
@@ -35,7 +37,15 @@ import {
     Move,
     RotateCw,
     Maximize2,
+    Upload,
+    HardDriveUpload,
+    Loader2,
+    ALargeSmall,
+    CaseSensitive,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import MediaDialog from '../MediaDialog';
+import { mediaAPI } from '../../services/api';
 
 // Available Google Fonts
 const FONTS = [
@@ -49,6 +59,8 @@ const FONTS = [
     { name: 'Raleway', style: 'sans-serif' },
     { name: 'Nunito', style: 'sans-serif' },
     { name: 'Oswald', style: 'sans-serif' },
+    { name: 'Merriweather', style: 'serif' },
+    { name: 'Dancing Script', style: 'cursive' },
 ];
 
 // Preset colors
@@ -126,6 +138,8 @@ const ElementPanel = ({
     onMoveUp,
     onMoveDown,
 }) => {
+    const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
+
     if (!element) {
         return (
             <div className="element-panel-empty flex flex-col items-center justify-center py-12 text-center">
@@ -149,6 +163,17 @@ const ElementPanel = ({
                 ...(element[parent] || {}),
                 [key]: value,
             },
+        });
+    };
+
+    const handleImageSelect = (media) => {
+        if (!media) return;
+
+        onUpdate({
+            ...element,
+            imageUrl: media.url,
+            sourceType: 'upload',
+            name: media.alt_text || element.name || 'Image',
         });
     };
 
@@ -339,11 +364,141 @@ const ElementPanel = ({
                                     </Button>
                                 </div>
 
+                                {/* Text Decoration */}
+                                <div className="flex gap-1">
+                                    <Button
+                                        variant={element.textDecoration === 'underline' ? 'secondary' : 'outline'}
+                                        size="sm"
+                                        className="flex-1"
+                                        onClick={() => handleChange('textDecoration', element.textDecoration === 'underline' ? 'none' : 'underline')}
+                                        title="Underline"
+                                    >
+                                        <Underline className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant={element.textDecoration === 'line-through' ? 'secondary' : 'outline'}
+                                        size="sm"
+                                        className="flex-1"
+                                        onClick={() => handleChange('textDecoration', element.textDecoration === 'line-through' ? 'none' : 'line-through')}
+                                        title="Strikethrough"
+                                    >
+                                        <Strikethrough className="w-4 h-4" />
+                                    </Button>
+                                </div>
+
+                                {/* Letter Spacing */}
+                                <div>
+                                    <Label className="text-xs">Letter Spacing: {element.letterSpacing || 0}px</Label>
+                                    <Slider
+                                        value={[element.letterSpacing || 0]}
+                                        min={-5}
+                                        max={20}
+                                        step={0.5}
+                                        onValueChange={([v]) => handleChange('letterSpacing', v)}
+                                    />
+                                </div>
+
+                                {/* Line Height */}
+                                <div>
+                                    <Label className="text-xs">Line Height: {element.lineHeight || 1.2}</Label>
+                                    <Slider
+                                        value={[(element.lineHeight || 1.2) * 100]}
+                                        min={80}
+                                        max={250}
+                                        step={5}
+                                        onValueChange={([v]) => handleChange('lineHeight', v / 100)}
+                                    />
+                                </div>
+
+                                {/* Text Transform */}
+                                <div>
+                                    <Label className="text-xs">Text Transform</Label>
+                                    <Select
+                                        value={element.textTransform || 'none'}
+                                        onValueChange={(v) => handleChange('textTransform', v)}
+                                    >
+                                        <SelectTrigger className="h-8">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Normal</SelectItem>
+                                            <SelectItem value="uppercase">UPPERCASE</SelectItem>
+                                            <SelectItem value="lowercase">lowercase</SelectItem>
+                                            <SelectItem value="capitalize">Capitalize</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 <ColorInput
                                     label="Text Color"
                                     value={element.color}
                                     onChange={(v) => handleChange('color', v)}
                                 />
+                            </div>
+                        </CollapsibleSection>
+
+                        {/* Text Background */}
+                        <CollapsibleSection title="Text Background" icon={Palette} defaultOpen={false}>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="enable-bg"
+                                        checked={!!element.background}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                handleChange('background', { color: 'rgba(0,0,0,0.5)', padding: 12, borderRadius: 8, opacity: 1 });
+                                            } else {
+                                                handleChange('background', null);
+                                            }
+                                        }}
+                                        className="rounded"
+                                    />
+                                    <Label htmlFor="enable-bg" className="text-xs cursor-pointer">Enable Background</Label>
+                                </div>
+
+                                {element.background && (
+                                    <>
+                                        <ColorInput
+                                            label="Background Color"
+                                            value={element.background?.color || 'rgba(0,0,0,0.5)'}
+                                            onChange={(v) => handleNestedChange('background', 'color', v)}
+                                        />
+
+                                        <div>
+                                            <Label className="text-xs">Padding: {element.background?.padding || 0}px</Label>
+                                            <Slider
+                                                value={[element.background?.padding || 0]}
+                                                min={0}
+                                                max={40}
+                                                step={2}
+                                                onValueChange={([v]) => handleNestedChange('background', 'padding', v)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label className="text-xs">Corner Radius: {element.background?.borderRadius || 0}px</Label>
+                                            <Slider
+                                                value={[element.background?.borderRadius || 0]}
+                                                min={0}
+                                                max={30}
+                                                step={1}
+                                                onValueChange={([v]) => handleNestedChange('background', 'borderRadius', v)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label className="text-xs">Opacity: {Math.round((element.background?.opacity || 1) * 100)}%</Label>
+                                            <Slider
+                                                value={[(element.background?.opacity || 1) * 100]}
+                                                min={0}
+                                                max={100}
+                                                step={5}
+                                                onValueChange={([v]) => handleNestedChange('background', 'opacity', v / 100)}
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </CollapsibleSection>
 
@@ -421,18 +576,42 @@ const ElementPanel = ({
 
                             <div>
                                 <Label className="text-xs">Image Source</Label>
-                                <Select
-                                    value={element.sourceType || 'article'}
-                                    onValueChange={(v) => handleChange('sourceType', v)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="article">From Article</SelectItem>
-                                        <SelectItem value="upload">Manual Upload</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <div className="space-y-2">
+                                    <Select
+                                        value={element.sourceType || 'article'}
+                                        onValueChange={(v) => handleChange('sourceType', v)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="article">From Article</SelectItem>
+                                            <SelectItem value="upload">Specific Image</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                    {element.sourceType === 'upload' && (
+                                        <div className="pt-2">
+                                            {element.imageUrl && (
+                                                <div className="mb-2 rounded overflow-hidden aspect-video relative group border border-zinc-700">
+                                                    <img
+                                                        src={element.imageUrl}
+                                                        alt="Selected"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            )}
+                                            <Button
+                                                variant="outline"
+                                                className="w-full"
+                                                onClick={() => setMediaDialogOpen(true)}
+                                            >
+                                                <Upload className="w-4 h-4 mr-2" />
+                                                {element.imageUrl ? 'Change Image' : 'Select Image'}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div>
@@ -449,6 +628,12 @@ const ElementPanel = ({
                     </CollapsibleSection>
                 )}
             </div>
+
+            <MediaDialog
+                open={mediaDialogOpen}
+                onOpenChange={setMediaDialogOpen}
+                onSelect={handleImageSelect}
+            />
         </div>
     );
 };
@@ -457,6 +642,10 @@ const ElementPanel = ({
  * AddElementPanel - Enhanced panel for adding new elements
  */
 const AddElementPanel = ({ onAddElement }) => {
+    const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef(null);
+
     const elements = [
         {
             type: 'imageSlot',
@@ -488,6 +677,129 @@ const AddElementPanel = ({ onAddElement }) => {
         },
     ];
 
+    const handleMediaSelect = (media) => {
+        if (!media) return;
+
+        onAddElement('imageSlot', {
+            width: 500,
+            height: 400,
+            x: 250,
+            y: 250,
+            sourceType: 'upload',
+            imageUrl: media.url,
+            name: media.alt_text || 'Image'
+        });
+    };
+
+    // Handle file upload from desktop
+    const handleFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+        if (!allowedTypes.includes(file.type)) {
+            toast.error('Please select an image file (JPG, PNG, WebP, GIF, or SVG)');
+            return;
+        }
+
+        try {
+            setIsUploading(true);
+
+            // Upload to media library
+            const response = await mediaAPI.upload(file, {
+                folder: 'canvas-elements',
+                alt: file.name.replace(/\.[^/.]+$/, ''),
+            });
+
+            // Handle response structure
+            const imageUrl = response.data?.data?.url || response.data?.url;
+
+            if (!imageUrl) {
+                throw new Error('Upload failed - no URL returned');
+            }
+
+            // Get actual image dimensions
+            const img = new window.Image();
+            img.crossOrigin = 'anonymous';
+
+            img.onload = () => {
+                let width = img.naturalWidth;
+                let height = img.naturalHeight;
+
+                // Maximum size constraints (fit within canvas reasonably)
+                const maxWidth = 800;
+                const maxHeight = 1200;
+
+                // Scale down if needed while maintaining aspect ratio
+                if (width > maxWidth) {
+                    const ratio = maxWidth / width;
+                    width = maxWidth;
+                    height = Math.round(height * ratio);
+                }
+                if (height > maxHeight) {
+                    const ratio = maxHeight / height;
+                    height = maxHeight;
+                    width = Math.round(width * ratio);
+                }
+
+                // Center on canvas (canvas is 1000x1500)
+                const x = Math.max(0, Math.round((1000 - width) / 2));
+                const y = Math.max(0, Math.round((1500 - height) / 4)); // Position in upper portion
+
+                // Add image element to canvas with actual dimensions
+                onAddElement('imageSlot', {
+                    width,
+                    height,
+                    x,
+                    y,
+                    sourceType: 'upload',
+                    imageUrl: imageUrl,
+                    name: file.name.replace(/\.[^/.]+$/, '') || 'Uploaded Image'
+                });
+
+                toast.success('Image added to canvas!');
+                setIsUploading(false);
+
+                // Reset file input
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            };
+
+            img.onerror = () => {
+                // Fallback to default size if image load fails
+                onAddElement('imageSlot', {
+                    width: 500,
+                    height: 400,
+                    x: 250,
+                    y: 250,
+                    sourceType: 'upload',
+                    imageUrl: imageUrl,
+                    name: file.name.replace(/\.[^/.]+$/, '') || 'Uploaded Image'
+                });
+
+                toast.success('Image added to canvas!');
+                setIsUploading(false);
+
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            };
+
+            img.src = imageUrl;
+
+        } catch (error) {
+            console.error('Upload failed:', error);
+            toast.error('Failed to upload image');
+            setIsUploading(false);
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
     return (
         <div className="add-element-panel p-3">
             <p className="text-xs text-muted-foreground mb-3">Click to add elements to canvas</p>
@@ -510,7 +822,62 @@ const AddElementPanel = ({ onAddElement }) => {
                         </div>
                     </Button>
                 ))}
+
+                <Separator className="my-2" />
+
+                <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto py-3 px-3 hover:bg-primary/5 hover:border-primary/50 transition-all group"
+                    onClick={() => setMediaDialogOpen(true)}
+                >
+                    <div className="flex items-center gap-3 w-full">
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                            <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        <div className="text-left">
+                            <p className="font-medium text-sm">Image from Library</p>
+                            <p className="text-xs text-muted-foreground">Add existing media</p>
+                        </div>
+                    </div>
+                </Button>
+
+                {/* Upload from Desktop */}
+                <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto py-3 px-3 hover:bg-primary/5 hover:border-primary/50 transition-all group"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                >
+                    <div className="flex items-center gap-3 w-full">
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                            {isUploading ? (
+                                <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                            ) : (
+                                <HardDriveUpload className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                            )}
+                        </div>
+                        <div className="text-left">
+                            <p className="font-medium text-sm">{isUploading ? 'Uploading...' : 'Upload from Desktop'}</p>
+                            <p className="text-xs text-muted-foreground">Import images, SVGs</p>
+                        </div>
+                    </div>
+                </Button>
+
+                {/* Hidden file input */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/svg+xml"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                />
             </div>
+
+            <MediaDialog
+                open={mediaDialogOpen}
+                onOpenChange={setMediaDialogOpen}
+                onSelect={handleMediaSelect}
+            />
         </div>
     );
 };

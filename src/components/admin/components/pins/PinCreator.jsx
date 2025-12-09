@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -25,12 +25,18 @@ import {
     Settings2,
     ChevronLeft,
     Save,
+    Link,
+    Image,
+    ZoomIn,
 } from 'lucide-react';
+import { Slider } from '../ui/slider';
 import { toast } from 'sonner';
 
 import PinCanvas from '../canvas/PinCanvas';
 import TemplateSelector from './TemplateSelector';
 import { templatesAPI, pinterestBoardsAPI, pinterestPinsAPI } from '../../services/api';
+import { useFontLoader } from '../../utils/FontLoader';
+import { FONTS } from '../canvas/ElementPanel';
 
 /**
  * PinCreator - Quick workflow to create pins from articles
@@ -58,8 +64,37 @@ const PinCreator = ({
         boardId: '',
     });
 
+    // Image URLs for template slots
+    const [imageUrls, setImageUrls] = useState([]);
+
+    // Image offsets for repositioning within slots (for fine-tuning before export)
+    const [imageOffsets, setImageOffsets] = useState({});
+    // Image scales for zooming
+    const [imageScales, setImageScales] = useState({});
+
     // Export ref
     const exportFnRef = useRef(null);
+
+    // Build template object for canvas
+    const canvasTemplate = useMemo(() => selectedTemplate ? {
+        ...selectedTemplate,
+        elements_json: typeof selectedTemplate.elements_json === 'string'
+            ? JSON.parse(selectedTemplate.elements_json)
+            : selectedTemplate.elements_json || [],
+    } : null, [selectedTemplate]);
+
+    // Load fonts for the selected template
+    const templateFonts = useMemo(() => {
+        if (!canvasTemplate?.elements_json) return [];
+        const usedFonts = canvasTemplate.elements_json
+            .filter(el => el.type === 'text' && el.fontFamily)
+            .map(el => el.fontFamily);
+        // Always include default fonts to be safe
+        const defaultFonts = FONTS.map(f => f.name);
+        return [...new Set([...defaultFonts, ...usedFonts])];
+    }, [canvasTemplate]);
+
+    useFontLoader(templateFonts);
 
     // Load templates on mount
     useEffect(() => {
@@ -110,10 +145,32 @@ const PinCreator = ({
     // Handle template selection
     const handleSelectTemplate = (template) => {
         setSelectedTemplate(template);
+
+        // Parse template elements to find image slots
+        let elements = [];
+        try {
+            elements = typeof template.elements_json === 'string'
+                ? JSON.parse(template.elements_json)
+                : template.elements_json || [];
+        } catch (e) {
+            elements = [];
+        }
+
+        // Find all imageSlot elements
+        const imageSlots = elements.filter(el => el.type === 'imageSlot');
+
+        // Initialize imageUrls array based on number of slots
+        const initialUrls = imageSlots.map((slot, index) => ({
+            slotId: slot.id,
+            name: slot.name || `Image ${index + 1}`,
+            url: '',
+        }));
+        setImageUrls(initialUrls);
+
         setStep(2);
     };
 
-    // Build article data for canvas
+    // Build article data for canvas with custom images
     const articleData = article ? {
         title: pinData.title || article.label || '',
         label: pinData.title || article.label || '',
@@ -122,7 +179,33 @@ const PinCreator = ({
         prepTime: article.prep_time || '',
         cookTime: article.cook_time || '',
         image: article.image_url || article.cover_url || '',
+        // Map custom image URLs to slot IDs
+        customImages: imageUrls.reduce((acc, item) => {
+            if (item.url) {
+                acc[item.slotId] = item.url;
+            }
+            return acc;
+        }, {}),
+        // Custom image offsets for repositioning
+        imageOffsets: imageOffsets,
+        imageScales: imageScales,
     } : null;
+
+    // Handle image offset change when user drags image within slot
+    const handleImageOffsetChange = (slotId, offset) => {
+        setImageOffsets(prev => ({
+            ...prev,
+            [slotId]: offset,
+        }));
+    };
+
+    // Handle image scale change
+    const handleImageScaleChange = (slotId, scale) => {
+        setImageScales(prev => ({
+            ...prev,
+            [slotId]: scale,
+        }));
+    };
 
     // Handle export and save
     const handleExportAndSave = async () => {
@@ -203,14 +286,6 @@ const PinCreator = ({
             setIsSaving(false);
         }
     };
-
-    // Build template object for canvas
-    const canvasTemplate = selectedTemplate ? {
-        ...selectedTemplate,
-        elements_json: typeof selectedTemplate.elements_json === 'string'
-            ? JSON.parse(selectedTemplate.elements_json)
-            : selectedTemplate.elements_json || [],
-    } : null;
 
     // Tools for left sidebar
     const TOOLS = [
@@ -323,6 +398,8 @@ const PinCreator = ({
                                     scale={0.5}
                                     zoom={100}
                                     showGrid={false}
+                                    allowImageDrag={true}
+                                    onImageOffsetChange={handleImageOffsetChange}
                                     onExport={(fn) => { exportFnRef.current = fn; }}
                                 />
                             ) : (
@@ -376,6 +453,66 @@ const PinCreator = ({
                                     {pinData.description.length}/500 characters
                                 </p>
                             </div>
+
+                            {/* Dynamic Image URLs based on template slots */}
+                            {imageUrls.length > 0 && (
+                                <>
+                                    <Separator className="bg-zinc-800" />
+                                    <div className="space-y-3">
+                                        <Label className="text-white flex items-center gap-2">
+                                            <Image className="w-4 h-4" />
+                                            Image URLs ({imageUrls.length} slot{imageUrls.length > 1 ? 's' : ''})
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Paste image URLs to replace template images
+                                        </p>
+                                        {imageUrls.map((item, index) => (
+                                            <div key={item.slotId} className="space-y-1">
+                                                <Label className="text-xs text-muted-foreground">
+                                                    {item.name}
+                                                </Label>
+                                                <div className="relative">
+                                                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                                    <Input
+                                                        value={item.url}
+                                                        onChange={(e) => {
+                                                            const newUrls = [...imageUrls];
+                                                            newUrls[index] = { ...item, url: e.target.value };
+                                                            setImageUrls(newUrls);
+                                                        }}
+                                                        placeholder="https://example.com/image.jpg"
+                                                        className="bg-zinc-800 border-zinc-700 pl-9"
+                                                    />
+                                                </div>
+                                                {item.url && (
+                                                    <>
+                                                        <img
+                                                            src={item.url}
+                                                            alt={item.name}
+                                                            className="w-full h-20 object-cover rounded-md mt-1"
+                                                            onError={(e) => e.target.style.display = 'none'}
+                                                        />
+                                                        <div className="flex items-center gap-3 pt-1">
+                                                            <ZoomIn className="w-3 h-3 text-muted-foreground" />
+                                                            <Slider
+                                                                value={[imageScales[item.slotId] || 1]}
+                                                                min={1}
+                                                                max={3}
+                                                                step={0.1}
+                                                                onValueChange={([value]) => handleImageScaleChange(item.slotId, value)}
+                                                                className="flex-1"
+                                                            />
+                                                            <span className="text-[10px] text-muted-foreground w-6 text-right font-mono">
+                                                                {(imageScales[item.slotId] || 1).toFixed(1)}x
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
 
                             <Separator className="bg-zinc-800" />
 

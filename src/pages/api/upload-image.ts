@@ -2,12 +2,20 @@ import type { APIRoute } from 'astro';
 import { uploadImage, validateImage } from '../../lib/r2';
 import type { Env } from '../../lib/db';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../lib/auth';
+import {
+  formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError
+} from '../../lib/error-handler';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const env = locals.runtime.env as Env;
+    const env = (locals as any).runtime?.env as Env;
+
+    if (!env?.IMAGES || !env?.DB) {
+      throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage or database not configured', 500);
+    }
+
     const bucket = env.IMAGES;
     const publicUrl = env.ENVIRONMENT === 'production' ? env.R2_PUBLIC_URL : '/images';
 
@@ -23,15 +31,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const file = formData.get('file') as File;
 
     if (!file) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'No file provided'
-      }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const { body, status, headers } = formatErrorResponse(
+        new AppError(ErrorCodes.VALIDATION_ERROR, 'No file provided', 400)
+      );
+      return new Response(body, { status, headers });
     }
 
     // Validate image
@@ -41,15 +44,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
 
     if (!validation.valid) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: validation.error
-      }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const { body, status, headers } = formatErrorResponse(
+        new AppError(ErrorCodes.VALIDATION_ERROR, validation.error || 'Invalid image', 400)
+      );
+      return new Response(body, { status, headers });
     }
 
     // Get metadata from form
@@ -76,8 +74,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
 
     // Store image metadata in D1 database
-    const db = env.DB;
-    await db
+    await env.DB
       .prepare(`
         INSERT INTO media (
           filename, r2_key, url, mime_type,
@@ -96,48 +93,39 @@ export const POST: APIRoute = async ({ request, locals }) => {
       )
       .run();
 
-    return new Response(JSON.stringify({
-      success: true,
-      data: {
-        url: result.url,
-        key: result.key,
-        filename: result.filename,
-        size: result.size,
-        contentType: result.contentType
-      }
-    }), {
-      status: 201,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+    const { body, status, headers } = formatSuccessResponse({
+      url: result.url,
+      key: result.key,
+      filename: result.filename,
+      size: result.size,
+      contentType: result.contentType
     });
+    return new Response(body, { status: 201, headers });
   } catch (error) {
     console.error('Error uploading image:', error);
-
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Failed to upload image',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const { body, status, headers } = formatErrorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to upload image', 500)
+    );
+    return new Response(body, { status, headers });
   }
 };
 
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
-    const env = locals.runtime.env as Env;
-    const db = env.DB;
+    const env = (locals as any).runtime?.env as Env;
+
+    if (!env?.DB) {
+      throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
+    }
 
     const url = new URL(request.url);
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
     // Get images from database
-    const { results } = await db
+    const { results } = await env.DB
       .prepare(`
         SELECT * FROM media
         ORDER BY uploaded_at DESC
@@ -147,40 +135,29 @@ export const GET: APIRoute = async ({ request, locals }) => {
       .all();
 
     // Get total count
-    const { results: countResults } = await db
+    const { results: countResults } = await env.DB
       .prepare('SELECT COUNT(*) as total FROM media')
       .all();
 
     const total = (countResults[0] as any).total;
 
-    return new Response(JSON.stringify({
-      success: true,
-      data: results,
+    const { body, status, headers } = formatSuccessResponse(results, {
       pagination: {
+        page: Math.floor(offset / limit) + 1,
         limit,
-        offset,
-        total
-      }
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300'
-      }
+        total,
+        totalPages: Math.ceil(total / limit)
+      },
+      cacheControl: 'public, max-age=300'
     });
+    return new Response(body, { status, headers });
   } catch (error) {
     console.error('Error fetching images:', error);
-
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Failed to fetch images',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const { body, status, headers } = formatErrorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to fetch images', 500)
+    );
+    return new Response(body, { status, headers });
   }
 };
-

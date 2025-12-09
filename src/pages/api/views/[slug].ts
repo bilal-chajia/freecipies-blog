@@ -1,63 +1,77 @@
 import type { APIRoute } from 'astro';
-import { incrementViewCount, getArticleBySlug } from '../../../lib/db';
+import { incrementViewCount, getArticleBySlug, type Env } from '../../../lib/db';
+import {
+  formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError
+} from '../../../lib/error-handler';
+
+export const prerender = false;
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const { slug } = params;
-  const db = locals.runtime.env.DB;
 
   if (!slug) {
-    return new Response(JSON.stringify({ error: 'Slug is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatErrorResponse(
+      new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+    );
+    return new Response(body, { status, headers });
   }
 
   try {
-    const article = await getArticleBySlug(db, slug);
-    // If not found, return 0 views
-    return new Response(JSON.stringify({ viewCount: article?.viewCount || 0 }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
+    const env = (locals as any).runtime?.env as Env;
+    if (!env?.DB) {
+      throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
+    }
+
+    const article = await getArticleBySlug(env.DB, slug);
+    const { body, status, headers } = formatSuccessResponse({
+      viewCount: article?.viewCount || 0
     });
+    return new Response(body, { status, headers });
   } catch (error) {
     console.error('Error fetching view count:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatErrorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to fetch view count', 500)
+    );
+    return new Response(body, { status, headers });
   }
 };
 
 export const POST: APIRoute = async ({ params, locals }) => {
-    const { slug } = params;
-    const db = locals.runtime.env.DB;
+  const { slug } = params;
 
-    if (!slug) {
-        return new Response(JSON.stringify({ error: 'Slug is required' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-        });
+  if (!slug) {
+    const { body, status, headers } = formatErrorResponse(
+      new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+    );
+    return new Response(body, { status, headers });
+  }
+
+  try {
+    const env = (locals as any).runtime?.env as Env;
+    if (!env?.DB) {
+      throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
 
-    try {
-        const success = await incrementViewCount(db, slug);
+    const success = await incrementViewCount(env.DB, slug);
 
-        if (success) {
-            return new Response(JSON.stringify({ success: true }), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        } else {
-            return new Response(JSON.stringify({ error: 'Article not found' }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-    } catch (error) {
-        console.error('Error incrementing view count:', error);
-        return new Response(JSON.stringify({ error: 'Internal server error' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+    if (success) {
+      const { body, status, headers } = formatSuccessResponse({ incremented: true });
+      return new Response(body, { status, headers });
+    } else {
+      const { body, status, headers } = formatErrorResponse(
+        new AppError(ErrorCodes.NOT_FOUND, 'Article not found', 404)
+      );
+      return new Response(body, { status, headers });
     }
+  } catch (error) {
+    console.error('Error incrementing view count:', error);
+    const { body, status, headers } = formatErrorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to increment view count', 500)
+    );
+    return new Response(body, { status, headers });
+  }
 };

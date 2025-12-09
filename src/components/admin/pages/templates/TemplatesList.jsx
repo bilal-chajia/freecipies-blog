@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+    CardFooter,
 } from '@/components/ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
     AlertDialog,
@@ -28,19 +28,22 @@ import {
 import {
     Plus,
     Search,
-    MoreVertical,
-    Edit,
+    MoreHorizontal,
+    Edit3,
     Trash2,
     Copy,
     Star,
-    Loader2,
     LayoutTemplate,
+    Clock,
+    Palette,
+    ArrowUpRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { templatesAPI } from '../../services/api';
+import { cn } from '@/lib/utils';
 
 /**
- * TemplatesList - Grid view of all Pinterest pin templates
+ * TemplatesList - Professional Grid view of all Pinterest pin templates
  */
 const TemplatesList = () => {
     const navigate = useNavigate();
@@ -70,22 +73,20 @@ const TemplatesList = () => {
         }
     };
 
-    // Filter templates by search
+    // Filter templates
     const filteredTemplates = templates.filter(t =>
         t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Handle delete
+    // Actions
     const handleDelete = async () => {
         if (!templateToDelete) return;
-
         try {
             await templatesAPI.delete(templateToDelete.slug);
             toast.success('Template deleted');
             loadTemplates();
         } catch (error) {
-            console.error('Failed to delete template:', error);
             toast.error('Failed to delete template');
         } finally {
             setDeleteDialogOpen(false);
@@ -93,7 +94,6 @@ const TemplatesList = () => {
         }
     };
 
-    // Handle duplicate
     const handleDuplicate = async (template) => {
         try {
             const newTemplate = {
@@ -102,6 +102,7 @@ const TemplatesList = () => {
                 slug: `${template.slug}-copy-${Date.now()}`,
                 is_default: false,
             };
+            // Clean ID and timestamps
             delete newTemplate.id;
             delete newTemplate.created_at;
             delete newTemplate.updated_at;
@@ -110,200 +111,227 @@ const TemplatesList = () => {
             toast.success('Template duplicated');
             loadTemplates();
         } catch (error) {
-            console.error('Failed to duplicate template:', error);
             toast.error('Failed to duplicate template');
         }
     };
 
-    // Handle set as default
     const handleSetDefault = async (template) => {
         try {
-            // First, unset any existing default
-            for (const t of templates.filter(t => t.is_default)) {
-                await templatesAPI.update(t.slug, { is_default: false });
+            const currentDefault = templates.find(t => t.is_default);
+            if (currentDefault) {
+                await templatesAPI.update(currentDefault.slug, { is_default: false });
             }
-            // Set new default
             await templatesAPI.update(template.slug, { is_default: true });
-            toast.success(`${template.name} set as default`);
+            toast.success('Default template updated');
             loadTemplates();
         } catch (error) {
-            console.error('Failed to set default:', error);
-            toast.error('Failed to set default template');
+            toast.error('Failed to update default template');
         }
     };
 
+    // Render loading skeletons
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <div className="space-y-8 p-8 max-w-[1600px] mx-auto">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                        <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+                        <div className="h-4 w-64 bg-muted/50 animate-pulse rounded" />
+                    </div>
+                    <div className="h-10 w-32 bg-muted animate-pulse rounded" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                        <div key={i} className="aspect-[2/3] bg-muted/30 animate-pulse rounded-xl border border-muted" />
+                    ))}
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="space-y-8 p-8 max-w-[1600px] mx-auto min-h-screen bg-background text-foreground">
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Pin Templates</h1>
-                    <p className="text-muted-foreground">
-                        Create and manage Pinterest pin templates
+                    <h1 className="text-3xl font-bold tracking-tight">Pin Templates</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Design and manage professional Pinterest templates for your recipes
                     </p>
                 </div>
-                <Button onClick={() => navigate('/templates/new')}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Template
+                <Button
+                    onClick={() => navigate('/templates/new')}
+                    size="lg"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+                >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Create Template
                 </Button>
             </div>
 
-            {/* Search */}
-            <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search templates..."
-                    className="pl-9"
-                />
+            {/* Filters & Search */}
+            <div className="flex items-center gap-4 bg-muted/30 p-2 rounded-xl border border-border/50 backdrop-blur-sm">
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search templates..."
+                        className="pl-9 bg-background/50 border-transparent focus:bg-background transition-all"
+                    />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground ml-auto px-2">
+                    <Palette className="w-4 h-4" />
+                    <span>{filteredTemplates.length} Templates</span>
+                </div>
             </div>
 
-            {/* Templates Grid */}
+            {/* Grid */}
             {filteredTemplates.length === 0 ? (
-                <Card className="p-12 text-center">
-                    <LayoutTemplate className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <h3 className="font-medium mb-2">No templates yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                        Create your first Pinterest pin template to get started
+                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-800 rounded-3xl bg-zinc-900/20">
+                    <div className="h-20 w-20 bg-zinc-900 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-black/20">
+                        <LayoutTemplate className="w-10 h-10 text-zinc-700" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">No templates found</h3>
+                    <p className="text-muted-foreground max-w-sm text-center mb-8">
+                        {searchQuery
+                            ? "Try adjusting your search terms to find what you're looking for."
+                            : "Create your first template to start generating beautiful pins automatically."}
                     </p>
-                    <Button onClick={() => navigate('/templates/new')}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Template
+                    <Button onClick={() => navigate('/templates/new')} variant="outline">
+                        Create New Template
                     </Button>
-                </Card>
+                </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {filteredTemplates.map((template) => (
                         <Card
                             key={template.id}
-                            className="group cursor-pointer hover:border-primary/50 transition-colors"
-                            onClick={() => navigate(`/templates/${template.slug}`)}
+                            className={cn(
+                                "group relative overflow-hidden bg-card hover:shadow-2xl hover:shadow-black/40 transition-all duration-300 hover:-translate-y-1 border-0 ring-1 ring-border/20 p-0 gap-0",
+                                template.is_default && "ring-2 ring-primary/50"
+                            )}
                         >
-                            {/* Preview */}
+                            {/* Card Image Area */}
                             <div
-                                className="aspect-[2/3] rounded-t-lg bg-muted flex items-center justify-center overflow-hidden"
+                                className="aspect-[2/3] relative bg-muted/50 overflow-hidden cursor-pointer"
+                                onClick={() => navigate(`/templates/${template.slug}`)}
                                 style={{ backgroundColor: template.background_color }}
                             >
                                 {template.thumbnail_url ? (
                                     <img
                                         src={template.thumbnail_url}
                                         alt={template.name}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        loading="lazy"
                                     />
                                 ) : (
-                                    <LayoutTemplate className="w-16 h-16 text-muted-foreground opacity-30" />
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 opacity-30">
+                                        <LayoutTemplate className="w-16 h-16" />
+                                        <span className="text-sm font-medium">No Preview</span>
+                                    </div>
+                                )}
+
+                                {/* Overlay Gradient */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                {/* Floating Action Buttons - Edit & Delete */}
+                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                    <Button
+                                        size="icon"
+                                        variant="secondary"
+                                        className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-black/50 hover:bg-black/70 border border-white/20"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/templates/${template.slug}`);
+                                        }}
+                                        title="Edit Template"
+                                    >
+                                        <Edit3 className="w-4 h-4 text-white" />
+                                    </Button>
+                                    <Button
+                                        size="icon"
+                                        variant="secondary"
+                                        className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-black/50 hover:bg-black/70 border border-white/20"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDuplicate(template);
+                                        }}
+                                        title="Duplicate Template"
+                                    >
+                                        <Copy className="w-4 h-4 text-white" />
+                                    </Button>
+                                    <Button
+                                        size="icon"
+                                        variant="secondary"
+                                        className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-red-500/80 hover:bg-red-600 border border-white/20"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setTemplateToDelete(template);
+                                            setDeleteDialogOpen(true);
+                                        }}
+                                        title="Delete Template"
+                                    >
+                                        <Trash2 className="w-4 h-4 text-white" />
+                                    </Button>
+                                </div>
+
+                                {/* Default Badge */}
+                                {!!template.is_default && (
+                                    <div className="absolute top-3 left-3">
+                                        <Badge className="bg-yellow-500/90 hover:bg-yellow-500 border-none shadow-lg text-black font-semibold backdrop-blur-sm">
+                                            <Star className="w-3 h-3 mr-1 fill-black" /> Default
+                                        </Badge>
+                                    </div>
                                 )}
                             </div>
 
-                            <CardHeader className="py-3">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1 min-w-0">
-                                        <CardTitle className="text-sm flex items-center gap-2">
+                            {/* Card Footer Info */}
+                            < div className="px-2 py-3 bg-card group-hover:bg-muted/30 transition-colors" >
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="font-medium truncate text-sm text-foreground/90 group-hover:text-primary transition-colors">
                                             {template.name}
-                                            {template.is_default && (
-                                                <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                                            )}
-                                        </CardTitle>
+                                        </h3>
                                         {template.description && (
-                                            <CardDescription className="text-xs truncate">
+                                            <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
                                                 {template.description}
-                                            </CardDescription>
+                                            </p>
                                         )}
                                     </div>
-
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger
-                                            onClick={(e) => e.stopPropagation()}
-                                            asChild
-                                        >
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 opacity-0 group-hover:opacity-100"
-                                            >
-                                                <MoreVertical className="w-4 h-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate(`/templates/${template.slug}`);
-                                                }}
-                                            >
-                                                <Edit className="w-4 h-4 mr-2" />
-                                                Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDuplicate(template);
-                                                }}
-                                            >
-                                                <Copy className="w-4 h-4 mr-2" />
-                                                Duplicate
-                                            </DropdownMenuItem>
-                                            {!template.is_default && (
-                                                <DropdownMenuItem
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleSetDefault(template);
-                                                    }}
-                                                >
-                                                    <Star className="w-4 h-4 mr-2" />
-                                                    Set as Default
-                                                </DropdownMenuItem>
-                                            )}
-                                            <DropdownMenuItem
-                                                className="text-destructive"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setTemplateToDelete(template);
-                                                    setDeleteDialogOpen(true);
-                                                }}
-                                            >
-                                                <Trash2 className="w-4 h-4 mr-2" />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    <div className="flex items-center text-[10px] text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-md whitespace-nowrap">
+                                        <Clock className="w-3 h-3 mr-1" />
+                                        {new Date(template.updated_at || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    </div>
                                 </div>
-                            </CardHeader>
+                            </div>
                         </Card>
-                    ))}
-                </div>
+                    ))
+                    }
+                </div >
             )}
 
-            {/* Delete Confirmation */}
+            {/* Delete Dialog */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Template?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete "{templateToDelete?.name}". This action cannot be undone.
+                            Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-red-500 hover:bg-red-600 text-white"
                         >
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </div >
     );
 };
 

@@ -49,18 +49,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const body = await request.json();
-    const author = await createAuthor(env.DB, body);
+    const reqBody = await request.json();
+    const author = await createAuthor(env.DB, reqBody);
 
-    return new Response(JSON.stringify(author), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatSuccessResponse(author);
+    return new Response(body, { status: 201, headers });
   } catch (error) {
     console.error('Error creating author:', error);
-    return new Response(JSON.stringify({ error: 'Failed to create author' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const { body, status, headers } = formatErrorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to create author', 500)
+    );
+    return new Response(body, { status, headers });
   }
 };

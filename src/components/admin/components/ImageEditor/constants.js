@@ -122,10 +122,13 @@ export const TEXT_POSITIONS = [
 
 // Preset color palette for text overlay
 export const TEXT_COLORS = [
-    '#ffffff',
-    '#000000',
-    '#ff6b35',
-    '#f7931e',
-    '#4ade80',
     '#3b82f6'
 ];
+
+// Compression Quality Presets
+export const QUALITY_PRESETS = {
+    low: { quality: 0.6, label: 'Low (Smallest file)' },
+    medium: { quality: 0.75, label: 'Medium (Balanced)' },
+    high: { quality: 0.85, label: 'High (Best quality)' },
+    original: { quality: 0.92, label: 'Original (Minimal compression)' },
+};

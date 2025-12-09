@@ -13,7 +13,10 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
     const { slug } = params;
 
     if (!slug) {
-        return new Response(JSON.stringify({ error: 'Slug is required' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     try {
@@ -56,7 +59,10 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
     const { slug } = params;
 
     if (!slug) {
-        return new Response(JSON.stringify({ error: 'Slug is required' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     try {
@@ -97,19 +103,22 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
         const author = await updateAuthor(env.DB, slug, body);
 
         if (!author) {
-            return new Response(JSON.stringify({ error: 'Author not found' }), { status: 404 });
+            const { body: errBody, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Author not found', 404)
+            );
+            return new Response(errBody, { status, headers });
         }
 
-        return new Response(JSON.stringify(author), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const { body: respBody, status, headers } = formatSuccessResponse(author);
+        return new Response(respBody, { status, headers });
     } catch (error) {
         console.error('Error updating author:', error);
-        return new Response(JSON.stringify({ error: 'Failed to update author' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const { body, status, headers } = formatErrorResponse(
+            error instanceof AppError
+                ? error
+                : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to update author', 500)
+        );
+        return new Response(body, { status, headers });
     }
 };
 
@@ -117,7 +126,10 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
     const { slug } = params;
 
     if (!slug) {
-        return new Response(JSON.stringify({ error: 'Slug is required' }), { status: 400 });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+        );
+        return new Response(body, { status, headers });
     }
 
     try {
@@ -132,18 +144,21 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
         const success = await deleteAuthor(env.DB, slug);
 
         if (!success) {
-            return new Response(JSON.stringify({ error: 'Author not found or failed to delete' }), { status: 404 });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Author not found or failed to delete', 404)
+            );
+            return new Response(body, { status, headers });
         }
 
-        return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const { body, status, headers } = formatSuccessResponse({ deleted: true });
+        return new Response(body, { status, headers });
     } catch (error) {
         console.error('Error deleting author:', error);
-        return new Response(JSON.stringify({ error: 'Failed to delete author' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const { body, status, headers } = formatErrorResponse(
+            error instanceof AppError
+                ? error
+                : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to delete author', 500)
+        );
+        return new Response(body, { status, headers });
     }
 };
