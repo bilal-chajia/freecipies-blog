@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE, SNAP_THRESHOLD } from '../utils/canvasConstants';
+import { SNAP_THRESHOLD } from '../utils/canvasConstants';
 
 /**
  * useSmartGuides - Custom hook for Canva-style smart alignment guides
@@ -11,20 +11,25 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE, SNAP_THRESHOLD } from '../utils
  * 
  * @param {Object} options - Configuration
  * @param {boolean} options.showGrid - Whether grid snapping is enabled
+ * @param {number} options.canvasWidth - Dynamic canvas width
+ * @param {number} options.canvasHeight - Dynamic canvas height
  * @param {Function} options.onElementChange - Callback when element position changes
  * @returns {Object} - Guide state and drag handlers
  */
-const useSmartGuides = ({ showGrid = false, onElementChange }) => {
+const useSmartGuides = ({ showGrid = false, canvasWidth = 1000, canvasHeight = 1500, onElementChange }) => {
     // Active guide lines to render
     const [guides, setGuides] = useState([]);
+
+    // Dynamic grid size: divide canvas into 20 columns (matches renderGrid)
+    const gridSize = canvasWidth / 20;
 
     /**
      * Snap value to grid
      */
     const snapToGrid = useCallback((value) => {
         if (!showGrid) return value;
-        return Math.round(value / GRID_SIZE) * GRID_SIZE;
-    }, [showGrid]);
+        return Math.round(value / gridSize) * gridSize;
+    }, [showGrid, gridSize]);
 
     /**
      * Get line guide stops (canvas edges and center)
@@ -32,10 +37,10 @@ const useSmartGuides = ({ showGrid = false, onElementChange }) => {
      */
     const getLineGuideStops = useCallback((skipShape) => {
         return {
-            vertical: [0, CANVAS_WIDTH / 2, CANVAS_WIDTH],
-            horizontal: [0, CANVAS_HEIGHT / 2, CANVAS_HEIGHT],
+            vertical: [0, canvasWidth / 2, canvasWidth],
+            horizontal: [0, canvasHeight / 2, canvasHeight],
         };
-    }, []);
+    }, [canvasWidth, canvasHeight]);
 
     /**
      * Get object snapping edges for a Konva node
@@ -62,7 +67,7 @@ const useSmartGuides = ({ showGrid = false, onElementChange }) => {
 
     /**
      * Handle drag move with smart guides
-     * Snaps to grid or canvas guides during drag
+     * Snaps to grid AND canvas guides during drag
      */
     const handleDragMove = useCallback((e) => {
         const node = e.target;
@@ -70,13 +75,12 @@ const useSmartGuides = ({ showGrid = false, onElementChange }) => {
         // Clear previous guides
         setGuides([]);
 
-        // If grid is on, prioritize grid snapping
+        // Apply grid snapping first if enabled
         if (showGrid) {
             node.position({
                 x: snapToGrid(node.x()),
                 y: snapToGrid(node.y()),
             });
-            return;
         }
 
         // --- Smart Snapping Logic ---
@@ -153,6 +157,56 @@ const useSmartGuides = ({ showGrid = false, onElementChange }) => {
         guides,
         handleDragMove,
         handleDragEnd,
+        handleTransformMove: useCallback((e) => {
+            const node = e.target;
+
+            // Get the bounding box of the transformed element
+            const boundBox = node.getClientRect();
+
+            // Calculate actual position and size after transform
+            const x = node.x();
+            const y = node.y();
+            const width = node.width() * node.scaleX();
+            const height = node.height() * node.scaleY();
+
+            const newGuides = [];
+            const guideLines = {
+                vertical: [0, canvasWidth / 2, canvasWidth],
+                horizontal: [0, canvasHeight / 2, canvasHeight],
+            };
+
+            // Check all edges of the element for snapping
+            const elementEdges = {
+                vertical: [x, x + width / 2, x + width],
+                horizontal: [y, y + height / 2, y + height],
+            };
+
+            // Find vertical guides (X axis)
+            elementEdges.vertical.forEach((edge) => {
+                guideLines.vertical.forEach((line) => {
+                    if (Math.abs(edge - line) < SNAP_THRESHOLD) {
+                        newGuides.push({
+                            orientation: 'V',
+                            lineGuide: line,
+                        });
+                    }
+                });
+            });
+
+            // Find horizontal guides (Y axis)
+            elementEdges.horizontal.forEach((edge) => {
+                guideLines.horizontal.forEach((line) => {
+                    if (Math.abs(edge - line) < SNAP_THRESHOLD) {
+                        newGuides.push({
+                            orientation: 'H',
+                            lineGuide: line,
+                        });
+                    }
+                });
+            });
+
+            setGuides(newGuides);
+        }, [canvasWidth, canvasHeight]),
         clearGuides,
         snapToGrid,
     };

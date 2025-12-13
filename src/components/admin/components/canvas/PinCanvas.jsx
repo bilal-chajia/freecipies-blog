@@ -51,6 +51,8 @@ const PinCanvas = ({
 
     // Container dimensions for responsive Stage
     const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+    const [isRotating, setIsRotating] = useState(false);
+    const [hoveredRotationHandle, setHoveredRotationHandle] = useState(false);
 
     // Use store for selection state (enables multi-select)
     const selectedIds = useEditorStore(state => state.selectedIds);
@@ -366,10 +368,13 @@ const PinCanvas = ({
         guides,
         handleDragMove,
         handleDragEnd: smartGuideDragEnd,
+        handleTransformMove,
         clearGuides,
         snapToGrid
     } = useSmartGuides({
         showGrid,
+        canvasWidth,
+        canvasHeight,
         onElementChange: handleElementChange
     });
 
@@ -453,27 +458,33 @@ const PinCanvas = ({
     const renderGrid = () => {
         if (!showGrid) return null;
 
+        // Dynamic grid size: divide canvas into 20 columns
+        const gridSize = canvasWidth / 20;
         const lines = [];
+
         // Vertical lines
-        for (let i = 0; i <= canvasWidth / GRID_SIZE; i++) {
+        for (let i = 0; i <= 20; i++) {
             lines.push(
                 <Line
                     key={`v${i}`}
-                    points={[i * GRID_SIZE, 0, i * GRID_SIZE, canvasHeight]}
-                    stroke="rgba(255,255,255,0.1)"
-                    strokeWidth={1}
+                    points={[i * gridSize, 0, i * gridSize, canvasHeight]}
+                    stroke="rgba(255, 0, 0, 0.7)"
+                    strokeWidth={0.8}
+                    dash={[2, 4]}
                     listening={false}
                 />
             );
         }
-        // Horizontal lines
-        for (let i = 0; i <= canvasHeight / GRID_SIZE; i++) {
+        // Horizontal lines - same spacing as vertical for uniform squares
+        const numHorizontal = Math.ceil(canvasHeight / gridSize);
+        for (let i = 0; i <= numHorizontal; i++) {
             lines.push(
                 <Line
                     key={`h${i}`}
-                    points={[0, i * GRID_SIZE, canvasWidth, i * GRID_SIZE]}
-                    stroke="rgba(255,255,255,0.1)"
-                    strokeWidth={1}
+                    points={[0, i * gridSize, canvasWidth, i * gridSize]}
+                    stroke="rgba(255, 0, 0, 0.7)"
+                    strokeWidth={0.8}
+                    dash={[2, 4]}
                     listening={false}
                 />
             );
@@ -484,8 +495,8 @@ const PinCanvas = ({
     // Render Smart Guides - Modern Canva Pro style
     const renderSmartGuides = () => {
         // Vibrant magenta/pink for guides (distinct from cyan selection)
-        const guideColor = '#ff3366';
-        const glowColor = '#ff3366';
+        const guideColor = '#5900ffff';
+        const glowColor = '#5900ffff';
 
         return guides.flatMap((guide, i) => {
             if (guide.orientation === 'V') {
@@ -495,8 +506,8 @@ const PinCanvas = ({
                         key={`guide-v-glow-${i}`}
                         points={[guide.lineGuide, 0, guide.lineGuide, canvasHeight]}
                         stroke={glowColor}
-                        strokeWidth={4}
-                        opacity={0.3}
+                        strokeWidth={3}
+                        opacity={0.7}
                         listening={false}
                     />,
                     // Main line (solid, crisp)
@@ -504,7 +515,7 @@ const PinCanvas = ({
                         key={`guide-v-${i}`}
                         points={[guide.lineGuide, 0, guide.lineGuide, canvasHeight]}
                         stroke={guideColor}
-                        strokeWidth={1}
+                        strokeWidth={3}
                         listening={false}
                     />,
                 ];
@@ -1055,14 +1066,11 @@ const PinCanvas = ({
                             shadowOffset={{ x: 0, y: 10 }}
                         />
 
-                        {/* Grid overlay */}
-                        {renderGrid()}
-
                         {/* Render all elements (clipped to canvas) */}
                         {elements.map(renderElement)}
 
-                        {/* Smart Guides overlay */}
-                        {renderSmartGuides()}
+                        {/* Grid overlay - rendered ON TOP of elements */}
+                        {renderGrid()}
                     </Group>
                 </Layer>
 
@@ -1072,7 +1080,11 @@ const PinCanvas = ({
                         <Transformer
                             ref={transformerRef}
                             onTransformStart={handleTransformStart}
-                            onTransformEnd={() => setIsTransforming(false)}
+                            onTransform={handleTransformMove}
+                            onTransformEnd={() => {
+                                setIsTransforming(false);
+                                clearGuides();
+                            }}
                             boundBoxFunc={(oldBox, newBox) => {
                                 if (newBox.width < 20 || newBox.height < 20) {
                                     return oldBox;
@@ -1096,8 +1108,14 @@ const PinCanvas = ({
                             enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']}
                             keepRatio={false}
                             ignoreStroke={true}
+                            padding={5}
                         />
                     )}
+                </Layer>
+
+                {/* Smart Guides Layer - ABOVE Transformer for visibility */}
+                <Layer x={canvasOffsetX} y={canvasOffsetY}>
+                    {renderSmartGuides()}
                 </Layer>
 
                 {/* Custom Rotation Handle Layer - same coordinate system as Transformer */}
@@ -1116,12 +1134,26 @@ const PinCanvas = ({
                                 rotation={rotation}
                             >
                                 {/* The Handle Group - positioned relative to element origin */}
+                                {/* Using React.useState for local hover state inside the IIFE-like render prop is tricky because hooks must be at top level. 
+                                    However, since we are inside a function component's render flow (PinCanvas), we can use a state declared at top level.
+                                    Let's use a new state 'hoveredRotationHandle' declared at PinCanvas level.
+                                */}
                                 <Group
                                     draggable
-                                    x={(selectedElement.width || 100) + 25}
-                                    y={(selectedElement.height || 100) / 2}
+                                    x={((selectedElement.width || 100) * (selectedElement.scaleX || 1)) + (40 / actualScale)}
+                                    y={((selectedElement.height || 100) * (selectedElement.scaleY || 1)) / 2}
+                                    scaleX={1 / actualScale}
+                                    scaleY={1 / actualScale}
+                                    opacity={isRotating ? 0 : 1}
+                                    onMouseEnter={() => setHoveredRotationHandle(true)}
+                                    onMouseLeave={() => setHoveredRotationHandle(false)}
                                     onDragStart={(e) => {
                                         e.cancelBubble = true;
+                                        setIsRotating(true);
+                                    }}
+                                    onDragEnd={(e) => {
+                                        e.cancelBubble = true;
+                                        setIsRotating(false);
                                     }}
                                     onDragMove={(e) => {
                                         e.cancelBubble = true;
@@ -1133,83 +1165,29 @@ const PinCanvas = ({
                                         const pointerX = pointer.x / actualScale - canvasOffsetX;
                                         const pointerY = pointer.y / actualScale - canvasOffsetY;
 
-                                        // Center of element (pivot point)
-                                        // For rotation, we need the stage-relative center of the element.
-                                        // Since we are inside a Layer with canvasOffset, we just need the element center
-                                        // relative to the Layer origin.
-                                        // But the element x,y is the top-left corner (usually).
-                                        // Wait, if we assume transform origin is center, then logic changes.
-                                        // PinCanvas elements seem to rotate around center? 
-                                        // Konva default is top-left unless offsetX/Y is set.
-                                        // But our Transformer handles rotation around CENTER usually.
-                                        // Let's assume standard center rotation:
+                                        // CURRENT state
+                                        // Account for element scale & zoom for robust positioning/gap
+                                        const elScaleX = selectedElement.scaleX || 1;
+                                        const elScaleY = selectedElement.scaleY || 1;
+                                        const w = (selectedElement.width || 100) * elScaleX;
+                                        const h = (selectedElement.height || 100) * elScaleY;
 
-                                        const w = selectedElement.width || 100;
-                                        const h = selectedElement.height || 100;
+                                        // Gap should be constant in SCREEN PIXELS (e.g. 40px)
+                                        // So in canvas units, it must be 40 / actualScale
+                                        const gap = 40 / actualScale;
+                                        const currRotRad = (selectedElement.rotation || 0) * Math.PI / 180;
 
-                                        // Center relative to element x,y
-                                        const cxLocal = w / 2;
-                                        const cyLocal = h / 2;
+                                        // 1. Find current Center Point (C) based on top-left (x,y) and current rotation
+                                        // Standard formula for point rotated around origin (0,0) shifted by x,y:
+                                        // P_rotated = (x,y) + Rot(P_local)
+                                        // Center local is (w/2, h/2)
+                                        // Rot(x,y) = (x cos - y sin, x sin + y cos)
+                                        const cx = selectedElement.x + (w / 2) * Math.cos(currRotRad) - (h / 2) * Math.sin(currRotRad);
+                                        const cy = selectedElement.y + (w / 2) * Math.sin(currRotRad) + (h / 2) * Math.cos(currRotRad);
 
-                                        // Center in global coords (inside this layer)
-                                        // We need to account for the CURRENT rotation to find the center?
-                                        // No, x,y is usually the top-left of the unrotated box in Konva?
-                                        // Actually, if we rotate around center, x,y usually shifts in Konva if using the transformer?
-                                        // NO, Konva default transformer rotates around center but keeps x,y effectively such that visual center matches.
-                                        // Let's rely on: Center = x + width/2 rotated?
-
-                                        // Simpler: Center is roughly bounding box center.
-                                        // Let's use the node's getClientRect if available, or just math.
-                                        // Math:
-                                        // Unrotated center = x + w/2, y + h/2.
-                                        // If we rotate around center, the center STAYS at x + w/2, y + h/2? 
-                                        // Yes, if pivot is center.
-                                        // But Konva elements pivot at (0,0) [top-left] unless offset is set.
-                                        // If using centered scaling/rotation, offset is usually set to w/2, h/2.
-                                        // We don't seem to set offsetX/Y on elements in PinCanvas usually (default 0,0).
-                                        // So the element rotates around top-left (0,0).
-                                        // BUT Transformer defaults to center rotation by adjusting x/y!
-                                        // So `x` and `y` CHANGE when you rotate with transformer to compensate.
-                                        // This means the visual center is ALWAYS roughly `x + (w/2 rotated) + (h/2 rotated)`.
-
-                                        // Let's calculate the "Visual Center":
-                                        const cos = Math.cos(rad);
-                                        const sin = Math.sin(rad);
-
-                                        // Center relative to x,y (0,0)
-                                        // cx = w/2, cy = h/2.
-                                        // Rotated: 
-                                        const rx = cxLocal * cos - cyLocal * sin;
-                                        const ry = cxLocal * sin + cyLocal * cos;
-
-                                        const centerX = selectedElement.x + rx;
-                                        const centerY = selectedElement.y + ry;
-
-                                        // But wait, if Transformer adjusts x/y to simulate center rotation while pivot is 0,0:
-                                        // Then `selectedElement.x` IS the top-left corner reference?
-                                        // It's tricky.
-                                        // Let's try simpler: Just standard atan2 from (element.x + w/2, element.y + h/2).
-                                        // If it's wrong, it will be offset.
-                                        // Testing shows Konva Transformer usually shifts x/y so the object rotates around center.
-                                        // So (x + w/2, y + h/2) might NOT be the center if it's rotated.
-
-                                        // Let's assume simpler method:
-                                        // The angle is from the Visual Center.
-                                        // We can use the node's absolute transforms if we had ref. We don't.
-                                        // Let's try the simple math first:
-
-                                        const centerX_approx = selectedElement.x + (w / 2 * cos - h / 2 * sin); // This assumes x,y is rotated top-left?
-                                        // Actually, let's just use the pointer vs the "Group" position (x,y)
-                                        // The group is at x,y.
-                                        // We can calculate angle from x,y? No.
-
-                                        // Let's try just standard atan2(pointer - center).
-                                        // Center = x + width/2, y + height/2 (unrotated approximation)
-                                        // If this jitters, we know why.
-
-                                        const vecX = pointerX - (selectedElement.x + w / 2); // Very rough if rotated
-                                        const vecY = pointerY - (selectedElement.y + h / 2);
-
+                                        // 2. Calculate New Rotation
+                                        const vecX = pointerX - cx;
+                                        const vecY = pointerY - cy;
                                         let newRotation = Math.atan2(vecY, vecX) * 180 / Math.PI;
 
                                         // Snap
@@ -1217,30 +1195,38 @@ const PinCanvas = ({
                                             newRotation = Math.round(newRotation / 45) * 45;
                                         }
 
-                                        handleElementChange(selectedElement.id, { rotation: newRotation });
+                                        // 3. Calculate New Top-Left (newX, newY) to keep Center (cx, cy) fixed
+                                        const newRotRad = newRotation * Math.PI / 180;
+                                        // We reverse the center calculation:
+                                        // newX = cx - Rot(w/2, h/2).x
+                                        // newY = cy - Rot(w/2, h/2).y
+                                        const newX = cx - ((w / 2) * Math.cos(newRotRad) - (h / 2) * Math.sin(newRotRad));
+                                        const newY = cy - ((w / 2) * Math.sin(newRotRad) + (h / 2) * Math.cos(newRotRad));
+
+                                        handleElementChange(selectedElement.id, {
+                                            rotation: newRotation,
+                                            x: newX,
+                                            y: newY
+                                        });
 
                                         // Keep handle in place
-                                        e.target.position({ x: (selectedElement.width || 100) + 25, y: (selectedElement.height || 100) / 2 });
+                                        e.target.position({ x: w + gap, y: h / 2 });
                                     }}
                                 >
                                     <Circle
-                                        radius={16}
-                                        fill="white"
+                                        radius={14}
+                                        fill={hoveredRotationHandle ? "#8b5cf6" : "transparent"}
                                         stroke="#8b5cf6"
-                                        strokeWidth={1}
-                                        shadowColor="black"
-                                        shadowBlur={5}
-                                        shadowOpacity={0.1}
-                                        shadowOffset={{ x: 0, y: 1 }}
+                                        strokeWidth={2}
                                     />
                                     <Path
                                         data="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8 M21 3v5h-5"
-                                        stroke="#8b5cf6"
-                                        strokeWidth={1.5}
-                                        scaleX={0.8}
-                                        scaleY={0.8}
-                                        x={-9.5}
-                                        y={-9.5}
+                                        stroke={hoveredRotationHandle ? "white" : "#8b5cf6"}
+                                        strokeWidth={3}
+                                        scaleX={0.6}
+                                        scaleY={0.6}
+                                        x={-6.5}
+                                        y={-6.5}
                                     />
                                 </Group>
                             </Group>
@@ -1251,7 +1237,7 @@ const PinCanvas = ({
 
             {/* Floating Toolbar - Canva-style context actions */}
             <AnimatePresence>
-                {editable && selectedIds.size === 1 && !editingTextId && !isDragging && !isTransforming && (() => {
+                {editable && selectedIds.size === 1 && !editingTextId && !isDragging && !isTransforming && !isRotating && (() => {
                     const selectedElement = elements.find(el => el.id === [...selectedIds][0]);
                     if (!selectedElement) return null;
                     return (

@@ -19,7 +19,10 @@ import {
     MoveUp,
     MoveDown,
     Image as ImageIcon,
-    Maximize2
+    Maximize2,
+    Eye,
+    EyeOff,
+    Grid
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,7 +54,7 @@ const CANVAS_PRESETS = [
     { name: 'Twitter Post', width: 1200, height: 675, ratio: '16:9' },
 ];
 
-const TopToolbar = ({ onExport, onPreview }) => {
+const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
     const navigate = useNavigate();
 
     // Store selectors
@@ -65,6 +68,8 @@ const TopToolbar = ({ onExport, onPreview }) => {
     const canRedo = useEditorStore(state => state.canRedo);
     const hasUnsavedChanges = useEditorStore(state => state.hasUnsavedChanges);
     const isSaving = useEditorStore(state => state.isSaving);
+    const showGrid = useEditorStore(state => state.showGrid);
+    const toggleGrid = useEditorStore(state => state.toggleGrid);
     const getFirstSelectedElement = useEditorStore(state => state.getFirstSelectedElement);
     const updateElement = useEditorStore(state => state.updateElement);
     const deleteSelected = useEditorStore(state => state.deleteSelected);
@@ -181,28 +186,8 @@ const TopToolbar = ({ onExport, onPreview }) => {
     // Render context-aware controls based on selected element
     const renderContextControls = () => {
         if (!selectedElement) {
-            // Canvas background when nothing selected
-            return (
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-500">Background</span>
-                    <div
-                        ref={bgColorTriggerRef}
-                        className="w-6 h-6 rounded-full border border-zinc-600 cursor-pointer hover:ring-2 hover:ring-primary/50"
-                        style={{ backgroundColor: template.background_color || '#ffffff' }}
-                        onClick={() => setShowBgColorPicker(!showBgColorPicker)}
-                        role="button"
-                        aria-label="Change background color"
-                    />
-                    {showBgColorPicker && (
-                        <ColorPicker
-                            color={template.background_color || '#ffffff'}
-                            onChange={(color) => setTemplate({ background_color: color })}
-                            onClose={() => setShowBgColorPicker(false)}
-                            triggerRect={getTriggerRect(bgColorTriggerRef)}
-                        />
-                    )}
-                </div>
-            );
+            // No context controls when nothing selected (background is in Settings panel)
+            return null;
         }
 
         if (selectedElement.type === 'text') {
@@ -358,59 +343,25 @@ const TopToolbar = ({ onExport, onPreview }) => {
                 <Separator orientation="vertical" className="h-6 bg-zinc-700" />
 
                 <div className="flex flex-col justify-center">
-                    <Input
-                        value={template.name || ''}
-                        onChange={(e) => setTemplate({ name: e.target.value })}
-                        className="h-7 bg-transparent border-none text-white font-medium hover:bg-white/5 focus:bg-white/10 transition-colors w-48 px-2"
-                        placeholder="Untitled Design"
-                        aria-label="Template name"
-                    />
+                    <div className="flex items-center gap-1.5">
+                        {hasUnsavedChanges && (
+                            <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                        )}
+                        <Input
+                            value={template.name || ''}
+                            onChange={(e) => setTemplate({ name: e.target.value })}
+                            className="h-7 bg-transparent border-none text-white font-medium hover:bg-white/5 focus:bg-white/10 transition-colors w-40 px-2"
+                            placeholder="Untitled Design"
+                            aria-label="Template name"
+                        />
+                    </div>
                     <div className="flex items-center gap-2 px-2">
                         <span className="text-[10px] text-zinc-500">
-                            {hasUnsavedChanges ? 'Unsaved changes' : 'Saved'}
+                            {hasUnsavedChanges ? 'Unsaved' : 'Saved'}
                         </span>
                         {isSaving && <Loader2 className="w-3 h-3 text-zinc-500 animate-spin" />}
                     </div>
                 </div>
-
-                <Separator orientation="vertical" className="h-6 bg-zinc-700" />
-
-                {/* Canvas Size Selector */}
-                <Select
-                    value={`${template.width || template.canvas_width || 1000}x${template.height || template.canvas_height || 1500}`}
-                    onValueChange={(value) => {
-                        const preset = CANVAS_PRESETS.find(p => `${p.width}x${p.height}` === value);
-                        if (preset) {
-                            setTemplate({
-                                width: preset.width,
-                                height: preset.height,
-                                canvas_width: preset.width,
-                                canvas_height: preset.height
-                            });
-                        }
-                    }}
-                >
-                    <SelectTrigger className="w-44 h-8 bg-zinc-800 border-zinc-700 text-white text-xs">
-                        <div className="flex items-center gap-2">
-                            <Maximize2 className="w-3.5 h-3.5 text-zinc-400" />
-                            <SelectValue placeholder="Canvas Size" />
-                        </div>
-                    </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-700">
-                        {CANVAS_PRESETS.map((preset) => (
-                            <SelectItem
-                                key={`${preset.width}x${preset.height}`}
-                                value={`${preset.width}x${preset.height}`}
-                                className="text-white hover:bg-zinc-800"
-                            >
-                                <div className="flex justify-between items-center gap-4">
-                                    <span>{preset.name}</span>
-                                    <span className="text-zinc-500 text-xs">{preset.width}×{preset.height}</span>
-                                </div>
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
 
                 <Separator orientation="vertical" className="h-6 bg-zinc-700" />
 
@@ -449,8 +400,14 @@ const TopToolbar = ({ onExport, onPreview }) => {
             {/* Right: Zoom & Export */}
             <div className="flex items-center gap-3">
                 {/* Zoom Slider */}
-                <div className="flex items-center gap-2 bg-zinc-800 rounded-md px-2 py-1 border border-zinc-700">
-                    <Minus className="w-3 h-3 text-zinc-500" />
+                <div className="flex items-center gap-1 bg-zinc-800 rounded-md px-2 py-1 border border-zinc-700">
+                    <button
+                        onClick={() => handleZoomChange(zoom - 10)}
+                        className="p-1 hover:bg-zinc-700 rounded transition-colors"
+                        aria-label="Zoom out"
+                    >
+                        <Minus className="w-3 h-3 text-zinc-400 hover:text-white" />
+                    </button>
                     <input
                         type="range"
                         min="10"
@@ -463,9 +420,27 @@ const TopToolbar = ({ onExport, onPreview }) => {
                         }}
                         aria-label="Zoom level"
                     />
-                    <Plus className="w-3 h-3 text-zinc-500" />
+                    <button
+                        onClick={() => handleZoomChange(zoom + 10)}
+                        className="p-1 hover:bg-zinc-700 rounded transition-colors"
+                        aria-label="Zoom in"
+                    >
+                        <Plus className="w-3 h-3 text-zinc-400 hover:text-white" />
+                    </button>
                     <span className="w-10 text-center text-xs text-white font-mono">{Math.round(zoom)}%</span>
                 </div>
+
+                {/* Grid Toggle */}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleGrid}
+                    className={`h-8 w-8 ${showGrid ? 'text-violet-500 bg-violet-500/10' : 'text-zinc-400'} hover:text-white hover:bg-white/10`}
+                    title={showGrid ? 'Hide Grid' : 'Show Grid'}
+                    aria-label={showGrid ? 'Hide grid' : 'Show grid'}
+                >
+                    <Grid className="w-4 h-4" />
+                </Button>
 
                 <div className="flex items-center gap-1">
                     <Button
@@ -473,10 +448,10 @@ const TopToolbar = ({ onExport, onPreview }) => {
                         size="icon"
                         className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-white/10"
                         onClick={onPreview}
-                        title="Preview"
-                        aria-label="Preview template"
+                        title={isPreviewOpen ? "Close Preview" : "Preview"}
+                        aria-label={isPreviewOpen ? "Close preview" : "Preview template"}
                     >
-                        <Play className="w-4 h-4" />
+                        {isPreviewOpen ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
 
                     <Button
@@ -493,7 +468,7 @@ const TopToolbar = ({ onExport, onPreview }) => {
                     <Button
                         size="icon"
                         className="h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground"
-                        onClick={onPreview}
+                        onClick={onExportImage}
                         title="Export Image"
                         aria-label="Export as image"
                     >

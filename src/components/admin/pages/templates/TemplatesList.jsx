@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -230,123 +231,139 @@ const TemplatesList = () => {
                     </Button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                    {filteredTemplates.map((template) => (
-                        <Card
-                            key={template.id}
-                            className={cn(
-                                "group relative overflow-hidden bg-card hover:shadow-2xl hover:shadow-black/40 transition-all duration-300 hover:-translate-y-1 border-0 ring-1 ring-border/20 p-0 gap-0",
-                                template.is_default && "ring-2 ring-primary/50"
-                            )}
-                        >
-                            {/* Card Image Area */}
-                            <div
-                                className="aspect-[2/3] relative bg-muted/50 overflow-hidden cursor-pointer"
-                                onClick={() => navigate(`/templates/${template.slug}`)}
-                                style={{ backgroundColor: template.background_color }}
+                <motion.div
+                    className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
+                    layout
+                >
+                    <AnimatePresence mode="popLayout">
+                        {filteredTemplates.map((template, index) => (
+                            <motion.div
+                                key={template.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{
+                                    duration: 0.2,
+                                    delay: index * 0.03,
+                                    layout: { duration: 0.3 }
+                                }}
                             >
-                                {template.thumbnail_url && (
-                                    template.thumbnail_url.startsWith('http') ||
-                                    template.thumbnail_url.startsWith('/') ||
-                                    template.thumbnail_url.startsWith('data:')
-                                ) ? (
-                                    <img
-                                        src={template.thumbnail_url}
-                                        alt={template.name}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                        loading="lazy"
-                                        onError={(e) => {
-                                            // Hide broken image and show placeholder
-                                            e.target.style.display = 'none';
-                                            e.target.nextSibling.style.display = 'flex';
-                                        }}
-                                    />
-                                ) : null}
-                                <div
-                                    className="absolute inset-0 flex-col items-center justify-center gap-3 opacity-30"
-                                    style={{ display: template.thumbnail_url && (template.thumbnail_url.startsWith('http') || template.thumbnail_url.startsWith('/') || template.thumbnail_url.startsWith('data:')) ? 'none' : 'flex' }}
+                                <Card
+                                    className={cn(
+                                        "group relative overflow-hidden bg-card hover:shadow-2xl hover:shadow-black/40 transition-all duration-300 hover:-translate-y-1 border-0 ring-1 ring-border/20 p-0 gap-0",
+                                        template.is_default && "ring-2 ring-primary/50"
+                                    )}
                                 >
-                                    <LayoutTemplate className="w-16 h-16" />
-                                    <span className="text-sm font-medium">No Preview</span>
-                                </div>
-
-                                {/* Overlay Gradient */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                                {/* Floating Action Buttons - Edit & Delete */}
-                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                                    <Button
-                                        size="icon"
-                                        variant="secondary"
-                                        className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-black/50 hover:bg-black/70 border border-white/20"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(`/templates/${template.slug}`);
-                                        }}
-                                        title="Edit Template"
+                                    {/* Card Image Area */}
+                                    <div
+                                        className="h-48 relative bg-muted/50 overflow-hidden cursor-pointer"
+                                        onClick={() => navigate(`/templates/${template.slug}`)}
+                                        style={{ backgroundColor: template.background_color }}
                                     >
-                                        <Edit3 className="w-4 h-4 text-white" />
-                                    </Button>
-                                    <Button
-                                        size="icon"
-                                        variant="secondary"
-                                        className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-black/50 hover:bg-black/70 border border-white/20"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDuplicate(template);
-                                        }}
-                                        title="Duplicate Template"
-                                    >
-                                        <Copy className="w-4 h-4 text-white" />
-                                    </Button>
-                                    <Button
-                                        size="icon"
-                                        variant="secondary"
-                                        className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-red-500/80 hover:bg-red-600 border border-white/20"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setTemplateToDelete(template);
-                                            setDeleteDialogOpen(true);
-                                        }}
-                                        title="Delete Template"
-                                    >
-                                        <Trash2 className="w-4 h-4 text-white" />
-                                    </Button>
-                                </div>
+                                        {template.thumbnail_url && (
+                                            template.thumbnail_url.startsWith('http') ||
+                                            template.thumbnail_url.startsWith('/') ||
+                                            template.thumbnail_url.startsWith('data:')
+                                        ) ? (
+                                            <img
+                                                src={template.thumbnail_url}
+                                                alt={template.name}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    // Hide broken image and show placeholder
+                                                    e.target.style.display = 'none';
+                                                    e.target.nextSibling.style.display = 'flex';
+                                                }}
+                                            />
+                                        ) : null}
+                                        <div
+                                            className="absolute inset-0 flex-col items-center justify-center gap-3 opacity-30"
+                                            style={{ display: template.thumbnail_url && (template.thumbnail_url.startsWith('http') || template.thumbnail_url.startsWith('/') || template.thumbnail_url.startsWith('data:')) ? 'none' : 'flex' }}
+                                        >
+                                            <LayoutTemplate className="w-16 h-16" />
+                                            <span className="text-sm font-medium">No Preview</span>
+                                        </div>
 
-                                {/* Default Badge */}
-                                {!!template.is_default && (
-                                    <div className="absolute top-3 left-3">
-                                        <Badge className="bg-yellow-500/90 hover:bg-yellow-500 border-none shadow-lg text-black font-semibold backdrop-blur-sm">
-                                            <Star className="w-3 h-3 mr-1 fill-black" /> Default
-                                        </Badge>
-                                    </div>
-                                )}
-                            </div>
+                                        {/* Overlay Gradient */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                            {/* Card Footer Info */}
-                            < div className="px-2 py-3 bg-card group-hover:bg-muted/30 transition-colors" >
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                        <h3 className="font-medium truncate text-sm text-foreground/90 group-hover:text-primary transition-colors">
-                                            {template.name}
-                                        </h3>
-                                        {/* Canvas Size - below title */}
-                                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                                            {template.canvas_width || 1000}×{template.canvas_height || 1500}
-                                        </p>
+                                        {/* Floating Action Buttons - Edit & Delete */}
+                                        <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                            <Button
+                                                size="icon"
+                                                variant="secondary"
+                                                className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-black/50 hover:bg-black/70 border border-white/20"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    navigate(`/templates/${template.slug}`);
+                                                }}
+                                                title="Edit Template"
+                                            >
+                                                <Edit3 className="w-4 h-4 text-white" />
+                                            </Button>
+                                            <Button
+                                                size="icon"
+                                                variant="secondary"
+                                                className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-black/50 hover:bg-black/70 border border-white/20"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDuplicate(template);
+                                                }}
+                                                title="Duplicate Template"
+                                            >
+                                                <Copy className="w-4 h-4 text-white" />
+                                            </Button>
+                                            <Button
+                                                size="icon"
+                                                variant="secondary"
+                                                className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-red-500/80 hover:bg-red-600 border border-white/20"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setTemplateToDelete(template);
+                                                    setDeleteDialogOpen(true);
+                                                }}
+                                                title="Delete Template"
+                                            >
+                                                <Trash2 className="w-4 h-4 text-white" />
+                                            </Button>
+                                        </div>
+
+                                        {/* Default Badge */}
+                                        {!!template.is_default && (
+                                            <div className="absolute top-3 left-3">
+                                                <Badge className="bg-yellow-500/90 hover:bg-yellow-500 border-none shadow-lg text-black font-semibold backdrop-blur-sm">
+                                                    <Star className="w-3 h-3 mr-1 fill-black" /> Default
+                                                </Badge>
+                                            </div>
+                                        )}
                                     </div>
-                                    {/* Date */}
-                                    <div className="flex items-center text-[10px] text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-md whitespace-nowrap">
-                                        <Clock className="w-3 h-3 mr-1" />
-                                        {new Date(template.updated_at || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+
+                                    {/* Card Footer Info */}
+                                    < div className="px-2 py-3 bg-card group-hover:bg-muted/30 transition-colors" >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="font-medium truncate text-sm text-foreground/90 group-hover:text-primary transition-colors">
+                                                    {template.name}
+                                                </h3>
+                                                {/* Canvas Size - below title */}
+                                                <p className="text-[10px] text-muted-foreground mt-0.5">
+                                                    {template.canvas_width || 1000}×{template.canvas_height || 1500}
+                                                </p>
+                                            </div>
+                                            {/* Date */}
+                                            <div className="flex items-center text-[10px] text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-md whitespace-nowrap">
+                                                <Clock className="w-3 h-3 mr-1" />
+                                                {new Date(template.updated_at || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </Card>
-                    ))
-                    }
-                </div >
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
             )}
 
             {/* Delete Dialog */}

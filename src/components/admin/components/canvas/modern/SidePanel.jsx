@@ -43,6 +43,7 @@ const SidePanel = () => {
     const template = useEditorStore(state => state.template);
     const setTemplate = useEditorStore(state => state.setTemplate);
     const elements = useEditorStore(state => state.elements);
+    const setElements = useEditorStore(state => state.setElements);
     const selectedIds = useEditorStore(state => state.selectedIds);
     const selectElement = useEditorStore(state => state.selectElement);
     const reorderElements = useEditorStore(state => state.reorderElements);
@@ -296,6 +297,17 @@ const SidePanel = () => {
                     </div>
                 );
             case 'settings':
+                const CANVAS_PRESETS = [
+                    { name: 'Pinterest Pin', width: 1000, height: 1500 },
+                    { name: 'Pinterest Square', width: 1000, height: 1000 },
+                    { name: 'Instagram Story', width: 1080, height: 1920 },
+                    { name: 'Instagram Post', width: 1080, height: 1080 },
+                    { name: 'Facebook Post', width: 1200, height: 630 },
+                    { name: 'Twitter Post', width: 1200, height: 675 },
+                ];
+                const currentPreset = CANVAS_PRESETS.find(p =>
+                    p.width === (template.width || 1000) && p.height === (template.height || 1500)
+                );
                 return (
                     <div className="p-4 space-y-4">
                         <div className="space-y-2">
@@ -304,15 +316,6 @@ const SidePanel = () => {
                                 value={template.name || ''}
                                 onChange={(e) => setTemplate({ name: e.target.value })}
                                 className="bg-zinc-900 border-zinc-800"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">Slug</label>
-                            <Input
-                                value={template.slug || ''}
-                                onChange={(e) => setTemplate({ slug: e.target.value })}
-                                className="bg-zinc-900 border-zinc-800 font-mono text-xs"
-                                placeholder="Auto-generated"
                             />
                         </div>
                         <div className="space-y-2">
@@ -350,26 +353,103 @@ const SidePanel = () => {
                             )}
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">Dimensions</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <span className="text-[10px] text-zinc-500">Width</span>
-                                    <Input
-                                        type="number"
-                                        value={template.width || 1000}
-                                        disabled
-                                        className="bg-zinc-900/50 border-zinc-800 text-zinc-500"
-                                    />
-                                </div>
-                                <div>
-                                    <span className="text-[10px] text-zinc-500">Height</span>
-                                    <Input
-                                        type="number"
-                                        value={template.height || 1500}
-                                        disabled
-                                        className="bg-zinc-900/50 border-zinc-800 text-zinc-500"
-                                    />
-                                </div>
+                            <label className="text-xs font-medium text-muted-foreground">Canvas Size</label>
+                            <select
+                                value={`${template.width || 1000}x${template.height || 1500}`}
+                                onChange={(e) => {
+                                    const preset = CANVAS_PRESETS.find(p => `${p.width}x${p.height}` === e.target.value);
+                                    if (preset) {
+                                        // Calculate scale ratio
+                                        const oldW = template.width || 1000;
+                                        const oldH = template.height || 1500;
+                                        const scaleX = preset.width / oldW;
+                                        const scaleY = preset.height / oldH;
+
+                                        // Resize elements proportionally
+                                        const newElements = elements.map(el => ({
+                                            ...el,
+                                            x: el.x * scaleX,
+                                            y: el.y * scaleY,
+                                            width: el.width * scaleX,
+                                            height: el.height * scaleY,
+                                            fontSize: el.fontSize ? el.fontSize * Math.min(scaleX, scaleY) : el.fontSize
+                                        }));
+                                        setElements(newElements);
+
+                                        setTemplate({
+                                            width: preset.width,
+                                            height: preset.height,
+                                            canvas_width: preset.width,
+                                            canvas_height: preset.height
+                                        });
+                                    }
+                                }}
+                                className="w-full h-10 px-3 rounded-md bg-zinc-900 border border-zinc-800 text-sm text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            >
+                                {CANVAS_PRESETS.map((preset) => (
+                                    <option key={`${preset.width}x${preset.height}`} value={`${preset.width}x${preset.height}`}>
+                                        {preset.name} ({preset.width}×{preset.height})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-medium text-muted-foreground">Scale</label>
+                                <span className="text-xs text-zinc-400 font-mono">
+                                    {template.width || 1000}×{template.height || 1500}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="range"
+                                    min="10"
+                                    max="30"
+                                    step="1"
+                                    value={Math.round(((template.width || 1000) / (currentPreset?.width || 1000)) * 10)}
+                                    onChange={(e) => {
+                                        const scale = parseInt(e.target.value, 10) / 10;
+                                        const baseWidth = currentPreset?.width || 1000;
+                                        const baseHeight = currentPreset?.height || 1500;
+
+                                        const newWidth = Math.round(baseWidth * scale);
+                                        const newHeight = Math.round(baseHeight * scale);
+
+                                        // Calculate scale relative to CURRENT size (not base)
+                                        const currentW = template.width || 1000;
+                                        const currentH = template.height || 1500;
+                                        // Avoid division by zero
+                                        if (currentW === 0 || currentH === 0) return;
+
+                                        const sX = newWidth / currentW;
+                                        const sY = newHeight / currentH;
+
+                                        // Resize elements
+                                        const newElements = elements.map(el => ({
+                                            ...el,
+                                            x: el.x * sX,
+                                            y: el.y * sY,
+                                            width: el.width * sX,
+                                            height: el.height * sY,
+                                            fontSize: el.fontSize ? el.fontSize * Math.min(sX, sY) : el.fontSize
+                                        }));
+                                        setElements(newElements);
+
+                                        setTemplate({
+                                            width: newWidth,
+                                            height: newHeight,
+                                            canvas_width: newWidth,
+                                            canvas_height: newHeight
+                                        });
+                                    }}
+                                    className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                                    style={{
+                                        background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, #3f3f46 ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, #3f3f46 100%)`
+                                    }}
+                                />
+                                <span className="w-12 text-center text-xs text-white font-mono bg-zinc-800 px-2 py-1 rounded">
+                                    ×{(((template.width || 1000) / (currentPreset?.width || 1000))).toFixed(1)}
+                                </span>
                             </div>
                         </div>
                     </div>

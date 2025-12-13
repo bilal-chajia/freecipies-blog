@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
@@ -23,6 +24,29 @@ import { templatesAPI, mediaAPI } from '../../services/api';
 import { useFontLoader } from '../../utils/FontLoader';
 import useEditorStore, { CANVAS_WIDTH, CANVAS_HEIGHT } from '../../store/useEditorStore';
 
+// Helper to resize images for thumbnails
+const resizeImage = (blob, maxWidth) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            // Calculate new dimensions maintaining aspect ratio
+            const ratio = Math.min(maxWidth / img.width, 1);
+            const width = Math.round(img.width * ratio);
+            const height = Math.round(img.height * ratio);
+
+            // Draw to canvas at new size
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert to blob with compression (WebP for best size)
+            canvas.toBlob(resolve, 'image/webp', 0.7);
+        };
+        img.src = URL.createObjectURL(blob);
+    });
+};
 
 
 const MOCK_ARTICLE_DATA = {
@@ -183,12 +207,15 @@ const TemplateEditor = () => {
         if (!exportFnRef.current) return null;
 
         try {
-            // Export canvas as low quality jpeg for thumbnail
-            const blob = await exportFnRef.current('jpeg', 0.8);
+            // Export canvas as WebP for best compression
+            const blob = await exportFnRef.current('webp', 0.7);
             if (!blob) return null;
 
-            const filename = `template-thumb-${slugName}-${Date.now()}.jpg`;
-            const file = new File([blob], filename, { type: 'image/jpeg' });
+            // Resize thumbnail for smaller file size (max 400px width)
+            const resizedBlob = await resizeImage(blob, 400);
+
+            const filename = `template-thumb-${slugName}-${Date.now()}.webp`;
+            const file = new File([resizedBlob], filename, { type: 'image/webp' });
 
             // Build form data
             const formData = new FormData();
@@ -277,8 +304,9 @@ const TemplateEditor = () => {
                 const success = response.data?.success !== false;
                 if (success) {
                     toast.success('Template saved!');
-                    markSaved();
+                    // Update thumbnail first, then mark as saved (order matters!)
                     setTemplate({ thumbnail_url: templateData.thumbnail_url });
+                    markSaved();
                 }
             }
         } catch (error) {
@@ -340,9 +368,37 @@ const TemplateEditor = () => {
         }
     };
 
-    // Handle preview
+    // Export image from main canvas
+    const handleExportImage = async () => {
+        if (!exportFnRef.current) {
+            toast.error('Export not ready');
+            return;
+        }
+        try {
+            const blob = await exportFnRef.current('png', 1.0);
+            if (!blob) {
+                toast.error('Export failed');
+                return;
+            }
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const filename = template.name || template.slug || 'template';
+            link.download = `${filename}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            toast.success('Image exported!');
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error('Export failed');
+        }
+    };
+
+    // Handle preview toggle
     const handlePreview = () => {
-        setIsPreviewOpen(true);
+        setIsPreviewOpen(!isPreviewOpen);
     };
 
     // Clean up preview URL when dialog closes (not used anymore but kept for state)
@@ -362,7 +418,7 @@ const TemplateEditor = () => {
 
     return (
         <React.Fragment>
-            <EditorLayout onExport={handleSave} onPreview={handlePreview}>
+            <EditorLayout onExport={handleSave} onPreview={handlePreview} onExportImage={handleExportImage} isPreviewOpen={isPreviewOpen}>
                 <PinCanvas
                     template={template}
                     editable={true}
@@ -374,36 +430,45 @@ const TemplateEditor = () => {
                 />
             </EditorLayout>
 
-            {/* Preview Modal */}
-            <Dialog open={isPreviewOpen} onOpenChange={handlePreviewOpenChange}>
-                <DialogContent className="max-w-[90vw] max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background/95 border-none shadow-2xl">
-                    <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
-                        <div>
-                            <DialogTitle>Preview Template</DialogTitle>
-                            <DialogDescription>
-                                Preview with sample data to simulate final result.
-                            </DialogDescription>
-                        </div>
-                        <Button onClick={handleDownloadPreview} size="sm">
-                            <Download className="w-4 h-4 mr-2" />
-                            Export Pin
-                        </Button>
-                    </DialogHeader>
-                    <div className="flex-1 overflow-auto p-8 flex items-center justify-center bg-[#0a0a14]">
-                        {isPreviewOpen && (
-                            <PinCanvas
-                                template={template}
-                                articleData={MOCK_ARTICLE_DATA}
-                                editable={false}
-                                scale={0.5}
-                                zoom={100}
-                                showGrid={false}
-                                onExport={(fn) => { previewExportRef.current = fn; }}
-                            />
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Preview Panel - Slide in from right */}
+            <AnimatePresence>
+                {isPreviewOpen && (
+                    <>
+                        {/* Backdrop overlay - click to close */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 bg-black/30 z-[60]"
+                            onClick={() => setIsPreviewOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ x: '100%', opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: '100%', opacity: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="fixed right-0 top-14 bottom-0 w-[500px] bg-background/95 backdrop-blur-lg border-l border-border shadow-2xl z-[70] flex flex-col"
+                        >
+                            <div className="p-4 border-b">
+                                <h2 className="font-semibold">Preview Template</h2>
+                                <p className="text-sm text-muted-foreground">Preview with sample data</p>
+                            </div>
+                            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-zinc-900/50">
+                                <PinCanvas
+                                    template={template}
+                                    articleData={MOCK_ARTICLE_DATA}
+                                    editable={false}
+                                    scale={0.35}
+                                    zoom={100}
+                                    showGrid={false}
+                                    onExport={(fn) => { previewExportRef.current = fn; }}
+                                />
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </React.Fragment>
     );
 };

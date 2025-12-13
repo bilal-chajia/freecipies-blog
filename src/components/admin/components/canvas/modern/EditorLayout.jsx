@@ -3,7 +3,7 @@ import TopToolbar from './TopToolbar';
 import SidePanel from './SidePanel';
 import ContextToolbar from './ContextToolbar';
 
-const EditorLayout = ({ children, onExport, onPreview }) => {
+const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewOpen }) => {
     // Left mouse button panning state
     const [isPanning, setIsPanning] = useState(false);
     const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -62,7 +62,7 @@ const EditorLayout = ({ children, onExport, onPreview }) => {
     return (
         <div className="fixed inset-0 flex flex-col overflow-hidden bg-zinc-950 text-white z-50">
             {/* Top Navigation Bar */}
-            <TopToolbar onExport={onExport} onPreview={onPreview} />
+            <TopToolbar onExport={onExport} onPreview={onPreview} onExportImage={onExportImage} isPreviewOpen={isPreviewOpen} />
 
             <div className="flex-1 flex overflow-hidden">
                 {/* Left Sidebar (Icons + Drawer) */}

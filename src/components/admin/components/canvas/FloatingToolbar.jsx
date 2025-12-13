@@ -81,27 +81,61 @@ const FloatingToolbar = ({
         const elY = selectedElement.y || 0;
         const elWidth = selectedElement.width || 100;
         const elHeight = selectedElement.height || 100;
+        const rotation = (selectedElement.rotation || 0) * (Math.PI / 180);
 
-        // canvasOffset is in stage coordinate units (needs to be scaled)
-        // The element position on screen = (canvasOffset + element position) * scale
-        const screenX = (canvasOffset.x + elX + elWidth / 2) * canvasScale;
+        // Find bounding box of rotated element
+        // Canvas uses top-left origin for rotation (unless offset)
+        // We calculate all 4 corners relative to (elX, elY)
+        const cos = Math.cos(rotation);
+        const sin = Math.sin(rotation);
 
-        // Toolbar dimensions (approximate)
+        const corners = [
+            { x: 0, y: 0 },
+            { x: elWidth, y: 0 },
+            { x: elWidth, y: elHeight },
+            { x: 0, y: elHeight },
+        ].map(p => ({
+            x: elX + (p.x * cos - p.y * sin),
+            y: elY + (p.x * sin + p.y * cos)
+        }));
+
+        const minY = Math.min(...corners.map(c => c.y));
+        const maxY = Math.max(...corners.map(c => c.y));
+        const minX = Math.min(...corners.map(c => c.x));
+        const maxX = Math.max(...corners.map(c => c.x));
+        const centerX = (minX + maxX) / 2;
+
+        // canvasOffset is in stage coordinate units
+        const screenX = (canvasOffset.x + centerX) * canvasScale;
+
+        // Position relative to the HIGHEST point of the rotated element
+        const screenTopY = (canvasOffset.y + minY) * canvasScale;
+        const screenBottomY = (canvasOffset.y + maxY) * canvasScale;
+
+        // Toolbar dimensions
         const toolbarWidth = 220;
         const toolbarHeight = 44;
-        const gap = 16; // Gap between element and toolbar
+        const gap = 16;
+        const padding = 8; // Minimum distance from viewport edge
 
-        // Position ABOVE element, centered
+        // Initial position: centered horizontally, above element
         let x = screenX - toolbarWidth / 2;
-        let y = (canvasOffset.y + elY) * canvasScale - toolbarHeight - gap;
+        let y = screenTopY - toolbarHeight - gap;
 
-        // Clamp to container bounds
-        x = Math.max(8, Math.min(x, container.width - toolbarWidth - 8));
-
-        // If too close to top, position below element
-        if (y < 60) {
-            y = (canvasOffset.y + elY + elHeight) * canvasScale + gap;
+        // If above element is off-screen (top), try below element
+        if (y < padding) {
+            y = screenBottomY + gap;
         }
+
+        // --- VIEWPORT CLAMPING (Always keep visible) ---
+
+        // Clamp X: ensure it doesn't go off left or right edge
+        x = Math.max(padding, Math.min(x, container.width - toolbarWidth - padding));
+
+        // Clamp Y: ensure it doesn't go off top or bottom edge
+        // Note: We prioritize keeping it on screen over not overlapping element
+        // if the element takes up the whole screen height.
+        y = Math.max(padding, Math.min(y, container.height - toolbarHeight - padding));
 
         return { x, y };
     };
