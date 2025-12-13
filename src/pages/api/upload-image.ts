@@ -37,10 +37,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response(body, { status, headers });
     }
 
-    // Validate image
+    // Validate file (images and fonts)
     const validation = validateImage(file, {
       maxSize: 10 * 1024 * 1024, // 10MB
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+      allowedTypes: [
+        // Images
+        'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif',
+        // Fonts
+        'font/ttf', 'font/otf', 'font/woff', 'font/woff2',
+        'application/x-font-ttf', 'application/x-font-otf',
+        'application/font-woff', 'application/font-woff2',
+        'application/octet-stream' // Some browsers send fonts as this
+      ]
     });
 
     if (!validation.valid) {

@@ -48,23 +48,13 @@ CREATE TABLE IF NOT EXISTS authors (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tags Table
+-- Tags Table (Simplified - just for content organization)
 CREATE TABLE IF NOT EXISTS tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     slug TEXT UNIQUE NOT NULL,
     label TEXT NOT NULL,
-    headline TEXT NOT NULL,
-    meta_title TEXT NOT NULL,
-    meta_description TEXT NOT NULL,
-    short_description TEXT NOT NULL,
-    tldr TEXT NOT NULL,
-    image_url TEXT,
-    image_alt TEXT,
-    collection_title TEXT NOT NULL,
-    num_entries_per_page INTEGER DEFAULT 12,
-    is_online BOOLEAN DEFAULT 0,
-    is_favorite BOOLEAN DEFAULT 0,
     color TEXT DEFAULT '#ff6600',
+    is_online BOOLEAN DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

@@ -317,38 +317,21 @@ export async function incrementViewCount(
   return result.success;
 }
 
-// Tag Database Operations
+// Tag Database Operations (Simplified)
 export async function createTag(
   db: D1Database,
   tag: Partial<Tag>
 ): Promise<Tag | null> {
-  const {
-    slug, label, headline, metaTitle, metaDescription,
-    shortDescription, tldr, image, collectionTitle,
-    numEntriesPerPage, isOnline, isFavorite, color
-  } = tag;
+  const { slug, label, color, isOnline } = tag;
 
   if (!slug || !label) throw new Error('Missing required fields');
 
   await db.prepare(`
-    INSERT INTO tags (
-      slug, label, headline, meta_title, meta_description,
-      short_description, tldr, image_url, image_alt,
-      collection_title, num_entries_per_page, is_online, is_favorite, color
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tags (slug, label, color, is_online)
+    VALUES (?, ?, ?, ?)
   `).bind(
-    slug, label, headline || label, metaTitle || label, metaDescription || '',
-    shortDescription || '', tldr || '',
-    image?.url, image?.alt,
-    collectionTitle || label, numEntriesPerPage || 12,
-    isOnline ? 1 : 0, isFavorite ? 1 : 0, color || '#ff6600'
+    slug, label, color || '#ff6600', isOnline ? 1 : 1
   ).run();
-
-  // We don't have getTagBySlug yet, but we can implement it or assume it exists?
-  // Actually getTags can filter by slug if we update it, or we can just return what we created.
-  // But let's stick to pattern. I need to check if getTagBySlug exists.
-  // It doesn't seem to exist in the file content I read.
-  // I should add it or use a simple query.
 
   const { results } = await db.prepare('SELECT * FROM tags WHERE slug = ?').bind(slug).all();
   if (results.length === 0) return null;
@@ -365,18 +348,8 @@ export async function updateTag(
 
   const fields: Record<string, any> = {
     label: tag.label,
-    headline: tag.headline,
-    meta_title: tag.metaTitle,
-    meta_description: tag.metaDescription,
-    short_description: tag.shortDescription,
-    tldr: tag.tldr,
-    image_url: tag.image?.url,
-    image_alt: tag.image?.alt,
-    collection_title: tag.collectionTitle,
-    num_entries_per_page: tag.numEntriesPerPage,
-    is_online: tag.isOnline !== undefined ? (tag.isOnline ? 1 : 0) : undefined,
-    is_favorite: tag.isFavorite !== undefined ? (tag.isFavorite ? 1 : 0) : undefined,
-    color: tag.color
+    color: tag.color,
+    is_online: tag.isOnline !== undefined ? (tag.isOnline ? 1 : 0) : undefined
   };
 
   for (const [key, value] of Object.entries(fields)) {
@@ -908,20 +881,8 @@ function mapRowToTag(row: any): Tag {
     id: row.id,
     slug: row.slug,
     label: row.label,
-    headline: row.headline,
-    metaTitle: row.meta_title,
-    metaDescription: row.meta_description,
-    shortDescription: row.short_description,
-    tldr: row.tldr,
-    image: row.image_url ? {
-      url: row.image_url,
-      alt: row.image_alt,
-    } : undefined,
-    collectionTitle: row.collection_title,
-    numEntriesPerPage: row.num_entries_per_page,
-    isOnline: Boolean(row.is_online),
-    isFavorite: Boolean(row.is_favorite),
     color: row.color || '#ff6600',
+    isOnline: Boolean(row.is_online),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     route: `/tags/${row.slug}`

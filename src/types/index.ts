@@ -79,19 +79,10 @@ export interface Tag {
   id: number;
   slug: string;
   label: string;
-  headline: string;
-  metaTitle: string;
-  metaDescription: string;
-  shortDescription: string;
-  tldr: string;
-  image?: Image;
-  collectionTitle: string;
-  numEntriesPerPage: number;
-  isOnline: boolean;
-  isFavorite: boolean;
   color?: string;
+  isOnline: boolean;
   createdAt: string;
-  updatedAt: string; // ISO 8601 string
+  updatedAt: string;
   route?: string; // Derived property
 }
 

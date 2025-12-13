@@ -18,7 +18,6 @@ const CategoryEditor = lazy(() => import('./pages/categories/CategoryEditor'));
 const AuthorsList = lazy(() => import('./pages/authors/AuthorsList'));
 const AuthorEditor = lazy(() => import('./pages/authors/AuthorEditor'));
 const TagsList = lazy(() => import('./pages/tags/TagsList'));
-const TagEditor = lazy(() => import('./pages/tags/TagEditor'));
 const MediaLibrary = lazy(() => import('./pages/media/MediaLibrary'));
 const Settings = lazy(() => import('./pages/settings/Settings'));
 const Login = lazy(() => import('./pages/auth/Login'));
@@ -103,10 +102,8 @@ function AdminApp() {
               <Route path="authors/new" element={<AuthorEditor />} />
               <Route path="authors/:slug" element={<AuthorEditor />} />
 
-              {/* Tags */}
+              {/* Tags - inline editing in list */}
               <Route path="tags" element={<TagsList />} />
-              <Route path="tags/new" element={<TagEditor />} />
-              <Route path="tags/:slug" element={<TagEditor />} />
 
               {/* Media */}
               <Route path="media" element={<MediaLibrary />} />

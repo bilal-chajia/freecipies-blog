@@ -46,28 +46,8 @@ import {
 import { toast } from 'sonner';
 import MediaDialog from '../MediaDialog';
 import { mediaAPI } from '../../services/api';
-
-// Available Google Fonts
-const FONTS = [
-    { name: 'Inter', style: 'sans-serif' },
-    { name: 'Roboto', style: 'sans-serif' },
-    { name: 'Open Sans', style: 'sans-serif' },
-    { name: 'Montserrat', style: 'sans-serif' },
-    { name: 'Playfair Display', style: 'serif' },
-    { name: 'Lora', style: 'serif' },
-    { name: 'Poppins', style: 'sans-serif' },
-    { name: 'Raleway', style: 'sans-serif' },
-    { name: 'Nunito', style: 'sans-serif' },
-    { name: 'Oswald', style: 'sans-serif' },
-    { name: 'Merriweather', style: 'serif' },
-    { name: 'Dancing Script', style: 'cursive' },
-];
-
-// Preset colors
-const COLOR_PRESETS = [
-    '#ffffff', '#000000', '#f43f5e', '#f97316', '#eab308',
-    '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
-];
+import ColorPicker from '../ColorPicker';
+import { FONTS, COLOR_PRESETS } from './utils/editorConstants';
 
 /**
  * CollapsibleSection - Accordion section for property panels
@@ -92,18 +72,18 @@ const CollapsibleSection = ({ title, icon: Icon, children, defaultOpen = true })
 };
 
 /**
- * ColorInput - Color picker with presets
+ * ColorInput - Color picker with advanced picker
  */
 const ColorInput = ({ value, onChange, label }) => {
+    const [showPicker, setShowPicker] = useState(false);
     return (
-        <div className="space-y-2">
+        <div className="space-y-2 relative">
             {label && <Label className="text-xs text-muted-foreground">{label}</Label>}
             <div className="flex gap-2">
-                <input
-                    type="color"
-                    value={value || '#ffffff'}
-                    onChange={(e) => onChange(e.target.value)}
-                    className="w-10 h-10 rounded-lg border cursor-pointer bg-transparent"
+                <div
+                    className="w-10 h-10 rounded-lg border cursor-pointer hover:ring-2 hover:ring-primary/50"
+                    style={{ backgroundColor: value || '#ffffff' }}
+                    onClick={() => setShowPicker(!showPicker)}
                 />
                 <Input
                     value={value || ''}
@@ -112,17 +92,14 @@ const ColorInput = ({ value, onChange, label }) => {
                     className="flex-1 font-mono text-sm"
                 />
             </div>
-            <div className="flex gap-1 flex-wrap">
-                {COLOR_PRESETS.map((color) => (
-                    <button
-                        key={color}
-                        onClick={() => onChange(color)}
-                        className={`w-6 h-6 rounded border-2 transition-all hover:scale-110 ${value === color ? 'border-primary ring-2 ring-primary/20' : 'border-transparent'
-                            }`}
-                        style={{ backgroundColor: color }}
-                    />
-                ))}
-            </div>
+            {showPicker && (
+                <ColorPicker
+                    color={value || '#ffffff'}
+                    onChange={onChange}
+                    onClose={() => setShowPicker(false)}
+                    className="top-16 left-0 z-50"
+                />
+            )}
         </div>
     );
 };
@@ -289,25 +266,112 @@ const ElementPanel = ({
                             <div className="space-y-3">
                                 <div>
                                     <Label className="text-xs">Font Family</Label>
-                                    <Select
-                                        value={element.fontFamily || 'Inter'}
-                                        onValueChange={(v) => handleChange('fontFamily', v)}
-                                    >
-                                        <SelectTrigger className="h-9">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {FONTS.map((font) => (
-                                                <SelectItem
-                                                    key={font.name}
-                                                    value={font.name}
-                                                    style={{ fontFamily: font.name }}
-                                                >
-                                                    {font.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="space-y-2">
+                                        <Select
+                                            value={element.fontFamily || 'Inter'}
+                                            onValueChange={(v) => handleChange('fontFamily', v)}
+                                        >
+                                            <SelectTrigger className="h-9">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <div className="p-2 border-b mb-1">
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="w-full justify-start text-xs"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                document.getElementById('font-upload-input').click();
+                                                            }}
+                                                        >
+                                                            <Upload className="w-3 h-3 mr-2" />
+                                                            Upload Font
+                                                        </Button>
+                                                        <input
+                                                            id="font-upload-input"
+                                                            type="file"
+                                                            accept=".ttf,.otf,.woff,.woff2"
+                                                            className="hidden"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (!file) return;
+
+                                                                const loadingToast = toast.loading('Uploading font...');
+                                                                try {
+                                                                    // 1. Upload to R2
+                                                                    const response = await mediaAPI.upload(file, {
+                                                                        folder: 'fonts',
+                                                                        alt: file.name
+                                                                    });
+                                                                    const url = response.data?.data?.url || response.data?.url;
+
+                                                                    if (!url) throw new Error('No URL returned');
+
+                                                                    const fontName = file.name.split('.')[0];
+
+                                                                    // 2. Add to store (persisted)
+                                                                    // We need to access useEditorStore directly here as this component doesn't use the hook
+                                                                    // But wait, ElementPanel is a child of the Editor which uses the store? 
+                                                                    // Actually we can just import the store hook in this file
+                                                                    // Since we didn't add it to imports yet, let's fix imports first
+                                                                    // For now, I'll access the store instance directly via getState() for non-hook usage or add hook usage
+                                                                    const { addCustomFont } = require('../../store/useEditorStore').default.getState();
+
+                                                                    addCustomFont({ name: fontName, url });
+
+                                                                    // 3. Select it
+                                                                    handleChange('fontFamily', fontName);
+
+                                                                    toast.success(`Font ${fontName} added!`, { id: loadingToast });
+                                                                } catch (error) {
+                                                                    console.error(error);
+                                                                    toast.error('Failed to upload font', { id: loadingToast });
+                                                                }
+                                                                // Reset input
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Custom Fonts Section */}
+                                                {(() => {
+                                                    // Access custom fonts from store state directly
+                                                    const customFonts = require('../../store/useEditorStore').default.getState().customFonts || [];
+                                                    if (customFonts.length > 0) {
+                                                        return (
+                                                            <>
+                                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">Custom Fonts</div>
+                                                                {customFonts.map((font) => (
+                                                                    <SelectItem
+                                                                        key={font.name}
+                                                                        value={font.name}
+                                                                        style={{ fontFamily: font.name }}
+                                                                    >
+                                                                        {font.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 mt-1">Standard Fonts</div>
+                                                            </>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
+
+                                                {FONTS.map((font) => (
+                                                    <SelectItem
+                                                        key={font.name}
+                                                        value={font.name}
+                                                        style={{ fontFamily: font.name }}
+                                                    >
+                                                        {font.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
 
                                 <div>

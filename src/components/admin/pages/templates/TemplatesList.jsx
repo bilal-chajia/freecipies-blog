@@ -50,6 +50,7 @@ const TemplatesList = () => {
     const [templates, setTemplates] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [sizeFilter, setSizeFilter] = useState('all');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState(null);
 
@@ -74,10 +75,20 @@ const TemplatesList = () => {
     };
 
     // Filter templates
-    const filteredTemplates = templates.filter(t =>
-        t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredTemplates = templates.filter(t => {
+        // Search filter
+        const matchesSearch = t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            t.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+        // Size filter
+        if (sizeFilter === 'all') return matchesSearch;
+
+        const width = t.canvas_width || 1000;
+        const height = t.canvas_height || 1500;
+        const sizeKey = `${width}x${height}`;
+
+        return matchesSearch && sizeKey === sizeFilter;
+    });
 
     // Actions
     const handleDelete = async () => {
@@ -180,6 +191,22 @@ const TemplatesList = () => {
                         className="pl-9 bg-background/50 border-transparent focus:bg-background transition-all"
                     />
                 </div>
+
+                {/* Size Filter */}
+                <select
+                    value={sizeFilter}
+                    onChange={(e) => setSizeFilter(e.target.value)}
+                    className="h-9 px-3 rounded-md bg-background/50 border border-border/50 text-sm text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                    <option value="all">All Sizes</option>
+                    <option value="1000x1500">Pinterest Pin (1000×1500)</option>
+                    <option value="1000x1000">Square (1000×1000)</option>
+                    <option value="1080x1920">Story (1080×1920)</option>
+                    <option value="1080x1080">Instagram (1080×1080)</option>
+                    <option value="1200x630">Facebook (1200×630)</option>
+                    <option value="1200x675">Twitter (1200×675)</option>
+                </select>
+
                 <div className="flex items-center gap-2 text-sm text-muted-foreground ml-auto px-2">
                     <Palette className="w-4 h-4" />
                     <span>{filteredTemplates.length} Templates</span>
@@ -218,19 +245,30 @@ const TemplatesList = () => {
                                 onClick={() => navigate(`/templates/${template.slug}`)}
                                 style={{ backgroundColor: template.background_color }}
                             >
-                                {template.thumbnail_url ? (
+                                {template.thumbnail_url && (
+                                    template.thumbnail_url.startsWith('http') ||
+                                    template.thumbnail_url.startsWith('/') ||
+                                    template.thumbnail_url.startsWith('data:')
+                                ) ? (
                                     <img
                                         src={template.thumbnail_url}
                                         alt={template.name}
                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         loading="lazy"
+                                        onError={(e) => {
+                                            // Hide broken image and show placeholder
+                                            e.target.style.display = 'none';
+                                            e.target.nextSibling.style.display = 'flex';
+                                        }}
                                     />
-                                ) : (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 opacity-30">
-                                        <LayoutTemplate className="w-16 h-16" />
-                                        <span className="text-sm font-medium">No Preview</span>
-                                    </div>
-                                )}
+                                ) : null}
+                                <div
+                                    className="absolute inset-0 flex-col items-center justify-center gap-3 opacity-30"
+                                    style={{ display: template.thumbnail_url && (template.thumbnail_url.startsWith('http') || template.thumbnail_url.startsWith('/') || template.thumbnail_url.startsWith('data:')) ? 'none' : 'flex' }}
+                                >
+                                    <LayoutTemplate className="w-16 h-16" />
+                                    <span className="text-sm font-medium">No Preview</span>
+                                </div>
 
                                 {/* Overlay Gradient */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -293,12 +331,12 @@ const TemplatesList = () => {
                                         <h3 className="font-medium truncate text-sm text-foreground/90 group-hover:text-primary transition-colors">
                                             {template.name}
                                         </h3>
-                                        {template.description && (
-                                            <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
-                                                {template.description}
-                                            </p>
-                                        )}
+                                        {/* Canvas Size - below title */}
+                                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                                            {template.canvas_width || 1000}×{template.canvas_height || 1500}
+                                        </p>
                                     </div>
+                                    {/* Date */}
                                     <div className="flex items-center text-[10px] text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-md whitespace-nowrap">
                                         <Clock className="w-3 h-3 mr-1" />
                                         {new Date(template.updated_at || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}

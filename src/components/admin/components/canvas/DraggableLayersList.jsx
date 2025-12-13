@@ -172,6 +172,20 @@ const DraggableLayersList = ({
                         <span className="text-[10px] text-muted-foreground capitalize px-1.5 py-0.5 bg-muted rounded">
                             {el.type}
                         </span>
+
+                        {/* Lock toggle */}
+                        {onToggleLock && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleLock(el.id);
+                                }}
+                                className={`p-1 rounded hover:bg-muted transition-colors ${el.locked ? 'text-amber-500' : 'text-muted-foreground hover:text-foreground'}`}
+                                title={el.locked ? 'Unlock element' : 'Lock element'}
+                            >
+                                {el.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                            </button>
+                        )}
                     </div>
                 );
             })}

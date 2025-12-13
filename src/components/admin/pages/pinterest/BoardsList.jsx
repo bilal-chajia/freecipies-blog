@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
@@ -7,6 +8,25 @@ import { Badge } from '@/components/ui/badge.jsx';
 import { pinterestBoardsAPI } from '../../services/api';
 import ConfirmationModal from '@/components/ui/confirmation-modal.jsx';
 import { toast } from 'sonner';
+
+// Animation variants for staggered entrance
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 300, damping: 24 }
+  }
+};
 
 const BoardsList = () => {
   const [boards, setBoards] = useState([]);
@@ -70,10 +90,38 @@ const BoardsList = () => {
     setDeleteModal({ isOpen: false, boardToDelete: null });
   };
 
+  // Skeleton board card
+  const SkeletonBoard = () => (
+    <div className="border rounded-lg p-4 animate-pulse">
+      <div className="flex items-start justify-between mb-2">
+        <div className="h-6 w-32 bg-muted rounded" />
+        <div className="h-5 w-16 bg-muted rounded-full" />
+      </div>
+      <div className="h-4 w-full bg-muted rounded mb-3" />
+      <div className="h-4 w-24 bg-muted rounded mb-4" />
+      <div className="flex gap-2">
+        <div className="h-8 w-16 bg-muted rounded" />
+        <div className="h-8 w-18 bg-muted rounded" />
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="h-9 w-44 bg-muted rounded animate-pulse" />
+          <div className="flex gap-2">
+            <div className="h-10 w-24 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-28 bg-muted rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="h-10 w-full bg-muted rounded animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <SkeletonBoard key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -121,7 +169,12 @@ const BoardsList = () => {
       </div>
 
       {/* Boards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+      >
         {filteredBoards.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-muted-foreground">
@@ -130,7 +183,14 @@ const BoardsList = () => {
           </div>
         ) : (
           filteredBoards.map((board) => (
-            <div key={board.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+            <motion.div
+              key={board.id}
+              variants={itemVariants}
+              layout
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className="border rounded-lg p-4 hover:shadow-lg transition-colors"
+            >
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-bold text-lg">{board.name}</h3>
                 <Badge variant={board.is_active ? 'default' : 'secondary'}>
@@ -168,10 +228,10 @@ const BoardsList = () => {
                   </a>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))
         )}
-      </div>
+      </motion.div>
 
       {/* Confirmation Modal */}
       <ConfirmationModal

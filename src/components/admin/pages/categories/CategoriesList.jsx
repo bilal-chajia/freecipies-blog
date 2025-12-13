@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
@@ -7,6 +8,31 @@ import { Badge } from '@/components/ui/badge.jsx';
 import { categoriesAPI } from '../../services/api';
 import ConfirmationModal from '@/components/ui/confirmation-modal.jsx';
 import CategoryCard from './CategoryCard';
+
+// Animation variants for staggered entrance
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24
+    }
+  }
+};
 
 const CategoriesList = () => {
   const location = useLocation();
@@ -89,75 +115,120 @@ const CategoriesList = () => {
     setDeleteModal({ isOpen: false, categoryToDelete: null });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+  // Skeleton card component
+  const SkeletonCard = () => (
+    <div className="relative overflow-hidden rounded-xl aspect-square bg-muted animate-pulse">
+      {/* Gradient overlay skeleton */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+      {/* Bottom content skeleton */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
+        <div className="h-6 w-20 bg-white/20 rounded-full" />
+        <div className="h-3 w-full bg-white/10 rounded" />
+        <div className="h-3 w-3/4 bg-white/10 rounded" />
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">Categories</h2>
-        <Link to="/categories/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            New Category
-          </Button>
-        </Link>
-      </div>
-
-      {error && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-          <p>{error}</p>
-        </div>
-      )}
-
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search categories..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {/* Categories Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filteredCategories.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <p className="text-muted-foreground">
-              {searchTerm ? 'No categories found matching your search' : 'No categories yet. Create your first one!'}
-            </p>
+    <AnimatePresence mode="wait">
+      {loading ? (
+        <motion.div
+          key="skeleton"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="space-y-6"
+        >
+          <div className="flex items-center justify-between">
+            <div className="h-9 w-40 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-36 bg-muted rounded animate-pulse" />
           </div>
-        ) : (
-          filteredCategories.map((category) => (
-            <CategoryCard
-              key={category.slug}
-              category={category}
-              onDelete={handleDeleteClick}
-              onUpdate={handleUpdate}
-            />
-          ))
-        )}
-      </div>
+          <div className="h-10 w-full bg-muted rounded animate-pulse" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        </motion.div>
+      ) : (
 
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={deleteModal.isOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="Delete Category"
-        description={`Are you sure you want to delete "${deleteModal.categoryToDelete?.label}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
-    </div>
+        <motion.div
+          key="content"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-bold">Categories</h2>
+            <Link to="/categories/new">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                New Category
+              </Button>
+            </Link>
+          </div>
+
+          {error && (
+            <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+              <p>{error}</p>
+            </div>
+          )}
+
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search categories..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Categories Grid */}
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            key={searchTerm} // Re-trigger animation on search
+          >
+            {filteredCategories.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <p className="text-muted-foreground">
+                  {searchTerm ? 'No categories found matching your search' : 'No categories yet. Create your first one!'}
+                </p>
+              </div>
+            ) : (
+              filteredCategories.map((category) => (
+                <motion.div key={category.slug} variants={itemVariants} layout>
+                  <CategoryCard
+                    category={category}
+                    onDelete={handleDeleteClick}
+                    onUpdate={handleUpdate}
+                  />
+                </motion.div>
+              ))
+            )}
+          </motion.div>
+
+          {/* Confirmation Modal */}
+          <ConfirmationModal
+            isOpen={deleteModal.isOpen}
+            onClose={handleDeleteCancel}
+            onConfirm={handleDeleteConfirm}
+            title="Delete Category"
+            description={`Are you sure you want to delete "${deleteModal.categoryToDelete?.label}"? This action cannot be undone.`}
+            confirmText="Delete"
+            cancelText="Cancel"
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

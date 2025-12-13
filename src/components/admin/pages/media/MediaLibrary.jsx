@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/select.jsx';
 import { Slider } from '@/components/ui/slider.jsx';
 import { mediaAPI, authorsAPI } from '../../services/api';
-import { formatFileSize, isImageFile } from '../../utils/helpers';
+import { formatFileSize, isImageFile, formatDate } from '../../utils/helpers';
 import { useMediaStore } from '../../store/useStore';
 import ConfirmationModal from '../../components/ui/confirmation-modal.jsx';
 import { compressImage, QUALITY_PRESETS, formatBytes } from '../../../../utils/imageCompression.js';
@@ -322,72 +322,66 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
           </div>
 
           {/* Content Layer */}
-          <div className="relative z-10 flex flex-col h-full p-4 text-white">
-            <div className="mt-auto space-y-2">
-              <div>
-                <p className="font-bold text-lg tracking-tight text-white mb-1 truncate" title={item.filename}>
-                  {item.filename}
-                </p>
-              </div>
+          <div className="relative z-10 h-full pointer-events-none">
+            {/* Actions - Top Center, Visible on Hover */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 pointer-events-auto">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-6 w-6 bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(item.url, '_blank');
+                }}
+                title="View"
+              >
+                <Eye className="h-3 w-3" />
+              </Button>
+              {isImageFile(item.filename) && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-6 w-6 bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingImage({ source: item, context: 'library' });
+                  }}
+                  title="Edit"
+                >
+                  <Edit2 className="h-3 w-3" />
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-6 w-6 bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyUrl(item.url);
+                }}
+                title="Copy URL"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="h-6 w-6 bg-red-500/80 hover:bg-red-600/90 backdrop-blur-sm rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(item.id);
+                }}
+                title="Delete"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
-                <span className="text-xs text-gray-300 font-medium pl-1">
-                  {formatFileSize(item.sizeBytes)}
-                </span>
-                <div className="flex gap-1">
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-7 w-7 bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(item.url, '_blank');
-                    }}
-                    title="View"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  {isImageFile(item.filename) && (
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="h-7 w-7 bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm rounded-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingImage({ source: item, context: 'library' });
-                      }}
-                      title="Edit"
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-7 w-7 bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopyUrl(item.url);
-                    }}
-                    title="Copy URL"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="h-7 w-7 bg-red-500/80 hover:bg-red-600/90 backdrop-blur-sm rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(item.id);
-                    }}
-                    title="Delete"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
+            {/* File Size - Bottom Right */}
+            <div className="absolute bottom-2 right-2 z-20">
+              <span className="text-[10px] font-medium text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                {formatFileSize(item.sizeBytes)}
+              </span>
             </div>
           </div>
         </Card>
@@ -478,10 +472,33 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
     </div>
   );
 
+  // Skeleton media card
+  const SkeletonMediaCard = () => (
+    <div className="relative aspect-square rounded-lg bg-muted animate-pulse overflow-hidden">
+      <div className="absolute bottom-2 right-2 h-5 w-12 bg-white/20 rounded" />
+    </div>
+  );
+
   if (loading && media.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-9 w-40 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-64 bg-muted rounded mt-2 animate-pulse" />
+          </div>
+          <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="flex gap-4">
+          <div className="h-10 flex-1 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-24 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-24 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {[...Array(12)].map((_, i) => (
+            <SkeletonMediaCard key={i} />
+          ))}
+        </div>
       </div>
     );
   }

@@ -1,18 +1,20 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Transformer, Line } from 'react-konva';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Transformer, Line, Circle, Path } from 'react-konva';
+import { AnimatePresence } from 'motion/react';
+import useEditorStore from '../../store/useEditorStore';
+import { GRID_SIZE, SNAP_THRESHOLD } from './utils/canvasConstants';
+import { useKeyboardShortcuts, useSmartGuides, useImageLoader, getProxiedUrl } from './hooks';
+import useCustomFontLoader from './hooks/useCustomFontLoader';
+import FloatingToolbar from './FloatingToolbar';
 
-// Pin canvas dimensions (Pinterest standard)
-const CANVAS_WIDTH = 1000;
-const CANVAS_HEIGHT = 1500;
-
-// Grid size for snapping
-const GRID_SIZE = 25;
-// Snap threshold for smart guides
-const SNAP_THRESHOLD = 5;
+// Default canvas dimensions (Pinterest 2:3 ratio)
+const DEFAULT_CANVAS_WIDTH = 1000;
+const DEFAULT_CANVAS_HEIGHT = 1500;
 
 /**
  * PinCanvas - Professional Konva-based canvas for Pinterest pin design
  * Features: Transformer controls, zoom, grid, smart guides, premium UI
+ * Supports custom canvas dimensions via template.width/height
  */
 const PinCanvas = ({
     template = null,
@@ -29,163 +31,267 @@ const PinCanvas = ({
 }) => {
     const stageRef = useRef(null);
     const transformerRef = useRef(null);
-    const [elements, setElements] = useState([]);
-    const [selectedId, setSelectedId] = useState(null);
-    const [loadedImages, setLoadedImages] = useState({});
+    const containerRef = useRef(null);
 
-    // Smart guides state
-    const [guides, setGuides] = useState([]);
+    // === DYNAMIC CANVAS DIMENSIONS ===
+    // Derive canvas size from template (supports custom sizes)
+    const canvasWidth = template?.width || template?.canvas_width || DEFAULT_CANVAS_WIDTH;
+    const canvasHeight = template?.height || template?.canvas_height || DEFAULT_CANVAS_HEIGHT;
+
+    // Use store for elements (not local state)
+    const elements = useEditorStore(state => state.elements);
+    const setElements = useEditorStore(state => state.setElements);
+
+    // === IMAGE LOADER HOOK ===
+    // Replaces ~80 lines of inline image preloading logic
+    const { loadedImages, setImage: setLoadedImage } = useImageLoader({ elements, articleData });
+
+    // === CUSTOM FONT LOADER ===
+    useCustomFontLoader();
+
+    // Container dimensions for responsive Stage
+    const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+
+    // Use store for selection state (enables multi-select)
+    const selectedIds = useEditorStore(state => state.selectedIds);
+    const selectElement = useEditorStore(state => state.selectElement);
+    const toggleSelection = useEditorStore(state => state.toggleSelection);
+    const addToSelection = useEditorStore(state => state.addToSelection);
+    const updateElement = useEditorStore(state => state.updateElement);
+    const deleteSelected = useEditorStore(state => state.deleteSelected);
+    const duplicateSelected = useEditorStore(state => state.duplicateSelected);
+    const undo = useEditorStore(state => state.undo);
+    const redo = useEditorStore(state => state.redo);
+
+    // Helper to check if element is selected
+    const isSelected = (id) => selectedIds.has(id);
+    // Get first selected for single-item scenarios
+    const selectedId = selectedIds.size > 0 ? [...selectedIds][0] : null;
+
+    // Text editing state (for on-canvas text editing)
+    const [editingTextId, setEditingTextId] = useState(null);
+    const [editingTextValue, setEditingTextValue] = useState('');
+    const textareaRef = useRef(null);
+
+    // Dragging/Transforming state - to hide floating toolbar
+    const [isDragging, setIsDragging] = useState(false);
+    const [isTransforming, setIsTransforming] = useState(false);
+
+
+    // Note: clipboard state is now managed by useKeyboardShortcuts hook
+    // Note: guides state is now managed by useSmartGuides hook
 
     // Calculate actual scale based on zoom
     const actualScale = scale * (zoom / 100);
 
-    // Load template elements
+    // Track container size with ResizeObserver
     useEffect(() => {
-        if (template?.elements_json) {
-            try {
-                const parsed = typeof template.elements_json === 'string'
-                    ? JSON.parse(template.elements_json)
-                    : template.elements_json;
-                setElements(parsed);
-            } catch (e) {
-                console.error('Failed to parse template elements:', e);
-                setElements([]);
-            }
-        }
-    }, [template]);
+        const container = containerRef.current;
+        if (!container) return;
 
-    // Preload images for image slots
-    useEffect(() => {
-        const getProxiedUrl = (url) => {
-            if (!url || url.startsWith('data:') || url.startsWith('/')) return url;
-            try {
-                const urlObj = new URL(url);
-                // Check if it's already using our proxy to avoid double proxying
-                if (url.includes('/api/proxy-image')) return url;
-                if (urlObj.hostname === window.location.hostname || urlObj.hostname === 'localhost') return url;
-                return `/api/proxy-image?url=${encodeURIComponent(url)}`;
-            } catch { return url; }
+        const updateSize = () => {
+            setContainerSize({
+                width: container.clientWidth,
+                height: container.clientHeight
+            });
         };
 
-        // Load element specific images
-        elements.forEach(el => {
-            if (el.type === 'imageSlot') {
-                // Check for custom image from articleData first
-                const customUrl = articleData?.customImages?.[el.id];
-                const rawUrl = customUrl || el.imageUrl;
-                const imageUrl = getProxiedUrl(rawUrl);
+        // Initial size
+        updateSize();
 
-                // Only load if URL present and specific slot image not already loaded
-                // Note: we track loaded state by the raw URL or ID to prevent needless reloads,
-                // but we might need to be careful if user changes URL.
-                // Current logic checks specific slot ID.
+        // Watch for resize
+        const resizeObserver = new ResizeObserver(updateSize);
+        resizeObserver.observe(container);
 
-                if (imageUrl) {
-                    // Check if we need to reload (new URL or not loaded yet)
-                    const currentImg = loadedImages[el.id];
-                    // transform current src back to raw? hard.
-                    // Instead, just load if not present.
+        return () => resizeObserver.disconnect();
+    }, []);
 
-                    if (!currentImg) {
-                        const img = new window.Image();
-                        img.crossOrigin = 'anonymous';
-                        img.onload = () => {
-                            setLoadedImages(prev => ({ ...prev, [el.id]: img }));
-                        };
-                        img.onerror = () => {
-                            // If proxy fails, try direct (fallback, though unlikely to work for CORS)
-                            if (imageUrl.includes('/api/proxy-image')) {
-                                img.src = rawUrl;
-                            }
-                        };
-                        img.src = imageUrl;
+    // Elements are now managed by the store - no need to parse template here
+    // The loadTemplateToStore action handles parsing elements_json
+
+    // === TRANSFORMER CUSTOMIZATION ===
+    // Custom styling for transformer handles (Canva-like pills and circles)
+    useEffect(() => {
+        if (transformerRef.current) {
+            // Check if anchorStyleFunc is supported (Konva v9+)
+            if (typeof transformerRef.current.anchorStyleFunc === 'function') {
+                transformerRef.current.anchorStyleFunc((anchor) => {
+                    const name = anchor.name();
+
+                    // Reset standard styles
+                    anchor.fill('#ffffff');
+                    anchor.stroke('#8b5cf6');
+                    anchor.strokeWidth(1);
+
+                    // Specific shapes based on position
+                    if (name.includes('middle')) {
+                        // Side handles -> Vertical pills
+                        anchor.cornerRadius(10);
+                        anchor.width(6);
+                        anchor.height(20);
+                    } else if (name.includes('center')) {
+                        // Top/Bottom handles -> Horizontal pills
+                        anchor.cornerRadius(10);
+                        anchor.width(20);
+                        anchor.height(6);
+                    } else {
+                        // Corner handles -> Circles
+                        anchor.cornerRadius(50);
+                        anchor.width(10);
+                        anchor.height(10);
                     }
-
-                    // If custom URL provided and different from what we might have (this logic is a bit tricky with proxy)
-                    // Let's rely on the dependency array [elements, articleData] + key check
-                    if (customUrl) {
-                        // Check if we already loaded this specific custom URL
-                        // We can attach a dataset/custom prop to the Image object to track origin?
-                        // Or just compare src. 
-                        // Proxied src starts with /api...
-                        if (currentImg && !currentImg.src.includes(encodeURIComponent(customUrl)) && currentImg.src !== customUrl) {
-                            const img = new window.Image();
-                            img.crossOrigin = 'anonymous';
-                            img.onload = () => {
-                                setLoadedImages(prev => ({ ...prev, [el.id]: img }));
-                            };
-                            img.src = imageUrl;
-                        }
-                    }
-                }
+                });
             }
-        });
-
-        // Load article main image
-        if (articleData?.image && !loadedImages['article_main']) {
-            const rawUrl = articleData.image;
-            const imageUrl = getProxiedUrl(rawUrl);
-
-            const img = new window.Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
-                setLoadedImages(prev => ({ ...prev, 'article_main': img }));
-            };
-            img.src = imageUrl;
         }
-    }, [elements, loadedImages, articleData]);
+    }, [editable, selectedIds]);
+
+    // Note: Image preloading is now handled by useImageLoader hook above
 
     // Update transformer when selection changes
     useEffect(() => {
-        if (transformerRef.current && stageRef.current) {
+        if (transformerRef.current && stageRef.current && editable) {
             const stage = stageRef.current;
-            if (selectedId) {
-                const selectedNode = stage.findOne(`#${selectedId}`);
-                if (selectedNode) {
-                    // Find the element to check its type
-                    const element = elements.find(el => el.id === selectedId);
+            if (selectedIds.size > 0) {
+                // Find all selected nodes, but EXCLUDE locked elements
+                const selectedNodes = [...selectedIds]
+                    .map(id => {
+                        const element = elements.find(el => el.id === id);
+                        // Skip locked elements - they shouldn't have transformer
+                        if (element?.locked) return null;
+                        return stage.findOne(`#${id}`);
+                    })
+                    .filter(node => node !== null && node !== undefined);
 
-                    // Enable all anchors for all elements
-                    transformerRef.current.enabledAnchors(['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']);
-
-                    // Lock aspect ratio for imageSlot elements
-                    if (element?.type === 'imageSlot') {
-                        transformerRef.current.keepRatio(true);
+                if (selectedNodes.length > 0) {
+                    // For single selection, check element type for keepRatio
+                    if (selectedNodes.length === 1) {
+                        const element = elements.find(el => el.id === [...selectedIds][0]);
+                        if (element?.type === 'imageSlot') {
+                            transformerRef.current.keepRatio(true);
+                        } else {
+                            transformerRef.current.keepRatio(false);
+                        }
                     } else {
-                        transformerRef.current.keepRatio(false);
+                        // For multiple selection, use uniform scaling
+                        transformerRef.current.keepRatio(true);
                     }
 
-                    transformerRef.current.nodes([selectedNode]);
-                    transformerRef.current.getLayer().batchDraw();
+                    transformerRef.current.nodes(selectedNodes);
+                    transformerRef.current.getLayer()?.batchDraw();
+                } else {
+                    // All selected are locked, hide transformer
+                    transformerRef.current.nodes([]);
+                    transformerRef.current.getLayer()?.batchDraw();
                 }
             } else {
                 transformerRef.current.nodes([]);
-                transformerRef.current.getLayer().batchDraw();
+                transformerRef.current.getLayer()?.batchDraw();
             }
         }
-    }, [selectedId, elements]);
+    }, [selectedIds, elements, editable]);
 
-    // Handle element selection
+    // Handle element selection (with Shift support for multi-select)
     const handleSelect = (id, e) => {
         if (e) e.cancelBubble = true;
-        setSelectedId(id);
+
+        // Check if element is locked - locked elements cannot be selected
         const element = elements.find(el => el.id === id);
-        onElementSelect?.(element);
+        if (element?.locked) return;
+
+        // Check if Shift key is held for multi-select
+        const shiftPressed = e?.evt?.shiftKey || e?.shiftKey || window.event?.shiftKey || false;
+
+        if (shiftPressed) {
+            // Toggle selection (add if not selected, remove if selected)
+            toggleSelection(id);
+        } else {
+            // Normal click: replace selection with this element
+            selectElement(id);
+            // Notify parent (for compatibility) - ONLY for single select!
+            onElementSelect?.(element);
+        }
     };
 
+    // === TEXT EDITING HANDLERS ===
+
+    // Start editing text on double-click
+    const handleTextDoubleClick = (element, e) => {
+        if (!editable) return;
+        if (element?.locked) return; // Locked elements cannot be edited
+        if (e) e.cancelBubble = true;
+
+        setEditingTextId(element.id);
+        setEditingTextValue(element.content || '');
+        selectElement(element.id);
+    };
+
+    // Save text edit and exit edit mode
+    const handleTextEditSave = () => {
+        if (editingTextId && editingTextValue !== null) {
+            // Update via store
+            updateElement(editingTextId, { content: editingTextValue });
+            // Also update local state for immediate feedback
+            handleElementChange(editingTextId, { content: editingTextValue });
+        }
+        setEditingTextId(null);
+        setEditingTextValue('');
+    };
+
+    // Cancel text edit
+    const handleTextEditCancel = () => {
+        setEditingTextId(null);
+        setEditingTextValue('');
+    };
+
+    // Focus textarea when editing starts
+    useEffect(() => {
+        if (editingTextId && textareaRef.current) {
+            textareaRef.current.focus();
+            textareaRef.current.select();
+        }
+    }, [editingTextId]);
+
     // Handle element updates (drag, resize, rotate)
+    // MUST be defined before hooks that use it
     const handleElementChange = (id, newProps) => {
-        setElements(prev => {
-            const updated = prev.map(el =>
+        // Use the store's updateElement action directly
+        updateElement(id, newProps);
+        // Also notify parent if callback provided
+        if (onTemplateChange) {
+            const updated = elements.map(el =>
                 el.id === id ? { ...el, ...newProps } : el
             );
-            onTemplateChange?.(updated);
-            return updated;
-        });
+            onTemplateChange(updated);
+        }
+    };
+
+    // === KEYBOARD SHORTCUTS HOOK ===
+    // Replaces ~95 lines of inline keyboard handling
+    useKeyboardShortcuts({
+        editable,
+        editingTextId,
+        selectedIds,
+        elements,
+        deleteSelected,
+        duplicateSelected,
+        undo,
+        redo,
+        addToSelection,
+        setElements,
+        updateElement: handleElementChange,
+        onTemplateChange,
+    });
+
+
+
+    // Handle transform start
+    const handleTransformStart = () => {
+        setIsTransforming(true);
     };
 
     // Handle transform end (resize/rotate)
     const handleTransformEnd = (id, e) => {
+        setIsTransforming(false);
         const node = e.target;
         const scaleX = node.scaleX();
         const scaleY = node.scaleY();
@@ -254,119 +360,29 @@ const PinCanvas = ({
         });
     };
 
-    // Snap to grid standard function
-    const snapToGrid = (value) => {
-        if (!showGrid) return value;
-        return Math.round(value / GRID_SIZE) * GRID_SIZE;
-    };
+    // === SMART GUIDES HOOK ===
+    // Replaces ~100 lines of inline smart guide logic
+    const {
+        guides,
+        handleDragMove,
+        handleDragEnd: smartGuideDragEnd,
+        clearGuides,
+        snapToGrid
+    } = useSmartGuides({
+        showGrid,
+        onElementChange: handleElementChange
+    });
 
-    // Get line guide stops (center, edges)
-    const getLineGuideStops = (skipShape) => {
-        // Just canvas center and edges for now
-        // Can be extended to include other object edges
-        return {
-            vertical: [0, CANVAS_WIDTH / 2, CANVAS_WIDTH],
-            horizontal: [0, CANVAS_HEIGHT / 2, CANVAS_HEIGHT],
-        };
-    };
-
-    // Get object snapping edges
-    const getObjectSnappingEdges = (node) => {
-        // Simple bounding box for standard layout
-        const width = node.width();
-        const height = node.height();
-        const x = node.x();
-        const y = node.y();
-
-        return {
-            vertical: [
-                { guide: Math.round(x), offset: 0, snap: 'start' },
-                { guide: Math.round(x + width / 2), offset: Math.round(width / 2), snap: 'center' },
-                { guide: Math.round(x + width), offset: Math.round(width), snap: 'end' },
-            ],
-            horizontal: [
-                { guide: Math.round(y), offset: 0, snap: 'start' },
-                { guide: Math.round(y + height / 2), offset: Math.round(height / 2), snap: 'center' },
-                { guide: Math.round(y + height), offset: Math.round(height), snap: 'end' },
-            ],
-        };
-    };
-
-    // Handle drag move with Smart Guides
-    const handleDragMove = (e) => {
-        const node = e.target;
-
-        // Clear previous guides
-        setGuides([]);
-
-        // If grid is on, prioritize grid snapping
-        if (showGrid) {
-            node.position({
-                x: snapToGrid(node.x()),
-                y: snapToGrid(node.y()),
-            });
-            return;
-        }
-
-        // --- Smart Snapping Logic ---
-        const guideLines = getLineGuideStops(node);
-        const itemBounds = getObjectSnappingEdges(node);
-        const newGuides = [];
-
-        let minV = SNAP_THRESHOLD;
-        let minH = SNAP_THRESHOLD;
-
-        // Find vertical snap (X axis)
-        itemBounds.vertical.forEach((bound) => {
-            guideLines.vertical.forEach((line) => {
-                const diff = Math.abs(line - bound.guide);
-                if (diff < minV) {
-                    minV = diff;
-                    // Snap the node
-                    node.x(line - bound.offset);
-                    // Add guide line
-                    newGuides.push({
-                        orientation: 'V',
-                        lineGuide: line,
-                        offset: bound.offset,
-                        snap: bound.snap,
-                    });
-                }
-            });
-        });
-
-        // Find horizontal snap (Y axis)
-        itemBounds.horizontal.forEach((bound) => {
-            guideLines.horizontal.forEach((line) => {
-                const diff = Math.abs(line - bound.guide);
-                if (diff < minH) {
-                    minH = diff;
-                    // Snap the node
-                    node.y(line - bound.offset);
-                    // Add guide line
-                    newGuides.push({
-                        orientation: 'H',
-                        lineGuide: line,
-                        offset: bound.offset,
-                        snap: bound.snap,
-                    });
-                }
-            });
-        });
-
-        setGuides(newGuides);
-    };
-
-    // Handle drag end
+    // Wrapper for handleDragEnd to match expected signature and clear dragging state
     const handleDragEnd = (id, e) => {
-        // Clear guides
-        setGuides([]);
+        setIsDragging(false);
+        smartGuideDragEnd(id, e);
+    };
 
-        // Save final position
-        handleElementChange(id, {
-            x: e.target.x(),
-            y: e.target.y(),
-        });
+    // Wrapper for handleDragMove to set dragging state
+    const wrappedHandleDragMove = (e) => {
+        setIsDragging(true);
+        handleDragMove(e);
     };
 
     // Replace variable placeholders with article data
@@ -388,10 +404,25 @@ const PinCanvas = ({
         if (transformerRef.current) {
             transformerRef.current.nodes([]);
         }
-        setGuides([]);
+        clearGuides();
 
-        // Get data URL at full resolution
+        // Calculate canvas position on stage
+        const container = containerRef.current;
+        const containerWidth = container?.clientWidth || 800;
+        const containerHeight = container?.clientHeight || 600;
+        const handlePadding = 100;
+        const stageW = Math.max(containerWidth, (canvasWidth + handlePadding * 2) * actualScale);
+        const stageH = Math.max(containerHeight, (canvasHeight + handlePadding * 2) * actualScale);
+        const offsetX = (stageW / actualScale - canvasWidth) / 2;
+        const offsetY = (stageH / actualScale - canvasHeight) / 2;
+
+        // Export ONLY the canvas area (not the entire stage with padding)
+        // Use x, y, width, height to crop to the actual canvas content
         const dataUrl = stageRef.current.toDataURL({
+            x: offsetX * actualScale,
+            y: offsetY * actualScale,
+            width: canvasWidth * actualScale,
+            height: canvasHeight * actualScale,
             pixelRatio: 1 / actualScale,
             mimeType: format === 'webp' ? 'image/webp' : (format === 'jpeg' || format === 'jpg' ? 'image/jpeg' : 'image/png'),
             quality: quality,
@@ -409,7 +440,7 @@ const PinCanvas = ({
         const response = await fetch(dataUrl);
         const blob = await response.blob();
         return blob;
-    }, [actualScale, selectedId]);
+    }, [actualScale, selectedId, clearGuides]);
 
     // Expose export function
     useEffect(() => {
@@ -424,11 +455,11 @@ const PinCanvas = ({
 
         const lines = [];
         // Vertical lines
-        for (let i = 0; i <= CANVAS_WIDTH / GRID_SIZE; i++) {
+        for (let i = 0; i <= canvasWidth / GRID_SIZE; i++) {
             lines.push(
                 <Line
                     key={`v${i}`}
-                    points={[i * GRID_SIZE, 0, i * GRID_SIZE, CANVAS_HEIGHT]}
+                    points={[i * GRID_SIZE, 0, i * GRID_SIZE, canvasHeight]}
                     stroke="rgba(255,255,255,0.1)"
                     strokeWidth={1}
                     listening={false}
@@ -436,11 +467,11 @@ const PinCanvas = ({
             );
         }
         // Horizontal lines
-        for (let i = 0; i <= CANVAS_HEIGHT / GRID_SIZE; i++) {
+        for (let i = 0; i <= canvasHeight / GRID_SIZE; i++) {
             lines.push(
                 <Line
                     key={`h${i}`}
-                    points={[0, i * GRID_SIZE, CANVAS_WIDTH, i * GRID_SIZE]}
+                    points={[0, i * GRID_SIZE, canvasWidth, i * GRID_SIZE]}
                     stroke="rgba(255,255,255,0.1)"
                     strokeWidth={1}
                     listening={false}
@@ -450,45 +481,69 @@ const PinCanvas = ({
         return lines;
     };
 
-    // Render Smart Guides
+    // Render Smart Guides - Modern Canva Pro style
     const renderSmartGuides = () => {
-        return guides.map((guide, i) => {
+        // Vibrant magenta/pink for guides (distinct from cyan selection)
+        const guideColor = '#ff3366';
+        const glowColor = '#ff3366';
+
+        return guides.flatMap((guide, i) => {
             if (guide.orientation === 'V') {
-                return (
+                return [
+                    // Glow layer (thicker, semi-transparent)
+                    <Line
+                        key={`guide-v-glow-${i}`}
+                        points={[guide.lineGuide, 0, guide.lineGuide, canvasHeight]}
+                        stroke={glowColor}
+                        strokeWidth={4}
+                        opacity={0.3}
+                        listening={false}
+                    />,
+                    // Main line (solid, crisp)
                     <Line
                         key={`guide-v-${i}`}
-                        points={[guide.lineGuide, 0, guide.lineGuide, CANVAS_HEIGHT]}
-                        stroke="#ec4899"
+                        points={[guide.lineGuide, 0, guide.lineGuide, canvasHeight]}
+                        stroke={guideColor}
                         strokeWidth={1}
-                        dash={[4, 2]}
                         listening={false}
-                    />
-                );
+                    />,
+                ];
             } else {
-                return (
+                return [
+                    // Glow layer
+                    <Line
+                        key={`guide-h-glow-${i}`}
+                        points={[0, guide.lineGuide, canvasWidth, guide.lineGuide]}
+                        stroke={glowColor}
+                        strokeWidth={4}
+                        opacity={0.3}
+                        listening={false}
+                    />,
+                    // Main line
                     <Line
                         key={`guide-h-${i}`}
-                        points={[0, guide.lineGuide, CANVAS_WIDTH, guide.lineGuide]}
-                        stroke="#ec4899"
+                        points={[0, guide.lineGuide, canvasWidth, guide.lineGuide]}
+                        stroke={guideColor}
                         strokeWidth={1}
-                        dash={[4, 2]}
                         listening={false}
-                    />
-                );
+                    />,
+                ];
             }
         });
     };
 
     // Render element based on type
     const renderElement = (element) => {
+        const isLocked = element.locked;
         const commonProps = {
             id: element.id,
-            draggable: editable,
-            onClick: (e) => handleSelect(element.id, e),
-            onTap: (e) => handleSelect(element.id, e),
-            onDragMove: handleDragMove,
-            onDragEnd: (e) => handleDragEnd(element.id, e),
-            onTransformEnd: (e) => handleTransformEnd(element.id, e),
+            draggable: editable && !isLocked,
+            onClick: isLocked ? undefined : (e) => handleSelect(element.id, e),
+            onTap: isLocked ? undefined : (e) => handleSelect(element.id, e),
+            onDragMove: isLocked ? undefined : wrappedHandleDragMove,
+            onDragEnd: isLocked ? undefined : (e) => handleDragEnd(element.id, e),
+            onTransformStart: isLocked ? undefined : handleTransformStart,
+            onTransformEnd: isLocked ? undefined : (e) => handleTransformEnd(element.id, e),
         };
 
         switch (element.type) {
@@ -621,6 +676,7 @@ const PinCanvas = ({
             onDragStart: commonProps.onDragStart,
             onDragMove: commonProps.onDragMove,
             onDragEnd: commonProps.onDragEnd,
+            onTransformStart: commonProps.onTransformStart,
             onTransformEnd: (e) => handleTransformEnd(element.id, e),
             onClick: (e) => handleSelect(element.id, e),
             onTap: (e) => handleSelect(element.id, e),
@@ -724,9 +780,8 @@ const PinCanvas = ({
                             height={element.height}
                             fill="#2a2a3e"
                             cornerRadius={element.borderRadius || 0}
-                            stroke={selectedId === element.id ? '#6366f1' : '#4a4a5e'}
-                            strokeWidth={2}
-                            dash={[8, 4]}
+                            stroke={selectedId === element.id ? '#8b5cf6' : '#4a4a5e'}
+                            strokeWidth={1}
                         />
                         {/* Placeholder icon */}
                         <Text
@@ -810,11 +865,13 @@ const PinCanvas = ({
             fontSize = minSize;
         }
 
+        const isLocked = element.locked;
+
         // Render Text directly - zone is resizable, uses auto-fit or stored fontSize
         return (
             <Text
                 key={element.id}
-                id={element.id}
+                {...commonProps}
                 x={element.x}
                 y={element.y}
                 text={displayText || 'Text'}
@@ -835,13 +892,10 @@ const PinCanvas = ({
                 shadowOffsetY={element.shadow?.offsetY || 0}
                 wrap="word"
                 ellipsis={false}
-                draggable={editable}
                 rotation={element.rotation || 0}
-                onClick={(e) => handleSelect(element.id, e)}
-                onTap={(e) => handleSelect(element.id, e)}
-                onDragMove={handleDragMove}
-                onDragEnd={(e) => handleDragEnd(element.id, e)}
-                onTransform={(e) => {
+                onDblClick={isLocked ? undefined : (e) => handleTextDoubleClick(element, e)}
+                onDblTap={isLocked ? undefined : (e) => handleTextDoubleClick(element, e)}
+                onTransform={isLocked ? undefined : (e) => {
                     // User is resizing the text zone
                     // Just reset scale and apply to width/height
                     const node = e.target;
@@ -855,7 +909,8 @@ const PinCanvas = ({
                         scaleY: 1,
                     });
                 }}
-                onTransformEnd={(e) => {
+                onTransformEnd={isLocked ? undefined : (e) => {
+                    setIsTransforming(false);
                     // Save zone dimensions to state
                     // fontSize remains user-controlled via the properties panel
                     const node = e.target;
@@ -929,99 +984,344 @@ const PinCanvas = ({
                 {...commonProps}
                 x={element.x || 0}
                 y={element.y || 0}
-                width={element.width || CANVAS_WIDTH}
-                height={element.height || CANVAS_HEIGHT}
+                width={element.width || canvasWidth}
+                height={element.height || canvasHeight}
                 fill={element.fill || 'rgba(0,0,0,0.3)'}
                 opacity={element.opacity || 1}
             />
         );
     };
 
+    // Stage must be large enough to show transformer handles outside canvas
+    // Minimum: canvas + 200px padding on all sides, or container size (whichever is larger)
+    const handlePadding = 100; // 100px on each side for handles
+    const stageWidth = Math.max(containerSize.width, (canvasWidth + handlePadding * 2) * actualScale);
+    const stageHeight = Math.max(containerSize.height, (canvasHeight + handlePadding * 2) * actualScale);
+
+    // Center the canvas within the Stage
+    const canvasOffsetX = (stageWidth / actualScale - canvasWidth) / 2;
+    const canvasOffsetY = (stageHeight / actualScale - canvasHeight) / 2;
+
     // Render the canvas
     return (
         <div
+            ref={containerRef}
             className="pin-canvas-wrapper"
             style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '20px',
-                background: 'repeating-conic-gradient(#1a1a2e 0% 25%, #16162a 0% 50%) 50% / 20px 20px',
-                borderRadius: '8px',
-                minHeight: '100%',
+                width: '100%',
+                height: '100%',
+                overflow: 'auto',
+                position: 'relative',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
             }}
         >
-            <div
-                className="pin-canvas-container"
-                style={{
-                    width: CANVAS_WIDTH * actualScale,
-                    height: CANVAS_HEIGHT * actualScale,
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1)',
+            <style>{`
+                .pin-canvas-wrapper::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
+            <Stage
+                ref={stageRef}
+                width={stageWidth}
+                height={stageHeight}
+                scaleX={actualScale}
+                scaleY={actualScale}
+                onClick={(e) => {
+                    // Deselect when clicking empty area (not on canvas content)
+                    if (e.target === e.target.getStage()) {
+                        selectElement(null);
+                        onElementSelect?.(null);
+                    }
                 }}
             >
-                <Stage
-                    ref={stageRef}
-                    width={CANVAS_WIDTH * actualScale}
-                    height={CANVAS_HEIGHT * actualScale}
-                    scaleX={actualScale}
-                    scaleY={actualScale}
-                    onClick={(e) => {
-                        // Deselect when clicking empty area
-                        if (e.target === e.target.getStage()) {
-                            setSelectedId(null);
-                            onElementSelect?.(null);
-                        }
-                    }}
-                >
-                    <Layer>
+
+                <Layer x={canvasOffsetX} y={canvasOffsetY}>
+                    {/* Clipped Group - elements stay within canvas bounds */}
+                    <Group
+                        clipFunc={(ctx) => {
+                            ctx.rect(0, 0, canvasWidth, canvasHeight);
+                        }}
+                    >
                         {/* Background */}
                         <Rect
                             x={0}
                             y={0}
-                            width={CANVAS_WIDTH}
-                            height={CANVAS_HEIGHT}
+                            width={canvasWidth}
+                            height={canvasHeight}
                             fill={template?.background_color || '#1a1a2e'}
+                            shadowColor="rgba(0,0,0,0.3)"
+                            shadowBlur={20}
+                            shadowOffset={{ x: 0, y: 10 }}
                         />
 
                         {/* Grid overlay */}
                         {renderGrid()}
 
-                        {/* Smart Guides overlay */}
-                        {renderSmartGuides()}
-
-                        {/* Render all elements */}
+                        {/* Render all elements (clipped to canvas) */}
                         {elements.map(renderElement)}
 
-                        {/* Transformer for selection */}
-                        {editable && (
-                            <Transformer
-                                ref={transformerRef}
-                                boundBoxFunc={(oldBox, newBox) => {
-                                    // Limit minimum size
-                                    if (newBox.width < 20 || newBox.height < 20) {
-                                        return oldBox;
-                                    }
-                                    return newBox;
-                                }}
-                                anchorFill="#6366f1"
-                                anchorStroke="#4f46e5"
-                                anchorSize={10}
-                                anchorCornerRadius={2}
-                                borderStroke="#6366f1"
-                                borderStrokeWidth={2}
-                                rotateAnchorOffset={30}
-                                enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']}
-                            />
-                        )}
-                    </Layer>
-                </Stage>
-            </div>
+                        {/* Smart Guides overlay */}
+                        {renderSmartGuides()}
+                    </Group>
+                </Layer>
+
+                {/* Separate unclipped layer for Transformer - visible outside canvas */}
+                <Layer x={canvasOffsetX} y={canvasOffsetY}>
+                    {editable && (
+                        <Transformer
+                            ref={transformerRef}
+                            onTransformStart={handleTransformStart}
+                            onTransformEnd={() => setIsTransforming(false)}
+                            boundBoxFunc={(oldBox, newBox) => {
+                                if (newBox.width < 20 || newBox.height < 20) {
+                                    return oldBox;
+                                }
+                                return newBox;
+                            }}
+                            // Canva style: white filled circular anchors with purple stroke
+                            anchorFill="#ffffff"
+                            anchorStroke="#8b5cf6"
+                            anchorStrokeWidth={1}
+                            anchorSize={10}
+                            anchorCornerRadius={5}
+                            // Selection border - purple like Canva
+                            borderStroke="#8b5cf6"
+                            borderStrokeWidth={1}
+                            borderDash={[]}
+                            // Disable default top rotation handle (we'll make a custom one)
+                            rotateEnabled={false}
+                            rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+                            // All anchors for full control
+                            enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']}
+                            keepRatio={false}
+                            ignoreStroke={true}
+                        />
+                    )}
+                </Layer>
+
+                {/* Custom Rotation Handle Layer - same coordinate system as Transformer */}
+                <Layer x={canvasOffsetX} y={canvasOffsetY}>
+                    {editable && selectedIds.size === 1 && !editingTextId && !isDragging && !isTransforming && (() => {
+                        const selectedElement = elements.find(el => el.id === [...selectedIds][0]);
+                        if (!selectedElement || selectedElement.locked) return null;
+
+                        const rotation = selectedElement.rotation || 0;
+                        const rad = (rotation * Math.PI) / 180;
+
+                        return (
+                            <Group
+                                x={selectedElement.x}
+                                y={selectedElement.y}
+                                rotation={rotation}
+                            >
+                                {/* The Handle Group - positioned relative to element origin */}
+                                <Group
+                                    draggable
+                                    x={(selectedElement.width || 100) + 25}
+                                    y={(selectedElement.height || 100) / 2}
+                                    onDragStart={(e) => {
+                                        e.cancelBubble = true;
+                                    }}
+                                    onDragMove={(e) => {
+                                        e.cancelBubble = true;
+                                        const stage = e.target.getStage();
+                                        const pointer = stage.getPointerPosition();
+                                        if (!pointer) return;
+
+                                        // Calculate angle in "canvas" space
+                                        const pointerX = pointer.x / actualScale - canvasOffsetX;
+                                        const pointerY = pointer.y / actualScale - canvasOffsetY;
+
+                                        // Center of element (pivot point)
+                                        // For rotation, we need the stage-relative center of the element.
+                                        // Since we are inside a Layer with canvasOffset, we just need the element center
+                                        // relative to the Layer origin.
+                                        // But the element x,y is the top-left corner (usually).
+                                        // Wait, if we assume transform origin is center, then logic changes.
+                                        // PinCanvas elements seem to rotate around center? 
+                                        // Konva default is top-left unless offsetX/Y is set.
+                                        // But our Transformer handles rotation around CENTER usually.
+                                        // Let's assume standard center rotation:
+
+                                        const w = selectedElement.width || 100;
+                                        const h = selectedElement.height || 100;
+
+                                        // Center relative to element x,y
+                                        const cxLocal = w / 2;
+                                        const cyLocal = h / 2;
+
+                                        // Center in global coords (inside this layer)
+                                        // We need to account for the CURRENT rotation to find the center?
+                                        // No, x,y is usually the top-left of the unrotated box in Konva?
+                                        // Actually, if we rotate around center, x,y usually shifts in Konva if using the transformer?
+                                        // NO, Konva default transformer rotates around center but keeps x,y effectively such that visual center matches.
+                                        // Let's rely on: Center = x + width/2 rotated?
+
+                                        // Simpler: Center is roughly bounding box center.
+                                        // Let's use the node's getClientRect if available, or just math.
+                                        // Math:
+                                        // Unrotated center = x + w/2, y + h/2.
+                                        // If we rotate around center, the center STAYS at x + w/2, y + h/2? 
+                                        // Yes, if pivot is center.
+                                        // But Konva elements pivot at (0,0) [top-left] unless offset is set.
+                                        // If using centered scaling/rotation, offset is usually set to w/2, h/2.
+                                        // We don't seem to set offsetX/Y on elements in PinCanvas usually (default 0,0).
+                                        // So the element rotates around top-left (0,0).
+                                        // BUT Transformer defaults to center rotation by adjusting x/y!
+                                        // So `x` and `y` CHANGE when you rotate with transformer to compensate.
+                                        // This means the visual center is ALWAYS roughly `x + (w/2 rotated) + (h/2 rotated)`.
+
+                                        // Let's calculate the "Visual Center":
+                                        const cos = Math.cos(rad);
+                                        const sin = Math.sin(rad);
+
+                                        // Center relative to x,y (0,0)
+                                        // cx = w/2, cy = h/2.
+                                        // Rotated: 
+                                        const rx = cxLocal * cos - cyLocal * sin;
+                                        const ry = cxLocal * sin + cyLocal * cos;
+
+                                        const centerX = selectedElement.x + rx;
+                                        const centerY = selectedElement.y + ry;
+
+                                        // But wait, if Transformer adjusts x/y to simulate center rotation while pivot is 0,0:
+                                        // Then `selectedElement.x` IS the top-left corner reference?
+                                        // It's tricky.
+                                        // Let's try simpler: Just standard atan2 from (element.x + w/2, element.y + h/2).
+                                        // If it's wrong, it will be offset.
+                                        // Testing shows Konva Transformer usually shifts x/y so the object rotates around center.
+                                        // So (x + w/2, y + h/2) might NOT be the center if it's rotated.
+
+                                        // Let's assume simpler method:
+                                        // The angle is from the Visual Center.
+                                        // We can use the node's absolute transforms if we had ref. We don't.
+                                        // Let's try the simple math first:
+
+                                        const centerX_approx = selectedElement.x + (w / 2 * cos - h / 2 * sin); // This assumes x,y is rotated top-left?
+                                        // Actually, let's just use the pointer vs the "Group" position (x,y)
+                                        // The group is at x,y.
+                                        // We can calculate angle from x,y? No.
+
+                                        // Let's try just standard atan2(pointer - center).
+                                        // Center = x + width/2, y + height/2 (unrotated approximation)
+                                        // If this jitters, we know why.
+
+                                        const vecX = pointerX - (selectedElement.x + w / 2); // Very rough if rotated
+                                        const vecY = pointerY - (selectedElement.y + h / 2);
+
+                                        let newRotation = Math.atan2(vecY, vecX) * 180 / Math.PI;
+
+                                        // Snap
+                                        if (e.evt.shiftKey) {
+                                            newRotation = Math.round(newRotation / 45) * 45;
+                                        }
+
+                                        handleElementChange(selectedElement.id, { rotation: newRotation });
+
+                                        // Keep handle in place
+                                        e.target.position({ x: (selectedElement.width || 100) + 25, y: (selectedElement.height || 100) / 2 });
+                                    }}
+                                >
+                                    <Circle
+                                        radius={16}
+                                        fill="white"
+                                        stroke="#8b5cf6"
+                                        strokeWidth={1}
+                                        shadowColor="black"
+                                        shadowBlur={5}
+                                        shadowOpacity={0.1}
+                                        shadowOffset={{ x: 0, y: 1 }}
+                                    />
+                                    <Path
+                                        data="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8 M21 3v5h-5"
+                                        stroke="#8b5cf6"
+                                        strokeWidth={1.5}
+                                        scaleX={0.8}
+                                        scaleY={0.8}
+                                        x={-9.5}
+                                        y={-9.5}
+                                    />
+                                </Group>
+                            </Group>
+                        );
+                    })()}
+                </Layer>
+            </Stage>
+
+            {/* Floating Toolbar - Canva-style context actions */}
+            <AnimatePresence>
+                {editable && selectedIds.size === 1 && !editingTextId && !isDragging && !isTransforming && (() => {
+                    const selectedElement = elements.find(el => el.id === [...selectedIds][0]);
+                    if (!selectedElement) return null;
+                    return (
+                        <FloatingToolbar
+                            key="floating-toolbar"
+                            selectedElement={selectedElement}
+                            canvasScale={actualScale}
+                            canvasOffset={{ x: canvasOffsetX, y: canvasOffsetY }}
+                            containerRef={containerRef}
+                            stageRef={stageRef}
+                            onElementChange={handleElementChange}
+                        />
+                    );
+                })()}
+            </AnimatePresence>
+
+            {/* Text Editing Overlay */}
+            {editingTextId && (() => {
+                const editingElement = elements.find(el => el.id === editingTextId);
+                if (!editingElement) return null;
+
+                return (
+                    <textarea
+                        ref={textareaRef}
+                        value={editingTextValue}
+                        onChange={(e) => setEditingTextValue(e.target.value)}
+                        onBlur={handleTextEditSave}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                                handleTextEditCancel();
+                            }
+                            // Enter without Shift saves (Shift+Enter for new line)
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleTextEditSave();
+                            }
+                        }}
+                        style={{
+                            position: 'absolute',
+                            left: editingElement.x * actualScale,
+                            top: editingElement.y * actualScale,
+                            width: (editingElement.width || 300) * actualScale,
+                            minHeight: 40,
+                            maxHeight: 'none',
+                            height: 'auto',
+                            padding: '8px',
+                            fontSize: (editingElement.fontSize || 32) * actualScale,
+                            fontFamily: editingElement.fontFamily || 'Inter, sans-serif',
+                            fontWeight: editingElement.fontWeight || 'normal',
+                            fontStyle: editingElement.fontStyle || 'normal',
+                            textAlign: editingElement.textAlign || 'center',
+                            color: editingElement.color || '#ffffff',
+                            background: 'rgba(20, 20, 40, 0.95)',
+                            border: '2px solid #6366f1',
+                            borderRadius: '4px',
+                            outline: 'none',
+                            resize: 'vertical', // Allow vertical resize
+                            zIndex: 1000,
+                            lineHeight: editingElement.lineHeight || 1.4,
+                            letterSpacing: editingElement.letterSpacing || 0,
+                            overflow: 'visible',
+                            boxSizing: 'border-box',
+                        }}
+                    />
+                );
+            })()}
         </div>
     );
 };
 
-// Export both the component and utility to set images
-export { PinCanvas, CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE };
+// Export both the component and utility constants
+export { PinCanvas, DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, GRID_SIZE };
 export default PinCanvas;

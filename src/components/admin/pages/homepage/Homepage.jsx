@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Save, Home, Image, FileText, Star, Eye, Plus, X, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
@@ -10,11 +10,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx';
 import { useHomepageStore } from '../../store/useStore';
+import ColorPicker from '../../components/ColorPicker';
 
 const Homepage = () => {
   const { homepage, loading, error, setHomepage } = useHomepageStore();
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
+  const [showHeroColorPicker, setShowHeroColorPicker] = useState(false);
+  const heroColorTriggerRef = useRef(null);
   const [formData, setFormData] = useState({
     // Hero Section
     hero: {
@@ -299,17 +302,21 @@ const Homepage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold flex items-center gap-2">
-            <Home className="w-8 h-8" />
-            Homepage
-          </h2>
-          <p className="text-muted-foreground mt-1">
+          <div className="flex items-center gap-3 mb-1">
+            <Home className="w-7 h-7 text-gray-800 dark:text-white" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Homepage</h2>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Customize your homepage layout and content
           </p>
         </div>
-        <Button onClick={handleSave} disabled={saving}>
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-gray-900 hover:bg-gray-800 text-white dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
+        >
           <Save className="w-4 h-4 mr-2" />
           {saving ? 'Saving...' : 'Save Settings'}
         </Button>
@@ -317,7 +324,7 @@ const Homepage = () => {
 
       {/* Status Messages */}
       {saveStatus === 'success' && (
-        <Alert className="border-green-200 bg-green-50 text-green-800">
+        <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
           <Save className="h-4 w-4" />
           <AlertDescription>
             Homepage settings saved successfully!
@@ -326,7 +333,7 @@ const Homepage = () => {
       )}
 
       {saveStatus === 'error' && (
-        <Alert className="border-red-200 bg-red-50 text-red-800">
+        <Alert className="border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
           <X className="h-4 w-4" />
           <AlertDescription>
             Failed to save homepage settings. Please try again.
@@ -336,34 +343,40 @@ const Homepage = () => {
 
       {/* Homepage Tabs */}
       <Tabs defaultValue="hero" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
-          <TabsTrigger value="hero">Hero</TabsTrigger>
-          <TabsTrigger value="featured">Featured</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="latest">Latest</TabsTrigger>
-          <TabsTrigger value="popular">Popular</TabsTrigger>
-          <TabsTrigger value="newsletter">Newsletter</TabsTrigger>
-          <TabsTrigger value="banners">Banners</TabsTrigger>
-          <TabsTrigger value="seo">SEO</TabsTrigger>
-        </TabsList>
+        <div className="mb-6 overflow-x-auto">
+          <TabsList className="inline-flex h-auto p-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm min-w-max">
+            <TabsTrigger value="hero" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Hero</TabsTrigger>
+            <TabsTrigger value="featured" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Featured</TabsTrigger>
+            <TabsTrigger value="categories" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Categories</TabsTrigger>
+            <TabsTrigger value="latest" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Latest</TabsTrigger>
+            <TabsTrigger value="popular" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Popular</TabsTrigger>
+            <TabsTrigger value="newsletter" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Newsletter</TabsTrigger>
+            <TabsTrigger value="banners" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Banners</TabsTrigger>
+            <TabsTrigger value="seo" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">SEO</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Hero Section */}
         <TabsContent value="hero" className="space-y-6">
-          <Card>
-            <CardHeader>
+          <Card className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm overflow-hidden">
+            <CardHeader className="px-6 py-5 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Hero Section</CardTitle>
-                  <CardDescription>The main banner area at the top of your homepage</CardDescription>
+                  <CardTitle className="text-base font-semibold text-gray-900 dark:text-white">Hero Section</CardTitle>
+                  <CardDescription className="mt-1 text-sm text-gray-500 dark:text-gray-400">The main banner area at the top of your homepage</CardDescription>
                 </div>
-                <Switch
-                  checked={formData.hero.enabled}
-                  onCheckedChange={(checked) => handleNestedInputChange('hero', 'enabled', checked)}
-                />
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={formData.hero.enabled}
+                    onChange={(e) => handleNestedInputChange('hero', 'enabled', e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
               </div>
             </CardHeader>
             {formData.hero.enabled && (
-              <CardContent className="space-y-4">
+              <CardContent className="p-6 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="heroTitle">Title</Label>
@@ -403,34 +416,55 @@ const Homepage = () => {
                       placeholder="https://..."
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="heroBackgroundColor">Background Color</Label>
-                    <Input
-                      id="heroBackgroundColor"
-                      type="color"
-                      value={formData.hero.backgroundColor}
-                      onChange={(e) => handleNestedInputChange('hero', 'backgroundColor', e.target.value)}
-                    />
+                  <div className="space-y-2 relative">
+                    <Label htmlFor="heroBackgroundColor" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Background Color</Label>
+                    <div className="flex items-center border border-gray-300 dark:border-zinc-700 rounded-md shadow-sm bg-white dark:bg-zinc-800 overflow-hidden">
+                      <div
+                        ref={heroColorTriggerRef}
+                        className="h-8 w-10 m-1 rounded border border-gray-300 dark:border-zinc-600 cursor-pointer"
+                        style={{ backgroundColor: formData.hero.backgroundColor || '#FFFFFF' }}
+                        onClick={() => setShowHeroColorPicker(!showHeroColorPicker)}
+                      />
+                      <Input
+                        id="heroBackgroundColor"
+                        value={formData.hero.backgroundColor}
+                        onChange={(e) => handleNestedInputChange('hero', 'backgroundColor', e.target.value)}
+                        className="flex-1 border-0 shadow-none focus-visible:ring-0 font-mono text-sm"
+                        placeholder="#FFFFFF"
+                      />
+                    </div>
+                    {showHeroColorPicker && (
+                      <ColorPicker
+                        color={formData.hero.backgroundColor}
+                        onChange={(color) => handleNestedInputChange('hero', 'backgroundColor', color)}
+                        onClose={() => setShowHeroColorPicker(false)}
+                        triggerRect={heroColorTriggerRef.current?.getBoundingClientRect()}
+                      />
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="heroCtaLink">CTA Link</Label>
+                  <Label htmlFor="heroCtaLink" className="block text-sm font-medium text-gray-700 dark:text-gray-300">CTA Link</Label>
                   <Input
                     id="heroCtaLink"
                     value={formData.hero.ctaLink}
                     onChange={(e) => handleNestedInputChange('hero', 'ctaLink', e.target.value)}
                     placeholder="/articles?type=recipe"
+                    className="shadow-sm"
                   />
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="heroShowSearch"
-                    checked={formData.hero.showSearch}
-                    onCheckedChange={(checked) => handleNestedInputChange('hero', 'showSearch', checked)}
-                  />
-                  <Label htmlFor="heroShowSearch">Show search bar</Label>
+                <div className="flex items-center gap-3">
+                  <label className="toggle-switch" style={{ width: '40px', height: '20px' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.hero.showSearch}
+                      onChange={(e) => handleNestedInputChange('hero', 'showSearch', e.target.checked)}
+                    />
+                    <span className="toggle-slider" style={{ '--toggle-size': '16px' }}></span>
+                  </label>
+                  <Label htmlFor="heroShowSearch" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">Show search bar</Label>
                 </div>
               </CardContent>
             )}

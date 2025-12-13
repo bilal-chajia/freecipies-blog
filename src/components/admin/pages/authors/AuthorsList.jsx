@@ -92,10 +92,63 @@ const AuthorsList = () => {
     setDeleteModal({ isOpen: false, authorToDelete: null });
   };
 
+  // Skeleton table row
+  const SkeletonRow = () => (
+    <tr className="animate-pulse">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <div className="w-10 h-10 rounded-full bg-muted mr-3" />
+          <div className="h-4 w-24 bg-muted rounded" />
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 w-32 bg-muted rounded" />
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 w-20 bg-muted rounded" />
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-center">
+        <div className="h-5 w-10 bg-muted rounded-full mx-auto" />
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-center">
+        <div className="h-5 w-10 bg-muted rounded-full mx-auto" />
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right">
+        <div className="flex justify-end space-x-2">
+          <div className="h-9 w-9 bg-muted rounded" />
+          <div className="h-9 w-9 bg-muted rounded" />
+        </div>
+      </td>
+    </tr>
+  );
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="h-9 w-28 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="h-10 w-full bg-muted rounded animate-pulse" />
+        <div className="bg-card rounded-md border border-border overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-muted">
+              <tr>
+                <th className="px-6 py-3 text-left"><div className="h-3 w-16 bg-muted-foreground/20 rounded" /></th>
+                <th className="px-6 py-3 text-left"><div className="h-3 w-12 bg-muted-foreground/20 rounded" /></th>
+                <th className="px-6 py-3 text-left"><div className="h-3 w-10 bg-muted-foreground/20 rounded" /></th>
+                <th className="px-6 py-3 text-center"><div className="h-3 w-14 bg-muted-foreground/20 rounded mx-auto" /></th>
+                <th className="px-6 py-3 text-center"><div className="h-3 w-16 bg-muted-foreground/20 rounded mx-auto" /></th>
+                <th className="px-6 py-3 text-right"><div className="h-3 w-16 bg-muted-foreground/20 rounded ml-auto" /></th>
+              </tr>
+            </thead>
+            <tbody className="bg-card divide-y divide-border">
+              {[...Array(5)].map((_, i) => (
+                <SkeletonRow key={i} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }

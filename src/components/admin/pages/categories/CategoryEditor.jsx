@@ -21,6 +21,7 @@ import { generateSlug } from '../../utils/helpers';
 import { cn } from '@/lib/utils';
 import MediaDialog from '../../components/MediaDialog';
 import ImageEditor from '../../components/ImageEditor';
+import ColorPicker from '../../components/ColorPicker';
 
 // Module-level cache to prevent repeated API calls during HMR/remounts
 const loadedCategories = new Map();
@@ -45,6 +46,7 @@ const CategoryEditor = () => {
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [imageEditorOpen, setImageEditorOpen] = useState(false);
   const [pendingImageFromUrl, setPendingImageFromUrl] = useState(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   const [formData, setFormData] = useState({
     slug: '',
@@ -778,12 +780,12 @@ const CategoryEditor = () => {
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Badge Color</Label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={formData.color || '#ff6600'}
-                      onChange={(e) => handleChange('color', e.target.value)}
-                      className="w-10 h-9 rounded border cursor-pointer"
+                  <div className="flex items-center gap-3 relative">
+                    <div
+                      className="w-10 h-9 rounded border cursor-pointer hover:ring-2 hover:ring-primary/50"
+                      style={{ backgroundColor: formData.color || '#ff6600' }}
+                      onClick={() => setShowColorPicker(!showColorPicker)}
+                      title="Click to change color"
                     />
                     <Input
                       value={formData.color || '#ff6600'}
@@ -795,6 +797,14 @@ const CategoryEditor = () => {
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex-shrink-0"
                       style={{ backgroundColor: formData.color || '#ff6600' }}
                     />
+                    {showColorPicker && (
+                      <ColorPicker
+                        color={formData.color || '#ff6600'}
+                        onChange={(color) => handleChange('color', color)}
+                        onClose={() => setShowColorPicker(false)}
+                        className="top-12 left-0"
+                      />
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">Color used for category badges</p>
                 </div>
