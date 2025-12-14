@@ -12,6 +12,7 @@ import EmailSettings from './tabs/EmailSettings';
 import SocialSettings from './tabs/SocialSettings';
 import ContentSettings from './tabs/ContentSettings';
 import AdsSettings from './tabs/AdsSettings';
+import AppearanceSettings from './tabs/AppearanceSettings';
 import AdvancedSettings from './tabs/AdvancedSettings';
 
 const Settings = () => {
@@ -26,6 +27,9 @@ const Settings = () => {
     adminEmail: 'admin@freecipies.com',
     timezone: 'America/Toronto',
     language: 'en',
+
+    // Appearance Settings
+    badgeColor: '#3b82f6',
 
     // SEO Settings
     defaultMetaTitle: 'Freecipies - Delicious Recipes & Cooking Tips',
@@ -211,8 +215,13 @@ const Settings = () => {
     // const { settings, loading, error, setSettings } = useSettingsStore();
     // The original code was essentially initializing local state with mock data.
 
-    setSettings(mockSettings);
-    setFormData(prev => ({ ...prev, ...mockSettings }));
+    const updatedMockSettings = {
+      ...mockSettings,
+      badgeColor: '#3b82f6',
+    };
+
+    setSettings(updatedMockSettings);
+    setFormData(prev => ({ ...prev, ...updatedMockSettings }));
   }, [setSettings]);
 
   const handleInputChange = (field, value) => {
@@ -297,13 +306,14 @@ const Settings = () => {
 
       {/* Settings Tabs */}
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="email">Email</TabsTrigger>
           <TabsTrigger value="social">Social</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="ads">Ads</TabsTrigger>
+          <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
         </TabsList>
 
@@ -329,6 +339,10 @@ const Settings = () => {
 
         <TabsContent value="ads" className="mt-6">
           <AdsSettings formData={formData} handleInputChange={handleInputChange} />
+        </TabsContent>
+
+        <TabsContent value="appearance" className="mt-6">
+          <AppearanceSettings formData={formData} handleInputChange={handleInputChange} />
         </TabsContent>
 
         <TabsContent value="advanced" className="mt-6">

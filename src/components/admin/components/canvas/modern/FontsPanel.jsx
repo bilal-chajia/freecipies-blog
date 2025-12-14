@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import useEditorStore from '../../../store/useEditorStore';
+import { useUIStore } from '../../../store/useStore';
 
 /**
  * FontsPanel - Font management section for Text tab
@@ -11,6 +12,9 @@ import useEditorStore from '../../../store/useEditorStore';
  * Styled for dark zinc theme matching template editor
  */
 const FontsPanel = () => {
+    const { theme } = useUIStore();
+    const isDark = theme === 'dark';
+
     const [fonts, setFonts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -139,13 +143,13 @@ const FontsPanel = () => {
         <div className="space-y-3">
             {/* Section Header */}
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-zinc-100">Your Fonts</h3>
+                <h3 className={`text-sm font-medium ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Your Fonts</h3>
                 <span className="text-xs text-zinc-500">{fonts.length}</span>
             </div>
 
             {/* Upload Button */}
             <Button
-                className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-zinc-700"
+                className={`w-full ${isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-zinc-700' : 'bg-white hover:bg-zinc-50 text-zinc-900 border-zinc-200'}`}
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
@@ -180,7 +184,7 @@ const FontsPanel = () => {
                         placeholder="Search fonts..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-8 h-8 text-sm bg-zinc-900 border-zinc-800 text-zinc-100 placeholder:text-zinc-500"
+                        className={`pl-8 h-8 text-sm ${isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-100 placeholder:text-zinc-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400'}`}
                         aria-label="Search your uploaded fonts"
                     />
                 </div>
@@ -202,12 +206,12 @@ const FontsPanel = () => {
                     {filteredFonts.map((font) => (
                         <div
                             key={font.name}
-                            className="group flex items-center justify-between p-2 rounded-md bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
+                            className={`group flex items-center justify-between p-2 rounded-md transition-colors ${isDark ? 'bg-zinc-800/50 hover:bg-zinc-800' : 'bg-zinc-50 hover:bg-zinc-100'}`}
                             role="listitem"
                         >
                             {/* Font name displayed in the font itself */}
                             <span
-                                className="text-base text-zinc-100 truncate flex-1"
+                                className={`text-base truncate flex-1 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}
                                 style={{ fontFamily: font.name }}
                                 title={font.name}
                             >
@@ -216,7 +220,7 @@ const FontsPanel = () => {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
+                                className={`h-7 w-7 opacity-0 group-hover:opacity-100 ${isDark ? 'text-zinc-400' : 'text-zinc-500'} hover:text-red-400 hover:bg-red-500/10`}
                                 onClick={() => handleDelete(font)}
                                 aria-label={`Delete font ${font.name}`}
                             >

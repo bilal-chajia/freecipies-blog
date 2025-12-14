@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Transformer, Line, Circle, Path } from 'react-konva';
 import { AnimatePresence } from 'motion/react';
 import useEditorStore from '../../store/useEditorStore';
+import { useUIStore } from '../../store/useStore';
 import { GRID_SIZE, SNAP_THRESHOLD } from './utils/canvasConstants';
 import { useKeyboardShortcuts, useSmartGuides, useImageLoader, getProxiedUrl } from './hooks';
 import useCustomFontLoader from './hooks/useCustomFontLoader';
@@ -64,6 +65,10 @@ const PinCanvas = ({
     const duplicateSelected = useEditorStore(state => state.duplicateSelected);
     const undo = useEditorStore(state => state.undo);
     const redo = useEditorStore(state => state.redo);
+
+    // Global Theme State
+    const { theme } = useUIStore();
+    const isDark = theme === 'dark';
 
     // Helper to check if element is selected
     const isSelected = (id) => selectedIds.has(id);
@@ -468,9 +473,9 @@ const PinCanvas = ({
                 <Line
                     key={`v${i}`}
                     points={[i * gridSize, 0, i * gridSize, canvasHeight]}
-                    stroke="rgba(255, 0, 0, 0.7)"
-                    strokeWidth={0.8}
-                    dash={[2, 4]}
+                    stroke={isDark ? "rgba(38, 0, 255, 0.97)" : "rgba(38, 0, 255, 0.97)"}
+                    strokeWidth={1}
+                    dash={[1, 8]}
                     listening={false}
                 />
             );
@@ -482,9 +487,9 @@ const PinCanvas = ({
                 <Line
                     key={`h${i}`}
                     points={[0, i * gridSize, canvasWidth, i * gridSize]}
-                    stroke="rgba(255, 0, 0, 0.7)"
-                    strokeWidth={0.8}
-                    dash={[2, 4]}
+                    stroke={isDark ? "rgba(38, 0, 255, 0.97)" : "rgba(38, 0, 255, 0.97)"}
+                    strokeWidth={1}
+                    dash={[1, 8]}
                     listening={false}
                 />
             );
@@ -856,7 +861,7 @@ const PinCanvas = ({
                     width: width,
                     fontSize: testSize,
                     fontFamily: element.fontFamily || 'Inter, sans-serif',
-                    fontStyle: `${element.fontWeight || 'normal'} ${element.fontStyle || 'normal'}`,
+                    fontStyle: `${element.fontStyle === 'italic' ? 'italic ' : ''}${element.fontWeight === 'bold' ? 'bold' : ''}`.trim() || 'normal',
                     lineHeight: lineHeight,
                     wrap: 'word',
                 });
@@ -890,7 +895,7 @@ const PinCanvas = ({
                 height={height}
                 fontSize={fontSize}
                 fontFamily={element.fontFamily || 'Inter, sans-serif'}
-                fontStyle={`${element.fontWeight || 'normal'} ${element.fontStyle || 'normal'}`}
+                fontStyle={`${element.fontStyle === 'italic' ? 'italic ' : ''}${element.fontWeight === 'bold' ? 'bold' : ''}`.trim() || 'normal'}
                 fill={element.color || '#ffffff'}
                 align={element.textAlign || 'center'}
                 verticalAlign="middle"
@@ -1025,6 +1030,8 @@ const PinCanvas = ({
                 position: 'relative',
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
+                backgroundColor: isDark ? '#1a1a2e' : '#edeff2', // Dynamic theme background
+                transition: 'background-color 0.3s ease'
             }}
         >
             <style>{`
@@ -1060,10 +1067,10 @@ const PinCanvas = ({
                             y={0}
                             width={canvasWidth}
                             height={canvasHeight}
-                            fill={template?.background_color || '#1a1a2e'}
-                            shadowColor="rgba(0,0,0,0.3)"
+                            fill={template?.background_color || (isDark ? '#1a1a2e' : '#ffffff')}
+                            shadowColor="rgba(0,0,0,0.15)"
                             shadowBlur={20}
-                            shadowOffset={{ x: 0, y: 10 }}
+                            shadowOffset={{ x: 0, y: 4 }}
                         />
 
                         {/* Render all elements (clipped to canvas) */}
@@ -1127,21 +1134,28 @@ const PinCanvas = ({
                         const rotation = selectedElement.rotation || 0;
                         const rad = (rotation * Math.PI) / 180;
 
+
+                        const screenTopY = (selectedElement.y + canvasOffsetY) * actualScale;
+                        const toolbarHeight = 36;
+                        const toolbarGap = 40;
+                        const isToolbarTop = screenTopY > (toolbarHeight + toolbarGap + 10);
+
+                        // Ideally: Toolbar Top -> Handle Bottom. Toolbar Bottom -> Handle Top.
+                        const handleY = isToolbarTop
+                            ? (selectedElement.height || 100) * (selectedElement.scaleY || 1) + (30 / actualScale) // Bottom
+                            : -(30 / actualScale); // Top
+
                         return (
                             <Group
                                 x={selectedElement.x}
                                 y={selectedElement.y}
                                 rotation={rotation}
+                                id="rotation-layer-group"
                             >
-                                {/* The Handle Group - positioned relative to element origin */}
-                                {/* Using React.useState for local hover state inside the IIFE-like render prop is tricky because hooks must be at top level. 
-                                    However, since we are inside a function component's render flow (PinCanvas), we can use a state declared at top level.
-                                    Let's use a new state 'hoveredRotationHandle' declared at PinCanvas level.
-                                */}
                                 <Group
                                     draggable
-                                    x={((selectedElement.width || 100) * (selectedElement.scaleX || 1)) + (40 / actualScale)}
-                                    y={((selectedElement.height || 100) * (selectedElement.scaleY || 1)) / 2}
+                                    x={((selectedElement.width || 100) * (selectedElement.scaleX || 1)) / 2}
+                                    y={handleY}
                                     scaleX={1 / actualScale}
                                     scaleY={1 / actualScale}
                                     opacity={isRotating ? 0 : 1}
@@ -1165,41 +1179,44 @@ const PinCanvas = ({
                                         const pointerX = pointer.x / actualScale - canvasOffsetX;
                                         const pointerY = pointer.y / actualScale - canvasOffsetY;
 
-                                        // CURRENT state
-                                        // Account for element scale & zoom for robust positioning/gap
-                                        const elScaleX = selectedElement.scaleX || 1;
-                                        const elScaleY = selectedElement.scaleY || 1;
-                                        const w = (selectedElement.width || 100) * elScaleX;
-                                        const h = (selectedElement.height || 100) * elScaleY;
-
-                                        // Gap should be constant in SCREEN PIXELS (e.g. 40px)
-                                        // So in canvas units, it must be 40 / actualScale
-                                        const gap = 40 / actualScale;
+                                        const w = (selectedElement.width || 100) * (selectedElement.scaleX || 1);
+                                        const h = (selectedElement.height || 100) * (selectedElement.scaleY || 1);
+                                        // Center of element
+                                        // P_center = P_topleft + Rot(w/2, h/2)
                                         const currRotRad = (selectedElement.rotation || 0) * Math.PI / 180;
-
-                                        // 1. Find current Center Point (C) based on top-left (x,y) and current rotation
-                                        // Standard formula for point rotated around origin (0,0) shifted by x,y:
-                                        // P_rotated = (x,y) + Rot(P_local)
-                                        // Center local is (w/2, h/2)
-                                        // Rot(x,y) = (x cos - y sin, x sin + y cos)
                                         const cx = selectedElement.x + (w / 2) * Math.cos(currRotRad) - (h / 2) * Math.sin(currRotRad);
                                         const cy = selectedElement.y + (w / 2) * Math.sin(currRotRad) + (h / 2) * Math.cos(currRotRad);
 
-                                        // 2. Calculate New Rotation
+                                        // Vector from center to pointer
                                         const vecX = pointerX - cx;
                                         const vecY = pointerY - cy;
+
+                                        // Angle of vector
                                         let newRotation = Math.atan2(vecY, vecX) * 180 / Math.PI;
+
+                                        // Adjust rotation based on handle position (Top vs Bottom)
+                                        // If handle is at bottom (+90 deg relative to center), dragging to right (0 deg) should mean -90 rotation?
+                                        // Actually atan2 gives absolute angle.
+                                        // If handle is at Bottom (90 deg relative to center):
+                                        // When pointer is at (0, 1) relative to center, rotation should be 0.
+                                        // atan2(1, 0) = 90 deg. 
+                                        // So newRotation = angle - 90.
+
+                                        // If handle is at Top (-90 deg relative to center):
+                                        // When pointer is at (0, -1), rotation should be 0.
+                                        // atan2(-1, 0) = -90.
+                                        // So newRotation = angle - (-90) = angle + 90.
+
+                                        const angleOffset = isToolbarTop ? 90 : -90;
+                                        newRotation -= angleOffset;
 
                                         // Snap
                                         if (e.evt.shiftKey) {
                                             newRotation = Math.round(newRotation / 45) * 45;
                                         }
 
-                                        // 3. Calculate New Top-Left (newX, newY) to keep Center (cx, cy) fixed
+                                        // Calculate new top-left to keep center fixed
                                         const newRotRad = newRotation * Math.PI / 180;
-                                        // We reverse the center calculation:
-                                        // newX = cx - Rot(w/2, h/2).x
-                                        // newY = cy - Rot(w/2, h/2).y
                                         const newX = cx - ((w / 2) * Math.cos(newRotRad) - (h / 2) * Math.sin(newRotRad));
                                         const newY = cy - ((w / 2) * Math.sin(newRotRad) + (h / 2) * Math.cos(newRotRad));
 
@@ -1209,28 +1226,35 @@ const PinCanvas = ({
                                             y: newY
                                         });
 
-                                        // Keep handle in place
-                                        e.target.position({ x: w + gap, y: h / 2 });
+                                        // Keep handle visual in place (relative to group rot)
+                                        e.target.position({
+                                            x: w / 2,
+                                            y: handleY
+                                        });
                                     }}
                                 >
                                     <Circle
                                         radius={14}
-                                        fill={hoveredRotationHandle ? "#8b5cf6" : "transparent"}
+                                        fill={hoveredRotationHandle ? "#8b5cf6" : "white"}
                                         stroke="#8b5cf6"
-                                        strokeWidth={2}
+                                        strokeWidth={1}
+                                        shadowColor="black"
+                                        shadowBlur={5}
+                                        shadowOpacity={0.1}
                                     />
                                     <Path
                                         data="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8 M21 3v5h-5"
                                         stroke={hoveredRotationHandle ? "white" : "#8b5cf6"}
-                                        strokeWidth={3}
+                                        strokeWidth={2.5}
                                         scaleX={0.6}
                                         scaleY={0.6}
-                                        x={-6.5}
-                                        y={-6.5}
+                                        x={-7.2}
+                                        y={-7.2}
                                     />
                                 </Group>
                             </Group>
                         );
+
                     })()}
                 </Layer>
             </Stage>

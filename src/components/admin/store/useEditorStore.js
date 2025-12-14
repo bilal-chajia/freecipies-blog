@@ -94,6 +94,8 @@ const useEditorStore = create((set, get) => ({
     resetTemplate: () => {
         set({
             template: {
+                id: null,
+                slug: null,
                 name: '',
                 background_color: '#ffffff',
                 width: 1000,

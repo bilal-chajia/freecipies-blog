@@ -116,9 +116,12 @@ const TemplateEditor = () => {
     const exportFnRef = useRef(null);
     const previewExportRef = useRef(null);
 
-    // Load existing template
+    // Load existing template or reset for new
     useEffect(() => {
-        if (!isNewTemplate) {
+        if (isNewTemplate) {
+            // Reset to blank template for new designs
+            resetTemplate();
+        } else {
             loadTemplate();
         }
     }, [slug]);
@@ -265,6 +268,10 @@ const TemplateEditor = () => {
                 return;
             }
 
+            // Determine if this is a new template based on store data, not URL
+            // A template is "new" if it doesn't have an ID (never saved to DB)
+            const isCreating = !template.id;
+
             // Generate slug if empty (for new templates)
             let templateSlug = template.slug;
             if (!templateSlug) {
@@ -291,22 +298,27 @@ const TemplateEditor = () => {
             };
 
             let response;
-            if (isNewTemplate) {
+            if (isCreating) {
                 response = await templatesAPI.create(templateData);
                 const success = response.data?.success !== false;
                 if (success) {
                     toast.success('Template created!');
                     markSaved();
+                    // Notify sidebar to add the new template
+                    window.dispatchEvent(new CustomEvent('template:saved', { detail: { template: templateData, isNew: true } }));
                     navigate(`/templates/${templateSlug}`);
                 }
             } else {
-                response = await templatesAPI.update(slug, templateData);
+                // Use template.slug for update (the existing slug in the DB)
+                response = await templatesAPI.update(template.slug, templateData);
                 const success = response.data?.success !== false;
                 if (success) {
                     toast.success('Template saved!');
                     // Update thumbnail first, then mark as saved (order matters!)
                     setTemplate({ thumbnail_url: templateData.thumbnail_url });
                     markSaved();
+                    // Notify sidebar to update this template in the list
+                    window.dispatchEvent(new CustomEvent('template:saved', { detail: { template: templateData, isNew: false } }));
                 }
             }
         } catch (error) {
@@ -418,17 +430,24 @@ const TemplateEditor = () => {
 
     return (
         <React.Fragment>
-            <EditorLayout onExport={handleSave} onPreview={handlePreview} onExportImage={handleExportImage} isPreviewOpen={isPreviewOpen}>
-                <PinCanvas
-                    template={template}
-                    editable={true}
-                    scale={0.5}
-                    zoom={zoom}
-                    showGrid={showGrid}
-                    onElementSelect={handleElementSelect}
-                    onExport={(fn) => { exportFnRef.current = fn; }}
-                />
-            </EditorLayout>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+            >
+                <EditorLayout onExport={handleSave} onPreview={handlePreview} onExportImage={handleExportImage} isPreviewOpen={isPreviewOpen}>
+                    <PinCanvas
+                        template={template}
+                        editable={true}
+                        scale={0.5}
+                        zoom={zoom}
+                        showGrid={showGrid}
+                        onElementSelect={handleElementSelect}
+                        onExport={(fn) => { exportFnRef.current = fn; }}
+                    />
+                </EditorLayout>
+            </motion.div>
 
             {/* Preview Panel - Slide in from right */}
             <AnimatePresence>

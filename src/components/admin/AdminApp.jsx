@@ -71,7 +71,39 @@ function AdminApp() {
             {/* Login Route */}
             <Route path="/login" element={<Login />} />
 
-            {/* Protected Admin Routes */}
+            {/* Template Editor - Full Screen (outside AdminLayout) */}
+            <Route
+              path="/templates"
+              element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <TemplateEditor />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/templates/new"
+              element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <TemplateEditor />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/templates/:slug"
+              element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <TemplateEditor />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Protected Admin Routes (inside AdminLayout) */}
             <Route
               path="/"
               element={
@@ -112,11 +144,6 @@ function AdminApp() {
               <Route path="pinterest/boards" element={<BoardsList />} />
               <Route path="pinterest/boards/new" element={<BoardEditor />} />
               <Route path="pinterest/boards/:id" element={<BoardEditor />} />
-
-              {/* Pin Templates */}
-              <Route path="templates" element={<TemplatesList />} />
-              <Route path="templates/new" element={<TemplateEditor />} />
-              <Route path="templates/:slug" element={<TemplateEditor />} />
 
               {/* Settings */}
               <Route path="settings" element={<Settings />} />

@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import useEditorStore from '../../store/useEditorStore';
+import { useUIStore } from '../../store/useStore';
 
 // Default canvas dimensions (fallback)
 const DEFAULT_CANVAS_WIDTH = 1000;
@@ -69,6 +70,10 @@ const FloatingToolbar = ({
 
     // Clipboard state for copy/paste
     const [clipboard, setClipboard] = useState(null);
+
+    // Theme state
+    const { theme } = useUIStore();
+    const isDark = theme === 'dark';
 
     // Calculate toolbar position based on selected element
     const calculatePosition = () => {
@@ -203,8 +208,8 @@ const FloatingToolbar = ({
         onElementChange?.(selectedElement.id, newProps);
     };
 
-    // Button style - purple icons matching selection border (#8b5cf6)
-    const buttonClass = "h-8 w-8 p-0 hover:bg-violet-500/20 text-violet-400 hover:text-violet-300";
+    // Button style - purple icons matching selection border (#8b5cf6) - smaller size
+    const buttonClass = `h-6 w-6 rounded-full p-0 border hover:bg-violet-500/20 ${isDark ? 'border-zinc-700 text-primary hover:text-white' : 'border-zinc-300 text-primary hover:text-primary/80 hover:bg-violet-100'}`;
 
     return (
         <motion.div
@@ -219,7 +224,10 @@ const FloatingToolbar = ({
                 top: toolbarPosition.y,
             }}
         >
-            <div className="flex items-center gap-0.5 bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl px-2 py-1.5">
+            <div className={`flex items-center gap-0.5 backdrop-blur-md border rounded-xl shadow-2xl px-2 py-1.5 ${isDark
+                ? 'bg-zinc-900/95 border-white/10'
+                : 'bg-white/95 border-zinc-200'
+                }`}>
                 {/* Rotate */}
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -230,7 +238,7 @@ const FloatingToolbar = ({
                             onClick={handleRotate}
                             disabled={isLocked}
                         >
-                            <RotateCw className="h-4 w-4" />
+                            <RotateCw className="h-3 w-3" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
@@ -248,9 +256,9 @@ const FloatingToolbar = ({
                             onClick={handleToggleLock}
                         >
                             {isLocked ? (
-                                <Lock className="h-4 w-4 text-amber-500" />
+                                <Lock className="h-3 w-3 text-amber-500" />
                             ) : (
-                                <Unlock className="h-4 w-4" />
+                                <Unlock className="h-3 w-3" />
                             )}
                         </Button>
                     </TooltipTrigger>
@@ -269,7 +277,7 @@ const FloatingToolbar = ({
                             onClick={handleDuplicate}
                             disabled={isLocked}
                         >
-                            <Copy className="h-4 w-4" />
+                            <Copy className="h-3 w-3" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
@@ -287,7 +295,7 @@ const FloatingToolbar = ({
                             onClick={handleDelete}
                             disabled={isLocked}
                         >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
@@ -306,17 +314,25 @@ const FloatingToolbar = ({
                             size="sm"
                             className={buttonClass}
                         >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-3 w-3" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent side="right" align="start" sideOffset={8} className="w-48 bg-zinc-900/95 backdrop-blur-md border-white/10 text-violet-300">
-                        <DropdownMenuItem onClick={handleCopy}>
-                            <ClipboardCopy className="h-4 w-4 mr-2" />
+                    <DropdownMenuContent
+                        side="right"
+                        align="start"
+                        sideOffset={8}
+                        className={`w-48 backdrop-blur-md border ${isDark
+                            ? 'bg-zinc-900/95 border-white/10 text-violet-300'
+                            : 'bg-white/95 border-zinc-200 text-zinc-700'
+                            }`}
+                    >
+                        <DropdownMenuItem onClick={handleCopy} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                            <ClipboardCopy className="h-3 w-3 mr-2" />
                             Copy
-                            <span className="ml-auto text-xs text-muted-foreground">Ctrl+C</span>
+                            <span className="ml-auto text-xs opacity-50">Ctrl+C</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handlePaste} disabled={!clipboard}>
-                            <Clipboard className="h-4 w-4 mr-2" />
+                        <DropdownMenuItem onClick={handlePaste} disabled={!clipboard} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                            <Clipboard className="h-3 w-3 mr-2" />
                             Paste
                             <span className="ml-auto text-xs text-muted-foreground">Ctrl+V</span>
                         </DropdownMenuItem>
@@ -324,30 +340,41 @@ const FloatingToolbar = ({
                         <DropdownMenuSeparator />
 
                         {/* Align to Page - inline buttons in two rows */}
+                        {/* Align to Page - inline buttons in two rows */}
                         <div className="px-2 py-1.5">
-                            <div className="text-xs text-muted-foreground mb-1.5">Align to page</div>
+                            <div className={`text-xs mb-1.5 ${isDark ? 'text-muted-foreground' : 'text-zinc-500'}`}>Align to page</div>
                             <div className="flex flex-col gap-1">
                                 <div className="flex gap-1">
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleAlignToPage('left')} title="Left">
-                                        <AlignLeft className="h-3.5 w-3.5" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleAlignToPage('center')} title="Center horizontally">
-                                        <AlignCenter className="h-3.5 w-3.5" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleAlignToPage('right')} title="Right">
-                                        <AlignRight className="h-3.5 w-3.5" />
-                                    </Button>
+                                    {['left', 'center', 'right'].map(align => (
+                                        <Button
+                                            key={align}
+                                            variant="ghost"
+                                            size="sm"
+                                            className={`h-7 w-7 p-0 ${isDark ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'}`}
+                                            onClick={() => handleAlignToPage(align)}
+                                            title={align.charAt(0).toUpperCase() + align.slice(1)}
+                                        >
+                                            {align === 'left' && <AlignLeft className="h-3.5 w-3.5" />}
+                                            {align === 'center' && <AlignCenter className="h-3.5 w-3.5" />}
+                                            {align === 'right' && <AlignRight className="h-3.5 w-3.5" />}
+                                        </Button>
+                                    ))}
                                 </div>
                                 <div className="flex gap-1">
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleAlignToPage('top')} title="Top">
-                                        <AlignVerticalJustifyStart className="h-3.5 w-3.5" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleAlignToPage('middle')} title="Center vertically">
-                                        <AlignVerticalJustifyCenter className="h-3.5 w-3.5" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleAlignToPage('bottom')} title="Bottom">
-                                        <AlignVerticalJustifyEnd className="h-3.5 w-3.5" />
-                                    </Button>
+                                    {['top', 'middle', 'bottom'].map(align => (
+                                        <Button
+                                            key={align}
+                                            variant="ghost"
+                                            size="sm"
+                                            className={`h-7 w-7 p-0 ${isDark ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'}`}
+                                            onClick={() => handleAlignToPage(align)}
+                                            title={align.charAt(0).toUpperCase() + align.slice(1)}
+                                        >
+                                            {align === 'top' && <AlignVerticalJustifyStart className="h-3.5 w-3.5" />}
+                                            {align === 'middle' && <AlignVerticalJustifyCenter className="h-3.5 w-3.5" />}
+                                            {align === 'bottom' && <AlignVerticalJustifyEnd className="h-3.5 w-3.5" />}
+                                        </Button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -355,20 +382,20 @@ const FloatingToolbar = ({
                         <DropdownMenuSeparator />
 
                         {/* Layer Controls */}
-                        <DropdownMenuItem onClick={() => bringToFront?.(selectedElement.id)}>
-                            <ChevronsUp className="h-4 w-4 mr-2" />
+                        <DropdownMenuItem onClick={() => bringToFront?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                            <ChevronsUp className="h-3 w-3 mr-2" />
                             Bring to front
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => moveElementUp?.(selectedElement.id)}>
-                            <ChevronUp className="h-4 w-4 mr-2" />
+                        <DropdownMenuItem onClick={() => moveElementUp?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                            <ChevronUp className="h-3 w-3 mr-2" />
                             Bring forward
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => moveElementDown?.(selectedElement.id)}>
-                            <ChevronDown className="h-4 w-4 mr-2" />
+                        <DropdownMenuItem onClick={() => moveElementDown?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                            <ChevronDown className="h-3 w-3 mr-2" />
                             Send backward
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => sendToBack?.(selectedElement.id)}>
-                            <ChevronsDown className="h-4 w-4 mr-2" />
+                        <DropdownMenuItem onClick={() => sendToBack?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                            <ChevronsDown className="h-3 w-3 mr-2" />
                             Send to back
                         </DropdownMenuItem>
                     </DropdownMenuContent>

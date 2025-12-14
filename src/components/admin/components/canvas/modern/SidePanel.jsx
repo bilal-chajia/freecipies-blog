@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
     LayoutTemplate,
     Type,
@@ -11,7 +12,8 @@ import {
     Plus,
     X,
     Loader2,
-    Settings
+    Settings,
+    Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 
 import useEditorStore from '../../../store/useEditorStore';
+import { useUIStore } from '../../../store/useStore';
 import DraggableLayersList from '../DraggableLayersList';
 import { mediaAPI, templatesAPI } from '../../../services/api';
 import ColorPicker from '../../ColorPicker';
@@ -47,6 +50,12 @@ const SidePanel = () => {
     const selectedIds = useEditorStore(state => state.selectedIds);
     const selectElement = useEditorStore(state => state.selectElement);
     const reorderElements = useEditorStore(state => state.reorderElements);
+    const hasUnsavedChanges = useEditorStore(state => state.hasUnsavedChanges);
+    const loadTemplateToStore = useEditorStore(state => state.loadTemplateToStore);
+
+    // Theme
+    const { theme } = useUIStore();
+    const isDark = theme === 'dark';
     const toggleLock = useEditorStore(state => state.toggleLock);
 
     // Local state for contents
@@ -66,6 +75,26 @@ const SidePanel = () => {
             loadTemplates();
         }
     }, [activeTab]);
+
+    // Listen for template save events to update the list
+    useEffect(() => {
+        const handleTemplateSaved = (event) => {
+            const { template: savedTemplate, isNew } = event.detail || {};
+            if (!savedTemplate) return;
+
+            setTemplates(prev => {
+                if (isNew) {
+                    // Add new template to the beginning of the list
+                    return [savedTemplate, ...prev];
+                } else {
+                    // Update existing template in place
+                    return prev.map(t => t.slug === savedTemplate.slug ? { ...t, ...savedTemplate } : t);
+                }
+            });
+        };
+        window.addEventListener('template:saved', handleTemplateSaved);
+        return () => window.removeEventListener('template:saved', handleTemplateSaved);
+    }, []);
 
     const loadTemplates = async () => {
         try {
@@ -179,42 +208,98 @@ const SidePanel = () => {
 
     // Render Tab Content
     const renderContent = () => {
+        // Handle template switch with unsaved changes warning
+        const handleTemplateClick = (t) => {
+            const loadTemplate = () => {
+                const elements = typeof t.elements_json === 'string' ? JSON.parse(t.elements_json) : t.elements_json;
+                loadTemplateToStore(t, elements);
+                navigate(`/templates/${t.slug}`);
+                toast.success('Template loaded');
+            };
+
+            if (hasUnsavedChanges) {
+                if (window.confirm('You have unsaved changes. Discard and load new template?')) {
+                    loadTemplate();
+                }
+            } else {
+                loadTemplate();
+            }
+        };
+
+        // Handle template delete
+        const handleDeleteTemplate = async (e, templateSlug) => {
+            e.stopPropagation();
+            if (window.confirm('Delete this template? This cannot be undone.')) {
+                try {
+                    await templatesAPI.delete(templateSlug);
+                    setTemplates(prev => prev.filter(t => t.slug !== templateSlug));
+                    toast.success('Template deleted');
+                } catch (error) {
+                    console.error('Delete failed:', error);
+                    toast.error('Failed to delete template');
+                }
+            }
+        };
+
         switch (activeTab) {
             case 'templates':
                 return (
                     <div className="p-4 space-y-4">
                         <div className="relative">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search templates..." className="pl-8 bg-zinc-900 border-zinc-800" />
+                            <Input placeholder="Search templates..." className={`pl-8 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-100 border-zinc-200'}`} />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-3">
                             {isLoadingTemplates ? (
-                                <div className="col-span-2 text-center py-8 text-muted-foreground">
-                                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                                    Loading...
+                                <div className="col-span-2 text-center py-12 text-muted-foreground">
+                                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
+                                    <p className="text-xs">Loading templates...</p>
                                 </div>
                             ) : templates.length === 0 ? (
-                                <p className="col-span-2 text-center text-sm text-muted-foreground">No templates found</p>
+                                <div className="col-span-2 text-center py-12 px-4 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
+                                    <p className="text-sm font-medium text-muted-foreground mb-1">No templates found</p>
+                                    <p className="text-xs text-zinc-400">Create a new design to save as a template</p>
+                                </div>
                             ) : (
-                                templates.map(t => (
-                                    <button
+                                templates.map((t, index) => (
+                                    <motion.button
                                         key={t.id}
-                                        className="aspect-[2/3] bg-zinc-800 rounded overflow-hidden hover:ring-2 ring-primary transition-all relative group"
-                                        onClick={() => {
-                                            const elements = typeof t.elements_json === 'string' ? JSON.parse(t.elements_json) : t.elements_json;
-                                            useEditorStore.getState().loadTemplate(t, elements);
-                                            toast.success('Template loaded');
-                                        }}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.05, duration: 0.3 }}
+                                        whileHover={{ scale: 1.05, zIndex: 10 }}
+                                        className={`group relative aspect-[2/3] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all border ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-zinc-200'}`}
+                                        onClick={() => handleTemplateClick(t)}
                                     >
+                                        {/* Thumbnail */}
                                         {t.thumbnail_url ? (
-                                            <img src={t.thumbnail_url} alt={t.name} className="w-full h-full object-cover" />
+                                            <img src={t.thumbnail_url} alt={t.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No Preview</div>
+                                            <div className={`w-full h-full flex flex-col items-center justify-center gap-2 p-4 ${isDark ? 'text-zinc-600' : 'text-zinc-300'}`} style={{ backgroundColor: t.background_color || (isDark ? '#27272a' : '#f4f4f5') }}>
+                                                <LayoutTemplate className="w-8 h-8 opacity-50" />
+                                            </div>
                                         )}
-                                        <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-xs truncate">
-                                            {t.name}
+
+                                        {/* Overlay Gradient */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                        {/* Delete Action */}
+                                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+                                            <button
+                                                onClick={(e) => handleDeleteTemplate(e, t.slug)}
+                                                className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg hover:scale-110 transition-all"
+                                                title="Delete template"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
-                                    </button>
+
+                                        {/* Content Info */}
+                                        <div className="absolute inset-x-0 bottom-0 p-3 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-black/60 backdrop-blur-sm">
+                                            <p className="text-xs font-semibold text-white truncate text-left">{t.name}</p>
+                                            {t.category && <p className="text-[10px] text-zinc-300 truncate text-left">{t.category}</p>}
+                                        </div>
+                                    </motion.button>
                                 ))
                             )}
                         </div>
@@ -224,28 +309,28 @@ const SidePanel = () => {
                 return (
                     <div className="p-4 space-y-4">
                         <Button
-                            className="w-full h-12 text-lg font-bold bg-zinc-800 hover:bg-zinc-700 justify-start px-4"
+                            className={`w-full h-12 text-lg font-bold justify-start px-4 ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'}`}
                             variant="ghost"
                             onClick={() => handleAddText('heading')}
                         >
                             Add a Heading
                         </Button>
                         <Button
-                            className="w-full h-10 text-base font-medium bg-zinc-800 hover:bg-zinc-700 justify-start px-4"
+                            className={`w-full h-10 text-base font-medium justify-start px-4 ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'}`}
                             variant="ghost"
                             onClick={() => handleAddText('subheading')}
                         >
                             Add a Subheading
                         </Button>
                         <Button
-                            className="w-full h-8 text-sm bg-zinc-800 hover:bg-zinc-700 justify-start px-4"
+                            className={`w-full h-8 text-sm justify-start px-4 ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'}`}
                             variant="ghost"
                             onClick={() => handleAddText('body')}
                         >
                             Add body text
                         </Button>
 
-                        <Separator className="bg-zinc-800" />
+                        <Separator className={`${isDark ? 'bg-zinc-800' : 'bg-zinc-200'}`} />
 
                         {/* Font Management Section */}
                         <FontsPanel />
@@ -254,23 +339,23 @@ const SidePanel = () => {
             case 'elements':
                 return (
                     <div className="p-4 space-y-4">
-                        <h3 className="text-sm font-medium mb-2">Image Slot</h3>
+                        <h3 className={`text-sm font-medium mb-2 ${isDark ? '' : 'text-zinc-900'}`}>Image Slot</h3>
                         <button
-                            className="w-full h-20 bg-zinc-800 rounded hover:bg-zinc-700 border-2 border-dashed border-zinc-600 flex flex-col items-center justify-center gap-2 transition-colors"
+                            className={`w-full h-20 rounded border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors ${isDark ? 'bg-zinc-800 hover:bg-zinc-700 border-zinc-600' : 'bg-zinc-100 hover:bg-zinc-200 border-zinc-300'}`}
                             onClick={handleAddImageSlot}
                         >
-                            <ImageIcon className="w-6 h-6 text-zinc-400" />
-                            <span className="text-xs text-zinc-400">Add Image Placeholder</span>
+                            <ImageIcon className={`w-6 h-6 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} />
+                            <span className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Add Image Placeholder</span>
                         </button>
 
-                        <Separator className="bg-zinc-800" />
+                        <Separator className={`${isDark ? 'bg-zinc-800' : 'bg-zinc-200'}`} />
 
-                        <h3 className="text-sm font-medium mb-2">Shapes</h3>
+                        <h3 className={`text-sm font-medium mb-2 ${isDark ? '' : 'text-zinc-900'}`}>Shapes</h3>
                         <div className="grid grid-cols-3 gap-2">
-                            <button className="aspect-square bg-zinc-800 rounded hover:bg-zinc-700 flex items-center justify-center" onClick={() => handleAddShape('rectangle')}>
+                            <button className={`aspect-square rounded flex items-center justify-center ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200'}`} onClick={() => handleAddShape('rectangle')}>
                                 <div className="w-8 h-8 bg-zinc-400 rounded-sm" />
                             </button>
-                            <button className="aspect-square bg-zinc-800 rounded hover:bg-zinc-700 flex items-center justify-center" onClick={() => handleAddShape('circle')}>
+                            <button className={`aspect-square rounded flex items-center justify-center ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200'}`} onClick={() => handleAddShape('circle')}>
                                 <div className="w-8 h-8 bg-zinc-400 rounded-full" />
                             </button>
                         </div>
@@ -315,19 +400,19 @@ const SidePanel = () => {
                             <Input
                                 value={template.name || ''}
                                 onChange={(e) => setTemplate({ name: e.target.value })}
-                                className="bg-zinc-900 border-zinc-800"
+                                className={`${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}
                             />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground">Description</label>
                             <textarea
-                                className="flex min-h-[80px] w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className={`flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${isDark ? 'border-zinc-800 bg-zinc-900 text-white' : 'border-zinc-200 bg-white text-zinc-900'}`}
                                 value={template.description || ''}
                                 onChange={(e) => setTemplate({ description: e.target.value })}
                                 placeholder="Template description..."
                             />
                         </div>
-                        <Separator className="bg-zinc-800" />
+                        <Separator className={`${isDark ? 'bg-zinc-800' : 'bg-zinc-200'}`} />
                         <div className="space-y-2 relative">
                             <label className="text-xs font-medium text-muted-foreground">Background Color</label>
                             <div className="flex gap-2">
@@ -340,7 +425,7 @@ const SidePanel = () => {
                                 <Input
                                     value={template.background_color || '#ffffff'}
                                     onChange={(e) => setTemplate({ background_color: e.target.value })}
-                                    className="flex-1 bg-zinc-900 border-zinc-800 font-mono"
+                                    className={`flex-1 font-mono ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}
                                 />
                             </div>
                             {showBgColorPicker && (
@@ -384,7 +469,7 @@ const SidePanel = () => {
                                         });
                                     }
                                 }}
-                                className="w-full h-10 px-3 rounded-md bg-zinc-900 border border-zinc-800 text-sm text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                className={`w-full h-10 px-3 rounded-md border text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`}
                             >
                                 {CANVAS_PRESETS.map((preset) => (
                                     <option key={`${preset.width}x${preset.height}`} value={`${preset.width}x${preset.height}`}>
@@ -444,10 +529,10 @@ const SidePanel = () => {
                                     }}
                                     className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-primary"
                                     style={{
-                                        background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, #3f3f46 ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, #3f3f46 100%)`
+                                        background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, ${isDark ? '#3f3f46' : '#e4e4e7'} ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, ${isDark ? '#3f3f46' : '#e4e4e7'} 100%)`
                                     }}
                                 />
-                                <span className="w-12 text-center text-xs text-white font-mono bg-zinc-800 px-2 py-1 rounded">
+                                <span className={`w-12 text-center text-xs font-mono px-2 py-1 rounded ${isDark ? 'text-white bg-zinc-800' : 'text-zinc-900 bg-zinc-100'}`}>
                                     ×{(((template.width || 1000) / (currentPreset?.width || 1000))).toFixed(1)}
                                 </span>
                             </div>
@@ -476,14 +561,17 @@ const SidePanel = () => {
     };
 
     return (
-        <div className="flex h-full select-none">
+        <div className="relative flex h-full select-none">
             {/* Icons Strip */}
-            <div className="w-16 bg-[#18181b] border-r border-[#27272a] flex flex-col items-center py-4 gap-4 z-20">
+            <div className={`w-16 border-r flex flex-col items-center py-4 gap-4 z-50 ${isDark ? 'bg-[#18181b] border-[#27272a]' : 'bg-white border-zinc-200'
+                }`}>
                 {TABS.map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
-                        className={`flex flex-col items-center gap-1 w-full py-2 transition-colors ${activeTab === tab.id ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+                        className={`flex flex-col items-center gap-1 w-full py-2 transition-colors ${activeTab === tab.id
+                            ? (isDark ? 'text-white' : 'text-primary')
+                            : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-500 hover:text-zinc-900')
                             }`}
                         title={tab.label}
                         aria-label={`Open ${tab.label} panel`}
@@ -494,28 +582,36 @@ const SidePanel = () => {
                 ))}
             </div>
 
-            {/* Drawer */}
-            {activeTab && (
-                <div className="w-64 bg-[#1e1e2e] border-r border-[#27272a] flex flex-col z-10 animate-in slide-in-from-left duration-200">
-                    <div className="h-12 border-b border-[#27272a] flex items-center justify-between px-4 bg-[#1e1e2e]">
-                        <span className="font-medium text-white">
-                            {TABS.find(t => t.id === activeTab)?.label}
-                        </span>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-zinc-400 hover:text-white"
-                            onClick={() => setActiveTab(null)}
-                            aria-label="Close panel"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                    </div>
-                    <ScrollArea className="flex-1 bg-[#1e1e2e]">
-                        {renderContent()}
-                    </ScrollArea>
-                </div>
-            )}
+            {/* Drawer with smooth animations - overlays content */}
+            <AnimatePresence>
+                {activeTab && (
+                    <motion.div
+                        initial={{ x: -256 }}
+                        animate={{ x: 0 }}
+                        exit={{ x: -256 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        className={`absolute left-16 top-0 bottom-0 w-64 border-r flex flex-col z-40 overflow-hidden shadow-xl ${isDark ? 'bg-[#1e1e2e] border-[#27272a]' : 'bg-white border-zinc-200'}`}
+                    >
+                        <div className={`h-12 border-b flex items-center justify-between px-4 ${isDark ? 'bg-[#1e1e2e] border-[#27272a]' : 'bg-white border-zinc-200'}`}>
+                            <span className={`font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                                {TABS.find(t => t.id === activeTab)?.label}
+                            </span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-400 hover:text-zinc-900'}`}
+                                onClick={() => setActiveTab(null)}
+                                aria-label="Close panel"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                        </div>
+                        <ScrollArea className={`flex-1 ${isDark ? 'bg-[#1e1e2e]' : 'bg-white'}`}>
+                            {renderContent()}
+                        </ScrollArea>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

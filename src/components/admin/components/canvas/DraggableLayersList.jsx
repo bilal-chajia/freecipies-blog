@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { GripVertical, Eye, EyeOff, Lock, Unlock, Type, Image, Square, Layers } from 'lucide-react';
+import { useUIStore } from '../../store/useStore';
 
 /**
  * DraggableLayersList - Drag-and-drop reorderable layers panel
@@ -11,8 +12,11 @@ const DraggableLayersList = ({
     onSelect,
     onReorder,
     onToggleVisibility,
-    onToggleLock,
+    onToggleLock
 }) => {
+    const { theme } = useUIStore();
+    const isDark = theme === 'dark';
+
     const [draggedId, setDraggedId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
     const [dragPosition, setDragPosition] = useState(null); // 'above' or 'below'
@@ -148,7 +152,10 @@ const DraggableLayersList = ({
                         className={`
               layer-item flex items-center gap-2 p-2 rounded cursor-grab active:cursor-grabbing
               transition-all duration-150 select-none
-              ${isSelected ? 'bg-primary/10 border border-primary shadow-sm' : 'hover:bg-muted border border-transparent'}
+              ${isSelected ?
+                                (isDark ? 'bg-primary/20 border border-primary/50' : 'bg-primary/10 border border-primary') :
+                                (isDark ? 'hover:bg-zinc-800 border border-transparent' : 'hover:bg-zinc-100 border border-transparent')
+                            }
               ${isDragging ? 'opacity-50 scale-95' : ''}
               ${isDropTarget && dragPosition === 'above' ? 'border-t-2 border-t-primary mt-1' : ''}
               ${isDropTarget && dragPosition === 'below' ? 'border-b-2 border-b-primary mb-1' : ''}
@@ -158,18 +165,24 @@ const DraggableLayersList = ({
                         <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0 hover:text-foreground" />
 
                         {/* Element Icon */}
-                        <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary/20' : 'bg-muted'
+                        <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${isSelected
+                            ? 'bg-primary/20'
+                            : (isDark ? 'bg-zinc-800' : 'bg-zinc-200')
                             }`}>
-                            <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <Icon className={`w-3.5 h-3.5 ${isSelected
+                                ? 'text-primary'
+                                : (isDark ? 'text-zinc-400' : 'text-zinc-500')
+                                }`} />
                         </div>
 
                         {/* Name */}
-                        <span className={`text-sm flex-1 truncate ${isSelected ? 'font-medium' : ''}`}>
+                        <span className={`text-sm flex-1 truncate ${isSelected ? 'font-medium' : ''} ${isDark ? 'text-zinc-200' : 'text-zinc-700'}`}>
                             {el.name || el.type}
                         </span>
 
                         {/* Type badge */}
-                        <span className="text-[10px] text-muted-foreground capitalize px-1.5 py-0.5 bg-muted rounded">
+                        <span className={`text-[10px] capitalize px-1.5 py-0.5 rounded ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-zinc-200 text-zinc-600'
+                            }`}>
                             {el.type}
                         </span>
 
@@ -180,7 +193,7 @@ const DraggableLayersList = ({
                                     e.stopPropagation();
                                     onToggleLock(el.id);
                                 }}
-                                className={`p-1 rounded hover:bg-muted transition-colors ${el.locked ? 'text-amber-500' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`p-1 rounded-full hover:bg-muted transition-colors ${el.locked ? 'text-amber-500' : 'text-muted-foreground hover:text-foreground'}`}
                                 title={el.locked ? 'Unlock element' : 'Lock element'}
                             >
                                 {el.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}

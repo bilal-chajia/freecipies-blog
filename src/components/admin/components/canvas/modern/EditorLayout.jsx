@@ -1,9 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useUIStore } from '../../../store/useStore';
 import TopToolbar from './TopToolbar';
 import SidePanel from './SidePanel';
 import ContextToolbar from './ContextToolbar';
 
 const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewOpen }) => {
+    // Theme
+    const { theme } = useUIStore();
+    const isDark = theme === 'dark';
+
     // Left mouse button panning state
     const [isPanning, setIsPanning] = useState(false);
     const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -60,7 +65,7 @@ const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewO
     };
 
     return (
-        <div className="fixed inset-0 flex flex-col overflow-hidden bg-zinc-950 text-white z-50">
+        <div className={`h-screen w-screen flex flex-col overflow-hidden ${isDark ? 'bg-zinc-950' : 'bg-zinc-100'}`}>
             {/* Top Navigation Bar */}
             <TopToolbar onExport={onExport} onPreview={onPreview} onExportImage={onExportImage} isPreviewOpen={isPreviewOpen} />
 
@@ -68,8 +73,8 @@ const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewO
                 {/* Left Sidebar (Icons + Drawer) */}
                 <SidePanel />
 
-                {/* Main Content Area */}
-                <div className="flex-1 flex flex-col relative min-w-0">
+                {/* Main Content Area - with smooth transition when sidebar opens/closes */}
+                <div className="flex-1 flex flex-col relative min-w-0 transition-all duration-300 ease-out">
                     {/* Canvas Scroll Container */}
                     <div
                         ref={scrollContainerRef}
@@ -93,32 +98,17 @@ const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewO
                             }
                         `}</style>
 
-                        {/* Inner wrapper for centering - clickable for panning */}
+                        {/* Background grid pattern */}
                         <div
+                            className="absolute inset-0 opacity-[0.03] pointer-events-none"
                             style={{
-                                minWidth: '100%',
-                                minHeight: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '40px',
-                                boxSizing: 'border-box',
-                                cursor: isPanning ? 'grabbing' : 'grab',
+                                backgroundImage: `radial-gradient(circle, ${isDark ? '#fff' : '#000'} 1px, transparent 1px)`,
+                                backgroundSize: '20px 20px',
                             }}
-                            onMouseDown={handleWrapperMouseDown}
-                        >
-                            {/* Background grid pattern */}
-                            <div
-                                className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                                style={{
-                                    backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
-                                    backgroundSize: '20px 20px',
-                                }}
-                            />
+                        />
 
-                            {/* The Canvas */}
-                            {children}
-                        </div>
+                        {/* The Canvas - fills entire area */}
+                        {children}
                     </div>
                 </div>
             </div>

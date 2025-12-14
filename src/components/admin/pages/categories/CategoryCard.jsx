@@ -9,8 +9,10 @@ import {
 import { Switch } from '@/components/ui/switch';
 import ColorPicker from '../../components/ColorPicker';
 import { getContrastColor } from '../../utils/helpers';
+import { useSettingsStore } from '../../store/useStore';
 
 const CategoryCard = ({ category, onDelete, onUpdate }) => {
+    const { settings } = useSettingsStore();
     const [updating, setUpdating] = useState(false);
     const [showColorPicker, setShowColorPicker] = useState(false);
     const colorTriggerRef = useRef(null);
@@ -143,8 +145,8 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                             <h3
                                 className="font-bold text-sm tracking-tight mb-2 inline-block px-3 py-1 rounded-full shadow-sm whitespace-nowrap"
                                 style={{
-                                    backgroundColor: category.color || '#ff6600',
-                                    color: getContrastColor(category.color || '#ff6600')
+                                    backgroundColor: settings?.badgeColor || '#3b82f6',
+                                    color: category.color || '#ffffff'
                                 }}
                             >
                                 {category.label}

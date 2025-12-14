@@ -20,6 +20,8 @@ import {
     RotateCcw,
 } from 'lucide-react';
 
+import { useUIStore } from '../../store/useStore';
+
 /**
  * CanvasToolbar - Floating toolbar for canvas controls
  * Features: Zoom, Grid toggle, Undo/Redo, Preview
@@ -37,6 +39,9 @@ const CanvasToolbar = ({
     onExport,
     onReset,
 }) => {
+    const { theme } = useUIStore();
+    const isDark = theme === 'dark';
+
     const handleZoomIn = () => {
         onZoomChange?.(Math.min(200, zoom + 25));
     };
@@ -51,14 +56,14 @@ const CanvasToolbar = ({
 
     return (
         <TooltipProvider>
-            <div className="canvas-toolbar flex items-center gap-1 px-3 py-2 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg">
+            <div className={`canvas-toolbar flex items-center gap-1 px-3 py-2 backdrop-blur-sm border rounded-lg shadow-lg ${isDark ? 'bg-zinc-900/95 border-zinc-800' : 'bg-white/95 border-zinc-200'}`}>
                 {/* Zoom Controls */}
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className={`h-8 w-8 rounded-full ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                             onClick={handleZoomOut}
                             disabled={zoom <= 25}
                         >
@@ -87,7 +92,7 @@ const CanvasToolbar = ({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className={`h-8 w-8 rounded-full ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                             onClick={handleZoomIn}
                             disabled={zoom >= 200}
                         >
@@ -102,7 +107,7 @@ const CanvasToolbar = ({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className={`h-8 w-8 rounded-full ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                             onClick={handleFitToScreen}
                         >
                             <Maximize className="w-4 h-4" />
@@ -111,7 +116,7 @@ const CanvasToolbar = ({
                     <TooltipContent>Fit to Screen (100%)</TooltipContent>
                 </Tooltip>
 
-                <Separator orientation="vertical" className="h-6 mx-1" />
+                <Separator orientation="vertical" className={`h-6 mx-1 ${isDark ? 'bg-zinc-700' : 'bg-zinc-200'}`} />
 
                 {/* Grid Toggle */}
                 <Tooltip>
@@ -119,7 +124,7 @@ const CanvasToolbar = ({
                         <Button
                             variant={showGrid ? 'secondary' : 'ghost'}
                             size="icon"
-                            className="h-8 w-8"
+                            className={`h-8 w-8 rounded-full ${showGrid ? 'text-violet-500 bg-violet-500/10' : (isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900')}`}
                             onClick={onGridToggle}
                         >
                             <Grid3X3 className="w-4 h-4" />
@@ -128,7 +133,7 @@ const CanvasToolbar = ({
                     <TooltipContent>Grid Snap (Off = Smart Guides)</TooltipContent>
                 </Tooltip>
 
-                <Separator orientation="vertical" className="h-6 mx-1" />
+                <Separator orientation="vertical" className={`h-6 mx-1 ${isDark ? 'bg-zinc-700' : 'bg-zinc-200'}`} />
 
                 {/* Undo/Redo */}
                 <Tooltip>
@@ -136,7 +141,7 @@ const CanvasToolbar = ({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className={`h-8 w-8 rounded-full ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                             onClick={onUndo}
                             disabled={!canUndo}
                         >
@@ -151,7 +156,7 @@ const CanvasToolbar = ({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className={`h-8 w-8 rounded-full ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                             onClick={onRedo}
                             disabled={!canRedo}
                         >
@@ -161,7 +166,7 @@ const CanvasToolbar = ({
                     <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
                 </Tooltip>
 
-                <Separator orientation="vertical" className="h-6 mx-1" />
+                <Separator orientation="vertical" className={`h-6 mx-1 ${isDark ? 'bg-zinc-700' : 'bg-zinc-200'}`} />
 
                 {/* Preview & Export */}
                 <Tooltip>
@@ -169,7 +174,7 @@ const CanvasToolbar = ({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className={`h-8 w-8 rounded-full ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                             onClick={onPreview}
                         >
                             <Eye className="w-4 h-4" />
@@ -183,7 +188,7 @@ const CanvasToolbar = ({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className={`h-8 w-8 rounded-full ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                             onClick={onExport}
                         >
                             <Download className="w-4 h-4" />
@@ -197,7 +202,7 @@ const CanvasToolbar = ({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                             onClick={onReset}
                         >
                             <RotateCcw className="w-4 h-4" />
