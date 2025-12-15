@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Upload, X, Image as ImageIcon, Layout, Type, FileText, Settings, Globe, FileJson, Link2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
@@ -23,8 +23,6 @@ import MediaDialog from '../../components/MediaDialog';
 import ImageEditor from '../../components/ImageEditor';
 import ColorPicker from '../../components/ColorPicker';
 
-// Module-level cache to prevent repeated API calls during HMR/remounts
-const loadedCategories = new Map();
 
 const CategoryEditor = () => {
   const { slug } = useParams();
@@ -81,20 +79,20 @@ const CategoryEditor = () => {
     }
   };
 
-  useEffect(() => {
-    // Only load if we're in edit mode and haven't loaded this slug recently (within 5 seconds)
-    const lastLoaded = loadedCategories.get(slug);
-    const now = Date.now();
+  // Ref to prevent duplicate API calls in React Strict Mode
+  const isLoadingRef = useRef(false);
 
-    if (isEditMode && (!lastLoaded || now - lastLoaded > 5000)) {
-      loadedCategories.set(slug, now);
+  useEffect(() => {
+    // Always load the category when in edit mode
+    if (isEditMode && !isLoadingRef.current) {
       loadCategory();
-    } else if (isEditMode) {
-      setLoading(false); // Already loaded, don't show loading state
     }
   }, [slug]);
 
   const loadCategory = async () => {
+    if (isLoadingRef.current) return; // Prevent duplicate calls
+    isLoadingRef.current = true;
+
     try {
       setLoading(true);
       const response = await categoriesAPI.getBySlug(slug);
@@ -123,20 +121,39 @@ const CategoryEditor = () => {
       setError('Failed to load category');
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
-  // Convert image file to WebP using Canvas API
+  // Convert image file to WebP using Canvas API with optional resizing
+  const MAX_DIMENSION = 2048; // Maximum width or height in pixels
+
   const convertToWebP = (file) => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
+        // Calculate new dimensions if image exceeds max size
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          const aspectRatio = width / height;
+          if (width > height) {
+            width = MAX_DIMENSION;
+            height = Math.round(width / aspectRatio);
+          } else {
+            height = MAX_DIMENSION;
+            width = Math.round(height * aspectRatio);
+          }
+          console.log(`Resizing image from ${img.width}x${img.height} to ${width}x${height}`);
+        }
+
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = width;
+        canvas.height = height;
 
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
           (blob) => {
@@ -160,7 +177,7 @@ const CategoryEditor = () => {
             }
           },
           'image/webp',
-          0.9
+          0.85 // Slightly lower quality for better file size
         );
       };
       img.onerror = () => reject(new Error('Failed to load image'));

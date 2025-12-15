@@ -11,41 +11,48 @@ import ColorPicker from '../../components/ColorPicker';
 import { getContrastColor } from '../../utils/helpers';
 import { useSettingsStore } from '../../store/useStore';
 
-const CategoryCard = ({ category, onDelete, onUpdate }) => {
+const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
     const { settings } = useSettingsStore();
-    const [updating, setUpdating] = useState(false);
     const [showColorPicker, setShowColorPicker] = useState(false);
+    const [pendingColor, setPendingColor] = useState(null);
     const colorTriggerRef = useRef(null);
 
     const getTriggerRect = () => colorTriggerRef.current?.getBoundingClientRect() || null;
 
     const handleToggle = async (field, value) => {
-        if (updating) return;
-        setUpdating(true);
-        try {
-            await onUpdate(category.slug, { [field]: value });
-        } finally {
-            setUpdating(false);
-        }
+        if (isUpdating) return;
+        await onUpdate(category.slug, { [field]: value });
     };
 
-    const handleColorChange = async (newColor) => {
-        setUpdating(true);
-        try {
-            await onUpdate(category.slug, { color: newColor });
-        } finally {
-            setUpdating(false);
+    // Handle color change locally (no API call)
+    const handleColorChange = (newColor) => {
+        setPendingColor(newColor);
+    };
+
+    // Save color when picker closes
+    const handleColorPickerClose = async () => {
+        setShowColorPicker(false);
+        if (pendingColor && pendingColor !== category.color) {
+            setUpdating(true);
+            try {
+                await onUpdate(category.slug, { color: pendingColor });
+            } finally {
+                setUpdating(false);
+                setPendingColor(null);
+            }
+        } else {
+            setPendingColor(null);
         }
     };
 
     return (
         <motion.div
-            whileHover={{ y: -4, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ y: -2, scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className="h-full"
         >
-            <Card className="group relative overflow-hidden border-0 bg-card shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl rounded-xl h-full flex flex-col aspect-square p-0 gap-0">
+            <Card className="group relative overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg rounded-lg h-full flex flex-col aspect-square p-0 gap-0">
                 {/* Image Section - Full Cover */}
                 <div className="absolute inset-0 z-0">
                     {category.image?.url ? (
@@ -66,92 +73,85 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                 </div>
 
                 {/* Action Buttons - Top Center (Hover Only) */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 pointer-events-auto w-max max-w-[90%] flex-wrap justify-center">
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 pointer-events-auto bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
                     {/* Online Toggle */}
-                    <div
-                        className="flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-full h-6 px-1.5"
-                        title="Online Status"
+                    <Switch
+                        id={`online-${category.slug}`}
+                        checked={category.isOnline}
+                        onCheckedChange={(checked) => handleToggle('isOnline', checked)}
                         onClick={(e) => e.stopPropagation()}
-                    >
-                        <Switch
-                            id={`online-${category.slug}`}
-                            checked={category.isOnline}
-                            onCheckedChange={(checked) => handleToggle('isOnline', checked)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="scale-75 data-[state=checked]:bg-emerald-500"
-                        />
-                    </div>
+                        disabled={isUpdating}
+                        className="scale-[0.65] data-[state=checked]:bg-emerald-500"
+                        title="Online Status"
+                    />
 
                     {/* Featured Toggle */}
-                    <div
-                        className="flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-full h-6 px-1.5"
-                        title="Featured Status"
+                    <Switch
+                        id={`featured-${category.slug}`}
+                        checked={category.isFavorite}
+                        onCheckedChange={(checked) => handleToggle('isFavorite', checked)}
                         onClick={(e) => e.stopPropagation()}
-                    >
-                        <Switch
-                            id={`featured-${category.slug}`}
-                            checked={category.isFavorite}
-                            onCheckedChange={(checked) => handleToggle('isFavorite', checked)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="scale-75 data-[state=checked]:bg-yellow-400"
-                        />
-                    </div>
+                        disabled={isUpdating}
+                        className="scale-[0.65] data-[state=checked]:bg-yellow-400"
+                        title="Featured Status"
+                    />
 
-                    <div className="w-px h-4 bg-white/20 mx-0.5"></div>
+                    <div className="w-px h-4 bg-white/30 mx-0.5"></div>
 
                     {/* Color Picker */}
-                    <div className="relative" onClick={(e) => e.stopPropagation()}>
-                        <Button
+                    <div className="relative flex items-center" onClick={(e) => e.stopPropagation()}>
+                        <button
                             ref={colorTriggerRef}
-                            variant="secondary"
-                            size="icon"
-                            className="h-6 w-6 bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm rounded-full overflow-hidden"
+                            className="h-4 w-4 rounded-full overflow-hidden border border-white/30 hover:border-white/60 transition-colors flex-shrink-0"
                             onClick={() => setShowColorPicker(!showColorPicker)}
                             title="Change Badge Color"
                         >
                             <div
-                                className="absolute inset-1 rounded-full"
-                                style={{ backgroundColor: category.color || '#ff6600' }}
+                                className="w-full h-full"
+                                style={{ backgroundColor: pendingColor || category.color || '#ff6600' }}
                             />
-                        </Button>
+                        </button>
                         {showColorPicker && (
                             <ColorPicker
-                                color={category.color || '#ff6600'}
+                                color={pendingColor || category.color || '#ff6600'}
                                 onChange={handleColorChange}
-                                onClose={() => setShowColorPicker(false)}
+                                onClose={handleColorPickerClose}
                                 triggerRect={getTriggerRect()}
                             />
                         )}
                     </div>
-                    <Link to={`/categories/${category.slug}`}>
-                        <Button variant="secondary" size="icon" className="h-6 w-6 bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm rounded-full">
+
+                    {/* Edit Button */}
+                    <Link to={`/categories/${category.slug}`} onClick={(e) => e.stopPropagation()} className="flex items-center">
+                        <button className="h-4 w-4 flex items-center justify-center text-white/80 hover:text-white transition-colors" title="Edit">
                             <Edit2 className="h-3 w-3" />
-                        </Button>
+                        </button>
                     </Link>
-                    <Button
-                        variant="destructive"
-                        size="icon"
-                        className="h-6 w-6 bg-red-500/80 hover:bg-red-600/90 backdrop-blur-sm rounded-full"
-                        onClick={() => onDelete(category)}
+
+                    {/* Delete Button */}
+                    <button
+                        className="h-4 w-4 flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
+                        onClick={(e) => { e.stopPropagation(); onDelete(category); }}
+                        title="Delete"
                     >
                         <Trash2 className="h-3 w-3" />
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Content Overlay */}
-                <div className="relative z-10 flex flex-col h-full p-4 text-white pointer-events-none">
-                    <div className="mt-auto space-y-3 pointer-events-auto">
-                        <div className="border-t border-white/20 pt-3">
+                <div className="relative z-10 flex flex-col h-full p-3 text-white pointer-events-none">
+                    <div className="mt-auto space-y-1.5 pointer-events-auto">
+                        <div className="border-t border-white/20 pt-2">
                             <h3
-                                className="font-bold text-sm tracking-tight mb-2 inline-block px-3 py-1 rounded-full shadow-sm whitespace-nowrap"
+                                className="font-semibold text-xs tracking-tight mb-1 inline-flex items-center justify-center px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap leading-none"
                                 style={{
-                                    backgroundColor: settings?.badgeColor || '#3b82f6',
-                                    color: category.color || '#ffffff'
+                                    backgroundColor: pendingColor || category.color || '#ff6600',
+                                    color: '#000000'
                                 }}
                             >
                                 {category.label}
                             </h3>
-                            <p className="text-xs text-gray-300 line-clamp-2">
+                            <p className="text-[10px] text-gray-300 line-clamp-1">
                                 {category.shortDescription || 'No description provided.'}
                             </p>
                         </div>

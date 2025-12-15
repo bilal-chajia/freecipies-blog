@@ -222,6 +222,55 @@ export const templatesAPI = {
 };
 
 // ============================================
+// BRANDING API (Logos & Favicons)
+// ============================================
+
+export const brandingAPI = {
+  // Get current branding assets
+  getAll: () => api.get('/branding'),
+
+  // Upload logo (type: main, dark, mobile)
+  uploadLogo: (type, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/branding/logo/${type}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  // Upload favicon
+  uploadFavicon: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/branding/favicon', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  // Upload favicon variant (generated size)
+  uploadFaviconVariant: (file, filename) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('filename', filename);
+    return api.put('/branding', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  // Delete logo
+  deleteLogo: (type) => api.delete(`/branding/logo/${type}`),
+
+  // Delete favicon and all variants
+  deleteFavicon: () => api.delete('/branding/favicon'),
+};
+
+// ============================================
 // STATS API (Dashboard)
 // ============================================
 

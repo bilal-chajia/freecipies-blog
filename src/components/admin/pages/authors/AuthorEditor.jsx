@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
@@ -11,9 +11,6 @@ import { authorsAPI, mediaAPI } from '../../services/api';
 import { cn } from '@/lib/utils';
 import MediaDialog from '../../components/MediaDialog';
 import ImageEditor from '../../components/ImageEditor';
-
-// Module-level cache to prevent repeated API calls
-const loadedAuthors = new Map();
 
 const AuthorEditor = () => {
   const { slug } = useParams();
@@ -47,20 +44,21 @@ const AuthorEditor = () => {
 
   const [activeTab, setActiveTab] = useState('basic');
 
+  // Ref to prevent duplicate API calls in React Strict Mode
+  const isLoadingRef = useRef(false);
+
   // Load author from API
   useEffect(() => {
-    const lastLoaded = loadedAuthors.get(slug);
-    const now = Date.now();
-
-    if (isEditMode && (!lastLoaded || now - lastLoaded > 5000)) {
-      loadedAuthors.set(slug, now);
+    // Always load the author when in edit mode
+    if (isEditMode && !isLoadingRef.current) {
       loadAuthor();
-    } else if (isEditMode) {
-      setLoading(false);
     }
   }, [slug]);
 
   const loadAuthor = async () => {
+    if (isLoadingRef.current) return; // Prevent duplicate calls
+    isLoadingRef.current = true;
+
     try {
       setLoading(true);
       const response = await authorsAPI.getBySlug(slug);
@@ -92,20 +90,39 @@ const AuthorEditor = () => {
       }
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
-  // Convert image file to WebP using Canvas API
+  // Convert image file to WebP using Canvas API with optional resizing
+  const MAX_DIMENSION = 2048; // Maximum width or height in pixels
+
   const convertToWebP = (file) => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
+        // Calculate new dimensions if image exceeds max size
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          const aspectRatio = width / height;
+          if (width > height) {
+            width = MAX_DIMENSION;
+            height = Math.round(width / aspectRatio);
+          } else {
+            height = MAX_DIMENSION;
+            width = Math.round(height * aspectRatio);
+          }
+          console.log(`Resizing image from ${img.width}x${img.height} to ${width}x${height}`);
+        }
+
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = width;
+        canvas.height = height;
 
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
           (blob) => {
@@ -129,7 +146,7 @@ const AuthorEditor = () => {
             }
           },
           'image/webp',
-          0.9
+          0.85 // Slightly lower quality for better file size
         );
       };
       img.onerror = () => reject(new Error('Failed to load image'));

@@ -883,6 +883,83 @@ const PinCanvas = ({
 
         const isLocked = element.locked;
 
+        // Get effect settings
+        const effect = element.effect || { type: 'none' };
+
+        // Calculate effect-based properties
+        let effectProps = {};
+
+        if (effect.type === 'shadow') {
+            const offsetVal = effect.offset || 50;
+            const dir = (effect.direction || 45) * Math.PI / 180;
+            effectProps = {
+                shadowColor: effect.color || 'rgba(0,0,0,0.5)',
+                shadowBlur: (effect.blur || 50) / 10,
+                shadowOffsetX: offsetVal * 0.1 * Math.cos(dir),
+                shadowOffsetY: offsetVal * 0.1 * Math.sin(dir),
+                shadowOpacity: 1 - ((effect.transparency || 40) / 100),
+            };
+        } else if (effect.type === 'lift') {
+            effectProps = {
+                shadowColor: 'rgba(0,0,0,0.4)',
+                shadowBlur: (effect.blur || 50) / 5,
+                shadowOffsetX: 0,
+                shadowOffsetY: 15,
+                shadowOpacity: 0.5,
+            };
+        } else if (effect.type === 'hollow') {
+            effectProps = {
+                stroke: element.color || '#000000',
+                strokeWidth: (effect.thickness || 50) / 25,
+                fillEnabled: false,
+            };
+        } else if (effect.type === 'outline') {
+            effectProps = {
+                stroke: effect.color || '#000000',
+                strokeWidth: (effect.thickness || 50) / 15,
+            };
+        } else if (effect.type === 'echo') {
+            // Echo requires multiple layers - simplified as shadow here
+            const offsetVal = (effect.offset || 50) / 10;
+            effectProps = {
+                shadowColor: effect.color || '#000000',
+                shadowBlur: 0,
+                shadowOffsetX: -offsetVal,
+                shadowOffsetY: 0,
+                shadowOpacity: 0.5,
+            };
+        } else if (effect.type === 'glitch') {
+            // Glitch simplified - purple shadow offset
+            const offsetVal = (effect.offset || 50) / 20;
+            effectProps = {
+                shadowColor: '#ff00ff',
+                shadowBlur: 0,
+                shadowOffsetX: offsetVal,
+                shadowOffsetY: -offsetVal,
+                shadowOpacity: 0.7,
+            };
+        } else if (effect.type === 'neon') {
+            effectProps = {
+                shadowColor: effect.color || '#ff00ff',
+                shadowBlur: (effect.blur || 50) / 2,
+                shadowOffsetX: 0,
+                shadowOffsetY: 0,
+                shadowOpacity: 1,
+            };
+        } else if (effect.type === 'splice') {
+            const offsetVal = (effect.offset || 50) / 10;
+            effectProps = {
+                stroke: element.color || '#000000',
+                strokeWidth: (effect.thickness || 50) / 25,
+                fillEnabled: false,
+                shadowColor: effect.color || '#cccccc',
+                shadowBlur: 0,
+                shadowOffsetX: offsetVal,
+                shadowOffsetY: offsetVal,
+                shadowOpacity: 1,
+            };
+        }
+
         // Render Text directly - zone is resizable, uses auto-fit or stored fontSize
         return (
             <Text
@@ -895,46 +972,83 @@ const PinCanvas = ({
                 height={height}
                 fontSize={fontSize}
                 fontFamily={element.fontFamily || 'Inter, sans-serif'}
-                fontStyle={`${element.fontStyle === 'italic' ? 'italic ' : ''}${element.fontWeight === 'bold' ? 'bold' : ''}`.trim() || 'normal'}
-                fill={element.color || '#ffffff'}
+                fontStyle={(() => {
+                    const italic = element.fontStyle === 'italic' ? 'italic' : '';
+                    // Handle numeric weights (100-900) and keywords (bold, normal)
+                    const weight = element.fontWeight || 'normal';
+                    const weightStr = weight === 'normal' ? '' : weight;
+                    return [italic, weightStr].filter(Boolean).join(' ') || 'normal';
+                })()}
+                fill={effectProps.fillEnabled === false ? 'transparent' : (element.color || '#ffffff')}
                 align={element.textAlign || 'center'}
                 verticalAlign="middle"
                 letterSpacing={element.letterSpacing || 0}
                 lineHeight={lineHeight}
                 textDecoration={element.textDecoration || ''}
-                shadowColor={element.shadow?.color}
-                shadowBlur={element.shadow?.blur || 0}
-                shadowOffsetX={element.shadow?.offsetX || 0}
-                shadowOffsetY={element.shadow?.offsetY || 0}
+                {...effectProps}
                 wrap="word"
                 ellipsis={false}
                 rotation={element.rotation || 0}
                 onDblClick={isLocked ? undefined : (e) => handleTextDoubleClick(element, e)}
                 onDblTap={isLocked ? undefined : (e) => handleTextDoubleClick(element, e)}
                 onTransform={isLocked ? undefined : (e) => {
-                    // User is resizing the text zone
-                    // Just reset scale and apply to width/height
                     const node = e.target;
                     const scaleX = node.scaleX();
                     const scaleY = node.scaleY();
 
-                    node.setAttrs({
-                        width: Math.max(50, node.width() * scaleX),
-                        height: Math.max(30, node.height() * scaleY),
-                        scaleX: 1,
-                        scaleY: 1,
-                    });
+                    // Reset scale
+                    node.scaleX(1);
+                    node.scaleY(1);
+
+                    // Update width and height
+                    const newWidth = Math.max(50, node.width() * scaleX);
+                    const newHeight = Math.max(30, node.height() * scaleY);
+
+                    // Update fontSize based on scale
+                    // Using Math.max(scaleX, scaleY) ensures text grows if either dimension grows
+                    // But typically text scaling matches height scaling or proportional scaling
+                    const scale = Math.max(scaleX, scaleY);
+                    const currentFontSize = element.fontSize || 32;
+                    const newFontSize = Math.round(currentFontSize * scale);
+
+                    node.width(newWidth);
+                    node.height(newHeight);
+
+                    // We can't easily update React state mid-transform without lag
+                    // But we can update the Konva node props directly for preview
+                    // However, for controlled components, it's tricky.
+                    // The best way for text scaling in Konva with React is often to let scale apply, 
+                    // then reset scale and update fontSize on TransformEnd.
+                    // But user wants "always on text box", implying real-time update.
+
+                    // Let's try just updating the store on transform end, but for now 
+                    // we HAVE to use the "enabled anchors" approach if we want width-only resize vs scale resize.
+                    // If user drags corner, it scales. If user drags side, it changes width.
+                    // For now, let's implement the standard "scale = resize font" behavior.
                 }}
                 onTransformEnd={isLocked ? undefined : (e) => {
                     setIsTransforming(false);
-                    // Save zone dimensions to state
-                    // fontSize remains user-controlled via the properties panel
                     const node = e.target;
+                    const scaleX = node.scaleX();
+                    const scaleY = node.scaleY();
+
+                    // Reset scale
+                    node.scaleX(1);
+                    node.scaleY(1);
+
+                    // Calculate new font size based on scale
+                    const currentFontSize = element.fontSize || 32;
+                    const scale = Math.max(scaleX, scaleY);
+                    const newFontSize = Math.round(currentFontSize * scale);
+
+                    // Update width to match scaled width
+                    const newWidth = Math.round(node.width() * scaleX);
+
                     handleElementChange(element.id, {
                         x: node.x(),
                         y: node.y(),
-                        width: Math.round(node.width()),
-                        height: Math.round(node.height()),
+                        width: newWidth,
+                        fontSize: newFontSize,
                         rotation: node.rotation(),
                     });
                 }}

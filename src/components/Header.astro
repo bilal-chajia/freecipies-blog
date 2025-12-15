@@ -1,5 +1,37 @@
 ---
+import fs from "node:fs";
+import path from "node:path";
+
 const currentPath = Astro.url.pathname;
+
+// Check if logos exist
+const logosDir = path.join(process.cwd(), "public", "logos");
+let logoMain = null;
+let logoDark = null;
+
+// Look for uploaded logos - verify files exist before using
+try {
+  if (fs.existsSync(logosDir)) {
+    const files = fs.readdirSync(logosDir);
+    for (const file of files) {
+      const filePath = path.join(logosDir, file);
+      // Double-check file still exists (could have been deleted)
+      if (fs.existsSync(filePath)) {
+        if (file.startsWith("logo-main.")) {
+          logoMain = `/logos/${file}`;
+        } else if (file.startsWith("logo-dark.")) {
+          logoDark = `/logos/${file}`;
+        }
+      }
+    }
+  }
+} catch (e: any) {
+  // Directory doesn't exist or other error, use fallback
+  // Suppress ENOENT during dev/build as it happens during file replacement
+  if (e.code !== "ENOENT") {
+    console.error("Error reading logos directory:", e);
+  }
+}
 ---
 
 <header class="site-header">
@@ -7,7 +39,32 @@ const currentPath = Astro.url.pathname;
     <div class="header-content">
       <!-- Logo -->
       <a href="/" class="logo">
-        <span class="logo-text">Freecipies</span>
+        {
+          logoMain ? (
+            <>
+              <img
+                src={logoMain}
+                alt="Freecipies"
+                class="logo-img logo-light"
+              />
+              {logoDark ? (
+                <img
+                  src={logoDark}
+                  alt="Freecipies"
+                  class="logo-img logo-dark"
+                />
+              ) : (
+                <img
+                  src={logoMain}
+                  alt="Freecipies"
+                  class="logo-img logo-dark"
+                />
+              )}
+            </>
+          ) : (
+            <span class="logo-text">Freecipies</span>
+          )
+        }
       </a>
 
       <!-- Desktop Navigation -->
@@ -145,7 +202,7 @@ const currentPath = Astro.url.pathname;
   .header-container {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0 clamp(1rem, 3vw, 1.5rem);
+    padding: 0 clamp(0.1rem, 1vw, 0.5rem);
   }
 
   .header-content {
@@ -157,6 +214,7 @@ const currentPath = Astro.url.pathname;
 
   .logo {
     text-decoration: none;
+    margin-left: 0.1rem;
   }
 
   .logo-text {
@@ -166,6 +224,30 @@ const currentPath = Astro.url.pathname;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .logo-img {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .logo-light {
+    display: block;
+  }
+
+  .logo-dark {
+    display: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .logo-light {
+      display: none;
+    }
+
+    .logo-dark {
+      display: block;
+    }
   }
 
   .desktop-nav {
@@ -338,6 +420,18 @@ const currentPath = Astro.url.pathname;
   }
 
   @media (max-width: 768px) {
+    .header-container {
+      padding: 0 0.25rem;
+    }
+
+    .logo {
+      margin-left: 0.5rem;
+    }
+
+    .logo-img {
+      height: 50px;
+    }
+
     .desktop-nav {
       display: none;
     }

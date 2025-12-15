@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -32,6 +32,27 @@ const AdminLayout = () => {
   const { user, clearAuth } = useAuthStore();
   const [pinterestExpanded, setPinterestExpanded] = useState(true);
   const [blogExpanded, setBlogExpanded] = useState(true);
+  const [logoUrl, setLogoUrl] = useState(null);
+
+  // Fetch logo on mount
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        // Try to find logo in public/logos directory via a simple fetch
+        const extensions = ['svg', 'png', 'webp', 'jpg'];
+        for (const ext of extensions) {
+          const response = await fetch(`/logos/logo-main.${ext}`, { method: 'HEAD' });
+          if (response.ok) {
+            setLogoUrl(`/logos/logo-main.${ext}`);
+            break;
+          }
+        }
+      } catch (e) {
+        // No logo found, use fallback
+      }
+    };
+    fetchLogo();
+  }, []);
 
   // Main navigation items (Dashboard & Homepage)
   const navigation = [
@@ -74,13 +95,13 @@ const AdminLayout = () => {
     location.pathname === item.href || location.pathname.startsWith(item.href + '/')
   );
 
-  // Get current page name for header
-  const getCurrentPageName = () => {
+  // Get current page info (name and icon) for header
+  const getCurrentPageInfo = () => {
     const allItems = [...navigation, ...blogItems, ...pinterestItems, ...bottomNavigation];
     const current = allItems.find(item =>
       location.pathname === item.href || location.pathname.startsWith(item.href + '/')
     );
-    return current?.name || 'Dashboard';
+    return current || { name: 'Dashboard', icon: LayoutDashboard };
   };
 
   return (
@@ -93,8 +114,18 @@ const AdminLayout = () => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-zinc-800">
-            <ChefHat className="w-7 h-7 text-gray-900 dark:text-white mr-2" />
-            <span className="text-xl font-bold text-gray-900 dark:text-white">Freecipies</span>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt="Freecipies"
+                className="h-10 w-auto object-contain"
+              />
+            ) : (
+              <>
+                <ChefHat className="w-7 h-7 text-gray-900 dark:text-white mr-2" />
+                <span className="text-xl font-bold text-gray-900 dark:text-white">Freecipies</span>
+              </>
+            )}
           </div>
 
           {/* Navigation */}
@@ -305,7 +336,7 @@ const AdminLayout = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-zinc-950">
         {/* Header */}
-        <header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 flex-shrink-0">
+        <header className="h-14 flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 flex-shrink-0">
           <div className="flex items-center">
             <button
               onClick={toggleSidebar}
@@ -313,17 +344,18 @@ const AdminLayout = () => {
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <div className="flex items-center">
-              <button
-                onClick={() => navigate(-1)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-white mr-2 hidden sm:block"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-                {getCurrentPageName()}
-              </h1>
-            </div>
+            {(() => {
+              const pageInfo = getCurrentPageInfo();
+              const PageIcon = pageInfo.icon;
+              return (
+                <div className="flex items-center gap-2">
+                  <PageIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {pageInfo.name}
+                  </h1>
+                </div>
+              );
+            })()}
           </div>
           <div className="flex items-center">
             <button

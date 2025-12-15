@@ -90,19 +90,19 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
     const [authors, setAuthors] = React.useState([]);
 
     const fileInputRef = useRef(null);
+    const initializedForImageRef = useRef(null); // Track which image we've initialized for
 
     // 3. History Management
     const {
         saveToHistory,
         initializeHistory,
+        resetHistory,
         getPreviousState,
         getNextState,
         decrementHistoryIndex,
         incrementHistoryIndex,
-        historyIndex, // We might need this to disable buttons, checking usage below
         canUndo,
-        canRedo,
-        history
+        canRedo
     } = useImageHistory(getSnapshot);
 
     // 4. Effects
@@ -155,25 +155,45 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
     // Initialization when opening
     useEffect(() => {
         if (isOpen && image) {
-            resetState();
-            // initializeHistory is called via the hook's own effect if we implemented it right, 
-            // OR we call it here.
-            // Let's check useImageHistory. It expects us to call initializeHistory.
+            // Get a stable identifier for this image
+            const imageId = typeof image === 'string' ? image : (image instanceof File ? image.name + image.size : null);
 
-            // Set initial image
-            const initialSrc = typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null);
-            if (initialSrc) {
+            // Only initialize if this is a NEW image (not the same one we already initialized)
+            if (imageId && initializedForImageRef.current !== imageId) {
+                initializedForImageRef.current = imageId;
+
+                resetState();
+                resetHistory();
+
+                // Set initial image
+                const initialSrc = typeof image === 'string' ? image : URL.createObjectURL(image);
                 setOriginalImage(initialSrc);
-                // We need to wait for state to settle before initializing history?
-                // Actually resetState sets defaults. 
-                // We can initialize history slightly later or just rely on the fact that resetState updates state 
-                // and we want that initial state.
-            }
 
-            // Force history init after state reset
-            setTimeout(() => initializeHistory(), 0);
+                // Load image to detect aspect ratio
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    // Calculate and set the natural aspect ratio
+                    const naturalAspect = img.naturalWidth / img.naturalHeight;
+                    setAspect(naturalAspect);
+
+                    // Force history init after aspect is set
+                    setTimeout(() => initializeHistory(), 0);
+                };
+                img.onerror = () => {
+                    // Fallback to 1:1 if image fails to load
+                    setAspect(1);
+                    setTimeout(() => initializeHistory(), 0);
+                };
+                img.src = initialSrc;
+            }
         }
-    }, [image, isOpen, resetState, setOriginalImage, initializeHistory]);
+
+        // Reset the ref when dialog closes so next open initializes properly
+        if (!isOpen) {
+            initializedForImageRef.current = null;
+        }
+    }, [image, isOpen]); // Only depend on image and isOpen - the functions are stable
 
 
     // 5. Handlers
@@ -228,15 +248,31 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
     };
 
     const handleApplyCrop = async () => {
-        if (!croppedAreaPixels) return;
-
         try {
             setProcessing(true);
             const currentSrc = workingImage || (typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null));
 
+            // If croppedAreaPixels is null, get full image dimensions
+            let cropAreaToUse = croppedAreaPixels;
+            if (!cropAreaToUse) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = currentSrc;
+                });
+                cropAreaToUse = {
+                    x: 0,
+                    y: 0,
+                    width: img.naturalWidth,
+                    height: img.naturalHeight
+                };
+            }
+
             const croppedBlob = await getCroppedImg(
                 currentSrc,
-                croppedAreaPixels,
+                cropAreaToUse,
                 rotation,
                 { horizontal: flipH, vertical: flipV },
                 '', // No filters in the crop
@@ -298,9 +334,28 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
             const saveImageSrc = workingImage || (typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null));
             const qualityValue = QUALITY_PRESETS[compressionQuality]?.quality || 0.85;
 
+            // If croppedAreaPixels is null, we need to get the full image dimensions
+            let cropAreaToUse = croppedAreaPixels;
+            if (!cropAreaToUse) {
+                // Load image to get dimensions
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = saveImageSrc;
+                });
+                cropAreaToUse = {
+                    x: 0,
+                    y: 0,
+                    width: img.naturalWidth,
+                    height: img.naturalHeight
+                };
+            }
+
             const croppedImageBlob = await getCroppedImg(
                 saveImageSrc,
-                croppedAreaPixels,
+                cropAreaToUse,
                 rotation,
                 { horizontal: flipH, vertical: flipV },
                 combinedFilter,
@@ -539,13 +594,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                     {/* Canvas Area */}
                     <div className="flex-1 relative bg-zinc-900/30">
                         {!showOriginal ? (
-                            <div
-                                className="absolute inset-0"
-                                style={{
-                                    transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
-                                    transformOrigin: 'center center'
-                                }}
-                            >
+                            <div className="absolute inset-0">
                                 <Cropper
                                     image={imageSrc}
                                     crop={crop}
@@ -570,7 +619,8 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                                                 `saturate(${saturation})`,
                                                 temperature !== 0 ? `sepia(${Math.abs(temperature) / 100 * 0.3}) hue-rotate(${temperature > 0 ? 0 : 180}deg)` : '',
                                                 blur > 0 ? `blur(${blur}px)` : ''
-                                            ].filter(Boolean).join(' ')
+                                            ].filter(Boolean).join(' '),
+                                            transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`
                                         }
                                     }}
                                 />
@@ -613,20 +663,20 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                             </>
                         )}
                     </div>
-                </div >
+                </div>
 
                 {/* Right Panel */}
-                < div className="w-72 bg-zinc-900/50 border-l border-zinc-800 flex flex-col" >
+                <div className="w-72 bg-zinc-900/50 border-l border-zinc-800 flex flex-col">
                     <div className="h-14 border-b border-zinc-800 flex items-center px-4">
                         <h3 className="font-medium text-white capitalize">{activeTool}</h3>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4">
                         {renderToolPanel()}
                     </div>
-                </div >
+                </div>
 
-            </DialogContent >
-        </Dialog >
+            </DialogContent>
+        </Dialog>
     );
 };
 

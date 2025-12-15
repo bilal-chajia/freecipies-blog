@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import useEditorStore from '../../../store/useEditorStore';
 import { useUIStore } from '../../../store/useStore';
+import ConfirmationModal from '@/components/ui/confirmation-modal';
 
 /**
  * FontsPanel - Font management section for Text tab
@@ -113,10 +114,25 @@ const FontsPanel = () => {
         }
     };
 
-    // Handle font delete
-    const handleDelete = async (font) => {
-        if (!confirm(`Delete font "${font.name}"?`)) return;
+    // Confirmation State
+    const [confirmState, setConfirmState] = useState({
+        isOpen: false,
+        data: null,
+        title: '',
+        description: ''
+    });
 
+    const closeConfirm = () => setConfirmState(prev => ({ ...prev, isOpen: false }));
+
+    const handleConfirmAction = () => {
+        if (confirmState.data) {
+            executeDeleteFont(confirmState.data);
+        }
+        closeConfirm();
+    };
+
+    // Handle font delete
+    const executeDeleteFont = async (font) => {
         try {
             const response = await fetch(`/api/upload-font?filename=${encodeURIComponent(font.filename)}`, {
                 method: 'DELETE',
@@ -127,11 +143,22 @@ const FontsPanel = () => {
 
             if (response.ok) {
                 removeCustomFont(font.name);
-                await loadFonts();
+                setFonts(prev => prev.filter(f => f.name !== font.name));
+                toast.success('Font deleted');
             }
         } catch (error) {
             console.error('Failed to delete font:', error);
+            toast.error('Failed to delete font');
         }
+    };
+
+    const handleDelete = (font) => {
+        setConfirmState({
+            isOpen: true,
+            data: font,
+            title: 'Delete Font?',
+            description: `Are you sure you want to delete "${font.name}"? This action cannot be undone.`
+        });
     };
 
     // Filter fonts by search
@@ -142,12 +169,13 @@ const FontsPanel = () => {
     return (
         <div className="space-y-3">
             {/* Section Header */}
+            {/* ... (keep header) */}
             <div className="flex items-center justify-between">
                 <h3 className={`text-sm font-medium ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Your Fonts</h3>
                 <span className="text-xs text-zinc-500">{fonts.length}</span>
             </div>
 
-            {/* Upload Button */}
+            {/* Upload Button ... keep */}
             <Button
                 className={`w-full ${isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-zinc-700' : 'bg-white hover:bg-zinc-50 text-zinc-900 border-zinc-200'}`}
                 variant="outline"
@@ -211,7 +239,7 @@ const FontsPanel = () => {
                         >
                             {/* Font name displayed in the font itself */}
                             <span
-                                className={`text-base truncate flex-1 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}
+                                className={`text-base truncate flex-1 min-w-0 mr-2 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}
                                 style={{ fontFamily: font.name }}
                                 title={font.name}
                             >
@@ -220,7 +248,7 @@ const FontsPanel = () => {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className={`h-7 w-7 opacity-0 group-hover:opacity-100 ${isDark ? 'text-zinc-400' : 'text-zinc-500'} hover:text-red-400 hover:bg-red-500/10`}
+                                className={`h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 ${isDark ? 'text-zinc-400' : 'text-zinc-500'} hover:text-red-400 hover:bg-red-500/10`}
                                 onClick={() => handleDelete(font)}
                                 aria-label={`Delete font ${font.name}`}
                             >
@@ -230,6 +258,16 @@ const FontsPanel = () => {
                     ))}
                 </div>
             )}
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={confirmState.isOpen}
+                onClose={closeConfirm}
+                onConfirm={handleConfirmAction}
+                title={confirmState.title}
+                description={confirmState.description}
+                confirmText="Delete"
+            />
         </div>
     );
 };

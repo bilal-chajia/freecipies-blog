@@ -119,6 +119,13 @@ const TemplateEditor = () => {
     // Load existing template or reset for new
     useEffect(() => {
         if (isNewTemplate) {
+            // Checks for last edited template in localStorage
+            const lastSlug = localStorage.getItem('last_edited_template_slug');
+            if (lastSlug && lastSlug !== 'new') {
+                // Redirect to last template if it exists
+                navigate(`/templates/${lastSlug}`, { replace: true });
+                return;
+            }
             // Reset to blank template for new designs
             resetTemplate();
         } else {
@@ -157,10 +164,14 @@ const TemplateEditor = () => {
             const data = response.data?.data || response.data;
             if (data) {
                 loadTemplateToStore(data, data.elements_json);
+                // Save last accessed slug
+                localStorage.setItem('last_edited_template_slug', slug);
             }
         } catch (error) {
             console.error('Failed to load template:', error);
             toast.error('Failed to load template');
+            // Check if 404/not found, maybe clear last_slug?
+            // But let's verify error type first.
         }
     };
 

@@ -33,6 +33,7 @@ const useEditorStore = create((set, get) => ({
     zoom: 100,
     showGrid: false,
     activeTab: null,
+    activePanel: 'default', // 'default' | 'effects'
     isLoading: false,
     isSaving: false,
     hasUnsavedChanges: false,
@@ -349,6 +350,11 @@ const useEditorStore = create((set, get) => ({
     // === CUSTOM FONTS ACTIONS ===
     addCustomFont: (font) => {
         const { customFonts } = get();
+        // Prevent duplicates by checking if font with same name exists
+        if (customFonts.some(f => f.name === font.name)) {
+            console.log(`Font "${font.name}" already exists, skipping duplicate.`);
+            return;
+        }
         const newFonts = [...customFonts, font];
         set({ customFonts: newFonts });
         if (typeof localStorage !== 'undefined') {
@@ -369,6 +375,7 @@ const useEditorStore = create((set, get) => ({
     setZoom: (zoom) => set({ zoom }),
     toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
     setActiveTab: (tab) => set({ activeTab: tab }),
+    setActivePanel: (panel) => set({ activePanel: panel }),
     setLoading: (isLoading) => set({ isLoading }),
     setSaving: (isSaving) => set({ isSaving }),
     markSaved: () => set({ hasUnsavedChanges: false }),

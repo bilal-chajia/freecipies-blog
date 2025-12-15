@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import {
     LayoutTemplate,
     Type,
@@ -13,7 +14,8 @@ import {
     X,
     Loader2,
     Settings,
-    Trash2
+    Trash2,
+    Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +29,8 @@ import DraggableLayersList from '../DraggableLayersList';
 import { mediaAPI, templatesAPI } from '../../../services/api';
 import ColorPicker from '../../ColorPicker';
 import FontsPanel from './FontsPanel';
+import TextEffectsPanel from './TextEffectsPanel';
+import ConfirmationModal from '@/components/ui/confirmation-modal';
 
 const TABS = [
     { id: 'templates', icon: LayoutTemplate, label: 'Templates' },
@@ -39,9 +43,13 @@ const TABS = [
 ];
 
 const SidePanel = () => {
+    const navigate = useNavigate();
     // Store
     const activeTab = useEditorStore(state => state.activeTab);
     const setActiveTab = useEditorStore(state => state.setActiveTab);
+    const activePanel = useEditorStore(state => state.activePanel);
+    const setActivePanel = useEditorStore(state => state.setActivePanel);
+    const updateElement = useEditorStore(state => state.updateElement);
     const addElement = useEditorStore(state => state.addElement);
     const template = useEditorStore(state => state.template);
     const setTemplate = useEditorStore(state => state.setTemplate);
@@ -206,38 +214,110 @@ const SidePanel = () => {
         });
     };
 
+    // Execute functions for confirmation actions (must be outside renderContent for scope)
+    const executeLoadTemplate = (t) => {
+        const elements = typeof t.elements_json === 'string' ? JSON.parse(t.elements_json) : t.elements_json;
+        loadTemplateToStore(t, elements);
+        navigate(`/templates/${t.slug}`);
+        toast.success('Template loaded');
+    };
+
+    const executeDeleteTemplate = async (templateSlug) => {
+        try {
+            await templatesAPI.delete(templateSlug);
+            setTemplates(prev => prev.filter(t => t.slug !== templateSlug));
+            toast.success('Template deleted');
+        } catch (error) {
+            console.error('Delete failed:', error);
+            toast.error('Failed to delete template');
+        }
+    };
+
+    // Confirmation State
+    const [confirmState, setConfirmState] = useState({
+        isOpen: false,
+        type: null, // 'delete_template' | 'unsaved_changes'
+        data: null,
+        title: '',
+        description: ''
+    });
+
+    const closeConfirm = () => setConfirmState(prev => ({ ...prev, isOpen: false }));
+
+    const handleConfirmAction = () => {
+        if (confirmState.type === 'delete_template') {
+            const templateSlug = confirmState.data;
+            executeDeleteTemplate(templateSlug);
+        } else if (confirmState.type === 'unsaved_changes') {
+            const template = confirmState.data;
+            executeLoadTemplate(template);
+        }
+        closeConfirm();
+    };
+
     // Render Tab Content
     const renderContent = () => {
         // Handle template switch with unsaved changes warning
         const handleTemplateClick = (t) => {
-            const loadTemplate = () => {
-                const elements = typeof t.elements_json === 'string' ? JSON.parse(t.elements_json) : t.elements_json;
-                loadTemplateToStore(t, elements);
-                navigate(`/templates/${t.slug}`);
-                toast.success('Template loaded');
-            };
-
             if (hasUnsavedChanges) {
-                if (window.confirm('You have unsaved changes. Discard and load new template?')) {
-                    loadTemplate();
-                }
+                setConfirmState({
+                    isOpen: true,
+                    type: 'unsaved_changes',
+                    data: t,
+                    title: 'Unsaved Changes',
+                    description: 'You have unsaved changes. Discard them and load this template?',
+                    confirmText: 'Discard & Load'
+                });
             } else {
-                loadTemplate();
+                executeLoadTemplate(t);
             }
         };
 
-        // Handle template delete
         const handleDeleteTemplate = async (e, templateSlug) => {
             e.stopPropagation();
-            if (window.confirm('Delete this template? This cannot be undone.')) {
-                try {
-                    await templatesAPI.delete(templateSlug);
-                    setTemplates(prev => prev.filter(t => t.slug !== templateSlug));
-                    toast.success('Template deleted');
-                } catch (error) {
-                    console.error('Delete failed:', error);
-                    toast.error('Failed to delete template');
+            setConfirmState({
+                isOpen: true,
+                type: 'delete_template',
+                data: templateSlug,
+                title: 'Delete Template?',
+                description: 'This action cannot be undone. Typically we archive, but this is a permanent delete.',
+                confirmText: 'Delete'
+            });
+        };
+
+        // Handle template duplicate
+        const handleDuplicateTemplate = async (e, templateToCopy) => {
+            e.stopPropagation();
+            try {
+                // Create unique slug
+                const baseSlug = templateToCopy.slug.replace(/-copy-\d+$/, '');
+                const newSlug = `${baseSlug}-copy-${Date.now()}`;
+
+                const newTemplateData = {
+                    ...templateToCopy,
+                    name: `${templateToCopy.name} (Copy)`,
+                    slug: newSlug,
+                    id: undefined // Let DB assign new ID
+                };
+
+                // Remove ID and timestamps from payload if API doesn't handle them
+                delete newTemplateData.id;
+                delete newTemplateData.created_at;
+                delete newTemplateData.updated_at;
+
+                const response = await templatesAPI.create(newTemplateData);
+                const success = response.data?.success !== false;
+
+                if (success) {
+                    toast.success('Template duplicated');
+                    // Add to list immediately or reload
+                    loadTemplates();
+                } else {
+                    throw new Error('Duplicate failed');
                 }
+            } catch (error) {
+                console.error('Duplicate failed:', error);
+                toast.error('Failed to duplicate template');
             }
         };
 
@@ -283,8 +363,18 @@ const SidePanel = () => {
                                         {/* Overlay Gradient */}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                                        {/* Delete Action */}
-                                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+                                        {/* Actions */}
+                                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col gap-2 transform translate-y-2 group-hover:translate-y-0">
+                                            {/* Duplicate Button */}
+                                            <button
+                                                onClick={(e) => handleDuplicateTemplate(e, t)}
+                                                className="p-1.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 shadow-lg hover:scale-110 transition-all"
+                                                title="Duplicate template"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                            </button>
+
+                                            {/* Delete Button */}
                                             <button
                                                 onClick={(e) => handleDeleteTemplate(e, t.slug)}
                                                 className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg hover:scale-110 transition-all"
@@ -303,6 +393,16 @@ const SidePanel = () => {
                                 ))
                             )}
                         </div>
+
+                        {/* Confirmation Modal */}
+                        <ConfirmationModal
+                            isOpen={confirmState.isOpen}
+                            onClose={closeConfirm}
+                            onConfirm={handleConfirmAction}
+                            title={confirmState.title}
+                            description={confirmState.description}
+                            confirmText={confirmState.confirmText || 'Confirm'}
+                        />
                     </div>
                 );
             case 'text':
@@ -568,7 +668,10 @@ const SidePanel = () => {
                 {TABS.map(tab => (
                     <button
                         key={tab.id}
-                        onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
+                        onClick={() => {
+                            setActiveTab(activeTab === tab.id ? null : tab.id);
+                            setActivePanel('default'); // Close effects panel when switching tabs
+                        }}
                         className={`flex flex-col items-center gap-1 w-full py-2 transition-colors ${activeTab === tab.id
                             ? (isDark ? 'text-white' : 'text-primary')
                             : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-500 hover:text-zinc-900')
@@ -584,7 +687,7 @@ const SidePanel = () => {
 
             {/* Drawer with smooth animations - overlays content */}
             <AnimatePresence>
-                {activeTab && (
+                {(activeTab || activePanel === 'effects') && (
                     <motion.div
                         initial={{ x: -256 }}
                         animate={{ x: 0 }}
@@ -592,23 +695,33 @@ const SidePanel = () => {
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                         className={`absolute left-16 top-0 bottom-0 w-64 border-r flex flex-col z-40 overflow-hidden shadow-xl ${isDark ? 'bg-[#1e1e2e] border-[#27272a]' : 'bg-white border-zinc-200'}`}
                     >
-                        <div className={`h-12 border-b flex items-center justify-between px-4 ${isDark ? 'bg-[#1e1e2e] border-[#27272a]' : 'bg-white border-zinc-200'}`}>
-                            <span className={`font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-                                {TABS.find(t => t.id === activeTab)?.label}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-400 hover:text-zinc-900'}`}
-                                onClick={() => setActiveTab(null)}
-                                aria-label="Close panel"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </Button>
-                        </div>
-                        <ScrollArea className={`flex-1 ${isDark ? 'bg-[#1e1e2e]' : 'bg-white'}`}>
-                            {renderContent()}
-                        </ScrollArea>
+                        {activePanel === 'effects' ? (
+                            <TextEffectsPanel
+                                selectedElement={selectedElement}
+                                updateElement={updateElement}
+                                onClose={() => setActivePanel('default')}
+                            />
+                        ) : (
+                            <>
+                                <div className={`h-12 border-b flex items-center justify-between px-4 ${isDark ? 'bg-[#1e1e2e] border-[#27272a]' : 'bg-white border-zinc-200'}`}>
+                                    <span className={`font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                                        {TABS.find(t => t.id === activeTab)?.label}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-400 hover:text-zinc-900'}`}
+                                        onClick={() => setActiveTab(null)}
+                                        aria-label="Close panel"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                                <ScrollArea className={`flex-1 ${isDark ? 'bg-[#1e1e2e]' : 'bg-white'}`}>
+                                    {renderContent()}
+                                </ScrollArea>
+                            </>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>

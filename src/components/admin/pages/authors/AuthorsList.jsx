@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
@@ -19,12 +19,20 @@ const AuthorsList = () => {
     authorToDelete: null
   });
 
+  // Ref to prevent duplicate API calls in React Strict Mode
+  const isLoadingRef = useRef(false);
+
   // Load authors from API - reload when navigating back with refresh state
   useEffect(() => {
-    loadAuthors();
+    if (!isLoadingRef.current) {
+      loadAuthors();
+    }
   }, [location.state?.refresh]);
 
   const loadAuthors = async () => {
+    if (isLoadingRef.current) return; // Prevent duplicate calls
+    isLoadingRef.current = true;
+
     try {
       setLoading(true);
       setError('');
@@ -37,6 +45,7 @@ const AuthorsList = () => {
       setAuthors([]);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
@@ -154,33 +163,31 @@ const AuthorsList = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Authors</h1>
-        <Link to="/authors/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Author
-          </Button>
-        </Link>
-      </div>
-
+    <div className="space-y-4">
       {error && (
         <div className="bg-destructive/10 text-destructive p-4 rounded-md">
           <p>{error}</p>
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search authors by name, email or job..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* Search Bar + Add Button */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search authors by name, email or job..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Link to="/authors/new">
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Author
+          </Button>
+        </Link>
       </div>
 
       {/* Authors Table */}

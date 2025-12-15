@@ -300,27 +300,7 @@ const Homepage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Home className="w-7 h-7 text-gray-800 dark:text-white" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Homepage</h2>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Customize your homepage layout and content
-          </p>
-        </div>
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-gray-900 hover:bg-gray-800 text-white dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Settings'}
-        </Button>
-      </div>
+    <div className="space-y-4">
 
       {/* Status Messages */}
       {saveStatus === 'success' && (
@@ -343,17 +323,27 @@ const Homepage = () => {
 
       {/* Homepage Tabs */}
       <Tabs defaultValue="hero" className="w-full">
-        <div className="mb-6 overflow-x-auto">
-          <TabsList className="inline-flex h-auto p-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm min-w-max">
-            <TabsTrigger value="hero" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Hero</TabsTrigger>
-            <TabsTrigger value="featured" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Featured</TabsTrigger>
-            <TabsTrigger value="categories" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Categories</TabsTrigger>
-            <TabsTrigger value="latest" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Latest</TabsTrigger>
-            <TabsTrigger value="popular" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Popular</TabsTrigger>
-            <TabsTrigger value="newsletter" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Newsletter</TabsTrigger>
-            <TabsTrigger value="banners" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Banners</TabsTrigger>
-            <TabsTrigger value="seo" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">SEO</TabsTrigger>
-          </TabsList>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="overflow-x-auto">
+            <TabsList className="inline-flex h-auto p-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm min-w-max">
+              <TabsTrigger value="hero" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Hero</TabsTrigger>
+              <TabsTrigger value="featured" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Featured</TabsTrigger>
+              <TabsTrigger value="categories" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Categories</TabsTrigger>
+              <TabsTrigger value="latest" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Latest</TabsTrigger>
+              <TabsTrigger value="popular" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Popular</TabsTrigger>
+              <TabsTrigger value="newsletter" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Newsletter</TabsTrigger>
+              <TabsTrigger value="banners" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">Banners</TabsTrigger>
+              <TabsTrigger value="seo" className="px-6 py-2 data-[state=active]:bg-gray-100 data-[state=active]:dark:bg-zinc-800 data-[state=active]:shadow-sm rounded-md">SEO</TabsTrigger>
+            </TabsList>
+          </div>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-gray-900 hover:bg-gray-800 text-white dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 flex-shrink-0"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {saving ? 'Saving...' : 'Save Settings'}
+          </Button>
         </div>
 
         {/* Hero Section */}

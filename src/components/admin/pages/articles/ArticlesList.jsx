@@ -406,22 +406,7 @@ const ArticlesList = () => {
   ], []);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold">Articles</h2>
-          <p className="text-muted-foreground mt-1">
-            Manage your articles and recipes
-          </p>
-        </div>
-        <Link to="/articles/new">
-          <Button size="lg" className="gap-2">
-            <Plus className="w-5 h-5" />
-            New Article
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-4">
 
       {/* Filters Section */}
       <ArticleFilters

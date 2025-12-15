@@ -139,33 +139,29 @@ const BoardsList = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">Pinterest Boards</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={loadBoards}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
-          <Link to="/pinterest/boards/new">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              New Board
-            </Button>
-          </Link>
+    <div className="space-y-4">
+      {/* Search Bar + Buttons */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search boards..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search boards..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <Button variant="outline" onClick={loadBoards}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
+        <Link to="/pinterest/boards/new">
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            New Board
+          </Button>
+        </Link>
       </div>
 
       {/* Boards Grid */}

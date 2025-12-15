@@ -26,12 +26,28 @@ import {
     Sun,
     Moon,
     Home,
-    FilePlus
+    FilePlus,
+    Sparkles,
+    Strikethrough,
+    Underline as UnderlineIcon,
+    CaseSensitive,
+    ALargeSmall,
+    AlignVerticalJustifyStart,
+    AlignVerticalJustifyCenter,
+    AlignVerticalJustifyEnd,
+    Baseline,
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
+    AlignJustify
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
 import useEditorStore from '../../../store/useEditorStore';
 import { useUIStore } from '../../../store/useStore';
 import ColorPicker from '../../ColorPicker';
@@ -81,6 +97,8 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
     const duplicateSelected = useEditorStore(state => state.duplicateSelected);
     const moveElementUp = useEditorStore(state => state.moveElementUp);
     const moveElementDown = useEditorStore(state => state.moveElementDown);
+    const setActivePanel = useEditorStore(state => state.setActivePanel);
+    const activePanel = useEditorStore(state => state.activePanel);
     const customFonts = useEditorStore(state => state.customFonts);
 
     const selectedElement = getFirstSelectedElement();
@@ -202,6 +220,19 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
         if (selectedElement.type === 'text') {
             return (
                 <div className="flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()}>
+                    {/* Effects Button */}
+                    <Button
+                        variant={activePanel === 'effects' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className={`h-8 gap-2 px-3 text-xs font-medium border ${isDark ? 'border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700' : 'border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'} ${activePanel === 'effects' ? (isDark ? 'bg-zinc-700 text-white' : 'bg-zinc-100 text-zinc-900') : ''}`}
+                        onClick={() => setActivePanel(activePanel === 'effects' ? 'default' : 'effects')}
+                    >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Effects
+                    </Button>
+
+                    <Separator orientation="vertical" className={`h-6 ${isDark ? 'bg-zinc-700' : 'bg-zinc-200'}`} />
+
                     {/* Hidden font upload input */}
                     <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" onChange={handleFontUpload} />
 
@@ -241,12 +272,17 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
                     {/* Text Color */}
                     <div
                         ref={textColorTriggerRef}
-                        className={`w-6 h-6 rounded border cursor-pointer hover:ring-2 hover:ring-primary/50 ${isDark ? 'border-zinc-600' : 'border-zinc-300'}`}
-                        style={{ backgroundColor: selectedElement.color || '#000000' }}
+                        className={`relative flex flex-col items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-accent transition-colors ${isDark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
                         onClick={() => setShowTextColorPicker(!showTextColorPicker)}
                         role="button"
                         aria-label="Change text color"
-                    />
+                    >
+                        <span className={`text-base font-bold leading-none ${isDark ? 'text-white' : 'text-zinc-900'}`}>A</span>
+                        <div
+                            className="w-5 h-1.5 rounded-sm mt-0.5"
+                            style={{ backgroundColor: selectedElement.color || '#000000' }}
+                        />
+                    </div>
                     {showTextColorPicker && (
                         <ColorPicker
                             color={selectedElement.color || '#000000'}
@@ -278,11 +314,236 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
                         <Italic className="w-4 h-4" />
                     </Button>
 
+                    {/* Underline */}
+                    <Button
+                        variant={selectedElement.textDecoration?.includes('underline') ? 'secondary' : 'ghost'}
+                        size="icon"
+                        className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
+                        onClick={() => {
+                            const current = selectedElement.textDecoration || '';
+                            const hasUnderline = current.includes('underline');
+                            const newDeco = hasUnderline ? current.replace('underline', '').trim() : `${current} underline`.trim();
+                            updateProp('textDecoration', newDeco || '');
+                        }}
+                        aria-label="Toggle underline"
+                    >
+                        <UnderlineIcon className="w-4 h-4" />
+                    </Button>
+
+                    {/* Strikethrough */}
+                    <Button
+                        variant={selectedElement.textDecoration?.includes('line-through') ? 'secondary' : 'ghost'}
+                        size="icon"
+                        className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
+                        onClick={() => {
+                            const current = selectedElement.textDecoration || '';
+                            const hasStrike = current.includes('line-through');
+                            const newDeco = hasStrike ? current.replace('line-through', '').trim() : `${current} line-through`.trim();
+                            updateProp('textDecoration', newDeco || '');
+                        }}
+                        aria-label="Toggle strikethrough"
+                    >
+                        <Strikethrough className="w-4 h-4" />
+                    </Button>
+
+                    <Separator orientation="vertical" className={`h-6 ${isDark ? 'bg-zinc-700' : 'bg-zinc-200'}`} />
+
+                    {/* Text Alignment Popover */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
+                                aria-label="Text alignment"
+                            >
+                                {selectedElement.textAlign === 'center' ? <AlignCenter className="w-4 h-4" /> :
+                                    selectedElement.textAlign === 'right' ? <AlignRight className="w-4 h-4" /> :
+                                        selectedElement.textAlign === 'justify' ? <AlignJustify className="w-4 h-4" /> :
+                                            <AlignLeft className="w-4 h-4" />}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="start" className={`w-auto p-1 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200'}`}>
+                            <div className="flex items-center gap-0.5">
+                                <Button
+                                    variant={selectedElement.textAlign === 'left' || !selectedElement.textAlign ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => updateProp('textAlign', 'left')}
+                                    aria-label="Align left"
+                                >
+                                    <AlignLeft className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={selectedElement.textAlign === 'center' ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => updateProp('textAlign', 'center')}
+                                    aria-label="Align center"
+                                >
+                                    <AlignCenter className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={selectedElement.textAlign === 'right' ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => updateProp('textAlign', 'right')}
+                                    aria-label="Align right"
+                                >
+                                    <AlignRight className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={selectedElement.textAlign === 'justify' ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => updateProp('textAlign', 'justify')}
+                                    aria-label="Justify"
+                                >
+                                    <AlignJustify className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    {/* Font Weight Dropdown */}
+                    <Select value={selectedElement.fontWeight || 'normal'} onValueChange={(val) => updateProp('fontWeight', val)}>
+                        <SelectTrigger className={`w-24 h-8 text-xs ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`} aria-label="Font weight">
+                            <SelectValue placeholder="Weight" />
+                        </SelectTrigger>
+                        <SelectContent className={`${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`}>
+                            <SelectItem value="100">Thin</SelectItem>
+                            <SelectItem value="200">Extra Light</SelectItem>
+                            <SelectItem value="300">Light</SelectItem>
+                            <SelectItem value="normal">Regular</SelectItem>
+                            <SelectItem value="500">Medium</SelectItem>
+                            <SelectItem value="600">Semibold</SelectItem>
+                            <SelectItem value="bold">Bold</SelectItem>
+                            <SelectItem value="800">Extra Bold</SelectItem>
+                            <SelectItem value="900">Black</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {/* Text Case Popover */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
+                                aria-label="Text case options"
+                            >
+                                <ALargeSmall className="w-4 h-4" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="start" className={`w-40 p-2 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200'}`}>
+                            <div className="space-y-1">
+                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs" onClick={() => updateProp('textTransform', 'none')}>
+                                    Default
+                                </Button>
+                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs uppercase" onClick={() => updateProp('textTransform', 'uppercase')}>
+                                    UPPERCASE
+                                </Button>
+                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs lowercase" onClick={() => updateProp('textTransform', 'lowercase')}>
+                                    lowercase
+                                </Button>
+                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs capitalize" onClick={() => updateProp('textTransform', 'capitalize')}>
+                                    Capitalize
+                                </Button>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    {/* Spacing Popover */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
+                                aria-label="Text spacing options"
+                            >
+                                <Baseline className="w-4 h-4" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="start" className={`w-56 p-4 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200'}`}>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <Label className="text-xs">Letter spacing</Label>
+                                        <span className={`text-xs font-mono w-8 text-right ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{selectedElement.letterSpacing || 0}</span>
+                                    </div>
+                                    <Slider
+                                        value={[selectedElement.letterSpacing || 0]}
+                                        min={-5}
+                                        max={20}
+                                        step={0.5}
+                                        onValueChange={([val]) => updateProp('letterSpacing', val)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <Label className="text-xs">Line spacing</Label>
+                                        <span className={`text-xs font-mono w-8 text-right ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{selectedElement.lineHeight || 1.4}</span>
+                                    </div>
+                                    <Slider
+                                        value={[selectedElement.lineHeight || 1.4]}
+                                        min={0.8}
+                                        max={3}
+                                        step={0.1}
+                                        onValueChange={([val]) => updateProp('lineHeight', val)}
+                                    />
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
                     {/* Font Size */}
-                    <div className={`flex items-center gap-1 rounded px-2 py-1 ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
-                        <Button variant="ghost" size="icon" className={`h-6 w-6 p-0 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} onClick={() => updateProp('fontSize', Math.max(8, (selectedElement.fontSize || 16) - 1))}>-</Button>
-                        <span className={`w-8 text-center text-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>{selectedElement.fontSize || 16}</span>
-                        <Button variant="ghost" size="icon" className={`h-6 w-6 p-0 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} onClick={() => updateProp('fontSize', Math.min(200, (selectedElement.fontSize || 16) + 1))}>+</Button>
+                    <div className={`flex items-center gap-0.5 rounded border ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-zinc-200'}`}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-7 w-7 p-0 rounded-none ${isDark ? 'text-zinc-400 hover:text-white hover:bg-zinc-700' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'}`}
+                            onClick={() => updateProp('fontSize', Math.max(6, (selectedElement.fontSize || 16) - 1))}
+                        >
+                            -
+                        </Button>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <button
+                                    className={`w-10 h-7 text-center text-xs font-mono cursor-pointer hover:bg-primary/10 ${isDark ? 'text-white' : 'text-zinc-900'}`}
+                                >
+                                    {selectedElement.fontSize || 16}
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                side="bottom"
+                                align="center"
+                                className={`w-20 p-1 max-h-64 overflow-y-auto ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200'}`}
+                            >
+                                <div className="space-y-0.5">
+                                    {[6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64, 72, 80, 96, 120, 144].map((size) => (
+                                        <button
+                                            key={size}
+                                            onClick={() => updateProp('fontSize', size)}
+                                            className={`w-full px-2 py-1 text-left text-sm rounded transition-colors ${selectedElement.fontSize === size
+                                                ? 'bg-primary text-primary-foreground'
+                                                : isDark ? 'hover:bg-zinc-800 text-zinc-300' : 'hover:bg-zinc-100 text-zinc-700'
+                                                }`}
+                                        >
+                                            {size}
+                                        </button>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-7 w-7 p-0 rounded-none ${isDark ? 'text-zinc-400 hover:text-white hover:bg-zinc-700' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'}`}
+                            onClick={() => updateProp('fontSize', Math.min(200, (selectedElement.fontSize || 16) + 1))}
+                        >
+                            +
+                        </Button>
                     </div>
                 </div>
             );

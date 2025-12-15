@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, Filter, X, Calendar } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Filter, X, Calendar, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
@@ -43,27 +44,31 @@ const ArticleFilters = ({
                         />
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="gap-2"
-                    >
-                        <Filter className="w-4 h-4" />
-                        Filters
-                        {hasActiveFilters && (
-                            <Badge variant="secondary" className="ml-1 px-1 min-w-[20px] h-5 text-xs">
-                                {Object.values(localFilters).filter(v => v !== '' && v !== 'all' && (!Array.isArray(v) || v.length > 0)).length}
-                            </Badge>
-                        )}
-                    </Button>
+                <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="gap-2"
+                >
+                    <Filter className="w-4 h-4" />
+                    Filters
                     {hasActiveFilters && (
-                        <Button variant="ghost" onClick={onClearFilters} className="gap-2">
-                            <X className="w-4 h-4" />
-                            Clear
-                        </Button>
+                        <Badge variant="secondary" className="ml-1 px-1 min-w-[20px] h-5 text-xs">
+                            {Object.values(localFilters).filter(v => v !== '' && v !== 'all' && (!Array.isArray(v) || v.length > 0)).length}
+                        </Badge>
                     )}
-                </div>
+                </Button>
+                {hasActiveFilters && (
+                    <Button variant="ghost" onClick={onClearFilters} className="gap-2">
+                        <X className="w-4 h-4" />
+                        Clear
+                    </Button>
+                )}
+                <Link to="/articles/new">
+                    <Button className="gap-2">
+                        <Plus className="w-4 h-4" />
+                        New Article
+                    </Button>
+                </Link>
             </div>
 
             {/* Advanced Filters */}

@@ -74,42 +74,42 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        const body = await request.json();
+        const requestBody = await request.json();
 
         // Transform flat frontend fields to nested structure for updateArticle
         const transformedData: any = {
-            ...body,
+            ...requestBody,
             // Convert flat image fields to nested structure
-            image: body.imageUrl ? {
-                url: body.imageUrl,
-                alt: body.imageAlt || '',
-                width: body.imageWidth,
-                height: body.imageHeight
-            } : body.image,
+            image: requestBody.imageUrl ? {
+                url: requestBody.imageUrl,
+                alt: requestBody.imageAlt || '',
+                width: requestBody.imageWidth,
+                height: requestBody.imageHeight
+            } : requestBody.image,
             // Convert flat cover fields to nested structure  
-            cover: body.coverUrl ? {
-                url: body.coverUrl,
-                alt: body.coverAlt || '',
-                width: body.coverWidth,
-                height: body.coverHeight
-            } : body.cover,
+            cover: requestBody.coverUrl ? {
+                url: requestBody.coverUrl,
+                alt: requestBody.coverAlt || '',
+                width: requestBody.coverWidth,
+                height: requestBody.coverHeight
+            } : requestBody.cover,
         };
 
         // Parse JSON string fields if they are strings (frontend sends stringified JSON)
         const jsonFields = ['contentJson', 'recipeJson', 'faqsJson', 'keywordsJson', 'referencesJson', 'mediaJson'];
         for (const field of jsonFields) {
-            if (typeof body[field] === 'string' && body[field]) {
+            if (typeof requestBody[field] === 'string' && requestBody[field]) {
                 try {
-                    transformedData[field] = JSON.parse(body[field]);
+                    transformedData[field] = JSON.parse(requestBody[field]);
                 } catch (e) {
                     // If already an object or invalid, keep as-is
-                    transformedData[field] = body[field];
+                    transformedData[field] = requestBody[field];
                 }
             }
         }
 
         // Handle selectedTags -> tags conversion (frontend uses selectedTags with IDs)
-        if (body.selectedTags && Array.isArray(body.selectedTags)) {
+        if (requestBody.selectedTags && Array.isArray(requestBody.selectedTags)) {
             // For now, we'll need to look up tag slugs by ID or pass IDs
             // The updateArticle expects tag slugs, but frontend sends tag IDs
             // We'll skip tag updates for now if slug lookup is needed

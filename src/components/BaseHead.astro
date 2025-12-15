@@ -5,6 +5,8 @@ import "../styles/global.css";
 import type { ImageMetadata } from "astro";
 import FallbackImage from "../assets/blog-placeholder-1.jpg";
 import { SITE_TITLE } from "../consts";
+import fs from "node:fs";
+import path from "node:path";
 
 interface Props {
 	title: string;
@@ -17,12 +19,73 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const { title, description, image = FallbackImage } = Astro.props;
 const imageSrc = typeof image === "string" ? image : image.src;
 const imageUrl = new URL(imageSrc, Astro.url);
+
+// Check for uploaded favicons
+const logosDir = path.join(process.cwd(), "public", "logos");
+const publicDir = path.join(process.cwd(), "public");
+
+// Helper to check if file exists
+const fileExists = (dir: string, filename: string) => {
+	try {
+		return fs.existsSync(path.join(dir, filename));
+	} catch {
+		return false;
+	}
+};
+
+// Determine which favicon to use
+const hasFaviconSvg = fileExists(logosDir, "favicon.svg");
+const hasFavicon32 = fileExists(logosDir, "favicon-32x32.png");
+const hasFavicon16 = fileExists(logosDir, "favicon-16x16.png");
+const hasAppleTouch = fileExists(logosDir, "apple-touch-icon.png");
+const hasManifest = fileExists(logosDir, "site.webmanifest");
+const hasRootFavicon = fileExists(publicDir, "favicon.svg");
 ---
 
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+<!-- Favicons - use uploaded if available, otherwise fallback -->
+{
+	hasFaviconSvg ? (
+		<link rel="icon" type="image/svg+xml" href="/logos/favicon.svg" />
+	) : hasRootFavicon ? (
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+	) : null
+}
+
+{
+	hasFavicon32 && (
+		<link
+			rel="icon"
+			type="image/png"
+			sizes="32x32"
+			href="/logos/favicon-32x32.png"
+		/>
+	)
+}
+{
+	hasFavicon16 && (
+		<link
+			rel="icon"
+			type="image/png"
+			sizes="16x16"
+			href="/logos/favicon-16x16.png"
+		/>
+	)
+}
+{
+	hasAppleTouch && (
+		<link
+			rel="apple-touch-icon"
+			sizes="180x180"
+			href="/logos/apple-touch-icon.png"
+		/>
+	)
+}
+{hasManifest && <link rel="manifest" href="/logos/site.webmanifest" />}
+
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link
 	rel="alternate"
@@ -32,20 +95,12 @@ const imageUrl = new URL(imageSrc, Astro.url);
 />
 <meta name="generator" content={Astro.generator} />
 
-<!-- Font preloads -->
+<!-- Font preloads - Using Google Fonts for Atkinson Hyperlegible -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
-	rel="preload"
-	href="/fonts/atkinson-regular.woff"
-	as="font"
-	type="font/woff"
-	crossorigin
-/>
-<link
-	rel="preload"
-	href="/fonts/atkinson-bold.woff"
-	as="font"
-	type="font/woff"
-	crossorigin
+	href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+	rel="stylesheet"
 />
 
 <!-- Canonical URL -->

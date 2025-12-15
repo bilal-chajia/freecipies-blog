@@ -141,8 +141,9 @@ export const useImageEditorState = () => {
         setWatermarkRepeat('single');
         setWatermarkDensity(3);
         setTextOverlay({ enabled: false, text: '', font: 'sans-serif', size: 48, color: '#ffffff', position: 'center', shadow: true });
-        // Watermark settings might be preserved from localStorage in the main component, but here we reset to defaults
-        // Logic for preserving settings can remain in the main component or be moved here later
+        // Reset working images so new image loads correctly
+        setWorkingImage(null);
+        setOriginalImage(null);
     }, []);
 
     return {
