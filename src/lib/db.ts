@@ -1,6 +1,35 @@
-import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
-import type { Article, Category, Author, Tag, Media } from '../types';
+/**
+ * Drizzle-based database operations
+ * Drop-in replacement for db.ts using Drizzle ORM
+ */
 
+import { eq, and, or, like, desc, asc, sql, count, inArray } from 'drizzle-orm';
+import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
+import { createDb, type DrizzleDb } from './drizzle';
+import {
+  articles,
+  categories,
+  authors,
+  tags,
+  articleTags,
+  media,
+  pinterestBoards,
+  pinterestPins,
+  pinTemplates,
+  siteSettings,
+  redirects,
+  type Article,
+  type Category,
+  type Author,
+  type Tag,
+  type Media,
+  type NewArticle,
+  type NewCategory,
+  type NewAuthor,
+  type NewTag,
+} from './schema';
+
+// Re-export Env interface for compatibility
 export interface Env {
   DB: D1Database;
   IMAGES: R2Bucket;
@@ -9,13 +38,21 @@ export interface Env {
 }
 
 export interface PaginatedArticles {
-  items: Article[];
+  items: ArticleWithRelations[];
   total: number;
 }
-/**
- * Fetches a paginated list of articles from the database.
- * Leverages the v_articles_full view for rich data.
- */
+
+// Extended Article type with computed relations
+export interface ArticleWithRelations extends Article {
+  category?: Category;
+  author?: Author;
+  tags?: Tag[];
+}
+
+// ============================================
+// ARTICLE OPERATIONS
+// ============================================
+
 export async function getArticles(
   db: D1Database,
   options?: {
@@ -24,191 +61,198 @@ export async function getArticles(
     tagSlug?: string;
     limit?: number;
     offset?: number;
-    type?: 'recipe' | 'blog';
+    type?: 'recipe' | 'article';
     publishedAfter?: Date;
-    isOnline?: boolean; // true = online only, false = offline only, undefined = all
+    isOnline?: boolean;
     search?: string;
   }
 ): Promise<PaginatedArticles> {
-  const whereClauses: string[] = [];
-  const params: any[] = [];
+  const drizzle = createDb(db);
 
-  // Handle isOnline filter
-  // true = only online, false = only offline, undefined = all articles
+  // Build where conditions
+  const conditions: any[] = [];
+
   if (options?.isOnline === true) {
-    whereClauses.push('r.is_online = 1');
+    conditions.push(eq(articles.isOnline, true));
   } else if (options?.isOnline === false) {
-    whereClauses.push('r.is_online = 0');
+    conditions.push(eq(articles.isOnline, false));
   }
-  // If undefined, no filter is applied (show all)
 
   if (options?.type) {
-    whereClauses.push(`r.type = ?${params.length + 1}`);
-    params.push(options.type);
+    conditions.push(eq(articles.type, options.type));
   }
 
   if (options?.categorySlug) {
-    whereClauses.push(`r.category_slug = ?${params.length + 1}`);
-    params.push(options.categorySlug);
+    conditions.push(eq(articles.categorySlug, options.categorySlug));
   }
 
   if (options?.authorSlug) {
-    whereClauses.push(`r.author_slug = ?${params.length + 1}`);
-    params.push(options.authorSlug);
-  }
-
-  if (options?.tagSlug) {
-    // This requires a subquery or a join on the tags_json field
-    whereClauses.push(`EXISTS (
-      SELECT 1 FROM json_each(r.tags_json)
-      WHERE json_extract(value, '$.slug') = ?${params.length + 1}
-    )`);
-    params.push(options.tagSlug);
+    conditions.push(eq(articles.authorSlug, options.authorSlug));
   }
 
   if (options?.publishedAfter) {
-    whereClauses.push(`r.published_at > ?${params.length + 1}`);
-    params.push(options.publishedAfter.toISOString());
+    conditions.push(sql`${articles.publishedAt} > ${options.publishedAfter.toISOString()}`);
   }
 
   if (options?.search) {
-    // Search in label, short_description, and author_name
-    const searchParam = `%${options.search}%`;
-    const p1 = params.length + 1;
-    const p2 = params.length + 2;
-    const p3 = params.length + 3;
-    whereClauses.push(`(r.label LIKE ?${p1} OR r.short_description LIKE ?${p2} OR r.author_name LIKE ?${p3})`);
-    params.push(searchParam, searchParam, searchParam);
+    const searchPattern = `%${options.search}%`;
+    conditions.push(
+      or(
+        like(articles.label, searchPattern),
+        like(articles.shortDescription, searchPattern)
+      )
+    );
   }
 
-  const whereString = whereClauses.length > 0 ? whereClauses.join(' AND ') : '1=1';
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  // Main query to get the paginated items
-  let query = `SELECT * FROM v_articles_full r WHERE ${whereString} ORDER BY r.published_at DESC`;
-  const queryParams = [...params];
+  // Get items with relations
+  const items = await drizzle.query.articles.findMany({
+    where: whereClause,
+    with: {
+      category: true,
+      author: true,
+      articleTags: {
+        with: {
+          tag: true,
+        },
+      },
+    },
+    orderBy: [desc(articles.publishedAt)],
+    limit: options?.limit,
+    offset: options?.offset,
+  });
 
-  if (options?.limit) {
-    query += ` LIMIT ?${queryParams.length + 1}`;
-    queryParams.push(options.limit);
+  // Get total count
+  const [{ count: total }] = await drizzle
+    .select({ count: count() })
+    .from(articles)
+    .where(whereClause);
+
+  // Transform items to include tags array
+  const transformedItems = items.map(item => ({
+    ...item,
+    tags: item.articleTags?.map(at => at.tag) || [],
+  }));
+
+  // Handle tag filtering (post-query for now)
+  let filteredItems = transformedItems;
+  if (options?.tagSlug) {
+    filteredItems = transformedItems.filter(item =>
+      item.tags?.some(tag => tag?.slug === options.tagSlug)
+    );
   }
-
-  if (options?.offset) {
-    query += ` OFFSET ?${queryParams.length + 1}`;
-    queryParams.push(options.offset);
-  }
-
-  // Separate query to get the total count with the same filters
-  const countQuery = `SELECT COUNT(*) as total FROM v_articles_full r WHERE ${whereString}`;
-
-  // Run both queries in parallel for efficiency
-  const [articlesPromise, countPromise] = await db.batch([
-    db.prepare(query).bind(...queryParams),
-    db.prepare(countQuery).bind(...params)
-  ]);
-
-  const results = articlesPromise.results ?? [];
-  const totalItems = ((countPromise.results?.[0] as any)?.total as number) ?? 0;
 
   return {
-    items: results.map(row => mapRowToArticle(row)),
-    total: totalItems,
+    items: filteredItems as ArticleWithRelations[],
+    total: Number(total),
   };
 }
 
-/**
- * Fetches a single article by its slug using the v_articles_full view.
- */
 export async function getArticleBySlug(
   db: D1Database,
   slug: string,
-  type?: 'recipe' | 'blog'
-): Promise<Article | null> {
-  let query = `SELECT * FROM v_articles_full WHERE slug = ?1`;
-  const params: any[] = [slug];
+  type?: 'recipe' | 'article'
+): Promise<ArticleWithRelations | null> {
+  const drizzle = createDb(db);
 
+  const conditions = [eq(articles.slug, slug)];
   if (type) {
-    query += ` AND type = ?2`;
-    params.push(type);
+    conditions.push(eq(articles.type, type));
   }
 
-  const { results } = await db
-    .prepare(query)
-    .bind(...params)
-    .all();
+  const result = await drizzle.query.articles.findFirst({
+    where: and(...conditions),
+    with: {
+      category: true,
+      author: true,
+      articleTags: {
+        with: {
+          tag: true,
+        },
+      },
+    },
+  });
 
-  if (results.length === 0) return null;
+  if (!result) return null;
 
-  return mapRowToArticle(results[0]);
+  return {
+    ...result,
+    tags: result.articleTags?.map(at => at.tag) || [],
+  } as ArticleWithRelations;
 }
 
 export async function createArticle(
   db: D1Database,
-  article: Partial<Article> & { tags?: string[] } // tags as slugs
-): Promise<Article | null> {
+  article: Partial<ArticleWithRelations> & {
+    tags?: string[];
+    image?: { url?: string; alt?: string; width?: number; height?: number };
+    cover?: { url?: string; alt?: string; width?: number; height?: number };
+  }
+): Promise<ArticleWithRelations | null> {
+  const drizzle = createDb(db);
+
   const {
     slug, type, categorySlug, authorSlug, label, headline,
     metaTitle, metaDescription, canonicalUrl,
     shortDescription, tldr, introduction, summary,
     image, cover,
-    contentJson, recipeJson, faqsJson, keywords, referencesJson, mediaJson,
-    isOnline, isFavorite, publishedAt, tags
+    contentJson, recipeJson, faqsJson, keywordsJson, referencesJson, mediaJson,
+    isOnline, isFavorite, publishedAt, tags: tagSlugs
   } = article;
 
   if (!slug || !categorySlug || !authorSlug || !label || !headline) {
     throw new Error('Missing required fields');
   }
 
-  const result = await db.prepare(`
-    INSERT INTO articles (
-      slug, type, category_slug, author_slug, label, headline,
-      meta_title, meta_description, canonical_url,
-      short_description, tldr, introduction, summary,
-      image_url, image_alt, image_width, image_height,
-      cover_url, cover_alt, cover_width, cover_height,
-      content_json, recipe_json, faqs_json, keywords_json, references_json, media_json,
-      is_online, is_favorite, published_at
-    ) VALUES (
-      ?, ?, ?, ?, ?, ?,
-      ?, ?, ?,
-      ?, ?, ?, ?,
-      ?, ?, ?, ?,
-      ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?,
-      ?, ?, ?
-    )
-  `).bind(
-    slug, type || 'article', categorySlug, authorSlug, label, headline,
-    metaTitle || headline, metaDescription || shortDescription, canonicalUrl,
-    shortDescription, tldr, introduction, summary,
-    image?.url, image?.alt, image?.width, image?.height,
-    cover?.url, cover?.alt, cover?.width, cover?.height,
-    contentJson ? JSON.stringify(contentJson) : null,
-    recipeJson ? JSON.stringify(recipeJson) : null,
-    faqsJson ? JSON.stringify(faqsJson) : null,
-    keywords ? JSON.stringify(keywords) : null,
-    referencesJson ? JSON.stringify(referencesJson) : null,
-    mediaJson ? JSON.stringify(mediaJson) : null,
-    isOnline ? 1 : 0, isFavorite ? 1 : 0, publishedAt || new Date().toISOString()
-  ).run();
-
-  if (!result.success) {
-    throw new Error('Failed to create article');
-  }
+  // Insert article
+  const [inserted] = await drizzle.insert(articles).values({
+    slug,
+    type: type || 'article',
+    categorySlug,
+    authorSlug,
+    label,
+    headline,
+    metaTitle: metaTitle || headline,
+    metaDescription: metaDescription || shortDescription || '',
+    canonicalUrl,
+    shortDescription: shortDescription || '',
+    tldr: tldr || '',
+    introduction,
+    summary,
+    imageUrl: image?.url,
+    imageAlt: image?.alt,
+    imageWidth: image?.width,
+    imageHeight: image?.height,
+    coverUrl: cover?.url,
+    coverAlt: cover?.alt,
+    coverWidth: cover?.width,
+    coverHeight: cover?.height,
+    contentJson: contentJson ? JSON.stringify(contentJson) : null,
+    recipeJson: recipeJson ? JSON.stringify(recipeJson) : null,
+    faqsJson: faqsJson ? JSON.stringify(faqsJson) : null,
+    keywordsJson: keywordsJson ? JSON.stringify(keywordsJson) : null,
+    referencesJson: referencesJson ? JSON.stringify(referencesJson) : null,
+    mediaJson: mediaJson ? JSON.stringify(mediaJson) : null,
+    isOnline: isOnline || false,
+    isFavorite: isFavorite || false,
+    publishedAt: publishedAt || new Date().toISOString(),
+  }).returning();
 
   // Handle tags
-  if (tags && tags.length > 0) {
-    const articleId = result.meta.last_row_id;
+  if (tagSlugs && tagSlugs.length > 0 && inserted) {
+    const tagRecords = await drizzle
+      .select({ id: tags.id })
+      .from(tags)
+      .where(inArray(tags.slug, tagSlugs));
 
-    // Get tag IDs
-    const placeholders = tags.map(() => '?').join(',');
-    const tagResults = await db.prepare(`SELECT id FROM tags WHERE slug IN (${placeholders})`)
-      .bind(...tags)
-      .all();
-
-    if (tagResults.results.length > 0) {
-      const stmt = db.prepare('INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)');
-      const batch = tagResults.results.map((tag: any) => stmt.bind(articleId, tag.id));
-      await db.batch(batch);
+    if (tagRecords.length > 0) {
+      await drizzle.insert(articleTags).values(
+        tagRecords.map(tag => ({
+          articleId: inserted.id,
+          tagId: tag.id,
+        }))
+      );
     }
   }
 
@@ -218,80 +262,99 @@ export async function createArticle(
 export async function updateArticle(
   db: D1Database,
   slug: string,
-  article: Partial<Article> & { tags?: string[] }
-): Promise<Article | null> {
+  article: Partial<ArticleWithRelations> & {
+    tags?: string[];
+    image?: { url?: string; alt?: string; width?: number; height?: number } | null;
+    cover?: { url?: string; alt?: string; width?: number; height?: number } | null;
+  }
+): Promise<ArticleWithRelations | null> {
+  const drizzle = createDb(db);
+
   const existing = await getArticleBySlug(db, slug);
   if (!existing) return null;
 
-  const updates: string[] = [];
-  const params: any[] = [];
+  // Build update object
+  const updateData: Partial<NewArticle> = {};
 
-  const fields: Record<string, any> = {
-    type: article.type,
-    category_slug: article.categorySlug,
-    author_slug: article.authorSlug,
-    label: article.label,
-    headline: article.headline,
-    meta_title: article.metaTitle,
-    meta_description: article.metaDescription,
-    canonical_url: article.canonicalUrl,
-    short_description: article.shortDescription,
-    tldr: article.tldr,
-    introduction: article.introduction,
-    summary: article.summary,
-    image_url: article.image?.url,
-    image_alt: article.image?.alt,
-    image_width: article.image?.width,
-    image_height: article.image?.height,
-    cover_url: article.cover?.url,
-    cover_alt: article.cover?.alt,
-    cover_width: article.cover?.width,
-    cover_height: article.cover?.height,
-    content_json: article.contentJson ? JSON.stringify(article.contentJson) : undefined,
-    recipe_json: article.recipeJson ? JSON.stringify(article.recipeJson) : undefined,
-    faqs_json: article.faqsJson ? JSON.stringify(article.faqsJson) : undefined,
-    keywords_json: article.keywords ? JSON.stringify(article.keywords) : undefined,
-    references_json: article.referencesJson ? JSON.stringify(article.referencesJson) : undefined,
-    media_json: article.mediaJson ? JSON.stringify(article.mediaJson) : undefined,
-    is_online: article.isOnline !== undefined ? (article.isOnline ? 1 : 0) : undefined,
-    is_favorite: article.isFavorite !== undefined ? (article.isFavorite ? 1 : 0) : undefined,
-    published_at: article.publishedAt
-  };
+  if (article.type !== undefined) updateData.type = article.type;
+  if (article.categorySlug !== undefined) updateData.categorySlug = article.categorySlug;
+  if (article.authorSlug !== undefined) updateData.authorSlug = article.authorSlug;
+  if (article.label !== undefined) updateData.label = article.label;
+  if (article.headline !== undefined) updateData.headline = article.headline;
+  if (article.metaTitle !== undefined) updateData.metaTitle = article.metaTitle;
+  if (article.metaDescription !== undefined) updateData.metaDescription = article.metaDescription;
+  if (article.canonicalUrl !== undefined) updateData.canonicalUrl = article.canonicalUrl;
+  if (article.shortDescription !== undefined) updateData.shortDescription = article.shortDescription;
+  if (article.tldr !== undefined) updateData.tldr = article.tldr;
+  if (article.introduction !== undefined) updateData.introduction = article.introduction;
+  if (article.summary !== undefined) updateData.summary = article.summary;
 
-  for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) {
-      updates.push(`${key} = ?`);
-      params.push(value);
-    }
+  // Handle image
+  if (article.image !== undefined) {
+    updateData.imageUrl = article.image?.url ?? null;
+    updateData.imageAlt = article.image?.alt ?? null;
+    updateData.imageWidth = article.image?.width ?? null;
+    updateData.imageHeight = article.image?.height ?? null;
   }
 
-  if (updates.length > 0) {
-    params.push(slug); // for WHERE clause
-    await db.prepare(`UPDATE articles SET ${updates.join(', ')} WHERE slug = ?`).bind(...params).run();
+  // Handle cover
+  if (article.cover !== undefined) {
+    updateData.coverUrl = article.cover?.url ?? null;
+    updateData.coverAlt = article.cover?.alt ?? null;
+    updateData.coverWidth = article.cover?.width ?? null;
+    updateData.coverHeight = article.cover?.height ?? null;
+  }
+
+  // Handle JSON fields
+  if (article.contentJson !== undefined) {
+    updateData.contentJson = article.contentJson ? JSON.stringify(article.contentJson) : null;
+  }
+  if (article.recipeJson !== undefined) {
+    updateData.recipeJson = article.recipeJson ? JSON.stringify(article.recipeJson) : null;
+  }
+  if (article.faqsJson !== undefined) {
+    updateData.faqsJson = article.faqsJson ? JSON.stringify(article.faqsJson) : null;
+  }
+  if (article.keywordsJson !== undefined) {
+    updateData.keywordsJson = article.keywordsJson ? JSON.stringify(article.keywordsJson) : null;
+  }
+  if (article.referencesJson !== undefined) {
+    updateData.referencesJson = article.referencesJson ? JSON.stringify(article.referencesJson) : null;
+  }
+  if (article.mediaJson !== undefined) {
+    updateData.mediaJson = article.mediaJson ? JSON.stringify(article.mediaJson) : null;
+  }
+
+  if (article.isOnline !== undefined) updateData.isOnline = article.isOnline;
+  if (article.isFavorite !== undefined) updateData.isFavorite = article.isFavorite;
+  if (article.publishedAt !== undefined) updateData.publishedAt = article.publishedAt;
+
+  // Update article
+  if (Object.keys(updateData).length > 0) {
+    await drizzle.update(articles)
+      .set(updateData)
+      .where(eq(articles.slug, slug));
   }
 
   // Update tags if provided
-  if (article.tags) {
-    // Get article ID (we need it for junction table)
-    // We can get it from existing article if we had it, but existing is the object, not raw row.
-    // But we can query it.
-    const { results } = await db.prepare('SELECT id FROM articles WHERE slug = ?').bind(slug).all();
-    const articleId = results[0].id;
-
+  if (article.tags !== undefined) {
     // Delete existing tags
-    await db.prepare('DELETE FROM article_tags WHERE article_id = ?').bind(articleId).run();
+    await drizzle.delete(articleTags)
+      .where(eq(articleTags.articleId, existing.id));
 
     if (article.tags.length > 0) {
-      // Get tag IDs
-      const placeholders = article.tags.map(() => '?').join(',');
-      const tagResults = await db.prepare(`SELECT id FROM tags WHERE slug IN (${placeholders})`)
-        .bind(...article.tags)
-        .all();
+      const tagRecords = await drizzle
+        .select({ id: tags.id })
+        .from(tags)
+        .where(inArray(tags.slug, article.tags));
 
-      if (tagResults.results.length > 0) {
-        const stmt = db.prepare('INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)');
-        const batch = tagResults.results.map((tag: any) => stmt.bind(articleId, tag.id));
-        await db.batch(batch);
+      if (tagRecords.length > 0) {
+        await drizzle.insert(articleTags).values(
+          tagRecords.map(tag => ({
+            articleId: existing.id,
+            tagId: tag.id,
+          }))
+        );
       }
     }
   }
@@ -299,147 +362,80 @@ export async function updateArticle(
   return getArticleBySlug(db, slug);
 }
 
-export async function deleteArticle(
-  db: D1Database,
-  slug: string
-): Promise<boolean> {
-  const result = await db.prepare('DELETE FROM articles WHERE slug = ?').bind(slug).run();
-  return result.success;
+export async function deleteArticle(db: D1Database, slug: string): Promise<boolean> {
+  const drizzle = createDb(db);
+  const result = await drizzle.delete(articles).where(eq(articles.slug, slug));
+  return true;
 }
 
-export async function incrementViewCount(
-  db: D1Database,
-  slug: string
-): Promise<boolean> {
-  const result = await db.prepare(
-    'UPDATE articles SET view_count = COALESCE(view_count, 0) + 1 WHERE slug = ?'
-  ).bind(slug).run();
-  return result.success;
+export async function incrementViewCount(db: D1Database, slug: string): Promise<boolean> {
+  const drizzle = createDb(db);
+  await drizzle.update(articles)
+    .set({ viewCount: sql`COALESCE(${articles.viewCount}, 0) + 1` })
+    .where(eq(articles.slug, slug));
+  return true;
 }
 
-// Tag Database Operations (Simplified)
-export async function createTag(
-  db: D1Database,
-  tag: Partial<Tag>
-): Promise<Tag | null> {
-  const { slug, label, color, isOnline } = tag;
+// ============================================
+// CATEGORY OPERATIONS
+// ============================================
 
-  if (!slug || !label) throw new Error('Missing required fields');
-
-  await db.prepare(`
-    INSERT INTO tags (slug, label, color, is_online)
-    VALUES (?, ?, ?, ?)
-  `).bind(
-    slug, label, color || '#ff6600', isOnline ? 1 : 1
-  ).run();
-
-  const { results } = await db.prepare('SELECT * FROM tags WHERE slug = ?').bind(slug).all();
-  if (results.length === 0) return null;
-  return mapRowToTag(results[0]);
-}
-
-export async function updateTag(
-  db: D1Database,
-  slug: string,
-  tag: Partial<Tag>
-): Promise<Tag | null> {
-  const updates: string[] = [];
-  const params: any[] = [];
-
-  const fields: Record<string, any> = {
-    label: tag.label,
-    color: tag.color,
-    is_online: tag.isOnline !== undefined ? (tag.isOnline ? 1 : 0) : undefined
-  };
-
-  for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) {
-      updates.push(`${key} = ?`);
-      params.push(value);
-    }
-  }
-
-  if (updates.length > 0) {
-    params.push(slug);
-    await db.prepare(`UPDATE tags SET ${updates.join(', ')} WHERE slug = ?`).bind(...params).run();
-  }
-
-  const { results } = await db.prepare('SELECT * FROM tags WHERE slug = ?').bind(slug).all();
-  if (results.length === 0) return null;
-  return mapRowToTag(results[0]);
-}
-
-export async function deleteTag(
-  db: D1Database,
-  slug: string
-): Promise<boolean> {
-  const result = await db.prepare('DELETE FROM tags WHERE slug = ?').bind(slug).run();
-  return result.success;
-}
-
-export async function getTags(
+export async function getCategories(
   db: D1Database,
   options?: { isOnline?: boolean }
-): Promise<Tag[]> {
-  let query = 'SELECT * FROM tags';
-  const params: any[] = [];
+): Promise<Category[]> {
+  const drizzle = createDb(db);
 
-  if (options?.isOnline !== undefined) {
-    query += ' WHERE is_online = ?';
-    params.push(options.isOnline ? 1 : 0);
-  }
+  const conditions = options?.isOnline !== undefined
+    ? eq(categories.isOnline, options.isOnline)
+    : undefined;
 
-  query += ' ORDER BY label ASC';
-
-  const { results } = await db.prepare(query).bind(...params).all();
-
-  return results.map(row => mapRowToTag(row));
+  return drizzle.query.categories.findMany({
+    where: conditions,
+    orderBy: [asc(categories.sortOrder), asc(categories.label)],
+  });
 }
 
-export async function getDashboardStats(db: D1Database) {
-  const [articles, categories, authors, tags] = await db.batch([
-    db.prepare('SELECT COUNT(*) as count FROM articles'),
-    db.prepare('SELECT COUNT(*) as count FROM categories'),
-    db.prepare('SELECT COUNT(*) as count FROM authors'),
-    db.prepare('SELECT COUNT(*) as count FROM tags')
-  ]);
-
-  return {
-    articles: (articles.results?.[0] as any)?.count || 0,
-    categories: (categories.results?.[0] as any)?.count || 0,
-    authors: (authors.results?.[0] as any)?.count || 0,
-    tags: (tags.results?.[0] as any)?.count || 0
-  };
+export async function getCategoryBySlug(db: D1Database, slug: string): Promise<Category | null> {
+  const drizzle = createDb(db);
+  const result = await drizzle.query.categories.findFirst({
+    where: eq(categories.slug, slug),
+  });
+  return result ?? null;
 }
 
-
-
-// Category Database Operations
 export async function createCategory(
   db: D1Database,
-  category: Partial<Category>
+  category: Partial<Category> & {
+    image?: { url?: string; alt?: string; width?: number; height?: number };
+  }
 ): Promise<Category | null> {
-  const {
-    slug, label, headline, metaTitle, metaDescription,
-    shortDescription, tldr, image, collectionTitle,
-    numEntriesPerPage, isOnline, isFavorite, sortOrder, color
-  } = category;
+  const drizzle = createDb(db);
+
+  const { slug, label, headline, metaTitle, metaDescription, shortDescription, tldr,
+    image, collectionTitle, numEntriesPerPage, isOnline, isFavorite, sortOrder, color } = category;
 
   if (!slug || !label) throw new Error('Missing required fields');
 
-  await db.prepare(`
-    INSERT INTO categories (
-      slug, label, headline, meta_title, meta_description,
-      short_description, tldr, image_url, image_alt, image_width, image_height,
-      collection_title, num_entries_per_page, is_online, is_favorite, sort_order, color
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(
-    slug, label, headline || label, metaTitle || label, metaDescription || '',
-    shortDescription || '', tldr || '',
-    image?.url, image?.alt, image?.width, image?.height,
-    collectionTitle || label, numEntriesPerPage || 12,
-    isOnline ? 1 : 0, isFavorite ? 1 : 0, sortOrder || 0, color || '#ff6600'
-  ).run();
+  await drizzle.insert(categories).values({
+    slug,
+    label,
+    headline: headline || label,
+    metaTitle: metaTitle || label,
+    metaDescription: metaDescription || '',
+    shortDescription: shortDescription || '',
+    tldr: tldr || '',
+    imageUrl: image?.url,
+    imageAlt: image?.alt,
+    imageWidth: image?.width,
+    imageHeight: image?.height,
+    collectionTitle: collectionTitle || label,
+    numEntriesPerPage: numEntriesPerPage || 12,
+    isOnline: isOnline || false,
+    isFavorite: isFavorite || false,
+    sortOrder: sortOrder || 0,
+    color: color || '#ff6600',
+  });
 
   return getCategoryBySlug(db, slug);
 }
@@ -447,114 +443,107 @@ export async function createCategory(
 export async function updateCategory(
   db: D1Database,
   slug: string,
-  category: Partial<Category>
+  category: Partial<Category> & {
+    image?: { url?: string; alt?: string; width?: number; height?: number } | null;
+  }
 ): Promise<Category | null> {
-  const updates: string[] = [];
-  const params: any[] = [];
+  const drizzle = createDb(db);
 
-  const fields: Record<string, any> = {
-    label: category.label,
-    headline: category.headline,
-    meta_title: category.metaTitle,
-    meta_description: category.metaDescription,
-    short_description: category.shortDescription,
-    tldr: category.tldr,
-    // Handle image fields: if image is explicitly null, set all to null
-    // If image is undefined, don't update. If image exists, use its values.
-    image_url: category.image === null ? null : category.image?.url,
-    image_alt: category.image === null ? null : category.image?.alt,
-    image_width: category.image === null ? null : category.image?.width,
-    image_height: category.image === null ? null : category.image?.height,
-    collection_title: category.collectionTitle,
-    num_entries_per_page: category.numEntriesPerPage,
-    is_online: category.isOnline !== undefined ? (category.isOnline ? 1 : 0) : undefined,
-    is_favorite: category.isFavorite !== undefined ? (category.isFavorite ? 1 : 0) : undefined,
-    sort_order: category.sortOrder,
-    color: category.color
-  };
+  const updateData: Partial<NewCategory> = {};
 
-  for (const [key, value] of Object.entries(fields)) {
-    // Include null values (to clear fields) but skip undefined (to not update)
-    if (value !== undefined) {
-      updates.push(`${key} = ?`);
-      params.push(value);
-    }
+  if (category.label !== undefined) updateData.label = category.label;
+  if (category.headline !== undefined) updateData.headline = category.headline;
+  if (category.metaTitle !== undefined) updateData.metaTitle = category.metaTitle;
+  if (category.metaDescription !== undefined) updateData.metaDescription = category.metaDescription;
+  if (category.shortDescription !== undefined) updateData.shortDescription = category.shortDescription;
+  if (category.tldr !== undefined) updateData.tldr = category.tldr;
+  if (category.collectionTitle !== undefined) updateData.collectionTitle = category.collectionTitle;
+  if (category.numEntriesPerPage !== undefined) updateData.numEntriesPerPage = category.numEntriesPerPage;
+  if (category.isOnline !== undefined) updateData.isOnline = category.isOnline;
+  if (category.isFavorite !== undefined) updateData.isFavorite = category.isFavorite;
+  if (category.sortOrder !== undefined) updateData.sortOrder = category.sortOrder;
+  if (category.color !== undefined) updateData.color = category.color;
+
+  // Handle image
+  if (category.image !== undefined) {
+    updateData.imageUrl = category.image?.url ?? null;
+    updateData.imageAlt = category.image?.alt ?? null;
+    updateData.imageWidth = category.image?.width ?? null;
+    updateData.imageHeight = category.image?.height ?? null;
   }
 
-  if (updates.length > 0) {
-    params.push(slug);
-    await db.prepare(`UPDATE categories SET ${updates.join(', ')} WHERE slug = ?`).bind(...params).run();
+  if (Object.keys(updateData).length > 0) {
+    await drizzle.update(categories).set(updateData).where(eq(categories.slug, slug));
   }
 
   return getCategoryBySlug(db, slug);
 }
 
-export async function deleteCategory(
-  db: D1Database,
-  slug: string
-): Promise<boolean> {
-  const result = await db.prepare('DELETE FROM categories WHERE slug = ?').bind(slug).run();
-  return result.success;
+export async function deleteCategory(db: D1Database, slug: string): Promise<boolean> {
+  const drizzle = createDb(db);
+  await drizzle.delete(categories).where(eq(categories.slug, slug));
+  return true;
 }
 
-export async function getCategories(
+// ============================================
+// AUTHOR OPERATIONS
+// ============================================
+
+export async function getAuthors(
   db: D1Database,
   options?: { isOnline?: boolean }
-): Promise<Category[]> {
-  let query = 'SELECT * FROM categories';
-  const params: any[] = [];
+): Promise<Author[]> {
+  const drizzle = createDb(db);
 
-  if (options?.isOnline !== undefined) {
-    query += ' WHERE is_online = ?';
-    params.push(options.isOnline ? 1 : 0);
-  }
+  const conditions = options?.isOnline !== undefined
+    ? eq(authors.isOnline, options.isOnline)
+    : undefined;
 
-  query += ' ORDER BY sort_order ASC, label ASC';
-
-  const { results } = await db.prepare(query).bind(...params).all();
-
-  return results.map(row => mapRowToCategory(row));
+  return drizzle.query.authors.findMany({
+    where: conditions,
+    orderBy: [asc(authors.name)],
+  });
 }
 
-export async function getCategoryBySlug(
-  db: D1Database,
-  slug: string
-): Promise<Category | null> {
-  const { results } = await db
-    .prepare('SELECT * FROM categories WHERE slug = ?')
-    .bind(slug)
-    .all();
-
-  if (results.length === 0) return null;
-
-  return mapRowToCategory(results[0]);
+export async function getAuthorBySlug(db: D1Database, slug: string): Promise<Author | null> {
+  const drizzle = createDb(db);
+  const result = await drizzle.query.authors.findFirst({
+    where: eq(authors.slug, slug),
+  });
+  return result ?? null;
 }
 
-// Author Database Operations
 export async function createAuthor(
   db: D1Database,
-  author: Partial<Author>
+  author: Partial<Author> & {
+    image?: { url?: string; alt?: string; width?: number; height?: number };
+    bio?: any;
+  }
 ): Promise<Author | null> {
-  const {
-    slug, name, email, job, metaTitle, metaDescription,
-    shortDescription, tldr, image, bio, isOnline, isFavorite
-  } = author;
+  const drizzle = createDb(db);
+
+  const { slug, name, email, job, metaTitle, metaDescription, shortDescription, tldr,
+    image, bio, isOnline, isFavorite } = author;
 
   if (!slug || !name || !email) throw new Error('Missing required fields');
 
-  await db.prepare(`
-    INSERT INTO authors (
-      slug, name, email, job, meta_title, meta_description,
-      short_description, tldr, image_url, image_alt, image_width, image_height,
-      bio_json, is_online, is_favorite
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(
-    slug, name, email, job, metaTitle || name, metaDescription || '',
-    shortDescription || '', tldr || '',
-    image?.url, image?.alt, image?.width, image?.height,
-    bio ? JSON.stringify(bio) : null,
-    isOnline ? 1 : 0, isFavorite ? 1 : 0
-  ).run();
+  await drizzle.insert(authors).values({
+    slug,
+    name,
+    email,
+    job,
+    metaTitle: metaTitle || name,
+    metaDescription: metaDescription || '',
+    shortDescription: shortDescription || '',
+    tldr: tldr || '',
+    imageUrl: image?.url,
+    imageAlt: image?.alt,
+    imageWidth: image?.width,
+    imageHeight: image?.height,
+    bioJson: bio ? JSON.stringify(bio) : null,
+    isOnline: isOnline || false,
+    isFavorite: isFavorite || false,
+  });
 
   return getAuthorBySlug(db, slug);
 }
@@ -562,89 +551,122 @@ export async function createAuthor(
 export async function updateAuthor(
   db: D1Database,
   slug: string,
-  author: Partial<Author>
+  author: Partial<Author> & {
+    image?: { url?: string; alt?: string; width?: number; height?: number } | null;
+    bio?: any;
+  }
 ): Promise<Author | null> {
-  const updates: string[] = [];
-  const params: any[] = [];
+  const drizzle = createDb(db);
 
-  const fields: Record<string, any> = {
-    name: author.name,
-    email: author.email,
-    job: author.job,
-    meta_title: author.metaTitle,
-    meta_description: author.metaDescription,
-    short_description: author.shortDescription,
-    tldr: author.tldr,
-    image_url: author.image?.url,
-    image_alt: author.image?.alt,
-    image_width: author.image?.width,
-    image_height: author.image?.height,
-    bio_json: author.bio ? JSON.stringify(author.bio) : undefined,
-    is_online: author.isOnline !== undefined ? (author.isOnline ? 1 : 0) : undefined,
-    is_favorite: author.isFavorite !== undefined ? (author.isFavorite ? 1 : 0) : undefined
-  };
+  const updateData: Partial<NewAuthor> = {};
 
-  for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) {
-      updates.push(`${key} = ?`);
-      params.push(value);
-    }
+  if (author.name !== undefined) updateData.name = author.name;
+  if (author.email !== undefined) updateData.email = author.email;
+  if (author.job !== undefined) updateData.job = author.job;
+  if (author.metaTitle !== undefined) updateData.metaTitle = author.metaTitle;
+  if (author.metaDescription !== undefined) updateData.metaDescription = author.metaDescription;
+  if (author.shortDescription !== undefined) updateData.shortDescription = author.shortDescription;
+  if (author.tldr !== undefined) updateData.tldr = author.tldr;
+  if (author.isOnline !== undefined) updateData.isOnline = author.isOnline;
+  if (author.isFavorite !== undefined) updateData.isFavorite = author.isFavorite;
+
+  // Handle image
+  if (author.image !== undefined) {
+    updateData.imageUrl = author.image?.url ?? null;
+    updateData.imageAlt = author.image?.alt ?? null;
+    updateData.imageWidth = author.image?.width ?? null;
+    updateData.imageHeight = author.image?.height ?? null;
   }
 
-  if (updates.length > 0) {
-    params.push(slug);
-    await db.prepare(`UPDATE authors SET ${updates.join(', ')} WHERE slug = ?`).bind(...params).run();
+  // Handle bio
+  if (author.bio !== undefined) {
+    updateData.bioJson = author.bio ? JSON.stringify(author.bio) : null;
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await drizzle.update(authors).set(updateData).where(eq(authors.slug, slug));
   }
 
   return getAuthorBySlug(db, slug);
 }
 
-export async function deleteAuthor(
-  db: D1Database,
-  slug: string
-): Promise<boolean> {
-  const result = await db.prepare('DELETE FROM authors WHERE slug = ?').bind(slug).run();
-  return result.success;
+export async function deleteAuthor(db: D1Database, slug: string): Promise<boolean> {
+  const drizzle = createDb(db);
+  await drizzle.delete(authors).where(eq(authors.slug, slug));
+  return true;
 }
 
-export async function getAuthors(
+// ============================================
+// TAG OPERATIONS
+// ============================================
+
+export async function getTags(
   db: D1Database,
   options?: { isOnline?: boolean }
-): Promise<Author[]> {
-  let query = 'SELECT * FROM authors';
-  const params: any[] = [];
+): Promise<Tag[]> {
+  const drizzle = createDb(db);
 
-  if (options?.isOnline !== undefined) {
-    query += ' WHERE is_online = ?';
-    params.push(options.isOnline ? 1 : 0);
+  const conditions = options?.isOnline !== undefined
+    ? eq(tags.isOnline, options.isOnline)
+    : undefined;
+
+  return drizzle.query.tags.findMany({
+    where: conditions,
+    orderBy: [asc(tags.label)],
+  });
+}
+
+export async function createTag(db: D1Database, tag: Partial<Tag>): Promise<Tag | null> {
+  const drizzle = createDb(db);
+
+  const { slug, label, color, isOnline } = tag;
+  if (!slug || !label) throw new Error('Missing required fields');
+
+  await drizzle.insert(tags).values({
+    slug,
+    label,
+    color: color || '#ff6600',
+    isOnline: isOnline ?? true,
+  });
+
+  const result = await drizzle.query.tags.findFirst({
+    where: eq(tags.slug, slug),
+  });
+  return result ?? null;
+}
+
+export async function updateTag(db: D1Database, slug: string, tag: Partial<Tag>): Promise<Tag | null> {
+  const drizzle = createDb(db);
+
+  const updateData: Partial<NewTag> = {};
+  if (tag.label !== undefined) updateData.label = tag.label;
+  if (tag.color !== undefined) updateData.color = tag.color;
+  if (tag.isOnline !== undefined) updateData.isOnline = tag.isOnline;
+
+  if (Object.keys(updateData).length > 0) {
+    await drizzle.update(tags).set(updateData).where(eq(tags.slug, slug));
   }
 
-  query += ' ORDER BY name ASC';
-
-  const { results } = await db.prepare(query).bind(...params).all();
-
-  return results.map(row => mapRowToAuthor(row));
+  const result = await drizzle.query.tags.findFirst({
+    where: eq(tags.slug, slug),
+  });
+  return result ?? null;
 }
 
-export async function getAuthorBySlug(
-  db: D1Database,
-  slug: string
-): Promise<Author | null> {
-  const { results } = await db
-    .prepare('SELECT * FROM authors WHERE slug = ?')
-    .bind(slug)
-    .all();
-
-  if (results.length === 0) return null;
-
-  return mapRowToAuthor(results[0]);
+export async function deleteTag(db: D1Database, slug: string): Promise<boolean> {
+  const drizzle = createDb(db);
+  await drizzle.delete(tags).where(eq(tags.slug, slug));
+  return true;
 }
 
-// Media Database Operations
+// ============================================
+// MEDIA OPERATIONS
+// ============================================
+
 export async function getMedia(
   db: D1Database,
   options?: {
-    type?: string; // 'image', 'video', etc. or specific mime type
+    type?: string;
     search?: string;
     sortBy?: string;
     order?: 'asc' | 'desc';
@@ -652,256 +674,87 @@ export async function getMedia(
     offset?: number;
   }
 ): Promise<Media[]> {
-  let query = 'SELECT * FROM media';
-  const params: any[] = [];
-  const clauses: string[] = [];
+  const drizzle = createDb(db);
 
-  if (options?.type) {
+  const conditions: any[] = [];
+
+  if (options?.type && options.type !== 'all') {
     if (options.type === 'image') {
-      clauses.push("mime_type LIKE 'image/%'");
+      conditions.push(like(media.mimeType, 'image/%'));
     } else if (options.type === 'video') {
-      clauses.push("mime_type LIKE 'video/%'");
-    } else if (options.type === 'audio') {
-      clauses.push("mime_type LIKE 'audio/%'");
-    } else if (options.type === 'document') {
-      clauses.push("(mime_type = 'application/pdf' OR mime_type LIKE 'application/msword%' OR mime_type LIKE 'application/vnd%')");
-    } else if (options.type !== 'all') {
-      clauses.push("mime_type = ?");
-      params.push(options.type);
+      conditions.push(like(media.mimeType, 'video/%'));
+    } else {
+      conditions.push(eq(media.mimeType, options.type));
     }
   }
 
   if (options?.search) {
-    clauses.push("(filename LIKE ? OR alt_text LIKE ?)");
-    params.push(`%${options.search}%`);
-    params.push(`%${options.search}%`);
+    const pattern = `%${options.search}%`;
+    conditions.push(or(like(media.filename, pattern), like(media.altText, pattern)));
   }
 
-  if (clauses.length > 0) {
-    query += ` WHERE ${clauses.join(' AND ')}`;
-  }
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const orderDir = options?.order === 'asc' ? asc : desc;
 
-  // Sorting
-  const allowedSortCols = ['filename', 'size_bytes', 'uploaded_at'];
-  let orderBy = 'uploaded_at';
-
-  if (options?.sortBy) {
-    if (options.sortBy === 'created_at' || options.sortBy === 'uploaded_at') {
-      orderBy = 'uploaded_at';
-    } else if (options.sortBy === 'size' || options.sortBy === 'size_bytes') {
-      orderBy = 'size_bytes';
-    } else if (options.sortBy === 'name' || options.sortBy === 'filename') {
-      orderBy = 'filename';
-    }
-  }
-
-  const order = options?.order === 'asc' ? 'ASC' : 'DESC';
-  query += ` ORDER BY ${orderBy} ${order}`;
-
-  if (options?.limit) {
-    query += ' LIMIT ?';
-    params.push(options.limit);
-    if (options?.offset) {
-      query += ' OFFSET ?';
-      params.push(options.offset);
-    }
-  }
-
-  const { results } = await db.prepare(query).bind(...params).all();
-
-  return results.map(row => mapRowToMedia(row));
+  return drizzle.query.media.findMany({
+    where: whereClause,
+    orderBy: [orderDir(media.uploadedAt)],
+    limit: options?.limit,
+    offset: options?.offset,
+  });
 }
 
-export async function getMediaById(
-  db: D1Database,
-  id: number
-): Promise<Media | null> {
-  const { results } = await db.prepare('SELECT * FROM media WHERE id = ?').bind(id).all();
-  if (results.length === 0) return null;
-  return mapRowToMedia(results[0]);
+export async function getMediaById(db: D1Database, id: number): Promise<Media | null> {
+  const drizzle = createDb(db);
+  const result = await drizzle.query.media.findFirst({
+    where: eq(media.id, id),
+  });
+  return result ?? null;
 }
 
-export async function deleteMedia(
-  db: D1Database,
-  id: number
-): Promise<boolean> {
-  const result = await db.prepare('DELETE FROM media WHERE id = ?').bind(id).run();
-  return result.success;
+export async function deleteMedia(db: D1Database, id: number): Promise<boolean> {
+  const drizzle = createDb(db);
+  await drizzle.delete(media).where(eq(media.id, id));
+  return true;
 }
 
 export async function updateMedia(
   db: D1Database,
   id: number,
-  updates: {
-    r2Key?: string;
-    url?: string;
-    filename?: string;
-    mimeType?: string;
-    sizeBytes?: number;
-  }
+  updates: { r2Key?: string; url?: string; filename?: string; mimeType?: string; sizeBytes?: number }
 ): Promise<boolean> {
-  const setClauses: string[] = [];
-  const params: any[] = [];
+  const drizzle = createDb(db);
 
-  if (updates.r2Key !== undefined) {
-    setClauses.push('r2_key = ?');
-    params.push(updates.r2Key);
-  }
-  if (updates.url !== undefined) {
-    setClauses.push('url = ?');
-    params.push(updates.url);
-  }
-  if (updates.filename !== undefined) {
-    setClauses.push('filename = ?');
-    params.push(updates.filename);
-  }
-  if (updates.mimeType !== undefined) {
-    setClauses.push('mime_type = ?');
-    params.push(updates.mimeType);
-  }
-  if (updates.sizeBytes !== undefined) {
-    setClauses.push('size_bytes = ?');
-    params.push(updates.sizeBytes);
+  const updateData: any = {};
+  if (updates.r2Key !== undefined) updateData.r2Key = updates.r2Key;
+  if (updates.url !== undefined) updateData.url = updates.url;
+  if (updates.filename !== undefined) updateData.filename = updates.filename;
+  if (updates.mimeType !== undefined) updateData.mimeType = updates.mimeType;
+  if (updates.sizeBytes !== undefined) updateData.sizeBytes = updates.sizeBytes;
+
+  if (Object.keys(updateData).length > 0) {
+    await drizzle.update(media).set(updateData).where(eq(media.id, id));
   }
 
-  if (setClauses.length === 0) return true;
-
-  params.push(id);
-  const result = await db.prepare(
-    `UPDATE media SET ${setClauses.join(', ')} WHERE id = ?`
-  ).bind(...params).run();
-
-  return result.success;
+  return true;
 }
 
-// Helper functions to map database rows to TypeScript types
-function mapRowToArticle(row: any): Article {
-  return {
-    id: row.id,
-    type: row.type,
-    slug: row.slug,
-    categorySlug: row.category_slug,
-    authorSlug: row.author_slug,
-    label: row.label,
-    headline: row.headline,
-    metaTitle: row.meta_title,
-    metaDescription: row.meta_description,
-    canonicalUrl: row.canonical_url,
-    shortDescription: row.short_description,
-    tldr: row.tldr,
-    introduction: row.introduction,
-    summary: row.summary,
-    image: row.image_url ? {
-      url: row.image_url,
-      alt: row.image_alt,
-      width: row.image_width,
-      height: row.image_height,
-    } : undefined,
-    cover: row.cover_url ? {
-      url: row.cover_url,
-      alt: row.cover_alt,
-      width: row.cover_width,
-      height: row.cover_height,
-    } : undefined,
-    contentJson: row.content_json ? JSON.parse(row.content_json) : undefined,
-    recipeJson: row.recipe_json ? (JSON.parse(row.recipe_json) as import('../types').RecipeDetails) : undefined,
-    faqsJson: row.faqs_json ? (JSON.parse(row.faqs_json) as import('../types').FaqItem[]) : undefined,
-    keywords: row.keywords_json ? (JSON.parse(row.keywords_json) as string[]) : undefined,
-    referencesJson: row.references_json ? JSON.parse(row.references_json) : undefined,
-    mediaJson: row.media_json ? JSON.parse(row.media_json) : undefined,
-    isOnline: Boolean(row.is_online),
-    viewCount: row.view_count || 0,
-    isFavorite: Boolean(row.is_favorite),
-    publishedAt: row.published_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    categoryLabel: row.category_label,
-    authorName: row.author_name,
-    tags: row.tags_json ? (JSON.parse(row.tags_json) as import('../types').Tag[]) : [],
-    route: `/${row.type === 'recipe' ? 'recipes' : 'blog'}/${row.slug}`
-  };
-}
+// ============================================
+// DASHBOARD STATS
+// ============================================
 
-function mapRowToCategory(row: any): Category {
-  return {
-    id: row.id,
-    isOnline: Boolean(row.is_online),
-    isFavorite: Boolean(row.is_favorite),
-    slug: row.slug,
-    label: row.label,
-    headline: row.headline,
-    metaTitle: row.meta_title,
-    metaDescription: row.meta_description,
-    shortDescription: row.short_description,
-    tldr: row.tldr,
-    image: row.image_url ? {
-      url: row.image_url,
-      alt: row.image_alt,
-      width: row.image_width,
-      height: row.image_height,
-    } : undefined,
-    collectionTitle: row.collection_title,
-    numEntriesPerPage: row.num_entries_per_page,
-    createdAt: row.created_at,
-    sortOrder: row.sort_order,
-    color: row.color || '#ff6600',
-    updatedAt: row.updated_at,
-    route: `/categories/${row.slug}`
-  };
-}
+export async function getDashboardStats(db: D1Database) {
+  const drizzle = createDb(db);
 
-function mapRowToAuthor(row: any): Author {
-  return {
-    id: row.id,
-    isOnline: Boolean(row.is_online),
-    isFavorite: Boolean(row.is_favorite),
-    slug: row.slug,
-    name: row.name,
-    email: row.email,
-    job: row.job,
-    metaTitle: row.meta_title,
-    metaDescription: row.meta_description,
-    shortDescription: row.short_description,
-    tldr: row.tldr,
-    image: row.image_url ? {
-      url: row.image_url,
-      alt: row.image_alt,
-      width: row.image_width,
-      height: row.image_height,
-    } : undefined,
-    bio: row.bio_json ? (JSON.parse(row.bio_json) as import('../types').AuthorBio) : undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    route: `/authors/${row.slug}`
-  };
-}
+  const [articleCount] = await drizzle.select({ count: count() }).from(articles);
+  const [categoryCount] = await drizzle.select({ count: count() }).from(categories);
+  const [authorCount] = await drizzle.select({ count: count() }).from(authors);
+  const [tagCount] = await drizzle.select({ count: count() }).from(tags);
 
-function mapRowToTag(row: any): Tag {
   return {
-    id: row.id,
-    slug: row.slug,
-    label: row.label,
-    color: row.color || '#ff6600',
-    isOnline: Boolean(row.is_online),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    route: `/tags/${row.slug}`
-  };
-}
-
-function mapRowToMedia(row: any): Media {
-  return {
-    id: row.id,
-    filename: row.filename,
-    r2Key: row.r2_key,
-    url: row.url,
-    mimeType: row.mime_type,
-    sizeBytes: row.size_bytes,
-    width: row.width,
-    height: row.height,
-    altText: row.alt_text,
-    attribution: row.attribution,
-    uploadedBy: row.uploaded_by,
-    uploadedAt: row.uploaded_at
+    articles: Number(articleCount.count),
+    categories: Number(categoryCount.count),
+    authors: Number(authorCount.count),
+    tags: Number(tagCount.count),
   };
 }
