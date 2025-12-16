@@ -221,10 +221,10 @@ const AuthorsList = () => {
                 <tr key={author.slug} className="hover:bg-muted/50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      {author.image?.url ? (
+                      {author.imageUrl ? (
                         <img
-                          src={author.image.url}
-                          alt={author.image.alt || author.name}
+                          src={author.imageUrl}
+                          alt={author.imageAlt || author.name}
                           className="w-10 h-10 rounded-full object-cover mr-3"
                         />
                       ) : (

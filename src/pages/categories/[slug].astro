@@ -28,6 +28,19 @@ const { items: articles } = await getArticles(env.DB, {
 const featuredArticle = articles[0];
 const gridArticles = articles.slice(1);
 
+// Helper to parse recipeJson
+const parseRecipe = (json: string | null | undefined) => {
+    if (!json) return null;
+    try {
+        return typeof json === "string" ? JSON.parse(json) : json;
+    } catch {
+        return null;
+    }
+};
+const featuredRecipe = featuredArticle
+    ? parseRecipe(featuredArticle.recipeJson)
+    : null;
+
 // Fetch all categories for navigation
 const allCategories = await getCategories(env.DB, { isOnline: true });
 ---
@@ -43,11 +56,11 @@ const allCategories = await getCategories(env.DB, { isOnline: true });
                         class="featured-card"
                     >
                         <div class="featured-image">
-                            {featuredArticle.image?.url && (
+                            {featuredArticle.imageUrl && (
                                 <img
-                                    src={featuredArticle.image.url}
+                                    src={featuredArticle.imageUrl}
                                     alt={
-                                        featuredArticle.image.alt ||
+                                        featuredArticle.imageAlt ||
                                         featuredArticle.label
                                     }
                                     loading="eager"
@@ -61,14 +74,8 @@ const allCategories = await getCategories(env.DB, { isOnline: true });
                                     {featuredArticle.label}
                                 </h2>
                                 <div class="featured-meta">
-                                    {featuredArticle.recipeJson?.cookTime && (
-                                        <span>
-                                            ⏱{" "}
-                                            {
-                                                featuredArticle.recipeJson
-                                                    .cookTime
-                                            }
-                                        </span>
+                                    {featuredRecipe?.cookTime && (
+                                        <span>⏱ {featuredRecipe.cookTime}</span>
                                     )}
                                 </div>
                             </div>
@@ -103,9 +110,9 @@ const allCategories = await getCategories(env.DB, { isOnline: true });
                                 { active: cat.slug === slug },
                             ]}
                         >
-                            {cat.image?.url && (
+                            {cat.imageUrl && (
                                 <img
-                                    src={cat.image.url}
+                                    src={cat.imageUrl}
                                     alt={cat.label}
                                     class="chip-image"
                                 />

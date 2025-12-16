@@ -21,24 +21,16 @@ if (!tag) {
 const { items: articles, total } = await getArticles(env.DB, { tagSlug: slug });
 ---
 
-<Layout title={tag.metaTitle} description={tag.metaDescription}>
+<Layout
+    title={`${tag.label} Recipes`}
+    description={`Discover delicious recipes tagged with ${tag.label}`}
+>
     <main class="tag-archive">
         <!-- Hero Section -->
         <section class="hero-section">
             <div class="hero-container">
-                {
-                    tag.image?.url && (
-                        <div class="tag-image">
-                            <img
-                                src={tag.image.url}
-                                alt={tag.image.alt || tag.label}
-                                loading="eager"
-                            />
-                        </div>
-                    )
-                }
+                {/* Tags don't have images in the schema */}
                 <h1 class="hero-title">{tag.label}</h1>
-                {tag.headline && <p class="hero-subtitle">{tag.headline}</p>}
                 <div class="tag-meta">
                     <span class="recipe-count"
                         >{total} {total === 1 ? "recipe" : "recipes"}</span
@@ -47,16 +39,7 @@ const { items: articles, total } = await getArticles(env.DB, { tagSlug: slug });
             </div>
         </section>
 
-        <!-- TLDR Section -->
-        {
-            tag.tldr && (
-                <section class="tldr-section">
-                    <div class="section-container">
-                        <p class="tldr-text">{tag.tldr}</p>
-                    </div>
-                </section>
-            )
-        }
+        {/* Tags don't have tldr in schema */}
 
         <!-- Recipes Grid -->
         <section class="recipes-section">

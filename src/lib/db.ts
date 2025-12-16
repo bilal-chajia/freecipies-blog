@@ -28,7 +28,7 @@ import {
   type NewAuthor,
   type NewTag,
 } from './schema';
-import type { Article, Category, Author, Image } from '../types';
+import type { Article, Category, Author } from '../types';
 
 // Re-export Env interface for compatibility
 export interface Env {
@@ -43,99 +43,15 @@ export interface PaginatedArticles {
   total: number;
 }
 
-// ============================================
-// TRANSFORMATION HELPERS
-// ============================================
-
-function buildImage(url: string | null, alt: string | null, width: number | null, height: number | null): Image | undefined {
-  if (!url) return undefined;
-  return {
-    url,
-    alt: alt || '',
-    width: width ?? undefined,
-    height: height ?? undefined,
-  };
-}
-
-function transformArticle(row: any): Article {
-  return {
-    id: row.id,
-    slug: row.slug,
-    type: row.type,
-    categorySlug: row.categorySlug,
-    authorSlug: row.authorSlug,
-    label: row.label,
-    headline: row.headline,
-    metaTitle: row.metaTitle,
-    metaDescription: row.metaDescription,
-    canonicalUrl: row.canonicalUrl ?? undefined,
-    shortDescription: row.shortDescription,
-    tldr: row.tldr,
-    introduction: row.introduction ?? undefined,
-    summary: row.summary ?? undefined,
-    image: buildImage(row.imageUrl, row.imageAlt, row.imageWidth, row.imageHeight),
-    cover: buildImage(row.coverUrl, row.coverAlt, row.coverWidth, row.coverHeight),
-    contentJson: row.contentJson ? JSON.parse(row.contentJson) : undefined,
-    recipeJson: row.recipeJson ? JSON.parse(row.recipeJson) : undefined,
-    faqsJson: row.faqsJson ? JSON.parse(row.faqsJson) : undefined,
-    keywords: row.keywordsJson ? JSON.parse(row.keywordsJson) : undefined,
-    referencesJson: row.referencesJson ? JSON.parse(row.referencesJson) : undefined,
-    mediaJson: row.mediaJson ? JSON.parse(row.mediaJson) : undefined,
-    isOnline: row.isOnline ?? false,
-    isFavorite: row.isFavorite ?? false,
-    publishedAt: row.publishedAt ?? undefined,
-    viewCount: row.viewCount ?? 0,
-    createdAt: row.createdAt ?? '',
-    updatedAt: row.updatedAt ?? '',
-    categoryLabel: row.category?.label,
-    authorName: row.author?.name,
-    tags: row.articleTags?.map((at: any) => at.tag).filter(Boolean) || [],
-    route: `/recipes/${row.slug}`,
-  };
-}
-
-function transformCategory(row: any): Category {
-  return {
-    id: row.id,
-    slug: row.slug,
-    label: row.label,
-    headline: row.headline,
-    metaTitle: row.metaTitle,
-    metaDescription: row.metaDescription,
-    shortDescription: row.shortDescription,
-    tldr: row.tldr,
-    image: buildImage(row.imageUrl, row.imageAlt, row.imageWidth, row.imageHeight),
-    collectionTitle: row.collectionTitle,
-    numEntriesPerPage: row.numEntriesPerPage ?? 12,
-    isOnline: row.isOnline ?? false,
-    isFavorite: row.isFavorite ?? false,
-    sortOrder: row.sortOrder ?? 0,
-    color: row.color ?? '#ff6600',
-    createdAt: row.createdAt ?? '',
-    updatedAt: row.updatedAt ?? '',
-    route: `/categories/${row.slug}`,
-  };
-}
-
-function transformAuthor(row: any): Author {
-  return {
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    email: row.email,
-    job: row.job ?? undefined,
-    metaTitle: row.metaTitle,
-    metaDescription: row.metaDescription,
-    shortDescription: row.shortDescription,
-    tldr: row.tldr,
-    image: buildImage(row.imageUrl, row.imageAlt, row.imageWidth, row.imageHeight),
-    bio: row.bioJson ? JSON.parse(row.bioJson) : undefined,
-    isOnline: row.isOnline ?? false,
-    isFavorite: row.isFavorite ?? false,
-    createdAt: row.createdAt ?? '',
-    updatedAt: row.updatedAt ?? '',
-    route: `/authors/${row.slug}`,
-  };
+// Helper to safely parse JSON strings
+function safeParseJson(value: string | null | undefined): any {
+  if (!value) return null;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }
 
 // ============================================
@@ -219,19 +135,28 @@ export async function getArticles(
     .from(articles)
     .where(whereClause);
 
-  // Transform items to frontend format
-  const transformedItems = items.map(item => transformArticle(item));
+  // Map items with relations and parse JSON fields
+  const mappedItems = items.map(item => ({
+    ...item,
+    recipeJson: safeParseJson(item.recipeJson),
+    faqsJson: safeParseJson(item.faqsJson),
+    category: item.category,
+    author: item.author,
+    tags: item.articleTags?.map(at => at.tag).filter(Boolean) || [],
+    categoryLabel: item.category?.label,
+    authorName: item.author?.name,
+  }));
 
   // Handle tag filtering (post-query for now)
-  let filteredItems = transformedItems;
+  let filteredItems = mappedItems;
   if (options?.tagSlug) {
-    filteredItems = transformedItems.filter(item =>
+    filteredItems = mappedItems.filter(item =>
       item.tags?.some(tag => tag?.slug === options.tagSlug)
     );
   }
 
   return {
-    items: filteredItems,
+    items: filteredItems as Article[],
     total: Number(total),
   };
 }
@@ -263,15 +188,22 @@ export async function getArticleBySlug(
 
   if (!result) return null;
 
-  return transformArticle(result);
+  return {
+    ...result,
+    recipeJson: safeParseJson(result.recipeJson),
+    faqsJson: safeParseJson(result.faqsJson),
+    category: result.category,
+    author: result.author,
+    tags: result.articleTags?.map(at => at.tag).filter(Boolean) || [],
+    categoryLabel: result.category?.label,
+    authorName: result.author?.name,
+  } as Article;
 }
 
 export async function createArticle(
   db: D1Database,
   article: Partial<Article> & {
     tags?: string[];
-    image?: { url?: string; alt?: string; width?: number; height?: number };
-    cover?: { url?: string; alt?: string; width?: number; height?: number };
   }
 ): Promise<Article | null> {
   const drizzle = createDb(db);
@@ -280,7 +212,8 @@ export async function createArticle(
     slug, type, categorySlug, authorSlug, label, headline,
     metaTitle, metaDescription, canonicalUrl,
     shortDescription, tldr, introduction, summary,
-    image, cover,
+    imageUrl, imageAlt, imageWidth, imageHeight,
+    coverUrl, coverAlt, coverWidth, coverHeight,
     contentJson, recipeJson, faqsJson, keywordsJson, referencesJson, mediaJson,
     isOnline, isFavorite, publishedAt, tags: tagSlugs
   } = article;
@@ -304,14 +237,14 @@ export async function createArticle(
     tldr: tldr || '',
     introduction,
     summary,
-    imageUrl: image?.url,
-    imageAlt: image?.alt,
-    imageWidth: image?.width,
-    imageHeight: image?.height,
-    coverUrl: cover?.url,
-    coverAlt: cover?.alt,
-    coverWidth: cover?.width,
-    coverHeight: cover?.height,
+    imageUrl: imageUrl,
+    imageAlt: imageAlt,
+    imageWidth: imageWidth,
+    imageHeight: imageHeight,
+    coverUrl: coverUrl,
+    coverAlt: coverAlt,
+    coverWidth: coverWidth,
+    coverHeight: coverHeight,
     contentJson: contentJson ? JSON.stringify(contentJson) : null,
     recipeJson: recipeJson ? JSON.stringify(recipeJson) : null,
     faqsJson: faqsJson ? JSON.stringify(faqsJson) : null,
@@ -346,12 +279,10 @@ export async function createArticle(
 export async function updateArticle(
   db: D1Database,
   slug: string,
-  article: Partial<ArticleWithRelations> & {
+  article: Partial<Article> & {
     tags?: string[];
-    image?: { url?: string; alt?: string; width?: number; height?: number } | null;
-    cover?: { url?: string; alt?: string; width?: number; height?: number } | null;
   }
-): Promise<ArticleWithRelations | null> {
+): Promise<Article | null> {
   const drizzle = createDb(db);
 
   const existing = await getArticleBySlug(db, slug);
@@ -374,20 +305,16 @@ export async function updateArticle(
   if (article.summary !== undefined) updateData.summary = article.summary;
 
   // Handle image
-  if (article.image !== undefined) {
-    updateData.imageUrl = article.image?.url ?? null;
-    updateData.imageAlt = article.image?.alt ?? null;
-    updateData.imageWidth = article.image?.width ?? null;
-    updateData.imageHeight = article.image?.height ?? null;
-  }
+  if (article.imageUrl !== undefined) updateData.imageUrl = article.imageUrl;
+  if (article.imageAlt !== undefined) updateData.imageAlt = article.imageAlt;
+  if (article.imageWidth !== undefined) updateData.imageWidth = article.imageWidth;
+  if (article.imageHeight !== undefined) updateData.imageHeight = article.imageHeight;
 
   // Handle cover
-  if (article.cover !== undefined) {
-    updateData.coverUrl = article.cover?.url ?? null;
-    updateData.coverAlt = article.cover?.alt ?? null;
-    updateData.coverWidth = article.cover?.width ?? null;
-    updateData.coverHeight = article.cover?.height ?? null;
-  }
+  if (article.coverUrl !== undefined) updateData.coverUrl = article.coverUrl;
+  if (article.coverAlt !== undefined) updateData.coverAlt = article.coverAlt;
+  if (article.coverWidth !== undefined) updateData.coverWidth = article.coverWidth;
+  if (article.coverHeight !== undefined) updateData.coverHeight = article.coverHeight;
 
   // Handle JSON fields
   if (article.contentJson !== undefined) {
@@ -479,7 +406,7 @@ export async function getCategories(
     orderBy: [asc(categories.sortOrder), asc(categories.label)],
   });
 
-  return results.map(transformCategory);
+  return results as Category[];
 }
 
 export async function getCategoryBySlug(db: D1Database, slug: string): Promise<Category | null> {
@@ -487,19 +414,17 @@ export async function getCategoryBySlug(db: D1Database, slug: string): Promise<C
   const result = await drizzle.query.categories.findFirst({
     where: eq(categories.slug, slug),
   });
-  return result ? transformCategory(result) : null;
+  return (result ?? null) as Category | null;
 }
 
 export async function createCategory(
   db: D1Database,
-  category: Partial<Category> & {
-    image?: { url?: string; alt?: string; width?: number; height?: number };
-  }
+  category: Partial<Category>
 ): Promise<Category | null> {
   const drizzle = createDb(db);
 
   const { slug, label, headline, metaTitle, metaDescription, shortDescription, tldr,
-    image, collectionTitle, numEntriesPerPage, isOnline, isFavorite, sortOrder, color } = category;
+    imageUrl, imageAlt, imageWidth, imageHeight, collectionTitle, numEntriesPerPage, isOnline, isFavorite, sortOrder, color } = category;
 
   if (!slug || !label) throw new Error('Missing required fields');
 
@@ -511,10 +436,10 @@ export async function createCategory(
     metaDescription: metaDescription || '',
     shortDescription: shortDescription || '',
     tldr: tldr || '',
-    imageUrl: image?.url,
-    imageAlt: image?.alt,
-    imageWidth: image?.width,
-    imageHeight: image?.height,
+    imageUrl: imageUrl,
+    imageAlt: imageAlt,
+    imageWidth: imageWidth,
+    imageHeight: imageHeight,
     collectionTitle: collectionTitle || label,
     numEntriesPerPage: numEntriesPerPage || 12,
     isOnline: isOnline || false,
@@ -551,12 +476,10 @@ export async function updateCategory(
   if (category.color !== undefined) updateData.color = category.color;
 
   // Handle image
-  if (category.image !== undefined) {
-    updateData.imageUrl = category.image?.url ?? null;
-    updateData.imageAlt = category.image?.alt ?? null;
-    updateData.imageWidth = category.image?.width ?? null;
-    updateData.imageHeight = category.image?.height ?? null;
-  }
+  if (category.imageUrl !== undefined) updateData.imageUrl = category.imageUrl;
+  if (category.imageAlt !== undefined) updateData.imageAlt = category.imageAlt;
+  if (category.imageWidth !== undefined) updateData.imageWidth = category.imageWidth;
+  if (category.imageHeight !== undefined) updateData.imageHeight = category.imageHeight;
 
   if (Object.keys(updateData).length > 0) {
     await drizzle.update(categories).set(updateData).where(eq(categories.slug, slug));
@@ -590,7 +513,7 @@ export async function getAuthors(
     orderBy: [asc(authors.name)],
   });
 
-  return results.map(transformAuthor);
+  return results as Author[];
 }
 
 export async function getAuthorBySlug(db: D1Database, slug: string): Promise<Author | null> {
@@ -598,7 +521,7 @@ export async function getAuthorBySlug(db: D1Database, slug: string): Promise<Aut
   const result = await drizzle.query.authors.findFirst({
     where: eq(authors.slug, slug),
   });
-  return result ? transformAuthor(result) : null;
+  return (result ?? null) as Author | null;
 }
 
 export async function createAuthor(
@@ -659,16 +582,14 @@ export async function updateAuthor(
   if (author.isFavorite !== undefined) updateData.isFavorite = author.isFavorite;
 
   // Handle image
-  if (author.image !== undefined) {
-    updateData.imageUrl = author.image?.url ?? null;
-    updateData.imageAlt = author.image?.alt ?? null;
-    updateData.imageWidth = author.image?.width ?? null;
-    updateData.imageHeight = author.image?.height ?? null;
-  }
+  if (author.imageUrl !== undefined) updateData.imageUrl = author.imageUrl;
+  if (author.imageAlt !== undefined) updateData.imageAlt = author.imageAlt;
+  if (author.imageWidth !== undefined) updateData.imageWidth = author.imageWidth;
+  if (author.imageHeight !== undefined) updateData.imageHeight = author.imageHeight;
 
   // Handle bio
-  if (author.bio !== undefined) {
-    updateData.bioJson = author.bio ? JSON.stringify(author.bio) : null;
+  if (author.bioJson !== undefined) {
+    updateData.bioJson = author.bioJson;
   }
 
   if (Object.keys(updateData).length > 0) {

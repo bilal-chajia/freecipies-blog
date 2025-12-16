@@ -107,7 +107,13 @@ const CategoryEditor = () => {
           metaDescription: category.metaDescription || '',
           shortDescription: category.shortDescription || '',
           tldr: category.tldr || '',
-          image: category.image || null,
+          // Map flat image properties back to nested object for UI
+          image: category.imageUrl ? {
+            url: category.imageUrl,
+            alt: category.imageAlt || '',
+            width: category.imageWidth || null,
+            height: category.imageHeight || null,
+          } : null,
           collectionTitle: category.collectionTitle || '',
           numEntriesPerPage: category.numEntriesPerPage || 12,
           isOnline: category.isOnline || false,
@@ -376,8 +382,14 @@ const CategoryEditor = () => {
       }
 
       // Image is already uploaded via handleImageSelect
+      // Transform nested image object to flat properties for API
+      const { image, ...restData } = formData;
       const categoryData = {
-        ...formData,
+        ...restData,
+        imageUrl: image?.url || null,
+        imageAlt: image?.alt || null,
+        imageWidth: image?.width || null,
+        imageHeight: image?.height || null,
         headline: formData.headline || formData.label,
         metaTitle: formData.metaTitle || formData.label,
         metaDescription: formData.metaDescription || formData.shortDescription,

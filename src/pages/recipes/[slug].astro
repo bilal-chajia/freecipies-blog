@@ -64,13 +64,13 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
     type="recipe"
     publishedTime={recipe.publishedAt}
     author={{ name: recipe.authorName || "Freecipies Team" }}
-    image={recipe.image?.url || ""}
-    imageAlt={recipe.image?.alt}
+    image={recipe.imageUrl || ""}
+    imageAlt={recipe.imageAlt}
     recipe={recipeDetails
       ? {
           name: recipe.headline,
           description: recipe.shortDescription,
-          image: recipe.image?.url || "",
+          image: recipe.imageUrl || "",
           prepTime: recipeDetails.prepTime,
           cookTime: recipeDetails.cookTime,
           totalTime: undefined,

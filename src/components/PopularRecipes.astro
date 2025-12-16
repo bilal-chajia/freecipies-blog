@@ -42,7 +42,10 @@ try {
                             <h4 class="recipe-title">{recipe.label}</h4>
                             <div class="recipe-meta">
                                 {recipe.categoryLabel && (
-                                    <span class="category">
+                                    <span
+                                        class="category"
+                                        style={`color: ${recipe.category?.color || "#666"}`}
+                                    >
                                         {recipe.categoryLabel}
                                     </span>
                                 )}
@@ -56,10 +59,10 @@ try {
                                 )}
                             </div>
                         </div>
-                        {recipe.image?.url && (
+                        {recipe.imageUrl && (
                             <img
-                                src={recipe.image.url}
-                                alt={recipe.image.alt || recipe.label}
+                                src={recipe.imageUrl}
+                                alt={recipe.imageAlt || recipe.label}
                                 class="recipe-thumb"
                                 width="80"
                                 height="80"

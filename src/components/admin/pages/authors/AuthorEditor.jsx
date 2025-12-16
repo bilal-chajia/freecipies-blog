@@ -74,7 +74,13 @@ const AuthorEditor = () => {
           metaDescription: author.metaDescription || '',
           shortDescription: author.shortDescription || '',
           tldr: author.tldr || '',
-          image: author.image || null,
+          // Map flat image properties back to nested object for UI
+          image: author.imageUrl ? {
+            url: author.imageUrl,
+            alt: author.imageAlt || '',
+            width: author.imageWidth || null,
+            height: author.imageHeight || null,
+          } : null,
           isOnline: author.isOnline || false,
           isFavorite: author.isFavorite || false,
         });
@@ -356,8 +362,14 @@ const AuthorEditor = () => {
         return;
       }
 
+      // Transform nested image object to flat properties for API
+      const { image, ...restData } = formData;
       const authorData = {
-        ...formData,
+        ...restData,
+        imageUrl: image?.url || null,
+        imageAlt: image?.alt || null,
+        imageWidth: image?.width || null,
+        imageHeight: image?.height || null,
         metaTitle: formData.metaTitle || formData.name,
         metaDescription: formData.metaDescription || formData.shortDescription,
       };

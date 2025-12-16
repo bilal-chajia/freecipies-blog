@@ -79,21 +79,21 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
 
         // Check if image is being changed or removed - delete old image if so
         const existingCategory = await getCategoryBySlug(env.DB, slug);
-        const oldImageUrl = existingCategory?.image?.url;
-        const newImageUrl = body.image?.url;
+        const oldImageUrl = existingCategory?.imageUrl;
+        const newImageUrl = body.imageUrl;
 
         // Debug logging
         console.log('Image update check:', {
             oldImageUrl,
             newImageUrl,
-            bodyImage: body.image,
-            bodyImageIsNull: body.image === null,
-            bodyImageIsUndefined: body.image === undefined,
-            shouldDelete: oldImageUrl && (newImageUrl !== oldImageUrl || body.image === null)
+            bodyImageUrl: body.imageUrl,
+            bodyImageUrlIsNull: body.imageUrl === null,
+            bodyImageUrlIsUndefined: body.imageUrl === undefined,
+            shouldDelete: oldImageUrl && (newImageUrl !== oldImageUrl || body.imageUrl === null)
         });
 
         // Delete old image if: 1) new image is different, or 2) image is being removed (set to null)
-        if (oldImageUrl && (newImageUrl !== oldImageUrl || body.image === null)) {
+        if (oldImageUrl && (newImageUrl !== oldImageUrl || body.imageUrl === null)) {
             try {
                 // URL format: /images/{key} - key is everything after /images/
                 const keyMatch = oldImageUrl.match(/\/images\/(.+)$/);

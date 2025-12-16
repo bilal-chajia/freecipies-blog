@@ -15,12 +15,13 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
     const { settings } = useSettingsStore();
     const [showColorPicker, setShowColorPicker] = useState(false);
     const [pendingColor, setPendingColor] = useState(null);
+    const [localUpdating, setLocalUpdating] = useState(false);
     const colorTriggerRef = useRef(null);
 
     const getTriggerRect = () => colorTriggerRef.current?.getBoundingClientRect() || null;
 
     const handleToggle = async (field, value) => {
-        if (isUpdating) return;
+        if (isUpdating || localUpdating) return;
         await onUpdate(category.slug, { [field]: value });
     };
 
@@ -33,11 +34,11 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
     const handleColorPickerClose = async () => {
         setShowColorPicker(false);
         if (pendingColor && pendingColor !== category.color) {
-            setUpdating(true);
+            setLocalUpdating(true);
             try {
                 await onUpdate(category.slug, { color: pendingColor });
             } finally {
-                setUpdating(false);
+                setLocalUpdating(false);
                 setPendingColor(null);
             }
         } else {
@@ -55,10 +56,10 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
             <Card className="group relative overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg rounded-lg h-full flex flex-col aspect-square p-0 gap-0">
                 {/* Image Section - Full Cover */}
                 <div className="absolute inset-0 z-0">
-                    {category.image?.url ? (
+                    {category.imageUrl ? (
                         <motion.img
-                            src={category.image.url}
-                            alt={category.image.alt || category.label}
+                            src={category.imageUrl}
+                            alt={category.imageAlt || category.label}
                             className="h-full w-full object-cover"
                             whileHover={{ scale: 1.1 }}
                             transition={{ duration: 0.5 }}

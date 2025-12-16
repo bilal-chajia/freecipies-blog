@@ -7,11 +7,13 @@ interface Props {
 
 const { category } = Astro.props;
 
-const image = category.image || {
-  url: "https://images.unsplash.com/photo-1556910103-1c02745a30bf?w=800&q=80", // Remote placeholder
-  alt: category.label,
-  width: 800,
-  height: 600,
+const image = {
+  url:
+    category.imageUrl ||
+    "https://images.unsplash.com/photo-1556910103-1c02745a30bf?w=800&q=80", // Remote placeholder
+  alt: category.imageAlt || category.label,
+  width: category.imageWidth || 800,
+  height: category.imageHeight || 600,
 };
 ---
 

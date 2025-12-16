@@ -60,10 +60,10 @@ const getCategoryColor = (categorySlug: string) =>
                     data-index={index}
                   >
                     <div class="card-image">
-                      {recipe.image?.url && (
+                      {recipe.imageUrl && (
                         <img
-                          src={recipe.image.url}
-                          alt={recipe.image.alt || recipe.headline}
+                          src={recipe.imageUrl}
+                          alt={recipe.imageAlt || recipe.headline}
                         />
                       )}
                       <div class="card-overlay" />
@@ -100,10 +100,10 @@ const getCategoryColor = (categorySlug: string) =>
                   class="recipe-card recipe-card-small"
                 >
                   <div class="card-image">
-                    {recipe.image?.url && (
+                    {recipe.imageUrl && (
                       <img
-                        src={recipe.image.url}
-                        alt={recipe.image.alt || recipe.headline}
+                        src={recipe.imageUrl}
+                        alt={recipe.imageAlt || recipe.headline}
                       />
                     )}
                     <div class="card-overlay" />
@@ -138,10 +138,10 @@ const getCategoryColor = (categorySlug: string) =>
               {popularRecipes.map((recipe: Article) => (
                 <article class="foxiz-card">
                   <a href={getRecipeUrl(recipe)} class="foxiz-card-image">
-                    {recipe.image?.url && (
+                    {recipe.imageUrl && (
                       <img
-                        src={recipe.image.url}
-                        alt={recipe.image.alt || recipe.headline}
+                        src={recipe.imageUrl}
+                        alt={recipe.imageAlt || recipe.headline}
                         loading="lazy"
                       />
                     )}
@@ -205,8 +205,8 @@ const getCategoryColor = (categorySlug: string) =>
               {categories.map((category: Category) => (
                 <a href={`/categories/${category.slug}`} class="category-chip">
                   <div class="chip-image-wrapper">
-                    {category.image?.url ? (
-                      <img src={category.image.url} alt={category.label} />
+                    {category.imageUrl ? (
+                      <img src={category.imageUrl} alt={category.label} />
                     ) : (
                       <div class="chip-placeholder">
                         {category.label.charAt(0)}
@@ -241,10 +241,10 @@ const getCategoryColor = (categorySlug: string) =>
               {moreRecipes.map((recipe: Article) => (
                 <a href={getRecipeUrl(recipe)} class="recipe-card-vertical">
                   <div class="card-image-wrapper">
-                    {recipe.image?.url && (
+                    {recipe.imageUrl && (
                       <img
-                        src={recipe.image.url}
-                        alt={recipe.image.alt || recipe.headline}
+                        src={recipe.imageUrl}
+                        alt={recipe.imageAlt || recipe.headline}
                         loading="lazy"
                       />
                     )}
@@ -1070,3 +1070,4 @@ const getCategoryColor = (categorySlug: string) =>
     startAutoSlide();
   });
 </script>
+

@@ -14,11 +14,11 @@ const tagUrl = `/tags/${tag.slug}`;
 <a href={tagUrl} class="tag-card">
     <div class="tag-content">
         {
-            tag.image?.url && (
+            tag.imageUrl && (
                 <div class="tag-image">
                     <img
-                        src={tag.image.url}
-                        alt={tag.image.alt || tag.label}
+                        src={tag.imageUrl}
+                        alt={tag.imageAlt || tag.label}
                         loading="lazy"
                     />
                 </div>
@@ -119,3 +119,4 @@ const tagUrl = `/tags/${tag.slug}`;
         border-radius: 4px;
     }
 </style>
+

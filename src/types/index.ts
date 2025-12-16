@@ -44,16 +44,19 @@ export interface Category {
   metaDescription: string;
   shortDescription: string;
   tldr: string;
-  image?: Image;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  imageWidth?: number | null;
+  imageHeight?: number | null;
   collectionTitle: string;
   numEntriesPerPage: number;
   isOnline: boolean;
   isFavorite: boolean;
   sortOrder: number;
-  color?: string;
+  color?: string | null;
   createdAt: string;
-  updatedAt: string; // ISO 8601 string
-  route?: string; // Derived property
+  updatedAt: string;
+  route?: string;
 }
 
 export interface Author {
@@ -61,29 +64,33 @@ export interface Author {
   slug: string;
   name: string;
   email: string;
-  job?: string;
+  alternateName?: string | null;
+  job?: string | null;
   metaTitle: string;
   metaDescription: string;
   shortDescription: string;
   tldr: string;
-  image?: Image;
-  bio?: AuthorBio; // Use specific type for JSON
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  imageWidth?: number | null;
+  imageHeight?: number | null;
+  bioJson?: string | null;
   isOnline: boolean;
   isFavorite: boolean;
   createdAt: string;
-  updatedAt: string; // ISO 8601 string
-  route?: string; // Derived property
+  updatedAt: string;
+  route?: string;
 }
 
 export interface Tag {
   id: number;
   slug: string;
   label: string;
-  color?: string;
+  color?: string | null;
   isOnline: boolean;
   createdAt: string;
   updatedAt: string;
-  route?: string; // Derived property
+  route?: string;
 }
 
 export interface Article {
@@ -96,29 +103,38 @@ export interface Article {
   headline: string;
   metaTitle: string;
   metaDescription: string;
-  canonicalUrl?: string;
+  canonicalUrl?: string | null;
   shortDescription: string;
   tldr: string;
-  introduction?: string;
-  summary?: string;
-  image?: Image;
-  cover?: Image;
-  contentJson?: any; // Consider defining a structure for article content
-  recipeJson?: RecipeDetails;
-  faqsJson?: FaqItem[];
-  keywords?: string[];
-  referencesJson?: any[];
-  mediaJson?: any;
+  introduction?: string | null;
+  summary?: string | null;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  imageWidth?: number | null;
+  imageHeight?: number | null;
+  coverUrl?: string | null;
+  coverAlt?: string | null;
+  coverWidth?: number | null;
+  coverHeight?: number | null;
+  contentJson?: string | null;
+  recipeJson?: RecipeDetails | null;
+  faqsJson?: FaqItem[] | null;
+  keywordsJson?: string | null;
+  referencesJson?: string | null;
+  mediaJson?: string | null;
   isOnline: boolean;
   isFavorite: boolean;
-  publishedAt?: string;
+  publishedAt?: string | null;
   viewCount: number;
   createdAt: string;
-  updatedAt: string; // ISO 8601 string
+  updatedAt: string;
+  // Relations (from joins)
+  category?: Category;
+  author?: Author;
+  tags?: Tag[];
   categoryLabel?: string;
   authorName?: string;
-  tags?: Tag[];
-  route?: string; // Derived property
+  route?: string;
 }
 
 export interface APIResponse<T> {

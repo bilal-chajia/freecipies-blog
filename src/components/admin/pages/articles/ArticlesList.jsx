@@ -268,9 +268,9 @@ const ArticlesList = () => {
         const article = row.original;
         return (
           <div className="flex items-center gap-3">
-            {article.image?.url && (
+            {article.imageUrl && (
               <img
-                src={article.image.url}
+                src={article.imageUrl}
                 alt={article.label}
                 className="w-12 h-12 rounded object-cover"
               />

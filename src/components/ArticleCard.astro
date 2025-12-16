@@ -8,12 +8,21 @@ interface Props {
 
 const { article, loading = "lazy" } = Astro.props;
 
-const image = article.image || {
-    url: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&q=80",
-    alt: article.headline,
-    width: 800,
-    height: 600,
+const image = {
+    url:
+        article.imageUrl ||
+        "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&q=80",
+    alt: article.imageAlt || article.headline,
+    width: article.imageWidth || 800,
+    height: article.imageHeight || 600,
 };
+
+// Parse recipeJson if it's a string
+const recipe = article.recipeJson
+    ? typeof article.recipeJson === "string"
+        ? JSON.parse(article.recipeJson)
+        : article.recipeJson
+    : null;
 ---
 
 <article
@@ -59,7 +68,8 @@ const image = article.image || {
         <!-- Category -->
         <div class="flex items-center gap-2 mb-3">
             <span
-                class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide"
+                class="text-xs font-semibold uppercase tracking-wide"
+                style={`color: ${article.category?.color || "#2563eb"}`}
             >
                 {
                     article.categoryLabel ||
@@ -97,7 +107,7 @@ const image = article.image || {
             </div>
 
             {
-                article.recipeJson && (
+                recipe && (
                     <div class="flex items-center gap-1">
                         <svg
                             class="w-4 h-4"
@@ -112,7 +122,7 @@ const image = article.image || {
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                             />
                         </svg>
-                        <span>{article.recipeJson.prepTime || "N/A"}</span>
+                        <span>{recipe?.prepTime || "N/A"}</span>
                     </div>
                 )
             }

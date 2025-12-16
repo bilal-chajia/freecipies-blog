@@ -136,8 +136,8 @@ const siteDescription =
                   style={`--tag-color: ${tag.color || "#ff6600"};`}
                 >
                   <div class="chip-image">
-                    {tag.image?.url ? (
-                      <img src={tag.image.url} alt={tag.label} />
+                    {tag.imageUrl ? (
+                      <img src={tag.imageUrl} alt={tag.label} />
                     ) : (
                       <div class="chip-placeholder">{tag.label.charAt(0)}</div>
                     )}
@@ -198,10 +198,10 @@ const siteDescription =
               {recipes.map((recipe: Article) => (
                 <article class="recipe-card">
                   <a href={`/recipes/${recipe.slug}`} class="card-image-link">
-                    {recipe.image?.url && (
+                    {recipe.imageUrl && (
                       <img
-                        src={recipe.image.url}
-                        alt={recipe.image.alt || recipe.headline}
+                        src={recipe.imageUrl}
+                        alt={recipe.imageAlt || recipe.headline}
                         loading="lazy"
                       />
                     )}
@@ -692,3 +692,4 @@ const siteDescription =
     border-color: #ff3366;
   }
 </style>
+

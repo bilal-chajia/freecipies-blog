@@ -16,12 +16,12 @@ const authorUrl = `/authors/${author.slug}`;
         <!-- Author Avatar -->
         <div class="author-avatar">
             {
-                author.image?.url ? (
+                author.imageUrl ? (
                     <img
-                        src={author.image.url}
-                        alt={author.image.alt || author.name}
-                        width={author.image.width || 120}
-                        height={author.image.height || 120}
+                        src={author.imageUrl}
+                        alt={author.imageAlt || author.name}
+                        width={author.imageWidth || 120}
+                        height={author.imageHeight || 120}
                         loading="lazy"
                     />
                 ) : (

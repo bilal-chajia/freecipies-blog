@@ -25,7 +25,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         r.slug,
         r.label,
         r.type,
-        r.image,
+        r.image_url,
         r.view_count,
         c.label as category_label,
         c.slug as category_slug
@@ -41,7 +41,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
             slug: a.slug,
             title: a.label,
             type: a.type,
-            image: a.image,
+            imageUrl: a.image_url,
             views: a.view_count || 0,
             category: a.category_label,
             categorySlug: a.category_slug,

@@ -58,9 +58,9 @@ export const GET: APIRoute = async ({ params, locals, site }) => {
         <loc>${baseUrl}/recipes/${recipe.slug}</loc>
         <lastmod>${recipe.updatedAt ? new Date(recipe.updatedAt).toISOString().split('T')[0] : today}</lastmod>
         <changefreq>weekly</changefreq>
-        <priority>0.7</priority>${recipe.image?.url ? `
+        <priority>0.7</priority>${recipe.imageUrl ? `
         <image:image>
-            <image:loc>${escapeXml(getAbsoluteImageUrl(recipe.image.url))}</image:loc>
+            <image:loc>${escapeXml(getAbsoluteImageUrl(recipe.imageUrl))}</image:loc>
             <image:title>${escapeXml(recipe.headline)}</image:title>
         </image:image>` : ''}
     </url>`).join('')}

@@ -24,9 +24,17 @@ const { items: articles, total } = await getArticles(env.DB, {
 let bioParagraphs: string[] = [];
 let socialNetworks: { name: string; url: string }[] = [];
 
-if (author.bio) {
-    bioParagraphs = author.bio.paragraphs || [];
-    socialNetworks = author.bio.networks || [];
+if (author.bioJson) {
+    try {
+        const bio =
+            typeof author.bioJson === "string"
+                ? JSON.parse(author.bioJson)
+                : author.bioJson;
+        bioParagraphs = bio.paragraphs || [];
+        socialNetworks = bio.networks || [];
+    } catch (e) {
+        // Bio parsing failed, use defaults
+    }
 }
 ---
 
@@ -39,12 +47,12 @@ if (author.bio) {
                     <!-- Avatar -->
                     <div class="avatar-container">
                         {
-                            author.image?.url ? (
+                            author.imageUrl ? (
                                 <img
-                                    src={author.image.url}
-                                    alt={author.image.alt || author.name}
-                                    width={author.image.width || 150}
-                                    height={author.image.height || 150}
+                                    src={author.imageUrl}
+                                    alt={author.imageAlt || author.name}
+                                    width={author.imageWidth || 150}
+                                    height={author.imageHeight || 150}
                                     class="author-avatar"
                                 />
                             ) : (

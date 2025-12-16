@@ -17,8 +17,8 @@ const recipeDetails = recipe.recipeJson;
     <!-- Recipe Image -->
     <div class="relative h-48 overflow-hidden">
       <img
-        src={recipe.image?.url}
-        alt={recipe.image?.alt || recipe.headline}
+        src={recipe.imageUrl}
+        alt={recipe.imageAlt || recipe.headline}
         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
         loading="lazy"
       />
@@ -108,3 +108,4 @@ const recipeDetails = recipe.recipeJson;
     </div>
   </a>
 </article>
+

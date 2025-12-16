@@ -29,21 +29,21 @@ const storiesWithPages = stories.map((story) => ({
     ...story,
     storyPages: [
         {
-            image: story.image,
+            imageUrl: story.imageUrl,
             title: story.headline,
             text: story.shortDescription || story.tldr || "",
         },
-        ...(story.image
+        ...(story.imageUrl
             ? [
                   {
-                      image: story.image,
+                      imageUrl: story.imageUrl,
                       title: "Swipe to continue",
                       text: "Tap right to see more",
                   },
               ]
             : []),
         {
-            image: story.image,
+            imageUrl: story.imageUrl,
             title: story.headline,
             text: "Ready to cook?",
         },
@@ -70,9 +70,9 @@ const storiesWithPages = stories.map((story) => ({
                         >
                             <div class="story-ring">
                                 <div class="story-image-wrapper">
-                                    {story.image?.url ? (
+                                    {story.imageUrl ? (
                                         <img
-                                            src={story.image.url}
+                                            src={story.imageUrl}
                                             alt={story.headline}
                                             loading="lazy"
                                         />
