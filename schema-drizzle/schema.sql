@@ -853,6 +853,112 @@ CREATE INDEX IF NOT EXISTS idx_tags_active ON tags(deleted_at);
 
 
 -- ==================================================================================
+-- TABLE: EQUIPMENT (Admin-Managed Kitchen Tools with Affiliate Links)
+-- ==================================================================================
+-- PURPOSE:
+--   Centralized catalog of kitchen equipment referenced by recipes.
+--   Admin can manage affiliate links globally (one update affects all recipes).
+--
+-- FIELD REQUIREMENTS:
+-- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
+-- │ Field               │ Required │ Criteria / Notes                           │
+-- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
+-- │ slug                │ ✅ YES   │ URL-safe, unique, kebab-case               │
+-- │ name                │ ✅ YES   │ Display name                               │
+-- │ description         │ ❌ NO    │ Short description for tooltips             │
+-- │ category            │ ❌ NO    │ "bakeware", "appliances", "utensils"       │
+-- │ image_json          │ ❌ NO    │ Product image                              │
+-- │ affiliate_url       │ ❌ NO    │ Primary affiliate link                     │
+-- │ affiliate_provider  │ ❌ NO    │ "amazon", "williams-sonoma", etc.          │
+-- └─────────────────────┴──────────┴────────────────────────────────────────────┘
+-- ==================================================================================
+
+CREATE TABLE IF NOT EXISTS equipment (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    -- =========================================================================
+    -- 1. IDENTITY
+    -- =========================================================================
+
+    -- URL identifier for routing (e.g., /equipment/stand-mixer).
+    -- FORMAT: Lowercase, kebab-case only.
+    slug TEXT UNIQUE NOT NULL,
+
+    -- Display name shown in recipe cards and equipment lists.
+    -- EXAMPLES: "Stand Mixer", "Sheet Pan", "Digital Thermometer"
+    name TEXT NOT NULL,
+
+    -- Short description for tooltips and equipment pages.
+    -- EXAMPLE: "Essential for whipping egg whites and kneading dough."
+    description TEXT,
+
+    -- Equipment category for filtering in admin.
+    -- OPTIONS: "appliances", "bakeware", "cookware", "utensils", "gadgets", "other"
+    category TEXT DEFAULT 'other',
+
+    -- =========================================================================
+    -- 2. VISUALS
+    -- =========================================================================
+    -- Product image (standardized format).
+    -- SCHEMA: Same as other images_json fields.
+    -- {
+    --   "media_id": 301,
+    --   "alt": "KitchenAid Stand Mixer",
+    --   "variants": { "lg": {...}, "md": {...}, "sm": {...}, "xs": {...} }
+    -- }
+    image_json TEXT DEFAULT '{}',
+
+    -- =========================================================================
+    -- 3. AFFILIATE LINKS
+    -- =========================================================================
+
+    -- Primary affiliate link.
+    -- EXAMPLE: "https://www.amazon.com/dp/B00005UP2P?tag=yourtag-20"
+    affiliate_url TEXT,
+
+    -- Affiliate provider for tracking/reporting.
+    -- OPTIONS: "amazon", "williams-sonoma", "target", "walmart", "custom"
+    affiliate_provider TEXT,
+
+    -- Affiliate disclosure note (optional override).
+    -- DEFAULT: Use global site_settings disclosure.
+    affiliate_note TEXT,
+
+    -- Price (optional, for display only - may become stale).
+    -- EXAMPLE: "$299.99"
+    price_display TEXT,
+
+    -- =========================================================================
+    -- 4. SYSTEM
+    -- =========================================================================
+
+    -- Visibility toggle.
+    -- 0 = Hidden (don't show affiliate links).
+    -- 1 = Active (show in recipes).
+    is_active BOOLEAN DEFAULT 1,
+
+    -- Sort order for equipment lists.
+    sort_order INTEGER DEFAULT 0,
+
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted_at DATETIME DEFAULT NULL
+);
+
+-- TRIGGER: Auto-Update Timestamp
+CREATE TRIGGER IF NOT EXISTS update_equipment_timestamp
+AFTER UPDATE ON equipment
+BEGIN
+    UPDATE equipment SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- INDEXES
+CREATE INDEX IF NOT EXISTS idx_equipment_slug ON equipment(slug);
+CREATE INDEX IF NOT EXISTS idx_equipment_category ON equipment(category);
+CREATE INDEX IF NOT EXISTS idx_equipment_active ON equipment(is_active);
+
+
+-- ==================================================================================
 -- TABLE: ARTICLES (The Core Content)
 -- ==================================================================================
 -- PURPOSE:
@@ -1139,6 +1245,16 @@ CREATE TABLE IF NOT EXISTS articles (
     -- │ }                                                                  │
     -- │   USE CASES: Explain exotic ingredients, boost SEO for long-tail.  │
     -- │                                                                    │
+    -- │ { "type": "faq_section",                                           │
+    -- │   "title": "Common Questions",    -- Optional section heading      │
+    -- │   "items": [                                                       │
+    -- │     { "q": "Can I freeze the dough?", "a": "Yes, up to 3 months" },│
+    -- │     { "q": "Can I use almond milk?", "a": "Yes, same ratio" }      │
+    -- │   ]                                                                │
+    -- │ }                                                                  │
+    -- │   NOTE: All faq_section blocks are aggregated into faqs_json       │
+    -- │         for easy JSON-LD FAQPage schema generation.                │
+    -- │                                                                    │
     -- └────────────────────────────────────────────────────────────────────┘
     --
     -- RENDERING EXAMPLE (Astro/React):
@@ -1156,9 +1272,33 @@ CREATE TABLE IF NOT EXISTS articles (
 
     -- --------------------------------------------------------------------
     -- 5. RECIPE DATA ("GOLD KEY") for type='recipe'
+    -- --------------------------------------------------------------------
     --   NOTE:
     --     - headline & short_description are the truth for name/description.
     --     - recipe_json focuses on timings, servings, structure, and extras.
+    --
+    -- ┌────────────────────────────────────────────────────────────────────┐
+    -- │ INTERACTIVE RECIPE CARD FEATURES (Supported by this schema)       │
+    -- ├────────────────────────────────────────────────────────────────────┤
+    -- │ Feature              │ Data Source              │ Interaction      │
+    -- │──────────────────────│──────────────────────────│──────────────────│
+    -- │ Servings Adjuster    │ servings (numeric)       │ Scale recipe     │
+    -- │ Ingredient Scaling   │ ingredients[].amount     │ Auto-recalculate │
+    -- │ Ingredient Checkbox  │ ingredients[].items[]    │ Mark gathered    │
+    -- │ Step Timers          │ instructions[].timer     │ Start/pause      │
+    -- │ Star Rating          │ aggregateRating          │ Submit/display   │
+    -- │ Print Recipe         │ All fields               │ Print view       │
+    -- │ Jump to Section      │ Section structure        │ Anchor links     │
+    -- │ Equipment Links      │ equipment[] + cache      │ Affiliate clicks │
+    -- │ Share Buttons        │ headline + images_json   │ Social sharing   │
+    -- │ Tips Display         │ tips[]                   │ Expandable notes │
+    -- │ Substitutions        │ ingredients[].substitutes│ Alt ingredients  │
+    -- │ Nutrition Facts      │ nutrition{}              │ Collapsible panel│
+    -- │ Diet Badges          │ suitableForDiet[]        │ Filter/display   │
+    -- │ Video Player         │ video{}                  │ Embedded player  │
+    -- │ Shopping List Export │ ingredients[]            │ App-level        │
+    -- │ Step-by-Step Mode    │ instructions[]           │ App-level        │
+    -- └────────────────────────────────────────────────────────────────────┘
     -- --------------------------------------------------------------------
 
     recipe_json TEXT DEFAULT '{
@@ -1166,10 +1306,12 @@ CREATE TABLE IF NOT EXISTS articles (
       "cook": null,
       "total": null,
       "servings": null,
+      "recipeYield": null,
 
       "recipeCategory": null,
       "recipeCuisine": null,
       "keywords": [],
+      "suitableForDiet": [],
 
       "difficulty": null,
       "cookingMethod": null,
@@ -1181,6 +1323,7 @@ CREATE TABLE IF NOT EXISTS articles (
 
       "ingredients": [],
       "instructions": [],
+      "tips": [],
 
       "nutrition": {},
       "aggregateRating": { "ratingValue": null, "ratingCount": 0 },
@@ -1192,19 +1335,31 @@ CREATE TABLE IF NOT EXISTS articles (
     --   prepTime / cookTime / totalTime :
     --     ISO-8601 duration strings (e.g. "PT15M", "PT1H15M") for schema.org.
     --
-    -- SERVINGS:
-    --   servings : numeric value used for scaling and display.
-    --   "recipeYield" string can be derived as e.g. "4 servings" in the app.
+    -- SERVINGS & YIELD:
+    --   servings    : Numeric value for scaling UI (e.g., 4).
+    --   recipeYield : Display string for JSON-LD (e.g., "Makes 12 cookies", "4 servings").
+    --                 REQUIRED for Google Rich Results.
     --
     -- CATEGORY / CUISINE / KEYWORDS:
     --   recipeCategory : e.g. "Dessert", "Breakfast".
     --   recipeCuisine  : e.g. "Italian", "Mexican".
     --   keywords       : ["lemon","blueberry","biscuits"] for exports/search.
     --
+    -- DIET SUITABILITY (schema.org RestrictedDiet):
+    --   suitableForDiet : Array of diet types for JSON-LD and filter badges.
+    --   VALUES: "VeganDiet", "VegetarianDiet", "GlutenFreeDiet", "DiabeticDiet",
+    --           "HalalDiet", "HinduDiet", "KosherDiet", "LowCalorieDiet",
+    --           "LowFatDiet", "LowLactoseDiet", "LowSaltDiet"
+    --   EXAMPLE: ["VeganDiet", "GlutenFreeDiet"]
+    --
     -- DIFFICULTY & METHOD:
     --   difficulty    : e.g. "Easy", "Medium", "Hard".
     --   cookingMethod : e.g. "baking", "grilling".
     --   estimatedCost : optional cost label.
+    --
+    -- TIPS (Chef's Notes for Recipe Card):
+    --   tips : Array of markdown strings shown in recipe card.
+    --   EXAMPLE: ["Let dough rest 10 min for fluffier results", "Don't overmix!"]
     --
     -- INGREDIENTS (GROUPED, SCALABLE):
     --   [
@@ -1274,8 +1429,13 @@ CREATE TABLE IF NOT EXISTS articles (
     --     "ratingCount": 55
     --   }
     --
-    -- EQUIPMENT:
-    --   ["Oven", "Mixing bowl", "Sheet pan"]
+    -- EQUIPMENT (References centralized equipment table):
+    --   [
+    --     { "equipment_id": 1, "required": true },
+    --     { "equipment_id": 5, "required": false, "notes": "or use hand mixer" }
+    --   ]
+    --   NOTE: Admin manages equipment names/affiliate links in `equipment` table.
+    --         Frontend joins to get name, image, affiliate_url for display.
     --
     -- VIDEO:
     --   {
@@ -1317,15 +1477,18 @@ CREATE TABLE IF NOT EXISTS articles (
     --   - Pre-baked covers for fast card rendering.
 
     -- --------------------------------------------------------------------
-    -- 7. STRUCTURED FAQ (SEO)
+    -- 7. STRUCTURED FAQ (SEO CACHE)
     -- --------------------------------------------------------------------
 
     faqs_json TEXT DEFAULT '[]' CHECK (json_valid(faqs_json)),
-    -- FAQ entries for FAQPage markup and on-page accordions.
+    -- CACHE: Aggregated FAQs from all faq_section content blocks.
+    -- Used for JSON-LD FAQPage schema generation (no content scanning needed).
     -- [
     --   { "q": "Can I freeze the dough?", "a": "Yes, up to 3 months..." },
     --   { "q": "Can I use almond milk?", "a": "Yes, but texture changes..." }
     -- ]
+    -- UPDATE STRATEGY: Rebuild on article save by scanning content_json
+    --                  for all blocks where type = 'faq_section'.
 
     -- --------------------------------------------------------------------
     -- 8. SNAPSHOTS & CACHES (ZERO-JOIN RENDERING)
@@ -1356,6 +1519,44 @@ CREATE TABLE IF NOT EXISTS articles (
     -- Flattened label set for fast tag filters & card badges.
     -- Example: ["Vegan", "Gluten-Free", "Under 30 Minutes"].
 
+    cached_category_json TEXT DEFAULT '{}' CHECK (json_valid(cached_category_json)),
+    -- Category snapshot for zero-join card rendering.
+    -- {
+    --   "id": 3,
+    --   "slug": "desserts",
+    --   "name": "Desserts",
+    --   "icon_svg": "<svg>..."    -- Optional category icon
+    -- }
+    -- UPDATE STRATEGY: Refresh when category updates or article changes category.
+
+    cached_author_json TEXT DEFAULT '{}' CHECK (json_valid(cached_author_json)),
+    -- Author snapshot for zero-join card rendering.
+    -- {
+    --   "id": 5,
+    --   "slug": "jane-doe",
+    --   "name": "Jane Doe",
+    --   "job_title": "Recipe Developer",
+    --   "avatar": {
+    --     "url": "...",
+    --     "alt": "Jane Doe"
+    --   }
+    -- }
+    -- UPDATE STRATEGY: Refresh when author updates profile or avatar.
+
+    cached_equipment_json TEXT DEFAULT '[]' CHECK (json_valid(cached_equipment_json)),
+    -- Equipment snapshot with affiliate links for zero-join rendering.
+    -- [
+    --   {
+    --     "id": 1,
+    --     "name": "Stand Mixer",
+    --     "slug": "stand-mixer",
+    --     "affiliate_url": "https://amazon.com/...",
+    --     "image_url": "...",
+    --     "required": true
+    --   }
+    -- ]
+    -- UPDATE STRATEGY: Refresh when equipment table updates or recipe saves.
+
     cached_comment_count INTEGER DEFAULT 0,
     -- Denormalized total comment count for quick display.
 
@@ -1369,6 +1570,43 @@ CREATE TABLE IF NOT EXISTS articles (
 
     reading_time_minutes INTEGER DEFAULT 0,
     -- Approximate reading time (whole minutes) for long-form articles.
+
+    cached_toc_json TEXT DEFAULT '[]' CHECK (json_valid(cached_toc_json)),
+    -- Table of Contents generated from content_json headings at save time.
+    -- [
+    --   { "id": "ingredients", "text": "Ingredients", "level": 2 },
+    --   { "id": "dry-ingredients", "text": "Dry Ingredients", "level": 3 },
+    --   { "id": "instructions", "text": "Instructions", "level": 2 }
+    -- ]
+    --
+    -- IMPLEMENTATION LOGIC (run on article save):
+    -- ─────────────────────────────────────────────────────────────────────
+    -- function generateTOC(content_json) {
+    --   return content_json
+    --     .filter(block => block.type === 'heading' && block.level >= 2)
+    --     .map(heading => ({
+    --       id: slugify(heading.text),           // "dry-ingredients"
+    --       text: heading.text,                  // "Dry Ingredients"
+    --       level: heading.level                 // 2, 3, or 4
+    --     }));
+    -- }
+    --
+    -- function slugify(text) {
+    --   return text
+    --     .toLowerCase()
+    --     .replace(/[^a-z0-9]+/g, '-')
+    --     .replace(/^-|-$/g, '');
+    -- }
+    -- ─────────────────────────────────────────────────────────────────────
+    --
+    -- RENDERING (frontend):
+    -- cached_toc_json.map(item => (
+    --   <a href={`#${item.id}`} style={{ marginLeft: (item.level - 2) * 16 }}>
+    --     {item.text}
+    --   </a>
+    -- ))
+    --
+    -- UPDATE STRATEGY: Rebuild on article save when content_json changes.
 
     cached_recipe_json TEXT DEFAULT '{
       "isRecipe": false,
@@ -1428,8 +1666,41 @@ CREATE TABLE IF NOT EXISTS articles (
     --   twitterCard     : "summary" | "summary_large_image" (default).
 
     jsonld_json TEXT DEFAULT '[]' CHECK (json_valid(jsonld_json)),
-    -- Pre-generated JSON-LD blobs (Recipe, HowTo, ItemList, FAQPage, ...).
-    -- Lets you do expensive schema generation once at save time.
+    -- Pre-generated JSON-LD structured data for SEO rich results.
+    -- Generated once at save time to avoid expensive runtime computation.
+    --
+    -- SCHEMA TYPES STORED:
+    --   - Recipe         : type='recipe' articles (Google Recipe cards)
+    --   - HowTo          : Step-by-step tutorials
+    --   - ItemList       : type='roundup' articles (listicles)
+    --   - FAQPage        : Built from faqs_json cache
+    --   - Article        : Standard article schema
+    --   - BreadcrumbList : Navigation path
+    --
+    -- EXAMPLE:
+    -- [
+    --   {
+    --     "@context": "https://schema.org",
+    --     "@type": "Recipe",
+    --     "name": "Lemon Blueberry Biscuits",
+    --     "image": ["https://..."],
+    --     "author": { "@type": "Person", "name": "Jane Doe" },
+    --     "prepTime": "PT15M",
+    --     "cookTime": "PT20M",
+    --     "recipeYield": "12 biscuits",
+    --     "recipeIngredient": ["2 cups flour", "1/2 cup sugar"],
+    --     "recipeInstructions": [{ "@type": "HowToStep", "text": "..." }],
+    --     "nutrition": { "@type": "NutritionInformation", "calories": "320" }
+    --   },
+    --   {
+    --     "@context": "https://schema.org",
+    --     "@type": "FAQPage",
+    --     "mainEntity": [{ "@type": "Question", "name": "...", "acceptedAnswer": {...} }]
+    --   }
+    -- ]
+    --
+    -- UPDATE STRATEGY: Rebuild on article save using recipe_json, faqs_json,
+    --                  cached_author_json, and images_json as sources.
 
     -- --------------------------------------------------------------------
     -- 10. CONFIG, WORKFLOW, EXPERIMENTS
@@ -1437,15 +1708,17 @@ CREATE TABLE IF NOT EXISTS articles (
 
     config_json TEXT DEFAULT '{
       "allowComments": true,
+      "showTableOfContents": true,
       "manualRelatedIds": [],
       "experimentKey": null,
       "experimentVariant": null
     }' CHECK (json_valid(config_json)),
     -- Per-article feature toggles and A/B test hooks:
-    --   allowComments    : enable/disable comments for this article.
-    --   manualRelatedIds : hard-coded related article IDs (override auto).
-    --   experimentKey    : identifier for experiments ("headline-test-2025-01").
-    --   experimentVariant: "A","B","control", etc.
+    --   allowComments       : Enable/disable comments for this article.
+    --   showTableOfContents : Show/hide TOC (uses cached_toc_json).
+    --   manualRelatedIds    : Hard-coded related article IDs (override auto).
+    --   experimentKey       : Identifier for experiments ("headline-test-2025-01").
+    --   experimentVariant   : "A","B","control", etc.
 
     workflow_status TEXT DEFAULT 'draft',
     -- Editorial workflow:
@@ -1601,12 +1874,15 @@ CREATE INDEX idx_tag_to_article ON articles_to_tags(tag_id);
 -- ==================================================================
 
 -- Search Index for Articles and Recipes
--- Includes headline, metadata, and flattened JSON content
+-- Includes headline, metadata, tags, author, category, and flattened JSON content
 CREATE VIRTUAL TABLE IF NOT EXISTS idx_articles_search USING fts5(
     headline,
     subtitle,
     short_description,
-    body_content, -- Flattened text from content_json + recipe_json
+    body_content,    -- Flattened text from content_json + recipe_json
+    tag_labels,      -- Flattened from cached_tags_json (e.g., "Vegan Gluten-Free Quick")
+    author_name,     -- From cached_author_json for "recipes by Jane" search
+    category_name,   -- From cached_category_json for category search
     content='articles',
     content_rowid='id'
 );
@@ -1624,7 +1900,10 @@ CREATE VIRTUAL TABLE IF NOT EXISTS idx_media_search_fts USING fts5(
 -- Trigger: Sync Articles on INSERT
 CREATE TRIGGER IF NOT EXISTS trg_articles_search_ai AFTER INSERT ON articles 
 BEGIN
-  INSERT INTO idx_articles_search(rowid, headline, subtitle, short_description, body_content)
+  INSERT INTO idx_articles_search(
+    rowid, headline, subtitle, short_description, body_content,
+    tag_labels, author_name, category_name
+  )
   VALUES (
     NEW.id, 
     NEW.headline, 
@@ -1632,56 +1911,96 @@ BEGIN
     NEW.short_description, 
     (
       SELECT GROUP_CONCAT(txt, ' ') FROM (
-        -- 1. Extract plain text from the content_json blocks
+        -- 1. Extract plain text from content_json blocks (paragraphs)
         SELECT json_extract(value, '$.text') as txt 
         FROM json_each(NEW.content_json) 
         WHERE json_extract(value, '$.text') IS NOT NULL
         
         UNION ALL
         
-        -- 2. Extract ingredient names from recipe_json (for deep searching)
+        -- 2. Extract heading text from content_json
+        SELECT json_extract(value, '$.text')
+        FROM json_each(NEW.content_json)
+        WHERE json_extract(value, '$.type') = 'heading'
+        
+        UNION ALL
+        
+        -- 3. Extract ingredient names from recipe_json
         SELECT json_extract(i.value, '$.name') 
         FROM json_each(NEW.recipe_json, '$.ingredients') as g, 
              json_each(g.value, '$.items') as i
         WHERE NEW.type = 'recipe'
       )
-    )
+    ),
+    -- 4. Flatten tag labels
+    (SELECT GROUP_CONCAT(value, ' ') FROM json_each(NEW.cached_tags_json)),
+    -- 5. Author name
+    json_extract(NEW.cached_author_json, '$.name'),
+    -- 6. Category name
+    json_extract(NEW.cached_category_json, '$.name')
   );
 END;
 
--- Trigger: Sync Articles on UPDATE
+-- Trigger: Sync Articles on UPDATE (including soft-delete handling)
 CREATE TRIGGER IF NOT EXISTS trg_articles_search_au AFTER UPDATE ON articles 
 BEGIN
-  -- Clean up old index entry
-  INSERT INTO idx_articles_search(idx_articles_search, rowid, headline, subtitle, short_description, body_content)
-  VALUES('delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description, '');
+  -- Clean up old index entry (include all columns for proper deletion)
+  INSERT INTO idx_articles_search(
+    idx_articles_search, rowid, headline, subtitle, short_description, 
+    body_content, tag_labels, author_name, category_name
+  )
+  VALUES('delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description, '', '', '', '');
   
-  -- Insert fresh index entry
-  INSERT INTO idx_articles_search(rowid, headline, subtitle, short_description, body_content)
-  VALUES (
+  -- Only insert fresh entry if NOT soft-deleted
+  INSERT INTO idx_articles_search(
+    rowid, headline, subtitle, short_description, body_content,
+    tag_labels, author_name, category_name
+  )
+  SELECT
     NEW.id, 
     NEW.headline, 
     NEW.subtitle, 
     NEW.short_description, 
     (
       SELECT GROUP_CONCAT(txt, ' ') FROM (
-        SELECT json_extract(value, '$.text') as txt FROM json_each(NEW.content_json)
+        -- 1. Extract plain text from content_json blocks (paragraphs)
+        SELECT json_extract(value, '$.text') as txt 
+        FROM json_each(NEW.content_json) 
         WHERE json_extract(value, '$.text') IS NOT NULL
+        
         UNION ALL
+        
+        -- 2. Extract heading text from content_json
+        SELECT json_extract(value, '$.text')
+        FROM json_each(NEW.content_json)
+        WHERE json_extract(value, '$.type') = 'heading'
+        
+        UNION ALL
+        
+        -- 3. Extract ingredient names from recipe_json
         SELECT json_extract(i.value, '$.name') 
         FROM json_each(NEW.recipe_json, '$.ingredients') as g, 
              json_each(g.value, '$.items') as i
         WHERE NEW.type = 'recipe'
       )
-    )
-  );
+    ),
+    -- 4. Flatten tag labels
+    (SELECT GROUP_CONCAT(value, ' ') FROM json_each(NEW.cached_tags_json)),
+    -- 5. Author name
+    json_extract(NEW.cached_author_json, '$.name'),
+    -- 6. Category name
+    json_extract(NEW.cached_category_json, '$.name')
+  WHERE NEW.deleted_at IS NULL;  -- Only index if NOT soft-deleted
 END;
 
--- Trigger: Sync Articles on DELETE (Handles Soft Delete Logic)
+-- Trigger: Sync Articles on DELETE (hard delete)
 CREATE TRIGGER IF NOT EXISTS trg_articles_search_ad AFTER DELETE ON articles 
 BEGIN
-  INSERT INTO idx_articles_search(idx_articles_search, rowid, headline, subtitle, short_description, body_content)
-  VALUES('delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description, '');
+  INSERT INTO idx_articles_search(
+    idx_articles_search, rowid, headline, subtitle, short_description, 
+    body_content, tag_labels, author_name, category_name
+  )
+  VALUES('delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description, '', '', '', '');
 END;
 
 
@@ -1705,10 +2024,18 @@ CREATE TABLE IF NOT EXISTS pinterest_boards (
     -- Human-readable board name (e.g. "Quick Dinners").
     -- Shown in the admin UI when choosing a board.
 
+    description TEXT,
+    -- Board description for reference.
+    -- Can match Pinterest board description.
+
     board_url TEXT,
     -- Full Pinterest board URL, e.g.:
     --   "https://www.pinterest.com/your_profile/quick-dinners/"
     -- Used for quick access from the admin and for reference.
+
+    cover_image_url TEXT,
+    -- Board cover image for admin preview.
+    -- Can be a URL from your media library or Pinterest.
 
     locale TEXT DEFAULT 'en',
     -- Optional: language/locale the board primarily targets.
@@ -1732,6 +2059,9 @@ CREATE TABLE IF NOT EXISTS pinterest_boards (
     --   NOT NULL = logically deleted/retired (hide in UI, keep for history).
 );
 
+-- INDEX: Filter active boards
+CREATE INDEX IF NOT EXISTS idx_pinterest_boards_active ON pinterest_boards(is_active);
+
 
 
 -- =====================================================================
@@ -1751,6 +2081,10 @@ CREATE TABLE IF NOT EXISTS pinterest_pins (
 
     board_id   INTEGER REFERENCES pinterest_boards(id) ON DELETE SET NULL,
 
+    section_name TEXT,
+    -- Pinterest board section name (optional).
+    -- Boards can have sections like "Breakfast Recipes", "Dinner Ideas".
+
     image_url       TEXT NOT NULL,
     -- Final image URL (from your media system or CDN).
     -- This is what Pinterest will fetch when you import CSV.
@@ -1767,6 +2101,18 @@ CREATE TABLE IF NOT EXISTS pinterest_pins (
     tags_json       TEXT DEFAULT '[]' CHECK (json_valid(tags_json)),
     -- ["easy dinner","chicken","high protein"] for your own reference/filters.
 
+    status TEXT DEFAULT 'draft',
+    -- Workflow status:
+    --   'draft'     : Created, not yet exported.
+    --   'scheduled' : Ready for next export batch.
+    --   'exported'  : Included in CSV export.
+    --   'published' : Confirmed live on Pinterest.
+    --   'failed'    : Export/publish failed.
+
+    pinterest_pin_id TEXT,
+    -- Actual Pinterest pin ID after publishing (if available via API).
+    -- Useful for tracking and analytics integration.
+
     exported_at     DATETIME,
     -- Last time this row was included in an export/CSV.
 
@@ -1780,6 +2126,12 @@ CREATE TABLE IF NOT EXISTS pinterest_pins (
 CREATE INDEX IF NOT EXISTS idx_pinterest_pins_board
     ON pinterest_pins(board_id);
 
+CREATE INDEX IF NOT EXISTS idx_pinterest_pins_article
+    ON pinterest_pins(article_id);
+
+CREATE INDEX IF NOT EXISTS idx_pinterest_pins_status
+    ON pinterest_pins(status);
+
 CREATE INDEX IF NOT EXISTS idx_pinterest_pins_batch
     ON pinterest_pins(export_batch_id);
 
@@ -1790,14 +2142,63 @@ BEGIN
 END;
 
 
--- Templates pour le générateur d'images Admin (Canvas)
+-- =====================================================================
+-- TABLE: pin_templates
+-- PURPOSE:
+--   - Store reusable canvas templates for the Pinterest pin generator.
+--   - Admin can select templates when creating new pins.
+-- =====================================================================
+
 CREATE TABLE IF NOT EXISTS pin_templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    
+    slug TEXT UNIQUE NOT NULL,
+    -- URL-safe identifier for routing (e.g., "recipe-card-bold").
+    -- Used in admin URLs: /templates/recipe-card-bold
+
     name TEXT NOT NULL,
-    elements_json TEXT NOT NULL, -- Configuration JSON du design
+    -- Template display name (e.g., "Recipe Card Bold", "Quote Minimal").
+
+    description TEXT,
+    -- Optional description for admin UI.
+    -- e.g., "Bold recipe card with large title and cooking time"
+
+    category TEXT DEFAULT 'general',
+    -- Template category for filtering:
+    --   'recipe', 'listicle', 'quote', 'before_after', 'general'
+
+    thumbnail_url TEXT,
+    -- Preview/thumbnail image URL for template picker in admin.
+    -- Auto-generated when template is saved (WebP, ~400px wide).
+
+    width INTEGER DEFAULT 1000,
+    -- Pin width in pixels.
+
+    height INTEGER DEFAULT 1500,
+    -- Pin height in pixels (default 2:3 ratio for Pinterest).
+
+    elements_json TEXT NOT NULL CHECK (json_valid(elements_json)),
+    -- Canvas design configuration JSON.
+    -- Contains layers, text boxes, image placeholders, colors, fonts, etc.
+    -- Schema depends on your canvas editor implementation.
+
     is_active BOOLEAN DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    -- 1 = Available in template picker.
+    -- 0 = Hidden (archived).
+
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_pin_templates_slug ON pin_templates(slug);
+CREATE INDEX IF NOT EXISTS idx_pin_templates_category ON pin_templates(category);
+CREATE INDEX IF NOT EXISTS idx_pin_templates_active ON pin_templates(is_active);
+
+CREATE TRIGGER IF NOT EXISTS update_pin_templates_timestamp
+AFTER UPDATE ON pin_templates
+BEGIN
+    UPDATE pin_templates SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
 
 
 -- =====================================================================
