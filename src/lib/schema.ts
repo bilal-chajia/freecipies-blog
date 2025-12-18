@@ -181,6 +181,7 @@ export const articles = sqliteTable('articles', {
     cachedRatingJson: text('cached_rating_json'),
     cachedTocJson: text('cached_toc_json'),
     cachedRecipeJson: text('cached_recipe_json'),
+    cachedCardJson: text('cached_card_json'),
     readingTimeMinutes: integer('reading_time_minutes'),
 
     // Scalar Indexes
