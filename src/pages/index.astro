@@ -64,6 +64,10 @@ const getCategoryColor = (categorySlug: string) =>
                         <img
                           src={recipe.imageUrl}
                           alt={recipe.imageAlt || recipe.headline}
+                          width="1200"
+                          height="675"
+                          loading={index === 0 ? "eager" : "lazy"}
+                          fetchpriority={index === 0 ? "high" : "auto"}
                         />
                       )}
                       <div class="card-overlay" />
@@ -104,6 +108,9 @@ const getCategoryColor = (categorySlug: string) =>
                       <img
                         src={recipe.imageUrl}
                         alt={recipe.imageAlt || recipe.headline}
+                        width="600"
+                        height="400"
+                        loading="lazy"
                       />
                     )}
                     <div class="card-overlay" />
@@ -142,6 +149,8 @@ const getCategoryColor = (categorySlug: string) =>
                       <img
                         src={recipe.imageUrl}
                         alt={recipe.imageAlt || recipe.headline}
+                        width="400"
+                        height="300"
                         loading="lazy"
                       />
                     )}
@@ -206,7 +215,13 @@ const getCategoryColor = (categorySlug: string) =>
                 <a href={`/categories/${category.slug}`} class="category-chip">
                   <div class="chip-image-wrapper">
                     {category.imageUrl ? (
-                      <img src={category.imageUrl} alt={category.label} />
+                      <img 
+                        src={category.imageUrl} 
+                        alt={category.label}
+                        width="80"
+                        height="80"
+                        loading="lazy"
+                      />
                     ) : (
                       <div class="chip-placeholder">
                         {category.label.charAt(0)}
@@ -245,6 +260,8 @@ const getCategoryColor = (categorySlug: string) =>
                       <img
                         src={recipe.imageUrl}
                         alt={recipe.imageAlt || recipe.headline}
+                        width="400"
+                        height="300"
                         loading="lazy"
                       />
                     )}

@@ -2,249 +2,136 @@
 
 ## Overview
 
-This document provides comprehensive API documentation for the Freecipies Blog Platform. All endpoints are RESTful and return JSON responses.
+Comprehensive API documentation for the Freecipies Blog Platform.
+*   **Base URL**: `/api`
+*   **Format**: JSON
+*   **Authentication**: Bearer Token (JWT) required for CUD operations (Create, Update, Delete).
 
-## Base URL
+---
 
-```
-Production: https://freecipies.com/api
-Staging: https://staging.freecipies.com/api
-Development: http://localhost:4321/api
-```
+## Constants & Enums
 
-## Authentication
+### Image Sizes
+Images are stored in R2 and served with flat URL strings.
+*   **Article Cover**: `1200x675` (16:9)
+*   **Author Avatar**: `300x300` (1:1)
+*   **Category Cover**: `800x600` (4:3)
 
-### API Key Authentication
-Include your API key in the `Authorization` header:
+### HTTP Status Codes
+*   `200 OK`: Success
+*   `201 Created`: Resource created
+*   `400 Bad Request`: Validation error
+*   `401 Unauthorized`: Missing token
+*   `403 Forbidden`: Insufficient permissions
+*   `404 Not Found`: Resource unknown
+*   `500 Internal Error`: Server/Database failure
 
-```
-Authorization: Bearer YOUR_API_KEY
-```
-
-### JWT Token Authentication
-For admin endpoints, include JWT token:
-
-```
-Authorization: Bearer YOUR_JWT_TOKEN
-```
-
-## Response Format
-
-### Success Response
-```json
-{
-  "success": true,
-  "data": {},
-  "pagination": {
-    "page": 1,
-    "limit": 12,
-    "total": 100,
-    "totalPages": 9
-  }
-}
-```
-
-### Error Response
-```json
-{
-  "success": false,
-  "error": "Error message",
-  "code": "ERROR_CODE",
-  "details": {}
-}
-```
-
-## Error Codes
-
-| Code | Status | Description |
-|------|--------|-------------|
-| `NOT_FOUND` | 404 | Resource not found |
-| `VALIDATION_ERROR` | 400 | Invalid request parameters |
-| `UNAUTHORIZED` | 401 | Missing or invalid authentication |
-| `FORBIDDEN` | 403 | Insufficient permissions |
-| `INTERNAL_ERROR` | 500 | Server error |
-| `DATABASE_ERROR` | 500 | Database operation failed |
-| `INVALID_REQUEST` | 400 | Malformed request |
-
-## Rate Limiting
-
-- **Anonymous Users**: 100 requests/minute
-- **Authenticated Users**: 1000 requests/minute
-- **Admin Users**: Unlimited
-
-Rate limit headers:
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1634567890
-```
+---
 
 ## Endpoints
 
-### Articles
+### 1. Articles & Recipes
+Primary content endpoints. Differentiated by `type` ('article' vs 'recipe').
 
-#### GET /api/articles
-Retrieve a list of articles with optional filtering.
+#### `GET /api/articles`
+Search and list articles.
+*   **Params**: `limit`, `page`, `category` (slug), `author` (slug), `search` (text), `type`.
 
-**Query Parameters:**
-- `slug` (string, optional): Get single article by slug
-- `category` (string, optional): Filter by category slug
-- `author` (string, optional): Filter by author slug
-- `tag` (string, optional): Filter by tag slug
-- `limit` (number, optional): Items per page (default: 12, max: 100)
-- `page` (number, optional): Page number (default: 1)
+#### `GET /api/articles/:slug`
+Retrieve full details (content, JSON-LD data) for a single article.
 
-**Example Request:**
-```bash
-GET /api/articles?category=breakfast&limit=20&page=1
-```
-
-**Example Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "slug": "fluffy-pancakes",
-      "type": "recipe",
-      "label": "Fluffy Pancakes",
-      "headline": "Perfect Fluffy Pancakes Recipe",
-      "metaTitle": "Fluffy Pancakes - Easy Recipe",
-      "metaDescription": "Learn how to make perfect fluffy pancakes...",
-      "categorySlug": "breakfast",
-      "authorSlug": "john-doe",
-      "isOnline": true,
-      "publishedAt": "2024-01-15T10:00:00Z",
-      "viewCount": 1250,
-      "createdAt": "2024-01-15T10:00:00Z",
-      "updatedAt": "2024-01-15T10:00:00Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 45,
-    "totalPages": 3
-  }
-}
-```
-
-**Status Codes:**
-- `200`: Success
-- `400`: Invalid parameters
-- `500`: Server error
-
----
-
-### Categories
-
-#### GET /api/categories
-Retrieve all categories or a specific category.
-
-**Query Parameters:**
-- `slug` (string, optional): Get single category by slug
-
-**Example Request:**
-```bash
-GET /api/categories
-```
-
-**Example Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "slug": "breakfast",
-      "label": "Breakfast",
-      "headline": "Breakfast Recipes",
-      "metaTitle": "Breakfast Recipes",
-      "metaDescription": "Delicious breakfast recipes...",
-      "shortDescription": "Start your day right",
-      "tldr": "Breakfast ideas",
-      "collectionTitle": "Breakfast Collection",
-      "numEntriesPerPage": 12,
-      "sortOrder": 1,
-      "isOnline": true,
-      "isFavorite": true,
-      "createdAt": "2024-01-01T00:00:00Z",
-      "updatedAt": "2024-01-01T00:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-### Authors
-
-#### GET /api/authors
-Retrieve all authors or a specific author.
-
-**Query Parameters:**
-- `slug` (string, optional): Get single author by slug
-
-**Example Request:**
-```bash
-GET /api/authors?slug=john-doe
-```
-
-**Example Response:**
+**Response (Recipe)**:
 ```json
 {
   "success": true,
   "data": {
-    "id": 1,
-    "slug": "john-doe",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "job": "Chef",
-    "metaTitle": "John Doe - Chef",
-    "metaDescription": "Learn from Chef John Doe...",
-    "shortDescription": "Professional chef with 10 years experience",
-    "tldr": "Expert chef",
+    "id": "uuid-string",
+    "slug": "fluffy-pancakes",
+    "label": "Fluffy Pancakes",
+    "headline": "Perfect Fluffy Pancakes Recipe",
+    "content": "<p>HTML Content...</p>",
+    "type": "recipe",
+    
+    // Flat Image Schema
+    "imageUrl": "https://cdn.freecipies.com/images/pancakes.webp",
+    "imageWidth": 1200,
+    "imageHeight": 675,
+    "imageAlt": "Stack of pancakes",
+    
+    // Structured Data
+    "recipeJson": {
+      "prepTime": "PT15M",
+      "cookTime": "PT20M",
+      "yield": "4 servings",
+      "ingredients": ["1 cup flour", "1 egg"]
+    },
+    "faqsJson": [
+      { "question": "Can I freeze?", "answer": "Yes." }
+    ],
+    
+    // Metadata
+    "viewCount": 1542,
     "isOnline": true,
-    "isFavorite": true,
-    "createdAt": "2024-01-01T00:00:00Z",
-    "updatedAt": "2024-01-01T00:00:00Z"
+    "publishedAt": "2024-03-20T10:00:00Z"
   }
 }
 ```
 
+#### `POST /api/articles` (Admin)
+Create a new drafted article.
+*   **Body**: JSON object matching schema.
+
+#### `PUT /api/articles/:slug` (Admin)
+Update an existing article.
+
+#### `DELETE /api/articles/:slug` (Admin)
+Permanently remove an article.
+
 ---
 
-### Tags
+### 2. Categories
 
-#### GET /api/tags
-Retrieve all tags.
+#### `GET /api/categories`
+List all categories with metadata.
 
-**Example Request:**
-```bash
-GET /api/tags
-```
-
-**Example Response:**
+**Response**:
 ```json
 {
   "success": true,
   "data": [
     {
-      "id": 1,
-      "slug": "vegetarian",
-      "label": "Vegetarian",
-      "headline": "Vegetarian Recipes",
-      "metaTitle": "Vegetarian Recipes",
-      "metaDescription": "Delicious vegetarian recipes...",
-      "shortDescription": "Plant-based recipes",
-      "tldr": "Vegetarian options",
-      "collectionTitle": "Vegetarian Collection",
-      "numEntriesPerPage": 12,
-      "isOnline": true,
-      "isFavorite": false,
-      "createdAt": "2024-01-01T00:00:00Z",
-      "updatedAt": "2024-01-01T00:00:00Z"
+      "slug": "breakfast",
+      "label": "Breakfast",
+      "color": "#ff9900", // Hex color for UI badges
+      "imageUrl": "https://cdn.freecipies.com/images/cat-breakfast.webp",
+      "imageWidth": 800,
+      "imageHeight": 600,
+      "totalArticles": 45
+    }
+  ]
+}
+```
+
+#### `GET /api/categories/:slug`
+Get single category details.
+
+---
+
+### 3. Authors
+
+#### `GET /api/authors`
+List all authors.
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "slug": "chef-john",
+      "name": "Chef John",
+      "job": "Head Chef",
+      "imageUrl": "https://cdn.freecipies.com/images/john.webp"
     }
   ]
 }
@@ -252,213 +139,29 @@ GET /api/tags
 
 ---
 
-## Caching Strategy
+### 4. Admin & Utilities
 
-### Cache Headers
+#### `POST /api/media` (Admin)
+Direct upload endpoint for Cloudflare R2.
+*   **Content-Type**: `multipart/form-data`
+*   **Response**: `{ "url": "https://...", "r2Key": "..." }`
 
-All GET endpoints return appropriate cache headers:
+#### `GET /api/stats/popular`
+Returns trending articles based on view count.
+*   **Usage**: Used for client-side "Popular Recipes" widgets.
 
-```
-Cache-Control: public, max-age=3600, stale-while-revalidate=86400
-```
-
-**Cache Durations:**
-- Single resource (article, category, author): 1 hour
-- List endpoints: 30 minutes
-- Search results: 15 minutes
-
-### Cache Invalidation
-
-Cache is automatically invalidated when:
-- Content is updated via admin API
-- Content is published/unpublished
-- Scheduled content goes live
+#### `GET /api/pins` (Admin)
+Manage Pinterest marketing assets linked to articles.
 
 ---
 
-## Pagination
+## Authentication
 
-All list endpoints support pagination:
+**Header**:
+`Authorization: Bearer <JWT_TOKEN>`
 
-**Query Parameters:**
-- `limit`: Items per page (1-100, default: 12)
-- `page`: Page number (default: 1)
+Tokens are issued via the `/admin/login` flow (Cloudflare Access or custom auth service) and verified by middleware on all write operations.
 
-**Response:**
-```json
-{
-  "pagination": {
-    "page": 1,
-    "limit": 12,
-    "total": 100,
-    "totalPages": 9
-  }
-}
-```
-
----
-
-## Filtering
-
-### By Category
-```bash
-GET /api/articles?category=breakfast
-```
-
-### By Author
-```bash
-GET /api/articles?author=john-doe
-```
-
-### By Tag
-```bash
-GET /api/articles?tag=vegetarian
-```
-
-### Combined Filters
-```bash
-GET /api/articles?category=breakfast&author=john-doe&tag=vegetarian&limit=20&page=1
-```
-
----
-
-## Sorting
-
-Articles are sorted by:
-1. Published date (newest first)
-2. View count (for trending)
-3. Creation date (fallback)
-
----
-
-## Common Errors
-
-### 400 Bad Request
-```json
-{
-  "success": false,
-  "error": "Invalid pagination parameters",
-  "code": "VALIDATION_ERROR",
-  "details": {
-    "limit": "Must be between 1 and 100"
-  }
-}
-```
-
-### 404 Not Found
-```json
-{
-  "success": false,
-  "error": "Article not found",
-  "code": "NOT_FOUND"
-}
-```
-
-### 429 Too Many Requests
-```json
-{
-  "success": false,
-  "error": "Rate limit exceeded",
-  "code": "RATE_LIMIT_EXCEEDED"
-}
-```
-
-### 500 Internal Server Error
-```json
-{
-  "success": false,
-  "error": "Failed to fetch articles",
-  "code": "DATABASE_ERROR",
-  "details": {
-    "originalError": "Connection timeout"
-  }
-}
-```
-
----
-
-## Best Practices
-
-### 1. Use Pagination
-Always use pagination for list endpoints to improve performance:
-```bash
-GET /api/articles?limit=20&page=1
-```
-
-### 2. Cache Responses
-Implement client-side caching to reduce API calls:
-```javascript
-const cache = new Map();
-const cacheKey = `articles-${category}`;
-if (cache.has(cacheKey)) {
-  return cache.get(cacheKey);
-}
-```
-
-### 3. Handle Errors Gracefully
-Always check the `success` field and handle errors:
-```javascript
-const response = await fetch('/api/articles');
-const data = await response.json();
-if (!data.success) {
-  console.error(data.error);
-}
-```
-
-### 4. Use Appropriate HTTP Methods
-- `GET`: Retrieve data
-- `POST`: Create data (admin only)
-- `PUT`: Update data (admin only)
-- `DELETE`: Delete data (admin only)
-
-### 5. Monitor Rate Limits
-Check rate limit headers and implement backoff:
-```javascript
-const remaining = response.headers.get('X-RateLimit-Remaining');
-if (remaining < 10) {
-  // Implement backoff strategy
-}
-```
-
----
-
-## Webhooks (Future)
-
-Webhooks will be available for:
-- Article published
-- Article updated
-- Article deleted
-- Comment posted
-- Rating submitted
-
----
-
-## SDK & Libraries
-
-### JavaScript/TypeScript
-```typescript
-import { FreecipiesAPI } from '@freecipies/api-client';
-
-const api = new FreecipiesAPI({
-  baseUrl: 'https://freecipies.com/api',
-  apiKey: 'YOUR_API_KEY'
-});
-
-const articles = await api.articles.list({ category: 'breakfast' });
-```
-
----
-
-## Support
-
-For API support, contact: api-support@freecipies.com
-
----
-
-## Changelog
-
-### v1.0.0 (2024-01-15)
-- Initial API release
-- Articles, Categories, Authors, Tags endpoints
-- Pagination and filtering support
-- Rate limiting implemented
+## Rate Limiting
+*   **Public**: 100 req/min/IP
+*   **Admin**: Unlimited

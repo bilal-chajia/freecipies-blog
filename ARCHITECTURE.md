@@ -2,717 +2,193 @@
 
 ## Executive Summary
 
-This document outlines the comprehensive architecture for the Freecipies blog platform, built using **Astro.js** for the frontend and **Cloudflare services** for deployment, performance optimization, and security. The platform supports recipe management with a JSON-based content system and includes an admin dashboard for content management.
+The Freecipies platform is a high-performance, hybrid web application built on **Astro.js** and **Cloudflare's Edge Network**. It combines Server-Side Rendering (SSR) for the public-facing site to ensure maximum SEO and speed, with a Client-Side Rendered (CSR) **React Admin Panel** for rich content management. Data is persisted in **Cloudflare D1** (SQLite) and **Cloudflare R2** (Object Storage), ensuring global low-latency access.
 
 ## Table of Contents
 
-1. [System Architecture](#system-architecture)
-2. [Technology Stack](#technology-stack)
-3. [Frontend Architecture](#frontend-architecture)
-4. [Backend Architecture](#backend-architecture)
-5. [Data Storage Strategy](#data-storage-strategy)
-6. [API Design](#api-design)
-7. [Security Architecture](#security-architecture)
-8. [Performance Optimization](#performance-optimization)
-9. [Deployment Strategy](#deployment-strategy)
-10. [Admin Dashboard](#admin-dashboard)
-11. [Scalability Considerations](#scalability-considerations)
+1. [System Architecture](#1-system-architecture)
+2. [Technology Stack](#2-technology-stack)
+3. [Frontend Architecture (Public)](#3-frontend-architecture-public)
+4. [Admin Panel Architecture](#4-admin-panel-architecture)
+5. [Backend & API](#5-backend--api)
+6. [Data Storage and Schema](#6-data-storage-and-schema)
+7. [Performance Strategy](#7-performance-strategy)
+8. [Deployment](#8-deployment)
 
 ---
 
 ## 1. System Architecture
 
-### High-Level Architecture Diagram
+### High-Level Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Users/Browsers                        │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Cloudflare CDN/Edge                       │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │     WAF      │  │  DDoS Prot.  │  │ Rate Limiting│      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-                ┌────────────┴────────────┐
-                │                         │
-                ▼                         ▼
-┌───────────────────────┐    ┌───────────────────────┐
-│  Cloudflare Pages     │    │  Cloudflare Workers   │
-│  (Static/SSR)         │    │  (API Endpoints)      │
-│                       │    │                       │
-│  ┌─────────────────┐ │    │  ┌─────────────────┐  │
-│  │  Astro.js App   │ │    │  │  API Routes     │  │
-│  │  - Components   │ │    │  │  - /api/recipes │  │
-│  │  - Layouts      │ │    │  │  - /api/cats    │  │
-│  │  - Pages        │ │    │  │  - /api/authors │  │
-│  └─────────────────┘ │    │  └─────────────────┘  │
-└───────────────────────┘    └──────────┬────────────┘
-                                        │
-                                        ▼
-                        ┌───────────────────────────┐
-                        │  Cloudflare Workers KV    │
-                        │  ┌─────────────────────┐  │
-                        │  │  RECIPES Namespace  │  │
-                        │  │  CATEGORIES NS      │  │
-                        │  │  AUTHORS NS         │  │
-                        │  │  TAGS NS            │  │
-                        │  └─────────────────────┘  │
-                        └───────────────────────────┘
-                                        │
-                                        ▼
-                        ┌───────────────────────────┐
-                        │  Cloudflare D1 (Optional) │
-                        │  ┌─────────────────────┐  │
-                        │  │  Relational Data    │  │
-                        │  │  - Recipes Table    │  │
-                        │  │  - Categories Table │  │
-                        │  │  - Authors Table    │  │
-                        │  └─────────────────────┘  │
-                        └───────────────────────────┘
+```mermaid
+graph TD
+    User[Public Visitor] -->|HTTPS| CF[Cloudflare Edge]
+    Admin[Content Creator] -->|HTTPS| CF
+
+    subgraph "Cloudflare Ecosystem"
+        CF -->|SSR Routes| Astro[Astro Application]
+        CF -->|Static Assets| R2[R2 Storage (Images)]
+        
+        Astro -->|Read/Write| D1[(D1 Database)]
+        
+        subgraph "Client Side"
+            Browser -->|Hydration| React[React Components]
+            Browser -->|SPA Mode| AdminApp[React Admin Panel]
+        end
+        
+        AdminApp -->|API Requests| AstroAPI[API Routes]
+        AstroAPI -->|CRUD| D1
+        AstroAPI -->|Uploads| R2
+    end
 ```
 
-### Architecture Principles
-
-1. **Separation of Concerns**: Clear distinction between frontend (Astro.js) and backend (Cloudflare Workers)
-2. **Edge-First**: Leverage Cloudflare's global edge network for low latency
-3. **Serverless**: No server management, automatic scaling
-4. **Security by Design**: Multiple layers of security (WAF, DDoS, authentication)
-5. **Performance Optimized**: CDN caching, static generation, edge computing
-6. **Modular Design**: Independent, reusable components and services
+### Core Principles
+*   **Hybrid Rendering**: 
+    *   **Public Pages**: Server-Side Rendered (SSR) HTML for LCP/SEO.
+    *   **Admin Panel**: Client-Only React SPA for app-like interactivity.
+*   **Edge-Native**: All compute (SSR + API) runs on Cloudflare Workers (V8 Isolates), eliminating cold starts.
+*   **Flat Data Structure**: Critical display data (Image URLs, Dimensions, Colors) is stored flat on records to minimize JOIN overheads.
 
 ---
 
 ## 2. Technology Stack
 
-### Frontend
-- **Framework**: Astro.js 5.x
-  - Server-side rendering (SSR)
-  - Static site generation (SSG)
-  - Partial hydration for interactivity
-- **Styling**: TailwindCSS 4.x
-  - Utility-first CSS
-  - Responsive design
-  - Dark mode support
-- **Language**: TypeScript (strict mode)
-- **Build Tool**: Vite (bundled with Astro)
+### Frontend (Public)
+*   **Framework**: Astro 5.x
+*   **Styling**: TailwindCSS 4.x
+*   **Interactivity**: Vanilla JS (Web Stories) + React (Calculators/Forms)
+
+### Admin Dashboard (`/admin`)
+*   **Core**: React 18.x (SPA via `client:only`)
+*   **Routing**: `react-router-dom` v6
+*   **State**: Zustand
+*   **UI Library**: Radix UI
+*   **Forms**: `react-hook-form` + `zod`
+*   **Rich Text**: TipTap / Custom WYSIWYG
+*   **Graphics**: HTML5 Canvas + `react-easy-crop` (for Image Editor)
 
 ### Backend
-- **Runtime**: Cloudflare Workers
-  - V8 isolates (faster than containers)
-  - Edge computing
-  - Serverless functions
-- **API**: RESTful endpoints
-- **Language**: TypeScript
-
-### Data Storage
-- **Primary**: Cloudflare Workers KV
-  - Key-value store
-  - Global replication
-  - Low latency reads
-- **Optional**: Cloudflare D1
-  - SQLite-based relational database
-  - SQL queries
-  - Serverless
-
-### Deployment & Infrastructure
-- **Hosting**: Cloudflare Pages
-- **CDN**: Cloudflare CDN
-- **Security**: Cloudflare WAF, DDoS Protection
-- **CI/CD**: Git-based automatic deployments
+*   **Runtime**: Cloudflare Pages Functions
+*   **Database**: Cloudflare D1 (SQLite)
+*   **ORM**: Drizzle ORM
+*   **Storage**: Cloudflare R2
+*   **Auth**: JWT-based stateless authentication
 
 ---
 
-## 3. Frontend Architecture
+## 3. Frontend Architecture (Public)
 
-### Astro.js Configuration
+### Layouts
+*   `RecipeLayout.astro`: Injects rich JSON-LD Schema.org data for recipes (prepTime, cookTime, yield).
+*   `Layout.astro`: Standard shell for blog posts and landing pages.
 
-The frontend uses Astro.js with the following configuration:
-
-```javascript
-// astro.config.mjs
-export default defineConfig({
-  site: 'https://freecipies.com', // Your production URL
-  integrations: [sitemap()],
-  adapter: cloudflare({
-    mode: 'directory',
-    routes: {
-      extend: {
-        include: [{ pattern: '/api/*' }],
-      }
-    }
-  }),
-  output: 'server',
-  vite: {
-    plugins: [tailwindcss()],
-  },
-});
-```
-
-### Component Structure
-
-```
-src/components/
-├── RecipeCard.astro       # Recipe display card
-├── CategoryCard.astro     # Category display card
-├── Header.astro           # Site header with navigation
-├── Footer.astro           # Site footer
-├── BaseHead.astro         # SEO meta tags
-└── FormattedDate.astro    # Date formatting utility
-```
-
-### Layout System
-
-```
-src/layouts/
-├── Layout.astro           # Main layout wrapper
-├── RecipeLayout.astro     # Recipe detail page layout
-└── BlogPost.astro         # Blog post layout
-```
-
-### Routing Strategy
-
-- **Static Routes**: Pre-rendered at build time
-  - `/` - Home page
-  - `/about` - About page
-  - `/categories` - Categories listing
-
-- **Dynamic Routes**: Server-rendered on demand
-  - `/recipes/[slug]` - Recipe detail pages
-  - `/categories/[slug]` - Category pages
-  - `/authors/[slug]` - Author pages
-
-- **API Routes**: Cloudflare Workers endpoints
-  - `/api/recipes` - Recipe data
-  - `/api/categories` - Category data
-  - `/api/authors` - Author data
-
-### SEO Optimization
-
-- **Server-Side Rendering**: Dynamic content is SEO-friendly
-- **Meta Tags**: Comprehensive meta tags for each page
-- **Sitemap**: Auto-generated XML sitemap
-- **Structured Data**: JSON-LD for rich snippets
-- **Open Graph**: Social media sharing optimization
+### Key Components
+*   **StoriesBar**: 
+    *   Horizontal scrolling story rings.
+    *   **Optimization**: Data passed via global `window.STORIES_DATA` to prevent DOM bloating.
+*   **WebStoryViewer**: 
+    *   Full-screen immersive viewer.
+    *   Zero-dependency Vanilla JS implementation for instant touch response.
+*   **RecipeCard**: 
+    *   Uses flat `imageUrl`, `imageWidth`, `imageHeight` for CLS-free loading.
+    *   Optimistic hover states.
 
 ---
 
-## 4. Backend Architecture
+## 4. Admin Panel Architecture
 
-### Cloudflare Workers API
+The Admin Panel is a "Photoshop-lite" CMS built directly into the application.
 
-The backend consists of serverless edge functions deployed as Cloudflare Workers:
+### Custom Editors
 
-```
-src/pages/api/
-├── recipes.ts       # Recipe CRUD operations
-├── categories.ts    # Category operations
-├── authors.ts       # Author operations
-└── tags.ts          # Tag operations
-```
+#### A. Image Editor (`ImageEditor.jsx`)
+A comprehensive browser-based image processor.
+*   **Capabilities**: Crop, Rotate, Flip, Resize.
+*   **Adjustments**: Brightness, Contrast, Saturation, Warmth.
+*   **Filters**: Chrome, Fade, Mono, Noir, etc.
+*   **Productivity**: "Copy/Paste Edits" from one image to another.
+*   **Output**: Client-side WebP compression before upload.
 
-### API Endpoint Structure
+#### B. Pin Creator (`PinCreator.jsx`)
+A specialized marketing tool for Pinterest.
+*   **Canvas Engine**: Drag-and-drop layer management.
+*   **Templates**: Pre-built 2:3 aspect ratio layouts.
+*   **Export**: Generates high-res PNGs directly from the DOM.
 
-Each API endpoint follows this pattern:
-
-```typescript
-import type { APIRoute } from 'astro';
-
-export const prerender = false;
-
-export const GET: APIRoute = async ({ request }) => {
-  const url = new URL(request.url);
-  const slug = url.searchParams.get('slug');
-  
-  try {
-    // Fetch from KV or D1
-    const data = await fetchFromKV(slug);
-    
-    return new Response(JSON.stringify({
-      success: true,
-      data
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600'
-      }
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-  }
-};
-```
-
-### Request Flow
-
-1. **Request Received**: User requests a page or API endpoint
-2. **Edge Routing**: Cloudflare routes to nearest edge location
-3. **Worker Execution**: Cloudflare Worker processes the request
-4. **Data Fetch**: Worker retrieves data from KV or D1
-5. **Response**: JSON or HTML returned to client
-6. **Caching**: Response cached at edge for subsequent requests
+#### C. Category Editor
+*   **Color System**: Visual color picker to define category branding (Badges/Chips).
+*   **Live Preview**: Real-time rendering of the category card.
 
 ---
 
-## 5. Data Storage Strategy
+## 5. Backend & API
 
-### Cloudflare Workers KV
+All data access flows through typed API routes in `src/pages/api/*`.
 
-**Use Cases:**
-- Recipe data storage
-- Category and tag metadata
-- Author profiles
-- Static content caching
+| Endpoint | Method | Function |
+| :--- | :--- | :--- |
+| `/api/articles` | GET, POST | List articles / Create draft |
+| `/api/articles/[slug]` | GET, PUT, DELETE | CRUD for specific article |
+| `/api/recipes` | GET | Specialized recipe feed |
+| `/api/stats/popular` | GET | Analytics-driven popular content |
+| `/api/media` | POST | Direct streaming upload to R2 |
+| `/api/pins` | GET, POST | Manage marketing assets |
 
-**Structure:**
-```
-Key Format: {type}:{slug}
-Examples:
-- recipe:spaghetti-puttanesca
-- category:breakfast-and-brunch
-- author:katt-lawrence
-```
-
-**Advantages:**
-- Global replication
-- Low latency reads (<1ms)
-- Automatic scaling
-- No database management
-
-**Limitations:**
-- Eventually consistent
-- Limited query capabilities
-- Best for read-heavy workloads
-
-### Cloudflare D1 (Optional)
-
-**Use Cases:**
-- Complex queries
-- Relational data
-- Analytics and reporting
-- User-generated content
-
-**Schema Example:**
-```sql
-CREATE TABLE recipes (
-  id INTEGER PRIMARY KEY,
-  slug TEXT UNIQUE NOT NULL,
-  category_slug TEXT,
-  author_slug TEXT,
-  label TEXT,
-  meta_title TEXT,
-  meta_description TEXT,
-  data JSON,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
-);
-
-CREATE INDEX idx_category ON recipes(category_slug);
-CREATE INDEX idx_author ON recipes(author_slug);
-```
-
-### Data Migration from Google Sheets
-
-The existing Google Apps Script code can be adapted to push data to Cloudflare:
-
-```javascript
-// Modified postRecipes() function
-function postRecipes() {
-  const payload = {
-    // ... recipe data
-  };
-  
-  const options = {
-    method: 'PUT',
-    contentType: 'application/json',
-    headers: {
-      'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
-    },
-    payload: JSON.stringify(payload)
-  };
-  
-  // Push to Cloudflare KV via API
-  const response = UrlFetchApp.fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/storage/kv/namespaces/${NAMESPACE_ID}/values/${key}`,
-    options
-  );
-}
-```
+**Response format**: Standardized JSON envelope ` { success: true, data: ..., pagination: ... }`.
 
 ---
 
-## 6. API Design
+## 6. Data Storage and Schema
 
-### RESTful Endpoints
+### Cloudflare D1 (SQLite) Schema
 
-#### Recipes API
+**Articles Table** (`articles`)
+The central content repository.
+*   `id`: Primary Key
+*   `type`: 'recipe' | 'article'
+*   `recipe_json`: TEXT (JSON) - Stores structured recipe data (ingredients, steps).
+*   `faqs_json`: TEXT (JSON) - Stores FAQ arrays.
+*   `image_url`, `image_width`, `image_height`: Flat columns for zero-latency rendering.
+*   `is_online`: Visibility flag.
+*   `view_count`: Simple analytics counter.
 
-```
-GET /api/recipes
-  Query Parameters:
-    - slug: string (optional)
-    - category: string (optional)
-    - author: string (optional)
-    - tag: string (optional)
-    - limit: number (default: 12)
-    - page: number (default: 1)
-  
-  Response:
-    {
-      "success": true,
-      "data": [...],
-      "pagination": {
-        "page": 1,
-        "limit": 12,
-        "total": 100,
-        "totalPages": 9
-      }
-    }
-```
+**Categories Table** (`categories`)
+*   `slug`: Unique identifier (e.g., 'breakfast')
+*   `color`: Hex code for UI theming.
+*   `image_url`: Cover image for the category.
 
-#### Categories API
+**Pinterest Pins** (`pinterest_pins`)
+*   Links generated marketing assets to articles.
 
-```
-GET /api/categories
-  Query Parameters:
-    - slug: string (optional)
-  
-  Response:
-    {
-      "success": true,
-      "data": [...]
-    }
-```
-
-#### Authors API
-
-```
-GET /api/authors
-  Query Parameters:
-    - slug: string (optional)
-  
-  Response:
-    {
-      "success": true,
-      "data": [...]
-    }
-```
-
-### Error Handling
-
-All API endpoints follow a consistent error response format:
-
-```json
-{
-  "success": false,
-  "error": "Error message",
-  "code": "ERROR_CODE",
-  "details": {}
-}
-```
-
-### Rate Limiting
-
-Implemented via Cloudflare:
-- **Anonymous Users**: 100 requests/minute
-- **Authenticated Users**: 1000 requests/minute
-- **Admin Users**: Unlimited
+### Cloudflare R2
+*   **Path Structure**: `/images/{timestamp}-{slug}.webp`
+*   **CDN Integration**: Served directly via custom domain for caching.
 
 ---
 
-## 7. Security Architecture
+## 7. Performance Strategy
 
-### Multi-Layer Security
+### Core Web Vitals (CWV)
+1.  **LCP (Largest Contentful Paint)**:
+    *   Hero images utilize `fetchpriority="high"`.
+    *   Preloading of critical font assets.
+2.  **CLS (Cumulative Layout Shift)**:
+    *   **Hardcoded Dimensions**: Database stores image dimensions; HTML renders with exact `width/height`.
+    *   **Skeleton States**: React components use placeholder skeletons while hydrating.
+3.  **INP (Interaction to Next Paint)**:
+    *   **Global Data Injection**: Replaced heavy HTML data attributes with `window.STORIES_DATA` to reduce main-thread parsing costs.
 
-#### 1. Cloudflare WAF (Web Application Firewall)
-- OWASP Top 10 protection
-- Custom rule sets
-- Bot detection
-- IP reputation filtering
-
-#### 2. DDoS Protection
-- Automatic mitigation
-- Traffic analysis
-- Rate limiting
-- Challenge pages for suspicious traffic
-
-#### 3. Authentication & Authorization
-
-**Admin Dashboard:**
-```typescript
-// Middleware for protected routes
-export async function onRequest(context) {
-  const token = context.request.headers.get('Authorization');
-  
-  if (!token || !await verifyToken(token)) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-  
-  return context.next();
-}
-```
-
-**JWT Token Structure:**
-```json
-{
-  "sub": "user_id",
-  "role": "admin",
-  "exp": 1234567890,
-  "iat": 1234567890
-}
-```
-
-#### 4. Content Security Policy (CSP)
-
-```
-Content-Security-Policy: 
-  default-src 'self';
-  script-src 'self' 'unsafe-inline';
-  style-src 'self' 'unsafe-inline';
-  img-src 'self' data: https:;
-  font-src 'self';
-  connect-src 'self' https://api.freecipies.com;
-```
-
-#### 5. HTTPS Enforcement
-- Automatic HTTPS redirects
-- HSTS headers
-- TLS 1.3 minimum
+### Caching Layers
+*   **Browser**: `Cache-Control: public, max-age=3600` for lists.
+*   **CDN**: R2 assets cached at the edge for 1 year (`immutable`).
+*   **Database**: High-traffic queries (like "Popular Recipes") caches results in memory/KV (planned).
 
 ---
 
-## 8. Performance Optimization
+## 8. Deployment
 
-### Caching Strategy
-
-#### Edge Caching (Cloudflare CDN)
-```
-Static Assets (CSS, JS, Images):
-  Cache-Control: public, max-age=31536000, immutable
-
-API Responses:
-  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
-
-HTML Pages:
-  Cache-Control: public, max-age=300, stale-while-revalidate=3600
-```
-
-#### Browser Caching
-- Service Worker for offline support
-- Local Storage for user preferences
-- IndexedDB for offline recipe storage
-
-### Image Optimization
-
-1. **Cloudflare Images** (Optional):
-   - Automatic format conversion (WebP, AVIF)
-   - Responsive images
-   - Lazy loading
-
-2. **Sharp** (Build-time):
-   - Image compression
-   - Thumbnail generation
-   - Format conversion
-
-### Code Optimization
-
-- **Code Splitting**: Automatic via Vite
-- **Tree Shaking**: Remove unused code
-- **Minification**: CSS and JavaScript
-- **Critical CSS**: Inline above-the-fold styles
-
-### Core Web Vitals Targets
-
-- **LCP (Largest Contentful Paint)**: < 2.5s
-- **FID (First Input Delay)**: < 100ms
-- **CLS (Cumulative Layout Shift)**: < 0.1
-
----
-
-## 9. Deployment Strategy
-
-### Cloudflare Pages Deployment
-
-#### Automatic Deployment (Git Integration)
-
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy to Cloudflare Pages
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - run: pnpm install
-      - run: pnpm build
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: pages deploy dist
-```
-
-#### Manual Deployment
-
-```bash
-# Build the project
-pnpm build
-
-# Deploy to Cloudflare Pages
-wrangler pages deploy dist
-```
-
-### Environment Configuration
-
-```bash
-# Production
-ENVIRONMENT=production
-PUBLIC_API_URL=https://freecipies.com/api
-
-# Staging
-ENVIRONMENT=staging
-PUBLIC_API_URL=https://staging.freecipies.com/api
-
-# Development
-ENVIRONMENT=development
-PUBLIC_API_URL=http://localhost:4321/api
-```
-
-### Rollback Strategy
-
-1. **Automatic Rollback**: On build failure
-2. **Manual Rollback**: Via Cloudflare dashboard
-3. **Version Control**: Git-based rollback
-
----
-
-## 10. Admin Dashboard
-
-### Architecture
-
-```
-/admin
-├── /login          # Authentication
-├── /dashboard      # Overview
-├── /recipes        # Recipe management
-│   ├── /new        # Create recipe
-│   ├── /[id]/edit  # Edit recipe
-│   └── /[id]       # View recipe
-├── /categories     # Category management
-├── /authors        # Author management
-└── /settings       # Configuration
-```
-
-### Features
-
-1. **Recipe Management**
-   - WYSIWYG editor for content
-   - Image upload with optimization
-   - SEO metadata editor
-   - Preview before publish
-   - Schedule publishing
-
-2. **Category & Tag Management**
-   - Create/edit/delete categories
-   - Assign recipes to categories
-   - Tag management
-
-3. **Author Management**
-   - Author profiles
-   - Social media links
-   - Author bio and image
-
-4. **Analytics Dashboard**
-   - Page views
-   - Popular recipes
-   - User engagement metrics
-
-### Authentication Flow
-
-```
-1. User visits /admin
-2. Redirect to /admin/login
-3. User enters credentials
-4. Server validates with Cloudflare Access
-5. JWT token issued
-6. Token stored in httpOnly cookie
-7. Subsequent requests include token
-8. Middleware validates token
-9. Access granted/denied
-```
-
----
-
-## 11. Scalability Considerations
-
-### Horizontal Scaling
-
-- **Cloudflare Workers**: Automatically scales to handle traffic
-- **Edge Locations**: 300+ data centers globally
-- **No Cold Starts**: V8 isolates start in <1ms
-
-### Vertical Scaling
-
-- **KV Storage**: Unlimited keys, 25 MB per value
-- **D1 Database**: Up to 10 GB per database
-- **Workers CPU**: 50ms CPU time per request (can be increased)
-
-### Traffic Handling
-
-- **Concurrent Requests**: Unlimited (auto-scaling)
-- **Bandwidth**: Unlimited on Cloudflare
-- **Request Rate**: 100,000+ requests/second
-
-### Future Enhancements
-
-1. **Search Functionality**
-   - Algolia or Meilisearch integration
-   - Full-text search
-   - Faceted filtering
-
-2. **User Features**
-   - User accounts
-   - Recipe favorites
-   - Comments and ratings
-   - Recipe collections
-
-3. **Internationalization**
-   - Multi-language support
-   - Localized content
-   - Regional recipes
-
-4. **Mobile App**
-   - React Native app
-   - Offline recipe access
-   - Shopping list feature
-
----
-
-## Conclusion
-
-This architecture provides a robust, scalable, and secure foundation for the Freecipies blog platform. By leveraging Astro.js for the frontend and Cloudflare services for the backend, the platform achieves:
-
-- **Performance**: Sub-second page loads globally
-- **Scalability**: Automatic scaling to handle traffic spikes
-- **Security**: Multi-layer protection against threats
-- **Developer Experience**: Modern tooling and TypeScript
-- **Cost Efficiency**: Serverless pricing model
-
-The modular design allows for easy maintenance and future enhancements, while the separation of concerns ensures that frontend and backend can evolve independently.
+*   **Host**: Cloudflare Pages.
+*   **Build**: `pnpm build` (Astro static/hybrid build).
+*   **Database Migrations**: Drizzle Kit (`drizzle-kit push:sqlite`).
+*   **CI/CD**: Automatic deployment on git push.

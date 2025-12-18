@@ -45,7 +45,7 @@ try {
   }
 
   // The recipeJson field is already parsed by getArticleBySlug
-  recipeDetails = recipe.recipeJson;
+  recipeDetails = recipe.recipeJson || undefined;
 } catch (e: any) {
   console.error(`Error processing recipe for slug "${slug}":`, e);
   return new Response("An unexpected error occurred", { status: 500 });
@@ -62,10 +62,10 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
     title={pageTitle}
     description={pageDescription}
     type="recipe"
-    publishedTime={recipe.publishedAt}
+    publishedTime={recipe.publishedAt || undefined}
     author={{ name: recipe.authorName || "Freecipies Team" }}
     image={recipe.imageUrl || ""}
-    imageAlt={recipe.imageAlt}
+    imageAlt={recipe.imageAlt || undefined}
     recipe={recipeDetails
       ? {
           name: recipe.headline,

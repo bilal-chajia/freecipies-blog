@@ -66,7 +66,6 @@ const storiesWithPages = stories.map((story) => ({
                                 story.route || `/recipes/${story.slug}`
                             }
                             data-story-headline={story.headline}
-                            data-story-pages={JSON.stringify(story.storyPages)}
                         >
                             <div class="story-ring">
                                 <div class="story-image-wrapper">
@@ -74,6 +73,8 @@ const storiesWithPages = stories.map((story) => ({
                                         <img
                                             src={story.imageUrl}
                                             alt={story.headline}
+                                            width="80"
+                                            height="80"
                                             loading="lazy"
                                         />
                                     ) : (
@@ -92,44 +93,55 @@ const storiesWithPages = stories.map((story) => ({
     )
 }
 
+<script is:inline define:vars={{ storiesData: storiesWithPages }}>
+    // Pass data to client-side safely without bloating DOM
+    window.STORIES_DATA = storiesData;
+</script>
+
 <script is:inline>
     // Handle story item clicks - using is:inline to ensure it runs
     (function () {
         console.log("StoriesBar script initializing");
 
         function initStoryClicks() {
-            const storyItems = document.querySelectorAll("[data-story-pages]");
+            const storyItems = document.querySelectorAll(".story-item");
             console.log("Found story items:", storyItems.length);
 
-            storyItems.forEach((item, index) => {
+            storyItems.forEach((item) => {
                 item.addEventListener("click", (e) => {
                     e.preventDefault();
                     e.stopPropagation();
 
+                    const index = parseInt(
+                        item.getAttribute("data-story-index") || "0",
+                    );
                     console.log("Story item clicked:", index);
 
                     const route = item.getAttribute("data-story-route");
                     const slug = item.getAttribute("data-story-slug");
                     const headline = item.getAttribute("data-story-headline");
-                    const pagesJson = item.getAttribute("data-story-pages");
 
-                    console.log("Story data:", {
+                    // Get pages from global object instead of parsing DOM attribute
+                    const storyWithPages =
+                        window.STORIES_DATA && window.STORIES_DATA[index];
+                    const pages = storyWithPages
+                        ? storyWithPages.storyPages
+                        : [];
+
+                    console.log("Story data from global:", {
                         route,
                         slug,
                         headline,
-                        pagesJson: !!pagesJson,
+                        pagesFound: pages.length > 0,
                     });
 
-                    if (pagesJson) {
+                    if (pages.length > 0) {
                         try {
-                            const pages = JSON.parse(pagesJson);
                             const storyData = {
                                 route: route,
                                 slug: slug,
                                 headline: headline,
                             };
-
-                            console.log("Parsed data:", { storyData, pages });
 
                             // Check if openWebStory exists
                             if (typeof window.openWebStory === "function") {
@@ -141,7 +153,7 @@ const storiesWithPages = stories.map((story) => ({
                                 );
                             }
                         } catch (err) {
-                            console.error("Failed to parse story data:", err);
+                            console.error("Failed to open story:", err);
                         }
                     } else {
                         console.error("No story pages data found");
@@ -164,6 +176,7 @@ const storiesWithPages = stories.map((story) => ({
                 if (e.target.closest(".story-item")) return;
                 isDown = true;
                 slider.style.cursor = "grabbing";
+                slider.style.scrollBehavior = "auto"; // Disable smooth scroll for instant drag
                 startX = e.pageX - slider.offsetLeft;
                 scrollLeft = slider.scrollLeft;
             });
@@ -171,11 +184,13 @@ const storiesWithPages = stories.map((story) => ({
             slider.addEventListener("mouseleave", () => {
                 isDown = false;
                 slider.style.cursor = "grab";
+                slider.style.scrollBehavior = "smooth"; // Re-enable smooth scroll
             });
 
             slider.addEventListener("mouseup", () => {
                 isDown = false;
                 slider.style.cursor = "grab";
+                slider.style.scrollBehavior = "smooth"; // Re-enable smooth scroll
             });
 
             slider.addEventListener("mousemove", (e) => {
