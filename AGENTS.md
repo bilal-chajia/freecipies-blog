@@ -2,6 +2,21 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
+## Database Schema (Source of Truth)
+
+> **CRITICAL:** `schema-drizzle/schema.sql` is the **SINGLE SOURCE OF TRUTH** for the database schema.
+
+- **Source of truth:** `schema-drizzle/schema.sql`
+- **Documentation:** `schema-drizzle/DATABASE_SCHEMA.md`
+- **Drizzle types:** `src/lib/schema.ts` (generated from schema.sql)
+
+When modifying the database:
+1. Edit `schema-drizzle/schema.sql` first
+2. Update `DATABASE_SCHEMA.md` documentation
+3. Regenerate `src/lib/schema.ts` to match
+
+**Never edit `src/lib/schema.ts` directly** - it should always reflect `schema.sql`.
+
 ## Quick Reference
 
 ```bash
@@ -11,6 +26,7 @@ bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
+
 
 ## Landing the Plane (Session Completion)
 
