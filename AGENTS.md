@@ -19,12 +19,14 @@ When modifying the database:
 
 ## Quick Reference
 
+**Note:** `bd` is installed via Go. Full path: `C:\Users\Poste\go\bin\bd.exe`
+
 ```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
+C:\Users\Poste\go\bin\bd.exe ready              # Find available work
+C:\Users\Poste\go\bin\bd.exe show <id>          # View issue details
+C:\Users\Poste\go\bin\bd.exe update <id> --status in_progress  # Claim work
+C:\Users\Poste\go\bin\bd.exe close <id>         # Complete work
+C:\Users\Poste\go\bin\bd.exe sync               # Sync with git
 ```
 
 
