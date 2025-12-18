@@ -8,32 +8,91 @@
 -- 1. Data Integrity: Settings are backed up alongside content (Articles/Media).
 -- 2. Developer Experience: Unified query interface (Drizzle ORM) for all data.
 -- 3. Typing: Allows structured JSON storage for complex settings (e.g., Social Links).
+--
+-- COMMON KEYS (Pre-defined for reference):
+-- ┌─────────────────┬──────────────────────────────────────────────────────────────┐
+-- │ Key             │ Example Value Structure                                      │
+-- ├─────────────────┼──────────────────────────────────────────────────────────────┤
+-- │ site_info       │ {"name": "Freecipies", "tagline": "...", "logo": {...}}      │
+-- │ social_links    │ {"facebook": "...", "instagram": "...", "pinterest": "..."}  │
+-- │ seo_defaults    │ {"titleSuffix": " | Freecipies", "defaultOgImage": "..."}    │
+-- │ theme_config    │ {"primaryColor": "#ff6600", "darkMode": false}               │
+-- │ scripts         │ {"googleAnalytics": "G-XXX", "headerScripts": "..."}         │
+-- │ footer_config   │ {"copyright": "© 2025", "links": [...]}                      │
+-- │ newsletter      │ {"provider": "mailchimp", "listId": "...", "enabled": true}  │
+-- │ contact_info    │ {"email": "...", "address": "...", "phone": "..."}           │
+-- └─────────────────┴──────────────────────────────────────────────────────────────┘
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS site_settings (
     -- The unique identifier for the setting group.
-    -- Examples: 'general_info', 'social_links', 'theme_config', 'scripts'
+    -- Examples: 'site_info', 'social_links', 'theme_config', 'scripts'
+    -- CONSTRAINT: Use snake_case, lowercase (e.g., 'footer_config', NOT 'FooterConfig').
     key TEXT PRIMARY KEY,
 
     -- The configuration payload.
     -- IMPORTANT: This column stores JSON strings, not simple text.
     -- This allows nesting complex data without creating multiple columns.
-    -- Example: '{"facebook": "url", "twitter": "url"}'
+    -- Example: '{"facebook": "https://facebook.com/...", "twitter": "..."}'
+    -- VALIDATION: App layer should validate against expected schema per key.
     value TEXT NOT NULL, 
 
     -- Helper text for the Admin Panel UI.
     -- Displayed to the user to explain what this setting controls.
-    -- Example: "Manage links to your social media profiles footer."
+    -- Example: "Manage links to your social media profiles for the footer."
     description TEXT,
 
+    -- Grouping for the Admin Settings page.
+    -- Allows organizing settings into collapsible sections in the UI.
+    -- Common values: 'general', 'seo', 'social', 'theme', 'scripts', 'integrations'
+    category TEXT DEFAULT 'general',
+
+    -- Display order within a category.
+    -- Lower numbers appear first. Use increments of 10 for easy reordering.
+    -- Example: site_info=10, contact_info=20, social_links=30
+    sort_order INTEGER DEFAULT 0,
+
+    -- Type hint for the Admin UI editor.
+    -- Tells the frontend what kind of input to render.
+    -- OPTIONS:
+    --   'json'    = Full JSON editor (default, for complex objects)
+    --   'text'    = Simple text input
+    --   'number'  = Numeric input
+    --   'boolean' = Toggle switch
+    --   'image'   = Image picker (value stores media_id or URL)
+    --   'color'   = Color picker (value stores hex code)
+    --   'code'    = Code editor with syntax highlighting (for scripts)
+    type TEXT DEFAULT 'json',
+
     -- Timestamp for auditing changes.
+    -- Shows when this setting was last modified in the Admin Panel.
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- INDEX: Fast lookup by category for Admin Settings page sections.
+CREATE INDEX IF NOT EXISTS idx_site_settings_category 
+    ON site_settings(category, sort_order);
+
+-- TRIGGER: Auto-update timestamp on any change.
+CREATE TRIGGER IF NOT EXISTS update_site_settings_timestamp
+AFTER UPDATE ON site_settings
+BEGIN
+    UPDATE site_settings SET updated_at = CURRENT_TIMESTAMP WHERE key = NEW.key;
+END;
 
 
 -- ==================================================================================
 -- TABLE: MEDIA (Centralized Asset Library - Long Term Support)
+-- ==================================================================================
+-- Purpose: Central repository for all uploaded images with responsive variants.
+-- Strategy: SQL columns for searchable metadata + JSON for technical payloads.
+--
+-- DELETION SAFETY:
+--   When deleting a media row, the backend MUST:
+--   1. Read variants_json to extract r2_key for ALL variants (xs, sm, md, lg).
+--   2. Send DeleteObject commands to R2 for each variant.
+--   3. Only then delete (or soft-delete) the SQL row.
+--   This prevents "orphaned files" (ghost files) on R2 storage.
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS media (
@@ -44,62 +103,116 @@ CREATE TABLE IF NOT EXISTS media (
     -- Extracted from JSON to allow fast SQL filtering (WHERE name LIKE '%...%').
     
     -- Internal name for the editor (e.g., "Apple Pie Shoot 01").
+    -- Used in the Media Library search and file browser.
     name TEXT NOT NULL, 
     
     -- SEO / Accessibility Text. 
     -- Kept as a separate column to allow efficient full-text search.
+    -- Should describe the image content for screen readers.
     alt_text TEXT, 
     
-    -- [NEW] Visible Caption. 
+    -- Visible Caption. 
     -- Can be displayed below the image in articles.
+    -- Example: "Fresh apple pie cooling on a rustic wooden table"
     caption TEXT, 
 
-    -- [NEW] Legal / Copyright info. 
+    -- Legal / Copyright info. 
     -- Example: "© Photography by Marie Dupont" or "Source: Unsplash".
+    -- Displayed in image overlays or footers when attribution is required.
     credit TEXT,  
     
-    -- Filter helper (e.g., 'image/webp', 'image/gif').
+    -- Filter helper (e.g., 'image/webp', 'image/gif', 'video/mp4').
+    -- Used to filter Media Library by type.
     mime_type TEXT DEFAULT 'image/webp',
 
-    -- Optional human-readable ratio hint ("16:9", "4:5").
-    -- Used mainly for layout hints; precise sizes still come from variants_json.
-    -- Example values: "16:9", "4:5", "1:1"
-    -- Filled at upload time (e.g. from the main/original variant).
+    -- Optional human-readable ratio hint ("16:9", "4:5", "1:1").
+    -- Used for layout hints and space reservation before image loads.
+    -- Calculated from the largest variant (lg) dimensions at upload time.
     aspect_ratio TEXT,
+
+    -- Original file size in bytes (before compression/variants).
+    -- Used for admin display: "2.4 MB" and storage analytics.
+    -- Example: 2457600 (for a 2.4 MB file)
+    size_bytes INTEGER,
 
     -- 2. TECHNICAL PAYLOAD (The "Plumbing")
     -- ------------------------------------------------------------------
     -- Stores the references to the physical files on R2.
-    -- Read-only for the frontend.
+    -- Read-only for the frontend; managed by the upload pipeline.
+    --
+    -- BREAKPOINT STRATEGY (Width targets, height auto-calculated from aspect ratio):
+    -- ┌─────────┬────────┬─────────────────────────────────────────────────┐
+    -- │ Variant │ Width  │ Target Devices                                  │
+    -- ├─────────┼────────┼─────────────────────────────────────────────────┤
+    -- │ xs      │ 360px  │ Budget phones, 1x screens (iPhone SE = 375px)  │
+    -- │ sm      │ 720px  │ Phones 2x retina (360 × 2), small tablets      │
+    -- │ md      │ 1200px │ Tablets, laptops, standard desktop content     │
+    -- │ lg      │ 2048px │ 4K displays, MacBook Retina, iPad Pro          │
+    -- └─────────┴────────┴─────────────────────────────────────────────────┘
     --
     -- SCHEMA:
     -- {
     --   "variants": {
-    --     "xs": { "url": "...", "r2_key": "...", "width": 360,  "height": ... }, -- Mobile
-    --     "sm": { "url": "...", "r2_key": "...", "width": 720,  "height": ... }, -- Retina
-    --     "md": { "url": "...", "r2_key": "...", "width": 1200, "height": ... }, -- Desktop
-    --     "lg": { "url": "...", "r2_key": "...", "width": 2048, "height": ... }  -- 4K
+    --     "original": { "url": "...", "r2_key": "...", "width": 4000, "height": 3000 },  -- OPTIONAL
+    --     "xs": { "url": "https://...", "r2_key": "2025/03/image-xs.webp", "width": 360,  "height": 240 },
+    --     "sm": { "url": "https://...", "r2_key": "2025/03/image-sm.webp", "width": 720,  "height": 480 },
+    --     "md": { "url": "https://...", "r2_key": "2025/03/image-md.webp", "width": 1200, "height": 800 },
+    --     "lg": { "url": "https://...", "r2_key": "2025/03/image-lg.webp", "width": 2048, "height": 1365 }
     --   },
-    --   "placeholder": "data:image/jpeg;base64/..." (Blurhash/LQIP)
+    --   "placeholder": "data:image/jpeg;base64,/9j/4AAQ..." (Blurhash/LQIP, <1KB)
     -- }
+    --
+    -- VARIANT RULES:
+    --   - xs, sm, md, lg: REQUIRED. All 4 must be present.
+    --   - original: OPTIONAL. Only stored when source image > 2048px.
+    --               Used for Pin Creator templates and future re-processing.
+    --               Preserves full quality for high-res outputs.
+    --
+    -- AGENT RULE: When source < 2048px, use source as "lg" and skip "original".
     variants_json TEXT NOT NULL,
 
     -- 3. SMART DISPLAY (Design Control)
     -- ------------------------------------------------------------------
-    -- [NEW] Focal Point for CSS `object-position`.
+    -- Focal Point for CSS `object-position`.
     -- Prevents the subject from being cropped out on mobile screens.
     -- SCHEMA: {"x": 50, "y": 50} (Percentages 0-100).
+    -- DEFAULT: Center (50, 50). Updated via click-to-set in Admin UI.
     focal_point_json TEXT DEFAULT '{"x": 50, "y": 50}',
 
     -- 4. SYSTEM METADATA
     -- ------------------------------------------------------------------
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    -- When this media record was first created.
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- When metadata (name, alt_text, caption, etc.) was last updated.
+    -- Does NOT change when variants are regenerated.
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- Soft delete marker.
+    -- If NOT NULL, the media is considered deleted but files remain on R2
+    -- until a cleanup job runs. This allows for "undo" functionality.
+    -- LOGIC: Frontend queries should filter WHERE deleted_at IS NULL.
+    deleted_at DATETIME DEFAULT NULL
 );
 
 -- INDEXES
 -- Optimized for the Admin Media Library search bar.
 CREATE INDEX IF NOT EXISTS idx_media_search ON media(name, alt_text, credit);
+
+-- Optimized for "Most Recent" sorting in Media Library.
 CREATE INDEX IF NOT EXISTS idx_media_date ON media(created_at DESC);
+
+-- Filter out soft-deleted items efficiently.
+CREATE INDEX IF NOT EXISTS idx_media_active ON media(deleted_at);
+
+-- TRIGGER: Auto-update timestamp on any metadata change.
+CREATE TRIGGER IF NOT EXISTS update_media_timestamp
+AFTER UPDATE ON media
+BEGIN
+    UPDATE media SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+
 
 
 
@@ -114,92 +227,244 @@ CREATE INDEX IF NOT EXISTS idx_media_date ON media(created_at DESC);
 -- Strategy: Hybrid SQL/JSON.
 --           - SQL: High-frequency filtering (slug, parent, is_online).
 --           - JSON: Rich content payloads (images with variants, config).
+--
+-- FIELD REQUIREMENTS:
+-- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
+-- │ Field               │ Required │ Criteria / Notes                           │
+-- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
+-- │ slug                │ ✅ YES   │ URL-safe, unique, immutable after creation │
+-- │ label               │ ✅ YES   │ Menu display name, <20 chars               │
+-- │ parent_id           │ ❌ NO    │ Only for subcategories                     │
+-- │ headline            │ ❌ NO    │ Falls back to 'label' if NULL              │
+-- │ collection_title    │ ❌ NO    │ Falls back to 'headline' or 'label'        │
+-- │ short_description   │ ❌ NO    │ Recommended for SEO                        │
+-- │ images_json         │ ❌ NO    │ But recommended (thumbnail + cover)        │
+-- │ color               │ ❌ NO    │ Defaults to #ff6600ff                      │
+-- │ icon_svg            │ ❌ NO    │ Optional menu icon                         │
+-- │ is_featured         │ ❌ NO    │ Defaults to false                          │
+-- │ seo_json            │ ❌ NO    │ Overrides only (falls back to label/desc)  │
+-- │ config_json         │ ❌ NO    │ Defaults applied at app layer              │
+-- │ i18n_json           │ ❌ NO    │ Only for multilingual sites                │
+-- └─────────────────────┴──────────┴────────────────────────────────────────────┘
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS categories (
+    -- Surrogate primary key.
+    -- Used for relations (articles.category_id) and internal references.
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
+    -- =========================================================================
     -- 1. NAVIGATION & HIERARCHY
-    -- ------------------------------------------------------------------
-    -- URL identifier. Immutable. Lowercase, kebab-case. 
-    -- Regex: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+    -- =========================================================================
+
+    -- URL identifier for routing.
+    -- IMMUTABLE: Should never change after creation (breaks SEO/bookmarks).
+    -- FORMAT: Lowercase, kebab-case only.
+    -- REGEX: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+    -- EXAMPLES: "breakfast", "quick-meals", "gluten-free-desserts"
+    -- BAD: "Breakfast", "quick_meals", "gluten free"
     slug TEXT UNIQUE NOT NULL,
 
-    -- Internal/Menu label. Keep < 20 chars for UI fitness.
+    -- Display label for navigation menus, breadcrumbs, and sidebar.
+    -- CONSTRAINT: Keep under 30 characters for UI fitness.
+    -- EXAMPLES: "Breakfast", "Quick Meals", "Desserts"
     label TEXT NOT NULL,
 
-    -- Self-reference for nested menus (e.g., Recipes > Vegan > Dessert).
-    -- ON DELETE SET NULL ensures children don't vanish if parent is deleted.
+    -- Self-reference for hierarchical categories (Adjacency List Pattern).
+    -- Example tree: Recipes > Vegan > Dessert
+    -- NULL = Top-level category (no parent).
+    -- ON DELETE SET NULL: If parent is deleted, children become top-level.
+    -- DEPTH LIMIT: Recommend max 3 levels for UX (Menu > Submenu > Leaf).
     parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
 
-    -- 2. DISPLAY TEXT (Landing Page)
-    -- ------------------------------------------------------------------
-    -- H1 Page Title. Defaults to 'label' if NULL.
+    -- Pre-computed hierarchy depth for fast filtering.
+    -- 0 = Root/top-level category (no parent).
+    -- 1 = Direct child of a root category.
+    -- 2 = Grandchild (2 levels deep), etc.
+    -- UPDATED BY: App logic or trigger when parent_id changes.
+    -- USAGE: Fast queries like "WHERE depth <= 1" for main nav menus.
+    -- PERFORMANCE: Avoids expensive recursive CTE queries.
+    depth INTEGER DEFAULT 0,
+
+    -- =========================================================================
+    -- 2. DISPLAY TEXT (Landing Page Content)
+    -- =========================================================================
+
+    -- H1 page title for the category landing page.
+    -- FALLBACK: If NULL, use 'label' value.
+    -- SEO TIP: Can be longer/more descriptive than 'label'.
+    -- EXAMPLE: "Easy Breakfast Recipes for Busy Mornings"
     headline TEXT,
 
-    -- Header for the post grid (e.g., "Latest Recipes"). Critical for UI structure.
+    -- Header text above the post grid/list.
+    -- Provides context for the article collection.
+    -- FALLBACK: If NULL, use 'headline' or 'label'.
+    -- EXAMPLES: "Latest Breakfast Recipes", "Most Popular Vegan Dishes"
     collection_title TEXT,
 
-    -- Intro text displayed below the headline.
+    -- Intro paragraph displayed below the headline.
+    -- Used for SEO (meta description fallback) and user context.
+    -- RECOMMENDED: 160-225 characters for optimal SEO.
+    -- EXAMPLE: "Start your day right with our collection of quick and healthy breakfast recipes. ...."
     short_description TEXT,
 
-    -- 3. VISUALS (The Storefront Copy)
-    -- ------------------------------------------------------------------
+    -- =========================================================================
+    -- 3. VISUALS (Display-Ready Image Data)
+    -- =========================================================================
     -- Contains "Display-Ready" data mapped from the 'media' table.
-    -- DOES NOT contain administrative keys (r2_key).
+    -- SECURITY: Does NOT contain administrative keys (r2_key).
+    -- AGENT RULE: When selecting an image from Media Library, copy the full
+    --             variant set here for zero-join rendering.
     --
-    -- [spec: images_json]
+    -- SCHEMA (images_json):
     -- {
-    --   "thumbnail": {                     <-- Slot 1: Menu Icons / Cards
-    --     "media_id": 105,                 <-- Reference to Source Media ID
-    --     "alt": "Healthy Food Icon",      <-- Copied from Media (or overridden)
-    --     "placeholder": "...",            <-- Blurhash String
-    --     "variants": {                    <-- FULL SET (Copied from Media)
-    --        "xs": { "url": "...", "width": 360 },
-    --        "sm": { "url": "...", "width": 720 },
-    --        "md": { "url": "...", "width": 1200 },
-    --        "lg": { "url": "...", "width": 2048 }
+    --   "thumbnail": {                     <-- Slot 1: Menu Icons / Category Cards
+    --     "media_id": 105,                 <-- Reference to source Media ID
+    --     "alt": "Healthy breakfast bowl", <-- Copied from Media (or overridden)
+    --     "caption": "...",                <-- Optional visible caption
+    --     "credit": "© Photographer",      <-- Optional attribution
+    --     "placeholder": "data:image/...", <-- Blurhash/LQIP string (<1KB)
+    --     "focal_point": { "x": 50, "y": 30 },  <-- Optional override for cropping
+    --     "aspectRatio": "16:9",           <-- Layout hint for space reservation
+    --     "variants": {                    <-- FULL SET copied from Media
+    --        "original": { "url": "...", "width": 4000, "height": 3000 },  <-- OPTIONAL
+    --        "lg": { "url": "...", "width": 2048, "height": 1365 },
+    --        "md": { "url": "...", "width": 1200, "height": 800 },
+    --        "sm": { "url": "...", "width": 720, "height": 480 },
+    --        "xs": { "url": "...", "width": 360, "height": 240 }
     --     }
     --   },
-    --   "cover": {                         <-- Slot 2: Page Hero Background
+    --   "cover": {                         <-- Slot 2: Hero Background Image
     --     "media_id": 202,
-    --     "variants": { "xs": {...}, "sm": {...}, "md": {...}, "lg": {...} }
+    --     "alt": "...",
+    --     "placeholder": "...",
+    --     "focal_point": { "x": 50, "y": 50 },
+    --     "aspectRatio": "16:9",
+    --     "variants": {
+    --        "original": { "url": "...", "width": 4000, "height": 2250 },
+    --        "lg": { "url": "...", "width": 2048, "height": 1152 },
+    --        "md": { "url": "...", "width": 1200, "height": 675 },
+    --        "sm": { "url": "...", "width": 720, "height": 405 },
+    --        "xs": { "url": "...", "width": 360, "height": 203 }
+    --     }
     --   }
     -- }
+    --
+    -- VARIANT STRUCTURE:
+    --   Each variant contains:
+    --   - url (string, REQUIRED): Public CDN URL
+    --   - width (integer, REQUIRED): Width in pixels
+    --   - height (integer, REQUIRED): Height in pixels (for CLS prevention)
+    --
+    -- VARIANT RULES:
+    --   - xs, sm, md, lg: Always present (copied from Media).
+    --   - original: Only present if source image was > 2048px.
+    --               Used for Pin Creator templates and high-quality exports.
+    --
+    -- FUTURE FIELDS (Reserved for later):
+    --   - format: "webp" | "avif" | "jpeg" (for multi-format serving)
+    --   - avif: { "url": "...", ... } (alternative AVIF variants)
     images_json TEXT DEFAULT '{}',
 
+    -- =========================================================================
     -- 4. LOGIC & THEME
-    -- ------------------------------------------------------------------
-    -- UI Theme Color. Valid HEX format (e.g., #ff6600ff).
+    -- =========================================================================
+
+    -- UI theme color for category badges, borders, and accents.
+    -- FORMAT: 8-character HEX with alpha (e.g., #ff6600ff).
+    -- USAGE: CSS variables, category pills, hover states.
+    -- DEFAULT: Orange (#ff6600ff).
     color TEXT DEFAULT '#ff6600ff',
 
-    -- "Featured" flag. 1 = Pin to Homepage/Sidebar. 0 = Standard.
+    -- Raw SVG code for menu icons and category badges.
+    -- USAGE: Navigation menus, category cards, breadcrumbs, mobile tabs.
+    -- FORMAT: Valid SVG with viewBox attribute.
+    -- EXAMPLE: '<svg viewBox="0 0 24 24"><path d="M12 2L..."/></svg>'
+    -- SECURITY: Must be sanitized (no <script>, no event handlers like onclick).
+    -- SIZE LIMIT: Keep under 2KB. Use path-only icons, no embedded images.
+    icon_svg TEXT,
+
+    -- Featured flag for homepage and sidebar widgets.
+    -- 1 = Display in "Featured Categories" section.
+    -- 0 = Standard category (default).
+    -- LIMIT: Recommend max 4-6 featured categories for UX.
     is_featured BOOLEAN DEFAULT 0,
 
+    -- =========================================================================
     -- 5. JSON CONFIG CONTAINERS
-    -- ------------------------------------------------------------------
-    -- [spec: seo_json]
-    -- { "metaTitle": "...", "metaDescription": "...", "noIndex": false }
+    -- =========================================================================
+
+    -- SEO overrides for the category landing page.
+    -- FALLBACK: If fields are NULL, app layer uses headline/short_description.
+    -- SCHEMA (seo_json):
+    -- {
+    --   "metaTitle": "Best Breakfast Recipes | Freecipies",  <-- <title> tag
+    --   "metaDescription": "Discover 100+ easy breakfast...", <-- <meta name="description">
+    --   "noIndex": false,                  <-- true = hide from search engines
+    --   "canonical": null,                 <-- Override canonical URL if needed
+    --   "ogImage": "https://...",          <-- Social share image (Facebook/Twitter)
+    --   "ogTitle": null,                   <-- Override OG title (falls back to metaTitle)
+    --   "ogDescription": null,             <-- Override OG description
+    --   "twitterCard": "summary_large_image",  <-- "summary" | "summary_large_image"
+    --   "robots": null                     <-- Custom robots: "nofollow,noarchive"
+    -- }
     seo_json TEXT DEFAULT '{}',
 
-    -- [spec: config_json]
-    -- { "postsPerPage": 12, "layoutMode": "grid", "showSidebar": true }
+    -- Layout and behavior configuration for the category page.
+    -- SCHEMA (config_json):
+    -- {
+    --   "postsPerPage": 12,                <-- Pagination limit
+    --   "layoutMode": "grid",              <-- "grid" | "list" | "masonry"
+    --   "cardStyle": "full",               <-- "compact" | "full" | "minimal"
+    --   "showSidebar": true,               <-- Show/hide sidebar on landing
+    --   "showFilters": true,               <-- Show tag filter toggles
+    --   "showBreadcrumb": true,            <-- Show breadcrumb navigation
+    --   "showPagination": true,            <-- Show pagination controls
+    --   "sortBy": "publishedAt",           <-- Default sort: "publishedAt" | "title" | "viewCount"
+    --   "sortOrder": "desc",               <-- "asc" | "desc"
+    --   "headerStyle": "hero"              <-- "hero" | "minimal" | "none"
+    -- }
     config_json TEXT DEFAULT '{}',
 
-    -- [spec: i18n_json]
-    -- { "fr": { "label": "Recettes", "headline": "..." }, "es": { ... } }
+    -- Internationalization overrides for multilingual sites.
+    -- SCHEMA (i18n_json):
+    -- {
+    --   "fr": { "label": "Petit-déjeuner", "headline": "Recettes du matin" },
+    --   "es": { "label": "Desayuno", "headline": "Recetas de desayuno" }
+    -- }
+    -- USAGE: App layer checks user locale, falls back to base fields.
     i18n_json TEXT DEFAULT '{}',
 
+    -- =========================================================================
     -- 6. SYSTEM & METRICS
-    -- ------------------------------------------------------------------
-    sort_order INTEGER DEFAULT 0,       -- 0 = First, 10 = Last
-    is_online BOOLEAN DEFAULT 0,        -- 0 = Draft, 1 = Published
-    cached_post_count INTEGER DEFAULT 0, -- Background job updates this
+    -- =========================================================================
 
+    -- Display order for menus and navigation.
+    -- LOGIC: Lower numbers appear first.
+    -- TIP: Use increments of 10 (10, 20, 30) for easy reordering.
+    sort_order INTEGER DEFAULT 0,
+
+    -- Visibility toggle.
+    -- 0 = Draft (hidden from public, visible in Admin).
+    -- 1 = Published (visible to all users).
+    is_online BOOLEAN DEFAULT 0,
+
+    -- Denormalized count of published articles in this category.
+    -- UPDATED BY: Background job or trigger when articles change.
+    -- USAGE: Display "42 recipes" badge on category cards.
+    cached_post_count INTEGER DEFAULT 0,
+
+    -- Record creation timestamp (UTC).
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- Last modification timestamp (UTC).
+    -- Auto-updated by trigger on any column change.
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     
-    -- Soft Deletes: If NOT NULL, consider record deleted.
+    -- Soft delete marker.
+    -- NULL = Active record.
+    -- NOT NULL = Logically deleted (hidden from queries, kept for recovery).
+    -- AGENT RULE: All queries should include WHERE deleted_at IS NULL.
     deleted_at DATETIME DEFAULT NULL
 );
 
@@ -219,6 +484,7 @@ CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);             
 CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories(parent_id);          -- Hierarchy
 CREATE INDEX IF NOT EXISTS idx_categories_display ON categories(is_online, sort_order); -- Menus
 CREATE INDEX IF NOT EXISTS idx_categories_featured ON categories(is_featured);      -- Home Page Widgets
+CREATE INDEX IF NOT EXISTS idx_categories_active ON categories(deleted_at);         -- Soft delete filter
 
 
 
@@ -230,165 +496,196 @@ CREATE INDEX IF NOT EXISTS idx_categories_featured ON categories(is_featured);  
 -- Strategy: Hybrid SQL/JSON.
 --           - SQL: Identity, role-based filtering, and high-level display info.
 --           - JSON: Rich assets (images, bio) mapped from the Media Library.
+--
+-- FIELD REQUIREMENTS:
+-- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
+-- │ Field               │ Required │ Criteria / Notes                           │
+-- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
+-- │ slug                │ ✅ YES   │ URL-safe, unique, immutable after creation │
+-- │ name                │ ✅ YES   │ Public display name                        │
+-- │ email               │ ✅ YES   │ Unique, for admin/auth                     │
+-- │ job_title           │ ❌ NO    │ Shown on article cards                     │
+-- │ role                │ ❌ NO    │ Defaults to 'guest'                        │
+-- │ headline            │ ❌ NO    │ Falls back to name                         │
+-- │ subtitle            │ ❌ NO    │ Optional tagline                           │
+-- │ short_description   │ ❌ NO    │ Falls back to bio_json.short               │
+-- │ excerpt             │ ❌ NO    │ Newsletter teaser                          │
+-- │ introduction        │ ❌ NO    │ Hero copy for profile page                 │
+-- │ images_json         │ ❌ NO    │ But recommended (avatar + cover)           │
+-- │ bio_json            │ ❌ NO    │ Bio text + social links                    │
+-- │ seo_json            │ ❌ NO    │ Overrides only                             │
+-- └─────────────────────┴──────────┴────────────────────────────────────────────┘
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS authors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
+    -- =========================================================================
     -- 1. IDENTITY & ROUTING
-    -- ------------------------------------------------------------------
-    -- URL identifier. Immutable. Lowercase, kebab-case. 
-    -- Regex: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+    -- =========================================================================
+
+    -- URL identifier for routing.
+    -- IMMUTABLE: Should never change after creation (breaks SEO/bookmarks).
+    -- FORMAT: Lowercase, kebab-case only.
+    -- REGEX: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+    -- EXAMPLES: "jane-doe", "chef-john", "guest-contributor-2024"
     slug TEXT UNIQUE NOT NULL,
 
-    -- Public Display Name (e.g., "Jane Doe").
-    -- VALIDATION: Must not be empty.
+    -- Public display name shown on article bylines and profile page.
+    -- EXAMPLES: "Jane Doe", "Chef John", "The Freecipies Team"
     name TEXT NOT NULL,
 
-    -- Internal Contact. MUST be unique to prevent duplicate accounts.
-    -- LOGIC: Used for admin authentication or Gravatar fallbacks.
+    -- Internal contact email (unique per author).
+    -- USAGE: Admin authentication, Gravatar fallback, notifications.
+    -- SECURITY: Not exposed publicly unless bio_json contains it.
     email TEXT UNIQUE NOT NULL,
 
-    -- 2. DISPLAY METADATA (Top-Level)
-    -- ------------------------------------------------------------------
-    -- Shown on Article Cards (e.g., "Senior Editor", "Guest Contributor").
+    -- =========================================================================
+    -- 2. DISPLAY METADATA (Profile & Cards)
+    -- =========================================================================
+
+    -- Job title/role shown on article cards and profile page.
+    -- EXAMPLES: "Senior Editor", "Guest Contributor", "Founder & Chef"
     job_title TEXT,
 
-    -- Used for Team Page filtering/sorting.
-    -- OPTIONS: 'guest', 'staff', 'editor', 'admin'.
-    -- DEFAULT: 'guest' (Safety precaution).
+    -- Internal role for permissions and filtering.
+    -- OPTIONS: 'guest', 'staff', 'editor', 'admin'
+    -- DEFAULT: 'guest' (safety precaution for new authors)
+    -- USAGE: Team page filtering, admin permissions.
     role TEXT DEFAULT 'guest',
 
-    -- 3. DISPLAY METADATA (SOURCE OF TRUTH FOR TITLE & DESCRIPTION)
-    -- Main H1 for the article page (Recipe name if type='recipe').
-    headline TEXT NOT NULL,
-    -- Optional H2-style subheading near the headline.
+    -- Main H1 for the author profile page.
+    -- FALLBACK: If NULL, use 'name' value.
+    -- EXAMPLE: "Meet Jane Doe, Our Senior Food Editor"
+    headline TEXT,
+
+    -- Optional H2-style subheading/tagline.
+    -- EXAMPLE: "Passionate about healthy Mediterranean cuisine"
     subtitle TEXT,
-    -- Primary description used for Cards, Listing pages, and fallback SEO meta.
-    short_description TEXT NOT NULL,
-    -- Slightly longer teaser for Blog index pages and Newsletter intros.
+
+    -- Primary description for cards and listing pages.
+    -- FALLBACK: If NULL, use bio_json.short.
+    -- RECOMMENDED: 100-160 characters.
+    short_description TEXT,
+
+    -- Longer teaser for blog index and newsletter intros.
+    -- EXAMPLE: "Jane has been writing about food for over 10 years..."
     excerpt TEXT,
-    -- Hero / "chapeau" copy near the top of the article for context/storytelling.
+
+    -- Hero/chapeau copy for the top of the profile page.
+    -- Can include markdown for rich formatting.
     introduction TEXT,
 
-    -- [spec: images_json]
-    -- [
-    --   -- Example image slot JSON (for images_json in articles/categories/authors)
--- {
---   -- Slot key describing WHERE this image is used in the layout.
---   -- Common values: "featuredImage", "hero", "thumbnail", "stepImage".
---   "slot": "featuredImage",
---
---   -- Reference to the source asset in the `media` table.
---   -- Used to re-hydrate or update from the central Media Library.
---   "media_id": 105,
---
---   -- Accessible alt text for screen readers and SEO.
---   -- Prefer a concise, descriptive sentence over keyword stuffing.
---   "alt": "Accessible alt text",
---
---   -- Optional visible caption shown under the image on the page.
---   -- Can override the generic `media.caption` for this specific usage.
---   "caption": "Lemon blueberry biscuits on a cooling rack",
---
---   -- Optional credit / attribution line.
---   -- Example: "© Jane Doe Photography" or "Source: Unsplash".
---   "credit": "© Jane Doe Photography",
---
---   -- Low-quality image placeholder (LQIP / blurhash / Base64).
---   -- Used for progressive loading before high-res variants load.
---   "placeholder": "...",
---
---   -- Optional focal point override for this specific usage.
---   -- Percentages in the 0–100 range used for CSS `object-position`
---   -- or for smart cropping in the front-end.
---   "focal_point": { "x": 50, "y": 40 },
---
---   -- Optional aspect ratio hint for layout decisions.
---   -- Examples: "16:9", "4:5". Helps reserve correct space before image loads.
---   "aspectRatio": "16:9",
---
---   -- Responsive image variants copied from `media.variants_json`.
---   -- These should be fully display-ready URLs and dimensions.
---   "variants": {
---     -- Extra-small: mobile cards / small thumbnails.
---     "xs": { "src": "...", "width": 320,  "height": ... },
---
---     -- Small: retina mobile or small inline images.
---     "sm": { "src": "...", "width": 640,  "height": ... },
---
---     -- Medium: standard desktop content width.
---     "md": { "src": "...", "width": 1024, "height": ... },
---
---     -- Large: hero sections / full-width banners.
---     "lg": { "src": "...", "width": 1600, "height": ... }
---   }
--- },
---   {
---   "slot": "mainContentImages",
---   "items": [
---     {
---       "media_id": 123,       -- OPTIONAL: link back to media table
---   "variants": {
---     "xs": { "src": "...", "width": 320,  "height": ... },
---     "sm": { "src": "...", "width": 640,  "height": ... },
---     "md": { "src": "...", "width": 1024, "height": ... },
---     "lg": { "src": "...", "width": 1600, "height": ... }
---   }
---       "alt": "...",          -- accessible description
---       "caption": "...",      -- optional visible caption
---
---       "credit": "© Jane Doe",-- OPTIONAL: per-image credit
---       "focal_point": {       -- OPTIONAL: override default focal point
---         "x": 50,
---         "y": 50
---       },
---       "role": "process"      -- OPTIONAL: "process","hero-detail","step"
---     }
---   ]
--- }
-    -- ]
-    images_json TEXT DEFAULT '[]',
-
-    -- 4. BIOGRAPHY & SOCIALS
-    -- ------------------------------------------------------------------
-    -- [spec: bio_json]
+    -- =========================================================================
+    -- 3. VISUALS (Display-Ready Image Data)
+    -- =========================================================================
+    -- Standardized format matching categories table.
+    --
+    -- SCHEMA (images_json):
     -- {
-    --   "short": "Jane writes about tech...",
-    --   "long": "## About Jane...",
-    --   "socials": [                                 <-- CHANGED TO ARRAY
-    --      { 
-    --        "network": "twitter",                   -- Icon Key (slug)
-    --        "url": "https://x.com/jane",            -- The Link
-    --        "label": "@janedoe"                     -- (Optional) Display Text
-    --      },
-    --      { 
-    --        "network": "custom", 
-    --        "url": "https://jane.blog", 
-    --        "label": "My Personal Blog" 
-    --      }
+    --   "avatar": {                        <-- Slot 1: Profile photos, byline
+    --     "media_id": 105,
+    --     "alt": "Jane Doe headshot",
+    --     "placeholder": "data:image/...",
+    --     "aspectRatio": "1:1",            <-- Square for avatars
+    --     "variants": {
+    --        "original": { "url": "...", "width": 800, "height": 800 },
+    --        "lg": { "url": "...", "width": 400, "height": 400 },
+    --        "md": { "url": "...", "width": 200, "height": 200 },
+    --        "sm": { "url": "...", "width": 100, "height": 100 },
+    --        "xs": { "url": "...", "width": 50, "height": 50 }
+    --     }
+    --   },
+    --   "cover": {                         <-- Slot 2: Profile page hero
+    --     "media_id": 202,
+    --     "alt": "Jane in her kitchen",
+    --     "placeholder": "...",
+    --     "aspectRatio": "16:9",
+    --     "variants": {
+    --        "lg": { "url": "...", "width": 2048, "height": 1152 },
+    --        "md": { "url": "...", "width": 1200, "height": 675 },
+    --        "sm": { "url": "...", "width": 720, "height": 405 },
+    --        "xs": { "url": "...", "width": 360, "height": 203 }
+    --     }
+    --   }
+    -- }
+    --
+    -- BREAKPOINT NOTES:
+    --   AVATAR: Uses smaller widths (50, 100, 200, 400) instead of standard
+    --           because avatars display at 32-120px typically (bylines, comments).
+    --           Saves R2 storage. Original (800px) kept for profile page.
+    --   COVER:  Uses standard breakpoints (360, 720, 1200, 2048) for hero sections.
+    images_json TEXT DEFAULT '{}',
+
+    -- =========================================================================
+    -- 4. BIOGRAPHY & SOCIALS
+    -- =========================================================================
+    -- SCHEMA (bio_json):
+    -- {
+    --   "short": "Jane writes about healthy Mediterranean recipes...",
+    --   "long": "## About Jane\n\nJane has been cooking since...",  <-- Markdown
+    --   "socials": [
+    --     { "network": "twitter", "url": "https://x.com/jane", "label": "@janedoe" },
+    --     { "network": "instagram", "url": "https://instagram.com/jane" },
+    --     { "network": "youtube", "url": "https://youtube.com/@jane" },
+    --     { "network": "website", "url": "https://jane.blog", "label": "My Blog" }
     --   ]
     -- }
+    -- NETWORK OPTIONS: twitter, instagram, facebook, youtube, pinterest, 
+    --                  tiktok, linkedin, website, email, custom
     bio_json TEXT DEFAULT '{}',
 
-    -- 5. CONFIGURATION
-    -- ------------------------------------------------------------------
-    -- SEO Overrides for the Author Profile Page.
-    -- [spec: seo_json]
-    -- { "metaTitle": "...", "metaDescription": "...", "noIndex": false }
+    -- =========================================================================
+    -- 5. SEO CONFIGURATION
+    -- =========================================================================
+    -- SCHEMA (seo_json):
+    -- {
+    --   "metaTitle": "Jane Doe - Senior Food Editor | Freecipies",
+    --   "metaDescription": "Meet Jane Doe, our senior editor specializing in...",
+    --   "noIndex": false,
+    --   "canonical": null,
+    --   "ogImage": "https://...",          <-- Social share image
+    --   "ogTitle": null,                   <-- Override OG title
+    --   "ogDescription": null,             <-- Override OG description
+    --   "twitterCard": "summary_large_image"
+    -- }
     seo_json TEXT DEFAULT '{}',
 
-    -- 6. SYSTEM
-    -- ------------------------------------------------------------------
-    -- Visibility Toggle. 0 = Hidden/Draft, 1 = Public Profile.
+    -- =========================================================================
+    -- 6. SYSTEM & METRICS
+    -- =========================================================================
+
+    -- Visibility toggle.
+    -- 0 = Hidden/Draft (not shown on public pages).
+    -- 1 = Published (visible on team page, bylines).
     is_online BOOLEAN DEFAULT 0,
 
+    -- Featured flag for homepage "Featured Authors" section.
+    -- 1 = Display in featured author widgets.
+    -- 0 = Standard author (default).
+    is_featured BOOLEAN DEFAULT 0,
+
+    -- Display order for team page.
+    -- LOGIC: Lower numbers appear first.
+    -- TIP: Use increments of 10 (10, 20, 30) for easy reordering.
+    sort_order INTEGER DEFAULT 0,
+
+    -- Denormalized count of published articles by this author.
+    -- UPDATED BY: Background job or trigger when articles change.
+    -- USAGE: Display "42 articles by Jane" on profile cards.
+    cached_post_count INTEGER DEFAULT 0,
+
+    -- Record creation timestamp (UTC).
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- Last modification timestamp (UTC).
+    -- Auto-updated by trigger on any column change.
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
-    -- Soft Deletes.
+    -- Soft delete marker.
     -- CRITICAL: Never hard delete an author who has published posts.
-    -- LOGIC: If NOT NULL, author is "archived" but posts remain linked.
+    -- If NOT NULL, author is "archived" but posts remain linked.
+    -- LOGIC: Show "Author no longer active" on their posts.
     deleted_at DATETIME DEFAULT NULL
 );
 
@@ -407,6 +704,9 @@ END;
 CREATE INDEX IF NOT EXISTS idx_authors_slug ON authors(slug);     -- Routing
 CREATE INDEX IF NOT EXISTS idx_authors_role ON authors(role);     -- Team Page Filtering
 CREATE INDEX IF NOT EXISTS idx_authors_email ON authors(email);   -- Admin Lookups
+CREATE INDEX IF NOT EXISTS idx_authors_featured ON authors(is_featured);  -- Featured Authors Widget
+CREATE INDEX IF NOT EXISTS idx_authors_display ON authors(is_online, sort_order);  -- Team Page
+CREATE INDEX IF NOT EXISTS idx_authors_active ON authors(deleted_at);  -- Soft delete filter
 
 
 
@@ -421,59 +721,102 @@ CREATE INDEX IF NOT EXISTS idx_authors_email ON authors(email);   -- Admin Looku
 -- STRATEGY: "Hybrid SQL/JSON"
 --   1. SQL Columns: used for Identity, Sorting (Popularity), and Autocomplete.
 --   2. JSON Columns: used for flexible Grouping and visual Customization (SVG).
+--
+-- FIELD REQUIREMENTS:
+-- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
+-- │ Field               │ Required │ Criteria / Notes                           │
+-- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
+-- │ slug                │ ✅ YES   │ URL-safe, unique, kebab-case               │
+-- │ label               │ ✅ YES   │ Display text for buttons/badges            │
+-- │ description         │ ❌ NO    │ SEO/tooltip text                           │
+-- │ filter_groups_json  │ ❌ NO    │ Defaults to empty array []                 │
+-- │ style_json          │ ❌ NO    │ SVG icon, color, variant                   │
+-- └─────────────────────┴──────────┴────────────────────────────────────────────┘
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS tags (
-    -- ------------------------------------------------------------------
-    -- 1. IDENTITY & ROUTING
-    -- ------------------------------------------------------------------
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    -- URL Identifier. 
-    -- CONSTRAINT: Lowercase, kebab-case (e.g., 'gluten-free').
-    -- USAGE: Used in URL query params (e.g., ?filters=gluten-free).
+    -- =========================================================================
+    -- 1. IDENTITY & ROUTING
+    -- =========================================================================
+
+    -- URL identifier for routing and query params.
+    -- FORMAT: Lowercase, kebab-case only.
+    -- REGEX: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+    -- EXAMPLES: "gluten-free", "under-30-minutes", "vegetarian"
+    -- USAGE: /tags/gluten-free or ?filters=gluten-free,vegetarian
     slug TEXT UNIQUE NOT NULL,
 
-    -- Display Label.
-    -- USAGE: The text shown on the button (e.g., "Gluten Free").
+    -- Display label shown on tag buttons, badges, and filters.
+    -- EXAMPLES: "Gluten Free", "Under 30 Minutes", "Vegetarian"
+    -- CONSTRAINT: Keep under 25 characters for UI fitness.
     label TEXT NOT NULL,
 
-    -- ------------------------------------------------------------------
+    -- Optional description for SEO and tooltips.
+    -- USAGE: Meta description for /tags/slug pages, hover tooltips.
+    -- RECOMMENDED: 100-160 characters for optimal SEO.
+    -- EXAMPLE: "Recipes free from gluten, perfect for celiac-friendly diets."
+    description TEXT,
+
+    -- =========================================================================
     -- 2. FILTER LOGIC (Multi-Grouping)
-    -- ------------------------------------------------------------------
+    -- =========================================================================
     -- Defines which "Sections" this tag appears in within the UI filter menu.
-    -- Allows a single tag to belong to multiple contexts.
+    -- Allows a single tag to belong to multiple filter contexts.
     --
-    -- [SPECIFICATION: filter_groups_json]
-    -- TYPE: JSON Array of Strings.
-    -- EXAMPLE: ["Diet", "Lifestyle", "Popular"]
+    -- SCHEMA (filter_groups_json):
+    -- ["Diet", "Lifestyle", "Popular"]
+    --
+    -- COMMON GROUPS:
+    --   - "Diet": Gluten Free, Vegan, Keto, Dairy Free
+    --   - "Meal": Breakfast, Lunch, Dinner, Snack
+    --   - "Time": Under 15 Min, Under 30 Min, Under 1 Hour
+    --   - "Difficulty": Easy, Medium, Advanced
+    --   - "Occasion": Holiday, Party, Weeknight
+    --
     -- AGENT RULE: Always initialize as '[]' (Empty Array). Never NULL.
     filter_groups_json TEXT DEFAULT '[]',
 
-    -- ------------------------------------------------------------------
+    -- =========================================================================
     -- 3. VISUAL STYLING (Design System)
-    -- ------------------------------------------------------------------
+    -- =========================================================================
     -- Stores visual properties including RAW SVG code for instant rendering.
     --
-    -- [SPECIFICATION: style_json]
+    -- SCHEMA (style_json):
     -- {
-    --   "svg_code": "<svg viewBox='0 0 24 24'><path d='...'/></svg>", -- Raw Sanitized SVG
-    --   "color": "#10b981",       -- Hex Color for Badge Background/Text
-    --   "variant": "outline"      -- UI Variant: 'solid' | 'outline' | 'ghost'
+    --   "svg_code": "<svg viewBox='0 0 24 24'><path d='...'/></svg>",
+    --   "color": "#10b981",       <-- Hex color for badge background/text
+    --   "variant": "outline"      <-- UI variant: 'solid' | 'outline' | 'ghost'
     -- }
-    -- AGENT RULE: Ensure 'svg_code' is sanitized (No <script> tags) and has a viewBox.
+    --
+    -- SVG RULES:
+    --   - Must be sanitized (no <script> tags, no event handlers)
+    --   - Must have viewBox attribute
+    --   - Keep under 2KB for performance
     style_json TEXT DEFAULT '{}',
 
-    -- ------------------------------------------------------------------
+    -- =========================================================================
     -- 4. SYSTEM & METRICS
-    -- ------------------------------------------------------------------
-    -- Metric: Number of active posts using this tag.
-    -- USAGE: Critical for sorting the "Tag Cloud" (Most popular tags first).
-    -- LOGIC: Updated via background job or trigger on the posts_tags relation table.
+    -- =========================================================================
+
+    -- Denormalized count of published articles using this tag.
+    -- USAGE: Tag cloud sorting (most popular first), badge display.
+    -- UPDATED BY: Background job or trigger on articles_to_tags changes.
     cached_post_count INTEGER DEFAULT 0,
 
+    -- Record creation timestamp (UTC).
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+
+    -- Last modification timestamp (UTC).
+    -- Auto-updated by trigger on any column change.
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- Soft delete marker.
+    -- NULL = Active tag.
+    -- NOT NULL = Logically deleted (hidden from filters, kept for history).
+    -- AGENT RULE: All queries should include WHERE deleted_at IS NULL.
+    deleted_at DATETIME DEFAULT NULL
 );
 
 -- ==================================================================================
@@ -499,6 +842,10 @@ CREATE INDEX IF NOT EXISTS idx_tags_popular ON tags(cached_post_count DESC);
 -- INDEX: Admin Autocomplete
 -- PURPOSE: Makes the Admin UI snappy when searching for existing tags by name.
 CREATE INDEX IF NOT EXISTS idx_tags_label ON tags(label);
+
+-- INDEX: Soft Delete Filter
+-- PURPOSE: Efficiently filter out deleted tags from queries.
+CREATE INDEX IF NOT EXISTS idx_tags_active ON tags(deleted_at);
 
 -- NOTE ON FILTERING:
 -- We do NOT index 'filter_groups_json' because SQLite cannot efficiently index JSON arrays.
@@ -1273,4 +1620,57 @@ CREATE TABLE IF NOT EXISTS pin_templates (
     is_active BOOLEAN DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+
+-- =====================================================================
+-- TABLE: redirects
+-- PURPOSE:
+--   - Manage 301/302 redirects for SEO and broken link handling.
+--   - Essential for preserving link equity when URLs change.
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS redirects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    from_path TEXT UNIQUE NOT NULL,
+    -- The old/source path (e.g., "/old-recipe-slug").
+    -- Should NOT include domain, just the path.
+
+    to_path TEXT NOT NULL,
+    -- The new/destination path (e.g., "/recipes/new-recipe-slug").
+    -- Can be relative path or full URL for external redirects.
+
+    status_code INTEGER DEFAULT 301,
+    -- HTTP status code:
+    --   301 = Permanent Redirect (SEO-friendly, passes link equity)
+    --   302 = Temporary Redirect (for A/B tests, maintenance)
+    --   307 = Temporary (preserves request method)
+    --   308 = Permanent (preserves request method)
+
+    is_active BOOLEAN DEFAULT 1,
+    -- Toggle to enable/disable without deleting.
+    -- 1 = Active, 0 = Disabled.
+
+    notes TEXT,
+    -- Optional admin notes (e.g., "Renamed after rebrand").
+
+    hit_count INTEGER DEFAULT 0,
+    -- Track how many times this redirect was triggered.
+    -- Useful for identifying if old links are still being used.
+
+    last_hit_at DATETIME,
+    -- Timestamp of the last redirect hit.
+
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_redirects_from_path ON redirects(from_path);
+CREATE INDEX IF NOT EXISTS idx_redirects_active ON redirects(is_active);
+
+CREATE TRIGGER IF NOT EXISTS update_redirects_timestamp
+AFTER UPDATE ON redirects
+BEGIN
+    UPDATE redirects SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
 
