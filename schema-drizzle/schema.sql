@@ -863,26 +863,35 @@ CREATE INDEX IF NOT EXISTS idx_tags_active ON tags(deleted_at);
 --   1. SQL Columns: Used for Relations (FKs), Sorting, and High-Speed Filtering.
 --   2. JSON Columns: Used for flexible Content Blocks and Structured Data.
 --
+-- FIELD REQUIREMENTS:
+-- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
+-- │ Field               │ Required │ Criteria / Notes                           │
+-- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
+-- │ slug                │ ✅ YES   │ URL-safe, unique, kebab-case               │
+-- │ type                │ ✅ YES   │ 'article', 'recipe', or 'roundup'          │
+-- │ category_id         │ ✅ YES   │ Must exist in categories table             │
+-- │ author_id           │ ✅ YES   │ Must exist in authors table                │
+-- │ headline            │ ✅ YES   │ Main H1 / recipe name                      │
+-- │ short_description   │ ✅ YES   │ Card text / meta fallback                  │
+-- │ locale              │ ❌ NO    │ Defaults to 'en'                           │
+-- │ parent_article_id   │ ❌ NO    │ For pillar/cluster pages                   │
+-- │ subtitle            │ ❌ NO    │ Optional tagline                           │
+-- │ excerpt             │ ❌ NO    │ Newsletter teaser                          │
+-- │ introduction        │ ❌ NO    │ Hero copy                                  │
+-- │ images_json         │ ❌ NO    │ But required for publishing                │
+-- │ content_json        │ ❌ NO    │ But required for publishing                │
+-- │ recipe_json         │ ❌ NO    │ Required if type='recipe'                  │
+-- │ roundup_json        │ ❌ NO    │ Required if type='roundup'                 │
+-- │ faqs_json           │ ❌ NO    │ For FAQ rich results                       │
+-- │ seo_json            │ ❌ NO    │ Overrides only                             │
+-- │ config_json         │ ❌ NO    │ Feature toggles                            │
+-- └─────────────────────┴──────────┴────────────────────────────────────────────┘
+--
 -- AGENT RULES:
 --   1. RELATIONSHIPS: Always use IDs (category_id, author_id), never slugs.
 --   2. CONTENT: Use the Flattened Block JSON structure (No 'data' wrapper).
 --   3. ADS: Never insert 'ad_slot' blocks automatically. Only if explicitly requested.
 -- ==================================================================================
-
--- ========================================================================
--- TABLE: articles
--- PURPOSE:
---   Unified content table for:
---     - Long-form articles
---     - Recipes (with interactive scaling/timers)
---     - Roundup/list posts
--- STRATEGY:
---   - Relational columns for routing, permissions, fast filtering, feeds.
---   - JSON (TEXT) columns for flexible, nested, UI-driven structures.
---   - Minimal, intentional redundancy for fast recipe cards and SEO.
--- NOTE:
---   All timestamps should be stored in UTC; convert in the app/UI.
--- ========================================================================
 
 CREATE TABLE IF NOT EXISTS articles (
     -- --------------------------------------------------------------------
@@ -954,22 +963,51 @@ CREATE TABLE IF NOT EXISTS articles (
 
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
     -- Primary imagery definition for the article.
-    -- Recommended structure:
+    -- Standardized format matching categories/authors tables.
+    --
+    -- SCHEMA (images_json):
     -- {
-    --   "cover": {
+    --   "cover": {                          <-- Hero/featured image
+    --     "media_id": 105,                  <-- Reference to source Media ID
+    --     "alt": "Lemon blueberry biscuits on cooling rack",
+    --     "caption": "Fresh out of the oven",  <-- Optional visible caption
+    --     "credit": "© Jane Doe",           <-- Optional attribution
+    --     "placeholder": "data:image/...",  <-- Blurhash/LQIP string
+    --     "focal_point": { "x": 50, "y": 50 },  <-- Cropping hint
+    --     "aspectRatio": "16:9",            <-- Layout hint
     --     "variants": {
-    --       "xs": { "src": "...", "width": 320, "height": 200 },
-    --       "sm": { "src": "...", "width": 640, "height": 400 },
-    --       "md": { "src": "...", "width": 1024, "height": 640 },
-    --       "lg": { "src": "...", "width": 1600, "height": 900 }
-    --     },
-    --     "alt": "Accessible alt text for the hero image",
-    --     "placeholder": "Base64 or low-res placeholder"
+    --        "original": { "url": "...", "width": 4000, "height": 2250 },  <-- Optional
+    --        "lg": { "url": "...", "width": 2048, "height": 1152 },
+    --        "md": { "url": "...", "width": 1200, "height": 675 },
+    --        "sm": { "url": "...", "width": 720, "height": 405 },
+    --        "xs": { "url": "...", "width": 360, "height": 203 }
+    --     }
     --   },
-    --   "gallery": [
-    --     { "src": "...", "alt": "...", "caption": "..." }
+    --   "thumbnail": {                      <-- Optional: For cards if different from cover
+    --     "media_id": 202,
+    --     "alt": "...",
+    --     "placeholder": "...",
+    --     "aspectRatio": "4:3",
+    --     "variants": { ... }
+    --   },
+    --   "gallery": [                        <-- Array for additional images
+    --     {
+    --       "media_id": 301,
+    --       "alt": "Step 1: Mixing the dough",
+    --       "caption": "Combine flour and sugar",
+    --       "credit": "...",
+    --       "placeholder": "...",
+    --       "variants": { "lg": {...}, "md": {...}, "sm": {...}, "xs": {...} }
+    --     }
     --   ]
     -- }
+    --
+    -- VARIANT RULES:
+    --   - Use "url" key (not "src") for consistency across all tables.
+    --   - Standard breakpoints: 360, 720, 1200, 2048 (xs, sm, md, lg).
+    --   - Include height for CLS prevention.
+    --   - "original" only if source > 2048px (for Pin Creator).
+    --
     -- NOTE: cover.variants is mirrored into related_articles_json
     --       for zero-join card rendering.
 
@@ -979,15 +1017,142 @@ CREATE TABLE IF NOT EXISTS articles (
 
     content_json TEXT DEFAULT '[]' CHECK (json_valid(content_json)),
     -- Flattened block array representing the article body.
-    -- Example:
-    -- [
-    --   { "type": "paragraph", "text": "Intro..." },
-    --   { "type": "heading", "level": 2, "text": "Ingredients" },
-    --   { "type": "ad_slot", "variant": "newsletter" },
-    --   { "type": "tip_box", "title": "Pro Tip", "text": "..." }
-    -- ]
-    -- Frontend/editor interprets "type" to render components.
+    -- Frontend/editor interprets "type" to render React/Astro components.
     -- Avoids schema migrations when adding new block types.
+    --
+    -- ┌────────────────────────────────────────────────────────────────────┐
+    -- │ BLOCK TYPES REFERENCE                                              │
+    -- ├────────────────────────────────────────────────────────────────────┤
+    -- │ ALL "text" FIELDS: Support Markdown (bold, italic, links, lists).  │
+    -- │ Render with: react-markdown, marked, or remark.                    │
+    -- │                                                                    │
+    -- │ TEXT BLOCKS:                                                       │
+    -- │ ─────────────────────────────────────────────────────────────────  │
+    -- │ { "type": "paragraph", "text": "Rich text with **markdown**..." }  │
+    -- │                                                                    │
+    -- │ { "type": "heading", "level": 2, "text": "Section Title" }         │
+    -- │   level: 2 | 3 | 4 (H1 reserved for headline)                      │
+    -- │                                                                    │
+    -- │ { "type": "blockquote", "text": "Quote...", "cite": "Author" }     │
+    -- │                                                                    │
+    -- │ { "type": "list", "style": "unordered", "items": ["A", "B", "C"] } │
+    -- │   style: "unordered" | "ordered" | "checklist"                     │
+    -- │                                                                    │
+    -- │ MEDIA BLOCKS:                                                      │
+    -- │ ─────────────────────────────────────────────────────────────────  │
+    -- │ { "type": "image",                                                 │
+    -- │   "media_id": 123,                                                 │
+    -- │   "alt": "...",                                                    │
+    -- │   "caption": "...",                                                │
+    -- │   "size": "full",           -- "full" | "medium" | "small"         │
+    -- │   "variants": { "lg": {...}, "md": {...}, ... }                    │
+    -- │ }                                                                  │
+    -- │                                                                    │
+    -- │ { "type": "gallery",                                               │
+    -- │   "layout": "grid",         -- "grid" | "carousel" | "masonry"     │
+    -- │   "images": [ { "media_id": 1, "alt": "...", "variants": {...} } ] │
+    -- │ }                                                                  │
+    -- │                                                                    │
+    -- │ { "type": "video",                                                 │
+    -- │   "provider": "youtube",    -- "youtube" | "vimeo" | "self"        │
+    -- │   "videoId": "dQw4w9WgXcQ",                                        │
+    -- │   "poster": { "variants": {...} },                                 │
+    -- │   "aspectRatio": "16:9"                                            │
+    -- │ }                                                                  │
+    -- │                                                                    │
+    -- │ CALLOUT BLOCKS:                                                    │
+    -- │ ─────────────────────────────────────────────────────────────────  │
+    -- │ { "type": "tip_box",                                               │
+    -- │   "variant": "tip",         -- "tip" | "warning" | "info" | "note" │
+    -- │   "title": "Pro Tip",                                              │
+    -- │   "text": "**Bold** and lists:\n1. Item\n2. Item"                  │
+    -- │ }                                                                  │
+    -- │   TEXT FIELD: Supports full Markdown (bold, lists, links).         │
+    -- │   Use \n for line breaks. Render with react-markdown or marked.   │                                                                  │
+    -- │                                                                    │
+    -- │ { "type": "cta_button",                                            │
+    -- │   "text": "Get the Recipe",                                        │
+    -- │   "url": "#recipe",                                                │
+    -- │   "style": "primary"        -- "primary" | "secondary" | "outline" │
+    -- │ }                                                                  │
+    -- │                                                                    │
+    -- │ EMBED BLOCKS:                                                      │
+    -- │ ─────────────────────────────────────────────────────────────────  │
+    -- │ { "type": "embed",                                                 │
+    -- │   "provider": "instagram",  -- "instagram" | "pinterest" | "tiktok"│
+    -- │   "url": "https://...",                                            │
+    -- │   "html": "<blockquote>..."                                        │
+    -- │ }                                                                  │
+    -- │                                                                    │
+    -- │ { "type": "recipe_card",                                           │
+    -- │   "article_id": 456,        -- Internal recipe reference           │
+    -- │   "headline": "...",                                               │
+    -- │   "cover": { "variants": {...} }                                   │
+    -- │ }                                                                  │
+    -- │                                                                    │
+    -- │ { "type": "product_card",                                          │
+    -- │   "name": "KitchenAid Mixer",                                      │
+    -- │   "url": "https://amazon.com/...",                                 │
+    -- │   "price": "$299",                                                 │
+    -- │   "image": { "variants": {...} },                                  │
+    -- │   "affiliate": true                                                │
+    -- │ }                                                                  │
+    -- │                                                                    │
+    -- │ LAYOUT BLOCKS:                                                     │
+    -- │ ─────────────────────────────────────────────────────────────────  │
+    -- │ { "type": "divider" }                                              │
+    -- │                                                                    │
+    -- │ { "type": "spacer", "size": "md" }  -- "sm" | "md" | "lg" | "xl"   │
+    -- │                                                                    │
+    -- │ { "type": "ad_slot", "variant": "in-content" }                     │
+    -- │   variant: "in-content" | "newsletter" | "sidebar"                 │
+    -- │   AGENT RULE: Never insert ad_slot blocks automatically!           │
+    -- │                                                                    │
+    -- │ { "type": "table",                                                 │
+    -- │   "headers": ["Ingredient", "Amount"],                             │
+    -- │   "rows": [["Flour", "2 cups"], ["Sugar", "1 cup"]]                │
+    -- │ }                                                                  │
+    -- │                                                                    │
+    -- │ FOOD BLOG BLOCKS:                                                  │
+    -- │ ─────────────────────────────────────────────────────────────────  │
+    -- │                                                                    │
+    -- │ { "type": "before_after",                                          │
+    -- │   "layout": "slider",       -- "slider" | "side_by_side"           │
+    -- │   "before": {                                                      │
+    -- │     "media_id": 101, "alt": "Raw dough", "label": "Before",        │
+    -- │     "variants": { "lg": {...}, ... }                               │
+    -- │   },                                                               │
+    -- │   "after": {                                                       │
+    -- │     "media_id": 102, "alt": "Baked", "label": "After 12 min",      │
+    -- │     "variants": { "lg": {...}, ... }                               │
+    -- │   }                                                                │
+    -- │ }                                                                  │
+    -- │   USE CASES: Bread proofing, meat searing, caramel stages.         │
+    -- │                                                                    │
+    -- │ { "type": "ingredient_spotlight",                                  │
+    -- │   "name": "Tahini",                                                │
+    -- │   "description": "Sesame seed paste used in hummus...",            │
+    -- │   "image": { "media_id": 201, "variants": {...} },                 │
+    -- │   "tips": "Store in fridge after opening",                         │
+    -- │   "substitutes": ["Sunflower seed butter", "Cashew butter"],       │
+    -- │   "link": "/ingredients/tahini"    -- Optional internal link       │
+    -- │ }                                                                  │
+    -- │   USE CASES: Explain exotic ingredients, boost SEO for long-tail.  │
+    -- │                                                                    │
+    -- └────────────────────────────────────────────────────────────────────┘
+    --
+    -- RENDERING EXAMPLE (Astro/React):
+    --   import ReactMarkdown from 'react-markdown'; // For "text" fields
+    --
+    --   content_json.map(block => {
+    --     switch(block.type) {
+    --       case 'paragraph': return <ReactMarkdown>{block.text}</ReactMarkdown>;
+    --       case 'heading':   return <Heading level={block.level}>{block.text}</Heading>;
+    --       case 'image':     return <ResponsiveImage {...block} />;
+    --       case 'step_by_step': return <ProcessVis steps={block.steps} />;
+    --       ...
+    --     }
+    --   })
 
     -- --------------------------------------------------------------------
     -- 5. RECIPE DATA ("GOLD KEY") for type='recipe'
@@ -1052,7 +1217,10 @@ CREATE TABLE IF NOT EXISTS articles (
     --           "unit": "grams",
     --           "name": "all-purpose flour",
     --           "notes": "sifted",
-    --           "isOptional": false
+    --           "isOptional": false,
+    --           "substitutes": [       -- OPTIONAL: Ingredient swaps
+    --             { "name": "whole wheat flour", "ratio": "1:1", "notes": "denser result" }
+    --           ]
     --         }
     --       ]
     --     },
@@ -1244,14 +1412,20 @@ CREATE TABLE IF NOT EXISTS articles (
       "metaDescription": null,
       "noIndex": false,
       "canonical": null,
-      "ogImage": null
+      "ogImage": null,
+      "ogTitle": null,
+      "ogDescription": null,
+      "twitterCard": "summary_large_image"
     }' CHECK (json_valid(seo_json)),
-    -- Per-article SEO overrides:
-    --   metaTitle       : custom <title>; fallback is headline.
+    -- Per-article SEO overrides (standardized with categories/authors):
+    --   metaTitle       : Custom <title>; fallback is headline.
     --   metaDescription : SEO meta description; fallback is short_description.
     --   noIndex         : true to exclude from search engines.
-    --   canonical       : canonical URL to avoid duplicate content issues.
-    --   ogImage         : social share image override (URL/key).
+    --   canonical       : Canonical URL to avoid duplicate content issues.
+    --   ogImage         : Social share image URL override.
+    --   ogTitle         : Override Open Graph title (falls back to metaTitle).
+    --   ogDescription   : Override OG description (falls back to metaDescription).
+    --   twitterCard     : "summary" | "summary_large_image" (default).
 
     jsonld_json TEXT DEFAULT '[]' CHECK (json_valid(jsonld_json)),
     -- Pre-generated JSON-LD blobs (Recipe, HowTo, ItemList, FAQPage, ...).
@@ -1355,6 +1529,10 @@ CREATE INDEX IF NOT EXISTS idx_articles_total_time
 CREATE INDEX IF NOT EXISTS idx_articles_difficulty
     ON articles(difficulty_label);
 -- Fast "Easy/Medium/Hard" recipe filters.
+
+CREATE INDEX IF NOT EXISTS idx_articles_active
+    ON articles(deleted_at);
+-- Soft delete filter: efficiently exclude deleted articles.
 
 -- ========================================================================
 -- TRIGGERS
