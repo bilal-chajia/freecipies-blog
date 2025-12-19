@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import ImageEditor from '../../components/ImageEditor.jsx';
 import {
   Upload,
@@ -18,10 +19,15 @@ import {
   X,
   Check,
   RefreshCw,
+  Filter,
+  ArrowUpRight,
+  Info,
+  Maximize2,
 } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Card } from '@/ui/card.jsx';
+import { Badge } from '@/ui/badge.jsx';
 import {
   Dialog,
   DialogContent,
@@ -37,20 +43,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/ui/select.jsx';
-import { Slider } from '@/ui/slider.jsx';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/ui/dropdown-menu.jsx';
+import { Progress } from '@/ui/progress.jsx';
 import { mediaAPI, authorsAPI } from '../../services/api';
 import { formatFileSize, isImageFile, formatDate } from '../../utils/helpers';
 import { useMediaStore } from '../../store/useStore';
 import ConfirmationModal from '@/ui/confirmation-modal';
 import { compressImage, QUALITY_PRESETS, formatBytes } from '../../../../utils/imageCompression.js';
+import { toast } from 'sonner';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.02 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  show: { opacity: 1, scale: 1 }
+};
 
 const MediaLibrary = ({ onSelect, isDialog }) => {
   const { media, selectedMedia, loading, setMedia, toggleMediaSelection, clearSelection } = useMediaStore();
-  const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list'
+  const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('all'); // 'all', 'image', 'video', 'audio', 'document'
-  const [sortBy, setSortBy] = useState('created_at'); // 'created_at', 'name', 'size'
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
+  const [filterType, setFilterType] = useState('all');
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -62,11 +88,10 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
   const [altText, setAltText] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState('');
   const [authors, setAuthors] = useState([]);
-  const [compressionQuality, setCompressionQuality] = useState('high'); // 'low', 'medium', 'high', 'original'
+  const [compressionQuality, setCompressionQuality] = useState('high');
   const [compressionStats, setCompressionStats] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Fetch authors when dialog opens
   useEffect(() => {
     if (showUploadDialog) {
       loadAuthors();
@@ -76,9 +101,8 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
   const loadAuthors = async () => {
     try {
       const response = await authorsAPI.getAll();
-      if (response.data.success) {
-        setAuthors(response.data.data || []);
-      }
+      const authorsData = response.data?.data || response.data || [];
+      setAuthors(Array.isArray(authorsData) ? authorsData : []);
     } catch (error) {
       console.error('Failed to load authors:', error);
     }
@@ -103,6 +127,7 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
       }
     } catch (error) {
       console.error('Failed to load media:', error);
+      toast.error('Failed to load media assets');
     }
   };
 
@@ -110,7 +135,6 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
     const file = event.target.files[0];
     if (file) {
       setSelectedFile(file);
-      // Initialize custom filename with original name (without extension)
       const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
       setCustomFileName(nameWithoutExt);
       if (isImageFile(file.name)) {
@@ -125,27 +149,22 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
 
     try {
       setUploading(true);
-      setUploadProgress(0);
+      setUploadProgress(10);
 
       let fileToUpload = selectedFile;
 
-      // Compress image if it's an image file
       if (isImageFile(selectedFile.name)) {
-        setUploadProgress(10);
         const qualityValue = QUALITY_PRESETS[compressionQuality]?.quality || 0.85;
-
         const { file: compressedFile, stats } = await compressImage(selectedFile, {
           quality: qualityValue,
           maxWidth: 1920,
           maxHeight: 1920,
         });
-
         fileToUpload = compressedFile;
         setCompressionStats(stats);
-        setUploadProgress(50);
+        setUploadProgress(40);
       }
 
-      // Apply custom filename if set
       if (customFileName) {
         const currentExt = fileToUpload.name.split('.').pop();
         const newFileName = `${customFileName}.${currentExt}`;
@@ -154,90 +173,72 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
         }
       }
 
-      // Build attribution string from selected author
       const attribution = selectedAuthor && selectedAuthor !== 'none'
         ? `${authors.find(a => a.slug === selectedAuthor)?.name || selectedAuthor} / Freecipies`
         : '';
 
-      setUploadProgress(75);
+      setUploadProgress(60);
 
-      // mediaAPI.upload handles FormData creation internally
       const response = await mediaAPI.upload(fileToUpload, {
         alt: altText,
         attribution: attribution,
       });
 
       if (response.data.success) {
-        setShowUploadDialog(false);
-        setSelectedFile(null);
-        setPreviewUrl('');
-        setCustomFileName('');
-        setAltText('');
-        setSelectedAuthor('');
-        setCompressionStats(null);
-        loadMedia();
+        setUploadProgress(100);
+        toast.success(`"${fileToUpload.name}" uploaded successfully`);
+        setTimeout(() => {
+            setShowUploadDialog(false);
+            setSelectedFile(null);
+            setPreviewUrl('');
+            setCustomFileName('');
+            setAltText('');
+            setSelectedAuthor('');
+            setCompressionStats(null);
+            loadMedia();
+        }, 500);
       }
     } catch (error) {
-      console.error('Failed to upload file:', error);
-      alert('Failed to upload file');
+      console.error('Upload failed:', error);
+      toast.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);
-      setUploadProgress(0);
     }
-  };
-
-  const handleDelete = (mediaId) => {
-    setDeleteModal({ isOpen: true, id: mediaId, isBulk: false });
-  };
-
-  const handleBulkDelete = () => {
-    setDeleteModal({ isOpen: true, id: null, isBulk: true });
   };
 
   const confirmDelete = async () => {
     const { id, isBulk } = deleteModal;
-
-    if (isBulk) {
-      // Process deletions sequentially
-      let hasError = false;
-      for (const mediaId of selectedMedia) {
-        try {
+    try {
+      if (isBulk) {
+        for (const mediaId of selectedMedia) {
           await mediaAPI.delete(mediaId);
-        } catch (error) {
-          console.error(`Failed to delete media ${mediaId}:`, error);
-          hasError = true;
         }
-      }
-
-      if (hasError) {
-        alert('Some files could not be deleted. Check console for details.');
-      }
-      clearSelection();
-    } else {
-      try {
+        clearSelection();
+        toast.success('Selected assets deleted');
+      } else {
         await mediaAPI.delete(id);
-      } catch (error) {
-        console.error('Failed to delete media:', error);
-        alert('Failed to delete file');
+        toast.success('Asset deleted');
       }
+      loadMedia();
+    } catch (error) {
+      console.error('Delete failed:', error);
+      toast.error('Failed to delete asset(s)');
+    } finally {
+      setDeleteModal({ isOpen: false, id: null, isBulk: false });
     }
-
-    loadMedia();
-    setDeleteModal({ isOpen: false, id: null, isBulk: false });
   };
 
   const handleCopyUrl = async (url) => {
     try {
       await navigator.clipboard.writeText(url);
-      alert('URL copied to clipboard!');
+      toast.success('Asset URL copied');
     } catch (error) {
-      console.error('Failed to copy URL:', error);
+      toast.error('Failed to copy URL');
     }
   };
 
   const handleEditorSave = async (file) => {
     if (editingImage?.context === 'upload') {
-      // For new uploads, just update the preview
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
       setEditingImage(null);
@@ -246,612 +247,410 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
 
     try {
       setUploading(true);
-
-      // In-place replacement for existing library images
       const mediaItem = editingImage?.source;
       if (mediaItem?.id) {
         const response = await mediaAPI.replaceImage(mediaItem.id, file);
         if (response.data.success) {
+          toast.success('Image updated successfully');
           setEditingImage(null);
           loadMedia();
         }
       }
     } catch (error) {
-      console.error('Failed to save edited image:', error);
-      alert('Failed to save image');
+      console.error('Save failed:', error);
+      toast.error('Failed to update image');
     } finally {
       setUploading(false);
     }
   };
 
   const getFileIcon = (filename) => {
-    if (!filename) return <FileIcon className="w-8 h-8 text-gray-500" />;
+    if (!filename) return <FileIcon className="w-8 h-8 opacity-40" />;
     const ext = filename.split('.').pop().toLowerCase();
-
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
-      return <ImageIcon className="w-8 h-8 text-blue-500" />;
-    } else if (['mp4', 'avi', 'mov', 'wmv'].includes(ext)) {
-      return <Video className="w-8 h-8 text-red-500" />;
-    } else if (['mp3', 'wav', 'flac', 'aac'].includes(ext)) {
-      return <Music className="w-8 h-8 text-green-500" />;
-    } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
-      return <Archive className="w-8 h-8 text-yellow-500" />;
-    } else {
-      return <FileIcon className="w-8 h-8 text-gray-500" />;
-    }
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return <ImageIcon className="w-8 h-8 text-blue-500" />;
+    if (['mp4', 'avi', 'mov', 'wmv'].includes(ext)) return <Video className="w-8 h-8 text-rose-500" />;
+    if (['mp3', 'wav', 'flac', 'aac'].includes(ext)) return <Music className="w-8 h-8 text-emerald-500" />;
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return <Archive className="w-8 h-8 text-amber-500" />;
+    return <FileIcon className="w-8 h-8 opacity-40" />;
   };
 
   const filteredMedia = media.filter(item => {
     const matchesSearch = !searchQuery ||
       item.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.altText?.toLowerCase().includes(searchQuery.toLowerCase());
-
     return matchesSearch;
   });
 
   const renderGridView = () => (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
+    >
+      <AnimatePresence mode="popLayout">
+        {filteredMedia.map((item) => (
+          <motion.div
+            key={item.id}
+            variants={itemVariants}
+            layout
+            className="group"
+          >
+            <Card
+              className={`relative overflow-hidden border-none bg-accent/50 group hover:ring-2 hover:ring-primary/40 transition-all duration-300 aspect-square rounded-2xl cursor-pointer shadow-sm ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+              onClick={() => onSelect ? onSelect(item) : toggleMediaSelection(item.id)}
+            >
+              {isImageFile(item.filename) ? (
+                <img src={item.url} alt={item.altText} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center transition-transform duration-500 group-hover:scale-110">
+                  {getFileIcon(item.filename)}
+                </div>
+              )}
+              
+              {/* Modern Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute top-2 right-2 flex flex-col gap-1.5 translate-x-2 group-hover:translate-x-0 transition-transform duration-300">
+                   <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                         <Button variant="secondary" size="icon" className="h-7 w-7 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20">
+                            <MoreVertical className="h-3.5 w-3.5" />
+                         </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                         <DropdownMenuItem onClick={() => window.open(item.url, '_blank')} className="cursor-pointer">
+                            <Maximize2 className="mr-2 h-3.5 w-3.5" /> View Full
+                         </DropdownMenuItem>
+                         {isImageFile(item.filename) && (
+                            <DropdownMenuItem onClick={() => setEditingImage({ source: item, context: 'library' })} className="cursor-pointer">
+                               <Edit2 className="mr-2 h-3.5 w-3.5" /> Edit Asset
+                            </DropdownMenuItem>
+                         )}
+                         <DropdownMenuItem onClick={() => handleCopyUrl(item.url)} className="cursor-pointer">
+                            <Copy className="mr-2 h-3.5 w-3.5" /> Copy URL
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => setDeleteModal({ isOpen: true, id: item.id, isBulk: false })} className="cursor-pointer text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+                         </DropdownMenuItem>
+                      </DropdownMenuContent>
+                   </DropdownMenu>
+                </div>
+                
+                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                   <div className="flex flex-col">
+                      <span className="text-[10px] text-white/90 font-bold truncate max-w-[80px]">
+                         {item.filename.split('.').shift()}
+                      </span>
+                      <span className="text-[8px] text-white/60 font-medium uppercase tracking-widest">
+                         .{item.filename.split('.').pop()}
+                      </span>
+                   </div>
+                   <Badge variant="secondary" className="h-4 px-1 text-[8px] bg-white/10 backdrop-blur-md text-white border-white/10 font-bold uppercase truncate">
+                      {formatFileSize(item.sizeBytes)}
+                   </Badge>
+                </div>
+              </div>
+              
+              {/* Selection Checkmark */}
+              {selectedMedia.includes(item.id) && (
+                <div className="absolute top-2 left-2 h-5 w-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg border-2 border-background">
+                   <Check className="h-3 w-3 bold" />
+                </div>
+              )}
+            </Card>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </motion.div>
+  );
+
+  const renderListView = () => (
+    <div className="space-y-3">
       {filteredMedia.map((item) => (
         <Card
           key={item.id}
-          className={`group relative overflow-hidden border-0 bg-card shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl rounded-xl h-full flex flex-col aspect-square cursor-pointer p-0 gap-0 ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary ring-offset-2' : ''
-            }`}
-          onClick={() => {
-            if (onSelect) {
-              onSelect(item);
-            } else {
-              toggleMediaSelection(item.id);
-            }
-          }}
+          className={`group flex items-center gap-4 p-3 border-border/50 bg-card hover:bg-accent/40 shadow-sm transition-all duration-300 rounded-2xl cursor-pointer ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}
+          onClick={() => onSelect ? onSelect(item) : toggleMediaSelection(item.id)}
         >
-          {/* Image/Icon Layer */}
-          <div className="absolute inset-0 z-0">
+          <div className="w-14 h-14 rounded-xl overflow-hidden bg-accent/50 flex items-center justify-center shrink-0 border border-border/30">
             {isImageFile(item.filename) ? (
-              <img
-                src={item.url}
-                alt={item.altText || item.filename}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
+              <img src={item.url} alt={item.altText} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground group-hover:scale-110 transition-transform duration-500">
-                {getFileIcon(item.filename)}
-              </div>
+              getFileIcon(item.filename)
             )}
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
           </div>
-
-          {/* Content Layer */}
-          <div className="relative z-10 h-full pointer-events-none">
-            {/* Actions - Top Center, Visible on Hover */}
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 pointer-events-auto">
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-6 w-6 bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(item.url, '_blank');
-                }}
-                title="View"
-              >
-                <Eye className="h-3 w-3" />
-              </Button>
-              {isImageFile(item.filename) && (
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="h-6 w-6 bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingImage({ source: item, context: 'library' });
-                  }}
-                  title="Edit"
-                >
-                  <Edit2 className="h-3 w-3" />
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-6 w-6 bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCopyUrl(item.url);
-                }}
-                title="Copy URL"
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="destructive"
-                size="icon"
-                className="h-6 w-6 bg-red-500/80 hover:bg-red-600/90 backdrop-blur-sm rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(item.id);
-                }}
-                title="Delete"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+               <p className="font-bold text-sm truncate">{item.filename}</p>
+               {selectedMedia.includes(item.id) && <Badge className="h-4 px-1 text-[8px] uppercase">Selected</Badge>}
             </div>
-
-            {/* File Size - Bottom Right */}
-            <div className="absolute bottom-2 right-2 z-20">
-              <span className="text-[10px] font-medium text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
-                {formatFileSize(item.sizeBytes)}
-              </span>
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium uppercase tracking-tight mt-1 opacity-60">
+              <span className="flex items-center gap-1"><RefreshCw className="h-2.5 w-2.5" /> {formatDate(item.created_at)}</span>
+              <span className="flex items-center gap-1"><Info className="h-2.5 w-2.5" /> {formatFileSize(item.sizeBytes)}</span>
             </div>
+          </div>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleCopyUrl(item.url)}><Copy className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => window.open(item.url, '_blank')}><Eye className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive" onClick={() => setDeleteModal({ isOpen: true, id: item.id, isBulk: false })}><Trash2 className="h-3.5 w-3.5" /></Button>
           </div>
         </Card>
       ))}
     </div>
   );
 
-  const renderListView = () => (
-    <div className="space-y-2">
-      {filteredMedia.map((item) => (
-        <div
-          key={item.id}
-          className={`flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary' : ''
-            }`}
-          onClick={() => {
-            if (onSelect) {
-              onSelect(item);
-            } else {
-              toggleMediaSelection(item.id);
-            }
-          }}
-        >
-          <div className="w-12 h-12 rounded overflow-hidden bg-muted flex items-center justify-center shrink-0">
-            {isImageFile(item.filename) ? (
-              <img
-                src={item.url}
-                alt={item.altText || item.filename}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              getFileIcon(item.filename)
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{item.filename}</p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>{formatFileSize(item.sizeBytes)}</span>
-              <span>{formatDate(item.created_at)}</span>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(item.url, '_blank');
-              }}
-            >
-              <Eye className="w-4 h-4" />
-            </Button>
-            {isImageFile(item.filename) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingImage({ source: item, context: 'library' });
-                }}
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleCopyUrl(item.url);
-              }}
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete(item.id);
-              }}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  // Skeleton media card
-  const SkeletonMediaCard = () => (
-    <div className="relative aspect-square rounded-lg bg-muted animate-pulse overflow-hidden">
-      <div className="absolute bottom-2 right-2 h-5 w-12 bg-white/20 rounded" />
-    </div>
-  );
-
-  if (loading && media.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="h-9 w-40 bg-muted rounded animate-pulse" />
-            <div className="h-4 w-64 bg-muted rounded mt-2 animate-pulse" />
-          </div>
-          <div className="h-10 w-32 bg-muted rounded animate-pulse" />
-        </div>
-        <div className="flex gap-4">
-          <div className="h-10 flex-1 bg-muted rounded animate-pulse" />
-          <div className="h-10 w-24 bg-muted rounded animate-pulse" />
-          <div className="h-10 w-24 bg-muted rounded animate-pulse" />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {[...Array(12)].map((_, i) => (
-            <SkeletonMediaCard key={i} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 pb-10">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold flex items-center gap-2">
-            <ImageIcon className="w-8 h-8" />
-            Media Library
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Manage your images, videos, and other media files
-          </p>
+           <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
+              <ImageIcon className="h-4 w-4" />
+              Assets & CDN
+           </div>
+           <h1 className="text-3xl font-bold tracking-tight">Media Library</h1>
+           <p className="text-muted-foreground mt-1">
+              Centralized repository for high-fidelity images, videos, and documentation.
+           </p>
         </div>
-        <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Upload className="w-4 h-4" />
-              Upload Files
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Upload Media Files</DialogTitle>
-              <DialogDescription>
-                Select files to upload to your media library
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar"
-                />
-                {selectedFile ? (
-                  <div className="space-y-4">
-                    {previewUrl && (
-                      <img
-                        src={previewUrl}
-                        alt="Preview"
-                        className="max-w-full max-h-48 mx-auto rounded"
-                      />
-                    )}
-                    <div className="space-y-3">
-                      {/* Filename */}
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={customFileName}
-                          onChange={(e) => setCustomFileName(e.target.value)}
-                          className="flex-1 text-center font-medium"
-                          placeholder="Enter filename"
-                        />
-                        <span className="text-muted-foreground text-sm">
-                          .{selectedFile.name.split('.').pop()}
-                        </span>
-                      </div>
-
-                      {/* Alt Text */}
-                      <div>
-                        <Input
-                          value={altText}
-                          onChange={(e) => setAltText(e.target.value)}
-                          placeholder="Alt text (for SEO & accessibility)"
-                          className="text-sm"
-                        />
-                      </div>
-
-                      {/* Author / Attribution */}
-                      <div>
-                        <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Attribution (select author)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No attribution</SelectItem>
-                            {authors.map((author) => (
-                              <SelectItem key={author.slug} value={author.slug}>
-                                {author.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Quality Selector - only for images */}
-                      {isImageFile(selectedFile.name) && (
-                        <div>
-                          <Select value={compressionQuality} onValueChange={setCompressionQuality}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Compression quality" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(QUALITY_PRESETS).map(([key, preset]) => (
-                                <SelectItem key={key} value={key}>
-                                  {preset.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      {/* File Size Info */}
-                      <div className="text-center space-y-1">
-                        <p className="text-sm text-muted-foreground">
-                          Original: {formatFileSize(selectedFile.size)}
-                        </p>
-                        {compressionStats && !compressionStats.skipped && (
-                          <p className="text-xs text-green-600 dark:text-green-400">
-                            Compressed: {formatBytes(compressionStats.compressedSize)}
-                            ({compressionStats.compressionRatio} smaller)
-                          </p>
-                        )}
-                      </div>
+        
+        <div className="flex items-center gap-3">
+           <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+              <DialogTrigger asChild>
+                 <Button className="h-11 px-6 gap-2 shadow-sm rounded-xl">
+                    <Upload className="h-4 w-4" />
+                    Upload Assets
+                 </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl">
+                 <div className="p-8 bg-card flex flex-col gap-6">
+                    <div className="space-y-1">
+                       <h2 className="text-xl font-bold">New Asset Upload</h2>
+                       <p className="text-sm text-muted-foreground font-medium">Add high-resolution files with automatic SEO optimization.</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <Upload className="w-12 h-12 text-muted-foreground mx-auto" />
-                    <div>
-                      <p className="font-medium">Drop files here or click to browse</p>
-                      <p className="text-sm text-muted-foreground">
-                        Supports images, videos, audio, and documents
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Choose Files
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {uploading && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Uploading...</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
+                    
                     <div
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-between items-center gap-2">
-                <div className="flex gap-1">
-                  {selectedFile && (
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="h-7 w-7 bg-muted/80 hover:bg-muted text-foreground border-0 rounded-full"
-                      title="Replace File"
+                      className={`relative group border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center gap-4 transition-all duration-300 ${selectedFile ? 'border-primary/40 bg-primary/5 shadow-inner' : 'border-border/60 hover:border-primary/40 hover:bg-accent/30'}`}
+                      onClick={() => !uploading && fileInputRef.current?.click()}
                     >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  {selectedFile && isImageFile(selectedFile.name) && (
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      onClick={() => setEditingImage({ source: selectedFile, context: 'upload' })}
-                      className="h-7 w-7 bg-muted/80 hover:bg-muted text-foreground border-0 rounded-full"
-                      title="Edit Image"
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    onClick={() => {
-                      setShowUploadDialog(false);
-                      setSelectedFile(null);
-                      setPreviewUrl('');
-                      setCustomFileName('');
-                    }}
-                    className="h-7 w-7 bg-red-500/80 hover:bg-red-600/90 text-white rounded-full"
-                    title="Cancel"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    onClick={handleUpload}
-                    disabled={!selectedFile || uploading || !customFileName.trim()}
-                    className="h-7 w-7 bg-primary/80 hover:bg-primary text-primary-foreground rounded-full disabled:opacity-50"
-                    title="Upload"
-                  >
-                    {uploading ? (
-                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    ) : (
-                      <Check className="h-3.5 w-3.5" />
+                       <input ref={fileInputRef} type="file" onChange={handleFileSelect} className="hidden" />
+                       
+                       {selectedFile ? (
+                          <div className="w-full flex flex-col items-center gap-5">
+                             <div className="relative group/preview">
+                                {previewUrl ? (
+                                   <div className="h-32 w-32 rounded-2xl overflow-hidden shadow-lg border-2 border-background">
+                                      <img src={previewUrl} className="h-full w-full object-cover" />
+                                   </div>
+                                ) : (
+                                   <div className="h-32 w-32 rounded-2xl bg-accent flex items-center justify-center shadow-lg">
+                                      {getFileIcon(selectedFile.filename)}
+                                   </div>
+                                )}
+                                <div className="absolute -bottom-2 -right-2 flex gap-1">
+                                   <button 
+                                     onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                                     className="h-8 w-8 rounded-full bg-white shadow-md border border-border flex items-center justify-center transition-transform hover:scale-110"
+                                   >
+                                      <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                                   </button>
+                                   {isImageFile(selectedFile.name) && (
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); setEditingImage({ source: selectedFile, context: 'upload' }); }}
+                                        className="h-8 w-8 rounded-full bg-white shadow-md border border-border flex items-center justify-center transition-transform hover:scale-110"
+                                      >
+                                         <Edit2 className="h-3.5 w-3.5 text-emerald-600" />
+                                      </button>
+                                   )}
+                                </div>
+                             </div>
+                             
+                             <div className="w-full space-y-3">
+                                <div className="flex gap-2">
+                                   <Input 
+                                     value={customFileName} 
+                                     onChange={(e) => setCustomFileName(e.target.value)} 
+                                     className="h-10 bg-background border-none ring-1 ring-border/50 font-bold"
+                                     placeholder="Filename (optional)"
+                                   />
+                                   <Badge variant="outline" className="h-10 text-[10px] font-black uppercase opacity-60">.{selectedFile.name.split('.').pop()}</Badge>
+                                </div>
+                                <Input 
+                                  value={altText} 
+                                  onChange={(e) => setAltText(e.target.value)} 
+                                  className="h-10 bg-background border-none ring-1 ring-border/50 text-sm"
+                                  placeholder="SEO Alt Description"
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                   <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
+                                      <SelectTrigger className="h-10 border-none ring-1 ring-border/50 bg-background text-xs font-bold">
+                                         <SelectValue placeholder="Attribution" />
+                                      </SelectTrigger>
+                                      <SelectContent className="rounded-xl">
+                                         <SelectItem value="none">No attribution</SelectItem>
+                                         {authors.map(a => <SelectItem key={a.slug} value={a.slug}>{a.name}</SelectItem>)}
+                                      </SelectContent>
+                                   </Select>
+                                   {isImageFile(selectedFile.name) && (
+                                      <Select value={compressionQuality} onValueChange={setCompressionQuality}>
+                                         <SelectTrigger className="h-10 border-none ring-1 ring-border/50 bg-background text-xs font-bold">
+                                            <SelectValue placeholder="Quality" />
+                                         </SelectTrigger>
+                                         <SelectContent className="rounded-xl">
+                                            {Object.entries(QUALITY_PRESETS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+                                         </SelectContent>
+                                      </Select>
+                                   )}
+                                </div>
+                             </div>
+                          </div>
+                       ) : (
+                          <div className="flex flex-col items-center gap-3 text-center py-6">
+                             <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-1">
+                                <Upload className="h-6 w-6 text-primary" />
+                             </div>
+                             <div>
+                                <h3 className="text-sm font-bold">Primary Upload Channel</h3>
+                                <p className="text-[11px] text-muted-foreground mt-1 max-w-[200px]">Click to explore local storage or drag assets directly.</p>
+                             </div>
+                          </div>
+                       )}
+                    </div>
+                    
+                    {uploading && (
+                       <div className="space-y-2">
+                          <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-primary">
+                             <span>Optimizing & Syncing</span>
+                             <span>{uploadProgress}%</span>
+                          </div>
+                          <Progress value={uploadProgress} className="h-1.5" />
+                       </div>
                     )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+                    
+                    <div className="flex gap-2 pt-2">
+                       <Button variant="ghost" onClick={() => setShowUploadDialog(false)} className="flex-1 h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px]">Discard</Button>
+                       <Button onClick={handleUpload} disabled={!selectedFile || uploading} className="flex-1 h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20">
+                          {uploading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Confirm Upload'}
+                       </Button>
+                    </div>
+                 </div>
+              </DialogContent>
+           </Dialog>
+        </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      {/* Control Tools Bar */}
+      <div className="flex flex-col xl:flex-row gap-4">
+         <div className="relative flex-1 group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-60 group-hover:text-primary transition-colors duration-300" />
             <Input
-              placeholder="Search media files..."
+              placeholder="Search assets by name, tag, or metadata..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="h-12 pl-10 border-none bg-card shadow-sm ring-1 ring-border/50 rounded-2xl focus-visible:ring-primary/50 transition-all"
             />
-          </div>
-        </div>
+         </div>
+         
+         <div className="flex flex-wrap items-center gap-3">
+            <Select value={filterType} onValueChange={setFilterType}>
+               <SelectTrigger className="w-[140px] h-12 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
+                  <Filter className="h-3.5 w-3.5 mr-2 opacity-60" />
+                  <SelectValue placeholder="Type" />
+               </SelectTrigger>
+               <SelectContent className="rounded-xl">
+                  <SelectItem value="all">All Assets</SelectItem>
+                  <SelectItem value="image">Imagery</SelectItem>
+                  <SelectItem value="video">Motion</SelectItem>
+                  <SelectItem value="document">Documents</SelectItem>
+               </SelectContent>
+            </Select>
 
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="image">Images</SelectItem>
-            <SelectItem value="video">Videos</SelectItem>
-            <SelectItem value="audio">Audio</SelectItem>
-            <SelectItem value="document">Documents</SelectItem>
-          </SelectContent>
-        </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+               <SelectTrigger className="w-[150px] h-12 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
+                  <RefreshCw className="h-3.5 w-3.5 mr-2 opacity-60" />
+                  <SelectValue placeholder="Sorted By" />
+               </SelectTrigger>
+               <SelectContent className="rounded-xl">
+                  <SelectItem value="created_at">Recent Activity</SelectItem>
+                  <SelectItem value="name">Alphanumeric</SelectItem>
+                  <SelectItem value="size">Performance Size</SelectItem>
+               </SelectContent>
+            </Select>
 
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="created_at">Date Created</SelectItem>
-            <SelectItem value="name">Name</SelectItem>
-            <SelectItem value="size">Size</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            size="icon"
-            onClick={() => setViewMode('grid')}
-          >
-            <Grid className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="icon"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="w-4 h-4" />
-          </Button>
-        </div>
+            <div className="flex p-1 bg-accent/50 rounded-2xl border border-border/30 h-12">
+               <button onClick={() => setViewMode('grid')} className={`h-full w-10 flex items-center justify-center rounded-xl transition-all ${viewMode === 'grid' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
+                  <Grid className="h-4 w-4" />
+               </button>
+               <button onClick={() => setViewMode('list')} className={`h-full w-10 flex items-center justify-center rounded-xl transition-all ${viewMode === 'list' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
+                  <List className="h-4 w-4" />
+               </button>
+            </div>
+         </div>
       </div>
 
-      {/* Selected Media Actions */}
-      {selectedMedia.length > 0 && (
-        <div className="flex items-center justify-between bg-muted p-4 rounded-lg">
-          <span className="text-sm">
-            {selectedMedia.length} file{selectedMedia.length !== 1 ? 's' : ''} selected
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={clearSelection}>
-              Clear Selection
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                handleBulkDelete();
-              }}
+      {/* Bulk Actions Banner */}
+      <AnimatePresence>
+         {selectedMedia.length > 0 && (
+            <motion.div 
+               initial={{ opacity: 0, y: 50 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, y: 50 }}
+               className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-6"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Selected
-            </Button>
-          </div>
-        </div>
-      )}
+               <Card className="p-4 bg-primary text-primary-foreground shadow-2xl rounded-3xl flex items-center justify-between border-none backdrop-blur-xl bg-primary/95">
+                  <div className="flex items-center gap-4 ml-2">
+                     <span className="h-8 w-8 bg-white/20 rounded-xl flex items-center justify-center font-black text-xs">{selectedMedia.length}</span>
+                     <div>
+                        <p className="font-bold text-sm leading-none">Management Protocol Active</p>
+                        <p className="text-[10px] text-white/60 font-black uppercase tracking-widest mt-1">Staged Assets Ready for Processing</p>
+                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <Button variant="ghost" size="sm" onClick={clearSelection} className="h-10 px-4 hover:bg-white/10 rounded-2xl font-bold uppercase tracking-wider text-[10px]">Cancel</Button>
+                     <Button onClick={handleBulkDelete} variant="secondary" size="sm" className="h-10 px-4 rounded-2xl font-bold uppercase tracking-wider text-[10px] bg-red-500 hover:bg-red-600 border-none text-white">
+                        <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Staged
+                     </Button>
+                  </div>
+               </Card>
+            </motion.div>
+         )}
+      </AnimatePresence>
 
-      {/* Media Grid/List */}
-      <div className="min-h-[400px]">
-        {filteredMedia.length === 0 ? (
-          <div className="text-center py-12">
-            <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No media files found</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchQuery || filterType !== 'all'
-                ? 'Try adjusting your search or filters'
-                : 'Upload your first media file to get started'
-              }
-            </p>
-            {!searchQuery && filterType === 'all' && (
-              <Button onClick={() => setShowUploadDialog(true)} className="gap-2">
-                <Upload className="w-4 h-4" />
-                Upload Files
-              </Button>
-            )}
+      {/* Main Library Display */}
+      <div className="min-h-[500px] bg-accent/20 rounded-[40px] p-6 border border-border/30">
+        <AnimatePresence mode="wait">
+          {viewMode === 'grid' ? renderGridView() : renderListView()}
+        </AnimatePresence>
+        
+        {filteredMedia.length === 0 && !loading && (
+          <div className="flex flex-col items-center justify-center py-32 opacity-30">
+             <ImageIcon className="h-16 w-16 mb-4" />
+             <h3 className="font-bold text-lg">No Assets Detected</h3>
+             <p className="text-sm">Initiate an upload to populate your library.</p>
           </div>
-        ) : (
-          viewMode === 'grid' ? renderGridView() : renderListView()
         )}
       </div>
 
-      {/* Stats */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          Showing {filteredMedia.length} of {media.length} files
-        </span>
-        <span>
-          {media.reduce((total, item) => total + item.sizeBytes, 0).toLocaleString()} bytes total
-        </span>
-      </div>
+      {/* Modals & Editors */}
       <ConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, id: null, isBulk: false })}
         onConfirm={confirmDelete}
-        title={deleteModal.isBulk ? "Delete Selected Files" : "Delete Media File"}
-        description={deleteModal.isBulk
-          ? `Are you sure you want to delete ${selectedMedia.length} files? This action cannot be undone.`
-          : "Are you sure you want to delete this file? This action cannot be undone."}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={deleteModal.isBulk ? "Bulk Asset Termination" : "Delete Source Asset"}
+        description={deleteModal.isBulk 
+          ? `You are about to permanently purge ${selectedMedia.length} items from the CDN. This cannot be reversed.` 
+          : "Are you sure you want to delete this asset? This will break any content currently linking to this file."}
+        confirmText={deleteModal.isBulk ? "Purge Selection" : "Delete Asset"}
+        cancelText="Preserve"
       />
 
-      <ImageEditor
-        isOpen={!!editingImage}
-        image={editingImage?.context === 'library' ? editingImage?.source?.url : editingImage?.source}
-        originalFilename={
-          editingImage?.context === 'library'
-            ? editingImage?.source?.filename
-            : editingImage?.source?.name || null
-        }
-        onSave={handleEditorSave}
-        onCancel={() => setEditingImage(null)}
-      />
+      {editingImage && (
+        <ImageEditor
+          image={editingImage.source}
+          onSave={handleEditorSave}
+          onCancel={() => setEditingImage(null)}
+        />
+      )}
     </div>
   );
 };

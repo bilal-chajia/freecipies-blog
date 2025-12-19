@@ -1,12 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { Edit2, Trash2, Star } from 'lucide-react';
+import { Edit2, Trash2, Star, Eye, EyeOff, MoreVertical, FolderTree, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
-import {
-    Card,
-} from '@/ui/card.jsx';
+import { Card } from '@/ui/card.jsx';
 import { Switch } from '@/ui/switch';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/ui/dropdown-menu.jsx';
 import ColorPicker from '../../components/ColorPicker';
 import { getContrastColor } from '../../utils/helpers';
 import { useSettingsStore } from '../../store/useStore';
@@ -25,12 +29,10 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
         await onUpdate(category.slug, { [field]: value });
     };
 
-    // Handle color change locally (no API call)
     const handleColorChange = (newColor) => {
         setPendingColor(newColor);
     };
 
-    // Save color when picker closes
     const handleColorPickerClose = async () => {
         setShowColorPicker(false);
         if (pendingColor && pendingColor !== category.color) {
@@ -46,120 +48,133 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
         }
     };
 
+    const badgeColor = pendingColor || category.color || '#ff6600';
+    const textColor = getContrastColor(badgeColor);
+
     return (
-        <motion.div
-            whileHover={{ y: -2, scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="h-full"
-        >
-            <Card className="group relative overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg rounded-lg h-full flex flex-col aspect-square p-0 gap-0">
-                {/* Image Section - Full Cover */}
-                <div className="absolute inset-0 z-0">
-                    {category.imageUrl ? (
-                        <motion.img
-                            src={category.imageUrl}
-                            alt={category.imageAlt || category.label}
-                            className="h-full w-full object-cover"
-                            whileHover={{ scale: 1.1 }}
-                            transition={{ duration: 0.5 }}
-                        />
-                    ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                            <span className="text-sm font-medium">No Image</span>
-                        </div>
-                    )}
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
-                </div>
-
-                {/* Action Buttons - Top Center (Hover Only) */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 pointer-events-auto bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
-                    {/* Online Toggle */}
-                    <Switch
-                        id={`online-${category.slug}`}
-                        checked={category.isOnline}
-                        onCheckedChange={(checked) => handleToggle('isOnline', checked)}
-                        onClick={(e) => e.stopPropagation()}
-                        disabled={isUpdating}
-                        className="scale-[0.65] data-[state=checked]:bg-emerald-500"
-                        title="Online Status"
+        <Card className="group relative overflow-hidden border-none bg-card shadow-sm hover:shadow-xl transition-all duration-500 rounded-2xl aspect-square flex flex-col p-0">
+            {/* Background Image & Overlay */}
+            <div className="absolute inset-0 z-0 overflow-hidden">
+                {category.imageUrl ? (
+                    <img
+                        src={category.imageUrl}
+                        alt={category.label}
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted/50 to-muted text-muted-foreground">
+                        <FolderTree className="h-10 w-10 opacity-20" />
+                    </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500" />
+            </div>
 
-                    {/* Featured Toggle */}
-                    <Switch
-                        id={`featured-${category.slug}`}
-                        checked={category.isFavorite}
-                        onCheckedChange={(checked) => handleToggle('isFavorite', checked)}
-                        onClick={(e) => e.stopPropagation()}
-                        disabled={isUpdating}
-                        className="scale-[0.65] data-[state=checked]:bg-yellow-400"
-                        title="Featured Status"
-                    />
+            {/* Top Status Indicators (Fixed) */}
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 z-20 pointer-events-none">
+                {category.isOnline ? (
+                    <div className="bg-emerald-500/90 backdrop-blur-sm p-1 rounded-full shadow-sm" title="Online">
+                        <Eye className="h-3 w-3 text-white" />
+                    </div>
+                ) : (
+                    <div className="bg-zinc-800/90 backdrop-blur-sm p-1 rounded-full shadow-sm" title="Offline">
+                        <EyeOff className="h-3 w-3 text-white/60" />
+                    </div>
+                )}
+                {category.isFavorite && (
+                    <div className="bg-yellow-400/90 backdrop-blur-sm p-1 rounded-full shadow-sm" title="Featured">
+                        <Star className="h-3 w-3 text-black fill-black" />
+                    </div>
+                )}
+            </div>
 
-                    <div className="w-px h-4 bg-white/30 mx-0.5"></div>
+            {/* Quick Actions Dropdown (Top Right) */}
+            <div className="absolute top-3 right-3 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-md text-white border-none">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                        <DropdownMenuItem asChild>
+                            <Link to={`/categories/${category.slug}`} className="cursor-pointer">
+                                <Edit2 className="mr-2 h-4 w-4" />
+                                Edit Details
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                            onClick={() => handleToggle('isFavorite', !category.isFavorite)}
+                            className="cursor-pointer text-yellow-600 dark:text-yellow-400"
+                        >
+                            <Star className={`mr-2 h-4 w-4 ${category.isFavorite ? 'fill-current' : ''}`} />
+                            {category.isFavorite ? 'Unfeature' : 'Feature'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                            onClick={() => handleToggle('isOnline', !category.isOnline)}
+                            className="cursor-pointer"
+                        >
+                            {category.isOnline ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                            {category.isOnline ? 'Take Offline' : 'Go Online'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                            onClick={() => onDelete(category)}
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
 
-                    {/* Color Picker */}
-                    <div className="relative flex items-center" onClick={(e) => e.stopPropagation()}>
+            {/* Bottom Content Area */}
+            <div className="relative mt-auto p-4 z-10 flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                    <div 
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm"
+                        style={{ backgroundColor: badgeColor, color: textColor }}
+                    >
+                        {category.label}
+                    </div>
+                    
+                    {/* Inline Color Picker Hook */}
+                    <div className="relative pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                         <button
                             ref={colorTriggerRef}
-                            className="h-4 w-4 rounded-full overflow-hidden border border-white/30 hover:border-white/60 transition-colors flex-shrink-0"
+                            className="h-3.5 w-3.5 rounded-full ring-1 ring-white/30 hover:ring-white/80 transition-all shadow-sm flex-shrink-0"
                             onClick={() => setShowColorPicker(!showColorPicker)}
-                            title="Change Badge Color"
+                            title="Pick Theme Color"
                         >
-                            <div
-                                className="w-full h-full"
-                                style={{ backgroundColor: pendingColor || category.color || '#ff6600' }}
-                            />
+                            <div className="w-full h-full rounded-full" style={{ backgroundColor: badgeColor }} />
                         </button>
                         {showColorPicker && (
                             <ColorPicker
-                                color={pendingColor || category.color || '#ff6600'}
+                                color={badgeColor}
                                 onChange={handleColorChange}
                                 onClose={handleColorPickerClose}
                                 triggerRect={getTriggerRect()}
                             />
                         )}
                     </div>
-
-                    {/* Edit Button */}
-                    <Link to={`/categories/${category.slug}`} onClick={(e) => e.stopPropagation()} className="flex items-center">
-                        <button className="h-4 w-4 flex items-center justify-center text-white/80 hover:text-white transition-colors" title="Edit">
-                            <Edit2 className="h-3 w-3" />
-                        </button>
-                    </Link>
-
-                    {/* Delete Button */}
-                    <button
-                        className="h-4 w-4 flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
-                        onClick={(e) => { e.stopPropagation(); onDelete(category); }}
-                        title="Delete"
-                    >
-                        <Trash2 className="h-3 w-3" />
-                    </button>
                 </div>
 
-                {/* Content Overlay */}
-                <div className="relative z-10 flex flex-col h-full p-3 text-white pointer-events-none">
-                    <div className="mt-auto space-y-1.5 pointer-events-auto">
-                        <div className="border-t border-white/20 pt-2">
-                            <h3
-                                className="font-semibold text-xs tracking-tight mb-1 inline-flex items-center justify-center px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap leading-none"
-                                style={{
-                                    backgroundColor: pendingColor || category.color || '#ff6600',
-                                    color: '#000000'
-                                }}
-                            >
-                                {category.label}
-                            </h3>
-                            <p className="text-[10px] text-gray-300 line-clamp-1">
-                                {category.shortDescription || 'No description provided.'}
-                            </p>
-                        </div>
+                <div className="space-y-0.5">
+                   <h3 className="text-white font-bold text-sm tracking-tight leading-tight line-clamp-1">
+                       {category.label}
+                   </h3>
+                   <p className="text-white/60 text-[11px] leading-relaxed line-clamp-2 italic">
+                       {category.shortDescription || "Master category for curated culinary content."}
+                   </p>
+                </div>
+                
+                <Link to={`/categories/${category.slug}`} className="pt-1 pointer-events-auto">
+                    <div className="text-[10px] text-white/40 group-hover:text-primary transition-colors flex items-center gap-1 font-bold uppercase tracking-widest">
+                        View Analytics
+                        <ArrowUpRight className="h-3 w-3" />
                     </div>
-                </div>
-            </Card>
-        </motion.div>
+                </Link>
+            </div>
+        </Card>
     );
 };
 

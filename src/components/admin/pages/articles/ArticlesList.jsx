@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Plus,
   Eye,
@@ -9,6 +10,12 @@ import {
   Trash2,
   MoreVertical,
   ImagePlus,
+  FileText,
+  TrendingUp,
+  CheckCircle2,
+  Clock,
+  ArrowUpRight,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Badge } from '@/ui/badge.jsx';
@@ -17,10 +24,20 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from '@/ui/dropdown-menu.jsx';
+import { Avatar, AvatarImage, AvatarFallback } from '@/ui/avatar.jsx';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '@/ui/card.jsx';
 import DataTable from '@/ui/data-table.jsx';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../services/api';
-import { formatDate, formatNumber, truncate, debounce } from '../../utils/helpers';
+import { formatDate, formatRelativeTime, formatNumber, truncate, debounce, getStatusColor } from '../../utils/helpers';
 import { useArticlesStore, useCategoriesStore, useAuthorsStore, useTagsStore } from '../../store/useStore';
 import PinCreator from '../../components/pins/PinCreator';
 import ArticleFilters from './ArticleFilters';
@@ -63,36 +80,23 @@ const ArticlesList = () => {
     try {
       setLoading(true);
 
-      // Build query params for API
       const params = {
         page: pagination.page,
         limit: pagination.limit,
       };
 
-      if (filters.type && filters.type !== 'all') {
-        params.type = filters.type;
-      }
-      if (filters.category && filters.category !== 'all') {
-        params.category = filters.category;
-      }
-      if (filters.author && filters.author !== 'all') {
-        params.author = filters.author;
-      }
-      if (filters.status && filters.status !== 'all') {
-        params.status = filters.status;
-      }
-      if (filters.search) {
-        params.search = filters.search;
-      }
+      if (filters.type && filters.type !== 'all') params.type = filters.type;
+      if (filters.category && filters.category !== 'all') params.category = filters.category;
+      if (filters.author && filters.author !== 'all') params.author = filters.author;
+      if (filters.status && filters.status !== 'all') params.status = filters.status;
+      if (filters.search) params.search = filters.search;
 
-      // Call the API
       const response = await articlesAPI.getAll(params);
 
       if (response.data.success) {
         const articlesData = response.data.data || [];
         const paginationData = response.data.pagination || {};
 
-        // Update store
         setArticles(articlesData);
         setPagination({
           ...pagination,
@@ -100,7 +104,6 @@ const ArticlesList = () => {
           totalPages: paginationData.totalPages || Math.ceil(articlesData.length / pagination.limit),
         });
       } else {
-        console.error('Failed to load articles:', response.data.message);
         setArticles([]);
       }
     } catch (error) {
@@ -114,9 +117,7 @@ const ArticlesList = () => {
   const loadCategories = async () => {
     try {
       const response = await categoriesAPI.getAll();
-      if (response.data.success) {
-        setCategories(response.data.data);
-      }
+      if (response.data.success) setCategories(response.data.data);
     } catch (error) {
       console.error('Failed to load categories:', error);
     }
@@ -125,9 +126,7 @@ const ArticlesList = () => {
   const loadAuthors = async () => {
     try {
       const response = await authorsAPI.getAll();
-      if (response.data.success) {
-        setAuthors(response.data.data);
-      }
+      if (response.data.success) setAuthors(response.data.data);
     } catch (error) {
       console.error('Failed to load authors:', error);
     }
@@ -136,9 +135,7 @@ const ArticlesList = () => {
   const loadTags = async () => {
     try {
       const response = await tagsAPI.getAll();
-      if (response.data.success) {
-        setTags(response.data.data);
-      }
+      if (response.data.success) setTags(response.data.data);
     } catch (error) {
       console.error('Failed to load tags:', error);
     }
@@ -148,93 +145,45 @@ const ArticlesList = () => {
     setSelectedRows(selectedRows);
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedRows.length === 0) return;
-
-    if (!confirm(`Are you sure you want to delete ${selectedRows.length} selected article${selectedRows.length !== 1 ? 's' : ''}?`)) return;
-
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      loadArticles();
-      setSelectedRows([]);
-    } catch (error) {
-      console.error('Failed to delete articles:', error);
-      alert('Failed to delete some articles');
-    }
-  };
-
-  const handleBulkToggleOnline = async (online) => {
-    if (selectedRows.length === 0) return;
-
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      loadArticles();
-      setSelectedRows([]);
-    } catch (error) {
-      console.error('Failed to toggle articles:', error);
-      alert('Failed to update articles');
-    }
-  };
-
   const handleDelete = async (slug) => {
     if (!confirm('Are you sure you want to delete this article?')) return;
-
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await articlesAPI.delete(slug);
       loadArticles();
     } catch (error) {
       console.error('Failed to delete article:', error);
-      alert('Failed to delete article');
     }
   };
 
-  const handleToggleOnline = async (slug) => {
+  const handleToggleOnline = async (slug, currentStatus) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await articlesAPI.updateStatus(slug, currentStatus ? 'offline' : 'online');
       loadArticles();
     } catch (error) {
-      console.error('Failed to toggle online status:', error);
+      console.error('Failed to toggle status:', error);
     }
   };
 
-  const handleToggleFavorite = async (slug) => {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      loadArticles();
-    } catch (error) {
-      console.error('Failed to toggle favorite:', error);
-    }
-  };
-
-  // Debounced search handler
   const debouncedSearch = useCallback(
     debounce((value) => {
       setFilters({ search: value });
-      setPagination({ page: 1 }); // Reset to first page on search
+      setPagination({ page: 1 });
     }, 500),
     []
   );
 
-  // Handle local filter changes
   const handleFilterChange = (key, value) => {
     const newFilters = { ...localFilters, [key]: value };
     setLocalFilters(newFilters);
 
-    // Apply filters to store
     if (key === 'search') {
       debouncedSearch(value);
     } else {
       setFilters({ [key]: value });
-      setPagination({ page: 1 }); // Reset to first page on filter change
+      setPagination({ page: 1 });
     }
   };
 
-  // Clear all filters
   const handleClearFilters = () => {
     const clearedFilters = {
       search: '',
@@ -251,7 +200,6 @@ const ArticlesList = () => {
     setPagination({ page: 1 });
   };
 
-  // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
     return Object.entries(localFilters).some(([key, value]) => {
       if (Array.isArray(value)) return value.length > 0;
@@ -259,143 +207,157 @@ const ArticlesList = () => {
     });
   }, [localFilters]);
 
-  // Define table columns
   const columns = useMemo(() => [
     {
       accessorKey: 'label',
-      header: 'Article',
+      header: 'Article Content',
       cell: ({ row }) => {
         const article = row.original;
         return (
-          <div className="flex items-center gap-3">
-            {article.imageUrl && (
+          <div className="flex items-center gap-4 py-1">
+            <div className="relative group">
               <img
-                src={article.imageUrl}
+                src={article.imageUrl || '/placeholder-image.jpg'}
                 alt={article.label}
-                className="w-12 h-12 rounded object-cover"
+                className="w-16 h-16 rounded-xl object-cover shadow-sm ring-1 ring-border/50 transition-all group-hover:ring-primary/50"
               />
-            )}
-            <div className="min-w-0">
+              {article.isFavorite && (
+                <div className="absolute -top-1 -right-1 bg-yellow-400 text-white rounded-full p-0.5 shadow-sm">
+                  <Star className="w-2.5 h-2.5 fill-current" />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 space-y-1">
               <div className="flex items-center gap-2">
-                <span
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.location.href = `/admin/articles/${article.slug}`;
-                  }}
-                  className="font-medium hover:text-primary truncate cursor-pointer"
+                <Link
+                  to={`/articles/edit/${article.id}`}
+                  className="font-semibold text-foreground hover:text-primary transition-colors truncate max-w-[280px]"
                 >
                   {article.label}
-                </span>
-                {article.isFavorite && (
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                </Link>
+                {article.type === 'recipe' && (
+                  <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider h-4 px-1.5 border-orange-500/30 text-orange-600 bg-orange-50">
+                    Recipe
+                  </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground truncate">
-                {truncate(article.shortDescription, 60)}
-              </p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="truncate">{article.categoryLabel}</span>
+                <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
+                <span className="flex items-center gap-1">
+                  <Eye className="h-3 w-3" />
+                  {formatNumber(article.viewCount || 0)}
+                </span>
+              </div>
             </div>
           </div>
         );
       },
     },
     {
-      accessorKey: 'type',
-      header: 'Type',
-      cell: ({ row }) => (
-        <Badge variant={row.original.type === 'recipe' ? 'default' : 'secondary'}>
-          {row.original.type}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: 'categoryLabel',
-      header: 'Category',
-    },
-    {
       accessorKey: 'authorName',
       header: 'Author',
+      cell: ({ row }) => {
+        const article = row.original;
+        return (
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8 ring-1 ring-border/50">
+              <AvatarImage src={article.authorAvatar} />
+              <AvatarFallback className="text-[10px] font-bold">
+                {(article.authorName || 'A').charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm font-medium">{article.authorName}</span>
+          </div>
+        );
+      },
     },
     {
-      accessorKey: 'isOnline',
+      accessorKey: 'status',
       header: 'Status',
-      cell: ({ row }) => (
-        <Badge variant={row.original.isOnline ? 'default' : 'secondary'}>
-          {row.original.isOnline ? 'Online' : 'Offline'}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: 'viewCount',
-      header: 'Views',
-      cell: ({ row }) => formatNumber(row.original.viewCount || 0),
+      cell: ({ row }) => {
+        const isOnline = row.original.isOnline;
+        return (
+          <Badge 
+            variant={isOnline ? "success" : "secondary"} 
+            className={`gap-1 px-2.5 py-0.5 font-medium ${isOnline ? "bg-green-500/10 text-green-600 border-green-500/20" : ""}`}
+          >
+            {isOnline ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+            {isOnline ? 'Published' : 'Draft'}
+          </Badge>
+        );
+      },
     },
     {
       accessorKey: 'publishedAt',
-      header: 'Date',
+      header: 'Published Date',
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
-          {formatDate(row.original.publishedAt || row.original.createdAt)}
-        </span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">
+            {formatDate(row.original.publishedAt || row.original.createdAt, 'MMM dd, yyyy')}
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            {formatRelativeTime(row.original.publishedAt || row.original.createdAt)}
+          </span>
+        </div>
       ),
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: '',
       cell: ({ row }) => {
         const article = row.original;
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-end gap-2">
             <Button
               variant="ghost"
               size="icon"
+              className="h-8 w-8 group"
+              onClick={() => navigate(`/articles/edit/${article.id}`)}
               title="Edit"
-              onClick={(e) => {
-                e.stopPropagation();
-                window.location.href = `/admin/articles/${article.slug}`;
-              }}
             >
-              <Edit className="w-4 h-4" />
+              <Edit className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger
-                className="inline-flex items-center justify-center rounded-md p-2 hover:bg-accent hover:text-accent-foreground focus:outline-none"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="w-4 h-4" />
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent rounded-full">
+                  <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleToggleOnline(article.slug)}>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Article Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => window.open(`/articles/${article.slug}`, '_blank')}>
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View Live Site
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleToggleOnline(article.slug, article.isOnline)}>
                   {article.isOnline ? (
                     <>
                       <EyeOff className="w-4 h-4 mr-2" />
-                      Set Offline
+                      Move to Drafts
                     </>
                   ) : (
                     <>
-                      <Eye className="w-4 h-4 mr-2" />
-                      Set Online
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Publish Now
                     </>
                   )}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleToggleFavorite(article.slug)}>
-                  <Star className="w-4 h-4 mr-2" />
-                  {article.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                <DropdownMenuItem onClick={() => {
+                  setSelectedArticleForPin(article);
+                  setShowPinCreator(true);
+                }}>
+                  <ImagePlus className="w-4 h-4 mr-2" />
+                  Create Pinterest Pin
                 </DropdownMenuItem>
-                <DropdownMenuItem
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
                   onClick={() => handleDelete(article.slug)}
-                  className="text-destructive"
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedArticleForPin(article);
-                    setShowPinCreator(true);
-                  }}
-                >
-                  <ImagePlus className="w-4 h-4 mr-2" />
-                  Create Pin
+                  Delete Article
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -403,62 +365,109 @@ const ArticlesList = () => {
         );
       },
     },
-  ], []);
+  ], [navigate]);
 
   return (
-    <div className="space-y-4">
-
-      {/* Filters Section */}
-      <ArticleFilters
-        localFilters={localFilters}
-        onFilterChange={handleFilterChange}
-        showFilters={showFilters}
-        setShowFilters={setShowFilters}
-        hasActiveFilters={hasActiveFilters}
-        onClearFilters={handleClearFilters}
-        categories={categories}
-        authors={authors}
-        tags={tags}
-      />
-
-      {/* Bulk Actions */}
-      {selectedRows.length > 0 && (
-        <div className="flex items-center justify-between bg-muted p-4 rounded-lg">
-          <span className="text-sm">
-            {selectedRows.length} article{selectedRows.length !== 1 ? 's' : ''} selected
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => handleBulkToggleOnline(true)}>
-              <Eye className="w-4 h-4 mr-2" />
-              Set Online
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleBulkToggleOnline(false)}>
-              <EyeOff className="w-4 h-4 mr-2" />
-              Set Offline
-            </Button>
-            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Selected
-            </Button>
-          </div>
+    <div className="space-y-6 pb-8">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Articles & Recipes</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your content library, track performance, and publish new stories.
+          </p>
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <Link to="/articles/new">
+            <Button className="h-10 px-6 gap-2 shadow-sm">
+              <Plus className="h-4 w-4" />
+              New Article
+            </Button>
+          </Link>
+        </div>
+      </div>
 
-      {/* Data Table */}
-      <DataTable
-        columns={columns}
-        data={articles}
-        loading={loading}
-        enableRowSelection={true}
-        enableSorting={true}
-        enableFiltering={false}
-        enablePagination={true}
-        pageSize={pagination.limit}
-        pageSizeOptions={[5, 10, 20, 50]}
-        searchPlaceholder="Search articles..."
-        emptyMessage="No articles found. Create your first one!"
-        onRowSelectionChange={handleRowSelectionChange}
-      />
+      {/* Mini Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-primary/5 border-none shadow-none ring-1 ring-primary/20">
+          <CardContent className="pt-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Total Articles</p>
+              <p className="text-2xl font-bold">{pagination.total}</p>
+            </div>
+            <div className="p-2 bg-primary/10 rounded-lg text-primary">
+              <FileText className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-500/5 border-none shadow-none ring-1 ring-green-500/20">
+          <CardContent className="pt-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-green-600 uppercase tracking-wider">Published</p>
+              <p className="text-2xl font-bold">{articles.filter(a => a.isOnline).length}</p>
+            </div>
+            <div className="p-2 bg-green-500/10 rounded-lg text-green-600">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        {/* Placeholder for other stats */}
+      </div>
+
+      <div className="space-y-4">
+        <ArticleFilters
+          localFilters={localFilters}
+          onFilterChange={handleFilterChange}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={handleClearFilters}
+          categories={categories}
+          authors={authors}
+          tags={tags}
+        />
+
+        {/* Bulk Actions Banner */}
+        {selectedRows.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between bg-primary/10 border border-primary/20 p-3 rounded-xl shadow-sm"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                {selectedRows.length}
+              </div>
+              <span className="text-sm font-medium text-primary">
+                {selectedRows.length} items selected
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="h-8 border-primary/30 text-primary hover:bg-primary/20">
+                Bulk Status
+              </Button>
+              <Button variant="destructive" size="sm" className="h-8 shadow-sm">
+                Delete Selected
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
+          <DataTable
+            columns={columns}
+            data={articles}
+            loading={loading}
+            enableRowSelection={true}
+            enableSorting={true}
+            enableFiltering={false}
+            enablePagination={true}
+            pageSize={pagination.limit}
+            pageSizeOptions={[10, 20, 50]}
+            onRowSelectionChange={handleRowSelectionChange}
+          />
+        </div>
+      </div>
 
       {/* Pin Creator Dialog */}
       <PinCreator
@@ -470,7 +479,6 @@ const ArticlesList = () => {
           setSelectedArticleForPin(null);
         }}
       />
-
     </div>
   );
 };

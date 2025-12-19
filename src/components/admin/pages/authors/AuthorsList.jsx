@@ -1,11 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Switch } from '@/ui/switch.jsx';
-import { Plus, Edit, Trash2, Search, Star } from 'lucide-react';
+import { 
+  Plus, 
+  Search, 
+  Users, 
+  Star, 
+  MoreVertical, 
+  Edit, 
+  Trash2, 
+  Mail, 
+  Briefcase,
+  Eye,
+  EyeOff,
+  LayoutGrid
+} from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/ui/dropdown-menu.jsx';
+import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar.jsx';
+import { Badge } from '@/ui/badge.jsx';
 import { authorsAPI } from '../../services/api';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { toast } from 'sonner';
 
 const AuthorsList = () => {
   const location = useLocation();
@@ -13,16 +36,14 @@ const AuthorsList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [updating, setUpdating] = useState(null); // Track which author is being updated
+  const [updating, setUpdating] = useState(null);
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     authorToDelete: null
   });
 
-  // Ref to prevent duplicate API calls in React Strict Mode
   const isLoadingRef = useRef(false);
 
-  // Load authors from API - reload when navigating back with refresh state
   useEffect(() => {
     if (!isLoadingRef.current) {
       loadAuthors();
@@ -30,7 +51,7 @@ const AuthorsList = () => {
   }, [location.state?.refresh]);
 
   const loadAuthors = async () => {
-    if (isLoadingRef.current) return; // Prevent duplicate calls
+    if (isLoadingRef.current) return;
     isLoadingRef.current = true;
 
     try {
@@ -49,7 +70,6 @@ const AuthorsList = () => {
     }
   };
 
-  // Filter authors based on search term
   const filteredAuthors = authors.filter(author =>
     author.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     author.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -62,24 +82,16 @@ const AuthorsList = () => {
 
     try {
       await authorsAPI.update(authorSlug, { [field]: value });
-
-      // Update local state
       setAuthors(authors.map(author =>
         author.slug === authorSlug ? { ...author, [field]: value } : author
       ));
+      toast.success(`${field === 'isOnline' ? 'Visibility' : 'Featured status'} updated`);
     } catch (err) {
       console.error('Failed to update author:', err);
-      setError('Failed to update author. Please try again.');
+      toast.error('Failed to update author');
     } finally {
       setUpdating(null);
     }
-  };
-
-  const handleDeleteClick = (author) => {
-    setDeleteModal({
-      isOpen: true,
-      authorToDelete: author
-    });
   };
 
   const handleDeleteConfirm = async () => {
@@ -87,226 +99,201 @@ const AuthorsList = () => {
 
     try {
       await authorsAPI.delete(deleteModal.authorToDelete.slug);
-      // Remove from local state
       setAuthors(authors.filter(a => a.slug !== deleteModal.authorToDelete.slug));
       setDeleteModal({ isOpen: false, authorToDelete: null });
+      toast.success('Author removed successfully');
     } catch (err) {
       console.error('Failed to delete author:', err);
-      setError('Failed to delete author. Please try again.');
+      toast.error('Failed to delete author');
       setDeleteModal({ isOpen: false, authorToDelete: null });
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteModal({ isOpen: false, authorToDelete: null });
-  };
-
-  // Skeleton table row
-  const SkeletonRow = () => (
-    <tr className="animate-pulse">
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-muted mr-3" />
-          <div className="h-4 w-24 bg-muted rounded" />
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="h-4 w-32 bg-muted rounded" />
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="h-4 w-20 bg-muted rounded" />
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-center">
-        <div className="h-5 w-10 bg-muted rounded-full mx-auto" />
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-center">
-        <div className="h-5 w-10 bg-muted rounded-full mx-auto" />
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right">
-        <div className="flex justify-end space-x-2">
-          <div className="h-9 w-9 bg-muted rounded" />
-          <div className="h-9 w-9 bg-muted rounded" />
-        </div>
-      </td>
-    </tr>
-  );
-
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="h-9 w-28 bg-muted rounded animate-pulse" />
-          <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+      <div className="space-y-6 animate-pulse">
+        <div className="flex flex-col gap-2">
+            <div className="h-9 w-64 bg-muted rounded-lg" />
+            <div className="h-4 w-96 bg-muted rounded-md" />
         </div>
-        <div className="h-10 w-full bg-muted rounded animate-pulse" />
-        <div className="bg-card rounded-md border border-border overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-muted">
-              <tr>
-                <th className="px-6 py-3 text-left"><div className="h-3 w-16 bg-muted-foreground/20 rounded" /></th>
-                <th className="px-6 py-3 text-left"><div className="h-3 w-12 bg-muted-foreground/20 rounded" /></th>
-                <th className="px-6 py-3 text-left"><div className="h-3 w-10 bg-muted-foreground/20 rounded" /></th>
-                <th className="px-6 py-3 text-center"><div className="h-3 w-14 bg-muted-foreground/20 rounded mx-auto" /></th>
-                <th className="px-6 py-3 text-center"><div className="h-3 w-16 bg-muted-foreground/20 rounded mx-auto" /></th>
-                <th className="px-6 py-3 text-right"><div className="h-3 w-16 bg-muted-foreground/20 rounded ml-auto" /></th>
-              </tr>
-            </thead>
-            <tbody className="bg-card divide-y divide-border">
-              {[...Array(5)].map((_, i) => (
-                <SkeletonRow key={i} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <div className="h-12 w-full bg-muted rounded-xl" />
+        <div className="bg-card rounded-2xl border border-border/50 h-[400px]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {error && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-          <p>{error}</p>
+    <div className="space-y-8 pb-8">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
+            <Users className="h-4 w-4" />
+            Team & Contributors
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Author Management</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your content creators, their profiles, and featured status.
+          </p>
         </div>
-      )}
-
-      {/* Search Bar + Add Button */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search authors by name, email or job..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex items-center gap-2">
+          <Link to="/authors/new">
+            <Button className="h-11 px-6 gap-2 shadow-sm rounded-xl">
+              <Plus className="h-4 w-4" />
+              Add New Author
+            </Button>
+          </Link>
         </div>
-        <Link to="/authors/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Author
-          </Button>
-        </Link>
       </div>
 
-      {/* Authors Table */}
-      <div className="bg-card rounded-md border border-border overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-muted">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Author
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Job
-              </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Online
-              </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Featured
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-card divide-y divide-border">
-            {filteredAuthors.length > 0 ? (
-              filteredAuthors.map((author) => (
-                <tr key={author.slug} className="hover:bg-muted/50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {author.imageUrl ? (
-                        <img
-                          src={author.imageUrl}
-                          alt={author.imageAlt || author.name}
-                          className="w-10 h-10 rounded-full object-cover mr-3"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mr-3">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            {author.name?.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <div className="text-sm font-medium">{author.name}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm">{author.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-muted-foreground">{author.job || '-'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Switch
-                        checked={author.isOnline}
-                        onCheckedChange={(checked) => handleToggle(author.slug, 'isOnline', checked)}
-                        disabled={updating === author.slug}
-                        className="data-[state=checked]:bg-emerald-500"
-                      />
-                      {author.isOnline && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Switch
-                        checked={author.isFavorite}
-                        onCheckedChange={(checked) => handleToggle(author.slug, 'isFavorite', checked)}
-                        disabled={updating === author.slug}
-                        className="data-[state=checked]:bg-yellow-400"
-                      />
-                      {author.isFavorite && (
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <Link to={`/authors/${author.slug}`}>
-                        <Button variant="outline" size="icon">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => handleDeleteClick(author)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
+      {/* Modern Search Actions */}
+      <div className="relative w-full max-w-2xl">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-60" />
+        <Input
+          placeholder="Filter authors by name, role, or contact info..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="h-12 pl-10 border-none bg-card shadow-sm ring-1 ring-border/50 rounded-xl focus-visible:ring-primary/50 transition-all"
+        />
+      </div>
+
+      {/* Authors Content */}
+      <div className="grid grid-cols-1 gap-4">
+        <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-border/50 bg-muted/30">
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Author Details</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hidden md:table-cell">Contact</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hidden lg:table-cell text-center">Featured</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-center">Visibility</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-right">Actions</th>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="px-6 py-12 text-center text-muted-foreground">
-                  {searchTerm ? 'No authors found matching your search' : 'No authors yet. Create your first one!'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                <AnimatePresence mode="popLayout">
+                  {filteredAuthors.length > 0 ? (
+                    filteredAuthors.map((author) => (
+                      <motion.tr 
+                        key={author.slug}
+                        layout
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="hover:bg-accent/30 transition-colors group"
+                      >
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-11 w-11 border-2 border-background shadow-sm ring-1 ring-border/50">
+                              <AvatarImage src={author.imageUrl} alt={author.name} className="object-cover" />
+                              <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold uppercase">
+                                {author.name?.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-bold text-sm tracking-tight">{author.name}</div>
+                              <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] mt-0.5">
+                                 <Briefcase className="h-3 w-3" />
+                                 {author.job || 'Contributor'}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap hidden md:table-cell">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="h-3.5 w-3.5 opacity-60" />
+                            {author.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap hidden lg:table-cell">
+                          <div className="flex justify-center">
+                            <button
+                              onClick={() => handleToggle(author.slug, 'isFavorite', !author.isFavorite)}
+                              className={`p-2 rounded-lg transition-all ${author.isFavorite ? 'bg-yellow-400/10 text-yellow-500' : 'hover:bg-muted text-muted-foreground/30'}`}
+                            >
+                              <Star className={`h-4 w-4 ${author.isFavorite ? 'fill-current' : ''}`} />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                           <div className="flex items-center justify-center gap-3">
+                              <Switch
+                                checked={author.isOnline}
+                                onCheckedChange={(checked) => handleToggle(author.slug, 'isOnline', checked)}
+                                disabled={updating === author.slug}
+                                className="data-[state=checked]:bg-emerald-500"
+                              />
+                              {author.isOnline ? (
+                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none text-[10px] font-bold uppercase">Live</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="bg-muted text-muted-foreground border-none text-[10px] font-bold uppercase">Hidden</Badge>
+                              )}
+                           </div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                              <DropdownMenuItem asChild>
+                                <Link to={`/authors/${author.slug}`} className="cursor-pointer">
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit Profile
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link to={`/articles?author=${author.slug}`} className="cursor-pointer">
+                                  <LayoutGrid className="mr-2 h-4 w-4" />
+                                  View Articles
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleToggle(author.slug, 'isFavorite', !author.isFavorite)}
+                                className="cursor-pointer text-yellow-600 dark:text-yellow-400"
+                              >
+                                <Star className={`mr-2 h-4 w-4 ${author.isFavorite ? 'fill-current' : ''}`} />
+                                {author.isFavorite ? 'Remove Featured' : 'Make Featured'}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => setDeleteModal({ isOpen: true, authorToDelete: author })}
+                                className="cursor-pointer text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Author
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </motion.tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-2 opacity-50">
+                           <Users className="h-10 w-10 text-muted-foreground" />
+                           <p className="font-medium text-sm">No authors found matching your criteria</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={deleteModal.isOpen}
-        onClose={handleDeleteCancel}
+        onClose={() => setDeleteModal({ isOpen: false, authorToDelete: null })}
         onConfirm={handleDeleteConfirm}
-        title="Delete Author"
-        description={`Are you sure you want to delete "${deleteModal.authorToDelete?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
+        title="Remove Contributor"
+        description={`Are you sure you want to remove "${deleteModal.authorToDelete?.name}"? All content created by this author will remain but will not have an associated profile.`}
+        confirmText="Remove Author"
         cancelText="Cancel"
       />
     </div>

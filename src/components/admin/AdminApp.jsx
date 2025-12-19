@@ -26,10 +26,13 @@ const BoardEditor = lazy(() => import('./pages/pinterest/BoardEditor'));
 const TemplatesList = lazy(() => import('./pages/templates/TemplatesList'));
 const TemplateEditor = lazy(() => import('./pages/templates/TemplateEditor'));
 
-// Loading component
+// Loading component with skeleton
 const PageLoader = () => (
-  <div className="flex items-center justify-center h-full">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+  <div className="flex items-center justify-center h-full min-h-[400px]">
+    <div className="flex flex-col items-center gap-4">
+      <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent"></div>
+      <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+    </div>
   </div>
 );
 
@@ -146,7 +149,8 @@ function AdminApp() {
               <Route path="pinterest/boards/:id" element={<BoardEditor />} />
 
               {/* Settings */}
-              <Route path="settings" element={<Settings />} />
+              <Route path="settings" element={<Navigate to="/settings/general" replace />} />
+              <Route path="settings/:tab" element={<Settings />} />
             </Route>
 
             {/* 404 */}

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Save, Settings as SettingsIcon, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { Save, AlertCircle, Zap } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
-import { Alert, AlertDescription } from '@/ui/alert.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSettingsStore } from '../../store/useStore';
 
 // Import Tab Components
@@ -224,6 +224,8 @@ const Settings = () => {
     setFormData(prev => ({ ...prev, ...updatedMockSettings }));
   }, [setSettings]);
 
+  const { tab = 'general' } = useParams();
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -239,12 +241,14 @@ const Settings = () => {
       // In real app, this would save to API
       setSettings(formData);
       setSaveStatus('success');
+      toast.success('Settings updated successfully');
 
       // Clear success message after 3 seconds
       setTimeout(() => setSaveStatus(null), 3000);
     } catch (error) {
       console.error('Failed to save settings:', error);
       setSaveStatus('error');
+      toast.error('Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -252,104 +256,107 @@ const Settings = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex flex-col gap-6 animate-pulse">
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-8 w-48 bg-muted rounded-lg" />
+            <div className="h-4 w-64 bg-muted rounded-md" />
+          </div>
+          <div className="h-10 w-32 bg-muted rounded-xl" />
+        </div>
+        <div className="h-12 w-full bg-muted rounded-xl" />
+        <div className="h-96 w-full bg-muted rounded-2xl" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-        <p>Error loading settings: {error}</p>
+      <div className="bg-destructive/10 text-destructive p-6 rounded-2xl border border-destructive/20 flex items-center gap-3">
+        <AlertCircle className="w-5 h-5" />
+        <p className="font-medium">Error loading settings: {error}</p>
       </div>
     );
   }
 
+  // Map tab param to component
+  const renderTabContent = () => {
+    const props = { formData, handleInputChange };
+    
+    switch (tab) {
+      case 'general':
+        return <GeneralSettings {...props} />;
+      case 'seo':
+        return <SeoSettings {...props} />;
+      case 'email':
+        return <EmailSettings {...props} />;
+      case 'social':
+        return <SocialSettings {...props} />;
+      case 'content':
+        return <ContentSettings {...props} />;
+      case 'ads':
+        return <AdsSettings {...props} />;
+      case 'appearance':
+        return <AppearanceSettings {...props} />;
+      case 'advanced':
+        return <AdvancedSettings {...props} />;
+      default:
+        return <GeneralSettings {...props} />;
+    }
+  };
+
+  // Get tab title for header
+  const getTabTitle = () => {
+    const titles = {
+      general: 'General',
+      seo: 'SEO',
+      email: 'Email',
+      social: 'Social',
+      content: 'Content',
+      ads: 'Ads',
+      appearance: 'Appearance',
+      advanced: 'Advanced',
+    };
+    return titles[tab] || 'General';
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div>
+      {/* Header Area */}
+      <div className="flex items-center justify-between pb-4 mb-6 border-b border-border/40">
         <div>
-          <h2 className="text-3xl font-bold flex items-center gap-2">
-            <SettingsIcon className="w-8 h-8" />
-            Settings
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Configure your blog settings and preferences
+          <h1 className="text-lg font-semibold">{getTabTitle()} Settings</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Manage your application preferences
           </p>
         </div>
-        <Button onClick={handleSave} disabled={saving}>
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Settings'}
+        <Button 
+          onClick={handleSave} 
+          disabled={saving}
+          size="sm"
+          className="h-8 px-4 gap-1.5 text-sm"
+        >
+          {saving ? (
+            <Zap className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Save className="w-3.5 h-3.5" />
+          )}
+          {saving ? 'Saving...' : 'Save'}
         </Button>
       </div>
 
-      {/* Status Messages */}
-      {saveStatus === 'success' && (
-        <Alert className="border-green-200 bg-green-50 text-green-800">
-          <CheckCircle className="h-4 w-4" />
-          <AlertDescription>
-            Settings saved successfully!
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {saveStatus === 'error' && (
-        <Alert className="border-red-200 bg-red-50 text-red-800">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to save settings. Please try again.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Settings Tabs */}
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="seo">SEO</TabsTrigger>
-          <TabsTrigger value="email">Email</TabsTrigger>
-          <TabsTrigger value="social">Social</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="ads">Ads</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="general" className="mt-6">
-          <GeneralSettings formData={formData} handleInputChange={handleInputChange} />
-        </TabsContent>
-
-        <TabsContent value="seo" className="mt-6">
-          <SeoSettings formData={formData} handleInputChange={handleInputChange} />
-        </TabsContent>
-
-        <TabsContent value="email" className="mt-6">
-          <EmailSettings formData={formData} handleInputChange={handleInputChange} />
-        </TabsContent>
-
-        <TabsContent value="social" className="mt-6">
-          <SocialSettings formData={formData} handleInputChange={handleInputChange} />
-        </TabsContent>
-
-        <TabsContent value="content" className="mt-6">
-          <ContentSettings formData={formData} handleInputChange={handleInputChange} />
-        </TabsContent>
-
-        <TabsContent value="ads" className="mt-6">
-          <AdsSettings formData={formData} handleInputChange={handleInputChange} />
-        </TabsContent>
-
-        <TabsContent value="appearance" className="mt-6">
-          <AppearanceSettings formData={formData} handleInputChange={handleInputChange} />
-        </TabsContent>
-
-        <TabsContent value="advanced" className="mt-6">
-          <AdvancedSettings formData={formData} handleInputChange={handleInputChange} />
-        </TabsContent>
-
-      </Tabs>
+      {/* Content Area */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+        >
+          {renderTabContent()}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };
