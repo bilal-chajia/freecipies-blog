@@ -25,8 +25,8 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
         const result = await db.prepare(`
       SELECT 
         id, slug, name, description, thumbnail_url,
-        canvas_width, canvas_height, background_color,
-        elements_json, is_default, is_active, sort_order,
+        width, height, category,
+        elements_json, is_active,
         created_at, updated_at
       FROM pin_templates
       WHERE slug = ?1
@@ -84,13 +84,11 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
             name,
             description,
             thumbnail_url,
-            canvas_width,
-            canvas_height,
-            background_color,
+            width,
+            height,
+            category,
             elements_json,
-            is_default,
             is_active,
-            sort_order,
             slug: newSlug,
         } = body;
 
@@ -116,33 +114,25 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
             updates.push(`thumbnail_url = ?${paramIndex++}`);
             updateParams.push(thumbnail_url);
         }
-        if (canvas_width !== undefined) {
-            updates.push(`canvas_width = ?${paramIndex++}`);
-            updateParams.push(canvas_width);
+        if (width !== undefined) {
+            updates.push(`width = ?${paramIndex++}`);
+            updateParams.push(width);
         }
-        if (canvas_height !== undefined) {
-            updates.push(`canvas_height = ?${paramIndex++}`);
-            updateParams.push(canvas_height);
+        if (height !== undefined) {
+            updates.push(`height = ?${paramIndex++}`);
+            updateParams.push(height);
         }
-        if (background_color !== undefined) {
-            updates.push(`background_color = ?${paramIndex++}`);
-            updateParams.push(background_color);
+        if (category !== undefined) {
+            updates.push(`category = ?${paramIndex++}`);
+            updateParams.push(category);
         }
         if (elementsStr !== undefined) {
             updates.push(`elements_json = ?${paramIndex++}`);
             updateParams.push(elementsStr);
         }
-        if (is_default !== undefined) {
-            updates.push(`is_default = ?${paramIndex++}`);
-            updateParams.push(is_default ? 1 : 0);
-        }
         if (is_active !== undefined) {
             updates.push(`is_active = ?${paramIndex++}`);
             updateParams.push(is_active ? 1 : 0);
-        }
-        if (sort_order !== undefined) {
-            updates.push(`sort_order = ?${paramIndex++}`);
-            updateParams.push(sort_order);
         }
         if (newSlug !== undefined && newSlug !== slug) {
             updates.push(`slug = ?${paramIndex++}`);

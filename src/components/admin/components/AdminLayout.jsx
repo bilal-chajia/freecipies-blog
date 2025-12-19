@@ -21,7 +21,7 @@ import {
   ChevronDown,
   Share2,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
+import { Button } from '@/ui/button.jsx';
 import { useUIStore, useAuthStore } from '../store/useStore';
 import SessionMonitor from './SessionMonitor';
 
@@ -146,8 +146,8 @@ const AdminLayout = () => {
                 >
                   {isActive && (
                     <motion.div
-                      layoutId="sidebar-active-bg"
-                      className="absolute inset-0 bg-gray-900 dark:bg-white rounded-lg"
+                      layoutId="sidebar-nav-bg"
+                      className="absolute inset-0 bg-gray-900 dark:bg-white rounded-lg pointer-events-none"
                       transition={{ type: "spring", stiffness: 350, damping: 30 }}
                     />
                   )}
@@ -200,8 +200,8 @@ const AdminLayout = () => {
                           >
                             {isActive && (
                               <motion.div
-                                layoutId="sidebar-active-bg"
-                                className="absolute inset-0 bg-gray-900 dark:bg-white rounded-lg"
+                                layoutId="sidebar-blog-bg"
+                                className="absolute inset-0 bg-gray-900 dark:bg-white rounded-lg pointer-events-none"
                                 transition={{ type: "spring", stiffness: 350, damping: 30 }}
                               />
                             )}
@@ -259,8 +259,8 @@ const AdminLayout = () => {
                           >
                             {isActive && (
                               <motion.div
-                                layoutId="sidebar-active-bg"
-                                className="absolute inset-0 bg-gray-900 dark:bg-white rounded-lg"
+                                layoutId="sidebar-pinterest-bg"
+                                className="absolute inset-0 bg-gray-900 dark:bg-white rounded-lg pointer-events-none"
                                 transition={{ type: "spring", stiffness: 350, damping: 30 }}
                               />
                             )}
@@ -293,8 +293,8 @@ const AdminLayout = () => {
                 >
                   {isActive && (
                     <motion.div
-                      layoutId="sidebar-active-bg"
-                      className="absolute inset-0 bg-gray-900 dark:bg-white rounded-lg"
+                      layoutId="sidebar-bottom-bg"
+                      className="absolute inset-0 bg-gray-900 dark:bg-white rounded-lg pointer-events-none"
                       transition={{ type: "spring", stiffness: 350, damping: 30 }}
                     />
                   )}
@@ -318,7 +318,7 @@ const AdminLayout = () => {
                   {user?.name || 'Admin'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {user?.email || 'admin@freecipies.com'}
+                  {user?.email || 'admin@recipes-saas.com'}
                 </p>
               </div>
             </div>

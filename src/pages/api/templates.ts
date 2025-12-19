@@ -8,7 +8,6 @@ import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../l
 export const prerender = false;
 
 // GET /api/templates - List all templates
-// GET /api/templates?is_default=true - Get default template
 export const GET: APIRoute = async ({ request, locals }) => {
     try {
         const env = locals.runtime.env as Env;
@@ -18,29 +17,24 @@ export const GET: APIRoute = async ({ request, locals }) => {
         const db = env.DB;
 
         const url = new URL(request.url);
-        const isDefault = url.searchParams.get('is_default') === 'true';
         const isActive = url.searchParams.get('is_active') !== 'false';
 
         let query = `
       SELECT 
         id, slug, name, description, thumbnail_url,
-        canvas_width, canvas_height, background_color,
-        elements_json, is_default, is_active, sort_order,
+        width, height, category,
+        elements_json, is_active,
         created_at, updated_at
       FROM pin_templates
       WHERE 1=1
     `;
         const params: any[] = [];
 
-        if (isDefault) {
-            query += ' AND is_default = 1';
-        }
-
         if (isActive) {
             query += ' AND is_active = 1';
         }
 
-        query += ' ORDER BY sort_order ASC, created_at DESC';
+        query += ' ORDER BY created_at DESC';
 
         const result = await db.prepare(query).bind(...params).all();
 
@@ -87,13 +81,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
             name,
             description = '',
             thumbnail_url = null,
-            canvas_width = 1000,
-            canvas_height = 1500,
-            background_color = '#ffffff',
+            width = 1000,
+            height = 1500,
+            category = 'general',
             elements_json = '[]',
-            is_default = false,
             is_active = true,
-            sort_order = 0,
         } = body;
 
         if (!slug || !name) {
@@ -108,21 +100,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const result = await db.prepare(`
       INSERT INTO pin_templates (
         slug, name, description, thumbnail_url,
-        canvas_width, canvas_height, background_color,
-        elements_json, is_default, is_active, sort_order
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+        width, height, category,
+        elements_json, is_active
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
     `).bind(
             slug,
             name,
             description,
             thumbnail_url,
-            canvas_width,
-            canvas_height,
-            background_color,
+            width,
+            height,
+            category,
             elementsStr,
-            is_default ? 1 : 0,
-            is_active ? 1 : 0,
-            sort_order
+            is_active ? 1 : 0
         ).run();
 
         if (!result.success) {
