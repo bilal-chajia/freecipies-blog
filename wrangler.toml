@@ -1,4 +1,4 @@
-name = "freecipies-blog"
+name = "recipes-saas"
 compatibility_date = "2024-10-01"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
@@ -9,27 +9,27 @@ pages_build_output_dir = "dist"
 # D1 Database
 [[d1_databases]]
 binding = "DB"
-database_name = "freecipies-db"
-database_id = "6ba09ee5-5c03-479c-995e-68d43d72bc05" # <-- REMPLACEZ CECI
-preview_database_id = "6ba09ee5-5c03-479c-995e-68d43d72bc05" # <-- REMPLACEZ CECI
+database_name = "recipes-saas"
+database_id = "local-dev"  # Placeholder for local dev, update when deploying to Cloudflare
+preview_database_id = "local-dev"
 
 # R2 Buckets
 [[r2_buckets]]
 binding = "IMAGES"
-bucket_name = "freecipies-images"
-preview_bucket_name = "freecipies-images-preview" # Ce nom est conventionnel et correct
+bucket_name = "recipes-saas-media"
+preview_bucket_name = "recipes-saas-media"
 
 # Environment Variables
 [vars]
 ENVIRONMENT = "development"
-R2_PUBLIC_URL = "https://images.freecipies.com"
+R2_PUBLIC_URL = "http://localhost:4321/api/images"  # Local dev URL
 # Auth secrets - for local development only. In production, use wrangler secrets.
 JWT_SECRET = "Bildev2025"
-ADMIN_USERNAME = "admin@freecipies.com"
+ADMIN_USERNAME = "admin@recipes-saas.com"
 ADMIN_PASSWORD = "admin123"
 
-# KV Namespaces
+# KV Namespaces (for sessions)
 [[kv_namespaces]]
 binding = "SESSION"
-id = "session-id-preview"
-preview_id = "session-id-preview"
+id = "local-session-kv"
+preview_id = "local-session-kv"

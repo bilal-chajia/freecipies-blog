@@ -1,8 +1,8 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/ui/button';
+import { Slider } from '@/ui/slider';
+import { Label } from '@/ui/label';
+import { Separator } from '@/ui/separator';
 import { Grid3X3, Square, Image as ImageIcon } from 'lucide-react';
 import { WATERMARK_POSITIONS } from '../constants';
 

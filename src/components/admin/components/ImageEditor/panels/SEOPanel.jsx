@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Label } from '@/ui/label';
+import { Input } from '@/ui/input';
+import { Button } from '@/ui/button';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
+} from '@/ui/select';
 import { Wand2, Loader2, Sparkles } from 'lucide-react';
 
 import { QUALITY_PRESETS } from '../constants';

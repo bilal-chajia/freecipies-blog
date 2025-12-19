@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card.jsx';
-import { Button } from '@/components/ui/button.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
+import { Card, CardContent } from '@/ui/card.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Badge } from '@/ui/badge.jsx';
 import { Upload, Trash2, RefreshCw, Image as ImageIcon, Moon, Sun, Smartphone, Globe, Check } from 'lucide-react';
 import { brandingAPI } from '../services/api';
 

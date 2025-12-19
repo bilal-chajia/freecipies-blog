@@ -9,7 +9,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from './ui/alert-dialog';
+} from '@/ui/alert-dialog';
 
 export default function SessionMonitor() {
     const { token, setAuth, clearAuth } = useAuthStore();

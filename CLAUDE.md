@@ -5,40 +5,44 @@
 ## Project Overview
 
 ### Core Stack
-| Technology | Version | Purpose |
-| :--- | :--- | :--- |
-| **Astro** | 5.16.4 | SSR Framework |
-| **React** | 18.3.1 | Admin Panel UI |
-| **TailwindCSS** | 4.0.0 | Styling |
-| **TypeScript** | 5.7.3 | Type Safety |
-| **Drizzle ORM** | 0.45.1 | Database ORM |
+
+| Technology      | Version | Purpose        |
+| :-------------- | :------ | :------------- |
+| **Astro**       | 5.16.4  | SSR Framework  |
+| **React**       | 18.3.1  | Admin Panel UI |
+| **TailwindCSS** | 4.0.0   | Styling        |
+| **TypeScript**  | 5.7.3   | Type Safety    |
+| **Drizzle ORM** | 0.45.1  | Database ORM   |
 
 ### Cloudflare Stack
-| Service | Package | Purpose |
-| :--- | :--- | :--- |
-| **D1** | via `@astrojs/cloudflare` 12.6.12 | SQLite Database |
-| **R2** | via Wrangler 4.43.0 | Object Storage |
-| **Workers** | via Wrangler | Edge Runtime |
+
+| Service     | Package                           | Purpose         |
+| :---------- | :-------------------------------- | :-------------- |
+| **D1**      | via `@astrojs/cloudflare` 12.6.12 | SQLite Database |
+| **R2**      | via Wrangler 4.43.0               | Object Storage  |
+| **Workers** | via Wrangler                      | Edge Runtime    |
 
 ### Key Dependencies
-| Package | Version | Purpose |
-| :--- | :--- | :--- |
-| `react-router-dom` | 6.27.0 | Admin SPA Routing |
-| `zustand` | 5.0.0 | State Management |
-| `zod` | 3.23.8 | Validation |
-| `jose` | 5.9.6 | JWT Auth |
-| `react-hook-form` | 7.53.0 | Form Management |
-| `react-easy-crop` | 5.5.6 | Image Cropping |
-| `recharts` | 2.13.0 | Analytics Charts |
-| `@radix-ui/*` | 1.x-2.x | UI Primitives |
-| `lucide-react` | 0.454.0 | Icons |
-| `sonner` | 1.5.0 | Toast Notifications |
+
+| Package            | Version | Purpose             |
+| :----------------- | :------ | :------------------ |
+| `react-router-dom` | 6.27.0  | Admin SPA Routing   |
+| `zustand`          | 5.0.0   | State Management    |
+| `zod`              | 3.23.8  | Validation          |
+| `jose`             | 5.9.6   | JWT Auth            |
+| `react-hook-form`  | 7.53.0  | Form Management     |
+| `react-easy-crop`  | 5.5.6   | Image Cropping      |
+| `recharts`         | 2.13.0  | Analytics Charts    |
+| `@radix-ui/*`      | 1.x-2.x | UI Primitives       |
+| `lucide-react`     | 0.454.0 | Icons               |
+| `sonner`           | 1.5.0   | Toast Notifications |
 
 ### Dev Dependencies
-| Package | Version | Purpose |
-| :--- | :--- | :--- |
-| `drizzle-kit` | 0.31.8 | DB Migrations |
-| `wrangler` | 4.43.0 | Cloudflare CLI |
+
+| Package       | Version | Purpose        |
+| :------------ | :------ | :------------- |
+| `drizzle-kit` | 0.31.8  | DB Migrations  |
+| `wrangler`    | 4.43.0  | Cloudflare CLI |
 
 - **Package Manager**: `pnpm` (NOT npm)
 - **Rendering**: SSR for public pages, CSR for Admin Panel
@@ -48,6 +52,7 @@
 ## 🚨 Critical Rules
 
 ### Performance First
+
 1. **No client-side hydration** on public pages unless absolutely necessary
 2. **Always add `width` and `height`** to `<img>` tags to prevent CLS
 3. **Use `loading="lazy"`** for below-fold images, `fetchpriority="high"` for hero images
@@ -55,26 +60,31 @@
 5. **Target Lighthouse 90+** on all public pages
 
 ### Database (Cloudflare D1)
+
 1. **Use Drizzle ORM** - never raw SQL unless optimizing specific queries
 2. **Flat schema** - `imageUrl`, `imageWidth`, `imageHeight` directly on records, NOT nested objects
 3. **Parse JSON fields** - `recipeJson` and `faqsJson` are stored as TEXT, parse with `safeParseJson()` in `db.ts`
 4. **Handle nulls** - Convert `null` to `undefined` with `|| undefined` for component props
 
 ### TypeScript
+
 1. **Strict mode** - no `any` types unless absolutely necessary
 2. **Import types** from `src/types/index.ts`
 3. **Use existing patterns** - check `src/lib/` for utilities before creating new ones
 
 ### Agent Behavior
+
 1. **No browser without permission** - NEVER use browser tools to navigate websites without explicit user approval
 2. **Ask before browsing** - If you need to visit a URL, ask the user first
 3. **Prefer MCP over browser** - Use MCP tools to read documentation instead of opening browsers
 
 ### Research Requirements
+
 1. **Read docs via MCP first** - Before implementing any feature using a library, use MCP tools to read its documentation
-2. **Check existing code** - Always search the codebase for existing patterns before writing new code
-3. **Verify versions** - Ensure any code examples match the versions listed in this file
-4. **Reference key files** - Read `src/lib/db.ts`, `src/types/index.ts`, and `src/lib/schema.ts` before database work
+2. **Use MCP for latest features** - Always query MCP servers (shadcn, context7, etc.) to ensure using the most current API patterns and features before writing code
+3. **Check existing code** - Always search the codebase for existing patterns before writing new code
+4. **Verify versions** - Ensure any code examples match the versions listed in this file
+5. **Reference key files** - Read `src/lib/db.ts`, `src/types/index.ts`, and `src/lib/schema.ts` before database work
 
 ---
 
@@ -102,9 +112,15 @@ src/
 ## ✅ Coding Patterns to Follow
 
 ### API Endpoints
+
 ```typescript
 // Always use standardized responses
-import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '../../lib/error-handler';
+import {
+  formatSuccessResponse,
+  formatErrorResponse,
+  AppError,
+  ErrorCodes,
+} from "../../lib/error-handler";
 
 export const GET: APIRoute = async ({ locals }) => {
   try {
@@ -114,7 +130,9 @@ export const GET: APIRoute = async ({ locals }) => {
     return new Response(body, { status, headers });
   } catch (error) {
     const { body, status, headers } = formatErrorResponse(
-      error instanceof AppError ? error : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed', 500)
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.DATABASE_ERROR, "Failed", 500)
     );
     return new Response(body, { status, headers });
   }
@@ -122,10 +140,11 @@ export const GET: APIRoute = async ({ locals }) => {
 ```
 
 ### Image Rendering
+
 ```astro
 <!-- CORRECT: Always include dimensions -->
-<img 
-  src={recipe.imageUrl} 
+<img
+  src={recipe.imageUrl}
   alt={recipe.imageAlt || ""}
   width={recipe.imageWidth || 1200}
   height={recipe.imageHeight || 675}
@@ -137,6 +156,7 @@ export const GET: APIRoute = async ({ locals }) => {
 ```
 
 ### Null Handling
+
 ```typescript
 // CORRECT: Convert null to undefined for optional props
 recipeDetails = recipe.recipeJson || undefined;
@@ -169,19 +189,20 @@ recipeDetails = recipe.recipeJson; // may be null
 
 ## 📚 Key Files to Reference
 
-| Purpose | File |
-| :--- | :--- |
-| Database functions | `src/lib/db.ts` |
-| Type definitions | `src/types/index.ts` |
-| Schema definitions | `src/lib/schema.ts` |
-| Error handling | `src/lib/error-handler.ts` |
-| Auth utilities | `src/lib/auth.ts` |
+| Purpose            | File                       |
+| :----------------- | :------------------------- |
+| Database functions | `src/lib/db.ts`            |
+| Type definitions   | `src/types/index.ts`       |
+| Schema definitions | `src/lib/schema.ts`        |
+| Error handling     | `src/lib/error-handler.ts` |
+| Auth utilities     | `src/lib/auth.ts`          |
 
 ---
 
 ## 🔀 Git & Commit Conventions
 
 ### Commit Message Format
+
 ```
 <type>: <short description>
 
@@ -189,6 +210,7 @@ recipeDetails = recipe.recipeJson; // may be null
 ```
 
 **Types:**
+
 - `feat:` - New feature
 - `fix:` - Bug fix
 - `docs:` - Documentation only
@@ -198,6 +220,7 @@ recipeDetails = recipe.recipeJson; // may be null
 - `chore:` - Build process, dependencies, tooling
 
 **Examples:**
+
 ```
 feat: add image cropping to admin editor
 fix: resolve null pointer in RecipeLayout
@@ -205,6 +228,7 @@ perf: optimize StoriesBar DOM size
 ```
 
 ### Branch Naming
+
 - `feature/<description>` - New features
 - `fix/<description>` - Bug fixes
 - `refactor/<description>` - Code improvements
@@ -223,6 +247,7 @@ perf: optimize StoriesBar DOM size
 ## 🔐 Security Guidelines
 
 ### NEVER Do
+
 - ❌ Commit `.env` files or secrets
 - ❌ Log sensitive data (tokens, passwords, emails)
 - ❌ Expose internal error messages to users
@@ -230,13 +255,15 @@ perf: optimize StoriesBar DOM size
 - ❌ Trust user input without validation
 
 ### Environment Variables
-| Variable | Purpose | Location |
-| :--- | :--- | :--- |
-| `JWT_SECRET` | Auth token signing | Cloudflare Secrets |
-| `DB` | D1 Database binding | wrangler.toml |
-| `R2_BUCKET` | R2 Storage binding | wrangler.toml |
+
+| Variable     | Purpose             | Location           |
+| :----------- | :------------------ | :----------------- |
+| `JWT_SECRET` | Auth token signing  | Cloudflare Secrets |
+| `DB`         | D1 Database binding | wrangler.toml      |
+| `R2_BUCKET`  | R2 Storage binding  | wrangler.toml      |
 
 ### Secrets Access
+
 ```typescript
 // CORRECT: Access via env
 const secret = env.JWT_SECRET;
@@ -250,6 +277,7 @@ const secret = "my-secret-key"; // NEVER DO THIS
 ## 💬 Communication & Decision Making
 
 ### When to ASK the User
+
 - Before deleting files or data
 - Before making breaking API changes
 - Before adding new dependencies
@@ -257,6 +285,7 @@ const secret = "my-secret-key"; // NEVER DO THIS
 - Before using browser tools
 
 ### When to PROCEED Without Asking
+
 - Fixing obvious TypeScript errors
 - Following established patterns
 - Adding missing image dimensions
@@ -264,6 +293,7 @@ const secret = "my-secret-key"; // NEVER DO THIS
 - Implementing clearly defined tasks
 
 ### Response Style
+
 - Be concise, not verbose
 - Show code diffs, not full files
 - Summarize what was done
@@ -274,16 +304,18 @@ const secret = "my-secret-key"; // NEVER DO THIS
 ## 📂 File & Naming Conventions
 
 ### New Files Location
-| Type | Location | Example |
-| :--- | :--- | :--- |
-| Astro page | `src/pages/` | `about.astro` |
-| API route | `src/pages/api/` | `recipes.ts` |
-| Component | `src/components/` | `RecipeCard.astro` |
-| Admin component | `src/components/admin/` | `ImageEditor.jsx` |
-| Utility | `src/lib/` | `cache.ts` |
-| Type | `src/types/` | Append to `index.ts` |
+
+| Type            | Location                | Example              |
+| :-------------- | :---------------------- | :------------------- |
+| Astro page      | `src/pages/`            | `about.astro`        |
+| API route       | `src/pages/api/`        | `recipes.ts`         |
+| Component       | `src/components/`       | `RecipeCard.astro`   |
+| Admin component | `src/components/admin/` | `ImageEditor.jsx`    |
+| Utility         | `src/lib/`              | `cache.ts`           |
+| Type            | `src/types/`            | Append to `index.ts` |
 
 ### Naming Patterns
+
 - **Components**: PascalCase (`RecipeCard.astro`)
 - **Utilities**: camelCase (`db.ts`, `errorHandler.ts`)
 - **API routes**: kebab-case for folders (`/api/pinterest-boards/`)
@@ -294,28 +326,31 @@ const secret = "my-secret-key"; // NEVER DO THIS
 ## 🚀 Deployment Awareness
 
 ### Commands
-| Command | Purpose |
-| :--- | :--- |
-| `pnpm dev` | Local dev server (no D1/R2) |
-| `pnpm build` | Production build |
+
+| Command        | Purpose                                 |
+| :------------- | :-------------------------------------- |
+| `pnpm dev`     | Local dev server (no D1/R2)             |
+| `pnpm build`   | Production build                        |
 | `pnpm preview` | Full Cloudflare simulation (D1/R2 work) |
 
 ### Production Considerations
+
 1. **Always test with `pnpm preview`** before considering work done
 2. **D1 is SQLite** - no PostGres features
 3. **Edge has no filesystem** - `fs` module won't work in production
 4. **R2 URLs must be public** or use signed URLs
 
 ### wrangler.toml Bindings
+
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "freecipies-db"
+database_name = "recipes-saas-db"
 database_id = "..."
 
 [[r2_buckets]]
 binding = "R2_BUCKET"
-bucket_name = "freecipies-images"
+bucket_name = "recipes-saas-images"
 ```
 
 ---

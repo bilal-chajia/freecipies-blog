@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { Badge } from '@/ui/badge';
 import {
     Card,
     CardContent,
     CardFooter,
-} from '@/components/ui/card';
+} from '@/ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
     DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+} from '@/ui/dropdown-menu';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -25,7 +25,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/alert-dialog';
 import {
     Plus,
     Search,

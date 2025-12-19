@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Upload, X, Image as ImageIcon, Layout, Type, FileText, Settings, Globe, FileJson, Link2, FolderOpen } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Textarea } from '@/components/ui/textarea.jsx';
-import { Switch } from '@/components/ui/switch.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Label } from '@/ui/label.jsx';
+import { Textarea } from '@/ui/textarea.jsx';
+import { Switch } from '@/ui/switch.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/ui/dialog"
 import { categoriesAPI, mediaAPI } from '../../services/api';
 import { generateSlug } from '../../utils/helpers';
 import { cn } from '@/lib/utils';

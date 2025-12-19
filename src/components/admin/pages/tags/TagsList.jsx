@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 import { Plus, Trash2, X, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
 import { tagsAPI } from '../../services/api';
-import ConfirmationModal from '@/components/ui/confirmation-modal.jsx';
+import ConfirmationModal from '@/ui/confirmation-modal.jsx';
 import ColorPicker from '../../components/ColorPicker';
 import { generateSlug } from '../../utils/helpers';
 

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/ui/button';
+import { Slider } from '@/ui/slider';
+import { Label } from '@/ui/label';
+import { Separator } from '@/ui/separator';
 import {
     Select,
     SelectContent,
@@ -11,7 +11,7 @@ import {
     SelectLabel,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
+} from '@/ui/select';
 import { ASPECT_RATIO_GROUPS, parseAspectValue } from '../constants';
 
 /**

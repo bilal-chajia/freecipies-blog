@@ -19,9 +19,9 @@ import {
   Check,
   RefreshCw,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Card } from '@/components/ui/card.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Card } from '@/ui/card.jsx';
 import {
   Dialog,
   DialogContent,
@@ -29,19 +29,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog.jsx';
+} from '@/ui/dialog.jsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select.jsx';
-import { Slider } from '@/components/ui/slider.jsx';
+} from '@/ui/select.jsx';
+import { Slider } from '@/ui/slider.jsx';
 import { mediaAPI, authorsAPI } from '../../services/api';
 import { formatFileSize, isImageFile, formatDate } from '../../utils/helpers';
 import { useMediaStore } from '../../store/useStore';
-import ConfirmationModal from '../../components/ui/confirmation-modal.jsx';
+import ConfirmationModal from '@/ui/confirmation-modal';
 import { compressImage, QUALITY_PRESETS, formatBytes } from '../../../../utils/imageCompression.js';
 
 const MediaLibrary = ({ onSelect, isDialog }) => {

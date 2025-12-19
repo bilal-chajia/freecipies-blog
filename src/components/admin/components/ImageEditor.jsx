@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import Cropper from 'react-easy-crop';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/ui/button';
+import { Separator } from '@/ui/separator';
 import {
     Dialog,
     DialogContent,
-} from '@/components/ui/dialog';
+} from '@/ui/dialog';
 import {
     Crop as CropIcon,
     SlidersHorizontal,

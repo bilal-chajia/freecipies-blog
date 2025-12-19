@@ -2,11 +2,11 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Edit2, Trash2, Star } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
+import { Button } from '@/ui/button.jsx';
 import {
     Card,
-} from '@/components/ui/card.jsx';
-import { Switch } from '@/components/ui/switch';
+} from '@/ui/card.jsx';
+import { Switch } from '@/ui/switch';
 import ColorPicker from '../../components/ColorPicker';
 import { getContrastColor } from '../../utils/helpers';
 import { useSettingsStore } from '../../store/useStore';

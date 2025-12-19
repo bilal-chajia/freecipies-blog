@@ -5,7 +5,7 @@ export const prerender = false;
 
 export const GET: APIRoute = async ({ locals, site }) => {
     const env = locals.runtime.env as Env;
-    const baseUrl = site?.toString().replace(/\/$/, '') || 'https://freecipies.com';
+    const baseUrl = site?.toString().replace(/\/$/, '') || 'https://recipes-saas.com';
 
     // Fetch all data for sitemap dynamically from database
     let recipes: any[] = [];

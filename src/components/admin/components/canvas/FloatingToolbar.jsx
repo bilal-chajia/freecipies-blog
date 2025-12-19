@@ -20,7 +20,7 @@ import {
     ChevronsUp,
     ChevronsDown,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -30,8 +30,8 @@ import {
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+} from '@/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import useEditorStore from '../../store/useEditorStore';
 import { useUIStore } from '../../store/useStore';
 

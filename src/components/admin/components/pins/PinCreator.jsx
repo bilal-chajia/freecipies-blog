@@ -2,20 +2,20 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     Dialog,
     DialogContent,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+} from '@/ui/dialog';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { Label } from '@/ui/label';
+import { Textarea } from '@/ui/textarea';
+import { ScrollArea } from '@/ui/scroll-area';
+import { Separator } from '@/ui/separator';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
+} from '@/ui/select';
 import {
     Loader2,
     Download,
@@ -29,7 +29,7 @@ import {
     Image,
     ZoomIn,
 } from 'lucide-react';
-import { Slider } from '../ui/slider';
+import { Slider } from '@/ui/slider';
 import { toast } from 'sonner';
 
 import PinCanvas from '../canvas/PinCanvas';

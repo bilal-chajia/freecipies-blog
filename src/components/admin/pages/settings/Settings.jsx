@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Save, Settings as SettingsIcon, CheckCircle, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
-import { Alert, AlertDescription } from '@/components/ui/alert.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
+import { Alert, AlertDescription } from '@/ui/alert.jsx';
 import { useSettingsStore } from '../../store/useStore';
 
 // Import Tab Components
@@ -23,8 +23,8 @@ const Settings = () => {
     // General Settings
     siteName: 'Freecipies',
     siteDescription: 'Delicious recipes and cooking tips',
-    siteUrl: 'https://freecipies.com',
-    adminEmail: 'admin@freecipies.com',
+    siteUrl: 'https://recipes-saas.com',
+    adminEmail: 'admin@recipes-saas.com',
     timezone: 'America/Toronto',
     language: 'en',
 
@@ -35,14 +35,14 @@ const Settings = () => {
     defaultMetaTitle: 'Freecipies - Delicious Recipes & Cooking Tips',
     defaultMetaDescription: 'Discover amazing recipes, cooking techniques, and kitchen tips from professional chefs and home cooks.',
     googleAnalyticsId: '',
-    robotsTxt: 'User-agent: *\nAllow: /\n\nSitemap: https://freecipies.com/sitemap.xml',
+    robotsTxt: 'User-agent: *\nAllow: /\n\nSitemap: https://recipes-saas.com/sitemap.xml',
 
     // Email Settings
     smtpHost: '',
     smtpPort: '587',
     smtpUser: '',
     smtpPassword: '',
-    emailFrom: 'noreply@freecipies.com',
+    emailFrom: 'noreply@recipes-saas.com',
     emailNotifications: true,
 
     // Social Media
@@ -137,8 +137,8 @@ const Settings = () => {
     const mockSettings = {
       siteName: 'Freecipies',
       siteDescription: 'Delicious recipes and cooking tips',
-      siteUrl: 'https://freecipies.com',
-      adminEmail: 'admin@freecipies.com',
+      siteUrl: 'https://recipes-saas.com',
+      adminEmail: 'admin@recipes-saas.com',
       timezone: 'America/Toronto',
       language: 'en',
       postsPerPage: 12,

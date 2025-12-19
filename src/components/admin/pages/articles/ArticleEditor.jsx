@@ -1,19 +1,19 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Eye, Code } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Textarea } from '@/components/ui/textarea.jsx';
-import { Switch } from '@/components/ui/switch.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Label } from '@/ui/label.jsx';
+import { Textarea } from '@/ui/textarea.jsx';
+import { Switch } from '@/ui/switch.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select.jsx';
+} from '@/ui/select.jsx';
 import Editor from '@monaco-editor/react';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../services/api';
 import { generateSlug, isValidJSON } from '../../utils/helpers';

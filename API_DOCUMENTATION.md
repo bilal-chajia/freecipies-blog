@@ -53,7 +53,7 @@ Retrieve full details (content, JSON-LD data) for a single article.
     "type": "recipe",
     
     // Flat Image Schema
-    "imageUrl": "https://cdn.freecipies.com/images/pancakes.webp",
+    "imageUrl": "https://cdn.recipes-saas.com/images/pancakes.webp",
     "imageWidth": 1200,
     "imageHeight": 675,
     "imageAlt": "Stack of pancakes",
@@ -103,7 +103,7 @@ List all categories with metadata.
       "slug": "breakfast",
       "label": "Breakfast",
       "color": "#ff9900", // Hex color for UI badges
-      "imageUrl": "https://cdn.freecipies.com/images/cat-breakfast.webp",
+      "imageUrl": "https://cdn.recipes-saas.com/images/cat-breakfast.webp",
       "imageWidth": 800,
       "imageHeight": 600,
       "totalArticles": 45
@@ -131,7 +131,7 @@ List all authors.
       "slug": "chef-john",
       "name": "Chef John",
       "job": "Head Chef",
-      "imageUrl": "https://cdn.freecipies.com/images/john.webp"
+      "imageUrl": "https://cdn.recipes-saas.com/images/john.webp"
     }
   ]
 }

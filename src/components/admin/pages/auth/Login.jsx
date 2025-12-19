@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChefHat, Lock, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Label } from '@/ui/label.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { authAPI } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
 

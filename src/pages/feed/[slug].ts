@@ -6,7 +6,7 @@ export const prerender = false;
 export const GET: APIRoute = async ({ params, locals, site }) => {
     const env = locals.runtime.env as Env;
     const categorySlug = params.slug;
-    const baseUrl = site?.toString().replace(/\/$/, '') || 'https://freecipies.com';
+    const baseUrl = site?.toString().replace(/\/$/, '') || 'https://recipes-saas.com';
 
     if (!categorySlug) {
         return new Response('Category not specified', { status: 400 });

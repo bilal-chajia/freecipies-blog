@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Tag, Palette, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Label } from '@/ui/label.jsx';
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { tagsAPI } from '../../services/api';
 import { generateSlug } from '../../utils/helpers';
 import ColorPicker from '../../components/ColorPicker';

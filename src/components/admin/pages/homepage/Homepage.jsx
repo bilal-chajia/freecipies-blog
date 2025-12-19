@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Save, Home, Image, FileText, Star, Eye, Plus, X, GripVertical } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Textarea } from '@/components/ui/textarea.jsx';
-import { Switch } from '@/components/ui/switch.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
-import { Alert, AlertDescription } from '@/components/ui/alert.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Label } from '@/ui/label.jsx';
+import { Textarea } from '@/ui/textarea.jsx';
+import { Switch } from '@/ui/switch.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select.jsx';
+import { Alert, AlertDescription } from '@/ui/alert.jsx';
 import { useHomepageStore } from '../../store/useStore';
 import ColorPicker from '../../components/ColorPicker';
 

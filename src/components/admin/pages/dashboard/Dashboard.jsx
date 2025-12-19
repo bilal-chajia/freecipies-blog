@@ -10,8 +10,8 @@ import {
   TrendingUp,
   Plus,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { statsAPI, articlesAPI } from '../../services/api';
 import { formatNumber, formatRelativeTime } from '../../utils/helpers';
 

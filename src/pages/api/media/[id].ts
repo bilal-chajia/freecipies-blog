@@ -5,6 +5,19 @@ import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from
 
 export const prerender = false;
 
+// Helper to parse variants JSON and extract R2 key
+function getR2KeyFromVariants(variantsJson: string | null): string | null {
+    if (!variantsJson) return null;
+    try {
+        const variants = JSON.parse(variantsJson);
+        // Try to find R2 key in order of preference
+        const variant = variants.original || variants.lg || variants.md || variants.sm || variants.xs;
+        return variant?.r2_key || null;
+    } catch {
+        return null;
+    }
+}
+
 // PUT - Replace image file (in-place)
 export const PUT: APIRoute = async ({ request, locals, params }) => {
     const idStr = params.id;
@@ -34,8 +47,8 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
         }
 
         // Get the original media record
-        const media = await getMediaById(env.DB, id);
-        if (!media) {
+        const mediaRecord = await getMediaById(env.DB, id);
+        if (!mediaRecord) {
             const { body, status, headers } = formatErrorResponse(
                 new AppError(ErrorCodes.NOT_FOUND, `Media file with ID ${id} not found`, 404)
             );
@@ -69,30 +82,22 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
             return new Response(body, { status, headers });
         }
 
-        // Determine new path (change extension to .webp if needed)
-        const oldKey = media.r2Key;
-        const newKey = oldKey.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
-        // Add cache-busting timestamp to URL to prevent browser caching
-        const cacheBuster = `?v=${Date.now()}`;
-        const baseNewUrl = media.url.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp').split('?')[0]; // Remove any existing query params
-        const newUrl = baseNewUrl + cacheBuster;
-        const newFilename = (media.filename || '').replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
+        // Get old R2 key from variants
+        const oldKey = getR2KeyFromVariants(mediaRecord.variantsJson);
 
-        // Always delete old file first to ensure clean replacement
-        try {
-            await env.IMAGES.delete(oldKey);
-            // Also delete webp version if original was different format
-            if (newKey !== oldKey) {
-                // In case there's already a .webp version from previous edit
-                try {
-                    await env.IMAGES.delete(newKey);
-                } catch (e) {
-                    // Ignore if doesn't exist
-                }
+        // Generate new key
+        const timestamp = Date.now();
+        const newKey = `media/${id}/${timestamp}.webp`;
+        const cacheBuster = `?v=${timestamp}`;
+        const newUrl = `${env.R2_PUBLIC_URL}/${newKey}${cacheBuster}`;
+
+        // Delete old file if exists
+        if (oldKey) {
+            try {
+                await env.IMAGES.delete(oldKey);
+            } catch (r2Error) {
+                console.warn(`Failed to delete old file from R2 (key: ${oldKey}):`, r2Error);
             }
-        } catch (r2Error) {
-            console.warn(`Failed to delete old file from R2 (key: ${oldKey}):`, r2Error);
-            // Continue - not critical if old file deletion fails
         }
 
         // Upload new file to R2
@@ -111,14 +116,14 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
             return new Response(body, { status, headers });
         }
 
-        // Update database record
+        // Update database record with new variantsJson
         try {
+            const newVariants = {
+                original: { url: newUrl.split('?')[0], r2_key: newKey, width: 0, height: 0 }
+            };
             await updateMedia(env.DB, id, {
-                r2Key: newKey,
-                url: newUrl,
-                filename: newFilename || file.name,
-                mimeType: 'image/webp',
-                sizeBytes: file.size
+                variantsJson: JSON.stringify(newVariants),
+                name: file.name
             });
         } catch (dbError) {
             console.error('Database update failed:', dbError);
@@ -173,8 +178,8 @@ export const DELETE: APIRoute = async ({ request, locals, params }) => {
         }
 
         // Get the media file first to find the R2 key
-        const media = await getMediaById(env.DB, id);
-        if (!media) {
+        const mediaRecord = await getMediaById(env.DB, id);
+        if (!mediaRecord) {
             const { body, status, headers } = formatErrorResponse(
                 new AppError(ErrorCodes.NOT_FOUND, `Media file with ID ${id} not found`, 404)
             );
@@ -183,17 +188,18 @@ export const DELETE: APIRoute = async ({ request, locals, params }) => {
 
         // Delete from R2
         let r2DeleteFailed = false;
-        if (media.r2Key) {
+        const r2Key = getR2KeyFromVariants(mediaRecord.variantsJson);
+        if (r2Key) {
             try {
-                await env.IMAGES.delete(media.r2Key);
+                await env.IMAGES.delete(r2Key);
             } catch (r2Error) {
                 r2DeleteFailed = true;
-                console.warn(`Failed to delete file from R2 (key: ${media.r2Key}):`, r2Error);
+                console.warn(`Failed to delete file from R2 (key: ${r2Key}):`, r2Error);
                 // Proceed to delete from DB anyway to avoid orphans in DB
             }
         }
 
-        // Delete from DB
+        // Delete from DB (soft delete)
         try {
             const success = await deleteMedia(env.DB, id);
             if (!success) {

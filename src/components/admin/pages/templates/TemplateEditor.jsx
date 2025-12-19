@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/ui/button';
 
 import {
     Loader2,
@@ -13,7 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
-} from '@/components/ui/dialog';
+} from '@/ui/dialog';
 import { toast } from 'sonner';
 import PinCanvas from '../../components/canvas/PinCanvas';
 import { FONTS } from '../../components/canvas/ElementPanel'; // Keep FONTS for loader

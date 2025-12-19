@@ -14,22 +14,22 @@ import {
     MoveUp,
     MoveDown
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { Slider } from '@/components/ui/slider';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { Separator } from '@/ui/separator';
+import { Slider } from '@/ui/slider';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
+} from '@/ui/select';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/ui/popover';
 
 import useEditorStore from '../../../store/useEditorStore';
 import { FONTS } from '../../canvas/ElementPanel';

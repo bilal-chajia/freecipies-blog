@@ -6,4 +6,4 @@ Disallow: /admin
 Disallow: /api/
 
 # Sitemap location
-Sitemap: https://freecipies.com/sitemap.xml
+Sitemap: https://recipes-saas.com/sitemap.xml

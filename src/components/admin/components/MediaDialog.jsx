@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog.jsx';
+import { Dialog, DialogContent, DialogTitle } from '@/ui/dialog.jsx';
 import MediaLibrary from '../pages/media/MediaLibrary';
 
 export default function MediaDialog({ open, onOpenChange, onSelect }) {

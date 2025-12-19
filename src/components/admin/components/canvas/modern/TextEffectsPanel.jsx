@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/ui/button';
+import { ScrollArea } from '@/ui/scroll-area';
+import { Slider } from '@/ui/slider';
+import { Label } from '@/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
 import { useUIStore } from '../../../store/useStore';
 import { ChevronLeft, Settings2 } from 'lucide-react';
 import ColorPicker from '../../ColorPicker';

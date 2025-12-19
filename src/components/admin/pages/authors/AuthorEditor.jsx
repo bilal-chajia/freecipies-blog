@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Textarea } from '@/components/ui/textarea.jsx';
-import { Switch } from '@/components/ui/switch.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Label } from '@/ui/label.jsx';
+import { Textarea } from '@/ui/textarea.jsx';
+import { Switch } from '@/ui/switch.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { ArrowLeft, Save, Upload, X, Image as ImageIcon, User, FileText, Globe, Link2, FolderOpen } from 'lucide-react';
 import { authorsAPI, mediaAPI } from '../../services/api';
 import { cn } from '@/lib/utils';

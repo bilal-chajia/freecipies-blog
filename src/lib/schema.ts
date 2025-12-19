@@ -1,3 +1,27 @@
+/**
+ * Drizzle ORM Schema Definitions
+ * ==============================
+ * 
+ * This file defines the database schema using Drizzle ORM for D1/SQLite.
+ * 
+ * IMPORTANT: This schema MUST match the actual D1 database structure.
+ * See: db/seed.sql for the authoritative table definitions.
+ * 
+ * Tables:
+ * - siteSettings: Key-value store for site configuration
+ * - media: Centralized asset library with responsive variants
+ * - categories: Article/recipe categorization (uses 'label', 'depth', 'is_online')
+ * - authors: Content creators with profiles
+ * - tags: Flexible labeling system
+ * - equipment: Kitchen tools with affiliate links
+ * - articles: Main content (articles, recipes, roundups)
+ * - articlesToTags: Junction table for article-tag relationships
+ * - pinterestBoards/pinterestPins/pinTemplates: Pinterest integration
+ * - redirects: URL redirect management
+ * 
+ * @see db/DATABASE_SCHEMA.md for detailed field documentation
+ */
+
 import { sqliteTable, text, integer, index, primaryKey } from 'drizzle-orm/sqlite-core';
 import { relations, sql } from 'drizzle-orm';
 
@@ -42,30 +66,47 @@ export const media = sqliteTable('media', {
 
 // ============================================================================
 // CATEGORIES
+// Aligned with: db/schema.sql (lines 251-469)
 // ============================================================================
 export const categories = sqliteTable('categories', {
     id: integer('id').primaryKey({ autoIncrement: true }),
+    
+    // Navigation & Hierarchy
     slug: text('slug').unique().notNull(),
-    name: text('name').notNull(),
-    description: text('description'),
-    shortDescription: text('short_description'),
+    label: text('label').notNull(),
     parentId: integer('parent_id'),
-    displayOrder: integer('display_order').default(0),
-    colorHex: text('color_hex'),
+    depth: integer('depth').default(0),
+    
+    // Display Text (Landing Page Content)
+    headline: text('headline'),
+    collectionTitle: text('collection_title'),
+    shortDescription: text('short_description'),
+    
+    // Visuals (Display-Ready Image Data)
+    imagesJson: text('images_json').default('{}'),
+    
+    // Logic & Theme
+    color: text('color').default('#ff6600ff'),
     iconSvg: text('icon_svg'),
-    imagesJson: text('images_json'),
-    seoJson: text('seo_json'),
-    configJson: text('config_json'),
-    cachedPostCount: integer('cached_post_count').default(0),
     isFeatured: integer('is_featured', { mode: 'boolean' }).default(false),
-    isNav: integer('is_nav', { mode: 'boolean' }).default(true),
+    
+    // JSON Config Containers
+    seoJson: text('seo_json').default('{}'),
+    configJson: text('config_json').default('{}'),
+    i18nJson: text('i18n_json').default('{}'),
+    
+    // System & Metrics
+    sortOrder: integer('sort_order').default(0),
+    isOnline: integer('is_online', { mode: 'boolean' }).default(false),
+    cachedPostCount: integer('cached_post_count').default(0),
     createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
     deletedAt: text('deleted_at'),
 }, (table) => [
     index('idx_categories_slug').on(table.slug),
     index('idx_categories_parent').on(table.parentId),
-    index('idx_categories_nav').on(table.isNav, table.displayOrder),
+    index('idx_categories_display').on(table.isOnline, table.sortOrder),
+    index('idx_categories_featured').on(table.isFeatured),
     index('idx_categories_active').on(table.deletedAt),
 ]);
 

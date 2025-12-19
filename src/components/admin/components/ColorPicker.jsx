@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Input } from '@/components/ui/input.jsx';
-import { Button } from '@/components/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Button } from '@/ui/button.jsx';
 import { cn } from '@/lib/utils';
 
 // Convert HSV to RGB

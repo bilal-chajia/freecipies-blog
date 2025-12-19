@@ -41,13 +41,13 @@ import {
     AlignRight,
     AlignJustify
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { Separator } from '@/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
+import { Slider } from '@/ui/slider';
+import { Label } from '@/ui/label';
 import useEditorStore from '../../../store/useEditorStore';
 import { useUIStore } from '../../../store/useStore';
 import ColorPicker from '../../ColorPicker';

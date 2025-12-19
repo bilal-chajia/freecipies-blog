@@ -1,13 +1,13 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/ui/button';
+import { Slider } from '@/ui/slider';
+import { Separator } from '@/ui/separator';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
     TooltipProvider
-} from '@/components/ui/tooltip';
+} from '@/ui/tooltip';
 import {
     ZoomIn,
     ZoomOut,

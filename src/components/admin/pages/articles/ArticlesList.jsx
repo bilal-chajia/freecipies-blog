@@ -10,15 +10,15 @@ import {
   MoreVertical,
   ImagePlus,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Badge } from '@/ui/badge.jsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.jsx';
-import DataTable from '@/components/ui/data-table.jsx';
+} from '@/ui/dropdown-menu.jsx';
+import DataTable from '@/ui/data-table.jsx';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../services/api';
 import { formatDate, formatNumber, truncate, debounce } from '../../utils/helpers';
 import { useArticlesStore, useCategoriesStore, useAuthorsStore, useTagsStore } from '../../store/useStore';

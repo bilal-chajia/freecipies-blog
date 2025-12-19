@@ -17,10 +17,10 @@ import {
     Trash2,
     Copy
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { ScrollArea } from '@/ui/scroll-area';
+import { Separator } from '@/ui/separator';
 import { toast } from 'sonner';
 
 import useEditorStore from '../../../store/useEditorStore';
@@ -30,7 +30,7 @@ import { mediaAPI, templatesAPI } from '../../../services/api';
 import ColorPicker from '../../ColorPicker';
 import FontsPanel from './FontsPanel';
 import TextEffectsPanel from './TextEffectsPanel';
-import ConfirmationModal from '@/components/ui/confirmation-modal';
+import ConfirmationModal from '@/ui/confirmation-modal';
 
 const TABS = [
     { id: 'templates', icon: LayoutTemplate, label: 'Templates' },

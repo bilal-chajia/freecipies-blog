@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Badge } from '@/ui/badge.jsx';
 import { categoriesAPI } from '../../services/api';
-import ConfirmationModal from '@/components/ui/confirmation-modal.jsx';
+import ConfirmationModal from '@/ui/confirmation-modal.jsx';
 import CategoryCard from './CategoryCard';
 import { toast } from 'sonner';
 

@@ -1,10 +1,10 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Switch } from '@/components/ui/switch.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
-import { Textarea } from '@/components/ui/textarea.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
+import { Label } from '@/ui/label.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Switch } from '@/ui/switch.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select.jsx';
+import { Textarea } from '@/ui/textarea.jsx';
 
 const AdsSettings = ({ formData, handleInputChange }) => {
     return (

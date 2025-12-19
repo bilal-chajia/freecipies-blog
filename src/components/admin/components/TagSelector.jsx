@@ -2,7 +2,7 @@ import * as React from "react"
 import { Check, ChevronsUpDown, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/ui/button"
 import {
     Command,
     CommandEmpty,
@@ -10,13 +10,13 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
-} from "@/components/ui/command"
+} from "@/ui/command"
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
+} from "@/ui/popover"
+import { Badge } from "@/ui/badge"
 
 export default function TagSelector({ tags = [], selectedTags = [], onTagsChange }) {
     const [open, setOpen] = React.useState(false)

@@ -1,5 +1,6 @@
 {
     "Codegeex.RepoIndex": true,
     "Codegeex.Chat.LanguagePreference": "English",
-    "Codegeex.CompletionDelay": 1
+    "Codegeex.CompletionDelay": 1,
+    "css.lint.unknownAtRules": "ignore"
 }

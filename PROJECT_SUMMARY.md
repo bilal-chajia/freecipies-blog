@@ -53,7 +53,7 @@ The Freecipies Blog Platform is a modern, high-performance recipe blog built wit
 ## Project Structure
 
 ```
-freecipies-blog/
+recipes-saas/
 ├── src/
 │   ├── components/          # Reusable Astro components
 │   │   ├── RecipeCard.astro
@@ -180,7 +180,7 @@ interface Author {
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd freecipies-blog
+cd recipes-saas
 
 # Install dependencies
 pnpm install

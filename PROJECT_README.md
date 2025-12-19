@@ -24,7 +24,7 @@ A modern, high-performance blog platform built with Astro.js and deployed on Clo
 ## 📁 Project Structure
 
 ```
-freecipies-blog/
+recipes-saas/
 ├── src/
 │   ├── components/          # Reusable Astro components
 │   │   ├── RecipeCard.astro
@@ -68,7 +68,7 @@ freecipies-blog/
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd freecipies-blog
+   cd recipes-saas
    ```
 
 2. **Install dependencies**
@@ -121,12 +121,12 @@ freecipies-blog/
 
 1. Create D1 database:
    ```bash
-   wrangler d1 create freecipies-db
+   wrangler d1 create recipes-saas-db
    ```
 
 2. Run migrations:
    ```bash
-   wrangler d1 execute freecipies-db --file=./schema.sql
+   wrangler d1 execute recipes-saas-db --file=./schema.sql
    ```
 
 ## 📊 Data Models
@@ -314,7 +314,7 @@ This project is licensed under the MIT License.
 For issues and questions:
 - GitHub Issues: [repository-url]/issues
 - Documentation: [docs-url]
-- Email: support@freecipies.com
+- Email: support@recipes-saas.com
 
 ## 🗺️ Roadmap
 

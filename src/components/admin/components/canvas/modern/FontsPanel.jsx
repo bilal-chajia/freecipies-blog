@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Trash2, Search, Loader2, Type } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { ScrollArea } from '@/ui/scroll-area';
 import useEditorStore from '../../../store/useEditorStore';
 import { useUIStore } from '../../../store/useStore';
-import ConfirmationModal from '@/components/ui/confirmation-modal';
+import ConfirmationModal from '@/ui/confirmation-modal';
 
 /**
  * FontsPanel - Font management section for Text tab

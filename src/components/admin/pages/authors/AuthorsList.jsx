@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Switch } from '@/components/ui/switch.jsx';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Switch } from '@/ui/switch.jsx';
 import { Plus, Edit, Trash2, Search, Star } from 'lucide-react';
 import { authorsAPI } from '../../services/api';
-import ConfirmationModal from '@/components/ui/confirmation-modal.jsx';
+import ConfirmationModal from '@/ui/confirmation-modal.jsx';
 
 const AuthorsList = () => {
   const location = useLocation();
