@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS site_settings (
     --   'image'   = Image picker (value stores media_id or URL)
     --   'color'   = Color picker (value stores hex code)
     --   'code'    = Code editor with syntax highlighting (for scripts)
-    type TEXT DEFAULT 'json',
+    type TEXT DEFAULT 'json' CHECK (type IN ('json', 'text', 'number', 'boolean', 'image', 'color', 'code')),
 
     -- Timestamp for auditing changes.
     -- Shows when this setting was last modified in the Admin Panel.
@@ -364,7 +364,7 @@ CREATE TABLE IF NOT EXISTS categories (
     -- FUTURE FIELDS (Reserved for later):
     --   - format: "webp" | "avif" | "jpeg" (for multi-format serving)
     --   - avif: { "url": "...", ... } (alternative AVIF variants)
-    images_json TEXT DEFAULT '{}',
+    images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
     -- =========================================================================
     -- 4. LOGIC & THEME
@@ -408,7 +408,7 @@ CREATE TABLE IF NOT EXISTS categories (
     --   "twitterCard": "summary_large_image",  <-- "summary" | "summary_large_image"
     --   "robots": null                     <-- Custom robots: "nofollow,noarchive"
     -- }
-    seo_json TEXT DEFAULT '{}',
+    seo_json TEXT DEFAULT '{}' CHECK (json_valid(seo_json)),
 
     -- Layout and behavior configuration for the category page.
     -- SCHEMA (config_json):
@@ -424,7 +424,7 @@ CREATE TABLE IF NOT EXISTS categories (
     --   "sortOrder": "desc",               <-- "asc" | "desc"
     --   "headerStyle": "hero"              <-- "hero" | "minimal" | "none"
     -- }
-    config_json TEXT DEFAULT '{}',
+    config_json TEXT DEFAULT '{}' CHECK (json_valid(config_json)),
 
     -- Internationalization overrides for multilingual sites.
     -- SCHEMA (i18n_json):
@@ -433,7 +433,7 @@ CREATE TABLE IF NOT EXISTS categories (
     --   "es": { "label": "Desayuno", "headline": "Recetas de desayuno" }
     -- }
     -- USAGE: App layer checks user locale, falls back to base fields.
-    i18n_json TEXT DEFAULT '{}',
+    i18n_json TEXT DEFAULT '{}' CHECK (json_valid(i18n_json)),
 
     -- =========================================================================
     -- 6. SYSTEM & METRICS
@@ -452,7 +452,7 @@ CREATE TABLE IF NOT EXISTS categories (
     -- Denormalized count of published articles in this category.
     -- UPDATED BY: Background job or trigger when articles change.
     -- USAGE: Display "42 recipes" badge on category cards.
-    cached_post_count INTEGER DEFAULT 0,
+    cached_post_count INTEGER DEFAULT 0 CHECK (cached_post_count >= 0),
 
     -- Record creation timestamp (UTC).
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -552,7 +552,7 @@ CREATE TABLE IF NOT EXISTS authors (
     -- OPTIONS: 'guest', 'staff', 'editor', 'admin'
     -- DEFAULT: 'guest' (safety precaution for new authors)
     -- USAGE: Team page filtering, admin permissions.
-    role TEXT DEFAULT 'guest',
+    role TEXT DEFAULT 'guest' CHECK (role IN ('guest', 'staff', 'editor', 'admin')),
 
     -- Main H1 for the author profile page.
     -- FALLBACK: If NULL, use 'name' value.
@@ -615,7 +615,7 @@ CREATE TABLE IF NOT EXISTS authors (
     --           because avatars display at 32-120px typically (bylines, comments).
     --           Saves R2 storage. Original (800px) kept for profile page.
     --   COVER:  Uses standard breakpoints (360, 720, 1200, 2048) for hero sections.
-    images_json TEXT DEFAULT '{}',
+    images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
     -- =========================================================================
     -- 4. BIOGRAPHY & SOCIALS
@@ -633,7 +633,7 @@ CREATE TABLE IF NOT EXISTS authors (
     -- }
     -- NETWORK OPTIONS: twitter, instagram, facebook, youtube, pinterest, 
     --                  tiktok, linkedin, website, email, custom
-    bio_json TEXT DEFAULT '{}',
+    bio_json TEXT DEFAULT '{}' CHECK (json_valid(bio_json)),
 
     -- =========================================================================
     -- 5. SEO CONFIGURATION
@@ -649,7 +649,7 @@ CREATE TABLE IF NOT EXISTS authors (
     --   "ogDescription": null,             <-- Override OG description
     --   "twitterCard": "summary_large_image"
     -- }
-    seo_json TEXT DEFAULT '{}',
+    seo_json TEXT DEFAULT '{}' CHECK (json_valid(seo_json)),
 
     -- =========================================================================
     -- 6. SYSTEM & METRICS
@@ -673,7 +673,7 @@ CREATE TABLE IF NOT EXISTS authors (
     -- Denormalized count of published articles by this author.
     -- UPDATED BY: Background job or trigger when articles change.
     -- USAGE: Display "42 articles by Jane" on profile cards.
-    cached_post_count INTEGER DEFAULT 0,
+    cached_post_count INTEGER DEFAULT 0 CHECK (cached_post_count >= 0),
 
     -- Record creation timestamp (UTC).
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -776,7 +776,7 @@ CREATE TABLE IF NOT EXISTS tags (
     --   - "Occasion": Holiday, Party, Weeknight
     --
     -- AGENT RULE: Always initialize as '[]' (Empty Array). Never NULL.
-    filter_groups_json TEXT DEFAULT '[]',
+    filter_groups_json TEXT DEFAULT '[]' CHECK (json_valid(filter_groups_json)),
 
     -- =========================================================================
     -- 3. VISUAL STYLING (Design System)
@@ -794,7 +794,7 @@ CREATE TABLE IF NOT EXISTS tags (
     --   - Must be sanitized (no <script> tags, no event handlers)
     --   - Must have viewBox attribute
     --   - Keep under 2KB for performance
-    style_json TEXT DEFAULT '{}',
+    style_json TEXT DEFAULT '{}' CHECK (json_valid(style_json)),
 
     -- =========================================================================
     -- 4. SYSTEM & METRICS
@@ -803,7 +803,7 @@ CREATE TABLE IF NOT EXISTS tags (
     -- Denormalized count of published articles using this tag.
     -- USAGE: Tag cloud sorting (most popular first), badge display.
     -- UPDATED BY: Background job or trigger on articles_to_tags changes.
-    cached_post_count INTEGER DEFAULT 0,
+    cached_post_count INTEGER DEFAULT 0 CHECK (cached_post_count >= 0),
 
     -- Record creation timestamp (UTC).
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -894,7 +894,7 @@ CREATE TABLE IF NOT EXISTS equipment (
 
     -- Equipment category for filtering in admin.
     -- OPTIONS: "appliances", "bakeware", "cookware", "utensils", "gadgets", "other"
-    category TEXT DEFAULT 'other',
+    category TEXT DEFAULT 'other' CHECK (category IN ('appliances', 'bakeware', 'cookware', 'utensils', 'gadgets', 'other')),
 
     -- =========================================================================
     -- 2. VISUALS
@@ -906,7 +906,7 @@ CREATE TABLE IF NOT EXISTS equipment (
     --   "alt": "KitchenAid Stand Mixer",
     --   "variants": { "lg": {...}, "md": {...}, "sm": {...}, "xs": {...} }
     -- }
-    image_json TEXT DEFAULT '{}',
+    image_json TEXT DEFAULT '{}' CHECK (json_valid(image_json)),
 
     -- =========================================================================
     -- 3. AFFILIATE LINKS
@@ -1012,7 +1012,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- Globally unique; if you want to reuse slugs after soft delete,
     -- handle that logic at the app layer for D1.
 
-    type TEXT NOT NULL DEFAULT 'article',
+    type TEXT NOT NULL DEFAULT 'article' CHECK (type IN ('article', 'recipe', 'roundup')),
     -- Content kind:
     --   'article' = generic editorial content
     --   'recipe'  = structured recipe
@@ -1599,9 +1599,6 @@ CREATE TABLE IF NOT EXISTS articles (
     -- ]
     -- UPDATE STRATEGY: Refresh when equipment table updates or recipe saves.
 
-    cached_comment_count INTEGER DEFAULT 0,
-    -- Denormalized total comment count for quick display.
-
     cached_rating_json TEXT DEFAULT '{}' CHECK (json_valid(cached_rating_json)),
     -- Optional denormalized rating snapshot for cards/lists:
     -- {
@@ -1815,7 +1812,7 @@ CREATE TABLE IF NOT EXISTS articles (
     --   experimentKey       : Identifier for experiments ("headline-test-2025-01").
     --   experimentVariant   : "A","B","control", etc.
 
-    workflow_status TEXT DEFAULT 'draft',
+    workflow_status TEXT DEFAULT 'draft' CHECK (workflow_status IN ('draft', 'in_review', 'scheduled', 'published', 'archived')),
     -- Editorial workflow:
     --   'draft'      : in progress.
     --   'in_review'  : awaiting editor approval.
@@ -2196,7 +2193,7 @@ CREATE TABLE IF NOT EXISTS pinterest_pins (
     tags_json       TEXT DEFAULT '[]' CHECK (json_valid(tags_json)),
     -- ["easy dinner","chicken","high protein"] for your own reference/filters.
 
-    status TEXT DEFAULT 'draft',
+    status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'scheduled', 'exported', 'published', 'failed')),
     -- Workflow status:
     --   'draft'     : Created, not yet exported.
     --   'scheduled' : Ready for next export batch.

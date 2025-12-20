@@ -480,7 +480,6 @@ contact_info    → Contact details
 | `cached_category_json`  | TEXT    | Category snapshot                         |
 | `cached_author_json`    | TEXT    | Author snapshot with avatar               |
 | `cached_equipment_json` | TEXT    | Equipment with affiliate links            |
-| `cached_comment_count`  | INTEGER | Comment count                             |
 | `cached_rating_json`    | TEXT    | Star rating snapshot                      |
 | `cached_toc_json`       | TEXT    | Table of contents from headings           |
 | `cached_recipe_json`    | TEXT    | Recipe card summary for listings          |
