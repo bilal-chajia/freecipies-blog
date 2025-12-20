@@ -1,7 +1,11 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { getArticles, getCategories, getAuthors } from "../lib/db";
-import type { Article, Category, Author } from "../types";
+import { getArticles } from "@modules/articles";
+import { getCategories } from "@modules/categories";
+import type { HydratedArticle } from "@modules/articles"; // Use Hydrated types
+import type { HydratedCategory } from "@modules/categories"; 
+import type { Author } from "@modules/authors";
+import { hydrateArticle, hydrateCategory } from "@shared/utils";
 import StoriesBar from "../components/StoriesBar.astro";
 import WebStoryViewer from "../components/WebStoryViewer.astro";
 
@@ -12,16 +16,17 @@ const siteDescription =
   "Discover delicious, easy-to-follow recipes with everyday ingredients. From quick weeknight dinners to impressive desserts, Freecipies makes cooking fun and accessible!";
 
 // Fetch data from database
-let allRecipes: Article[] = [];
-let categories: Category[] = [];
+let allRecipes: HydratedArticle[] = [];
+let categories: HydratedCategory[] = [];
 
 try {
   // Get all recipes for various sections
   const { items: recipes } = await getArticles(env.DB, { limit: 12 });
-  allRecipes = recipes;
+  allRecipes = recipes.map(hydrateArticle);
 
   // Get categories
-  categories = await getCategories(env.DB, { isOnline: true });
+  const rawCategories = await getCategories(env.DB, { isOnline: true });
+  categories = rawCategories.map(hydrateCategory);
 } catch (error) {
   console.error("Error fetching data for homepage:", error);
 }
@@ -35,7 +40,7 @@ const moreRecipes = allRecipes.slice(4, 8);      // More recipes
 const categoryColorMap = new Map(categories.map(c => [c.slug, c.color || '#ff6600']));
 
 // Helper function for recipe URL
-const getRecipeUrl = (recipe: Article) =>
+const getRecipeUrl = (recipe: HydratedArticle) =>
   recipe.route || `/recipes/${recipe.slug}`;
 
 // Helper function for category color
@@ -53,7 +58,7 @@ const getCategoryColor = (categorySlug: string) =>
             {/* Main Slider */}
             <div class="hero-slider" id="heroSlider">
               <div class="slider-track">
-                {featuredRecipes.slice(0, 4).map((recipe: Article, index: number) => (
+                {featuredRecipes.slice(0, 4).map((recipe: HydratedArticle, index: number) => (
                   <a
                     href={getRecipeUrl(recipe)}
                     class:list={["slide", { active: index === 0 }]}
@@ -86,7 +91,7 @@ const getCategoryColor = (categorySlug: string) =>
               </div>
               {/* Navigation Dots */}
               <div class="slider-dots">
-                {featuredRecipes.slice(0, 4).map((_: Article, index: number) => (
+                {featuredRecipes.slice(0, 4).map((_: HydratedArticle, index: number) => (
                   <button
                     class:list={["dot", { active: index === 0 }]}
                     data-index={index}
@@ -98,7 +103,7 @@ const getCategoryColor = (categorySlug: string) =>
 
             {/* Side cards */}
             <div class="hero-side-cards">
-              {featuredRecipes.slice(1, 3).map((recipe: Article) => (
+              {featuredRecipes.slice(1, 3).map((recipe: HydratedArticle) => (
                 <a
                   href={getRecipeUrl(recipe)}
                   class="recipe-card recipe-card-small"
@@ -142,7 +147,7 @@ const getCategoryColor = (categorySlug: string) =>
               </h2>
             </div>
             <div class="popular-grid">
-              {popularRecipes.map((recipe: Article) => (
+              {popularRecipes.map((recipe: HydratedArticle) => (
                 <article class="foxiz-card">
                   <a href={getRecipeUrl(recipe)} class="foxiz-card-image">
                     {recipe.imageUrl && (
@@ -211,7 +216,7 @@ const getCategoryColor = (categorySlug: string) =>
 
             <!-- Category Chips with Images -->
             <div class="category-chips-row">
-              {categories.map((category: Category) => (
+              {categories.map((category: HydratedCategory) => (
                 <a href={`/categories/${category.slug}`} class="category-chip">
                   <div class="chip-image-wrapper">
                     {category.imageUrl ? (
@@ -253,7 +258,7 @@ const getCategoryColor = (categorySlug: string) =>
               </a>
             </div>
             <div class="recipes-grid">
-              {moreRecipes.map((recipe: Article) => (
+              {moreRecipes.map((recipe: HydratedArticle) => (
                 <a href={getRecipeUrl(recipe)} class="recipe-card-vertical">
                   <div class="card-image-wrapper">
                     {recipe.imageUrl && (

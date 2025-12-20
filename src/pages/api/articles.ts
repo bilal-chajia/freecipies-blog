@@ -1,13 +1,8 @@
 import type { APIRoute } from 'astro';
-import {
-  getArticles, getArticleBySlug, createArticle, updateArticle, deleteArticle,
-  type Env
-} from '../../lib/db';
-import {
-  formatErrorResponse, formatSuccessResponse, validatePaginationParams,
-  ErrorCodes, AppError
-} from '../../lib/error-handler';
-import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../lib/auth';
+import { getArticles, getArticleBySlug, createArticle } from '@modules/articles';
+import type { Env } from '@shared/types';
+import { formatErrorResponse, formatSuccessResponse, validatePaginationParams, ErrorCodes, AppError } from '@shared/utils';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 
 export const prerender = false;
 
@@ -17,7 +12,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const category = url.searchParams.get('category');
   const author = url.searchParams.get('author');
   const tag = url.searchParams.get('tag');
-  const type = url.searchParams.get('type') as 'recipe' | 'blog' | null;
+  const type = url.searchParams.get('type') as 'recipe' | 'article' | 'roundup' | null;
   const statusFilter = url.searchParams.get('status'); // 'online', 'offline', or 'all'
   const search = url.searchParams.get('search');
 

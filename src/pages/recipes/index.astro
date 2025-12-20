@@ -1,7 +1,9 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { getArticles, getCategories, getTags } from "../../lib/db";
-import type { Article, Category, Tag } from "../../types";
+import { getArticles } from "@modules/articles";
+import { getCategories } from "@modules/categories";
+import { getTags } from "@modules/tags";
+import { hydrateArticles, hydrateCategories, hydrateTags } from "@shared/utils";
 
 export const prerender = false;
 
@@ -15,11 +17,11 @@ const page = parseInt(url.searchParams.get("page") || "1");
 const limit = 12;
 const offset = (page - 1) * limit;
 
-// Fetch data
-let recipes: Article[] = [];
+// Fetch data - use any[] to avoid complex type inference issues with hydration
+let recipes: any[] = [];
 let totalRecipes = 0;
-let categories: Category[] = [];
-let tags: Tag[] = [];
+let categories: any[] = [];
+let tags: any[] = [];
 
 try {
   // Get articles with optional filter
@@ -30,12 +32,14 @@ try {
     limit,
     offset,
   });
-  recipes = result.items;
+  recipes = hydrateArticles(result.items);
   totalRecipes = result.total;
 
   // Get all categories and tags for filters
-  categories = await getCategories(env.DB, { isOnline: true });
-  tags = await getTags(env.DB, { isOnline: true });
+  const rawCategories = await getCategories(env.DB, { isOnline: true });
+  const rawTags = await getTags(env.DB);
+  categories = hydrateCategories(rawCategories);
+  tags = hydrateTags(rawTags);
 } catch (error) {
   console.error("Error fetching recipes:", error);
 }
@@ -46,7 +50,7 @@ const totalPages = Math.ceil(totalRecipes / limit);
 const buildFilterUrl = (
   newCategory?: string,
   newTag?: string,
-  newPage?: number,
+  newPage?: number
 ) => {
   const params = new URLSearchParams();
   const cat = newCategory !== undefined ? newCategory : categoryFilter;
@@ -99,12 +103,12 @@ const siteDescription =
             All
           </a>
           {
-            categories.map((cat: Category) => (
+            categories.map((cat) => (
               <a
                 href={buildFilterUrl(
                   cat.slug === categoryFilter ? "" : cat.slug,
                   undefined,
-                  1,
+                  1
                 )}
                 class:list={[
                   "filter-pill",
@@ -125,12 +129,12 @@ const siteDescription =
         <section class="tags-section">
           <div class="container">
             <div class="tag-chips">
-              {tags.slice(0, 8).map((tag: Tag) => (
+              {tags.slice(0, 8).map((tag) => (
                 <a
                   href={buildFilterUrl(
                     undefined,
                     tag.slug === tagFilter ? "" : tag.slug,
-                    1,
+                    1
                   )}
                   class:list={["tag-chip", { active: tagFilter === tag.slug }]}
                   style={`--tag-color: ${tag.color || "#ff6600"};`}
@@ -195,7 +199,7 @@ const siteDescription =
         {
           recipes.length > 0 ? (
             <div class="recipes-grid">
-              {recipes.map((recipe: Article) => (
+              {recipes.map((recipe) => (
                 <article class="recipe-card">
                   <a href={`/recipes/${recipe.slug}`} class="card-image-link">
                     {recipe.imageUrl && (
@@ -276,7 +280,7 @@ const siteDescription =
                     >
                       {p}
                     </a>
-                  ),
+                  )
                 )}
               </div>
               {page < totalPages && (
@@ -692,4 +696,3 @@ const siteDescription =
     border-color: #ff3366;
   }
 </style>
-

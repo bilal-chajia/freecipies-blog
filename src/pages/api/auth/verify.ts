@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { verifyAuthToken } from '../../../lib/auth';
+import { verifyAuthToken } from '@modules/auth';
 
 export const prerender = false;
 

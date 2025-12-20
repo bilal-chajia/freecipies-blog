@@ -1,11 +1,8 @@
 import type { APIRoute } from 'astro';
-import {
-  getTags, createTag, type Env
-} from '../../lib/db';
-import {
-  formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError
-} from '../../lib/error-handler';
-import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../lib/auth';
+import { getTags, createTag } from '@modules/tags';
+import type { Env } from '@shared/types';
+import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 
 export const prerender = false;
 

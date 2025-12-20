@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { Env } from '../../../lib/db';
-import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../../lib/auth';
-import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '../../../lib/error-handler';
+import type { Env } from '@shared/types';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 
 export const prerender = false;
 

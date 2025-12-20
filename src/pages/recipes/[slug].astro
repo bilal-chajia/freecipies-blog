@@ -1,12 +1,10 @@
 ---
 import RecipeLayout from "../../layouts/RecipeLayout.astro";
 import SEO from "../../components/SEO.astro";
-import {
-  getArticleBySlug,
-  getAuthorBySlug,
-  getCategoryBySlug,
-} from "../../lib/db";
-import type { Article, Author, RecipeDetails, Category } from "../../types";
+import { getArticleBySlug, type RecipeDetails } from "@modules/articles";
+import { getAuthorById, type Author } from "@modules/authors";
+import { getCategoryById, type Category } from "@modules/categories";
+import { hydrateArticle } from "@shared/utils";
 
 /**
  * In SSR mode, Astro doesn't require getStaticPaths.
@@ -20,38 +18,30 @@ if (!slug) {
   return new Response("Slug is missing", { status: 400 });
 }
 
-let recipe: Article | null = null;
 let author: Author | null = null;
 let category: Category | null = null;
-let recipeDetails: RecipeDetails | undefined = undefined;
 
-try {
-  // The D1 binding is available on `runtime.env.DB`
-  recipe = await getArticleBySlug(runtime.env.DB, slug, "recipe");
+// The D1 binding is available on `runtime.env.DB`
+const rawRecipe = await getArticleBySlug(runtime.env.DB, slug, "recipe");
 
-  // If no recipe is found for the slug, return a 404 page.
-  if (!recipe) {
-    return new Response("Recipe not found", { status: 404 });
-  }
-
-  // Fetch author data to get the author's image
-  if (recipe.authorSlug) {
-    author = await getAuthorBySlug(runtime.env.DB, recipe.authorSlug);
-  }
-
-  // Fetch category data to get category color
-  if (recipe.categorySlug) {
-    category = await getCategoryBySlug(runtime.env.DB, recipe.categorySlug);
-  }
-
-  // The recipeJson field is already parsed by getArticleBySlug
-  recipeDetails = recipe.recipeJson || undefined;
-} catch (e: any) {
-  console.error(`Error processing recipe for slug "${slug}":`, e);
-  return new Response("An unexpected error occurred", { status: 500 });
+// If no recipe is found for the slug, return a 404 page.
+if (!rawRecipe) {
+  return new Response("Recipe not found", { status: 404 });
 }
 
-// This line will only be reached if recipe is not null
+const recipe = hydrateArticle(rawRecipe);
+const recipeDetails: RecipeDetails | undefined = recipe.recipeJson || undefined;
+
+// Fetch author data using authorId from the raw article
+if (rawRecipe.authorId) {
+  author = await getAuthorById(runtime.env.DB, rawRecipe.authorId);
+}
+
+// Fetch category data using categoryId from the raw article
+if (rawRecipe.categoryId) {
+  category = await getCategoryById(runtime.env.DB, rawRecipe.categoryId);
+}
+
 const pageTitle = recipe.metaTitle || recipe.headline;
 const pageDescription = recipe.metaDescription || recipe.shortDescription;
 ---
@@ -63,7 +53,7 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
     description={pageDescription}
     type="recipe"
     publishedTime={recipe.publishedAt || undefined}
-    author={{ name: recipe.authorName || "Freecipies Team" }}
+    author={{ name: author?.name || "Freecipies Team" }}
     image={recipe.imageUrl || ""}
     imageAlt={recipe.imageAlt || undefined}
     recipe={recipeDetails
@@ -71,16 +61,25 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
           name: recipe.headline,
           description: recipe.shortDescription,
           image: recipe.imageUrl || "",
-          prepTime: recipeDetails.prepTime,
-          cookTime: recipeDetails.cookTime,
+          prepTime: recipeDetails.prepTime
+            ? String(recipeDetails.prepTime)
+            : undefined,
+          cookTime: recipeDetails.cookTime
+            ? String(recipeDetails.cookTime)
+            : undefined,
           totalTime: undefined,
-          recipeYield: recipeDetails.servings,
-          recipeCategory: recipe.categoryLabel,
+          recipeYield: recipeDetails.servings
+            ? String(recipeDetails.servings)
+            : undefined,
+          recipeCategory: category?.label,
           recipeIngredient:
-            recipeDetails.ingredients?.flatMap((i) => i.items || []) || [],
+            recipeDetails.ingredients?.flatMap((i) =>
+              i.items.map((item) => item.name)
+            ) || [],
           recipeInstructions:
-            recipeDetails.instructions?.flatMap((i) => i.steps || []) || [],
-          nutrition: recipeDetails.nutrition,
+            recipeDetails.instructions?.flatMap((i) =>
+              i.steps.map((step) => step.text)
+            ) || [],
         }
       : undefined}
   />
@@ -100,8 +99,18 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
             <ul>
               {recipeDetails.ingredients?.map((group) => (
                 <>
-                  {group.group && <h3 class="font-bold mt-2">{group.group}</h3>}
-                  {group.items && group.items.map((item) => <li>{item}</li>)}
+                  {group.group_title && (
+                    <h3 class="font-bold mt-2">{group.group_title}</h3>
+                  )}
+                  {group.items &&
+                    group.items.map((item) => (
+                      <li>
+                        {item.name}
+                        {item.amount
+                          ? ` - ${item.amount}${item.unit || ""}`
+                          : ""}
+                      </li>
+                    ))}
                 </>
               ))}
             </ul>
@@ -113,8 +122,11 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
             <ol>
               {recipeDetails.instructions?.map((group) => (
                 <>
-                  {group.group && <h3 class="font-bold mt-2">{group.group}</h3>}
-                  {group.steps && group.steps.map((step) => <li>{step}</li>)}
+                  {group.section_title && (
+                    <h3 class="font-bold mt-2">{group.section_title}</h3>
+                  )}
+                  {group.steps &&
+                    group.steps.map((step) => <li>{step.text}</li>)}
                 </>
               ))}
             </ol>

@@ -1,23 +1,24 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import RecipeCard from "../../components/RecipeCard.astro";
-import { getAuthorBySlug, getArticles } from "../../lib/db";
+import { getAuthorBySlug } from "@modules/authors";
+import { getArticles } from "@modules/articles";
 
 const { slug } = Astro.params;
 const { env } = Astro.locals.runtime;
 
 if (!slug) {
-    return Astro.redirect("/404");
+  return Astro.redirect("/404");
 }
 
 const author = await getAuthorBySlug(env.DB, slug);
 
 if (!author) {
-    return Astro.redirect("/404");
+  return Astro.redirect("/404");
 }
 
 const { items: articles, total } = await getArticles(env.DB, {
-    authorSlug: slug,
+  authorSlug: slug,
 });
 
 // Parse bio if it's JSON
@@ -25,331 +26,329 @@ let bioParagraphs: string[] = [];
 let socialNetworks: { name: string; url: string }[] = [];
 
 if (author.bioJson) {
-    try {
-        const bio =
-            typeof author.bioJson === "string"
-                ? JSON.parse(author.bioJson)
-                : author.bioJson;
-        bioParagraphs = bio.paragraphs || [];
-        socialNetworks = bio.networks || [];
-    } catch (e) {
-        // Bio parsing failed, use defaults
-    }
+  try {
+    const bio =
+      typeof author.bioJson === "string"
+        ? JSON.parse(author.bioJson)
+        : author.bioJson;
+    bioParagraphs = bio.paragraphs || [];
+    socialNetworks = bio.networks || [];
+  } catch (e) {
+    // Bio parsing failed, use defaults
+  }
 }
 ---
 
 <Layout title={author.metaTitle} description={author.metaDescription}>
-    <main class="author-profile">
-        <!-- Author Hero -->
-        <section class="hero-section">
-            <div class="hero-container">
-                <div class="author-header">
-                    <!-- Avatar -->
-                    <div class="avatar-container">
-                        {
-                            author.imageUrl ? (
-                                <img
-                                    src={author.imageUrl}
-                                    alt={author.imageAlt || author.name}
-                                    width={author.imageWidth || 150}
-                                    height={author.imageHeight || 150}
-                                    class="author-avatar"
-                                />
-                            ) : (
-                                <div class="avatar-placeholder">
-                                    <span>
-                                        {author.name.charAt(0).toUpperCase()}
-                                    </span>
-                                </div>
-                            )
-                        }
-                    </div>
-
-                    <!-- Info -->
-                    <div class="author-info">
-                        <h1 class="author-name">{author.name}</h1>
-                        {author.job && <p class="author-job">{author.job}</p>}
-                        <p class="author-description">
-                            {author.shortDescription}
-                        </p>
-
-                        <!-- Stats -->
-                        <div class="author-stats">
-                            <div class="stat">
-                                <span class="stat-value">{total}</span>
-                                <span class="stat-label"
-                                    >{total === 1 ? "Recipe" : "Recipes"}</span
-                                >
-                            </div>
-                        </div>
-
-                        <!-- Social Links -->
-                        {
-                            socialNetworks.length > 0 && (
-                                <div class="social-links">
-                                    {socialNetworks.map((network) => (
-                                        <a
-                                            href={network.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="social-link"
-                                            title={network.name}
-                                        >
-                                            {network.name}
-                                        </a>
-                                    ))}
-                                </div>
-                            )
-                        }
-                    </div>
+  <main class="author-profile">
+    <!-- Author Hero -->
+    <section class="hero-section">
+      <div class="hero-container">
+        <div class="author-header">
+          <!-- Avatar -->
+          <div class="avatar-container">
+            {
+              author.imageUrl ? (
+                <img
+                  src={author.imageUrl}
+                  alt={author.imageAlt || author.name}
+                  width={author.imageWidth || 150}
+                  height={author.imageHeight || 150}
+                  class="author-avatar"
+                />
+              ) : (
+                <div class="avatar-placeholder">
+                  <span>{author.name.charAt(0).toUpperCase()}</span>
                 </div>
+              )
+            }
+          </div>
+
+          <!-- Info -->
+          <div class="author-info">
+            <h1 class="author-name">{author.name}</h1>
+            {author.job && <p class="author-job">{author.job}</p>}
+            <p class="author-description">
+              {author.shortDescription}
+            </p>
+
+            <!-- Stats -->
+            <div class="author-stats">
+              <div class="stat">
+                <span class="stat-value">{total}</span>
+                <span class="stat-label"
+                  >{total === 1 ? "Recipe" : "Recipes"}</span
+                >
+              </div>
             </div>
-        </section>
 
-        <!-- Bio Section -->
-        {
-            bioParagraphs.length > 0 && (
-                <section class="bio-section">
-                    <div class="section-container">
-                        <h2 class="section-title">About {author.name}</h2>
-                        <div class="bio-content">
-                            {bioParagraphs.map((paragraph) => (
-                                <p>{paragraph}</p>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            )
-        }
-
-        <!-- Recipes Section -->
-        <section class="recipes-section">
-            <div class="section-container">
-                <div class="section-header">
-                    <h2 class="section-title">Recipes by {author.name}</h2>
-                    <span class="recipe-count"
-                        >{total} {total === 1 ? "recipe" : "recipes"}</span
+            <!-- Social Links -->
+            {
+              socialNetworks.length > 0 && (
+                <div class="social-links">
+                  {socialNetworks.map((network) => (
+                    <a
+                      href={network.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="social-link"
+                      title={network.name}
                     >
+                      {network.name}
+                    </a>
+                  ))}
                 </div>
+              )
+            }
+          </div>
+        </div>
+      </div>
+    </section>
 
-                {
-                    articles.length > 0 ? (
-                        <div class="recipes-grid">
-                            {articles.map((article) => (
-                                <RecipeCard recipe={article} />
-                            ))}
-                        </div>
-                    ) : (
-                        <div class="empty-state">
-                            <p>No recipes published yet.</p>
-                        </div>
-                    )
-                }
+    <!-- Bio Section -->
+    {
+      bioParagraphs.length > 0 && (
+        <section class="bio-section">
+          <div class="section-container">
+            <h2 class="section-title">About {author.name}</h2>
+            <div class="bio-content">
+              {bioParagraphs.map((paragraph) => (
+                <p>{paragraph}</p>
+              ))}
             </div>
+          </div>
         </section>
-    </main>
+      )
+    }
+
+    <!-- Recipes Section -->
+    <section class="recipes-section">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">Recipes by {author.name}</h2>
+          <span class="recipe-count"
+            >{total} {total === 1 ? "recipe" : "recipes"}</span
+          >
+        </div>
+
+        {
+          articles.length > 0 ? (
+            <div class="recipes-grid">
+              {articles.map((article) => (
+                <RecipeCard recipe={article} />
+              ))}
+            </div>
+          ) : (
+            <div class="empty-state">
+              <p>No recipes published yet.</p>
+            </div>
+          )
+        }
+      </div>
+    </section>
+  </main>
 </Layout>
 
 <style>
-    .author-profile {
-        min-height: 100vh;
-    }
+  .author-profile {
+    min-height: 100vh;
+  }
 
-    .hero-section {
-        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-        padding: clamp(3rem, 8vw, 5rem) 0;
-    }
+  .hero-section {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    padding: clamp(3rem, 8vw, 5rem) 0;
+  }
 
-    .hero-container {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 0 clamp(1rem, 3vw, 1.5rem);
-    }
+  .hero-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+  }
 
+  .author-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2rem;
+  }
+
+  @media (min-width: 768px) {
     .author-header {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 2rem;
+      flex-direction: row;
+      text-align: left;
+      align-items: flex-start;
     }
+  }
 
-    @media (min-width: 768px) {
-        .author-header {
-            flex-direction: row;
-            text-align: left;
-            align-items: flex-start;
-        }
-    }
+  .avatar-container {
+    flex-shrink: 0;
+  }
 
-    .avatar-container {
-        flex-shrink: 0;
-    }
+  .author-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
 
-    .author-avatar {
-        width: 150px;
-        height: 150px;
-        border-radius: 50%;
-        object-fit: cover;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    }
+  .avatar-placeholder {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
 
-    .avatar-placeholder {
-        width: 150px;
-        height: 150px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    }
+  .avatar-placeholder span {
+    font-size: 4rem;
+    font-weight: 700;
+    color: white;
+  }
 
-    .avatar-placeholder span {
-        font-size: 4rem;
-        font-weight: 700;
-        color: white;
-    }
+  .author-info {
+    flex: 1;
+  }
 
-    .author-info {
-        flex: 1;
-    }
+  .author-name {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-weight: 800;
+    margin: 0;
+    color: #1a1a1a;
+  }
 
-    .author-name {
-        font-size: clamp(2rem, 4vw, 2.5rem);
-        font-weight: 800;
-        margin: 0;
-        color: #1a1a1a;
-    }
+  .author-job {
+    font-size: 1.125rem;
+    color: #ff6b35;
+    margin: 0.5rem 0 0 0;
+    font-weight: 600;
+  }
 
-    .author-job {
-        font-size: 1.125rem;
-        color: #ff6b35;
-        margin: 0.5rem 0 0 0;
-        font-weight: 600;
-    }
+  .author-description {
+    font-size: 1rem;
+    color: #555;
+    line-height: 1.6;
+    margin: 1rem 0 0 0;
+    max-width: 600px;
+  }
 
-    .author-description {
-        font-size: 1rem;
-        color: #555;
-        line-height: 1.6;
-        margin: 1rem 0 0 0;
-        max-width: 600px;
-    }
+  .author-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1.5rem;
+  }
 
-    .author-stats {
-        display: flex;
-        gap: 2rem;
-        margin-top: 1.5rem;
-    }
+  .stat {
+    display: flex;
+    flex-direction: column;
+  }
 
-    .stat {
-        display: flex;
-        flex-direction: column;
-    }
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
 
-    .stat-value {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #1a1a1a;
-    }
+  .stat-label {
+    font-size: 0.875rem;
+    color: #666;
+  }
 
-    .stat-label {
-        font-size: 0.875rem;
-        color: #666;
-    }
+  .social-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
 
-    .social-links {
-        display: flex;
-        gap: 1rem;
-        margin-top: 1.5rem;
-        flex-wrap: wrap;
-    }
+  .social-link {
+    padding: 0.5rem 1rem;
+    background: white;
+    border-radius: 8px;
+    color: #333;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
 
-    .social-link {
-        padding: 0.5rem 1rem;
-        background: white;
-        border-radius: 8px;
-        color: #333;
-        text-decoration: none;
-        font-size: 0.875rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
+  .social-link:hover {
+    background: #ff6b35;
+    color: white;
+  }
 
-    .social-link:hover {
-        background: #ff6b35;
-        color: white;
-    }
+  .bio-section {
+    padding: clamp(2rem, 5vw, 3rem) 0;
+    background: white;
+  }
 
-    .bio-section {
-        padding: clamp(2rem, 5vw, 3rem) 0;
-        background: white;
-    }
+  .section-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+  }
 
-    .section-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 clamp(1rem, 3vw, 1.5rem);
-    }
+  .section-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    margin: 0 0 1.5rem 0;
+    color: #1a1a1a;
+  }
 
-    .section-title {
-        font-size: clamp(1.5rem, 3vw, 2rem);
-        font-weight: 700;
-        margin: 0 0 1.5rem 0;
-        color: #1a1a1a;
-    }
+  .bio-content {
+    max-width: 800px;
+  }
 
-    .bio-content {
-        max-width: 800px;
-    }
+  .bio-content p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #444;
+    margin: 0 0 1rem 0;
+  }
 
-    .bio-content p {
-        font-size: 1rem;
-        line-height: 1.8;
-        color: #444;
-        margin: 0 0 1rem 0;
-    }
+  .recipes-section {
+    padding: clamp(3rem, 8vw, 5rem) 0;
+    background: #f9f9f9;
+  }
 
-    .recipes-section {
-        padding: clamp(3rem, 8vw, 5rem) 0;
-        background: #f9f9f9;
-    }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
 
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
+  .recipe-count {
+    font-size: 0.875rem;
+    color: #666;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+  }
 
-    .recipe-count {
-        font-size: 0.875rem;
-        color: #666;
-        background: white;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-    }
+  .recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+  }
 
+  .empty-state {
+    text-align: center;
+    padding: 4rem 0;
+    color: #666;
+  }
+
+  @media (max-width: 768px) {
     .recipes-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 2rem;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
     }
-
-    .empty-state {
-        text-align: center;
-        padding: 4rem 0;
-        color: #666;
-    }
-
-    @media (max-width: 768px) {
-        .recipes-grid {
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-    }
+  }
 </style>

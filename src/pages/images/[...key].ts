@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
-import type { Env } from '../../lib/db';
-import { getImage } from '../../lib/r2';
+import type { Env } from '@shared/types';
+import { getImage } from '@modules/media';
 
 export const prerender = false;
 

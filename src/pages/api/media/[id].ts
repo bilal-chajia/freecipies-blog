@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import { deleteMedia, getMediaById, updateMedia, type Env } from '../../../lib/db';
-import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../../lib/auth';
-import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '../../../lib/error-handler';
+import { deleteMedia, getMediaById, updateMedia } from '@modules/media';
+import type { Env } from '@shared/types';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
 
 export const prerender = false;
 

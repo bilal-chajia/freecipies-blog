@@ -1,212 +1,170 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import RecipeCard from "../../components/RecipeCard.astro";
-import { getTags, getArticles } from "../../lib/db";
+import { getArticles } from "@modules/articles";
+import { getTagBySlug } from "@modules/tags";
+import { hydrateArticles } from "@shared/utils";
 
 const { slug } = Astro.params;
 const { env } = Astro.locals.runtime;
 
-if (!slug) {
-    return Astro.redirect("/404");
-}
+if (!slug) return Astro.redirect("/404");
 
-// Get all tags and find the one we need
-const tags = await getTags(env.DB, { isOnline: true });
-const tag = tags.find((t) => t.slug === slug);
+const tag = await getTagBySlug(env.DB, slug);
 
-if (!tag) {
-    return Astro.redirect("/404");
-}
+if (!tag) return Astro.redirect("/404");
 
-const { items: articles, total } = await getArticles(env.DB, { tagSlug: slug });
+const { items: rawArticles, total } = await getArticles(env.DB, {
+  tagSlug: slug,
+});
+const articles = hydrateArticles(rawArticles);
 ---
 
 <Layout
-    title={`${tag.label} Recipes`}
-    description={`Discover delicious recipes tagged with ${tag.label}`}
+  title={`${tag.label} Recipes`}
+  description={`Discover delicious recipes tagged with ${tag.label}`}
 >
-    <main class="tag-archive">
-        <!-- Hero Section -->
-        <section class="hero-section">
-            <div class="hero-container">
-                {/* Tags don't have images in the schema */}
-                <h1 class="hero-title">{tag.label}</h1>
-                <div class="tag-meta">
-                    <span class="recipe-count"
-                        >{total} {total === 1 ? "recipe" : "recipes"}</span
-                    >
-                </div>
+  <main class="tag-archive">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-container">
+        <h1 class="hero-title">{tag.label}</h1>
+        <div class="tag-meta">
+          <span class="recipe-count"
+            >{total} {total === 1 ? "recipe" : "recipes"}</span
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- Recipes Grid -->
+    <section class="recipes-section">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">Recipes tagged "{tag.label}"</h2>
+        </div>
+        {
+          articles.length > 0 ? (
+            <div class="recipes-grid">
+              {articles.map((article) => (
+                <RecipeCard recipe={article} />
+              ))}
             </div>
-        </section>
-
-        {/* Tags don't have tldr in schema */}
-
-        <!-- Recipes Grid -->
-        <section class="recipes-section">
-            <div class="section-container">
-                <div class="section-header">
-                    <h2 class="section-title">Recipes tagged "{tag.label}"</h2>
-                </div>
-
-                {
-                    articles.length > 0 ? (
-                        <div class="recipes-grid">
-                            {articles.map((article) => (
-                                <RecipeCard recipe={article} />
-                            ))}
-                        </div>
-                    ) : (
-                        <div class="empty-state">
-                            <p>No recipes found with this tag.</p>
-                        </div>
-                    )
-                }
+          ) : (
+            <div class="empty-state">
+              <p>No recipes found with this tag.</p>
             </div>
-        </section>
+          )
+        }
+      </div>
+    </section>
 
-        <!-- Back to Tags -->
-        <section class="back-section">
-            <div class="section-container">
-                <a href="/tags" class="back-link"> ← Browse all tags </a>
-            </div>
-        </section>
-    </main>
+    <!-- Back to Tags -->
+    <section class="back-section">
+      <div class="section-container">
+        <a href="/tags" class="back-link">← Browse all tags</a>
+      </div>
+    </section>
+  </main>
 </Layout>
 
 <style>
-    .tag-archive {
-        min-height: 100vh;
-    }
+  .tag-archive {
+    min-height: 100vh;
+  }
 
-    .hero-section {
-        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-        padding: clamp(3rem, 8vw, 5rem) 0;
-        text-align: center;
-    }
+  .hero-section {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    padding: clamp(3rem, 8vw, 5rem) 0;
+    text-align: center;
+  }
 
-    .hero-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 0 clamp(1rem, 3vw, 1.5rem);
-    }
+  .hero-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+  }
 
-    .tag-image {
-        width: 100px;
-        height: 100px;
-        border-radius: 16px;
-        overflow: hidden;
-        margin: 0 auto 1.5rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
+  .hero-title {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    margin: 0 0 0.75rem 0;
+    color: #1a1a1a;
+    letter-spacing: -0.02em;
+  }
 
-    .tag-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
+  .tag-meta {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
 
-    .hero-title {
-        font-size: clamp(2rem, 5vw, 3rem);
-        font-weight: 800;
-        margin: 0 0 0.75rem 0;
-        color: #1a1a1a;
-        letter-spacing: -0.02em;
-    }
+  .recipe-count {
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #333;
+  }
 
-    .hero-subtitle {
-        font-size: clamp(1rem, 2vw, 1.25rem);
-        line-height: 1.6;
-        color: #555;
-        margin: 0 0 1rem 0;
-    }
+  .recipes-section {
+    padding: clamp(3rem, 8vw, 5rem) 0;
+    background: #fafafa;
+  }
 
-    .tag-meta {
-        display: flex;
-        justify-content: center;
-        gap: 1rem;
-    }
+  .section-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+  }
 
-    .recipe-count {
-        background: white;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #333;
-    }
+  .section-header {
+    margin-bottom: 2rem;
+  }
 
-    .tldr-section {
-        background: white;
-        padding: clamp(2rem, 4vw, 3rem) 0;
-        border-bottom: 1px solid #eee;
-    }
+  .section-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    margin: 0;
+    color: #1a1a1a;
+  }
 
-    .section-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 clamp(1rem, 3vw, 1.5rem);
-    }
+  .recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+  }
 
-    .tldr-text {
-        font-size: 1.125rem;
-        line-height: 1.7;
-        color: #444;
-        max-width: 800px;
-        margin: 0 auto;
-        text-align: center;
-    }
+  .empty-state {
+    text-align: center;
+    padding: 4rem 0;
+    color: #666;
+  }
 
-    .recipes-section {
-        padding: clamp(3rem, 8vw, 5rem) 0;
-        background: #fafafa;
-    }
+  .back-section {
+    padding: 2rem 0;
+    background: white;
+    border-top: 1px solid #eee;
+  }
 
-    .section-header {
-        margin-bottom: 2rem;
-    }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    color: #ff6b35;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
 
-    .section-title {
-        font-size: clamp(1.5rem, 3vw, 2rem);
-        font-weight: 700;
-        margin: 0;
-        color: #1a1a1a;
-    }
+  .back-link:hover {
+    color: #e55a2b;
+  }
 
+  @media (max-width: 768px) {
     .recipes-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 2rem;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
     }
-
-    .empty-state {
-        text-align: center;
-        padding: 4rem 0;
-        color: #666;
-    }
-
-    .back-section {
-        padding: 2rem 0;
-        background: white;
-        border-top: 1px solid #eee;
-    }
-
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        color: #ff6b35;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.2s ease;
-    }
-
-    .back-link:hover {
-        color: #e55a2b;
-    }
-
-    @media (max-width: 768px) {
-        .recipes-grid {
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-    }
+  }
 </style>

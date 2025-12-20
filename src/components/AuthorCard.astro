@@ -1,10 +1,10 @@
 ---
-import type { Author } from "../types";
+import type { HydratedAuthor } from "@modules/authors";
 
 interface Props {
-    author: Author;
-    showArticleCount?: boolean;
-    articleCount?: number;
+  author: HydratedAuthor;
+  showArticleCount?: boolean;
+  articleCount?: number;
 }
 
 const { author, showArticleCount = false, articleCount = 0 } = Astro.props;
@@ -12,183 +12,163 @@ const authorUrl = `/authors/${author.slug}`;
 ---
 
 <article class="author-card">
-    <a href={authorUrl} class="author-link">
-        <!-- Author Avatar -->
-        <div class="author-avatar">
-            {
-                author.imageUrl ? (
-                    <img
-                        src={author.imageUrl}
-                        alt={author.imageAlt || author.name}
-                        width={author.imageWidth || 120}
-                        height={author.imageHeight || 120}
-                        loading="lazy"
-                    />
-                ) : (
-                    <div class="avatar-placeholder">
-                        <span>{author.name.charAt(0).toUpperCase()}</span>
-                    </div>
-                )
-            }
-        </div>
-
-        <!-- Author Info -->
-        <div class="author-info">
-            <h3 class="author-name">{author.name}</h3>
-            {author.job && <p class="author-job">{author.job}</p>}
-            {
-                author.shortDescription && (
-                    <p class="author-description">{author.shortDescription}</p>
-                )
-            }
-
-            {
-                showArticleCount && (
-                    <div class="author-meta">
-                        <span class="article-count">
-                            <svg
-                                class="icon"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                                <polyline points="14,2 14,8 20,8" />
-                                <line x1="16" y1="13" x2="8" y2="13" />
-                                <line x1="16" y1="17" x2="8" y2="17" />
-                                <line x1="10" y1="9" x2="8" y2="9" />
-                            </svg>
-                            {articleCount}{" "}
-                            {articleCount === 1 ? "Recipe" : "Recipes"}
-                        </span>
-                    </div>
-                )
-            }
-        </div>
-    </a>
+  <a href={authorUrl} class="author-link">
+    <!-- Author Avatar -->
+    <div class="author-avatar">
+      {
+        author.imageUrl ? (
+          <img
+            src={author.imageUrl}
+            alt={author.imageAlt || author.name}
+            width={author.imageWidth || 120}
+            height={author.imageHeight || 120}
+            loading="lazy"
+          />
+        ) : (
+          <div class="avatar-placeholder">
+            <span>{author.name.charAt(0).toUpperCase()}</span>
+          </div>
+        )
+      }
+    </div>
+    <!-- Author Info -->
+    <div class="author-info">
+      <h3 class="author-name">{author.name}</h3>
+      {author.job && <p class="author-job">{author.job}</p>}
+      {
+        author.shortDescription && (
+          <p class="author-description">{author.shortDescription}</p>
+        )
+      }
+      {
+        showArticleCount && (
+          <div class="author-meta">
+            <span class="article-count">
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                {" "}
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                <polyline points="14,2 14,8 20,8" />{" "}
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />{" "}
+                <line x1="10" y1="9" x2="8" y2="9" />
+              </svg>{" "}
+              {articleCount} {articleCount === 1 ? "Recipe" : "Recipes"}{" "}
+            </span>
+          </div>
+        )
+      }
+    </div>
+  </a>
 </article>
-
 <style>
-    .author-card {
-        background: white;
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
-    }
-
-    .author-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    }
-
+  .author-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+  }
+  .author-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+  .author-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    text-decoration: none;
+    color: inherit;
+  }
+  .author-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+  }
+  .author-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .avatar-placeholder span {
+    font-size: 3rem;
+    font-weight: 700;
+    color: white;
+  }
+  .author-info {
+    text-align: center;
+  }
+  .author-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 0.25rem 0;
+    transition: color 0.2s ease;
+  }
+  .author-card:hover .author-name {
+    color: #ff6b35;
+  }
+  .author-job {
+    font-size: 0.875rem;
+    color: #666;
+    margin: 0 0 0.75rem 0;
+    font-weight: 500;
+  }
+  .author-description {
+    font-size: 0.875rem;
+    color: #555;
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .author-meta {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+  }
+  .article-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #666;
+    font-weight: 500;
+  }
+  .icon {
+    width: 16px;
+    height: 16px;
+  }
+  @media (max-width: 768px) {
     .author-link {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 2rem;
-        text-decoration: none;
-        color: inherit;
+      padding: 1.5rem;
     }
-
     .author-avatar {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        overflow: hidden;
-        margin-bottom: 1.25rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        flex-shrink: 0;
+      width: 100px;
+      height: 100px;
     }
-
-    .author-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .avatar-placeholder {
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
     .avatar-placeholder span {
-        font-size: 3rem;
-        font-weight: 700;
-        color: white;
+      font-size: 2.5rem;
     }
-
-    .author-info {
-        text-align: center;
-    }
-
-    .author-name {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #1a1a1a;
-        margin: 0 0 0.25rem 0;
-        transition: color 0.2s ease;
-    }
-
-    .author-card:hover .author-name {
-        color: #ff6b35;
-    }
-
-    .author-job {
-        font-size: 0.875rem;
-        color: #666;
-        margin: 0 0 0.75rem 0;
-        font-weight: 500;
-    }
-
-    .author-description {
-        font-size: 0.875rem;
-        color: #555;
-        line-height: 1.5;
-        margin: 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .author-meta {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid #eee;
-    }
-
-    .article-count {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
-        color: #666;
-        font-weight: 500;
-    }
-
-    .icon {
-        width: 16px;
-        height: 16px;
-    }
-
-    @media (max-width: 768px) {
-        .author-link {
-            padding: 1.5rem;
-        }
-
-        .author-avatar {
-            width: 100px;
-            height: 100px;
-        }
-
-        .avatar-placeholder span {
-            font-size: 2.5rem;
-        }
-    }
+  }
 </style>

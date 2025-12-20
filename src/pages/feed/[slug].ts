@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
-import { getArticles, getCategoryBySlug, type Env } from '../../lib/db';
+import { getArticles } from '@modules/articles';
+import { getCategoryBySlug } from '@modules/categories';
+import type { Env } from '@shared/types';
 
 export const prerender = false;
 

@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
-import { uploadImage } from '../../lib/r2';
-import type { Env } from '../../lib/db';
-import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../lib/auth';
+import { uploadImage } from '@modules/media';
+import type { Env } from '@shared/types';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 
 export const prerender = false;
 

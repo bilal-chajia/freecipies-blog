@@ -1,124 +1,123 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import AuthorCard from "../../components/AuthorCard.astro";
-import { getAuthors, getArticles } from "../../lib/db";
+import { getAuthors } from "@modules/authors";
+import { getArticles } from "@modules/articles";
+import { hydrateAuthor } from "@shared/utils";
 
 const { env } = Astro.locals.runtime;
-const authors = await getAuthors(env.DB, { isOnline: true });
+const rawAuthors = await getAuthors(env.DB, { isOnline: true });
+const authors = rawAuthors.map(hydrateAuthor);
 
 // Get article counts for each author
 const authorArticleCounts = new Map<string, number>();
 for (const author of authors) {
-    const { total } = await getArticles(env.DB, { authorSlug: author.slug });
-    authorArticleCounts.set(author.slug, total);
+  const { total } = await getArticles(env.DB, { authorSlug: author.slug });
+  authorArticleCounts.set(author.slug, total);
 }
 
 const pageTitle = "Our Recipe Creators - Freecipies";
 const pageDescription =
-    "Meet the talented chefs and food enthusiasts behind our delicious recipes. Discover their culinary journeys and cooking expertise.";
+  "Meet the talented chefs and food enthusiasts behind our delicious recipes. Discover their culinary journeys and cooking expertise.";
 ---
 
 <Layout title={pageTitle} description={pageDescription}>
-    <main class="authors-page">
-        <!-- Hero Section -->
-        <section class="hero-section">
-            <div class="hero-container">
-                <h1 class="hero-title">Meet Our Creators</h1>
-                <p class="hero-subtitle">
-                    Talented chefs and food enthusiasts sharing their passion
-                    through delicious recipes
-                </p>
-            </div>
-        </section>
+  <main class="authors-page">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-container">
+        <h1 class="hero-title">Meet Our Creators</h1>
+        <p class="hero-subtitle">
+          Talented chefs and food enthusiasts sharing their passion through
+          delicious recipes
+        </p>
+      </div>
+    </section>
 
-        <!-- Authors Grid -->
-        <section class="authors-section">
-            <div class="section-container">
-                {
-                    authors.length > 0 ? (
-                        <div class="authors-grid">
-                            {authors.map((author) => (
-                                <AuthorCard
-                                    author={author}
-                                    showArticleCount={true}
-                                    articleCount={
-                                        authorArticleCounts.get(author.slug) ||
-                                        0
-                                    }
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <div class="empty-state">
-                            <p>No authors found.</p>
-                        </div>
-                    )
-                }
+    <!-- Authors Grid -->
+    <section class="authors-section">
+      <div class="section-container">
+        {
+          authors.length > 0 ? (
+            <div class="authors-grid">
+              {authors.map((author) => (
+                <AuthorCard
+                  author={author}
+                  showArticleCount={true}
+                  articleCount={authorArticleCounts.get(author.slug) || 0}
+                />
+              ))}
             </div>
-        </section>
-    </main>
+          ) : (
+            <div class="empty-state">
+              <p>No authors found.</p>
+            </div>
+          )
+        }
+      </div>
+    </section>
+  </main>
 </Layout>
 
 <style>
-    .authors-page {
-        min-height: 100vh;
-    }
+  .authors-page {
+    min-height: 100vh;
+  }
 
-    .hero-section {
-        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-        padding: clamp(3rem, 8vw, 5rem) 0;
-        text-align: center;
-    }
+  .hero-section {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    padding: clamp(3rem, 8vw, 5rem) 0;
+    text-align: center;
+  }
 
-    .hero-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 0 clamp(1rem, 3vw, 1.5rem);
-    }
+  .hero-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+  }
 
-    .hero-title {
-        font-size: clamp(2rem, 5vw, 3rem);
-        font-weight: 800;
-        margin: 0 0 1rem 0;
-        color: #1a1a1a;
-        letter-spacing: -0.02em;
-    }
+  .hero-title {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    margin: 0 0 1rem 0;
+    color: #1a1a1a;
+    letter-spacing: -0.02em;
+  }
 
-    .hero-subtitle {
-        font-size: clamp(1rem, 2vw, 1.125rem);
-        line-height: 1.6;
-        color: #555;
-        margin: 0;
-    }
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.125rem);
+    line-height: 1.6;
+    color: #555;
+    margin: 0;
+  }
 
-    .authors-section {
-        padding: clamp(3rem, 8vw, 5rem) 0;
-        background: #f9f9f9;
-    }
+  .authors-section {
+    padding: clamp(3rem, 8vw, 5rem) 0;
+    background: #f9f9f9;
+  }
 
-    .section-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 clamp(1rem, 3vw, 1.5rem);
-    }
+  .section-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+  }
 
+  .authors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 0;
+    color: #666;
+  }
+
+  @media (max-width: 768px) {
     .authors-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 2rem;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
     }
-
-    .empty-state {
-        text-align: center;
-        padding: 4rem 0;
-        color: #666;
-    }
-
-    @media (max-width: 768px) {
-        .authors-grid {
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-    }
+  }
 </style>
-

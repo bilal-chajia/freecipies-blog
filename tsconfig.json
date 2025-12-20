@@ -1,5 +1,5 @@
 {
-  "extends": "astro/tsconfigs/strict",
+  "extends": "astro/tsconfigs/base",
   "include": [
     ".astro/types.d.ts",
     "**/*"
@@ -8,14 +8,20 @@
     "dist"
   ],
   "compilerOptions": {
+    "strict": true,
     "strictNullChecks": true,
+    "skipLibCheck": true,
+    "noImplicitAny": true,
     "baseUrl": ".",
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@/*": [
-        "src/components/admin/*"
-      ]
+      "@/*": ["src/admin/*"],
+      "@modules/*": ["src/modules/*"],
+      "@admin/*": ["src/admin/*"],
+      "@shared/*": ["src/shared/*"],
+      "@components/*": ["src/components/*"],
+      "@lib/*": ["src/lib/*"]
     }
   }
 }

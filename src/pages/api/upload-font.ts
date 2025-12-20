@@ -1,8 +1,6 @@
 import type { APIRoute } from 'astro';
-import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../lib/auth';
-import {
-    formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError
-} from '../../lib/error-handler';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 

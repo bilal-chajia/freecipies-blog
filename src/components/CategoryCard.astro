@@ -1,8 +1,8 @@
 ---
-import type { Category } from "../types";
+import type { HydratedCategory } from "@modules/categories";
 
 interface Props {
-  category: Category;
+  category: HydratedCategory;
 }
 
 const { category } = Astro.props;

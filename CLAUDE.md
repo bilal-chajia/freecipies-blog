@@ -92,20 +92,54 @@
 
 ```
 src/
-├── components/        # Astro + React components
-│   ├── admin/         # React Admin Panel (SPA)
-│   └── *.astro        # Public site components
+├── modules/           # Feature-based modules (NEW)
+│   ├── media/         # Media/Images module
+│   │   ├── api/       # API route handlers
+│   │   ├── services/  # r2.service.ts, media.service.ts
+│   │   ├── schema/    # Drizzle schema
+│   │   └── types/     # TypeScript types
+│   ├── articles/      # Articles module
+│   ├── categories/    # Categories module
+│   ├── authors/       # Authors module
+│   ├── tags/          # Tags module
+│   ├── auth/          # Authentication module
+│   ├── pinterest/     # Pinterest integration
+│   ├── templates/     # Pin templates
+│   └── settings/      # Site settings
+├── shared/            # Shared utilities (NEW)
+│   ├── database/      # drizzle.ts, schema.ts
+│   ├── utils/         # error-handler.ts, logging.ts, cache.ts
+│   └── types/         # Env types
+├── admin/             # React Admin Panel (MOVED from components/admin)
+│   ├── components/    # React components
+│   ├── pages/         # Admin pages
+│   ├── services/      # API client (api.js)
+│   ├── store/         # Zustand stores
+│   └── ui/            # shadcn components
+├── components/        # Public site Astro components
+│   └── *.astro        # Header, Footer, Cards, etc.
 ├── layouts/           # Page layouts (RecipeLayout, Layout)
-├── lib/               # Utilities
-│   ├── db.ts          # Database functions (getArticles, etc.)
+├── lib/               # Legacy utilities (being migrated to modules)
+│   ├── db.ts          # Database functions
 │   ├── schema.ts      # Drizzle schema definitions
 │   ├── auth.ts        # JWT authentication
 │   └── error-handler.ts # Standardized API responses
 ├── pages/
-│   ├── api/           # API routes (GET, POST, PUT, DELETE)
+│   ├── api/           # API routes (delegates to modules)
 │   └── *.astro        # Public pages
 └── types/             # TypeScript type definitions
 ```
+
+### Path Aliases (tsconfig.json)
+
+| Alias           | Path               | Usage               |
+| :-------------- | :----------------- | :------------------ |
+| `@/*`           | `src/admin/*`      | Admin panel imports |
+| `@modules/*`    | `src/modules/*`    | Module imports      |
+| `@admin/*`      | `src/admin/*`      | Admin panel         |
+| `@shared/*`     | `src/shared/*`     | Shared utilities    |
+| `@components/*` | `src/components/*` | Astro components    |
+| `@lib/*`        | `src/lib/*`        | Legacy utilities    |
 
 ---
 
@@ -305,14 +339,17 @@ const secret = "my-secret-key"; // NEVER DO THIS
 
 ### New Files Location
 
-| Type            | Location                | Example              |
-| :-------------- | :---------------------- | :------------------- |
-| Astro page      | `src/pages/`            | `about.astro`        |
-| API route       | `src/pages/api/`        | `recipes.ts`         |
-| Component       | `src/components/`       | `RecipeCard.astro`   |
-| Admin component | `src/components/admin/` | `ImageEditor.jsx`    |
-| Utility         | `src/lib/`              | `cache.ts`           |
-| Type            | `src/types/`            | Append to `index.ts` |
+| Type            | Location                        | Example                 |
+| :-------------- | :------------------------------ | :---------------------- |
+| Astro page      | `src/pages/`                    | `about.astro`           |
+| API route       | `src/modules/*/api/`            | `media/api/upload.ts`   |
+| Module service  | `src/modules/*/services/`       | `media/services/r2.ts`  |
+| Module schema   | `src/modules/*/schema/`         | `media/schema/media.ts` |
+| Astro component | `src/components/`               | `RecipeCard.astro`      |
+| Admin component | `src/admin/components/`         | `ImageEditor.jsx`       |
+| Admin page      | `src/admin/pages/`              | `Dashboard.jsx`         |
+| Shared utility  | `src/shared/utils/`             | `error-handler.ts`      |
+| Type            | `src/types/` or module `types/` | `index.ts`              |
 
 ### Naming Patterns
 

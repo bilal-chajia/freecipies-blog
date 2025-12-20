@@ -1,6 +1,8 @@
 ---
-import { getArticles } from "../lib/db";
-import type { Article } from "../types";
+import {
+  getArticles,
+  type HydratedArticle as Article,
+} from "@modules/articles";
 
 const { env } = Astro.locals.runtime;
 
@@ -10,15 +12,15 @@ oneDayAgo.setHours(oneDayAgo.getHours() - 24);
 
 // Fetch recent articles (strictly last 24h first)
 let { items: stories } = await getArticles(env.DB, {
-    isOnline: true,
-    publishedAfter: oneDayAgo,
-    limit: 15,
+  isOnline: true,
+  publishedAfter: oneDayAgo,
+  limit: 15,
 });
 
 // Fallback: If absolutely empty, fetch latest 12 to show SOMETHING.
 if (stories.length === 0) {
-    const { items: fallback } = await getArticles(env.DB, { limit: 12 });
-    stories = fallback;
+  const { items: fallback } = await getArticles(env.DB, { limit: 12 });
+  stories = fallback;
 }
 
 // Sort by view count (most viewed first)
@@ -26,372 +28,364 @@ stories = stories.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
 
 // Generate story pages from article data for demo
 const storiesWithPages = stories.map((story) => ({
-    ...story,
-    storyPages: [
-        {
+  ...story,
+  storyPages: [
+    {
+      imageUrl: story.imageUrl,
+      title: story.headline,
+      text: story.shortDescription || story.tldr || "",
+    },
+    ...(story.imageUrl
+      ? [
+          {
             imageUrl: story.imageUrl,
-            title: story.headline,
-            text: story.shortDescription || story.tldr || "",
-        },
-        ...(story.imageUrl
-            ? [
-                  {
-                      imageUrl: story.imageUrl,
-                      title: "Swipe to continue",
-                      text: "Tap right to see more",
-                  },
-              ]
-            : []),
-        {
-            imageUrl: story.imageUrl,
-            title: story.headline,
-            text: "Ready to cook?",
-        },
-    ],
+            title: "Swipe to continue",
+            text: "Tap right to see more",
+          },
+        ]
+      : []),
+    {
+      imageUrl: story.imageUrl,
+      title: story.headline,
+      text: "Ready to cook?",
+    },
+  ],
 }));
 ---
 
 {
-    stories.length > 0 && (
-        <section class="stories-section">
-            <div class="stories-container">
-                <div class="stories-scroll">
-                    {storiesWithPages.map((story, idx) => (
-                        <button
-                            type="button"
-                            class="story-item"
-                            data-story-index={idx}
-                            data-story-slug={story.slug}
-                            data-story-route={
-                                story.route || `/recipes/${story.slug}`
-                            }
-                            data-story-headline={story.headline}
-                        >
-                            <div class="story-ring">
-                                <div class="story-image-wrapper">
-                                    {story.imageUrl ? (
-                                        <img
-                                            src={story.imageUrl}
-                                            alt={story.headline}
-                                            width="80"
-                                            height="80"
-                                            loading="lazy"
-                                        />
-                                    ) : (
-                                        <div class="story-placeholder">
-                                            {story.headline.charAt(0)}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <span class="story-title">{story.headline}</span>
-                        </button>
-                    ))}
+  stories.length > 0 && (
+    <section class="stories-section">
+      <div class="stories-container">
+        <div class="stories-scroll">
+          {storiesWithPages.map((story, idx) => (
+            <button
+              type="button"
+              class="story-item"
+              data-story-index={idx}
+              data-story-slug={story.slug}
+              data-story-route={story.route || `/recipes/${story.slug}`}
+              data-story-headline={story.headline}
+            >
+              <div class="story-ring">
+                <div class="story-image-wrapper">
+                  {story.imageUrl ? (
+                    <img
+                      src={story.imageUrl}
+                      alt={story.headline}
+                      width="80"
+                      height="80"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="story-placeholder">
+                      {story.headline.charAt(0)}
+                    </div>
+                  )}
                 </div>
-            </div>
-        </section>
-    )
+              </div>
+              <span class="story-title">{story.headline}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 <script is:inline define:vars={{ storiesData: storiesWithPages }}>
-    // Pass data to client-side safely without bloating DOM
-    window.STORIES_DATA = storiesData;
+  // Pass data to client-side safely without bloating DOM
+  window.STORIES_DATA = storiesData;
 </script>
 
 <script is:inline>
-    // Handle story item clicks - using is:inline to ensure it runs
-    (function () {
-        console.log("StoriesBar script initializing");
+  // Handle story item clicks - using is:inline to ensure it runs
+  (function () {
+    console.log("StoriesBar script initializing");
 
-        function initStoryClicks() {
-            const storyItems = document.querySelectorAll(".story-item");
-            console.log("Found story items:", storyItems.length);
+    function initStoryClicks() {
+      const storyItems = document.querySelectorAll(".story-item");
+      console.log("Found story items:", storyItems.length);
 
-            storyItems.forEach((item) => {
-                item.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+      storyItems.forEach((item) => {
+        item.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
 
-                    const index = parseInt(
-                        item.getAttribute("data-story-index") || "0",
-                    );
-                    console.log("Story item clicked:", index);
+          const index = parseInt(item.getAttribute("data-story-index") || "0");
+          console.log("Story item clicked:", index);
 
-                    const route = item.getAttribute("data-story-route");
-                    const slug = item.getAttribute("data-story-slug");
-                    const headline = item.getAttribute("data-story-headline");
+          const route = item.getAttribute("data-story-route");
+          const slug = item.getAttribute("data-story-slug");
+          const headline = item.getAttribute("data-story-headline");
 
-                    // Get pages from global object instead of parsing DOM attribute
-                    const storyWithPages =
-                        window.STORIES_DATA && window.STORIES_DATA[index];
-                    const pages = storyWithPages
-                        ? storyWithPages.storyPages
-                        : [];
+          // Get pages from global object instead of parsing DOM attribute
+          const storyWithPages =
+            window.STORIES_DATA && window.STORIES_DATA[index];
+          const pages = storyWithPages ? storyWithPages.storyPages : [];
 
-                    console.log("Story data from global:", {
-                        route,
-                        slug,
-                        headline,
-                        pagesFound: pages.length > 0,
-                    });
+          console.log("Story data from global:", {
+            route,
+            slug,
+            headline,
+            pagesFound: pages.length > 0,
+          });
 
-                    if (pages.length > 0) {
-                        try {
-                            const storyData = {
-                                route: route,
-                                slug: slug,
-                                headline: headline,
-                            };
+          if (pages.length > 0) {
+            try {
+              const storyData = {
+                route: route,
+                slug: slug,
+                headline: headline,
+              };
 
-                            // Check if openWebStory exists
-                            if (typeof window.openWebStory === "function") {
-                                console.log("Calling openWebStory");
-                                window.openWebStory(storyData, pages);
-                            } else {
-                                console.error(
-                                    "openWebStory function not found on window",
-                                );
-                            }
-                        } catch (err) {
-                            console.error("Failed to open story:", err);
-                        }
-                    } else {
-                        console.error("No story pages data found");
-                    }
-                });
-            });
-        }
+              // Check if openWebStory exists
+              if (typeof window.openWebStory === "function") {
+                console.log("Calling openWebStory");
+                window.openWebStory(storyData, pages);
+              } else {
+                console.error("openWebStory function not found on window");
+              }
+            } catch (err) {
+              console.error("Failed to open story:", err);
+            }
+          } else {
+            console.error("No story pages data found");
+          }
+        });
+      });
+    }
 
-        // Mouse drag scroll for desktop
-        function initDragScroll() {
-            const slider = document.querySelector(".stories-scroll");
-            if (!slider) return;
+    // Mouse drag scroll for desktop
+    function initDragScroll() {
+      const slider = document.querySelector(".stories-scroll");
+      if (!slider) return;
 
-            let isDown = false;
-            let startX;
-            let scrollLeft;
+      let isDown = false;
+      let startX;
+      let scrollLeft;
 
-            slider.addEventListener("mousedown", (e) => {
-                // Ignore if clicking on a story item
-                if (e.target.closest(".story-item")) return;
-                isDown = true;
-                slider.style.cursor = "grabbing";
-                slider.style.scrollBehavior = "auto"; // Disable smooth scroll for instant drag
-                startX = e.pageX - slider.offsetLeft;
-                scrollLeft = slider.scrollLeft;
-            });
+      slider.addEventListener("mousedown", (e) => {
+        // Ignore if clicking on a story item
+        if (e.target.closest(".story-item")) return;
+        isDown = true;
+        slider.style.cursor = "grabbing";
+        slider.style.scrollBehavior = "auto"; // Disable smooth scroll for instant drag
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+      });
 
-            slider.addEventListener("mouseleave", () => {
-                isDown = false;
-                slider.style.cursor = "grab";
-                slider.style.scrollBehavior = "smooth"; // Re-enable smooth scroll
-            });
+      slider.addEventListener("mouseleave", () => {
+        isDown = false;
+        slider.style.cursor = "grab";
+        slider.style.scrollBehavior = "smooth"; // Re-enable smooth scroll
+      });
 
-            slider.addEventListener("mouseup", () => {
-                isDown = false;
-                slider.style.cursor = "grab";
-                slider.style.scrollBehavior = "smooth"; // Re-enable smooth scroll
-            });
+      slider.addEventListener("mouseup", () => {
+        isDown = false;
+        slider.style.cursor = "grab";
+        slider.style.scrollBehavior = "smooth"; // Re-enable smooth scroll
+      });
 
-            slider.addEventListener("mousemove", (e) => {
-                if (!isDown) return;
-                e.preventDefault();
-                const x = e.pageX - slider.offsetLeft;
-                const walk = (x - startX) * 2; // Scroll speed multiplier
-                slider.scrollLeft = scrollLeft - walk;
-            });
+      slider.addEventListener("mousemove", (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 2; // Scroll speed multiplier
+        slider.scrollLeft = scrollLeft - walk;
+      });
 
-            // Set initial cursor
-            slider.style.cursor = "grab";
-        }
+      // Set initial cursor
+      slider.style.cursor = "grab";
+    }
 
-        // Initialize when DOM is ready
-        if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", () => {
-                initStoryClicks();
-                initDragScroll();
-            });
-        } else {
-            initStoryClicks();
-            initDragScroll();
-        }
-    })();
+    // Initialize when DOM is ready
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        initStoryClicks();
+        initDragScroll();
+      });
+    } else {
+      initStoryClicks();
+      initDragScroll();
+    }
+  })();
 </script>
 
 <style>
-    .stories-section {
-        padding: 16px 0;
-        background: #fff;
-        border-bottom: 1px solid #f0f0f0;
-    }
+  .stories-section {
+    padding: 16px 0;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+  }
 
-    .stories-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 16px;
-    }
+  .stories-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
 
-    /* Instagram-style horizontal scroll */
-    .stories-scroll {
-        display: flex;
-        gap: 12px;
-        padding: 4px 0;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scroll-behavior: smooth;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
+  /* Instagram-style horizontal scroll */
+  .stories-scroll {
+    display: flex;
+    gap: 12px;
+    padding: 4px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
 
-    .stories-scroll::-webkit-scrollbar {
-        display: none;
-    }
+  .stories-scroll::-webkit-scrollbar {
+    display: none;
+  }
 
-    .story-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        min-width: 80px;
-        text-align: center;
-        opacity: 0;
-        transform: translateY(20px);
-        animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    }
+  .story-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    min-width: 80px;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
 
-    /* Staggered delay */
-    .story-item:nth-child(2n + 1) {
-        animation-delay: 0.1s;
-    }
-    .story-item:nth-child(2n + 2) {
-        animation-delay: 0.2s;
-    }
+  /* Staggered delay */
+  .story-item:nth-child(2n + 1) {
+    animation-delay: 0.1s;
+  }
+  .story-item:nth-child(2n + 2) {
+    animation-delay: 0.2s;
+  }
 
-    @keyframes slideUpFade {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+  @keyframes slideUpFade {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
     }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 
-    .story-ring {
-        width: 76px;
-        height: 76px;
-        border-radius: 50%;
-        padding: 3px;
-        background: linear-gradient(
-            45deg,
-            #f09433 0%,
-            #e6683c 25%,
-            #dc2743 50%,
-            #cc2366 75%,
-            #bc1888 100%
-        );
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 8px;
-        transition:
-            transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-            box-shadow 0.3s ease;
-        position: relative;
-    }
+  .story-ring {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(
+      45deg,
+      #f09433 0%,
+      #e6683c 25%,
+      #dc2743 50%,
+      #cc2366 75%,
+      #bc1888 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    transition:
+      transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+      box-shadow 0.3s ease;
+    position: relative;
+  }
 
-    .story-item:hover .story-ring {
-        transform: scale(1.1) rotate(5deg);
-        box-shadow: 0 10px 20px -5px rgba(220, 39, 67, 0.4);
-    }
+  .story-item:hover .story-ring {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 10px 20px -5px rgba(220, 39, 67, 0.4);
+  }
 
-    .story-ring::before {
-        content: "";
-        position: absolute;
-        inset: -2px;
-        border-radius: 50%;
-        background: inherit;
-        filter: blur(8px);
-        opacity: 0;
-        z-index: -1;
-        transition: opacity 0.3s ease;
-    }
+  .story-ring::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    background: inherit;
+    filter: blur(8px);
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+  }
 
-    .story-item:hover .story-ring::before {
-        opacity: 0.6;
-    }
+  .story-item:hover .story-ring::before {
+    opacity: 0.6;
+  }
 
-    .story-image-wrapper {
-        width: 100%;
-        height: 100%;
-        background: #fff;
-        border-radius: 50%;
-        padding: 3px;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        z-index: 1;
-    }
+  .story-image-wrapper {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    border-radius: 50%;
+    padding: 3px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
 
-    .story-image-wrapper img {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        object-fit: cover;
-        transition: transform 0.5s ease;
-    }
+  .story-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
 
-    .story-item:hover .story-image-wrapper img {
-        transform: scale(1.1);
-    }
+  .story-item:hover .story-image-wrapper img {
+    transform: scale(1.1);
+  }
 
-    .story-placeholder {
-        width: 100%;
-        height: 100%;
-        background: #f0f0f0;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: #888;
-        font-size: 24px;
-        transition: background-color 0.3s ease;
-    }
+  .story-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #f0f0f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #888;
+    font-size: 24px;
+    transition: background-color 0.3s ease;
+  }
 
-    .story-item:hover .story-placeholder {
-        background: #eef;
-        color: #666;
-    }
+  .story-item:hover .story-placeholder {
+    background: #eef;
+    color: #666;
+  }
 
-    .story-title {
-        font-size: 12px;
-        font-weight: 500;
-        color: #262626;
-        max-width: 74px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        transition: color 0.3s ease;
-    }
+  .story-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: #262626;
+    max-width: 74px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s ease;
+  }
 
-    .story-item:hover .story-title {
-        color: #dc2743;
-    }
+  .story-item:hover .story-title {
+    color: #dc2743;
+  }
 
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
     }
+    to {
+      opacity: 1;
+    }
+  }
 </style>
