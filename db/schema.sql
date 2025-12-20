@@ -108,8 +108,8 @@ CREATE TABLE IF NOT EXISTS media (
     
     -- SEO / Accessibility Text. 
     -- Kept as a separate column to allow efficient full-text search.
-    -- Should describe the image content for screen readers.
-    alt_text TEXT, 
+    -- REQUIRED: Every image must have alt text for accessibility (WCAG).
+    alt_text TEXT NOT NULL, 
     
     -- Visible Caption. 
     -- Can be displayed below the image in articles.
@@ -122,8 +122,8 @@ CREATE TABLE IF NOT EXISTS media (
     credit TEXT,  
     
     -- Filter helper (e.g., 'image/webp', 'image/gif', 'video/mp4').
-    -- Used to filter Media Library by type.
-    mime_type TEXT DEFAULT 'image/webp',
+    -- REQUIRED: Used to filter Media Library by type.
+    mime_type TEXT NOT NULL DEFAULT 'image/webp',
 
     -- Optional human-readable ratio hint ("16:9", "4:5", "1:1").
     -- Used for layout hints and space reservation before image loads.
@@ -303,10 +303,10 @@ CREATE TABLE IF NOT EXISTS categories (
     collection_title TEXT,
 
     -- Intro paragraph displayed below the headline.
-    -- Used for SEO (meta description fallback) and user context.
+    -- REQUIRED: Used for SEO (meta description fallback) and user context.
     -- RECOMMENDED: 160-225 characters for optimal SEO.
     -- EXAMPLE: "Start your day right with our collection of quick and healthy breakfast recipes. ...."
-    short_description TEXT,
+    short_description TEXT NOT NULL,
 
     -- =========================================================================
     -- 3. VISUALS (Display-Ready Image Data)
@@ -564,9 +564,9 @@ CREATE TABLE IF NOT EXISTS authors (
     subtitle TEXT,
 
     -- Primary description for cards and listing pages.
-    -- FALLBACK: If NULL, use bio_json.short.
+    -- REQUIRED: Used for author cards and SEO.
     -- RECOMMENDED: 100-160 characters.
-    short_description TEXT,
+    short_description TEXT NOT NULL,
 
     -- Longer teaser for blog index and newsletter intros.
     -- EXAMPLE: "Jane has been writing about food for over 10 years..."
