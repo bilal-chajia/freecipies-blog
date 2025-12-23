@@ -1,12 +1,14 @@
 import type { APIRoute } from 'astro';
-import { getArticles, getCategoryBySlug, type Env } from '../../lib/db';
+import { getArticles } from '@modules/articles';
+import { getCategoryBySlug } from '@modules/categories';
+import type { Env } from '@shared/types';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ params, locals, site }) => {
     const env = locals.runtime.env as Env;
     const categorySlug = params.slug;
-    const baseUrl = site?.toString().replace(/\/$/, '') || 'https://freecipies.com';
+    const baseUrl = site?.toString().replace(/\/$/, '') || 'https://recipes-saas.com';
 
     if (!categorySlug) {
         return new Response('Category not specified', { status: 400 });
@@ -58,9 +60,9 @@ export const GET: APIRoute = async ({ params, locals, site }) => {
         <loc>${baseUrl}/recipes/${recipe.slug}</loc>
         <lastmod>${recipe.updatedAt ? new Date(recipe.updatedAt).toISOString().split('T')[0] : today}</lastmod>
         <changefreq>weekly</changefreq>
-        <priority>0.7</priority>${recipe.image?.url ? `
+        <priority>0.7</priority>${recipe.imageUrl ? `
         <image:image>
-            <image:loc>${escapeXml(getAbsoluteImageUrl(recipe.image.url))}</image:loc>
+            <image:loc>${escapeXml(getAbsoluteImageUrl(recipe.imageUrl))}</image:loc>
             <image:title>${escapeXml(recipe.headline)}</image:title>
         </image:image>` : ''}
     </url>`).join('')}

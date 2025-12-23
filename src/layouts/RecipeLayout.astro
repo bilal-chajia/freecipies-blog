@@ -14,7 +14,13 @@ interface Props {
 
 const { recipe, author, category } = Astro.props;
 const categoryColor = category?.color || "#ff6600";
-const recipeJson = recipe.recipeJson;
+
+// Parse recipeJson if it's a string
+const recipeJson = recipe.recipeJson
+  ? typeof recipe.recipeJson === "string"
+    ? JSON.parse(recipe.recipeJson)
+    : recipe.recipeJson
+  : null;
 
 // Calculate estimated reading time (approx 200 words per minute)
 const wordCount = [
@@ -34,11 +40,11 @@ const readingTime = Math.max(5, Math.ceil(wordCount / 200));
 <Layout
   title={recipe.metaTitle || recipe.label}
   description={recipe.metaDescription || recipe.shortDescription}
-  image={recipe.image?.url}
+  image={recipe.imageUrl || undefined}
 >
   {
-    recipe.image && (
-      <link slot="head" rel="preload" as="image" href={recipe.image.url} />
+    recipe.imageUrl && (
+      <link slot="head" rel="preload" as="image" href={recipe.imageUrl} />
     )
   }
   <article class="recipe-page">
@@ -77,29 +83,29 @@ const readingTime = Math.max(5, Math.ceil(wordCount / 200));
         <!-- Author Card -->
         <RecipeAuthorCard
           authorName={author?.name || recipe.authorName}
-          authorImage={author?.image?.url}
+          authorImage={author?.imageUrl || undefined}
           authorRole={author?.job || "Blogger"}
-          lastUpdated={recipe.publishedAt}
+          lastUpdated={recipe.publishedAt || undefined}
           viewCount={recipe.viewCount}
         />
 
         <!-- Disclosure Notice -->
         <div class="disclosure-notice">
-          <strong>Disclosure:</strong> This website may contain affiliate links,
-          which means I may earn a commission if you click on the link and make a
-          purchase. I only recommend products or services that I personally use and
-          believe will add value to my readers. Your support is appreciated!
+          <strong>Disclosure:</strong> This website may contain affiliate links, which
+          means I may earn a commission if you click on the link and make a purchase.
+          I only recommend products or services that I personally use and believe
+          will add value to my readers. Your support is appreciated!
         </div>
 
         <!-- Hero Image -->
         {
-          recipe.image && (
+          recipe.imageUrl && (
             <div class="hero-image">
               <img
-                src={recipe.image.url}
-                alt={recipe.image.alt || recipe.label}
-                width={recipe.image.width}
-                height={recipe.image.height}
+                src={recipe.imageUrl}
+                alt={recipe.imageAlt || recipe.label}
+                width={recipe.imageWidth}
+                height={recipe.imageHeight}
                 loading="eager"
                 fetchpriority="high"
               />

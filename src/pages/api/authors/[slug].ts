@@ -1,11 +1,8 @@
 import type { APIRoute } from 'astro';
-import {
-    getAuthorBySlug, updateAuthor, deleteAuthor, type Env
-} from '../../../lib/db';
-import {
-    formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError
-} from '../../../lib/error-handler';
-import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../../lib/auth';
+import { getAuthorBySlug, updateAuthor, deleteAuthor } from '@modules/authors';
+import type { Env } from '@shared/types';
+import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 
 export const prerender = false;
 
@@ -78,11 +75,11 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
 
         // Check if image is being changed or removed - delete old image if so
         const existingAuthor = await getAuthorBySlug(env.DB, slug);
-        const oldImageUrl = existingAuthor?.image?.url;
-        const newImageUrl = body.image?.url;
+        const oldImageUrl = existingAuthor?.imageUrl;
+        const newImageUrl = body.imageUrl;
 
         // Delete old image if: 1) new image is different, or 2) image is being removed (set to null)
-        if (oldImageUrl && (newImageUrl !== oldImageUrl || body.image === null)) {
+        if (oldImageUrl && (newImageUrl !== oldImageUrl || body.imageUrl === null)) {
             try {
                 // URL format: /images/{key} - key is everything after /images/
                 const keyMatch = oldImageUrl.match(/\/images\/(.+)$/);

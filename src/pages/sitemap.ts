@@ -1,11 +1,15 @@
 import type { APIRoute } from 'astro';
-import { getArticles, getCategories, getTags, getAuthors, type Env } from '../lib/db';
+import { getArticles } from '@modules/articles';
+import { getCategories } from '@modules/categories';
+import { getTags } from '@modules/tags';
+import { getAuthors } from '@modules/authors';
+import type { Env } from '@shared/types';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ locals, site }) => {
     const env = locals.runtime.env as Env;
-    const baseUrl = site?.toString().replace(/\/$/, '') || 'https://freecipies.com';
+    const baseUrl = site?.toString().replace(/\/$/, '') || 'https://recipes-saas.com';
 
     // Fetch all data for sitemap dynamically from database
     let recipes: any[] = [];
@@ -66,9 +70,9 @@ export const GET: APIRoute = async ({ locals, site }) => {
         <loc>${baseUrl}/recipes/${recipe.slug}</loc>
         <lastmod>${recipe.updatedAt ? new Date(recipe.updatedAt).toISOString().split('T')[0] : today}</lastmod>
         <changefreq>weekly</changefreq>
-        <priority>0.8</priority>${recipe.image?.url ? `
+        <priority>0.8</priority>${recipe.imageUrl ? `
         <image:image>
-            <image:loc>${escapeXml(getAbsoluteImageUrl(recipe.image.url))}</image:loc>
+            <image:loc>${escapeXml(getAbsoluteImageUrl(recipe.imageUrl))}</image:loc>
             <image:title>${escapeXml(recipe.headline)}</image:title>
         </image:image>` : ''}
     </url>`).join('')}

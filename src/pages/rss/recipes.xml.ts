@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 
 export const GET: APIRoute = async ({ locals, site }) => {
   try {
-    const siteUrl = site?.toString() || 'https://freecipies.com';
+    const siteUrl = site?.toString() || 'https://recipes-saas.com';
 
     // Fetch recent articles from D1
     const db = locals.runtime?.env?.DB;
@@ -63,7 +63,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
     console.error('RSS generation error:', error);
 
     // Return minimal RSS feed on error
-    const siteUrl = site?.toString() || 'https://freecipies.com';
+    const siteUrl = site?.toString() || 'https://recipes-saas.com';
     const fallbackRss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>

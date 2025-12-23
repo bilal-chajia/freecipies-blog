@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { generateJWT, AuthRoles } from '../../../lib/auth';
+import { generateJWT, AuthRoles } from '@modules/auth';
 
 export const prerender = false;
 

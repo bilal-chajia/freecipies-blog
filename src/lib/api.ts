@@ -1,4 +1,9 @@
-import type { Article, Category, Author, Tag, APIResponse, PaginatedResponse } from '../types';
+import type { Article } from '@modules/articles';
+import type { Category } from '@modules/categories';
+import type { Author } from '@modules/authors';
+import type { Tag } from '@modules/tags';
+import type { APIResponse, PaginatedResponse } from '@shared/types';
+
 
 function getBaseUrl(astroUrl?: URL): URL {
   if (astroUrl) {

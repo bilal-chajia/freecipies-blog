@@ -3,7 +3,7 @@ import type { APIRoute } from 'astro';
 export const GET: APIRoute = async ({ params, locals, site }) => {
   try {
     const boardSlug = params.board;
-    const siteUrl = site?.toString() || 'https://freecipies.com';
+    const siteUrl = site?.toString() || 'https://recipes-saas.com';
 
     const db = locals.runtime?.env?.DB;
 
@@ -99,7 +99,7 @@ export const GET: APIRoute = async ({ params, locals, site }) => {
   <channel>
     <title>Error</title>
     <description>Failed to generate RSS feed</description>
-    <link>${site?.toString() || 'https://freecipies.com'}</link>
+    <link>${site?.toString() || 'https://recipes-saas.com'}</link>
   </channel>
 </rss>`, {
       status: 500,

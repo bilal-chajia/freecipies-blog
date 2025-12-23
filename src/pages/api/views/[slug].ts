@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
-import { incrementViewCount, getArticleBySlug, type Env } from '../../../lib/db';
-import {
-  formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError
-} from '../../../lib/error-handler';
+import { getArticleBySlug, incrementViewCount } from '@modules/articles';
+import type { Env } from '@shared/types';
+import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 
 export const prerender = false;
 

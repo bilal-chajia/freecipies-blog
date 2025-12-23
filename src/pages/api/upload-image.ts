@@ -1,10 +1,8 @@
 import type { APIRoute } from 'astro';
-import { uploadImage, validateImage } from '../../lib/r2';
-import type { Env } from '../../lib/db';
-import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '../../lib/auth';
-import {
-  formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError
-} from '../../lib/error-handler';
+import { uploadImage, validateImage } from '@modules/media';
+import type { Env } from '@shared/types';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 
 export const prerender = false;
 

@@ -66,13 +66,12 @@ export default async function getCroppedImg(
         ctx.filter = filter;
     }
 
-    // translate canvas context to a central location to allow rotating and flipping around the center
+    // translate canvas context to a central location to allow rotating around the center
     ctx.translate(bBoxWidth / 2, bBoxHeight / 2)
     ctx.rotate(rotRad)
-    ctx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1)
     ctx.translate(-image.width / 2, -image.height / 2)
 
-    // draw rotated image
+    // draw rotated image (without flip - flip is applied later)
     ctx.drawImage(image, 0, 0)
 
     // croppedAreaPixels values are bounding box relative
@@ -88,8 +87,34 @@ export default async function getCroppedImg(
     canvas.width = pixelCrop.width
     canvas.height = pixelCrop.height
 
-    // paste generated rotate image at the top left corner
-    ctx.putImageData(data, 0, 0)
+    // Reset filter for overlays
+    ctx.filter = 'none';
+
+    // If flip is needed, apply it now
+    if (flip.horizontal || flip.vertical) {
+        // Create a temporary canvas to hold the cropped data
+        const tempCanvas = document.createElement('canvas')
+        tempCanvas.width = pixelCrop.width
+        tempCanvas.height = pixelCrop.height
+        const tempCtx = tempCanvas.getContext('2d')
+        tempCtx.putImageData(data, 0, 0)
+
+        // Now draw it flipped onto the main canvas
+        ctx.save()
+        ctx.translate(
+            flip.horizontal ? pixelCrop.width : 0,
+            flip.vertical ? pixelCrop.height : 0
+        )
+        ctx.scale(
+            flip.horizontal ? -1 : 1,
+            flip.vertical ? -1 : 1
+        )
+        ctx.drawImage(tempCanvas, 0, 0)
+        ctx.restore()
+    } else {
+        // No flip, just paste the data
+        ctx.putImageData(data, 0, 0)
+    }
 
     // --- Vignette Effect ---
     if (vignette && vignette.enabled) {
