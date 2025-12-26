@@ -1,5 +1,7 @@
 # Freecipies Project Guidelines for AI Agents
 
+**Note**: This project uses [bd (beads)](https://github.com/steveyegge/beads) for issue tracking. Use bd commands instead of markdown TODOs. See AGENTS.md for workflow details.
+
 > **Read this file before making any code changes.**
 
 ## Project Overview
@@ -49,7 +51,47 @@
 
 ---
 
-## 🚨 Critical Rules
+## � Current Project State
+
+### Image Upload Module (Recently Refactored)
+
+**Location**: `src/admin/components/ImageUploader/`
+
+| File                      | Purpose                                               |
+| :------------------------ | :---------------------------------------------------- |
+| `index.jsx`               | Single-step upload dialog with crop + metadata        |
+| `config.js`               | Centralized constants (sizes, quality, aspect ratios) |
+| `errors.js`               | Custom error types with user-friendly messages        |
+| `DropZone.jsx`            | Drag & drop with particle effects                     |
+| `VariantProgress.jsx`     | Visual upload progress with variant cards             |
+| `CropEditor.jsx`          | Standalone crop editor (imports from config)          |
+| `hooks/useImageUpload.js` | Upload logic with retry and parallel uploads          |
+
+**Key Features**:
+
+- WebP/AVIF encoding via `@jsquash/webp` and `@jsquash/avif`
+- Parallel variant uploads (lg, md, sm, xs) with concurrency limit
+- Retry mechanism with exponential backoff
+- Memory management for canvas/blob URLs
+- Focal point selection for responsive images
+
+### Utility Files
+
+| File                                | Purpose                                |
+| :---------------------------------- | :------------------------------------- |
+| `src/admin/utils/retry.js`          | Generic retry with exponential backoff |
+| `src/admin/utils/fileValidation.js` | File/URL validation utilities          |
+| `src/admin/utils/urlHelpers.js`     | Safe object URL management             |
+
+### Known Issues (Fixed)
+
+- ✅ Infinite loop in focal point measurement (throttled, dependencies fixed)
+- ✅ Duplicate upload dialogs (old inline dialog removed)
+- ✅ Duplicate ASPECT_RATIOS constants (consolidated in config.js)
+
+---
+
+## �🚨 Critical Rules
 
 ### Performance First
 
@@ -77,6 +119,7 @@
 1. **No browser without permission** - NEVER use browser tools to navigate websites without explicit user approval
 2. **Ask before browsing** - If you need to visit a URL, ask the user first
 3. **Prefer MCP over browser** - Use MCP tools to read documentation instead of opening browsers
+4. **NO automatic builds** - Do NOT run `pnpm build` automatically. User will run builds manually. Only run `pnpm dev` as needed.
 
 ### Research Requirements
 
@@ -171,6 +214,13 @@ export const GET: APIRoute = async ({ locals }) => {
     return new Response(body, { status, headers });
   }
 };
+
+// Smart Routing Pattern (for [slug].ts that handles IDs too)
+const { slug } = params;
+const isNumeric = /^\d+$/.test(slug);
+const item = isNumeric 
+  ? await getById(db, parseInt(slug)) 
+  : await getBySlug(db, slug);
 ```
 
 ### Image Rendering
@@ -403,3 +453,5 @@ Before marking any task complete:
 - [ ] No hardcoded secrets or sensitive data
 - [ ] Commit message follows convention
 - [ ] Beads issue updated (`bd close <id>` if done)
+
+

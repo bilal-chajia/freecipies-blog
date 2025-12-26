@@ -15,7 +15,7 @@ export type HydratedTag = Tag & ExtractedTagStyle & {
 };
 
 export interface TagStyle {
+  svg_code?: string;
   color?: string;
-  backgroundColor?: string;
-  icon?: string;
+  variant?: string;
 }

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getAuthors, createAuthor } from '@modules/authors';
+import { getAuthors, createAuthor, transformAuthorRequestBody, transformAuthorResponse } from '@modules/authors';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -15,8 +15,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const db = env.DB;
 
     const authors = await getAuthors(db);
+    const responseAuthors = authors.map(transformAuthorResponse);
 
-    const { body, status, headers } = formatSuccessResponse(authors, {
+    const { body, status, headers } = formatSuccessResponse(responseAuthors, {
       cacheControl: 'no-cache, no-store, must-revalidate'
     });
     return new Response(body, { status, headers });
@@ -47,9 +48,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const reqBody = await request.json();
-    const author = await createAuthor(env.DB, reqBody);
+    const transformedBody = transformAuthorRequestBody(reqBody);
+    const author = await createAuthor(env.DB, transformedBody);
+    const responseAuthor = transformAuthorResponse(author);
 
-    const { body, status, headers } = formatSuccessResponse(author);
+    const { body, status, headers } = formatSuccessResponse(responseAuthor);
     return new Response(body, { status: 201, headers });
   } catch (error) {
     console.error('Error creating author:', error);

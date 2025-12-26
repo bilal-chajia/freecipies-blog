@@ -256,7 +256,6 @@ contact_info    → Contact details
 | `credit`           | TEXT     | ❌       | NULL                | Attribution/copyright                |
 | `mime_type`        | TEXT     | ✅       | `'image/webp'`      | MIME type                            |
 | `aspect_ratio`     | TEXT     | ❌       | NULL                | Display ratio (`16:9`, `4:5`, `1:1`) |
-| `size_bytes`       | INTEGER  | ❌       | NULL                | Original file size in bytes          |
 | `variants_json`    | TEXT     | ✅       | -                   | **See schema below**                 |
 | `focal_point_json` | TEXT     | ❌       | `'{"x":50,"y":50}'` | Cropping focal point                 |
 | `created_at`       | DATETIME | ❌       | CURRENT_TIMESTAMP   | Upload timestamp                     |
@@ -272,31 +271,36 @@ contact_info    → Contact details
       "url": "https://cdn.example.com/2025/01/image.webp",
       "r2_key": "2025/01/image.webp",
       "width": 4000,
-      "height": 3000
+      "height": 3000,
+      "sizeBytes": 412345
     },
     "lg": {
       "url": "https://cdn.example.com/2025/01/image-lg.webp",
       "r2_key": "2025/01/image-lg.webp",
       "width": 2048,
-      "height": 1536
+      "height": 1536,
+      "sizeBytes": 198765
     },
     "md": {
       "url": "https://cdn.example.com/2025/01/image-md.webp",
       "r2_key": "2025/01/image-md.webp",
       "width": 1200,
-      "height": 900
+      "height": 900,
+      "sizeBytes": 102345
     },
     "sm": {
       "url": "https://cdn.example.com/2025/01/image-sm.webp",
       "r2_key": "2025/01/image-sm.webp",
       "width": 720,
-      "height": 540
+      "height": 540,
+      "sizeBytes": 54321
     },
     "xs": {
       "url": "https://cdn.example.com/2025/01/image-xs.webp",
       "r2_key": "2025/01/image-xs.webp",
       "width": 360,
-      "height": 270
+      "height": 270,
+      "sizeBytes": 23123
     }
   },
   "placeholder": "data:image/jpeg;base64,/9j/4AAQ..."
@@ -307,6 +311,7 @@ contact_info    → Contact details
 >
 > - `xs`, `sm`, `md`, `lg` are **REQUIRED**. `original` is optional (only if source > 2048px).
 > - `r2_key` is the path in R2 bucket - needed for deletion.
+> - `sizeBytes` (optional) is the encoded file size for each variant, used by Media Library display.
 > - `placeholder` is a base64 blur hash < 1KB.
 > - Heights are auto-calculated from aspect ratio.
 
@@ -1462,3 +1467,5 @@ export function hydrateArticles(rawList: RawArticle[]): HydratedArticle[] {
   return rawList.map(hydrateArticle);
 }
 ```
+
+

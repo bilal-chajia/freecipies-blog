@@ -33,6 +33,9 @@ interface ImageVariant {
 
 interface ImageSlot {
   alt?: string;
+  url?: string;
+  width?: number;
+  height?: number;
   variants?: {
     xs?: ImageVariant;
     sm?: ImageVariant;
@@ -55,36 +58,106 @@ export interface ExtractedImage {
   imageHeight?: number;
 }
 
+export function getImageSlot(
+  imagesJson: string | null | undefined,
+  slot: 'thumbnail' | 'cover' | 'avatar' = 'thumbnail'
+): ImageSlot | null {
+  const images = safeParseJson<ImagesJson>(imagesJson);
+  if (!images) return null;
+  return images[slot] || null;
+}
+
+const buildSrcSet = (variants?: ImageSlot['variants']): string => {
+  if (!variants) return '';
+  const entries: string[] = [];
+  const ordered = ['xs', 'sm', 'md', 'lg', 'original'] as const;
+
+  for (const key of ordered) {
+    const variant = variants[key];
+    if (variant?.url && variant.width) {
+      entries.push(`${variant.url} ${variant.width}w`);
+    }
+  }
+
+  return entries.join(', ');
+};
+
+export function getImageSrcSet(
+  imagesJson: string | null | undefined,
+  slot: 'thumbnail' | 'cover' | 'avatar' = 'thumbnail'
+): string {
+  const imageSlot = getImageSlot(imagesJson, slot);
+  if (!imageSlot?.variants) return '';
+  return buildSrcSet(imageSlot.variants);
+}
+
+const FALLBACK_VARIANT_ORDER = ['lg', 'md', 'sm', 'original', 'xs'] as const;
+
+const pickVariantByWidth = (
+  variants: ImageSlot['variants'],
+  targetWidth?: number
+): ImageVariant | null => {
+  if (!variants) return null;
+
+  const entries = Object.entries(variants)
+    .filter(([, variant]) => variant && typeof variant.url === 'string')
+    .map(([key, variant]) => ({ key, ...(variant as ImageVariant) }));
+
+  if (!entries.length) return null;
+
+  const withWidth = entries
+    .filter((variant) => typeof variant.width === 'number' && (variant.width || 0) > 0)
+    .sort((a, b) => (a.width || 0) - (b.width || 0));
+
+  if (targetWidth && withWidth.length > 0) {
+    const match = withWidth.find((variant) => (variant.width || 0) >= targetWidth);
+    return (match || withWidth[withWidth.length - 1]) || null;
+  }
+
+  for (const key of FALLBACK_VARIANT_ORDER) {
+    const candidate = variants[key];
+    if (candidate?.url) return candidate;
+  }
+
+  return entries[0] || null;
+};
+
 /**
  * Extract image URL and metadata from imagesJson field
- * Prefers lg > md > sm > original > xs variants
+ * Uses the smallest variant that satisfies targetWidth (when provided),
+ * otherwise prefers lg > md > sm > original > xs
  */
 export function extractImage(
   imagesJson: string | null | undefined,
-  slot: 'thumbnail' | 'cover' | 'avatar' = 'thumbnail'
+  slot: 'thumbnail' | 'cover' | 'avatar' = 'thumbnail',
+  targetWidth?: number
 ): ExtractedImage {
   const images = safeParseJson<ImagesJson>(imagesJson);
   if (!images) return {};
 
   const imageSlot = images[slot];
-  if (!imageSlot?.variants) return {};
+  if (!imageSlot) return {};
 
-  // Pick the best available variant
-  const variant = 
-    imageSlot.variants.lg ||
-    imageSlot.variants.md ||
-    imageSlot.variants.sm ||
-    imageSlot.variants.original ||
-    imageSlot.variants.xs;
+  const variant = pickVariantByWidth(imageSlot.variants, targetWidth);
+  if (variant?.url) {
+    return {
+      imageUrl: variant.url,
+      imageAlt: imageSlot.alt,
+      imageWidth: variant.width,
+      imageHeight: variant.height,
+    };
+  }
 
-  if (!variant) return {};
+  if (imageSlot.url) {
+    return {
+      imageUrl: imageSlot.url,
+      imageAlt: imageSlot.alt,
+      imageWidth: imageSlot.width,
+      imageHeight: imageSlot.height,
+    };
+  }
 
-  return {
-    imageUrl: variant.url,
-    imageAlt: imageSlot.alt,
-    imageWidth: variant.width,
-    imageHeight: variant.height,
-  };
+  return {};
 }
 
 // ============================================================================
@@ -99,6 +172,8 @@ interface SeoJson {
   ogDescription?: string;
   canonical?: string;
   noIndex?: boolean;
+  twitterCard?: string;
+  robots?: string;
 }
 
 export interface ExtractedSeo {
@@ -127,35 +202,9 @@ export function extractSeo(seoJson: string | null | undefined): ExtractedSeo {
 // Recipe Extraction
 // ============================================================================
 
-export interface RecipeJson {
-  prepTime?: number;
-  cookTime?: number;
-  totalTime?: number;
-  servings?: number;
-  servingSize?: string;
-  difficulty?: string;
-  calories?: number;
-  cuisine?: string;
-  course?: string;
-  ingredients?: Array<{
-    group_title?: string;
-    items: Array<{
-      name: string;
-      amount?: string;
-      unit?: string;
-      notes?: string;
-    }>;
-  }>;
-  instructions?: Array<{
-    section_title?: string;
-    steps: Array<{
-      text: string;
-      time?: number;
-      tip?: string;
-      image?: string | null;
-    }>;
-  }>;
-}
+// Import comprehensive RecipeJson from articles module
+import type { RecipeJson } from '../../modules/articles/types/recipes.types';
+export type { RecipeJson };
 
 /**
  * Parse recipe JSON for display
@@ -169,15 +218,16 @@ export function extractRecipe(recipeJson: string | null | undefined): RecipeJson
 // ============================================================================
 
 interface TagStyleJson {
+  svg_code?: string;
   color?: string;
-  icon?: string;
-  backgroundColor?: string;
+  variant?: string;
 }
 
 export interface ExtractedTagStyle {
   color?: string;
   icon?: string;
-  backgroundColor?: string;
+  svgCode?: string;
+  variant?: string;
 }
 
 /**
@@ -189,8 +239,9 @@ export function extractTagStyle(styleJson: string | null | undefined): Extracted
 
   return {
     color: style.color,
-    icon: style.icon,
-    backgroundColor: style.backgroundColor,
+    icon: style.svg_code,
+    svgCode: style.svg_code,
+    variant: style.variant,
   };
 }
 
@@ -205,7 +256,7 @@ export function extractTagStyle(styleJson: string | null | undefined): Extracted
 /**
  * Hydrate an article with computed fields
  */
-export function hydrateArticle<T extends { 
+export function hydrateArticle<T extends {
   imagesJson?: string | null;
   seoJson?: string | null;
   recipeJson?: string | null;

@@ -57,23 +57,26 @@ export const articlesAPI = {
   // Get all articles with pagination and filters
   getAll: (params = {}) => api.get('/articles', { params }),
 
-  // Get single article by slug
+  // Get single article by slug (public)
   getBySlug: (slug) => api.get(`/articles/${slug}`),
+
+  // Get single article by ID (admin)
+  getById: (id) => api.get(`/admin/articles/${id}`),
 
   // Create new article
   create: (data) => api.post('/articles', data),
 
-  // Update article
-  update: (slug, data) => api.put(`/articles/${slug}`, data),
+  // Update article by ID (admin)
+  update: (id, data) => api.put(`/admin/articles/${id}`, data),
 
-  // Delete article
-  delete: (slug) => api.delete(`/articles/${slug}`),
+  // Delete article by ID (soft delete, admin)
+  delete: (id) => api.delete(`/admin/articles/${id}`),
 
-  // Toggle online status
-  toggleOnline: (slug) => api.patch(`/articles/${slug}/toggle-online`),
+  // Toggle online status by ID (admin)
+  toggleOnline: (id) => api.patch(`/admin/articles/${id}?action=toggle-online`),
 
-  // Toggle favorite status
-  toggleFavorite: (slug) => api.patch(`/articles/${slug}/toggle-favorite`),
+  // Toggle favorite status by ID (admin)
+  toggleFavorite: (id) => api.patch(`/admin/articles/${id}?action=toggle-favorite`),
 };
 
 // ============================================
@@ -93,11 +96,29 @@ export const categoriesAPI = {
 // ============================================
 
 export const authorsAPI = {
+  // Get all authors with filters
   getAll: (params = {}) => api.get('/authors', { params }),
+
+  // Get author by slug (uses /authors/[slug].ts endpoint)
   getBySlug: (slug) => api.get(`/authors/${slug}`),
+
+  // Get author by ID (uses /authors/[id].ts endpoint)
+  getById: (id) => api.get(`/authors/${id}`),
+
+  // Create new author (uses /authors/index.ts POST)
   create: (data) => api.post('/authors', data),
-  update: (slug, data) => api.put(`/authors/${slug}`, data),
-  delete: (slug) => api.delete(`/authors/${slug}`),
+
+  // Update author by ID (uses /authors/[id].ts PUT)
+  update: (id, data) => api.put(`/authors/${id}`, data),
+
+  // Delete author by ID (uses /authors/[id].ts DELETE)
+  delete: (id) => api.delete(`/authors/${id}`),
+
+  // Toggle online status by ID (uses /authors/[id].ts PATCH)
+  toggleOnline: (id) => api.patch(`/authors/${id}`, { action: 'toggle-online' }),
+
+  // Toggle featured status by ID (uses /authors/[id].ts PATCH)
+  toggleFeatured: (id) => api.patch(`/authors/${id}`, { action: 'toggle-featured' }),
 };
 
 // ============================================
@@ -121,7 +142,7 @@ export const mediaAPI = {
   getAll: (params = {}) => api.get('/media', { params }),
 
   // Upload file to R2
-  upload: (file, options = {}) => {
+  upload: async (file, options = {}) => {
     const formData = new FormData();
     formData.append('file', file);
     if (options.folder) formData.append('folder', options.folder);
@@ -129,16 +150,34 @@ export const mediaAPI = {
     if (options.alt) formData.append('alt', options.alt);
     if (options.attribution) formData.append('attribution', options.attribution);
 
-    return api.post('/upload-image', formData, {
+    const response = await api.post('/upload-image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+
+    // Backfill url from variantsJson for backward compatibility
+    if (response.data?.success && response.data?.data) {
+      const data = response.data.data;
+      if (!data.url && data.variantsJson) {
+        try {
+          const variants = typeof data.variantsJson === 'string' ? JSON.parse(data.variantsJson) : data.variantsJson;
+          const url = variants.original?.url || variants.lg?.url || '';
+          response.data.data.url = url;
+          // Also set top-level url if some components look there (though typically they look at data.data)
+          if (!response.data.url) response.data.url = url;
+        } catch (e) {
+          console.error('Failed to polyfill url from variantsJson', e);
+        }
+      }
+    }
+
+    return response;
   },
 
   // Upload image from URL
-  uploadFromUrl: (url, options = {}) => {
-    return api.post('/upload-from-url', {
+  uploadFromUrl: async (url, options = {}) => {
+    const response = await api.post('/upload-from-url', {
       url,
       alt: options.alt || '',
       attribution: options.attribution || '',
@@ -146,10 +185,30 @@ export const mediaAPI = {
       folder: options.folder || '',
       contextSlug: options.contextSlug || '',
     });
+
+    // Backfill url from variantsJson for backward compatibility
+    if (response.data?.success && response.data?.data) {
+      const data = response.data.data;
+      if (!data.url && data.variantsJson) {
+        try {
+          const variants = typeof data.variantsJson === 'string' ? JSON.parse(data.variantsJson) : data.variantsJson;
+          const url = variants.original?.url || variants.lg?.url || '';
+          response.data.data.url = url;
+          if (!response.data.url) response.data.url = url;
+        } catch (e) {
+          console.error('Failed to polyfill url from variantsJson', e);
+        }
+      }
+    }
+
+    return response;
   },
 
   // Delete media file
   delete: (id) => api.delete(`/media/${id}`),
+
+  // Bulk delete multiple media files
+  bulkDelete: (ids) => api.post('/media/bulk-delete', { ids }),
 
   // Replace image file (in-place)
   replaceImage: (id, file) => {
@@ -158,6 +217,56 @@ export const mediaAPI = {
     return api.put(`/media/${id}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  // Get presigned URLs for direct R2 upload
+  getUploadUrls: async (options) => {
+    const params = new URLSearchParams({
+      baseName: options.baseName,
+      variants: options.variants.join(','),
+      mimeType: options.mimeType || 'image/webp',
+      originalExt: options.originalExt || 'jpg',
+    });
+    return api.get(`/media/upload-urls?${params.toString()}`);
+  },
+
+  // Confirm upload after all variants uploaded to R2
+  confirmUpload: async (payload, config = {}) => {
+    return api.post('/media/confirm', payload, config);
+  },
+
+  // Upload directly to presigned URL (no auth needed, URL is pre-signed)
+  uploadToPresignedUrl: async (url, blob, contentType) => {
+    const response = await fetch(url, {
+      method: 'PUT',
+      body: blob,
+      headers: {
+        'Content-Type': contentType,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.status}`);
+    }
+    return response;
+  },
+
+  // Upload variant via Worker (fallback when presigned URLs unavailable)
+  uploadVariant: async (blob, options, config = {}) => {
+    const formData = new FormData();
+    formData.append('file', blob, options.filename || 'image.webp');
+    formData.append('variantName', options.variantName);
+    formData.append('baseName', options.baseName);
+    formData.append('uploadId', options.uploadId);
+    formData.append('width', options.width.toString());
+    formData.append('height', options.height.toString());
+
+    return api.post('/media/upload-variant', formData, {
+      ...config,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...(config.headers || {}),
       },
     });
   },
@@ -171,6 +280,11 @@ export const settingsAPI = {
   getAll: () => api.get('/settings'),
   get: (key) => api.get(`/settings/${key}`),
   update: (key, value) => api.put(`/settings/${key}`, { value }),
+
+  // Image upload settings
+  getImageUploadSettings: (config = {}) => api.get('/settings/image-upload', config),
+  updateImageUploadSettings: (settings) => api.put('/settings/image-upload', settings),
+  resetImageUploadSettings: () => api.delete('/settings/image-upload'),
 };
 
 // ============================================
@@ -281,4 +395,3 @@ export const statsAPI = {
 };
 
 export default api;
-

@@ -1,37 +1,7 @@
 ---
-import fs from "node:fs";
-import path from "node:path";
-
 const currentPath = Astro.url.pathname;
-
-// Check if logos exist
-const logosDir = path.join(process.cwd(), "public", "logos");
-let logoMain = null;
-let logoDark = null;
-
-// Look for uploaded logos - verify files exist before using
-try {
-  if (fs.existsSync(logosDir)) {
-    const files = fs.readdirSync(logosDir);
-    for (const file of files) {
-      const filePath = path.join(logosDir, file);
-      // Double-check file still exists (could have been deleted)
-      if (fs.existsSync(filePath)) {
-        if (file.startsWith("logo-main.")) {
-          logoMain = `/logos/${file}`;
-        } else if (file.startsWith("logo-dark.")) {
-          logoDark = `/logos/${file}`;
-        }
-      }
-    }
-  }
-} catch (e: any) {
-  // Directory doesn't exist or other error, use fallback
-  // Suppress ENOENT during dev/build as it happens during file replacement
-  if (e.code !== "ENOENT") {
-    console.error("Error reading logos directory:", e);
-  }
-}
+const logoMain = "/logos/logo-main.png";
+const logoDark = null;
 ---
 
 <header class="site-header">
@@ -492,4 +462,3 @@ try {
     }
   });
 </script>
-

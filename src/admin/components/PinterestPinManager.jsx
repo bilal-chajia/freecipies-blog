@@ -77,16 +77,35 @@ const PinterestPinManager = ({ articleId }) => {
       if (!uploadResponse.ok) throw new Error('Upload failed');
       const uploadData = await uploadResponse.json();
 
-      const img = new Image();
-      img.onload = () => {
-        setFormData(prev => ({
-          ...prev,
-          image_url: uploadData.url,
-          image_width: img.width,
-          image_height: img.height
-        }));
-      };
-      img.src = uploadData.url;
+      let imageUrl = '';
+      if (uploadData.success) {
+          if (uploadData.data?.variantsJson) {
+              try {
+                  const variants = typeof uploadData.data.variantsJson === 'string' 
+                      ? JSON.parse(uploadData.data.variantsJson) 
+                      : uploadData.data.variantsJson;
+                  imageUrl = variants.original?.url || variants.lg?.url || '';
+              } catch (e) {
+                  // Fallback
+                  imageUrl = uploadData.data?.url || uploadData.url || '';
+              }
+          } else {
+              imageUrl = uploadData.data?.url || uploadData.url || '';
+          }
+      }
+
+      if (imageUrl) {
+        const img = new Image();
+        img.onload = () => {
+          setFormData(prev => ({
+            ...prev,
+            image_url: imageUrl,
+            image_width: img.width,
+            image_height: img.height
+          }));
+        };
+        img.src = imageUrl;
+      }
 
     } catch (error) {
       console.error('Error uploading image:', error);

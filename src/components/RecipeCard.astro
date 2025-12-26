@@ -1,11 +1,18 @@
 ---
 import type { HydratedArticle } from "@modules/articles";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 import { formatTime } from "../lib/utils";
 interface Props {
   recipe: HydratedArticle;
 }
 const { recipe } = Astro.props;
 const recipeDetails = recipe.recipeJson;
+const thumbnail = extractImage(recipe.imagesJson, "thumbnail", 720);
+const cover = extractImage(recipe.imagesJson, "cover", 720);
+const slotName = thumbnail.imageUrl ? "thumbnail" : "cover";
+const selectedImage = thumbnail.imageUrl ? thumbnail : cover;
+const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
+const sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px";
 ---
 
 <article
@@ -18,8 +25,12 @@ hover:-translate-y-1"
 -->
     <div class="relative h-48 overflow-hidden">
       <img
-        src={recipe.imageUrl}
-        alt={recipe.imageAlt || recipe.headline}
+        src={selectedImage.imageUrl || recipe.imageUrl}
+        alt={selectedImage.imageAlt || recipe.imageAlt || recipe.headline}
+        width={selectedImage.imageWidth || recipe.imageWidth || 720}
+        height={selectedImage.imageHeight || recipe.imageHeight || 480}
+        srcset={srcSet || undefined}
+        sizes={srcSet ? sizes : undefined}
         class="w-full h-full object-cover
 group-hover:scale-110 transition-transform duration-300"
         loading="lazy"

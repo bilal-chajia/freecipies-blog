@@ -2,24 +2,11 @@
  * Categories Module - TypeScript Types
  */
 
-export interface CategoryImages {
-  hero?: {
-    url: string;
-    alt?: string;
-    width?: number;
-    height?: number;
-  };
-  thumbnail?: {
-    url: string;
-    alt?: string;
-  };
-  icon?: {
-    url: string;
-  };
-}
-
 import type { Category } from '../schema/categories.schema';
 import type { ExtractedImage, ExtractedSeo } from '@shared/utils';
+import type { CategoryImagesJson } from '../../articles/types/images.types';
+
+export type CategoryImages = CategoryImagesJson;
 
 export type HydratedCategory = Category & ExtractedImage & ExtractedSeo & {
   route: string;
@@ -34,8 +21,13 @@ export interface CategoryConfig {
 }
 
 export interface CategorySeo {
-  title?: string;
-  description?: string;
-  keywords?: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  noIndex?: boolean;
+  canonical?: string;
   ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  twitterCard?: string;
+  robots?: string;
 }

@@ -3,7 +3,13 @@ import Layout from "../../layouts/Layout.astro";
 import { getArticles } from "@modules/articles";
 import { getCategories } from "@modules/categories";
 import { getTags } from "@modules/tags";
-import { hydrateArticles, hydrateCategories, hydrateTags } from "@shared/utils";
+import {
+  extractImage,
+  getImageSrcSet,
+  hydrateArticles,
+  hydrateCategories,
+  hydrateTags,
+} from "@shared/utils";
 
 export const prerender = false;
 
@@ -63,6 +69,26 @@ const buildFilterUrl = (
 
   const queryString = params.toString();
   return queryString ? `/recipes?${queryString}` : "/recipes";
+};
+
+const getRecipeImage = (
+  recipe: any,
+  targetWidth: number,
+  prefer: "cover" | "thumbnail" = "cover"
+) => {
+  const cover = extractImage(recipe.imagesJson, "cover", targetWidth);
+  const thumbnail = extractImage(recipe.imagesJson, "thumbnail", targetWidth);
+  const slotName =
+    prefer === "cover"
+      ? cover.imageUrl
+        ? "cover"
+        : "thumbnail"
+      : thumbnail.imageUrl
+        ? "thumbnail"
+        : "cover";
+  const selected = slotName === "cover" ? cover : thumbnail;
+  const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
+  return { selected, srcSet };
 };
 
 const siteTitle = categoryFilter
@@ -199,55 +225,63 @@ const siteDescription =
         {
           recipes.length > 0 ? (
             <div class="recipes-grid">
-              {recipes.map((recipe) => (
-                <article class="recipe-card">
-                  <a href={`/recipes/${recipe.slug}`} class="card-image-link">
-                    {recipe.imageUrl && (
-                      <img
-                        src={recipe.imageUrl}
-                        alt={recipe.imageAlt || recipe.headline}
-                        loading="lazy"
-                      />
-                    )}
-                    <span class="card-badge">{recipe.categoryLabel}</span>
-                  </a>
-                  <div class="card-body">
-                    <h3 class="card-title">
-                      <a href={`/recipes/${recipe.slug}`}>{recipe.headline}</a>
-                    </h3>
-                    <div class="card-meta">
-                      {recipe.recipeJson?.prepTime && (
-                        <span class="meta-item">
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                          >
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M12 6v6l4 2" />
-                          </svg>
-                          {recipe.recipeJson.prepTime}
-                        </span>
+              {recipes.map((recipe) => {
+                const { selected, srcSet } = getRecipeImage(recipe, 400, "cover");
+                const sizes = "(max-width: 768px) 50vw, 25vw";
+                return (
+                  <article class="recipe-card">
+                    <a href={`/recipes/${recipe.slug}`} class="card-image-link">
+                      {(selected.imageUrl || recipe.imageUrl) && (
+                        <img
+                          src={selected.imageUrl || recipe.imageUrl}
+                          alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
+                          width={selected.imageWidth || recipe.imageWidth || 400}
+                          height={selected.imageHeight || recipe.imageHeight || 300}
+                          srcset={srcSet || undefined}
+                          sizes={srcSet ? sizes : undefined}
+                          loading="lazy"
+                        />
                       )}
-                      {recipe.recipeJson?.servings && (
-                        <span class="meta-item">
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                          >
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                            <circle cx="9" cy="7" r="4" />
-                          </svg>
-                          {recipe.recipeJson.servings}
-                        </span>
-                      )}
+                      <span class="card-badge">{recipe.categoryLabel}</span>
+                    </a>
+                    <div class="card-body">
+                      <h3 class="card-title">
+                        <a href={`/recipes/${recipe.slug}`}>{recipe.headline}</a>
+                      </h3>
+                      <div class="card-meta">
+                        {recipe.recipeJson?.prepTime && (
+                          <span class="meta-item">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M12 6v6l4 2" />
+                            </svg>
+                            {recipe.recipeJson.prepTime}
+                          </span>
+                        )}
+                        {recipe.recipeJson?.servings && (
+                          <span class="meta-item">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                              <circle cx="9" cy="7" r="4" />
+                            </svg>
+                            {recipe.recipeJson.servings}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <div class="no-recipes">

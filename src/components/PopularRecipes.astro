@@ -1,5 +1,6 @@
 ---
 import { getArticles } from "@modules/articles";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 
 interface Props {
   currentSlug?: string;
@@ -36,7 +37,14 @@ try {
   {
     recipes.length > 0 ? (
       <div class="recipe-list">
-        {recipes.map((recipe: any) => (
+        {recipes.map((recipe: any) => {
+          const thumbnail = extractImage(recipe.imagesJson, "thumbnail", 120);
+          const cover = extractImage(recipe.imagesJson, "cover", 120);
+          const slotName = thumbnail.imageUrl ? "thumbnail" : "cover";
+          const selected = thumbnail.imageUrl ? thumbnail : cover;
+          const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
+          const sizes = "80px";
+          return (
           <a href={`/recipes/${recipe.slug}`} class="recipe-item">
             <div class="recipe-content">
               <h4 class="recipe-title">{recipe.label}</h4>
@@ -57,18 +65,20 @@ try {
                 )}
               </div>
             </div>
-            {recipe.imageUrl && (
+            {(selected.imageUrl || recipe.imageUrl) && (
               <img
-                src={recipe.imageUrl}
-                alt={recipe.imageAlt || recipe.label}
+                src={selected.imageUrl || recipe.imageUrl}
+                alt={selected.imageAlt || recipe.imageAlt || recipe.label}
+                width={selected.imageWidth || recipe.imageWidth || 80}
+                height={selected.imageHeight || recipe.imageHeight || 80}
+                srcset={srcSet || undefined}
+                sizes={srcSet ? sizes : undefined}
                 class="recipe-thumb"
-                width="80"
-                height="80"
                 loading="lazy"
               />
             )}
           </a>
-        ))}
+        )})}
       </div>
     ) : (
       <p class="no-recipes">More recipes coming soon!</p>

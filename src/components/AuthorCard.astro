@@ -1,5 +1,6 @@
 ---
 import type { HydratedAuthor } from "@modules/authors";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 
 interface Props {
   author: HydratedAuthor;
@@ -9,6 +10,9 @@ interface Props {
 
 const { author, showArticleCount = false, articleCount = 0 } = Astro.props;
 const authorUrl = `/authors/${author.slug}`;
+const avatar = extractImage(author.imagesJson, "avatar", 200);
+const avatarSrcSet = getImageSrcSet(author.imagesJson, "avatar");
+const avatarSizes = "120px";
 ---
 
 <article class="author-card">
@@ -16,12 +20,14 @@ const authorUrl = `/authors/${author.slug}`;
     <!-- Author Avatar -->
     <div class="author-avatar">
       {
-        author.imageUrl ? (
+        (avatar.imageUrl || author.imageUrl) ? (
           <img
-            src={author.imageUrl}
-            alt={author.imageAlt || author.name}
-            width={author.imageWidth || 120}
-            height={author.imageHeight || 120}
+            src={avatar.imageUrl || author.imageUrl}
+            alt={avatar.imageAlt || author.imageAlt || author.name}
+            width={avatar.imageWidth || author.imageWidth || 120}
+            height={avatar.imageHeight || author.imageHeight || 120}
+            srcset={avatarSrcSet || undefined}
+            sizes={avatarSrcSet ? avatarSizes : undefined}
             loading="lazy"
           />
         ) : (

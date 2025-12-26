@@ -8,6 +8,7 @@ import {
   type Category,
 } from "@modules/categories";
 import { getArticles, type Article } from "@modules/articles";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 
 const { slug } = Astro.params;
 const { env } = Astro.locals.runtime;
@@ -47,38 +48,67 @@ const featuredRecipe = featuredArticle
 
 // Fetch all categories for navigation
 const allCategories = await getCategories(env.DB, { isOnline: true });
+
+const getArticleImage = (article: Article, targetWidth: number, prefer: 'cover' | 'thumbnail' = 'cover') => {
+  const cover = extractImage(article.imagesJson, "cover", targetWidth);
+  const thumbnail = extractImage(article.imagesJson, "thumbnail", targetWidth);
+  const slotName = prefer === 'cover'
+    ? (cover.imageUrl ? 'cover' : 'thumbnail')
+    : (thumbnail.imageUrl ? 'thumbnail' : 'cover');
+  const selected = slotName === 'cover' ? cover : thumbnail;
+  const srcSet = getImageSrcSet(article.imagesJson, slotName);
+  return { selected, srcSet };
+};
+
+const getCategoryImage = (cat: Category, targetWidth: number, prefer: 'cover' | 'thumbnail' = 'thumbnail') => {
+  const cover = extractImage(cat.imagesJson, "cover", targetWidth);
+  const thumbnail = extractImage(cat.imagesJson, "thumbnail", targetWidth);
+  const slotName = prefer === 'cover'
+    ? (cover.imageUrl ? 'cover' : 'thumbnail')
+    : (thumbnail.imageUrl ? 'thumbnail' : 'cover');
+  const selected = slotName === 'cover' ? cover : thumbnail;
+  const srcSet = getImageSrcSet(cat.imagesJson, slotName);
+  return { selected, srcSet };
+};
 ---
 
 <Layout title={category.metaTitle} description={category.metaDescription}>
   <!-- Hero Section with Featured Article -->
   <section class="category-hero">
     <div class="hero-container">
-      {
-        featuredArticle && (
-          <a href={`/recipes/${featuredArticle.slug}`} class="featured-card">
-            <div class="featured-image">
-              {featuredArticle.imageUrl && (
-                <img
-                  src={featuredArticle.imageUrl}
-                  alt={featuredArticle.imageAlt || featuredArticle.label}
-                  loading="eager"
-                />
-              )}
-              <div class="featured-overlay">
-                <span class="featured-badge">{category.label}</span>
-                <h2 class="featured-title">{featuredArticle.label}</h2>
-                <div class="featured-meta">
-                  {featuredRecipe?.cookTime && (
-                    <span>‚è± {featuredRecipe.cookTime}</span>
-                  )}
-                </div>
+  {
+    featuredArticle && (() => {
+      const { selected, srcSet } = getArticleImage(featuredArticle, 1200, "cover");
+      const sizes = "(max-width: 1024px) 100vw, 50vw";
+      return (
+        <a href={`/recipes/${featuredArticle.slug}`} class="featured-card">
+          <div class="featured-image">
+            {(selected.imageUrl || featuredArticle.imageUrl) && (
+              <img
+                src={selected.imageUrl || featuredArticle.imageUrl}
+                alt={selected.imageAlt || featuredArticle.imageAlt || featuredArticle.label}
+                width={selected.imageWidth || featuredArticle.imageWidth || 1200}
+                height={selected.imageHeight || featuredArticle.imageHeight || 900}
+                srcset={srcSet || undefined}
+                sizes={srcSet ? sizes : undefined}
+                loading="eager"
+              />
+            )}
+            <div class="featured-overlay">
+              <span class="featured-badge">{category.label}</span>
+              <h2 class="featured-title">{featuredArticle.label}</h2>
+              <div class="featured-meta">
+                {featuredRecipe?.cookTime && (
+                  <span>É?Ò {featuredRecipe.cookTime}</span>
+                )}
               </div>
             </div>
-          </a>
-        )
-      }
-
-      <div class="hero-content">
+          </div>
+        </a>
+      );
+    })()
+  }
+  <div class="hero-content">
         <h1 class="category-title">{category.label}</h1>
         <p class="category-description">
           {category.shortDescription || category.headline}
@@ -94,18 +124,31 @@ const allCategories = await getCategories(env.DB, { isOnline: true });
       <h2 class="nav-title">Want to Learn How to Make?</h2>
       <div class="category-chips">
         {
-          allCategories.map((cat: Category) => (
-            <a
-              href={`/categories/${cat.slug}`}
-              class:list={["category-chip", { active: cat.slug === slug }]}
-            >
-              {cat.imageUrl && (
-                <img src={cat.imageUrl} alt={cat.label} class="chip-image" />
-              )}
-              <span class="chip-label">{cat.label}</span>
-              <span class="chip-type">Category</span>
-            </a>
-          ))
+          allCategories.map((cat: Category) => {
+  const { selected, srcSet } = getCategoryImage(cat, 80, "thumbnail");
+  const sizes = "70px";
+  return (
+    <a
+      href={`/categories/${cat.slug}`}
+      class:list={["category-chip", { active: cat.slug === slug }]}
+    >
+      {(selected.imageUrl || cat.imageUrl) && (
+        <img
+          src={selected.imageUrl || cat.imageUrl}
+          alt={selected.imageAlt || cat.imageAlt || cat.label}
+          class="chip-image"
+          width={selected.imageWidth || cat.imageWidth || 70}
+          height={selected.imageHeight || cat.imageHeight || 70}
+          srcset={srcSet || undefined}
+          sizes={srcSet ? sizes : undefined}
+          loading="lazy"
+        />
+      )}
+      <span class="chip-label">{cat.label}</span>
+      <span class="chip-type">Category</span>
+    </a>
+  );
+})
         }
       </div>
     </div>
@@ -453,3 +496,6 @@ const allCategories = await getCategories(env.DB, { isOnline: true });
     transform: translateY(-1px);
   }
 </style>
+
+
+

@@ -1,5 +1,6 @@
 ---
 import type { HydratedArticle } from "@modules/articles";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 import FormattedDate from "./FormattedDate.astro";
 
 interface Props {
@@ -9,13 +10,20 @@ interface Props {
 
 const { article, loading = "lazy" } = Astro.props;
 
+const thumbnail = extractImage(article.imagesJson, "thumbnail", 720);
+const cover = extractImage(article.imagesJson, "cover", 720);
+const slotName = thumbnail.imageUrl ? "thumbnail" : "cover";
+const selected = thumbnail.imageUrl ? thumbnail : cover;
+const srcSet = getImageSrcSet(article.imagesJson, slotName);
+const sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px";
 const image = {
   url:
+    selected.imageUrl ||
     article.imageUrl ||
     "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&q=80",
-  alt: article.imageAlt || article.headline,
-  width: article.imageWidth || 800,
-  height: article.imageHeight || 600,
+  alt: selected.imageAlt || article.imageAlt || article.headline,
+  width: selected.imageWidth || article.imageWidth || 800,
+  height: selected.imageHeight || article.imageHeight || 600,
 };
 
 // Parse recipeJson if it's a string
@@ -39,6 +47,8 @@ overflow-hidden">
       alt={image.alt || article.headline}
       width={image.width || 800}
       height={image.height || 600}
+      srcset={srcSet || undefined}
+      sizes={srcSet ? sizes : undefined}
       loading={loading}
       class="w-full h-full object-cover group-hover:scale-110
 transition-transform duration-500"

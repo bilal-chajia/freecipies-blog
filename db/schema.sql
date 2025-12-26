@@ -130,11 +130,6 @@ CREATE TABLE IF NOT EXISTS media (
     -- Calculated from the largest variant (lg) dimensions at upload time.
     aspect_ratio TEXT,
 
-    -- Original file size in bytes (before compression/variants).
-    -- Used for admin display: "2.4 MB" and storage analytics.
-    -- Example: 2457600 (for a 2.4 MB file)
-    size_bytes INTEGER,
-
     -- 2. TECHNICAL PAYLOAD (The "Plumbing")
     -- ------------------------------------------------------------------
     -- Stores the references to the physical files on R2.
@@ -153,11 +148,11 @@ CREATE TABLE IF NOT EXISTS media (
     -- SCHEMA:
     -- {
     --   "variants": {
-    --     "original": { "url": "...", "r2_key": "...", "width": 4000, "height": 3000 },  -- OPTIONAL
-    --     "xs": { "url": "https://...", "r2_key": "2025/03/image-xs.webp", "width": 360,  "height": 240 },
-    --     "sm": { "url": "https://...", "r2_key": "2025/03/image-sm.webp", "width": 720,  "height": 480 },
-    --     "md": { "url": "https://...", "r2_key": "2025/03/image-md.webp", "width": 1200, "height": 800 },
-    --     "lg": { "url": "https://...", "r2_key": "2025/03/image-lg.webp", "width": 2048, "height": 1365 }
+    --     "original": { "url": "...", "r2_key": "...", "width": 4000, "height": 3000, "sizeBytes": 412345 },  -- OPTIONAL
+    --     "xs": { "url": "https://...", "r2_key": "2025/03/image-xs.webp", "width": 360,  "height": 240, "sizeBytes": 23123 },
+    --     "sm": { "url": "https://...", "r2_key": "2025/03/image-sm.webp", "width": 720,  "height": 480, "sizeBytes": 54321 },
+    --     "md": { "url": "https://...", "r2_key": "2025/03/image-md.webp", "width": 1200, "height": 800, "sizeBytes": 102345 },
+    --     "lg": { "url": "https://...", "r2_key": "2025/03/image-lg.webp", "width": 2048, "height": 1365, "sizeBytes": 198765 }
     --   },
     --   "placeholder": "data:image/jpeg;base64,/9j/4AAQ..." (Blurhash/LQIP, <1KB)
     -- }

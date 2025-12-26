@@ -21,7 +21,7 @@ import {
     Type,
     FileSearch
 } from 'lucide-react';
-import getCroppedImg from '../../../utils/canvasUtils';
+import getCroppedImg from '../../utils/canvasUtils';
 import { authorsAPI } from '../services/api';
 
 // Imports from modular structure

@@ -1,10 +1,31 @@
 import type { APIRoute } from 'astro';
-import { getCategoryBySlug, updateCategory, deleteCategory } from '@modules/categories';
+import { getCategoryBySlug, updateCategory, deleteCategory, transformCategoryRequestBody, transformCategoryResponse } from '@modules/categories';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 
 export const prerender = false;
+
+const getThumbnailUrlFromImagesJson = (value: any): string | null => {
+    if (!value) return null;
+    try {
+        const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+        const primarySlot = parsed?.thumbnail ?? parsed?.cover;
+        if (!primarySlot) return null;
+        if (primarySlot.variants && typeof primarySlot.variants === 'object') {
+            const variant =
+                primarySlot.variants.lg ||
+                primarySlot.variants.md ||
+                primarySlot.variants.sm ||
+                primarySlot.variants.original ||
+                primarySlot.variants.xs;
+            return variant?.url || null;
+        }
+        return primarySlot.url || null;
+    } catch {
+        return null;
+    }
+};
 
 export const GET: APIRoute = async ({ request, params, locals }) => {
     const { slug } = params;
@@ -33,7 +54,8 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
         }
 
         // Disable caching for admin panel to always get fresh data
-        const { body, status, headers } = formatSuccessResponse(category, {
+        const responseCategory = transformCategoryResponse(category);
+        const { body, status, headers } = formatSuccessResponse(responseCategory, {
             cacheControl: 'no-cache, no-store, must-revalidate'
         });
         return new Response(body, { status, headers });
@@ -73,24 +95,26 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
         }
 
         const body = await request.json();
+        const transformedBody = transformCategoryRequestBody(body);
 
         // Check if image is being changed or removed - delete old image if so
         const existingCategory = await getCategoryBySlug(env.DB, slug);
-        const oldImageUrl = existingCategory?.imageUrl;
-        const newImageUrl = body.imageUrl;
+        const oldImageUrl = getThumbnailUrlFromImagesJson(existingCategory?.imagesJson);
+        const shouldCheckImage = transformedBody.imagesJson !== undefined;
+        const newImageUrl = shouldCheckImage
+            ? getThumbnailUrlFromImagesJson(transformedBody.imagesJson)
+            : null;
 
         // Debug logging
         console.log('Image update check:', {
             oldImageUrl,
             newImageUrl,
-            bodyImageUrl: body.imageUrl,
-            bodyImageUrlIsNull: body.imageUrl === null,
-            bodyImageUrlIsUndefined: body.imageUrl === undefined,
-            shouldDelete: oldImageUrl && (newImageUrl !== oldImageUrl || body.imageUrl === null)
+            bodyImagesJsonProvided: shouldCheckImage,
+            shouldDelete: shouldCheckImage && oldImageUrl && newImageUrl !== oldImageUrl
         });
 
-        // Delete old image if: 1) new image is different, or 2) image is being removed (set to null)
-        if (oldImageUrl && (newImageUrl !== oldImageUrl || body.imageUrl === null)) {
+        // Delete old image if a new imagesJson was provided and URL changed or removed
+        if (shouldCheckImage && oldImageUrl && newImageUrl !== oldImageUrl) {
             try {
                 // URL format: /images/{key} - key is everything after /images/
                 const keyMatch = oldImageUrl.match(/\/images\/(.+)$/);
@@ -114,7 +138,7 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
             }
         }
 
-        const category = await updateCategory(env.DB, slug, body);
+        const category = await updateCategory(env.DB, slug, transformedBody);
 
         if (!category) {
             const { body: errBody, status, headers } = formatErrorResponse(
@@ -123,7 +147,8 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
             return new Response(errBody, { status, headers });
         }
 
-        const { body: respBody, status, headers } = formatSuccessResponse(category);
+        const responseCategory = transformCategoryResponse(category);
+        const { body: respBody, status, headers } = formatSuccessResponse(responseCategory);
         return new Response(respBody, { status, headers });
     } catch (error) {
         console.error('Error updating category:', error);

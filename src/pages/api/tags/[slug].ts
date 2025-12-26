@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { updateTag, deleteTag } from '@modules/tags';
+import { updateTag, deleteTag, transformTagRequestBody, transformTagResponse } from '@modules/tags';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -55,15 +55,16 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
         const db = env.DB;
 
         const tag = await getTagBySlug(db, slug);
+        const responseTag = transformTagResponse(tag);
 
-        if (!tag) {
+        if (!responseTag) {
             const { body, status, headers } = formatErrorResponse(
                 new AppError(ErrorCodes.NOT_FOUND, 'Tag not found', 404)
             );
             return new Response(body, { status, headers });
         }
 
-        const { body, status, headers } = formatSuccessResponse(tag, {
+        const { body, status, headers } = formatSuccessResponse(responseTag, {
             cacheControl: 'public, max-age=3600'
         });
         return new Response(body, { status, headers });
@@ -103,16 +104,18 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
         }
 
         const body = await request.json();
-        const tag = await updateTag(env.DB, slug, body);
+        const transformedBody = transformTagRequestBody(body);
+        const tag = await updateTag(env.DB, slug, transformedBody);
+        const responseTag = transformTagResponse(tag);
 
-        if (!tag) {
+        if (!responseTag) {
             const { body: errBody, status, headers } = formatErrorResponse(
                 new AppError(ErrorCodes.NOT_FOUND, 'Tag not found', 404)
             );
             return new Response(errBody, { status, headers });
         }
 
-        const { body: respBody, status, headers } = formatSuccessResponse(tag);
+        const { body: respBody, status, headers } = formatSuccessResponse(responseTag);
         return new Response(respBody, { status, headers });
     } catch (error) {
         console.error('Error updating tag:', error);

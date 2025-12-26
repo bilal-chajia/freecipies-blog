@@ -52,13 +52,23 @@ const AdminLayout = () => {
   const location = useLocation();
   const breadcrumbs = getBreadcrumbs(location.pathname);
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const isSettingsPage = location.pathname.includes("/settings");
+  const headerClassName = isSettingsPage
+    ? "flex h-12 shrink-0 items-center justify-between border-b px-2"
+    : "flex h-12 shrink-0 items-center justify-between border-b px-4";
+  const mainClassName = isSettingsPage
+    ? "flex-1 overflow-auto px-2 py-4"
+    : "flex-1 overflow-auto p-6";
+  const contentClassName = isSettingsPage
+    ? "mx-auto w-full max-w-none"
+    : "mx-auto max-w-6xl";
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
         {/* Header with Breadcrumb */}
-        <header className="flex h-12 shrink-0 items-center justify-between border-b px-4">
+        <header className={headerClassName}>
           <Breadcrumb>
             <BreadcrumbList>
               {breadcrumbs.map((crumb, index) => (
@@ -93,8 +103,8 @@ const AdminLayout = () => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto p-6">
-          <div className="mx-auto max-w-6xl">
+        <main className={mainClassName}>
+          <div className={contentClassName}>
             <Outlet />
           </div>
         </main>
@@ -106,4 +116,3 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
-

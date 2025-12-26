@@ -95,3 +95,74 @@ export async function deleteAuthor(db: D1Database, slug: string): Promise<boolea
     .where(eq(authors.slug, slug));
   return true;
 }
+
+/**
+ * Update an author by ID
+ */
+export async function updateAuthorById(
+  db: D1Database,
+  id: number,
+  author: Partial<NewAuthor>
+): Promise<Author | null> {
+  const drizzle = createDb(db);
+
+  const updateData = {
+    ...author,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await drizzle.update(authors)
+    .set(updateData)
+    .where(eq(authors.id, id));
+
+  return getAuthorById(db, id);
+}
+
+/**
+ * Soft delete an author by ID
+ */
+export async function deleteAuthorById(db: D1Database, id: number): Promise<boolean> {
+  const drizzle = createDb(db);
+  await drizzle.update(authors)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(eq(authors.id, id));
+  return true;
+}
+
+/**
+ * Toggle isOnline status by ID
+ */
+export async function toggleOnlineById(db: D1Database, id: number): Promise<Author | null> {
+  const drizzle = createDb(db);
+
+  const author = await getAuthorById(db, id);
+  if (!author) return null;
+
+  await drizzle.update(authors)
+    .set({
+      isOnline: !author.isOnline,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(authors.id, id));
+
+  return getAuthorById(db, id);
+}
+
+/**
+ * Toggle isFeatured status by ID
+ */
+export async function toggleFeaturedById(db: D1Database, id: number): Promise<Author | null> {
+  const drizzle = createDb(db);
+
+  const author = await getAuthorById(db, id);
+  if (!author) return null;
+
+  await drizzle.update(authors)
+    .set({
+      isFeatured: !author.isFeatured,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(authors.id, id));
+
+  return getAuthorById(db, id);
+}

@@ -32,11 +32,11 @@ import {
 import { Slider } from '@/ui/slider';
 import { toast } from 'sonner';
 
-import PinCanvas from '../canvas/PinCanvas';
+import PinCanvas from '@modules/templates/components/canvas/PinCanvas';
 import TemplateSelector from './TemplateSelector';
 import { templatesAPI, pinterestBoardsAPI, pinterestPinsAPI } from '../../services/api';
 import { useFontLoader } from '../../utils/FontLoader';
-import { FONTS } from '../canvas/ElementPanel';
+import { FONTS } from '@modules/templates/components/canvas/ElementPanel';
 
 /**
  * PinCreator - Quick workflow to create pins from articles
@@ -242,8 +242,24 @@ const PinCreator = ({
                     body: formData,
                 });
                 const uploadData = await uploadResponse.json();
-                if (uploadData.success && uploadData.url) {
-                    imageUrl = uploadData.url;
+                
+                // Handle new schema with variantsJson
+                if (uploadData.success) {
+                    if (uploadData.data?.variantsJson) {
+                        try {
+                            const variants = typeof uploadData.data.variantsJson === 'string' 
+                                ? JSON.parse(uploadData.data.variantsJson) 
+                                : uploadData.data.variantsJson;
+                            imageUrl = variants.original?.url || variants.lg?.url || '';
+                        } catch (e) {
+                            console.warn('Failed to parse variantsJson', e);
+                            // Fallback to direct url if available
+                            imageUrl = uploadData.data?.url || uploadData.url || '';
+                        }
+                    } else {
+                        // Old schema or direct url
+                        imageUrl = uploadData.data?.url || uploadData.url || '';
+                    }
                 }
             } catch (uploadError) {
                 console.warn('R2 upload failed, falling back to download:', uploadError);

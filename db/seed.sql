@@ -1,10 +1,10 @@
 /**
  * Seed Data Script for recipes-saas
- * Aligned with: schema-drizzle/schema.sql
+ * Aligned with: db/schema.sql
  * 
  * ALL FIELDS POPULATED for frontend testing (including optional JSON structures)
  * 
- * Run with: wrangler d1 execute recipes-saas --local --file=scripts/seed.sql
+ * Run with: wrangler d1 execute recipes-saas --local --file=db/seed.sql
  */
 
 -- ============================================================================

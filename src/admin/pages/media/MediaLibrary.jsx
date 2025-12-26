@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import ImageEditor from '../../components/ImageEditor.jsx';
+import ImageUploader from '../../components/ImageUploader';
 import {
   Upload,
   Search,
@@ -54,11 +55,122 @@ import { mediaAPI, authorsAPI } from '../../services/api';
 import { formatFileSize, isImageFile, formatDate } from '../../utils/helpers';
 import { useMediaStore } from '../../store/useStore';
 import ConfirmationModal from '@/ui/confirmation-modal';
-import { compressImage, QUALITY_PRESETS, formatBytes } from '../../../../utils/imageCompression.js';
+import { compressImage, QUALITY_PRESETS, formatBytes } from '../../../utils/imageCompression.js';
 import { toast } from 'sonner';
+
+// Helper to check if item is image (by mime or name)
+const isMediaItemImage = (item) => {
+  if (item.mimeType?.startsWith('image/') || item.mime_type?.startsWith('image/')) return true;
+  // Fallback to name check if mimeType missing
+  return isImageFile(item.name || '');
+};
+
+const parseVariants = (item) => {
+  const json = item.variants_json || item.variantsJson;
+  if (!json) return null;
+  if (typeof json === 'object') return json;
+  try { return JSON.parse(json); } catch { return null; }
+};
+
+const getVariantMap = (variants) => {
+  if (!variants || typeof variants !== 'object') return null;
+  if (variants.variants && typeof variants.variants === 'object') {
+    return variants.variants;
+  }
+  return variants;
+};
+
+const getBestVariant = (variants) => {
+  const map = getVariantMap(variants);
+  if (!map) return null;
+  return map.xs || map.sm || map.md || map.lg || map.original || null;
+};
+
+const getVariantSizeBytes = (variant) => {
+  if (!variant) return null;
+  const size = variant.sizeBytes ?? variant.size_bytes;
+  return typeof size === 'number' ? size : null;
+};
+
+const getDisplayedSizeBytes = (item) => {
+  const variants = parseVariants(item);
+  const best = getBestVariant(variants);
+  const variantSize = getVariantSizeBytes(best);
+  if (typeof variantSize === 'number') return variantSize;
+  return null;
+};
+
+const formatDisplayedSize = (item) => {
+  const bytes = getDisplayedSizeBytes(item);
+  return typeof bytes === 'number' && bytes > 0 ? formatFileSize(bytes) : '-';
+};
+
+// Get optimized thumbnail URL (xs/sm)
+const getThumbnailUrl = (item) => {
+  const variants = parseVariants(item);
+  const best = getBestVariant(variants);
+  return best?.url || item.url;
+};
+
+// Get full resolution URL
+const getFullUrl = (item) => {
+   const variants = parseVariants(item);
+   if (!variants) return item.url;
+   
+   if (variants.variants) {
+      const v = variants.variants;
+      return v.original?.url || v.lg?.url || v.md?.url || item.url;
+   }
+   return variants.original?.url || variants.lg?.url || item.url;
+};
+
+const OptimizedImage = ({ item, className = "", priority = false }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const variants = parseVariants(item);
+  const placeholder = variants?.placeholder;
+  
+  // Resolve source and dimensions
+  let src = item.url;
+  let width = undefined;
+  let height = undefined;
+  
+  const best = getBestVariant(variants);
+  if (best) {
+    src = best.url;
+    width = best.width;
+    height = best.height;
+  }
+  
+  // Fallback to item URL if calculation failed
+  if (!src) src = item.url;
+
+  return (
+    <div className={`relative w-full h-full overflow-hidden ${className}`}>
+      {placeholder && (
+        <img 
+          src={placeholder} 
+          alt="" 
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 blur-xl scale-110 ${isLoaded ? 'opacity-0' : 'opacity-100'}`}
+          aria-hidden="true"
+        />
+      )}
+      <img
+        src={src}
+        width={width}
+        height={height}
+        alt={item.altText || item.name}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
+        className={`w-full h-full object-cover transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        onLoad={() => setIsLoaded(true)}
+      />
+    </div>
+  );
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
+
   show: {
     opacity: 1,
     transition: { staggerChildren: 0.02 }
@@ -206,15 +318,18 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
     }
   };
 
+  const handleBulkDelete = () => {
+    setDeleteModal({ isOpen: true, id: null, isBulk: true });
+  };
+
   const confirmDelete = async () => {
     const { id, isBulk } = deleteModal;
     try {
       if (isBulk) {
-        for (const mediaId of selectedMedia) {
-          await mediaAPI.delete(mediaId);
-        }
+        // Use optimized bulk delete endpoint
+        await mediaAPI.bulkDelete(selectedMedia);
         clearSelection();
-        toast.success('Selected assets deleted');
+        toast.success(`Deleted ${selectedMedia.length} assets`);
       } else {
         await mediaAPI.delete(id);
         toast.success('Asset deleted');
@@ -276,7 +391,7 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
 
   const filteredMedia = media.filter(item => {
     const matchesSearch = !searchQuery ||
-      item.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.altText?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
@@ -289,7 +404,7 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
       className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
     >
       <AnimatePresence mode="popLayout">
-        {filteredMedia.map((item) => (
+        {filteredMedia.map((item, index) => (
           <motion.div
             key={item.id}
             variants={itemVariants}
@@ -297,59 +412,77 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
             className="group"
           >
             <Card
-              className={`relative overflow-hidden border-none bg-accent/50 group hover:ring-2 hover:ring-primary/40 transition-all duration-300 aspect-square rounded-2xl cursor-pointer shadow-sm ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+              className={`relative overflow-hidden border-none bg-accent/50 group hover:ring-2 hover:ring-primary/40 transition-all duration-300 aspect-square rounded-2xl cursor-pointer shadow-sm p-0 ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary ring-offset-2' : ''}`}
               onClick={() => onSelect ? onSelect(item) : toggleMediaSelection(item.id)}
             >
-              {isImageFile(item.filename) ? (
-                <img src={item.url} alt={item.altText} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+              {isMediaItemImage(item) ? (
+                <OptimizedImage item={item} priority={index < 8} className="transition-transform duration-700 group-hover:scale-110" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center transition-transform duration-500 group-hover:scale-110">
-                  {getFileIcon(item.filename)}
+                  {getFileIcon(item.name)}
                 </div>
               )}
               
               {/* Modern Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute top-2 right-2 flex flex-col gap-1.5 translate-x-2 group-hover:translate-x-0 transition-transform duration-300">
-                   <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                         <Button variant="secondary" size="icon" className="h-7 w-7 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20">
-                            <MoreVertical className="h-3.5 w-3.5" />
-                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40 rounded-xl">
-                         <DropdownMenuItem onClick={() => window.open(item.url, '_blank')} className="cursor-pointer">
-                            <Maximize2 className="mr-2 h-3.5 w-3.5" /> View Full
-                         </DropdownMenuItem>
-                         {isImageFile(item.filename) && (
-                            <DropdownMenuItem onClick={() => setEditingImage({ source: item, context: 'library' })} className="cursor-pointer">
-                               <Edit2 className="mr-2 h-3.5 w-3.5" /> Edit Asset
-                            </DropdownMenuItem>
-                         )}
-                         <DropdownMenuItem onClick={() => handleCopyUrl(item.url)} className="cursor-pointer">
-                            <Copy className="mr-2 h-3.5 w-3.5" /> Copy URL
-                         </DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => setDeleteModal({ isOpen: true, id: item.id, isBulk: false })} className="cursor-pointer text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
-                         </DropdownMenuItem>
-                      </DropdownMenuContent>
-                   </DropdownMenu>
+                <div className="absolute top-2 right-2 flex gap-0.5 translate-x-2 group-hover:translate-x-0 transition-transform duration-300">
+                   <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      className="h-5 w-5 rounded-full bg-blue-500/80 backdrop-blur-md border-none text-white hover:bg-blue-600"
+                      onClick={(e) => { e.stopPropagation(); window.open(getFullUrl(item), '_blank'); }}
+                      title="View Full"
+                   >
+                      <Maximize2 className="h-2.5 w-2.5" />
+                   </Button>
+                   <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      className="h-5 w-5 rounded-full bg-green-500/80 backdrop-blur-md border-none text-white hover:bg-green-600"
+                      onClick={(e) => { e.stopPropagation(); handleCopyUrl(getFullUrl(item)); }}
+                      title="Copy URL"
+                   >
+                      <Copy className="h-2.5 w-2.5" />
+                   </Button>
+                   <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      className="h-5 w-5 rounded-full bg-red-500/80 backdrop-blur-md border-none text-white hover:bg-red-600"
+                      onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item.id, isBulk: false }); }}
+                      title="Delete"
+                   >
+                      <Trash2 className="h-2.5 w-2.5" />
+                   </Button>
                 </div>
                 
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                   <div className="flex flex-col">
-                      <span className="text-[10px] text-white/90 font-bold truncate max-w-[80px]">
-                         {item.filename.split('.').shift()}
-                      </span>
-                      <span className="text-[8px] text-white/60 font-medium uppercase tracking-widest">
-                         .{item.filename.split('.').pop()}
-                      </span>
-                   </div>
+                   <span className="text-[10px] text-white/90 font-medium truncate max-w-[100px]">
+                      {item.name}
+                   </span>
                    <Badge variant="secondary" className="h-4 px-1 text-[8px] bg-white/10 backdrop-blur-md text-white border-white/10 font-bold uppercase truncate">
-                      {formatFileSize(item.sizeBytes)}
+                      {formatDisplayedSize(item)}
                    </Badge>
                 </div>
               </div>
+              
+              {/* Image Type Badge (top-left, aligned with action buttons) */}
+              {!selectedMedia.includes(item.id) && (() => {
+                const type = (item.mimeType || item.mime_type || 'image/jpeg').split('/').pop();
+                const colorClass = {
+                  webp: 'bg-green-500/80',
+                  avif: 'bg-purple-500/80',
+                  jpeg: 'bg-blue-500/80',
+                  jpg: 'bg-blue-500/80',
+                  png: 'bg-orange-500/80',
+                }[type] || 'bg-black/50';
+                return (
+                  <div className="absolute top-2 left-2 pointer-events-none">
+                     <Badge className={`h-5 px-1.5 text-[7px] ${colorClass} backdrop-blur-sm text-white border-none font-bold uppercase flex items-center`}>
+                        {type}
+                     </Badge>
+                  </div>
+                );
+              })()}
               
               {/* Selection Checkmark */}
               {selectedMedia.includes(item.id) && (
@@ -366,32 +499,32 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
 
   const renderListView = () => (
     <div className="space-y-3">
-      {filteredMedia.map((item) => (
+      {filteredMedia.map((item, index) => (
         <Card
           key={item.id}
           className={`group flex items-center gap-4 p-3 border-border/50 bg-card hover:bg-accent/40 shadow-sm transition-all duration-300 rounded-2xl cursor-pointer ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}
           onClick={() => onSelect ? onSelect(item) : toggleMediaSelection(item.id)}
         >
           <div className="w-14 h-14 rounded-xl overflow-hidden bg-accent/50 flex items-center justify-center shrink-0 border border-border/30">
-            {isImageFile(item.filename) ? (
-              <img src={item.url} alt={item.altText} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+            {isMediaItemImage(item) ? (
+              <OptimizedImage item={item} priority={index < 8} className="transition-transform group-hover:scale-110" />
             ) : (
-              getFileIcon(item.filename)
+              getFileIcon(item.name)
             )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-               <p className="font-bold text-sm truncate">{item.filename}</p>
+               <p className="font-bold text-sm truncate">{item.name}</p>
                {selectedMedia.includes(item.id) && <Badge className="h-4 px-1 text-[8px] uppercase">Selected</Badge>}
             </div>
             <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium uppercase tracking-tight mt-1 opacity-60">
               <span className="flex items-center gap-1"><RefreshCw className="h-2.5 w-2.5" /> {formatDate(item.created_at)}</span>
-              <span className="flex items-center gap-1"><Info className="h-2.5 w-2.5" /> {formatFileSize(item.sizeBytes)}</span>
+              <span className="flex items-center gap-1"><Info className="h-2.5 w-2.5" /> {formatDisplayedSize(item)}</span>
             </div>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleCopyUrl(item.url)}><Copy className="h-3.5 w-3.5" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => window.open(item.url, '_blank')}><Eye className="h-3.5 w-3.5" /></Button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleCopyUrl(getFullUrl(item))}><Copy className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => window.open(getFullUrl(item), '_blank')}><Eye className="h-3.5 w-3.5" /></Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive" onClick={() => setDeleteModal({ isOpen: true, id: item.id, isBulk: false })}><Trash2 className="h-3.5 w-3.5" /></Button>
           </div>
         </Card>
@@ -415,127 +548,35 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
         </div>
         
         <div className="flex items-center gap-3">
-           <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-              <DialogTrigger asChild>
-                 <Button className="h-11 px-6 gap-2 shadow-sm rounded-xl">
-                    <Upload className="h-4 w-4" />
-                    Upload Assets
-                 </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl">
-                 <div className="p-8 bg-card flex flex-col gap-6">
-                    <div className="space-y-1">
-                       <h2 className="text-xl font-bold">New Asset Upload</h2>
-                       <p className="text-sm text-muted-foreground font-medium">Add high-resolution files with automatic SEO optimization.</p>
-                    </div>
-                    
-                    <div
-                      className={`relative group border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center gap-4 transition-all duration-300 ${selectedFile ? 'border-primary/40 bg-primary/5 shadow-inner' : 'border-border/60 hover:border-primary/40 hover:bg-accent/30'}`}
-                      onClick={() => !uploading && fileInputRef.current?.click()}
-                    >
-                       <input ref={fileInputRef} type="file" onChange={handleFileSelect} className="hidden" />
-                       
-                       {selectedFile ? (
-                          <div className="w-full flex flex-col items-center gap-5">
-                             <div className="relative group/preview">
-                                {previewUrl ? (
-                                   <div className="h-32 w-32 rounded-2xl overflow-hidden shadow-lg border-2 border-background">
-                                      <img src={previewUrl} className="h-full w-full object-cover" />
-                                   </div>
-                                ) : (
-                                   <div className="h-32 w-32 rounded-2xl bg-accent flex items-center justify-center shadow-lg">
-                                      {getFileIcon(selectedFile.filename)}
-                                   </div>
-                                )}
-                                <div className="absolute -bottom-2 -right-2 flex gap-1">
-                                   <button 
-                                     onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                                     className="h-8 w-8 rounded-full bg-white shadow-md border border-border flex items-center justify-center transition-transform hover:scale-110"
-                                   >
-                                      <RefreshCw className="h-3.5 w-3.5 text-primary" />
-                                   </button>
-                                   {isImageFile(selectedFile.name) && (
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); setEditingImage({ source: selectedFile, context: 'upload' }); }}
-                                        className="h-8 w-8 rounded-full bg-white shadow-md border border-border flex items-center justify-center transition-transform hover:scale-110"
-                                      >
-                                         <Edit2 className="h-3.5 w-3.5 text-emerald-600" />
-                                      </button>
-                                   )}
-                                </div>
-                             </div>
-                             
-                             <div className="w-full space-y-3">
-                                <div className="flex gap-2">
-                                   <Input 
-                                     value={customFileName} 
-                                     onChange={(e) => setCustomFileName(e.target.value)} 
-                                     className="h-10 bg-background border-none ring-1 ring-border/50 font-bold"
-                                     placeholder="Filename (optional)"
-                                   />
-                                   <Badge variant="outline" className="h-10 text-[10px] font-black uppercase opacity-60">.{selectedFile.name.split('.').pop()}</Badge>
-                                </div>
-                                <Input 
-                                  value={altText} 
-                                  onChange={(e) => setAltText(e.target.value)} 
-                                  className="h-10 bg-background border-none ring-1 ring-border/50 text-sm"
-                                  placeholder="SEO Alt Description"
-                                />
-                                <div className="grid grid-cols-2 gap-2">
-                                   <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
-                                      <SelectTrigger className="h-10 border-none ring-1 ring-border/50 bg-background text-xs font-bold">
-                                         <SelectValue placeholder="Attribution" />
-                                      </SelectTrigger>
-                                      <SelectContent className="rounded-xl">
-                                         <SelectItem value="none">No attribution</SelectItem>
-                                         {authors.map(a => <SelectItem key={a.slug} value={a.slug}>{a.name}</SelectItem>)}
-                                      </SelectContent>
-                                   </Select>
-                                   {isImageFile(selectedFile.name) && (
-                                      <Select value={compressionQuality} onValueChange={setCompressionQuality}>
-                                         <SelectTrigger className="h-10 border-none ring-1 ring-border/50 bg-background text-xs font-bold">
-                                            <SelectValue placeholder="Quality" />
-                                         </SelectTrigger>
-                                         <SelectContent className="rounded-xl">
-                                            {Object.entries(QUALITY_PRESETS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
-                                         </SelectContent>
-                                      </Select>
-                                   )}
-                                </div>
-                             </div>
-                          </div>
-                       ) : (
-                          <div className="flex flex-col items-center gap-3 text-center py-6">
-                             <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-1">
-                                <Upload className="h-6 w-6 text-primary" />
-                             </div>
-                             <div>
-                                <h3 className="text-sm font-bold">Primary Upload Channel</h3>
-                                <p className="text-[11px] text-muted-foreground mt-1 max-w-[200px]">Click to explore local storage or drag assets directly.</p>
-                             </div>
-                          </div>
-                       )}
-                    </div>
-                    
-                    {uploading && (
-                       <div className="space-y-2">
-                          <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-primary">
-                             <span>Optimizing & Syncing</span>
-                             <span>{uploadProgress}%</span>
-                          </div>
-                          <Progress value={uploadProgress} className="h-1.5" />
-                       </div>
-                    )}
-                    
-                    <div className="flex gap-2 pt-2">
-                       <Button variant="ghost" onClick={() => setShowUploadDialog(false)} className="flex-1 h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px]">Discard</Button>
-                       <Button onClick={handleUpload} disabled={!selectedFile || uploading} className="flex-1 h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20">
-                          {uploading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Confirm Upload'}
-                       </Button>
-                    </div>
-                 </div>
-              </DialogContent>
-           </Dialog>
+           {/* Selection Actions - appear when items selected */}
+           <AnimatePresence>
+              {selectedMedia.length > 0 && (
+                 <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="flex items-center gap-2"
+                 >
+                    <span className="text-sm text-muted-foreground">
+                       {selectedMedia.length} selected
+                    </span>
+                    <Button variant="ghost" size="sm" onClick={clearSelection} className="h-9 px-3">
+                       Clear
+                    </Button>
+                    <Button onClick={handleBulkDelete} size="sm" variant="destructive" className="h-9 px-3 gap-1.5">
+                       <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </Button>
+                 </motion.div>
+              )}
+           </AnimatePresence>
+
+           <Button 
+             className="h-11 px-6 gap-2 shadow-sm rounded-xl"
+             onClick={() => setShowUploadDialog(true)}
+           >
+              <Upload className="h-4 w-4" />
+              Upload Assets
+           </Button>
         </div>
       </div>
 
@@ -588,33 +629,6 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
          </div>
       </div>
 
-      {/* Bulk Actions Banner */}
-      <AnimatePresence>
-         {selectedMedia.length > 0 && (
-            <motion.div 
-               initial={{ opacity: 0, y: 50 }}
-               animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0, y: 50 }}
-               className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-6"
-            >
-               <Card className="p-4 bg-primary text-primary-foreground shadow-2xl rounded-3xl flex items-center justify-between border-none backdrop-blur-xl bg-primary/95">
-                  <div className="flex items-center gap-4 ml-2">
-                     <span className="h-8 w-8 bg-white/20 rounded-xl flex items-center justify-center font-black text-xs">{selectedMedia.length}</span>
-                     <div>
-                        <p className="font-bold text-sm leading-none">Management Protocol Active</p>
-                        <p className="text-[10px] text-white/60 font-black uppercase tracking-widest mt-1">Staged Assets Ready for Processing</p>
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <Button variant="ghost" size="sm" onClick={clearSelection} className="h-10 px-4 hover:bg-white/10 rounded-2xl font-bold uppercase tracking-wider text-[10px]">Cancel</Button>
-                     <Button onClick={handleBulkDelete} variant="secondary" size="sm" className="h-10 px-4 rounded-2xl font-bold uppercase tracking-wider text-[10px] bg-red-500 hover:bg-red-600 border-none text-white">
-                        <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Staged
-                     </Button>
-                  </div>
-               </Card>
-            </motion.div>
-         )}
-      </AnimatePresence>
 
       {/* Main Library Display */}
       <div className="min-h-[500px] bg-accent/20 rounded-[40px] p-6 border border-border/30">
@@ -636,12 +650,12 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, id: null, isBulk: false })}
         onConfirm={confirmDelete}
-        title={deleteModal.isBulk ? "Bulk Asset Termination" : "Delete Source Asset"}
+        title={deleteModal.isBulk ? "Delete Selected" : "Delete Image"}
         description={deleteModal.isBulk 
-          ? `You are about to permanently purge ${selectedMedia.length} items from the CDN. This cannot be reversed.` 
-          : "Are you sure you want to delete this asset? This will break any content currently linking to this file."}
-        confirmText={deleteModal.isBulk ? "Purge Selection" : "Delete Asset"}
-        cancelText="Preserve"
+          ? `Delete ${selectedMedia.length} selected items? This cannot be undone.` 
+          : "Delete this image? Any content using it will show a broken image."}
+        confirmText="Delete"
+        cancelText="Cancel"
       />
 
       {editingImage && (
@@ -651,6 +665,16 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
           onCancel={() => setEditingImage(null)}
         />
       )}
+
+      {/* New ImageUploader Component (replaces old Dialog) */}
+      <ImageUploader
+         open={showUploadDialog}
+         onOpenChange={setShowUploadDialog}
+         onUploadComplete={(mediaRecord) => {
+            loadMedia();
+            toast.success('Image uploaded successfully!');
+         }}
+      />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import SocialShareBar from "../components/SocialShareBar.astro";
 import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
 import PopularRecipes from "../components/PopularRecipes.astro";
 import NewsletterWidget from "../components/NewsletterWidget.astro";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 
 interface Props {
   recipe: Article;
@@ -35,16 +36,33 @@ const wordCount = [
   .split(/\s+/).length;
 
 const readingTime = Math.max(5, Math.ceil(wordCount / 200));
+
+const heroCover = extractImage(recipe.imagesJson, "cover", 1200);
+const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);
+const heroSlotName = heroCover.imageUrl ? "cover" : "thumbnail";
+const heroImage = heroCover.imageUrl ? heroCover : heroThumb;
+const heroSrcSet = getImageSrcSet(recipe.imagesJson, heroSlotName);
+const heroSizes = "(max-width: 768px) 100vw, 800px";
+
+const authorAvatar = author?.imagesJson
+  ? extractImage(author.imagesJson, "avatar", 96)
+  : {};
+const authorImage = authorAvatar.imageUrl || author?.imageUrl;
 ---
 
 <Layout
   title={recipe.metaTitle || recipe.label}
   description={recipe.metaDescription || recipe.shortDescription}
-  image={recipe.imageUrl || undefined}
+  image={heroImage.imageUrl || recipe.imageUrl || undefined}
 >
   {
-    recipe.imageUrl && (
-      <link slot="head" rel="preload" as="image" href={recipe.imageUrl} />
+    (heroImage.imageUrl || recipe.imageUrl) && (
+      <link
+        slot="head"
+        rel="preload"
+        as="image"
+        href={heroImage.imageUrl || recipe.imageUrl}
+      />
     )
   }
   <article class="recipe-page">
@@ -83,7 +101,7 @@ const readingTime = Math.max(5, Math.ceil(wordCount / 200));
         <!-- Author Card -->
         <RecipeAuthorCard
           authorName={author?.name || recipe.authorName}
-          authorImage={author?.imageUrl || undefined}
+          authorImage={authorImage || undefined}
           authorRole={author?.job || "Blogger"}
           lastUpdated={recipe.publishedAt || undefined}
           viewCount={recipe.viewCount}
@@ -99,13 +117,15 @@ const readingTime = Math.max(5, Math.ceil(wordCount / 200));
 
         <!-- Hero Image -->
         {
-          recipe.imageUrl && (
+          (heroImage.imageUrl || recipe.imageUrl) && (
             <div class="hero-image">
               <img
-                src={recipe.imageUrl}
-                alt={recipe.imageAlt || recipe.label}
-                width={recipe.imageWidth}
-                height={recipe.imageHeight}
+                src={heroImage.imageUrl || recipe.imageUrl}
+                alt={heroImage.imageAlt || recipe.imageAlt || recipe.label}
+                width={heroImage.imageWidth || recipe.imageWidth}
+                height={heroImage.imageHeight || recipe.imageHeight}
+                srcset={heroSrcSet || undefined}
+                sizes={heroSrcSet ? heroSizes : undefined}
                 loading="eager"
                 fetchpriority="high"
               />

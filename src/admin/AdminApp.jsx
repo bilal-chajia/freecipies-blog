@@ -13,6 +13,10 @@ import { lazy, Suspense, useEffect } from 'react';
 const Homepage = lazy(() => import('./pages/homepage/Homepage'));
 const ArticlesList = lazy(() => import('./pages/articles/ArticlesList'));
 const ArticleEditor = lazy(() => import('./pages/articles/ArticleEditor'));
+const RecipesList = lazy(() => import('./pages/recipes/RecipesList'));
+const RecipeEditor = lazy(() => import('./pages/articles/RecipeEditor'));
+const RoundupsList = lazy(() => import('./pages/roundups/RoundupsList'));
+const RoundupEditor = lazy(() => import('./pages/articles/RoundupEditor'));
 const CategoriesList = lazy(() => import('./pages/categories/CategoriesList'));
 const CategoryEditor = lazy(() => import('./pages/categories/CategoryEditor'));
 const AuthorsList = lazy(() => import('./pages/authors/AuthorsList'));
@@ -23,8 +27,8 @@ const Settings = lazy(() => import('./pages/settings/Settings'));
 const Login = lazy(() => import('./pages/auth/Login'));
 const BoardsList = lazy(() => import('./pages/pinterest/BoardsList'));
 const BoardEditor = lazy(() => import('./pages/pinterest/BoardEditor'));
-const TemplatesList = lazy(() => import('./pages/templates/TemplatesList'));
-const TemplateEditor = lazy(() => import('./pages/templates/TemplateEditor'));
+const TemplatesList = lazy(() => import('@modules/templates/components').then(m => ({ default: m.TemplatesList })));
+const TemplateEditor = lazy(() => import('@modules/templates/components').then(m => ({ default: m.TemplateEditor })));
 
 // Loading component with skeleton
 const PageLoader = () => (
@@ -126,6 +130,16 @@ function AdminApp() {
               <Route path="articles" element={<ArticlesList />} />
               <Route path="articles/new" element={<ArticleEditor />} />
               <Route path="articles/:slug" element={<ArticleEditor />} />
+
+              {/* Recipes (dedicated list and editor) */}
+              <Route path="recipes" element={<RecipesList />} />
+              <Route path="recipes/new" element={<RecipeEditor />} />
+              <Route path="recipes/:slug" element={<RecipeEditor />} />
+
+              {/* Roundups (dedicated list and editor) */}
+              <Route path="roundups" element={<RoundupsList />} />
+              <Route path="roundups/new" element={<RoundupEditor />} />
+              <Route path="roundups/:slug" element={<RoundupEditor />} />
 
               {/* Categories */}
               <Route path="categories" element={<CategoriesList />} />

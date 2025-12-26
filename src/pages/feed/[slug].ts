@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getArticles } from '@modules/articles';
 import { getCategoryBySlug } from '@modules/categories';
+import { extractImage } from '@shared/utils';
 import type { Env } from '@shared/types';
 
 export const prerender = false;
@@ -45,6 +46,12 @@ export const GET: APIRoute = async ({ params, locals, site }) => {
         return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
     };
 
+    const getRecipeImageUrl = (recipe: any) => {
+        const cover = extractImage(recipe.imagesJson, 'cover', 1200);
+        const thumbnail = extractImage(recipe.imagesJson, 'thumbnail', 1200);
+        return cover.imageUrl || thumbnail.imageUrl || recipe.imageUrl || '';
+    };
+
     // Generate sitemap XML for this category
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -55,17 +62,20 @@ export const GET: APIRoute = async ({ params, locals, site }) => {
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
-    ${recipes.map(recipe => `
+    ${recipes.map(recipe => {
+        const imageUrl = getRecipeImageUrl(recipe);
+        return `
     <url>
         <loc>${baseUrl}/recipes/${recipe.slug}</loc>
         <lastmod>${recipe.updatedAt ? new Date(recipe.updatedAt).toISOString().split('T')[0] : today}</lastmod>
         <changefreq>weekly</changefreq>
-        <priority>0.7</priority>${recipe.imageUrl ? `
+        <priority>0.7</priority>${imageUrl ? `
         <image:image>
-            <image:loc>${escapeXml(getAbsoluteImageUrl(recipe.imageUrl))}</image:loc>
+            <image:loc>${escapeXml(getAbsoluteImageUrl(imageUrl))}</image:loc>
             <image:title>${escapeXml(recipe.headline)}</image:title>
         </image:image>` : ''}
-    </url>`).join('')}
+    </url>`;
+    }).join('')}
 </urlset>`;
 
     return new Response(sitemap.trim(), {

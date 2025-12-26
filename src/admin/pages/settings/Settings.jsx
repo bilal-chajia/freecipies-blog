@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Save, AlertCircle, Zap } from 'lucide-react';
+import { Save, AlertCircle, RefreshCw, Zap } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettingsStore } from '../../store/useStore';
@@ -14,11 +14,13 @@ import ContentSettings from './tabs/ContentSettings';
 import AdsSettings from './tabs/AdsSettings';
 import AppearanceSettings from './tabs/AppearanceSettings';
 import AdvancedSettings from './tabs/AdvancedSettings';
+import ImageUploadSettings from './tabs/ImageUploadSettings';
 
 const Settings = () => {
   const { settings, loading, error, setSettings } = useSettingsStore();
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // 'success', 'error', or null
+  const [mediaActions, setMediaActions] = useState(null);
   const [formData, setFormData] = useState({
     // General Settings
     siteName: 'Freecipies',
@@ -300,6 +302,8 @@ const Settings = () => {
         return <AppearanceSettings {...props} />;
       case 'advanced':
         return <AdvancedSettings {...props} />;
+      case 'media':
+        return <ImageUploadSettings onRegisterActions={setMediaActions} />;
       default:
         return <GeneralSettings {...props} />;
     }
@@ -316,6 +320,7 @@ const Settings = () => {
       ads: 'Ads',
       appearance: 'Appearance',
       advanced: 'Advanced',
+      media: 'Media & Uploads',
     };
     return titles[tab] || 'General';
   };
@@ -330,19 +335,43 @@ const Settings = () => {
             Manage your application preferences
           </p>
         </div>
-        <Button 
-          onClick={handleSave} 
-          disabled={saving}
-          size="sm"
-          className="h-8 px-4 gap-1.5 text-sm"
-        >
-          {saving ? (
-            <Zap className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Save className="w-3.5 h-3.5" />
-          )}
-          {saving ? 'Saving...' : 'Save'}
-        </Button>
+        {tab === 'media' ? (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={mediaActions?.onReset}
+              disabled={!mediaActions || mediaActions.isSaving}
+              className="h-8 px-4 gap-1.5 text-sm"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Reset
+            </Button>
+            <Button
+              size="sm"
+              onClick={mediaActions?.onSave}
+              disabled={!mediaActions || mediaActions.isSaving || !mediaActions.hasChanges}
+              className="h-8 px-4 gap-1.5 text-sm"
+            >
+              <Save className="w-3.5 h-3.5" />
+              {mediaActions?.isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            size="sm"
+            className="h-8 px-4 gap-1.5 text-sm"
+          >
+            {saving ? (
+              <Zap className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Save className="w-3.5 h-3.5" />
+            )}
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        )}
       </div>
 
       {/* Content Area */}

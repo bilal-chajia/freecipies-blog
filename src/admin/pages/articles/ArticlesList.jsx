@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Plus,
@@ -16,6 +16,8 @@ import {
   Clock,
   ArrowUpRight,
   ExternalLink,
+  Utensils,
+  Layers,
 } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Badge } from '@/ui/badge.jsx';
@@ -28,12 +30,12 @@ import {
   DropdownMenuLabel,
 } from '@/ui/dropdown-menu.jsx';
 import { Avatar, AvatarImage, AvatarFallback } from '@/ui/avatar.jsx';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from '@/ui/card.jsx';
 import DataTable from '@/ui/data-table.jsx';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../services/api';
@@ -42,8 +44,14 @@ import { useArticlesStore, useCategoriesStore, useAuthorsStore, useTagsStore } f
 import PinCreator from '../../components/pins/PinCreator';
 import ArticleFilters from './ArticleFilters';
 
-const ArticlesList = () => {
+const ArticlesList = ({ fixedType = null }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlType = searchParams.get('type') || 'all';
+
+  // fixedType takes priority over URL param
+  const effectiveType = fixedType || urlType;
+
   const { articles, filters, pagination, setArticles, setFilters, setPagination } = useArticlesStore();
   const { categories, setCategories } = useCategoriesStore();
   const { authors, setAuthors } = useAuthorsStore();
@@ -52,7 +60,7 @@ const ArticlesList = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [localFilters, setLocalFilters] = useState({
     search: '',
-    type: 'all',
+    type: effectiveType,
     category: 'all',
     author: 'all',
     status: 'all',
@@ -66,6 +74,23 @@ const ArticlesList = () => {
   const [showPinCreator, setShowPinCreator] = useState(false);
   const [selectedArticleForPin, setSelectedArticleForPin] = useState(null);
 
+  // Sync type filter from URL params (when navigating from sidebar)
+  // Skip if fixedType is provided (component is used as wrapper)
+  useEffect(() => {
+    if (!fixedType && effectiveType !== localFilters.type) {
+      setLocalFilters(prev => ({ ...prev, type: effectiveType }));
+      setFilters({ type: effectiveType });
+      setPagination({ page: 1 });
+    }
+  }, [effectiveType, fixedType]);
+
+  // Initialize filter from fixedType on mount
+  useEffect(() => {
+    if (fixedType) {
+      setFilters({ type: fixedType });
+    }
+  }, [fixedType]);
+
   useEffect(() => {
     loadCategories();
     loadAuthors();
@@ -74,7 +99,7 @@ const ArticlesList = () => {
 
   useEffect(() => {
     loadArticles();
-  }, [filters, pagination.page]);
+  }, [filters, pagination.page, fixedType]);
 
   const loadArticles = async () => {
     try {
@@ -85,7 +110,9 @@ const ArticlesList = () => {
         limit: pagination.limit,
       };
 
-      if (filters.type && filters.type !== 'all') params.type = filters.type;
+      // Prioritize fixedType if set
+      const typeToUse = fixedType || filters.type;
+      if (typeToUse && typeToUse !== 'all') params.type = typeToUse;
       if (filters.category && filters.category !== 'all') params.category = filters.category;
       if (filters.author && filters.author !== 'all') params.author = filters.author;
       if (filters.status && filters.status !== 'all') params.status = filters.status;
@@ -145,19 +172,19 @@ const ArticlesList = () => {
     setSelectedRows(selectedRows);
   };
 
-  const handleDelete = async (slug) => {
+  const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this article?')) return;
     try {
-      await articlesAPI.delete(slug);
+      await articlesAPI.delete(id);
       loadArticles();
     } catch (error) {
       console.error('Failed to delete article:', error);
     }
   };
 
-  const handleToggleOnline = async (slug, currentStatus) => {
+  const handleToggleOnline = async (id) => {
     try {
-      await articlesAPI.updateStatus(slug, currentStatus ? 'offline' : 'online');
+      await articlesAPI.toggleOnline(id);
       loadArticles();
     } catch (error) {
       console.error('Failed to toggle status:', error);
@@ -278,8 +305,8 @@ const ArticlesList = () => {
       cell: ({ row }) => {
         const isOnline = row.original.isOnline;
         return (
-          <Badge 
-            variant={isOnline ? "success" : "secondary"} 
+          <Badge
+            variant={isOnline ? "success" : "secondary"}
             className={`gap-1 px-2.5 py-0.5 font-medium ${isOnline ? "bg-green-500/10 text-green-600 border-green-500/20" : ""}`}
           >
             {isOnline ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
@@ -331,7 +358,7 @@ const ArticlesList = () => {
                   <ExternalLink className="w-4 h-4 mr-2" />
                   View Live Site
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleToggleOnline(article.slug, article.isOnline)}>
+                <DropdownMenuItem onClick={() => handleToggleOnline(article.id)}>
                   {article.isOnline ? (
                     <>
                       <EyeOff className="w-4 h-4 mr-2" />
@@ -352,8 +379,8 @@ const ArticlesList = () => {
                   Create Pinterest Pin
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => handleDelete(article.slug)}
+                <DropdownMenuItem
+                  onClick={() => handleDelete(article.id)}
                   className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
@@ -367,23 +394,83 @@ const ArticlesList = () => {
     },
   ], [navigate]);
 
+  const getPageTitle = () => {
+    switch (effectiveType) {
+      case 'recipe': return 'Recipes';
+      case 'roundup': return 'Roundups';
+      case 'article': return 'Articles';
+      default: return 'Articles & Recipes';
+    }
+  };
+
+  const getPageDescription = () => {
+    switch (effectiveType) {
+      case 'recipe': return 'Manage your culinary creations and cooking instructions.';
+      case 'roundup': return 'Curate collections of your best content.';
+      default: return 'Manage your content library, track performance, and publish new stories.';
+    }
+  };
+
+  const getNewButtonLabel = () => {
+    switch (effectiveType) {
+      case 'recipe': return 'New Recipe';
+      case 'roundup': return 'New Roundup';
+      case 'article': return 'New Article';
+      default: return 'New Content';
+    }
+  };
+
+  const handleNewClick = () => {
+    if (fixedType === 'recipe') navigate('/recipes/new');
+    else if (fixedType === 'roundup') navigate('/roundups/new');
+    else if (fixedType === 'article') navigate('/articles/new');
+  };
+
   return (
     <div className="space-y-6 pb-8">
       {/* Premium Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Articles & Recipes</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{getPageTitle()}</h1>
           <p className="text-muted-foreground mt-1">
-            Manage your content library, track performance, and publish new stories.
+            {getPageDescription()}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link to="/articles/new">
-            <Button className="h-10 px-6 gap-2 shadow-sm">
+          {fixedType ? (
+            <Button className="h-10 px-6 gap-2 shadow-sm" onClick={handleNewClick}>
               <Plus className="h-4 w-4" />
-              New Article
+              {getNewButtonLabel()}
             </Button>
-          </Link>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="h-10 px-6 gap-2 shadow-sm">
+                  <Plus className="h-4 w-4" />
+                  New Content
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Choose Type</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/articles/new')} className="cursor-pointer">
+                  <FileText className="w-4 h-4 mr-2 text-blue-500" />
+                  <span>New Article</span>
+                  <span className="ml-auto text-xs text-muted-foreground hidden sm:inline">Standard post</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/recipes/new')} className="cursor-pointer">
+                  <Utensils className="w-4 h-4 mr-2 text-orange-500" />
+                  <span>New Recipe</span>
+                  <span className="ml-auto text-xs text-muted-foreground hidden sm:inline">With ingredients</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/roundups/new')} className="cursor-pointer">
+                  <Layers className="w-4 h-4 mr-2 text-purple-500" />
+                  <span>New Roundup</span>
+                  <span className="ml-auto text-xs text-muted-foreground hidden sm:inline">Collection</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 
@@ -429,7 +516,7 @@ const ArticlesList = () => {
 
         {/* Bulk Actions Banner */}
         {selectedRows.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center justify-between bg-primary/10 border border-primary/20 p-3 rounded-xl shadow-sm"

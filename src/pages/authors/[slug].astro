@@ -3,6 +3,7 @@ import Layout from "../../layouts/Layout.astro";
 import RecipeCard from "../../components/RecipeCard.astro";
 import { getAuthorBySlug } from "@modules/authors";
 import { getArticles } from "@modules/articles";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 
 const { slug } = Astro.params;
 const { env } = Astro.locals.runtime;
@@ -20,6 +21,10 @@ if (!author) {
 const { items: articles, total } = await getArticles(env.DB, {
   authorSlug: slug,
 });
+
+const avatar = extractImage(author.imagesJson, "avatar", 200);
+const avatarSrcSet = getImageSrcSet(author.imagesJson, "avatar");
+const avatarSizes = "150px";
 
 // Parse bio if it's JSON
 let bioParagraphs: string[] = [];
@@ -48,12 +53,14 @@ if (author.bioJson) {
           <!-- Avatar -->
           <div class="avatar-container">
             {
-              author.imageUrl ? (
+              (avatar.imageUrl || author.imageUrl) ? (
                 <img
-                  src={author.imageUrl}
-                  alt={author.imageAlt || author.name}
-                  width={author.imageWidth || 150}
-                  height={author.imageHeight || 150}
+                  src={avatar.imageUrl || author.imageUrl}
+                  alt={avatar.imageAlt || author.imageAlt || author.name}
+                  width={avatar.imageWidth || author.imageWidth || 150}
+                  height={avatar.imageHeight || author.imageHeight || 150}
+                  srcset={avatarSrcSet || undefined}
+                  sizes={avatarSrcSet ? avatarSizes : undefined}
                   class="author-avatar"
                 />
               ) : (

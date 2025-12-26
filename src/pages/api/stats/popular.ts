@@ -21,29 +21,38 @@ export const GET: APIRoute = async ({ request, locals }) => {
       SELECT 
         r.id,
         r.slug,
-        r.label,
+        r.headline as label,
         r.type,
-        r.image_url,
+        r.images_json,
         r.view_count,
         c.label as category_label,
         c.slug as category_slug
-      FROM recipies r
+      FROM articles r
       LEFT JOIN categories c ON r.category_id = c.id
       WHERE r.is_online = 1
       ORDER BY r.view_count DESC, r.created_at DESC
       LIMIT ?1
     `).bind(limit).all();
 
-        const articles = (result.results || []).map((a: any) => ({
-            id: a.id,
-            slug: a.slug,
-            title: a.label,
-            type: a.type,
-            imageUrl: a.image_url,
-            views: a.view_count || 0,
-            category: a.category_label,
-            categorySlug: a.category_slug,
-        }));
+        const articles = (result.results || []).map((a: any) => {
+            // Extract cover image URL from images_json
+            let imageUrl = '';
+            try {
+                const images = a.images_json ? JSON.parse(a.images_json) : {};
+                imageUrl = images?.cover?.variants?.md?.url || images?.cover?.variants?.sm?.url || '';
+            } catch { }
+            
+            return {
+                id: a.id,
+                slug: a.slug,
+                title: a.label,
+                type: a.type,
+                imageUrl,
+                views: a.view_count || 0,
+                category: a.category_label,
+                categorySlug: a.category_slug,
+            };
+        });
 
         const { body, status, headers } = formatSuccessResponse(articles, {
             cacheControl: 'no-cache, no-store, must-revalidate'

@@ -33,7 +33,7 @@ export async function getSetting(db: D1Database, key: string): Promise<SiteSetti
 export async function getSettingValue<T = any>(db: D1Database, key: string): Promise<T | null> {
   const setting = await getSetting(db, key);
   if (!setting) return null;
-  
+
   try {
     return JSON.parse(setting.value) as T;
   } catch {
@@ -51,16 +51,16 @@ export async function upsertSetting(
   options?: { description?: string; category?: string; type?: string }
 ): Promise<boolean> {
   const drizzle = createDb(db);
-  
+
   const valueStr = typeof value === 'object' ? JSON.stringify(value) : value;
-  
+
   // Try to update first
   const existing = await getSetting(db, key);
-  
+
   if (existing) {
     await drizzle.update(siteSettings)
-      .set({ 
-        value: valueStr, 
+      .set({
+        value: valueStr,
         updatedAt: new Date().toISOString(),
         ...(options?.description && { description: options.description }),
         ...(options?.category && { category: options.category }),
@@ -76,7 +76,7 @@ export async function upsertSetting(
       type: options?.type || 'json',
     });
   }
-  
+
   return true;
 }
 
@@ -127,4 +127,59 @@ export async function getDashboardStats(db: D1Database): Promise<{
     tags: result?.tags || 0,
     totalViews: result?.total_views || 0,
   };
+}
+
+// ============================================
+// IMAGE UPLOAD SETTINGS
+// ============================================
+
+import { IMAGE_UPLOAD_DEFAULTS, IMAGE_SETTINGS_DB_KEY } from '../../../shared/constants/image-upload';
+import type { ImageUploadSettings } from '../../../shared/constants/image-upload';
+
+// Re-export for backwards compatibility
+export { IMAGE_UPLOAD_DEFAULTS, type ImageUploadSettings };
+
+const IMAGE_SETTINGS_KEY = IMAGE_SETTINGS_DB_KEY;
+
+/**
+ * Get image upload settings (merged with defaults)
+ */
+export async function getImageUploadSettings(db: D1Database): Promise<ImageUploadSettings> {
+  const stored = await getSettingValue<Partial<ImageUploadSettings>>(db, IMAGE_SETTINGS_KEY);
+  return { ...IMAGE_UPLOAD_DEFAULTS, ...stored };
+}
+
+/**
+ * Update image upload settings (partial update)
+ */
+export async function updateImageUploadSettings(
+  db: D1Database,
+  updates: Partial<ImageUploadSettings>
+): Promise<ImageUploadSettings> {
+  // Get current settings
+  const current = await getImageUploadSettings(db);
+
+  // Merge with updates
+  const newSettings = { ...current, ...updates };
+
+  // Save
+  await upsertSetting(db, IMAGE_SETTINGS_KEY, newSettings, {
+    description: 'Image upload module configuration',
+    category: 'media',
+    type: 'json',
+  });
+
+  return newSettings;
+}
+
+/**
+ * Reset image upload settings to defaults
+ */
+export async function resetImageUploadSettings(db: D1Database): Promise<ImageUploadSettings> {
+  await upsertSetting(db, IMAGE_SETTINGS_KEY, IMAGE_UPLOAD_DEFAULTS, {
+    description: 'Image upload module configuration',
+    category: 'media',
+    type: 'json',
+  });
+  return IMAGE_UPLOAD_DEFAULTS;
 }

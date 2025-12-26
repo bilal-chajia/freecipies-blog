@@ -1,7 +1,7 @@
 # Project Architecture
 
-> **Last Updated:** 2025-12-19  
-> **Framework:** Astro 5 + React 19  
+> **Last Updated:** 2025-12-26
+> **Framework:** Astro 5 + React 19
 > **Deployment:** Cloudflare Pages + D1 + R2
 
 ---
@@ -133,9 +133,43 @@ src/modules/{module}/
 | `tags`       | Filtering and discovery       |
 | `media`      | Image library and variants    |
 | `pinterest`  | Boards and pins               |
-| `templates`  | Pin canvas templates          |
+| `templates`  | Pin canvas templates + editor |
 | `settings`   | Site configuration            |
 | `auth`       | Admin authentication          |
+
+### Templates Module (Self-Contained)
+
+The `templates` module is **fully self-contained** with UI components, stores, and API handlers:
+
+```
+src/modules/templates/
+├── schema/templates.schema.ts       # Drizzle table
+├── types/
+│   ├── elements.types.ts            # TextElement, ImageElement, etc.
+│   └── templates.types.ts           # Template, ArticleData
+├── services/templates.service.ts    # Drizzle CRUD
+├── api/handlers.ts                  # D1 request handlers
+├── utils/
+│   ├── placeholders.ts              # {{article.title}} substitution
+│   └── fontLoader.ts                # Google Fonts loader
+├── store/
+│   ├── useEditorStore.ts            # Canvas state
+│   └── useUIStore.ts                # Theme state
+├── components/
+│   ├── canvas/                      # PinCanvas, ElementPanel, toolbars
+│   │   ├── hooks/                   # useKeyboardShortcuts, etc.
+│   │   └── modern/                  # TopToolbar, SidePanel, etc.
+│   ├── editor/                      # TemplateEditor, TemplatesList
+│   └── pins/                        # TemplateSelector
+├── README.md
+└── index.ts                         # Barrel export
+```
+
+**Admin imports from module:**
+
+```javascript
+import { TemplateEditor, PinCanvas, useEditorStore } from "@modules/templates";
+```
 
 ---
 

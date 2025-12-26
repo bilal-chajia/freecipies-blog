@@ -8,6 +8,8 @@ export interface MediaVariant {
   r2_key: string;
   width: number;
   height: number;
+  sizeBytes?: number;
+  size_bytes?: number;
 }
 
 export interface MediaVariants {
@@ -55,7 +57,6 @@ export interface MediaRecord {
   caption?: string | null;
   credit?: string | null;
   mimeType: string;
-  fileSize?: number | null;
   width?: number | null;
   height?: number | null;
   blurhash?: string | null;

@@ -1,181 +1,104 @@
 import type { APIRoute } from 'astro';
-import { uploadImage } from '@modules/media';
+import { uploadImage, createMedia, type NewMedia } from '@modules/media';
+import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 
-export const prerender = false;
-
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const env = locals.runtime.env as Env;
-        const bucket = env.IMAGES;
+        const env = (locals as any).runtime?.env as Env;
+
+        if (!env?.IMAGES) {
+            throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500);
+        }
+
         const publicUrl = (env as any).ENVIRONMENT === 'production' ? env.R2_PUBLIC_URL : '/images';
 
-        // Authenticate and authorize user
+        // Authenticate
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
         const authContext = await extractAuthContext(request, jwtSecret);
-        if (!hasRole(authContext, AuthRoles.EDITOR)) {
-            return createAuthError('Insufficient permissions to upload images', 403);
+        if (!hasRole(authContext, AuthRoles.EDITOR) && !hasRole(authContext, AuthRoles.ADMIN)) {
+            return createAuthError('Insufficient permissions', 403);
         }
 
-        // Get request body
-        const body = await request.json();
-        const { url: imageUrl, alt, attribution, convertToWebp = true, folder, contextSlug } = body;
+        const body = await request.json() as { 
+            imageUrl: string; 
+            alt?: string; 
+            attribution?: string; 
+            caption?: string;
+        };
+        
+        const { imageUrl, alt, attribution, caption } = body;
 
         if (!imageUrl) {
-            return new Response(JSON.stringify({
-                success: false,
-                error: 'No URL provided'
-            }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
+            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'No URL provided', 400);
         }
 
-        // Validate URL
-        let parsedUrl: URL;
-        try {
-            parsedUrl = new URL(imageUrl);
-        } catch {
-            return new Response(JSON.stringify({
-                success: false,
-                error: 'Invalid URL provided'
-            }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
+        // Fetch image
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            throw new AppError(ErrorCodes.VALIDATION_ERROR, `Failed to fetch image from URL: ${response.statusText}`, 400);
         }
-
-        // Fetch the image from the URL
-        const imageResponse = await fetch(imageUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-        });
-
-        if (!imageResponse.ok) {
-            return new Response(JSON.stringify({
-                success: false,
-                error: `Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`
-            }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-
-        // Check content type
-        const contentType = imageResponse.headers.get('content-type') || '';
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-
-        if (!allowedTypes.some(type => contentType.includes(type))) {
-            return new Response(JSON.stringify({
-                success: false,
-                error: `Invalid content type: ${contentType}. Allowed: ${allowedTypes.join(', ')}`
-            }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-
-        // Get the image data
-        const imageBuffer = await imageResponse.arrayBuffer();
-
-        // Check file size (10MB max)
-        if (imageBuffer.byteLength > 10 * 1024 * 1024) {
-            return new Response(JSON.stringify({
-                success: false,
-                error: 'Image too large. Maximum size is 10MB'
-            }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-
-        // Generate filename from URL
-        const urlPath = parsedUrl.pathname;
-        let originalFilename = urlPath.split('/').pop() || 'image';
-
-        // Clean up filename
-        originalFilename = originalFilename.replace(/[^a-zA-Z0-9_.-]/g, '_');
-
-        // Determine final content type and extension
-        let finalContentType = contentType.split(';')[0].trim();
-        let finalFilename = originalFilename;
-
-        // For WebP conversion, we'll change the extension
-        if (convertToWebp && !contentType.includes('webp')) {
-            const baseName = originalFilename.replace(/\.[^.]+$/, '');
-            finalFilename = `${baseName}.webp`;
-            finalContentType = 'image/webp';
-        }
-
-        // Create a File-like object
-        const blob = new Blob([imageBuffer], { type: finalContentType });
-        const file = new File([blob], finalFilename, { type: finalContentType });
+        
+        const blob = await response.blob();
+        
+        // Sanitize filename
+        const rawFilename = imageUrl.split('/').pop()?.split('?')[0] || `import-${Date.now()}`;
+        const filename = rawFilename.replace(/[^a-zA-Z0-9._-]/g, '_'); // Basic sanitization
 
         // Upload to R2
         const result = await uploadImage(
-            bucket,
+            env.IMAGES,
             {
-                file,
-                filename: finalFilename,
-                contentType: finalContentType,
+                file: blob,
+                filename: filename,
+                contentType: blob.type || 'image/jpeg',
+                folder: 'media',
                 metadata: {
                     alt: alt || '',
-                    attribution: attribution || '',
-                    sourceUrl: imageUrl
-                },
-                folder: folder || undefined,
-                contextSlug: contextSlug || undefined
+                    credit: attribution || ''
+                }
             },
             publicUrl
         );
 
-        // Store image metadata in D1 database
-        const db = env.DB;
-        await db
-            .prepare(`
-        INSERT INTO media (
-          filename, r2_key, url, mime_type,
-          size_bytes, alt_text, attribution, uploaded_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
-            .bind(
-                finalFilename,
-                result.key,
-                result.url,
-                result.contentType,
-                result.size,
-                alt || '',
-                attribution || '',
-                'url-import'
-            )
-            .run();
+        // Prepare Variants JSON (Simulation)
+        const variants = {
+            original: { url: result.url, width: 0, height: 0, sizeBytes: result.size },
+            lg: { url: result.url, width: 0, height: 0, sizeBytes: result.size },
+            md: { url: result.url, width: 0, height: 0, sizeBytes: result.size },
+            sm: { url: result.url, width: 0, height: 0, sizeBytes: result.size },
+            xs: { url: result.url, width: 0, height: 0, sizeBytes: result.size }
+        };
 
-        return new Response(JSON.stringify({
-            success: true,
-            data: {
-                url: result.url,
-                key: result.key,
-                filename: result.filename,
-                size: result.size,
-                contentType: result.contentType,
-                sourceUrl: imageUrl
-            }
-        }), {
-            status: 201,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        // Create DB Record
+         const mediaData: NewMedia = {
+            name: filename,
+            altText: alt || '',
+            caption: caption || '',
+            credit: attribution || '',
+            mimeType: result.contentType,
+            variantsJson: JSON.stringify(variants),
+            focalPointJson: JSON.stringify({ x: 50, y: 50 }),
+            aspectRatio: '1:1'
+        };
+
+        const newMedia = await createMedia(env.DB, mediaData);
+
+        if (!newMedia) {
+             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to save media record', 500);
+        }
+
+        const { body: responseBody, status, headers } = formatSuccessResponse(newMedia);
+        return new Response(responseBody, { status: 201, headers });
+
     } catch (error) {
-        console.error('Error uploading image from URL:', error);
-
-        return new Response(JSON.stringify({
-            success: false,
-            error: 'Failed to upload image from URL',
-            message: error instanceof Error ? error.message : 'Unknown error'
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        console.error('Error uploading from URL:', error);
+         const { body, status, headers } = formatErrorResponse(
+            error instanceof AppError 
+                ? error 
+                : new AppError(ErrorCodes.INTERNAL_ERROR, 'Import from URL failed', 500)
+        );
+        return new Response(body, { status, headers });
     }
 };

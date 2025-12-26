@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getTags, createTag } from '@modules/tags';
+import { getTags, createTag, transformTagRequestBody, transformTagResponse } from '@modules/tags';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -15,8 +15,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const db = env.DB;
 
     const tags = await getTags(db);
+    const responseTags = tags.map(transformTagResponse);
 
-    const { body, status, headers } = formatSuccessResponse(tags, {
+    const { body, status, headers } = formatSuccessResponse(responseTags, {
       cacheControl: 'public, max-age=3600'
     });
     return new Response(body, { status, headers });
@@ -47,9 +48,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const reqBody = await request.json();
-    const tag = await createTag(env.DB, reqBody);
+    const transformedBody = transformTagRequestBody(reqBody);
+    const tag = await createTag(env.DB, transformedBody);
+    const responseTag = transformTagResponse(tag);
 
-    const { body, status, headers } = formatSuccessResponse(tag);
+    const { body, status, headers } = formatSuccessResponse(responseTag);
     return new Response(body, { status: 201, headers });
   } catch (error) {
     console.error('Error creating tag:', error);

@@ -1,184 +1,115 @@
 import type { APIRoute } from 'astro';
+import { uploadImage, createMedia, type NewMedia } from '@modules/media';
+import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
-import { uploadImage } from '@modules/media';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 
-export const prerender = false;
-
-const SAMPLE_IMAGES = [
-    {
-        url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80',
-        filename: 'food-1.jpg',
-        alt: 'Delicious food spread',
-        attribution: 'Unsplash'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&q=80',
-        filename: 'salad.jpg',
-        alt: 'Fresh salad',
-        attribution: 'Unsplash'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80',
-        filename: 'pizza.jpg',
-        alt: 'Homemade pizza',
-        attribution: 'Unsplash'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=80',
-        filename: 'pancakes.jpg',
-        alt: 'Fluffy pancakes',
-        attribution: 'Unsplash'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=80',
-        filename: 'french-toast.jpg',
-        alt: 'French toast',
-        attribution: 'Unsplash'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1467003909585-2f8a7270028d?w=800&q=80',
-        filename: 'healthy-bowl.jpg',
-        alt: 'Healthy food bowl',
-        attribution: 'Unsplash'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&q=80',
-        filename: 'pasta.jpg',
-        alt: 'Italian pasta',
-        attribution: 'Unsplash'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&q=80',
-        filename: 'dessert.jpg',
-        alt: 'Sweet dessert',
-        attribution: 'Unsplash'
-    }
+// Default seed images for categories
+const SEED_IMAGES = [
+    { name: 'Breakfast', url: 'https://images.unsplash.com/photo-1533089862017-5614387e0748?w=800&q=80', folder: 'categories', slug: 'breakfast' },
+    { name: 'Desserts', url: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&q=80', folder: 'categories', slug: 'desserts' },
+    { name: 'Dinner', url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80', folder: 'categories', slug: 'dinner' },
+    { name: 'Healthy', url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&q=80', folder: 'categories', slug: 'healthy' },
+    { name: 'Vegan', url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80', folder: 'categories', slug: 'vegan' },
+    { name: 'Baking', url: 'https://images.unsplash.com/photo-1556910103-1c02745a30bf?w=800&q=80', folder: 'categories', slug: 'baking' }
 ];
 
-export const GET: APIRoute = async ({ locals }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const env = locals.runtime.env as Env;
-        const bucket = env.IMAGES;
-        const db = env.DB;
-        const publicUrl = env.R2_PUBLIC_URL || '/images';
+        const env = (locals as any).runtime?.env as Env;
+        if (!env?.IMAGES) { throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500); }
+        const publicUrl = (env as any).ENVIRONMENT === 'production' ? env.R2_PUBLIC_URL : '/images';
 
-        interface UploadedImage {
-            key: string;
-            url: string;
-            filename: string;
-            size: number;
-            contentType: string;
-            alt: string;
-            width: number;
-            height: number;
-            success: boolean;
+        // Auth (Admin only)
+        const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+        const authContext = await extractAuthContext(request, jwtSecret);
+        if (!hasRole(authContext, AuthRoles.ADMIN)) {
+            return createAuthError('Insufficient permissions', 403);
         }
 
-        const uploadedImages: UploadedImage[] = [];
+        const results = [];
 
-        // 1. Upload all images
-        for (const img of SAMPLE_IMAGES) {
-            // Fetch image
-            const response = await fetch(img.url);
-            const blob = await response.blob();
+        for (const img of SEED_IMAGES) {
+            try {
+                // 1. Fetch image
+                const response = await fetch(img.url);
+                if (!response.ok) {
+                    console.warn(`Failed to fetch ${img.url}`);
+                    continue;
+                }
+                const blob = await response.blob();
+                
+                // 2. Upload to R2
+                const uploadResult = await uploadImage(
+                    env.IMAGES,
+                    {
+                        file: blob,
+                        filename: `${img.slug}.jpg`,
+                        contentType: blob.type,
+                        folder: img.folder,
+                        metadata: { alt: img.name }
+                    },
+                    publicUrl
+                );
 
-            // Upload to R2
-            const uploadResult = await uploadImage(
-                bucket,
-                {
-                    file: blob,
-                    filename: img.filename,
-                    contentType: 'image/jpeg',
-                    metadata: {
-                        alt: img.alt,
-                        attribution: img.attribution
-                    }
-                },
-                publicUrl
-            );
+                // 3. Create Media Record
+                const variants = {
+                    original: { url: uploadResult.url, width: 800, height: 600, sizeBytes: uploadResult.size }, // Approximate
+                    lg: { url: uploadResult.url, width: 800, height: 600, sizeBytes: uploadResult.size },
+                    md: { url: uploadResult.url, width: 800, height: 600, sizeBytes: uploadResult.size },
+                    sm: { url: uploadResult.url, width: 800, height: 600, sizeBytes: uploadResult.size },
+                    xs: { url: uploadResult.url, width: 800, height: 600, sizeBytes: uploadResult.size }
+                };
 
-            // Insert into DB (Media table)
-            await db.prepare(`
-        INSERT INTO media (
-          filename, r2_key, url, mime_type,
-          size_bytes, alt_text, attribution, uploaded_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(r2_key) DO UPDATE SET
-          url=excluded.url,
-          uploaded_at=CURRENT_TIMESTAMP
-      `).bind(
-                img.filename,
-                uploadResult.key,
-                uploadResult.url,
-                uploadResult.contentType,
-                uploadResult.size,
-                img.alt,
-                img.attribution,
-                'seed-script'
-            ).run();
+                const mediaData: NewMedia = {
+                    name: img.name,
+                    altText: img.name,
+                    caption: `Default cover for ${img.slug}`,
+                    credit: 'Unsplash',
+                    mimeType: uploadResult.contentType,
+                    variantsJson: JSON.stringify(variants),
+                    focalPointJson: JSON.stringify({ x: 50, y: 50 }),
+                    aspectRatio: '4:3'
+                };
 
-            uploadedImages.push({
-                ...uploadResult,
-                alt: img.alt,
-                width: 800, // Hardcoded for now as we know the source
-                height: 600
-            });
+                const newMedia = await createMedia(env.DB, mediaData);
+                
+                if (newMedia) {
+                    results.push({ id: newMedia.id, name: newMedia.name });
+
+                    // 4. Update Category Link (if matches)
+                    // Construction of the JSON object that goes into categories.images_json (or cover_image_json)
+                    // Checking schema.sql for categories table... 
+                    // It has `cover_image_json` and `hero_image_json`.
+                    
+                    const imageJson = JSON.stringify({
+                        media_id: newMedia.id,
+                        alt: newMedia.altText,
+                        placeholder: uploadResult.url, // simplistic placeholder
+                        aspectRatio: '4:3',
+                        variants: variants
+                    });
+
+                    // We update cover_image_json
+                    await env.DB.prepare(`UPDATE categories SET cover_image_json = ? WHERE slug = ?`)
+                        .bind(imageJson, img.slug)
+                        .run();
+                }
+
+            } catch (innerError) {
+                console.error(`Failed to seed ${img.name}:`, innerError);
+            }
         }
 
-        // 2. Assign images to Categories
-        const { results: categories } = await db.prepare('SELECT id, slug FROM categories').all();
-
-        for (const cat of categories) {
-            const randomImage = uploadedImages[Math.floor(Math.random() * uploadedImages.length)];
-            await db.prepare(`
-                UPDATE categories 
-                SET image_url = ?, image_alt = ?, image_width = ?, image_height = ?
-                WHERE id = ?
-            `).bind(
-                randomImage.url,
-                randomImage.alt,
-                randomImage.width,
-                randomImage.height,
-                cat.id
-            ).run();
-        }
-
-        // 3. Assign images to Articles
-        const { results: articles } = await db.prepare('SELECT id, slug FROM articles').all();
-
-        for (const article of articles) {
-            const randomImage = uploadedImages[Math.floor(Math.random() * uploadedImages.length)];
-            const randomCover = uploadedImages[Math.floor(Math.random() * uploadedImages.length)];
-
-            await db.prepare(`
-                UPDATE articles 
-                SET 
-                    image_url = ?, image_alt = ?, image_width = ?, image_height = ?,
-                    cover_url = ?, cover_alt = ?, cover_width = ?, cover_height = ?
-                WHERE id = ?
-            `).bind(
-                randomImage.url, randomImage.alt, randomImage.width, randomImage.height,
-                randomCover.url, randomCover.alt, randomCover.width, randomCover.height,
-                article.id
-            ).run();
-        }
-
-        return new Response(JSON.stringify({
-            success: true,
-            message: `Seeded ${uploadedImages.length} images and updated ${categories.length} categories and ${articles.length} articles.`,
-            data: uploadedImages
-        }), {
-            headers: { 'Content-Type': 'application/json' }
+        const { body, status, headers } = formatSuccessResponse({ 
+            success: true, 
+            message: `Seeded ${results.length} images`, 
+            seeded: results 
         });
+        return new Response(body, { status: 200, headers });
 
     } catch (error) {
-        console.error('Seeding error:', error);
-        return new Response(JSON.stringify({
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        console.error('Seeding completely failed:', error);
+        return new Response(JSON.stringify({ error: 'Seeding failed' }), { status: 500 });
     }
 };

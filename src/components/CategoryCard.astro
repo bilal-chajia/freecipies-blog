@@ -1,5 +1,6 @@
 ---
 import type { HydratedCategory } from "@modules/categories";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 
 interface Props {
   category: HydratedCategory;
@@ -7,13 +8,20 @@ interface Props {
 
 const { category } = Astro.props;
 
+const cover = extractImage(category.imagesJson, "cover", 1200);
+const thumbnail = extractImage(category.imagesJson, "thumbnail", 720);
+const slotName = cover.imageUrl ? "cover" : "thumbnail";
+const selected = cover.imageUrl ? cover : thumbnail;
+const srcSet = getImageSrcSet(category.imagesJson, slotName);
+const sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 480px";
 const image = {
   url:
+    selected.imageUrl ||
     category.imageUrl ||
     "https://images.unsplash.com/photo-1556910103-1c02745a30bf?w=800&q=80", // Remote placeholder
-  alt: category.imageAlt || category.label,
-  width: category.imageWidth || 800,
-  height: category.imageHeight || 600,
+  alt: selected.imageAlt || category.imageAlt || category.label,
+  width: selected.imageWidth || category.imageWidth || 800,
+  height: selected.imageHeight || category.imageHeight || 600,
 };
 ---
 
@@ -31,6 +39,8 @@ const image = {
         alt={image.alt || category.label}
         width={image.width || 800}
         height={image.height || 600}
+        srcset={srcSet || undefined}
+        sizes={srcSet ? sizes : undefined}
         loading="lazy"
         class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
       />

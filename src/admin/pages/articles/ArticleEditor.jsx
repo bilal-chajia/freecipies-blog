@@ -1,774 +1,114 @@
-import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, Eye, Code } from 'lucide-react';
-import { Button } from '@/ui/button.jsx';
-import { Input } from '@/ui/input.jsx';
-import { Label } from '@/ui/label.jsx';
-import { Textarea } from '@/ui/textarea.jsx';
-import { Switch } from '@/ui/switch.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/ui/select.jsx';
-import Editor from '@monaco-editor/react';
-import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../services/api';
-import { generateSlug, isValidJSON } from '../../utils/helpers';
-import MediaDialog from '../../components/MediaDialog';
-import TagSelector from '../../components/TagSelector';
-import RecipeBuilder from '../../components/RecipeBuilder';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useContentEditor } from './shared';
+import EditorLayout from './shared/EditorLayout';
+import EditorSidebar from '../../components/EditorSidebar';
+import EditorMain from '../../components/EditorMain';
 
+/**
+ * Simplified Article Editor - now handles only articles
+ * For recipes use RecipeEditor, for roundups use RoundupEditor
+ */
 const ArticleEditor = () => {
   const { slug } = useParams();
-  const navigate = useNavigate();
-  const isEditMode = !!slug;
+  const [searchParams] = useSearchParams();
+  const initialType = searchParams.get('type') || 'article';
 
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [categories, setCategories] = useState([]);
-  const [authors, setAuthors] = useState([]);
-  const [tags, setTags] = useState([]);
-
-  // Form data
-  const [formData, setFormData] = useState({
-    slug: '',
-    type: 'article',
-    categorySlug: '',
-    authorSlug: '',
-    label: '',
-    headline: '',
-    metaTitle: '',
-    metaDescription: '',
-    canonicalUrl: '',
-    shortDescription: '',
-    tldr: '',
-    introduction: '',
-    summary: '',
-    imageUrl: '',
-    imageAlt: '',
-    coverUrl: '',
-    coverAlt: '',
-    isOnline: false,
-    isFavorite: false,
-    publishedAt: '',
-    selectedTags: [],
+  const editor = useContentEditor({
+    slug,
+    contentType: initialType,
   });
 
-  // JSON fields
-  const [contentJson, setContentJson] = useState('{}');
-  const [recipeJson, setRecipeJson] = useState('{}');
-  const [faqsJson, setFaqsJson] = useState('[]');
-  const [keywordsJson, setKeywordsJson] = useState('[]');
-  const [referencesJson, setReferencesJson] = useState('[]');
-  const [mediaJson, setMediaJson] = useState('{}');
+  const {
+    loading,
+    saving,
+    isEditMode,
+    formData,
+    categories,
+    authors,
+    tags,
+    contentJson,
+    setContentJson,
+    recipeJson,
+    setRecipeJson,
+    roundupJson,
+    setRoundupJson,
+    faqsJson,
+    setFaqsJson,
+    jsonErrors,
+    validateJSON,
+    useVisualEditor,
+    setUseVisualEditor,
+    isValidJSON,
+    mediaDialogOpen,
+    setMediaDialogOpen,
+    handleMediaSelect,
+    handleInputChange,
+    handleSave,
+    openMediaDialog,
+    navigate,
+  } = editor;
 
-  // JSON validation errors
-  const [jsonErrors, setJsonErrors] = useState({});
-
-  // Media Dialog State
-  const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
-  const [activeMediaField, setActiveMediaField] = useState(null); // 'image' | 'cover'
-
-  // Track if article has been loaded to prevent duplicate API calls
-  const articleLoadedRef = useRef(false);
-
-  useEffect(() => {
-    loadCategories();
-    loadAuthors();
-    loadTags();
-    if (isEditMode && !articleLoadedRef.current) {
-      articleLoadedRef.current = true;
-      loadArticle();
-    }
-  }, [slug]);
-
-  const loadCategories = async () => {
-    try {
-      const response = await categoriesAPI.getAll();
-      if (response.data.success) {
-        setCategories(response.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to load categories:', error);
-    }
+  // Dynamic title based on content type
+  const typeLabels = {
+    article: { name: 'Article', emoji: '📝' },
+    recipe: { name: 'Recipe', emoji: '🍳' },
+    roundup: { name: 'Roundup', emoji: '📚' },
   };
 
-  const loadAuthors = async () => {
-    try {
-      const response = await authorsAPI.getAll();
-      if (response.data.success) {
-        setAuthors(response.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to load authors:', error);
-    }
-  };
+  const typeInfo = typeLabels[formData.type] || typeLabels.article;
+  const title = isEditMode ? `Edit ${typeInfo.name}` : `New ${typeInfo.name}`;
+  const subtitle = isEditMode
+    ? formData.label || 'Untitled'
+    : `Create a new ${typeInfo.name.toLowerCase()}`;
 
-  const loadTags = async () => {
-    try {
-      const response = await tagsAPI.getAll();
-      if (response.data.success) {
-        setTags(response.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to load tags:', error);
-    }
-  };
+  const mainContent = (
+    <EditorMain
+      formData={formData}
+      onInputChange={handleInputChange}
+      contentJson={contentJson}
+      setContentJson={setContentJson}
+      recipeJson={recipeJson}
+      setRecipeJson={setRecipeJson}
+      roundupJson={roundupJson}
+      setRoundupJson={setRoundupJson}
+      faqsJson={faqsJson}
+      setFaqsJson={setFaqsJson}
+      jsonErrors={jsonErrors}
+      validateJSON={validateJSON}
+      useVisualEditor={useVisualEditor}
+      setUseVisualEditor={setUseVisualEditor}
+      isValidJSON={isValidJSON}
+    />
+  );
 
-  const loadArticle = async () => {
-    try {
-      setLoading(true);
-      const response = await articlesAPI.getBySlug(slug);
-      if (response.data.success) {
-        const article = response.data.data;
-        setFormData({
-          slug: article.slug,
-          type: article.type,
-          categorySlug: article.categorySlug,
-          authorSlug: article.authorSlug,
-          label: article.label,
-          headline: article.headline,
-          metaTitle: article.metaTitle,
-          metaDescription: article.metaDescription,
-          canonicalUrl: article.canonicalUrl || '',
-          shortDescription: article.shortDescription,
-          tldr: article.tldr,
-          introduction: article.introduction || '',
-          summary: article.summary || '',
-          imageUrl: article.imageUrl || '',
-          imageAlt: article.imageAlt || '',
-          coverUrl: article.coverUrl || '',
-          coverAlt: article.coverAlt || '',
-          isOnline: article.isOnline,
-          isFavorite: article.isFavorite,
-          publishedAt: article.publishedAt || '',
-          selectedTags: article.tags?.map(t => t.id) || [],
-        });
-
-        // Load JSON fields
-        setContentJson(JSON.stringify(article.content || {}, null, 2));
-        setRecipeJson(JSON.stringify(article.recipe || {}, null, 2));
-        setFaqsJson(JSON.stringify(article.faqs || [], null, 2));
-        setKeywordsJson(JSON.stringify(article.keywords || [], null, 2));
-        setReferencesJson(JSON.stringify(article.references || [], null, 2));
-        setMediaJson(JSON.stringify(article.media || {}, null, 2));
-      } else {
-        // Article not found or invalid response
-        alert(`Article "${slug}" not found. Redirecting to articles list.`);
-        navigate('/articles');
-      }
-    } catch (error) {
-      console.error('Failed to load article:', error);
-      // On 404 or other errors, show message and navigate back to articles list
-      if (error.response?.status === 404) {
-        alert(`Article "${slug}" not found. Redirecting to articles list.`);
-        navigate('/articles');
-      } else {
-        alert('Failed to load article: ' + (error.response?.data?.message || error.message));
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-
-    // Auto-generate slug from label
-    if (field === 'label' && !isEditMode) {
-      setFormData(prev => ({ ...prev, slug: generateSlug(value) }));
-    }
-  };
-
-  const handleMediaSelect = (item) => {
-    if (activeMediaField === 'image') {
-      setFormData(prev => ({
-        ...prev,
-        imageUrl: item.url,
-        imageAlt: item.altText || prev.imageAlt
-      }));
-    } else if (activeMediaField === 'cover') {
-      setFormData(prev => ({
-        ...prev,
-        coverUrl: item.url,
-        coverAlt: item.altText || prev.coverAlt
-      }));
-    }
-  };
-
-  const openMediaDialog = (field) => {
-    setActiveMediaField(field);
-    setMediaDialogOpen(true);
-  };
-
-  const validateJSON = (field, value) => {
-    if (!isValidJSON(value)) {
-      setJsonErrors(prev => ({ ...prev, [field]: 'Invalid JSON' }));
-      return false;
-    } else {
-      setJsonErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-      return true;
-    }
-  };
-
-  const handleSave = async () => {
-    // Validate all JSON fields
-    const jsonFields = {
-      content: contentJson,
-      recipe: recipeJson,
-      faqs: faqsJson,
-      keywords: keywordsJson,
-      references: referencesJson,
-      media: mediaJson,
-    };
-
-    let hasErrors = false;
-    Object.entries(jsonFields).forEach(([field, value]) => {
-      if (!validateJSON(field, value)) {
-        hasErrors = true;
-      }
-    });
-
-    if (hasErrors) {
-      alert('Please fix JSON errors before saving');
-      return;
-    }
-
-    // Prepare data
-    const data = {
-      ...formData,
-      contentJson,
-      recipeJson,
-      faqsJson,
-      keywordsJson,
-      referencesJson,
-      mediaJson,
-    };
-
-    try {
-      setSaving(true);
-      if (isEditMode) {
-        await articlesAPI.update(slug, data);
-      } else {
-        await articlesAPI.create(data);
-      }
-      navigate('/articles');
-    } catch (error) {
-      console.error('Failed to save article:', error);
-      alert('Failed to save article: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  const sidebarContent = (
+    <EditorSidebar
+      formData={formData}
+      onInputChange={handleInputChange}
+      onSave={handleSave}
+      saving={saving}
+      isEditMode={isEditMode}
+      categories={categories}
+      authors={authors}
+      tags={tags}
+      onMediaDialogOpen={openMediaDialog}
+    />
+  );
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/articles')}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h2 className="text-3xl font-bold">
-              {isEditMode ? 'Edit Article' : 'New Article'}
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              {isEditMode ? `Editing: ${formData.label}` : 'Create a new article or recipe'}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/articles')}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
-            <Save className="w-4 h-4" />
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Form */}
-      <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="basic">Basic Info</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="recipe">Recipe Data</TabsTrigger>
-          <TabsTrigger value="seo">SEO</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced</TabsTrigger>
-        </TabsList>
-
-        {/* Basic Info Tab */}
-        <TabsContent value="basic" className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => handleInputChange('type', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="article">Article</SelectItem>
-                  <SelectItem value="recipe">Recipe</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="slug">Slug *</Label>
-              <Input
-                id="slug"
-                value={formData.slug}
-                onChange={(e) => handleInputChange('slug', e.target.value)}
-                placeholder="article-slug"
-                disabled={isEditMode}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="label">Title *</Label>
-            <Input
-              id="label"
-              value={formData.label}
-              onChange={(e) => handleInputChange('label', e.target.value)}
-              placeholder="Article title"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="headline">Headline *</Label>
-            <Input
-              id="headline"
-              value={formData.headline}
-              onChange={(e) => handleInputChange('headline', e.target.value)}
-              placeholder="Catchy headline"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={formData.categorySlug}
-                onValueChange={(value) => handleInputChange('categorySlug', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.slug} value={cat.slug}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="author">Author *</Label>
-              <Select
-                value={formData.authorSlug}
-                onValueChange={(value) => handleInputChange('authorSlug', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select author" />
-                </SelectTrigger>
-                <SelectContent>
-                  {authors.map((author) => (
-                    <SelectItem key={author.slug} value={author.slug}>
-                      {author.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tags">Tags</Label>
-            <TagSelector
-              tags={tags}
-              selectedTags={formData.selectedTags}
-              onTagsChange={(newTags) => handleInputChange('selectedTags', newTags)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="shortDescription">Short Description *</Label>
-            <Textarea
-              id="shortDescription"
-              value={formData.shortDescription}
-              onChange={(e) => handleInputChange('shortDescription', e.target.value)}
-              placeholder="Brief description"
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tldr">TL;DR *</Label>
-            <Textarea
-              id="tldr"
-              value={formData.tldr}
-              onChange={(e) => handleInputChange('tldr', e.target.value)}
-              placeholder="Too long; didn't read summary"
-              rows={2}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="imageUrl">Featured Image URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={(e) => handleInputChange('imageUrl', e.target.value)}
-                  placeholder="https://..."
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => openMediaDialog('image')}
-                >
-                  Select
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="imageAlt">Image Alt Text</Label>
-              <Input
-                id="imageAlt"
-                value={formData.imageAlt}
-                onChange={(e) => handleInputChange('imageAlt', e.target.value)}
-                placeholder="Image description"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isOnline"
-                checked={formData.isOnline}
-                onCheckedChange={(checked) => handleInputChange('isOnline', checked)}
-              />
-              <Label htmlFor="isOnline">Online</Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isFavorite"
-                checked={formData.isFavorite}
-                onCheckedChange={(checked) => handleInputChange('isFavorite', checked)}
-              />
-              <Label htmlFor="isFavorite">Favorite</Label>
-            </div>
-          </div>
-
-          {/* Cover Image Input (if needed, though hidden in earlier screenshot logic, assuming consistency) */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="coverUrl">Cover Image URL (Optional)</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="coverUrl"
-                  value={formData.coverUrl}
-                  onChange={(e) => handleInputChange('coverUrl', e.target.value)}
-                  placeholder="https://..."
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => openMediaDialog('cover')}
-                >
-                  Select
-                </Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="coverAlt">Cover Image Alt</Label>
-              <Input
-                id="coverAlt"
-                value={formData.coverAlt}
-                onChange={(e) => handleInputChange('coverAlt', e.target.value)}
-                placeholder="Cover image description"
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Content Tab */}
-        <TabsContent value="content" className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="introduction">Introduction</Label>
-            <Textarea
-              id="introduction"
-              value={formData.introduction}
-              onChange={(e) => handleInputChange('introduction', e.target.value)}
-              placeholder="Article introduction"
-              rows={4}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="summary">Summary</Label>
-            <Textarea
-              id="summary"
-              value={formData.summary}
-              onChange={(e) => handleInputChange('summary', e.target.value)}
-              placeholder="Article summary"
-              rows={4}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Content JSON</Label>
-              {jsonErrors.content && (
-                <span className="text-sm text-destructive">{jsonErrors.content}</span>
-              )}
-            </div>
-            <div className="border rounded-lg overflow-hidden">
-              <Editor
-                height="400px"
-                language="json"
-                theme="vs-dark"
-                value={contentJson}
-                onChange={(value) => {
-                  setContentJson(value);
-                  validateJSON('content', value);
-                }}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  lineNumbers: 'on',
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                }}
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Add paragraphs, sections, and custom content in JSON format
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>FAQs JSON</Label>
-              {jsonErrors.faqs && (
-                <span className="text-sm text-destructive">{jsonErrors.faqs}</span>
-              )}
-            </div>
-            <div className="border rounded-lg overflow-hidden">
-              <Editor
-                height="300px"
-                language="json"
-                theme="vs-dark"
-                value={faqsJson}
-                onChange={(value) => {
-                  setFaqsJson(value);
-                  validateJSON('faqs', value);
-                }}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                }}
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Recipe Data Tab */}
-        <TabsContent value="recipe" className="space-y-6">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Recipe JSON</Label>
-              {jsonErrors.recipe && (
-                <span className="text-sm text-destructive">{jsonErrors.recipe}</span>
-              )}
-            </div>
-            <div className="border rounded-lg overflow-hidden bg-background p-4">
-              <RecipeBuilder
-                value={recipeJson}
-                onChange={(newValue) => {
-                  setRecipeJson(newValue);
-                  // Clear error if valid
-                  if (isValidJSON(newValue)) {
-                    setJsonErrors(prev => {
-                      const newErrors = { ...prev };
-                      delete newErrors.recipe;
-                      return newErrors;
-                    });
-                  }
-                }}
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Include ingredients, instructions, nutrition, prep time, etc.
-            </p>
-          </div>
-        </TabsContent>
-
-        {/* SEO Tab */}
-        <TabsContent value="seo" className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="metaTitle">Meta Title *</Label>
-            <Input
-              id="metaTitle"
-              value={formData.metaTitle}
-              onChange={(e) => handleInputChange('metaTitle', e.target.value)}
-              placeholder="SEO title"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="metaDescription">Meta Description *</Label>
-            <Textarea
-              id="metaDescription"
-              value={formData.metaDescription}
-              onChange={(e) => handleInputChange('metaDescription', e.target.value)}
-              placeholder="SEO description"
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="canonicalUrl">Canonical URL</Label>
-            <Input
-              id="canonicalUrl"
-              value={formData.canonicalUrl}
-              onChange={(e) => handleInputChange('canonicalUrl', e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Keywords JSON</Label>
-              {jsonErrors.keywords && (
-                <span className="text-sm text-destructive">{jsonErrors.keywords}</span>
-              )}
-            </div>
-            <div className="border rounded-lg overflow-hidden">
-              <Editor
-                height="200px"
-                language="json"
-                theme="vs-dark"
-                value={keywordsJson}
-                onChange={(value) => {
-                  setKeywordsJson(value);
-                  validateJSON('keywords', value);
-                }}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                }}
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Advanced Tab */}
-        <TabsContent value="advanced" className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="publishedAt">Published Date</Label>
-            <Input
-              id="publishedAt"
-              type="datetime-local"
-              value={formData.publishedAt}
-              onChange={(e) => handleInputChange('publishedAt', e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>References JSON</Label>
-              {jsonErrors.references && (
-                <span className="text-sm text-destructive">{jsonErrors.references}</span>
-              )}
-            </div>
-            <div className="border rounded-lg overflow-hidden">
-              <Editor
-                height="300px"
-                language="json"
-                theme="vs-dark"
-                value={referencesJson}
-                onChange={(value) => {
-                  setReferencesJson(value);
-                  validateJSON('references', value);
-                }}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Media JSON</Label>
-              {jsonErrors.media && (
-                <span className="text-sm text-destructive">{jsonErrors.media}</span>
-              )}
-            </div>
-            <div className="border rounded-lg overflow-hidden">
-              <Editor
-                height="300px"
-                language="json"
-                theme="vs-dark"
-                value={mediaJson}
-                onChange={(value) => {
-                  setMediaJson(value);
-                  validateJSON('media', value);
-                }}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                }}
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Add YouTube videos, galleries, and other media
-            </p>
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      <MediaDialog
-        open={mediaDialogOpen}
-        onOpenChange={setMediaDialogOpen}
-        onSelect={handleMediaSelect}
-      />
-    </div>
+    <EditorLayout
+      title={title}
+      subtitle={subtitle}
+      backPath="/articles"
+      loading={loading}
+      mainContent={mainContent}
+      sidebarContent={sidebarContent}
+      mediaDialogOpen={mediaDialogOpen}
+      setMediaDialogOpen={setMediaDialogOpen}
+      handleMediaSelect={handleMediaSelect}
+      navigate={navigate}
+    />
   );
 };
 
 export default ArticleEditor;
-

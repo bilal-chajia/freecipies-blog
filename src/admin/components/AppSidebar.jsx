@@ -28,6 +28,8 @@ import {
   Monitor,
   Laptop,
   ShieldCheck,
+  Utensils,
+  Layers,
 } from "lucide-react";
 
 import {
@@ -77,7 +79,16 @@ const navGroups = [
     title: "Blog",
     icon: FileText,
     items: [
-      { title: "Articles", url: "/articles", icon: FileText },
+      {
+        title: "Content",
+        icon: FileText,
+        isSubmenu: true,
+        items: [
+          { title: "Articles", url: "/articles", icon: FileText },
+          { title: "Recipes", url: "/recipes", icon: Utensils },
+          { title: "Roundups", url: "/roundups", icon: Layers },
+        ]
+      },
       { title: "Categories", url: "/categories", icon: FolderOpen },
       { title: "Authors", url: "/authors", icon: Users },
       { title: "Tags", url: "/tags", icon: Tags },
@@ -96,6 +107,7 @@ const navGroups = [
     icon: Settings,
     items: [
       { title: "General", url: "/settings/general", icon: Globe },
+      { title: "Media & Uploads", url: "/settings/media", icon: Image },
       { title: "SEO", url: "/settings/seo", icon: Search },
       { title: "Email", url: "/settings/email", icon: Mail },
       { title: "Social", url: "/settings/social", icon: Share2 },
@@ -205,17 +217,47 @@ export function AppSidebar({ ...props }) {
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         {group.items.map((item) => (
-                          <SidebarMenuSubItem key={item.title}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={isActive(item.url)}
-                            >
-                              <Link to={item.url}>
-                                <item.icon />
-                                <span>{item.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
+                          item.isSubmenu ? (
+                            // Nested submenu (e.g., Content > Articles/Recipes/Roundups)
+                            <Collapsible key={item.title} defaultOpen={item.items?.some(sub => isActive(sub.url))} className="group/submenu">
+                              <SidebarMenuSubItem>
+                                <CollapsibleTrigger asChild>
+                                  <SidebarMenuSubButton className="cursor-pointer">
+                                    <item.icon />
+                                    <span>{item.title}</span>
+                                    <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/submenu:rotate-90" />
+                                  </SidebarMenuSubButton>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                  <SidebarMenuSub className="ml-2 border-l border-border/50">
+                                    {item.items.map((subItem) => (
+                                      <SidebarMenuSubItem key={subItem.title}>
+                                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                                          <Link to={subItem.url}>
+                                            <subItem.icon className="h-3.5 w-3.5" />
+                                            <span>{subItem.title}</span>
+                                          </Link>
+                                        </SidebarMenuSubButton>
+                                      </SidebarMenuSubItem>
+                                    ))}
+                                  </SidebarMenuSub>
+                                </CollapsibleContent>
+                              </SidebarMenuSubItem>
+                            </Collapsible>
+                          ) : (
+                            // Regular menu item
+                            <SidebarMenuSubItem key={item.title}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={isActive(item.url)}
+                              >
+                                <Link to={item.url}>
+                                  <item.icon />
+                                  <span>{item.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          )
                         ))}
                       </SidebarMenuSub>
                     </CollapsibleContent>

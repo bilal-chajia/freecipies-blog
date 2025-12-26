@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { extractImage } from '@shared/utils';
 
 export const GET: APIRoute = async ({ locals, site }) => {
   try {
@@ -12,7 +13,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
       const { results } = await db.prepare(`
         SELECT 
           slug, label, headline, short_description, 
-          image_url, published_at, author_slug, category_slug
+          images_json, published_at, author_slug, category_slug
         FROM articles 
         WHERE is_online = 1 
         ORDER BY published_at DESC 
@@ -20,6 +21,12 @@ export const GET: APIRoute = async ({ locals, site }) => {
       `).all();
       articles = results || [];
     }
+
+    const getRecipeImageUrl = (article: any) => {
+      const cover = extractImage(article.images_json, 'cover', 1200);
+      const thumbnail = extractImage(article.images_json, 'thumbnail', 1200);
+      return cover.imageUrl || thumbnail.imageUrl || '';
+    };
 
     // Generate RSS feed
     const rss = `<?xml version="1.0" encoding="UTF-8"?>
@@ -39,7 +46,9 @@ export const GET: APIRoute = async ({ locals, site }) => {
       <title>Freecipies</title>
       <link>${siteUrl}</link>
     </image>
-    ${articles.map(article => `
+    ${articles.map(article => {
+      const imageUrl = getRecipeImageUrl(article);
+      return `
     <item>
       <title>${escapeXml(article.headline || article.label)}</title>
       <link>${siteUrl}/recipes/${article.slug}</link>
@@ -48,8 +57,9 @@ export const GET: APIRoute = async ({ locals, site }) => {
       <pubDate>${article.published_at ? new Date(article.published_at).toUTCString() : new Date().toUTCString()}</pubDate>
       ${article.author_slug ? `<dc:creator>${escapeXml(article.author_slug)}</dc:creator>` : ''}
       ${article.category_slug ? `<category>${escapeXml(article.category_slug)}</category>` : ''}
-      ${article.image_url ? `<enclosure url="${escapeXml(article.image_url)}" type="image/jpeg"/>` : ''}
-    </item>`).join('\n')}
+      ${imageUrl ? `<enclosure url="${escapeXml(imageUrl)}" type="image/jpeg"/>` : ''}
+    </item>`;
+    }).join('\n')}
   </channel>
 </rss>`;
 
@@ -90,4 +100,3 @@ function escapeXml(unsafe: string | null | undefined): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 }
-

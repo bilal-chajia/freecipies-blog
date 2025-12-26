@@ -112,7 +112,8 @@ export const formatFileSize = (bytes) => {
  * Get file extension
  */
 export const getFileExtension = (filename) => {
-  return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2);
+  if (!filename) return '';
+  return filename.split('.').pop();
 };
 
 /**

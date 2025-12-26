@@ -3,6 +3,7 @@ import {
   getArticles,
   type HydratedArticle as Article,
 } from "@modules/articles";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 
 const { env } = Astro.locals.runtime;
 
@@ -27,30 +28,45 @@ if (stories.length === 0) {
 stories = stories.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
 
 // Generate story pages from article data for demo
-const storiesWithPages = stories.map((story) => ({
-  ...story,
-  storyPages: [
-    {
-      imageUrl: story.imageUrl,
-      title: story.headline,
-      text: story.shortDescription || story.tldr || "",
+const storiesWithPages = stories.map((story) => {
+  const preview = extractImage(story.imagesJson, "thumbnail", 120);
+  const cover = extractImage(story.imagesJson, "cover", 1200);
+  const fallback = preview.imageUrl ? preview : cover;
+  const storyImage = cover.imageUrl || preview.imageUrl || story.imageUrl;
+
+  return {
+    ...story,
+    storyImage,
+    storyPreview: {
+      imageUrl: preview.imageUrl || story.imageUrl,
+      imageAlt: preview.imageAlt || story.headline,
+      imageWidth: preview.imageWidth || 80,
+      imageHeight: preview.imageHeight || 80,
+      srcSet: getImageSrcSet(story.imagesJson, "thumbnail"),
     },
-    ...(story.imageUrl
-      ? [
-          {
-            imageUrl: story.imageUrl,
-            title: "Swipe to continue",
-            text: "Tap right to see more",
-          },
-        ]
-      : []),
-    {
-      imageUrl: story.imageUrl,
-      title: story.headline,
-      text: "Ready to cook?",
-    },
-  ],
-}));
+    storyPages: [
+      {
+        imageUrl: storyImage,
+        title: story.headline,
+        text: story.shortDescription || story.tldr || "",
+      },
+      ...(storyImage
+        ? [
+            {
+              imageUrl: storyImage,
+              title: "Swipe to continue",
+              text: "Tap right to see more",
+            },
+          ]
+        : []),
+      {
+        imageUrl: storyImage,
+        title: story.headline,
+        text: "Ready to cook?",
+      },
+    ],
+  };
+});
 ---
 
 {
@@ -69,12 +85,14 @@ const storiesWithPages = stories.map((story) => ({
             >
               <div class="story-ring">
                 <div class="story-image-wrapper">
-                  {story.imageUrl ? (
+                  {story.storyPreview?.imageUrl ? (
                     <img
-                      src={story.imageUrl}
-                      alt={story.headline}
-                      width="80"
-                      height="80"
+                      src={story.storyPreview.imageUrl}
+                      alt={story.storyPreview.imageAlt || story.headline}
+                      width={story.storyPreview.imageWidth || 80}
+                      height={story.storyPreview.imageHeight || 80}
+                      srcset={story.storyPreview.srcSet || undefined}
+                      sizes={story.storyPreview.srcSet ? "80px" : undefined}
                       loading="lazy"
                     />
                   ) : (

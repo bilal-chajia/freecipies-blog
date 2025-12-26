@@ -4,7 +4,7 @@ import SEO from "../../components/SEO.astro";
 import { getArticleBySlug, type RecipeDetails } from "@modules/articles";
 import { getAuthorById, type Author } from "@modules/authors";
 import { getCategoryById, type Category } from "@modules/categories";
-import { hydrateArticle } from "@shared/utils";
+import { hydrateArticle, extractImage } from "@shared/utils";
 
 /**
  * In SSR mode, Astro doesn't require getStaticPaths.
@@ -32,6 +32,10 @@ if (!rawRecipe) {
 const recipe = hydrateArticle(rawRecipe);
 const recipeDetails: RecipeDetails | undefined = recipe.recipeJson || undefined;
 
+const heroCover = extractImage(rawRecipe.imagesJson, "cover", 1200);
+const heroThumb = extractImage(rawRecipe.imagesJson, "thumbnail", 1200);
+const heroImage = heroCover.imageUrl ? heroCover : heroThumb;
+
 // Fetch author data using authorId from the raw article
 if (rawRecipe.authorId) {
   author = await getAuthorById(runtime.env.DB, rawRecipe.authorId);
@@ -54,13 +58,13 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
     type="recipe"
     publishedTime={recipe.publishedAt || undefined}
     author={{ name: author?.name || "Freecipies Team" }}
-    image={recipe.imageUrl || ""}
-    imageAlt={recipe.imageAlt || undefined}
+    image={heroImage.imageUrl || recipe.imageUrl || ""}
+    imageAlt={heroImage.imageAlt || recipe.imageAlt || undefined}
     recipe={recipeDetails
       ? {
           name: recipe.headline,
           description: recipe.shortDescription,
-          image: recipe.imageUrl || "",
+          image: heroImage.imageUrl || recipe.imageUrl || "",
           prepTime: recipeDetails.prepTime
             ? String(recipeDetails.prepTime)
             : undefined,

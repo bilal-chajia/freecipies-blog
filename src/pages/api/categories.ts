@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getCategories, createCategory } from '@modules/categories';
+import { getCategories, createCategory, transformCategoryRequestBody, transformCategoryResponse } from '@modules/categories';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -15,9 +15,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const db = env.DB;
 
     const categories = await getCategories(db);
+    const responseCategories = categories.map(transformCategoryResponse);
 
     // Disable caching for admin panel to always get fresh data
-    const { body, status, headers } = formatSuccessResponse(categories, {
+    const { body, status, headers } = formatSuccessResponse(responseCategories, {
       cacheControl: 'no-cache, no-store, must-revalidate'
     });
     return new Response(body, { status, headers });
@@ -48,9 +49,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const reqBody = await request.json();
-    const category = await createCategory(env.DB, reqBody);
+    const transformedBody = transformCategoryRequestBody(reqBody);
+    const category = await createCategory(env.DB, transformedBody);
+    const responseCategory = transformCategoryResponse(category);
 
-    const { body, status, headers } = formatSuccessResponse(category);
+    const { body, status, headers } = formatSuccessResponse(responseCategory);
     return new Response(body, { status: 201, headers });
   } catch (error) {
     console.error('Error creating category:', error);

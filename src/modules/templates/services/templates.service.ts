@@ -1,91 +1,146 @@
 /**
- * Templates Module - Database Service
- * =====================================
- * Database operations for pin templates.
+ * Template Module - CRUD Service
+ * ===============================
+ * Database operations for templates using Drizzle ORM.
  */
 
-import { eq, and, asc } from 'drizzle-orm';
-import type { D1Database } from '@cloudflare/workers-types';
+import { eq } from 'drizzle-orm';
+import type { DrizzleD1Database } from 'drizzle-orm/d1';
 import { pinTemplates, type PinTemplate, type NewPinTemplate } from '../schema/templates.schema';
-import { createDb } from '../../../shared/database/drizzle';
+import type { TemplateElement, UpdateTemplateInput } from '../types';
 
 /**
  * Get all templates
  */
 export async function getTemplates(
-  db: D1Database,
-  options?: { category?: string; isActive?: boolean }
+  db: DrizzleD1Database,
+  options: { activeOnly?: boolean } = {}
 ): Promise<PinTemplate[]> {
-  const drizzle = createDb(db);
-
-  const conditions: any[] = [];
-
-  if (options?.category) {
-    conditions.push(eq(pinTemplates.category, options.category));
+  const { activeOnly = true } = options;
+  
+  if (activeOnly) {
+    return db.select().from(pinTemplates).where(eq(pinTemplates.isActive, true)).all();
   }
-  if (options?.isActive !== undefined) {
-    conditions.push(eq(pinTemplates.isActive, options.isActive));
-  }
-
-  return await drizzle
-    .select()
-    .from(pinTemplates)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(asc(pinTemplates.name));
+  return db.select().from(pinTemplates).all();
 }
 
 /**
- * Get a template by slug
+ * Get template by slug
  */
-export async function getTemplateBySlug(db: D1Database, slug: string): Promise<PinTemplate | null> {
-  const drizzle = createDb(db);
-  return await drizzle.query.pinTemplates.findFirst({
-    where: eq(pinTemplates.slug, slug),
-  }) || null;
+export async function getTemplateBySlug(
+  db: DrizzleD1Database,
+  slug: string
+): Promise<PinTemplate | undefined> {
+  return db.select().from(pinTemplates).where(eq(pinTemplates.slug, slug)).get();
 }
 
 /**
- * Get a template by ID
+ * Get template by ID
  */
-export async function getTemplateById(db: D1Database, id: number): Promise<PinTemplate | null> {
-  const drizzle = createDb(db);
-  return await drizzle.query.pinTemplates.findFirst({
-    where: eq(pinTemplates.id, id),
-  }) || null;
+export async function getTemplateById(
+  db: DrizzleD1Database,
+  id: number
+): Promise<PinTemplate | undefined> {
+  return db.select().from(pinTemplates).where(eq(pinTemplates.id, id)).get();
 }
 
 /**
- * Create a new template
+ * Create new template
  */
 export async function createTemplate(
-  db: D1Database,
-  template: NewPinTemplate
-): Promise<PinTemplate | null> {
-  const drizzle = createDb(db);
-  const [inserted] = await drizzle.insert(pinTemplates).values(template).returning();
-  return inserted || null;
+  db: DrizzleD1Database,
+  data: {
+    slug: string;
+    name: string;
+    description?: string;
+    category?: string;
+    width?: number;
+    height?: number;
+    elementsJson?: string | TemplateElement[];
+    thumbnailUrl?: string;
+    isActive?: boolean;
+  }
+): Promise<PinTemplate> {
+  const elementsStr = typeof data.elementsJson === 'string'
+    ? data.elementsJson
+    : JSON.stringify(data.elementsJson || []);
+
+  const result = await db.insert(pinTemplates).values({
+    slug: data.slug,
+    name: data.name,
+    description: data.description,
+    category: data.category ?? 'general',
+    width: data.width ?? 1000,
+    height: data.height ?? 1500,
+    elementsJson: elementsStr,
+    thumbnailUrl: data.thumbnailUrl,
+    isActive: data.isActive ?? true,
+  }).returning().get();
+
+  return result;
 }
 
 /**
- * Update a template
+ * Update template by slug
  */
 export async function updateTemplate(
-  db: D1Database,
-  id: number,
-  template: Partial<NewPinTemplate>
-): Promise<boolean> {
-  const drizzle = createDb(db);
-  await drizzle.update(pinTemplates)
-    .set({ ...template, updatedAt: new Date().toISOString() })
-    .where(eq(pinTemplates.id, id));
-  return true;
+  db: DrizzleD1Database,
+  slug: string,
+  data: UpdateTemplateInput
+): Promise<PinTemplate | undefined> {
+  const updates: Partial<NewPinTemplate> = {};
+
+  if (data.name !== undefined) updates.name = data.name;
+  if (data.description !== undefined) updates.description = data.description;
+  if (data.category !== undefined) updates.category = data.category;
+  if (data.width !== undefined) updates.width = data.width;
+  if (data.height !== undefined) updates.height = data.height;
+  if (data.thumbnail_url !== undefined) updates.thumbnailUrl = data.thumbnail_url;
+  if (data.is_active !== undefined) updates.isActive = data.is_active;
+  if (data.slug !== undefined) updates.slug = data.slug;
+  
+  if (data.elements_json !== undefined) {
+    updates.elementsJson = typeof data.elements_json === 'string'
+      ? data.elements_json
+      : JSON.stringify(data.elements_json);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return getTemplateBySlug(db, slug);
+  }
+
+  return db.update(pinTemplates)
+    .set(updates)
+    .where(eq(pinTemplates.slug, slug))
+    .returning()
+    .get();
 }
 
 /**
- * Delete a template
+ * Delete template by slug
  */
-export async function deleteTemplate(db: D1Database, id: number): Promise<boolean> {
-  const drizzle = createDb(db);
-  await drizzle.delete(pinTemplates).where(eq(pinTemplates.id, id));
-  return true;
+export async function deleteTemplate(
+  db: DrizzleD1Database,
+  slug: string
+): Promise<boolean> {
+  const result = await db.delete(pinTemplates)
+    .where(eq(pinTemplates.slug, slug))
+    .returning()
+    .get();
+  
+  return result !== undefined;
+}
+
+/**
+ * Check if slug exists
+ */
+export async function slugExists(
+  db: DrizzleD1Database,
+  slug: string
+): Promise<boolean> {
+  const template = await db.select({ id: pinTemplates.id })
+    .from(pinTemplates)
+    .where(eq(pinTemplates.slug, slug))
+    .get();
+  return template !== undefined;
 }
