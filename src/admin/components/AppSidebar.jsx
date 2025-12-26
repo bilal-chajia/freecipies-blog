@@ -84,7 +84,7 @@ const navGroups = [
         icon: FileText,
         isSubmenu: true,
         items: [
-          { title: "Articles", url: "/articles", icon: FileText },
+          { title: "Blog Posts", url: "/articles", icon: FileText },
           { title: "Recipes", url: "/recipes", icon: Utensils },
           { title: "Roundups", url: "/roundups", icon: Layers },
         ]
