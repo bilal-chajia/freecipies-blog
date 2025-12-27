@@ -21,10 +21,9 @@ const { title, description, image } = Astro.props;
   </head>
   <body class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
     <Header />
-    <main class="flex-1">
+    <main id="main-content" class="flex-1">
       <slot />
     </main>
     <Footer />
   </body>
 </html>
-

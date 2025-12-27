@@ -58,6 +58,7 @@ const authorImage = authorAvatar.imageUrl || author?.imageUrl;
   description={recipe.metaDescription || recipe.shortDescription}
   image={heroImage.imageUrl || recipe.imageUrl || undefined}
 >
+  <slot name="head" slot="head" />
   {
     (heroImage.imageUrl || recipe.imageUrl) && (
       <link

@@ -5,6 +5,7 @@ const logoDark = null;
 ---
 
 <header class="site-header">
+  <a href="#main-content" class="skip-link">Skip to content</a>
   <div class="header-container">
     <div class="header-content">
       <!-- Logo -->
@@ -86,6 +87,8 @@ const logoDark = null;
           class="search-btn"
           aria-label="Search"
           title="Quick and easy search"
+          aria-controls="search-modal"
+          aria-expanded="false"
         >
           <svg
             width="20"
@@ -99,7 +102,12 @@ const logoDark = null;
             <path d="m21 21-4.35-4.35"></path>
           </svg>
         </button>
-        <button class="mobile-menu-btn" aria-label="Show menu">
+        <button
+          class="mobile-menu-btn"
+          aria-label="Show menu"
+          aria-controls="mobile-nav"
+          aria-expanded="false"
+        >
           <svg
             width="24"
             height="24"
@@ -127,10 +135,10 @@ const logoDark = null;
   </nav>
 
   <!-- Search Modal -->
-  <div class="search-modal" id="search-modal">
+  <div class="search-modal" id="search-modal" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="search-modal-content">
       <div class="search-header">
-        <h2>Search Recipes</h2>
+        <h2 id="search-title">Search Recipes</h2>
         <button class="close-search" aria-label="Close search">
           <svg
             width="24"
@@ -169,10 +177,27 @@ const logoDark = null;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 8px;
+    background: #111;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+
+  .skip-link:focus {
+    left: 12px;
+    z-index: 101;
+  }
+
   .header-container {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0 clamp(0.1rem, 1vw, 0.5rem);
+    padding: 0 0.25rem;
   }
 
   .header-content {
@@ -184,7 +209,7 @@ const logoDark = null;
 
   .logo {
     text-decoration: none;
-    margin-left: 0.1rem;
+    margin-left: 0.5rem;
   }
 
   .logo-text {
@@ -197,7 +222,7 @@ const logoDark = null;
   }
 
   .logo-img {
-    height: 60px;
+    height: 50px;
     width: auto;
     object-fit: contain;
   }
@@ -221,7 +246,7 @@ const logoDark = null;
   }
 
   .desktop-nav {
-    display: flex;
+    display: none;
     gap: 2rem;
     align-items: center;
   }
@@ -269,14 +294,14 @@ const logoDark = null;
   }
 
   .mobile-menu-btn {
-    display: none;
+    display: flex;
   }
 
   .mobile-nav {
-    display: none;
+    display: flex;
     flex-direction: column;
     background: white;
-    border-top: 1px solid #e0e0e0;
+    border-top: 0;
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease;
@@ -284,6 +309,7 @@ const logoDark = null;
 
   .mobile-nav.active {
     max-height: 300px;
+    border-top: 1px solid #e0e0e0;
   }
 
   .mobile-nav-link {
@@ -357,6 +383,7 @@ const logoDark = null;
   .search-form {
     display: flex;
     gap: 1rem;
+    flex-direction: column;
   }
 
   .search-input {
@@ -389,38 +416,38 @@ const logoDark = null;
     transform: translateY(-1px);
   }
 
-  @media (max-width: 768px) {
+  @media (min-width: 768px) {
     .header-container {
-      padding: 0 0.25rem;
+      padding: 0 clamp(0.1rem, 1vw, 0.5rem);
     }
 
     .logo {
-      margin-left: 0.5rem;
+      margin-left: 0.1rem;
     }
 
     .logo-img {
-      height: 50px;
+      height: 60px;
     }
 
     .desktop-nav {
-      display: none;
+      display: flex;
     }
 
     .mobile-menu-btn {
-      display: flex;
+      display: none;
     }
 
     .mobile-nav {
-      display: flex;
+      display: none;
     }
 
     .search-modal-content {
-      width: 95%;
-      padding: 1.5rem;
+      width: 90%;
+      padding: 2rem;
     }
 
     .search-form {
-      flex-direction: column;
+      flex-direction: row;
     }
   }
 </style>
@@ -430,8 +457,16 @@ const logoDark = null;
   const mobileMenuBtn = document.querySelector(".mobile-menu-btn");
   const mobileNav = document.querySelector("#mobile-nav");
 
+  const toggleMobileNav = (forceState?: boolean) => {
+    const isOpen = typeof forceState === "boolean"
+      ? forceState
+      : !mobileNav?.classList.contains("active");
+    mobileNav?.classList.toggle("active", isOpen);
+    mobileMenuBtn?.setAttribute("aria-expanded", String(isOpen));
+  };
+
   mobileMenuBtn?.addEventListener("click", () => {
-    mobileNav?.classList.toggle("active");
+    toggleMobileNav();
   });
 
   // Search modal
@@ -439,26 +474,38 @@ const logoDark = null;
   const searchModal = document.querySelector("#search-modal");
   const closeSearch = document.querySelector(".close-search");
 
-  searchBtn?.addEventListener("click", () => {
+  const openSearch = () => {
     searchModal?.classList.add("active");
+    searchModal?.setAttribute("aria-hidden", "false");
+    searchBtn?.setAttribute("aria-expanded", "true");
     (document.querySelector(".search-input") as HTMLElement)?.focus();
+  };
+
+  const closeSearchModal = () => {
+    searchModal?.classList.remove("active");
+    searchModal?.setAttribute("aria-hidden", "true");
+    searchBtn?.setAttribute("aria-expanded", "false");
+  };
+
+  searchBtn?.addEventListener("click", () => {
+    openSearch();
   });
 
   closeSearch?.addEventListener("click", () => {
-    searchModal?.classList.remove("active");
+    closeSearchModal();
   });
 
   searchModal?.addEventListener("click", (e) => {
     if (e.target === searchModal) {
-      searchModal.classList.remove("active");
+      closeSearchModal();
     }
   });
 
   // Close on escape
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      searchModal?.classList.remove("active");
-      mobileNav?.classList.remove("active");
+      closeSearchModal();
+      toggleMobileNav(false);
     }
   });
 </script>
