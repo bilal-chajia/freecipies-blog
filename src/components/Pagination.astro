@@ -1,0 +1,206 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  baseUrl: string;
+  preserveParams?: Record<string, string>;
+}
+
+const { currentPage, totalPages, baseUrl, preserveParams = {} } = Astro.props;
+
+// Build URL with query params
+const buildPageUrl = (page: number) => {
+  const params = new URLSearchParams(preserveParams as Record<string, string>);
+  if (page > 1) params.set('page', String(page));
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+};
+
+// Generate page numbers with ellipsis
+const getPageNumbers = () => {
+  const pages: (number | 'ellipsis')[] = [];
+  const showPages = 5; // Max visible page numbers
+  
+  if (totalPages <= showPages + 2) {
+    // Show all pages if total is small
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    // Always show first page
+    pages.push(1);
+    
+    if (currentPage > 3) pages.push('ellipsis');
+    
+    // Show pages around current
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    
+    for (let i = start; i <= end; i++) pages.push(i);
+    
+    if (currentPage < totalPages - 2) pages.push('ellipsis');
+    
+    // Always show last page
+    pages.push(totalPages);
+  }
+  
+  return pages;
+};
+
+const pages = getPageNumbers();
+const hasPrev = currentPage > 1;
+const hasNext = currentPage < totalPages;
+---
+
+{totalPages > 1 && (
+  <nav class="pagination" aria-label="Pagination">
+    <a 
+      href={hasPrev ? buildPageUrl(currentPage - 1) : undefined}
+      class:list={["pagination-btn", "prev", { disabled: !hasPrev }]}
+      aria-disabled={!hasPrev}
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      <span class="sr-only">Previous</span>
+    </a>
+    
+    <div class="pagination-pages">
+      {pages.map((page) => (
+        page === 'ellipsis' ? (
+          <span class="pagination-ellipsis">…</span>
+        ) : (
+          <a 
+            href={buildPageUrl(page)}
+            class:list={["pagination-page", { active: page === currentPage }]}
+            aria-current={page === currentPage ? 'page' : undefined}
+          >
+            {page}
+          </a>
+        )
+      ))}
+    </div>
+    
+    <a 
+      href={hasNext ? buildPageUrl(currentPage + 1) : undefined}
+      class:list={["pagination-btn", "next", { disabled: !hasNext }]}
+      aria-disabled={!hasNext}
+    >
+      <span class="sr-only">Next</span>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+    </a>
+  </nav>
+)}
+
+<style>
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 3rem 0 1rem;
+  }
+  
+  .pagination-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    background: #f3f4f6;
+    color: #374151;
+    transition: all 0.2s ease;
+  }
+  
+  .pagination-btn:hover:not(.disabled) {
+    background: #e5e7eb;
+    color: #111;
+  }
+  
+  .pagination-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  
+  .pagination-pages {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .pagination-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #374151;
+    transition: all 0.2s ease;
+  }
+  
+  .pagination-page:hover:not(.active) {
+    background: #f3f4f6;
+  }
+  
+  .pagination-page.active {
+    background: linear-gradient(135deg, #ff3366, #ff6b35);
+    color: white;
+    font-weight: 600;
+  }
+  
+  .pagination-ellipsis {
+    padding: 0 0.5rem;
+    color: #9ca3af;
+  }
+  
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  
+  @media (max-width: 640px) {
+    .pagination-pages {
+      display: none;
+    }
+    
+    .pagination-btn {
+      flex: 1;
+      max-width: 8rem;
+    }
+    
+    .pagination-btn::after {
+      content: 'Previous';
+      margin-left: 0.5rem;
+    }
+    
+    .pagination-btn.next::after {
+      content: 'Next';
+      order: -1;
+      margin-left: 0;
+      margin-right: 0.5rem;
+    }
+    
+    .sr-only {
+      position: static;
+      width: auto;
+      height: auto;
+      margin: 0;
+      overflow: visible;
+      clip: auto;
+      white-space: normal;
+    }
+  }
+</style>

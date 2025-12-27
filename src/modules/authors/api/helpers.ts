@@ -47,7 +47,7 @@ const normalizeBioJsonObject = (value: any): BioJson => {
             ? Object.fromEntries(
                 Object.entries(value.socialLinks)
                     .filter(([, url]) => typeof url === 'string' && url.trim().length > 0)
-              )
+            ) as Record<string, string>
             : undefined;
     const socialLinksFromArray = !legacySocialLinks && socials
         ? Object.fromEntries(socials.map((entry) => [entry.network, entry.url]))

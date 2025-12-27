@@ -1,0 +1,246 @@
+---
+interface Props {
+  currentSort: string;
+  currentOrder: string;
+  currentLayout: string;
+  baseUrl: string;
+  showLayoutSwitch?: boolean;
+}
+
+const { 
+  currentSort = 'publishedAt', 
+  currentOrder = 'desc',
+  currentLayout = 'grid',
+  baseUrl,
+  showLayoutSwitch = true
+} = Astro.props;
+
+const sortOptions = [
+  { value: 'publishedAt', label: 'Plus récent' },
+  { value: 'viewCount', label: 'Plus populaire' },
+  { value: 'title', label: 'Alphabétique' },
+];
+
+const buildSortUrl = (sort: string, order: string) => {
+  const params = new URLSearchParams();
+  if (sort !== 'publishedAt') params.set('sortBy', sort);
+  if (order !== 'desc') params.set('sortOrder', order);
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+};
+
+const buildLayoutUrl = (layout: string) => {
+  const params = new URLSearchParams(Astro.url.searchParams);
+  if (layout !== 'grid') {
+    params.set('layout', layout);
+  } else {
+    params.delete('layout');
+  }
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+};
+---
+
+<div class="recipe-filters">
+  <div class="filters-left">
+    <div class="sort-dropdown">
+      <label for="sort-select" class="sr-only">Trier par</label>
+      <select 
+        id="sort-select"
+        class="sort-select"
+        onchange={`window.location.href = this.value`}
+      >
+        {sortOptions.map((option) => (
+          <option 
+            value={buildSortUrl(option.value, currentOrder)}
+            selected={option.value === currentSort}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <svg class="sort-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+    
+    <button 
+      class="order-toggle"
+      onclick={`window.location.href = '${buildSortUrl(currentSort, currentOrder === 'desc' ? 'asc' : 'desc')}'`}
+      title={currentOrder === 'desc' ? 'Ordre croissant' : 'Ordre décroissant'}
+    >
+      {currentOrder === 'desc' ? (
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+        </svg>
+      ) : (
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+        </svg>
+      )}
+    </button>
+  </div>
+  
+  {showLayoutSwitch && (
+    <div class="layout-switcher">
+      <a 
+        href={buildLayoutUrl('grid')}
+        class:list={["layout-btn", { active: currentLayout === 'grid' }]}
+        title="Grille"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+        </svg>
+      </a>
+      <a 
+        href={buildLayoutUrl('list')}
+        class:list={["layout-btn", { active: currentLayout === 'list' }]}
+        title="Liste"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+      </a>
+      <a 
+        href={buildLayoutUrl('masonry')}
+        class:list={["layout-btn", { active: currentLayout === 'masonry' }]}
+        title="Masonry"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </a>
+    </div>
+  )}
+</div>
+
+<style>
+  .recipe-filters {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .filters-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .sort-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .sort-select {
+    appearance: none;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .sort-select:hover {
+    border-color: #d1d5db;
+    background: #f3f4f6;
+  }
+  
+  .sort-select:focus {
+    outline: none;
+    border-color: #ff3366;
+    box-shadow: 0 0 0 3px rgba(255, 51, 102, 0.1);
+  }
+  
+  .sort-chevron {
+    position: absolute;
+    right: 0.75rem;
+    width: 1rem;
+    height: 1rem;
+    color: #6b7280;
+    pointer-events: none;
+  }
+  
+  .order-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .order-toggle:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+  
+  .layout-switcher {
+    display: flex;
+    background: #f3f4f6;
+    border-radius: 0.5rem;
+    padding: 0.25rem;
+  }
+  
+  .layout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    color: #6b7280;
+    transition: all 0.2s ease;
+  }
+  
+  .layout-btn:hover {
+    color: #374151;
+  }
+  
+  .layout-btn.active {
+    background: white;
+    color: #ff3366;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  
+  @media (max-width: 640px) {
+    .recipe-filters {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+    }
+    
+    .filters-left {
+      justify-content: space-between;
+    }
+    
+    .layout-switcher {
+      justify-content: center;
+    }
+  }
+</style>
