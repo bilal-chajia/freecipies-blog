@@ -8,6 +8,8 @@ import ExcerptsSection from './ExcerptsSection';
 export default function EditorSidebar({
     formData,
     onInputChange,
+    imagesData,
+    onImageRemove,
     onSave,
     saving,
     isEditMode,
@@ -38,7 +40,9 @@ export default function EditorSidebar({
 
                     <MediaSection
                         formData={formData}
+                        imagesData={imagesData}
                         onInputChange={onInputChange}
+                        onImageRemove={onImageRemove}
                         onMediaDialogOpen={onMediaDialogOpen}
                     />
 

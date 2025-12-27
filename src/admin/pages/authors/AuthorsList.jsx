@@ -29,6 +29,8 @@ import { Badge } from '@/ui/badge.jsx';
 import { authorsAPI } from '../../services/api';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
 import { toast } from 'sonner';
+import { extractImage, getImageSrcSet } from '@shared/utils';
+import { toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
 
 const AuthorsList = () => {
   const location = useLocation();
@@ -181,16 +183,29 @@ const AuthorsList = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="hover:bg-accent/30 transition-colors group"
-                      >
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-11 w-11 border-2 border-background shadow-sm ring-1 ring-border/50">
-                              <AvatarImage src={author.imageUrl} alt={author.name} className="object-cover" />
-                              <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold uppercase">
-                                {author.name?.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
+                      className="hover:bg-accent/30 transition-colors group"
+                    >
+                      <td className="px-6 py-5 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-11 w-11 border-2 border-background shadow-sm ring-1 ring-border/50">
+                            {(() => {
+                              const avatar = extractImage(author.imagesJson, 'avatar', 120);
+                              const avatarUrl = toAdminImageUrl(avatar.imageUrl || author.imageUrl || '');
+                              const avatarSrcSet = toAdminSrcSet(getImageSrcSet(author.imagesJson, 'avatar'));
+                              return (
+                                <AvatarImage
+                                  src={avatarUrl}
+                                  alt={author.name}
+                                  srcSet={avatarSrcSet || undefined}
+                                  sizes={avatarSrcSet ? '44px' : undefined}
+                                  className="object-cover"
+                                />
+                              );
+                            })()}
+                            <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold uppercase">
+                              {author.name?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
                             <div>
                               <div className="font-bold text-sm tracking-tight">{author.name}</div>
                               <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] mt-0.5">

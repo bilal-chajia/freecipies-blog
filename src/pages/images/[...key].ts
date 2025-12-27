@@ -57,6 +57,7 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
         }
 
         headers.set('etag', etag);
+        headers.set('Accept-Ranges', 'bytes');
 
         return new Response(object.body as any, {
             headers,

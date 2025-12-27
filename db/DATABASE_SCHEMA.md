@@ -739,7 +739,10 @@ contact_info    → Contact details
   "showPagination": true,
   "sortBy": "publishedAt",
   "sortOrder": "desc",
-  "headerStyle": "hero"
+  "headerStyle": "hero",
+  "tldr": "Quick summary text",
+  "showInNav": true,
+  "showInFooter": false
 }
 ```
 
@@ -755,6 +758,20 @@ contact_info    → Contact details
 | sortBy         | string  | `publishedAt`, `title`, `viewCount` | `publishedAt` |
 | sortOrder      | string  | `asc`, `desc`                       | `desc`        |
 | headerStyle    | string  | `hero`, `minimal`, `none`           | `hero`        |
+| tldr           | string  | -                                   | null          |
+| showInNav      | boolean | -                                   | null          |
+| showInFooter   | boolean | -                                   | null          |
+
+---
+
+### i18n_json (Categories - locale overrides)
+
+```json
+{
+  "fr": { "label": "Petit-déjeuner", "headline": "Recettes du matin" },
+  "es": { "label": "Desayuno", "headline": "Recetas de desayuno" }
+}
+```
 
 ---
 

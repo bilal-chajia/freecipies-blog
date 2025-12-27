@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const publicUrl = (env as any).ENVIRONMENT === 'production' ? env.R2_PUBLIC_URL : '/images';
+    const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
 
     // Parse form data
     const formData = await request.formData();

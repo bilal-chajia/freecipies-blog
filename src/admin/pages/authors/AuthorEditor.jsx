@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/ui/button.jsx';
 import { ArrowLeft } from 'lucide-react';
 import { authorsAPI } from '../../services/api';
-import { generateSlug } from '../../utils/helpers';
+import { buildImageSlotFromMedia, generateSlug } from '../../utils/helpers';
 import MediaDialog from '../../components/MediaDialog';
 import AuthorSidebar from '../../components/AuthorSidebar';
 import AuthorEditorMain from '../../components/AuthorEditorMain';
@@ -175,12 +175,10 @@ const AuthorEditor = () => {
 
   const handleMediaSelect = (item) => {
     if (activeImageType) {
-      handleImageChange(activeImageType, {
-        url: item.url,
-        alt: item.altText || formData.name,
-        width: item.width,
-        height: item.height,
+      const slot = buildImageSlotFromMedia(item, {
+        alt: formData.name || item.altText || '',
       });
+      handleImageChange(activeImageType, slot);
     }
     setMediaDialogOpen(false);
     setActiveImageType(null);

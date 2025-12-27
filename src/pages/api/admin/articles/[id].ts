@@ -4,11 +4,13 @@ import {
     updateArticleById,
     deleteArticleById,
     toggleOnlineById,
-    toggleFavoriteById
+    toggleFavoriteById,
+    syncCachedFields
 } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { transformArticleRequestBody } from '../../../../modules/articles/api/helpers';
 
 export const prerender = false;
 
@@ -89,34 +91,8 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
 
         const requestBody = await request.json();
 
-        // Transform flat frontend fields to nested structure if needed
-        const transformedData: any = { ...requestBody };
-
-        // Convert flat image fields to images_json structure
-        if (requestBody.imageUrl) {
-            transformedData.imagesJson = {
-                ...(typeof requestBody.imagesJson === 'object' ? requestBody.imagesJson : {}),
-                cover: {
-                    url: requestBody.imageUrl,
-                    alt: requestBody.imageAlt || '',
-                    width: requestBody.imageWidth,
-                    height: requestBody.imageHeight
-                }
-            };
-        }
-
-        // Convert flat cover fields if separate from image
-        if (requestBody.coverUrl) {
-            transformedData.imagesJson = {
-                ...(typeof transformedData.imagesJson === 'object' ? transformedData.imagesJson : {}),
-                cover: {
-                    url: requestBody.coverUrl,
-                    alt: requestBody.coverAlt || '',
-                    width: requestBody.coverWidth,
-                    height: requestBody.coverHeight
-                }
-            };
-        }
+        // Standardized normalization using helper
+        const transformedData = transformArticleRequestBody(requestBody);
 
         const success = await updateArticleById(env.DB, id, transformedData);
 
@@ -126,6 +102,9 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
             );
             return new Response(body, { status, headers });
         }
+
+        // Automatically synchronize cached fields (zero-join optimization)
+        await syncCachedFields(env.DB, id);
 
         // Fetch updated article to return
         const updatedArticle = await getArticleById(env.DB, id);
@@ -234,6 +213,11 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
                 new AppError(ErrorCodes.NOT_FOUND, 'Article not found', 404)
             );
             return new Response(body, { status, headers });
+        }
+
+        // If toggled online, also sync cached fields to be safe (though not strictly required for just online toggle)
+        if (action === 'toggle-online') {
+            await syncCachedFields(env.DB, id);
         }
 
         const { body, status, headers } = formatSuccessResponse({ id, ...result });

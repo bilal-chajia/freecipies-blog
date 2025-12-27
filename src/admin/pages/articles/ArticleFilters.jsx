@@ -16,10 +16,10 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu.jsx';
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger
 } from '@/ui/popover.jsx';
 
 const ArticleFilters = ({
@@ -31,11 +31,13 @@ const ArticleFilters = ({
     onClearFilters,
     categories,
     authors,
-    tags
+    tags,
+    fixedType
 }) => {
-    const activeFilterCount = Object.values(localFilters).filter(v => 
-      v !== '' && v !== 'all' && (!Array.isArray(v) || v.length > 0)
-    ).length;
+    const activeFilterCount = Object.entries(localFilters).filter(([key, value]) => {
+        if (fixedType && key === 'type') return false;
+        return value !== '' && value !== 'all' && (!Array.isArray(value) || value.length > 0);
+    }).length;
 
     return (
         <div className="flex flex-col gap-4">
@@ -67,10 +69,10 @@ const ArticleFilters = ({
                     </Button>
 
                     {hasActiveFilters && (
-                        <Button 
-                          variant="ghost" 
-                          onClick={onClearFilters} 
-                          className="h-11 px-4 rounded-xl text-muted-foreground hover:text-foreground hover:bg-transparent text-sm gap-2"
+                        <Button
+                            variant="ghost"
+                            onClick={onClearFilters}
+                            className="h-11 px-4 rounded-xl text-muted-foreground hover:text-foreground hover:bg-transparent text-sm gap-2"
                         >
                             <X className="w-4 h-4" />
                             Clear
@@ -82,22 +84,24 @@ const ArticleFilters = ({
             {/* Advanced Filters Panel */}
             {showFilters && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 bg-accent/30 rounded-2xl border border-dashed border-border/60 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 ml-1">Content Type</label>
-                        <Select
-                            value={localFilters.type}
-                            onValueChange={(value) => onFilterChange('type', value)}
-                        >
-                            <SelectTrigger className="h-10 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg">
-                                <SelectValue placeholder="All Types" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Content</SelectItem>
-                                <SelectItem value="article">Articles</SelectItem>
-                                <SelectItem value="recipe">Recipes</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {!fixedType && (
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 ml-1">Content Type</label>
+                            <Select
+                                value={localFilters.type}
+                                onValueChange={(value) => onFilterChange('type', value)}
+                            >
+                                <SelectTrigger className="h-10 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg">
+                                    <SelectValue placeholder="All Types" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Content</SelectItem>
+                                    <SelectItem value="article">Articles</SelectItem>
+                                    <SelectItem value="recipe">Recipes</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
 
                     <div className="space-y-1.5">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 ml-1">Category</label>
@@ -204,28 +208,28 @@ const ArticleFilters = ({
                     </div>
 
                     <div className="space-y-1.5 lg:col-span-2">
-                      <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 ml-1">Published Within</label>
-                      <div className="flex items-center gap-2 h-10">
-                        <div className="relative flex-1">
-                          <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                          <Input
-                              type="date"
-                              value={localFilters.dateFrom}
-                              onChange={(e) => onFilterChange('dateFrom', e.target.value)}
-                              className="h-10 pl-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg text-xs"
-                          />
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 ml-1">Published Within</label>
+                        <div className="flex items-center gap-2 h-10">
+                            <div className="relative flex-1">
+                                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                                <Input
+                                    type="date"
+                                    value={localFilters.dateFrom}
+                                    onChange={(e) => onFilterChange('dateFrom', e.target.value)}
+                                    className="h-10 pl-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg text-xs"
+                                />
+                            </div>
+                            <span className="text-muted-foreground/40 text-xs">to</span>
+                            <div className="relative flex-1">
+                                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                                <Input
+                                    type="date"
+                                    value={localFilters.dateTo}
+                                    onChange={(e) => onFilterChange('dateTo', e.target.value)}
+                                    className="h-10 pl-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg text-xs"
+                                />
+                            </div>
                         </div>
-                        <span className="text-muted-foreground/40 text-xs">to</span>
-                        <div className="relative flex-1">
-                          <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                          <Input
-                              type="date"
-                              value={localFilters.dateTo}
-                              onChange={(e) => onFilterChange('dateTo', e.target.value)}
-                              className="h-10 pl-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg text-xs"
-                          />
-                        </div>
-                      </div>
                     </div>
                 </div>
             )}

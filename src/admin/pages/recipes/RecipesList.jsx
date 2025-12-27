@@ -1,11 +1,21 @@
-import ArticlesList from '../articles/ArticlesList';
+import ContentListBase from '../../components/shared/ContentListBase';
+import { Utensils } from 'lucide-react';
 
-/**
- * Recipes List Page
- * Wrapper that renders ArticlesList with type=recipe filter
- */
 const RecipesList = () => {
-    return <ArticlesList fixedType="recipe" />;
+    return (
+        <ContentListBase
+            contentType="recipe"
+            title="Recipes"
+            description="Manage your culinary creations and cooking instructions."
+            newButtonLabel="New Recipe"
+            newButtonPath="/recipes/new"
+            editPathPrefix="/recipes"
+            editIdField="slug"
+            livePathPrefix="/recipes"
+            typeIcon={Utensils}
+            statsLabel="Total Recipes"
+        />
+    );
 };
 
 export default RecipesList;

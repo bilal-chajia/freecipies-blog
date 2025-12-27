@@ -1,11 +1,21 @@
-import ArticlesList from '../articles/ArticlesList';
+import ContentListBase from '../../components/shared/ContentListBase';
+import { Layers } from 'lucide-react';
 
-/**
- * Roundups List Page
- * Wrapper that renders ArticlesList with type=roundup filter
- */
 const RoundupsList = () => {
-    return <ArticlesList fixedType="roundup" />;
+    return (
+        <ContentListBase
+            contentType="roundup"
+            title="Roundups"
+            description="Curate collections of your best content."
+            newButtonLabel="New Roundup"
+            newButtonPath="/roundups/new"
+            editPathPrefix="/roundups"
+            editIdField="slug"
+            livePathPrefix="/roundups"
+            typeIcon={Layers}
+            statsLabel="Total Roundups"
+        />
+    );
 };
 
 export default RoundupsList;

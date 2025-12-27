@@ -4,7 +4,7 @@ import SEO from "../../components/SEO.astro";
 import { getArticleBySlug, type RecipeDetails } from "@modules/articles";
 import { getAuthorById, type Author } from "@modules/authors";
 import { getCategoryById, type Category } from "@modules/categories";
-import { hydrateArticle, extractImage } from "@shared/utils";
+import { hydrateArticle, extractImage, getImageSrcSet } from "@shared/utils";
 
 /**
  * In SSR mode, Astro doesn't require getStaticPaths.
@@ -22,28 +22,30 @@ let author: Author | null = null;
 let category: Category | null = null;
 
 // The D1 binding is available on `runtime.env.DB`
-const rawRecipe = await getArticleBySlug(runtime.env.DB, slug, "recipe");
+const recipe = await getArticleBySlug(runtime.env.DB, slug, "recipe");
 
 // If no recipe is found for the slug, return a 404 page.
-if (!rawRecipe) {
+if (!recipe) {
   return new Response("Recipe not found", { status: 404 });
 }
 
-const recipe = hydrateArticle(rawRecipe);
 const recipeDetails: RecipeDetails | undefined = recipe.recipeJson || undefined;
 
-const heroCover = extractImage(rawRecipe.imagesJson, "cover", 1200);
-const heroThumb = extractImage(rawRecipe.imagesJson, "thumbnail", 1200);
-const heroImage = heroCover.imageUrl ? heroCover : heroThumb;
+const heroCover = extractImage(recipe.imagesJson, "cover", 1200);
+const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);
+const coverSrcSet = getImageSrcSet(recipe.imagesJson, "cover");
+const thumbSrcSet = getImageSrcSet(recipe.imagesJson, "thumbnail");
+const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
+const heroImage = useCover ? heroCover : heroThumb;
 
 // Fetch author data using authorId from the raw article
-if (rawRecipe.authorId) {
-  author = await getAuthorById(runtime.env.DB, rawRecipe.authorId);
+if (recipe.authorId) {
+  author = await getAuthorById(runtime.env.DB, recipe.authorId);
 }
 
 // Fetch category data using categoryId from the raw article
-if (rawRecipe.categoryId) {
-  category = await getCategoryById(runtime.env.DB, rawRecipe.categoryId);
+if (recipe.categoryId) {
+  category = await getCategoryById(runtime.env.DB, recipe.categoryId);
 }
 
 const pageTitle = recipe.metaTitle || recipe.headline;

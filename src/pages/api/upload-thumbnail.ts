@@ -24,7 +24,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
 
         const bucket = env.IMAGES;
-        const publicUrl = (env as any).ENVIRONMENT === 'production' ? env.R2_PUBLIC_URL : '/images';
+        const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
 
         // Authenticate and authorize user
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;

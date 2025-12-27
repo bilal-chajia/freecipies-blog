@@ -94,6 +94,126 @@ export const isValidJSON = (str) => {
 };
 
 // ============================================
+// MEDIA VARIANT UTILITIES
+// ============================================
+
+export const parseVariantsJson = (value) => {
+  if (!value) return null;
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const normalizeVariantEntry = (variant) => {
+  if (!variant || typeof variant !== 'object') return null;
+  if (!variant.url) return null;
+  return {
+    url: variant.url,
+    width: variant.width ?? 0,
+    height: variant.height ?? 0,
+    sizeBytes: variant.sizeBytes ?? variant.size_bytes,
+  };
+};
+
+const normalizeMediaVariants = (parsed) => {
+  if (!parsed || typeof parsed !== 'object') return null;
+  if (parsed.variants && typeof parsed.variants === 'object') {
+    return parsed.variants;
+  }
+  return parsed;
+};
+
+export const buildImageSlotFromMedia = (item, overrides = {}) => {
+  const parsed = parseVariantsJson(item?.variantsJson || item?.variants_json);
+  const variantMap = normalizeMediaVariants(parsed);
+  const variants = {};
+
+  if (variantMap && typeof variantMap === 'object') {
+    Object.entries(variantMap).forEach(([key, variant]) => {
+      const normalized = normalizeVariantEntry(variant);
+      if (normalized?.url) {
+        variants[key] = normalized;
+      }
+    });
+  }
+
+  const alt = overrides.alt ?? item?.altText ?? item?.alt ?? '';
+  const caption = overrides.caption ?? item?.caption ?? '';
+  const credit = overrides.credit ?? item?.credit ?? '';
+  const placeholder = overrides.placeholder ?? parsed?.placeholder ?? item?.placeholder ?? '';
+  const aspectRatio = overrides.aspectRatio ?? item?.aspectRatio ?? item?.aspect_ratio;
+  const focalPointRaw = overrides.focal_point ?? item?.focalPointJson ?? item?.focal_point_json;
+  const focalPoint = (() => {
+    if (!focalPointRaw) return undefined;
+    if (typeof focalPointRaw === 'object') return focalPointRaw;
+    try {
+      return JSON.parse(focalPointRaw);
+    } catch {
+      return undefined;
+    }
+  })();
+
+  const slot = {
+    media_id: item?.id ?? overrides.media_id,
+    alt: alt || undefined,
+    caption: caption || undefined,
+    credit: credit || undefined,
+    placeholder: placeholder || undefined,
+    aspectRatio: aspectRatio || undefined,
+    focal_point: focalPoint,
+    variants: Object.keys(variants).length ? variants : undefined,
+  };
+
+  if (!slot.variants && item?.url) {
+    slot.url = item.url;
+    if (item.width != null) slot.width = item.width;
+    if (item.height != null) slot.height = item.height;
+  }
+
+  return slot;
+};
+
+const ADMIN_IMAGE_PREFIX = '/api/images/';
+const PUBLIC_IMAGE_PREFIX = '/images/';
+
+export const toAdminImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return url || '';
+  if (url.includes(ADMIN_IMAGE_PREFIX)) return url;
+
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed, 'http://admin.local');
+    if (parsed.pathname.startsWith(PUBLIC_IMAGE_PREFIX)) {
+      parsed.pathname = parsed.pathname.replace(PUBLIC_IMAGE_PREFIX, ADMIN_IMAGE_PREFIX);
+      const isAbsolute = /^https?:\/\//i.test(trimmed);
+      return isAbsolute ? parsed.toString() : `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch {
+    // Fall through to original value
+  }
+
+  return trimmed;
+};
+
+export const toAdminSrcSet = (srcSet) => {
+  if (!srcSet || typeof srcSet !== 'string') return srcSet || '';
+  return srcSet
+    .split(',')
+    .map((entry) => {
+      const trimmed = entry.trim();
+      if (!trimmed) return '';
+      const [url, ...rest] = trimmed.split(/\s+/);
+      const updatedUrl = toAdminImageUrl(url);
+      return [updatedUrl, ...rest].join(' ');
+    })
+    .filter(Boolean)
+    .join(', ');
+};
+
+// ============================================
 // FILE UTILITIES
 // ============================================
 
@@ -337,5 +457,6 @@ export default {
   getTypeColor,
   copyToClipboard,
   debounce,
+  parseVariantsJson,
+  buildImageSlotFromMedia,
 };
-

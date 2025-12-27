@@ -57,11 +57,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(body, { status: 201, headers });
   } catch (error) {
     console.error('Error creating category:', error);
-    const { body, status, headers } = formatErrorResponse(
-      error instanceof AppError
-        ? error
-        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to create category', 500)
-    );
+    const appErr = error instanceof AppError
+      ? error
+      : (error as any)?.code === 'VALIDATION_ERROR'
+        ? new AppError(ErrorCodes.VALIDATION_ERROR, error.message, 400)
+        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to create category', 500);
+
+    const { body, status, headers } = formatErrorResponse(appErr);
     return new Response(body, { status, headers });
   }
 };

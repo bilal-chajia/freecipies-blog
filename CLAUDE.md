@@ -30,7 +30,6 @@
 | :----------------- | :------ | :------------------ |
 | `react-router-dom` | 6.27.0  | Admin SPA Routing   |
 | `zustand`          | 5.0.0   | State Management    |
-| `zod`              | 3.23.8  | Validation          |
 | `jose`             | 5.9.6   | JWT Auth            |
 | `react-hook-form`  | 7.53.0  | Form Management     |
 | `react-easy-crop`  | 5.5.6   | Image Cropping      |
@@ -105,13 +104,13 @@
 
 1. **Use Drizzle ORM** - never raw SQL unless optimizing specific queries
 2. **Flat schema** - `imageUrl`, `imageWidth`, `imageHeight` directly on records, NOT nested objects
-3. **Parse JSON fields** - `recipeJson` and `faqsJson` are stored as TEXT, parse with `safeParseJson()` in `db.ts`
+3. **Parse JSON fields** - `recipeJson` and `faqsJson` are stored as TEXT, parse with `safeParseJson()` in `src/shared/utils/hydration.ts`
 4. **Handle nulls** - Convert `null` to `undefined` with `|| undefined` for component props
 
 ### TypeScript
 
 1. **Strict mode** - no `any` types unless absolutely necessary
-2. **Import types** from `src/types/index.ts`
+2. **Import types** from `src/shared/types/index.ts`
 3. **Use existing patterns** - check `src/lib/` for utilities before creating new ones
 
 ### Agent Behavior
@@ -127,7 +126,7 @@
 2. **Use MCP for latest features** - Always query MCP servers (shadcn, context7, etc.) to ensure using the most current API patterns and features before writing code
 3. **Check existing code** - Always search the codebase for existing patterns before writing new code
 4. **Verify versions** - Ensure any code examples match the versions listed in this file
-5. **Reference key files** - Read `src/lib/db.ts`, `src/types/index.ts`, and `src/lib/schema.ts` before database work
+5. **Reference key files** - Read `src/shared/database/drizzle.ts`, `src/shared/types/index.ts`, and `src/shared/database/schema.ts` before database work
 
 ---
 
@@ -163,8 +162,8 @@ src/
 │   └── *.astro        # Header, Footer, Cards, etc.
 ├── layouts/           # Page layouts (RecipeLayout, Layout)
 ├── lib/               # Legacy utilities (being migrated to modules)
-│   ├── db.ts          # Database functions
-│   ├── schema.ts      # Drizzle schema definitions
+│   ├── drizzle.ts     # Drizzle helpers (re-export)
+│   ├── api.ts         # API fetch helpers
 │   ├── auth.ts        # JWT authentication
 │   └── error-handler.ts # Standardized API responses
 ├── pages/
@@ -275,9 +274,9 @@ recipeDetails = recipe.recipeJson; // may be null
 
 | Purpose            | File                       |
 | :----------------- | :------------------------- |
-| Database functions | `src/lib/db.ts`            |
-| Type definitions   | `src/types/index.ts`       |
-| Schema definitions | `src/lib/schema.ts`        |
+| Database functions | `src/shared/database/drizzle.ts`            |
+| Type definitions   | `src/shared/types/index.ts`       |
+| Schema definitions | `src/shared/database/schema.ts`        |
 | Error handling     | `src/lib/error-handler.ts` |
 | Auth utilities     | `src/lib/auth.ts`          |
 
@@ -404,7 +403,7 @@ const secret = "my-secret-key"; // NEVER DO THIS
 ### Naming Patterns
 
 - **Components**: PascalCase (`RecipeCard.astro`)
-- **Utilities**: camelCase (`db.ts`, `errorHandler.ts`)
+- **Utilities**: camelCase (`drizzle.ts`, `errorHandler.ts`)
 - **API routes**: kebab-case for folders (`/api/pinterest-boards/`)
 - **CSS classes**: kebab-case via Tailwind
 

@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500);
         }
 
-        const publicUrl = (env as any).ENVIRONMENT === 'production' ? env.R2_PUBLIC_URL : '/images';
+        const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
 
         // Authenticate
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
@@ -22,13 +22,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
 
         const body = await request.json() as { 
-            imageUrl: string; 
+            imageUrl?: string;
+            url?: string;
             alt?: string; 
             attribution?: string; 
             caption?: string;
         };
         
-        const { imageUrl, alt, attribution, caption } = body;
+        const imageUrl = body.imageUrl || body.url;
+        const { alt, attribution, caption } = body;
 
         if (!imageUrl) {
             throw new AppError(ErrorCodes.VALIDATION_ERROR, 'No URL provided', 400);

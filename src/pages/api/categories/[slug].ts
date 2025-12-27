@@ -1,5 +1,14 @@
 import type { APIRoute } from 'astro';
-import { getCategoryBySlug, updateCategory, deleteCategory, transformCategoryRequestBody, transformCategoryResponse } from '@modules/categories';
+import {
+    getCategoryBySlug,
+    getCategoryById,
+    updateCategory,
+    updateCategoryById,
+    deleteCategory,
+    deleteCategoryById,
+    transformCategoryRequestBody,
+    transformCategoryResponse
+} from '@modules/categories';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -32,7 +41,7 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
 
     if (!slug) {
         const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug or ID is required', 400)
         );
         return new Response(body, { status, headers });
     }
@@ -44,7 +53,10 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
         }
         const db = env.DB;
 
-        const category = await getCategoryBySlug(db, slug);
+        const isNumeric = /^\d+$/.test(slug);
+        const category = isNumeric
+            ? await getCategoryById(db, parseInt(slug, 10))
+            : await getCategoryBySlug(db, slug);
 
         if (!category) {
             const { body, status, headers } = formatErrorResponse(
@@ -80,7 +92,7 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
 
     if (!slug) {
         const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug or ID is required', 400)
         );
         return new Response(body, { status, headers });
     }
@@ -97,8 +109,15 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
         const body = await request.json();
         const transformedBody = transformCategoryRequestBody(body);
 
+        // DEBUG: Check if iconSvg is in the transformed body
+        console.log('Backend received iconSvg:', transformedBody.iconSvg ? transformedBody.iconSvg.substring(0, 50) : 'NOT PRESENT');
+
+        const isNumeric = /^\d+$/.test(slug);
+
         // Check if image is being changed or removed - delete old image if so
-        const existingCategory = await getCategoryBySlug(env.DB, slug);
+        const existingCategory = isNumeric
+            ? await getCategoryById(env.DB, parseInt(slug, 10))
+            : await getCategoryBySlug(env.DB, slug);
         const oldImageUrl = getThumbnailUrlFromImagesJson(existingCategory?.imagesJson);
         const shouldCheckImage = transformedBody.imagesJson !== undefined;
         const newImageUrl = shouldCheckImage
@@ -138,7 +157,9 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
             }
         }
 
-        const category = await updateCategory(env.DB, slug, transformedBody);
+        const category = isNumeric
+            ? await updateCategoryById(env.DB, parseInt(slug, 10), transformedBody)
+            : await updateCategory(env.DB, slug, transformedBody);
 
         if (!category) {
             const { body: errBody, status, headers } = formatErrorResponse(
@@ -152,11 +173,13 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
         return new Response(respBody, { status, headers });
     } catch (error) {
         console.error('Error updating category:', error);
-        const { body, status, headers } = formatErrorResponse(
-            error instanceof AppError
-                ? error
-                : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to update category', 500)
-        );
+        const appErr = error instanceof AppError
+            ? error
+            : (error as any)?.code === 'VALIDATION_ERROR'
+                ? new AppError(ErrorCodes.VALIDATION_ERROR, (error as Error).message, 400)
+                : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to update category', 500);
+
+        const { body, status, headers } = formatErrorResponse(appErr);
         return new Response(body, { status, headers });
     }
 };
@@ -166,7 +189,7 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
 
     if (!slug) {
         const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
+            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug or ID is required', 400)
         );
         return new Response(body, { status, headers });
     }
@@ -180,7 +203,10 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        const success = await deleteCategory(env.DB, slug);
+        const isNumeric = /^\d+$/.test(slug);
+        const success = isNumeric
+            ? await deleteCategoryById(env.DB, parseInt(slug, 10))
+            : await deleteCategory(env.DB, slug);
 
         if (!success) {
             const { body, status, headers } = formatErrorResponse(

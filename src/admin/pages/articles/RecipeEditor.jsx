@@ -21,6 +21,7 @@ const RecipeEditor = () => {
         saving,
         isEditMode,
         formData,
+        imagesData,
         categories,
         authors,
         tags,
@@ -38,6 +39,7 @@ const RecipeEditor = () => {
         mediaDialogOpen,
         setMediaDialogOpen,
         handleMediaSelect,
+        handleImageRemove,
         handleInputChange,
         handleSave,
         openMediaDialog,
@@ -70,7 +72,9 @@ const RecipeEditor = () => {
     const sidebarContent = (
         <EditorSidebar
             formData={formData}
+            imagesData={imagesData}
             onInputChange={handleInputChange}
+            onImageRemove={handleImageRemove}
             onSave={handleSave}
             saving={saving}
             isEditMode={isEditMode}

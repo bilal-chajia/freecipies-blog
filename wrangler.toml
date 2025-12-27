@@ -22,7 +22,7 @@ preview_bucket_name = "recipes-saas-media"
 # Environment Variables
 [vars]
 ENVIRONMENT = "development"
-R2_PUBLIC_URL = "http://localhost:4321/api/images"  # Local dev URL
+R2_PUBLIC_URL = "http://localhost:4321/images"  # Local dev URL
 # Auth secrets - for local development only. In production, use wrangler secrets.
 JWT_SECRET = "Bildev2025"
 ADMIN_USERNAME = "admin@recipes-saas.com"

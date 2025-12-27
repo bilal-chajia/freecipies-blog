@@ -60,6 +60,19 @@ export async function getCategoryById(db: D1Database, id: number): Promise<Categ
 }
 
 /**
+ * Calculate depth based on parentId
+ * Returns 0 for root categories, parent.depth + 1 for child categories
+ */
+async function calculateDepth(db: D1Database, parentId: number | null | undefined): Promise<number> {
+  if (!parentId) return 0;
+
+  const parent = await getCategoryById(db, parentId);
+  if (!parent) return 0;
+
+  return (parent.depth || 0) + 1;
+}
+
+/**
  * Create a new category
  */
 export async function createCategory(
@@ -68,7 +81,13 @@ export async function createCategory(
 ): Promise<Category | null> {
   const drizzle = createDb(db);
 
-  const [inserted] = await drizzle.insert(categories).values(category).returning();
+  // Auto-calculate depth based on parentId
+  const depth = await calculateDepth(db, category.parentId);
+
+  const [inserted] = await drizzle.insert(categories).values({
+    ...category,
+    depth,
+  }).returning();
   return inserted || null;
 }
 
@@ -82,8 +101,14 @@ export async function updateCategory(
 ): Promise<Category | null> {
   const drizzle = createDb(db);
 
+  // Recalculate depth if parentId is being changed
+  const depth = category.parentId !== undefined
+    ? await calculateDepth(db, category.parentId)
+    : undefined;
+
   const updateData = {
     ...category,
+    ...(depth !== undefined ? { depth } : {}),
     updatedAt: new Date().toISOString(),
   };
 
@@ -95,12 +120,51 @@ export async function updateCategory(
 }
 
 /**
+ * Update a category by ID
+ */
+export async function updateCategoryById(
+  db: D1Database,
+  id: number,
+  category: Partial<NewCategory>
+): Promise<Category | null> {
+  const drizzle = createDb(db);
+
+  // Recalculate depth if parentId is being changed
+  const depth = category.parentId !== undefined
+    ? await calculateDepth(db, category.parentId)
+    : undefined;
+
+  const updateData = {
+    ...category,
+    ...(depth !== undefined ? { depth } : {}),
+    updatedAt: new Date().toISOString(),
+  };
+
+  await drizzle.update(categories)
+    .set(updateData)
+    .where(eq(categories.id, id));
+
+  return getCategoryById(db, id);
+}
+
+/**
  * Soft delete a category
  */
 export async function deleteCategory(db: D1Database, slug: string): Promise<boolean> {
   const drizzle = createDb(db);
-  await drizzle.update(categories)
+  const result = await drizzle.update(categories)
     .set({ deletedAt: new Date().toISOString() })
     .where(eq(categories.slug, slug));
-  return true;
+  return (result.rowsAffected ?? 0) > 0;
+}
+
+/**
+ * Soft delete a category by ID
+ */
+export async function deleteCategoryById(db: D1Database, id: number): Promise<boolean> {
+  const drizzle = createDb(db);
+  const result = await drizzle.update(categories)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(eq(categories.id, id));
+  return (result.rowsAffected ?? 0) > 0;
 }

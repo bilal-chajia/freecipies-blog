@@ -1,8 +1,9 @@
 import type { APIRoute } from 'astro';
-import { getArticles, getArticleBySlug, createArticle } from '@modules/articles';
+import { getArticles, getArticleBySlug, createArticle, syncCachedFields } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, validatePaginationParams, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { transformArticleRequestBody } from '../../modules/articles/api/helpers';
 
 export const prerender = false;
 
@@ -109,7 +110,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const reqBody = await request.json();
-    const article = await createArticle(env.DB, reqBody);
+
+    // Normalization
+    const transformedData = transformArticleRequestBody(reqBody);
+
+    const article = await createArticle(env.DB, transformedData);
+
+    if (article?.id) {
+      // Sync cached fields immediately after creation
+      await syncCachedFields(env.DB, article.id);
+    }
 
     const { body, status, headers } = formatSuccessResponse(article);
     return new Response(body, { status: 201, headers });
@@ -126,34 +136,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 export const PUT: APIRoute = async ({ request, locals }) => {
   try {
-    const env = (locals as any).runtime?.env as Env;
-    const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
-    const authContext = await extractAuthContext(request, jwtSecret);
-    if (!hasRole(authContext, AuthRoles.EDITOR)) {
-      return createAuthError('Insufficient permissions', 403);
-    }
-
-    const url = new URL(request.url);
-    // Extract slug from URL path if possible, but Astro API routes usually use params or query
-    // Here we expect slug in the URL like /api/articles?slug=xyz OR we can use dynamic route [slug].ts
-    // But this file is articles.ts, so it handles /api/articles
-    // The client likely sends PUT /api/articles/slug-here if we used [slug].ts
-    // But if we use query param for GET, maybe we use query param for PUT too?
-    // Or the client sends slug in body?
-    // The admin panel client (api.js) does: api.put(`/articles/${slug}`, data)
-    // So it expects /api/articles/:slug
-    // But this file is `articles.ts`. It handles `/api/articles`.
-    // To handle `/api/articles/:slug`, we need `src/pages/api/articles/[slug].ts`.
-
-    // Wait, if I put PUT in `articles.ts`, it only handles `/api/articles`.
-    // I should check if I need to create `[slug].ts`.
-    // The `api.js` uses `/articles/${slug}`.
-    // So I definitely need `src/pages/api/articles/[slug].ts`.
-
-    // However, for now I will implement POST here.
-    // I will create `[slug].ts` separately for PUT/DELETE.
-
     const { body, status, headers } = formatErrorResponse(
       new AppError(ErrorCodes.VALIDATION_ERROR, 'Method not allowed - use /api/articles/:slug for updates', 405)
     );

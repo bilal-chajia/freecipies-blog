@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getArticles, getArticleBySlug } from '@modules/articles';
 import type { Env } from '@shared/types';
+import { getCacheHeaders, CACHE_STRATEGIES } from '@shared/utils/cache';
 
 export const prerender = false;
 
@@ -34,16 +35,19 @@ export const GET: APIRoute = async ({ request, locals }) => {
         });
       }
 
-      return new Response(JSON.stringify({
-        success: true,
-        data: recipe
-      }), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=3600'
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: recipe
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...getCacheHeaders(CACHE_STRATEGIES.API_DEFAULT),
+          }
         }
-      });
+      );
     }
 
     // Get multiple recipes with filters
@@ -55,22 +59,25 @@ export const GET: APIRoute = async ({ request, locals }) => {
       offset
     });
 
-    return new Response(JSON.stringify({
-      success: true,
-      data: recipes.items,
-      pagination: {
-        page,
-        limit,
-        total: recipes.total,
-        totalPages: Math.ceil(recipes.total / limit)
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: recipes.items,
+        pagination: {
+          page,
+          limit,
+          total: recipes.total,
+          totalPages: Math.ceil(recipes.total / limit)
+        }
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...getCacheHeaders(CACHE_STRATEGIES.API_DEFAULT),
+        }
       }
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600'
-      }
-    });
+    );
   } catch (error) {
     console.error('Error fetching recipes:', error);
     
@@ -86,4 +93,3 @@ export const GET: APIRoute = async ({ request, locals }) => {
     });
   }
 };
-

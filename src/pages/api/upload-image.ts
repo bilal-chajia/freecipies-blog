@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500);
     }
 
-    const publicUrl = (env as any).ENVIRONMENT === 'production' ? env.R2_PUBLIC_URL : '/images';
+    const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
 
     // Authenticate (Optional? Usually yes for upload)
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;

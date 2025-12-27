@@ -3,12 +3,28 @@ import { Button } from '@/ui/button.jsx';
 import { Label } from '@/ui/label.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card.jsx';
+import { extractImage, getImageSrcSet } from '@shared/utils';
+import { toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
 
 export default function MediaSection({
     formData,
+    imagesData,
     onInputChange,
+    onImageRemove,
     onMediaDialogOpen,
 }) {
+    const featured = extractImage(imagesData, 'thumbnail', 720);
+    const featuredSrcSet = toAdminSrcSet(getImageSrcSet(imagesData, 'thumbnail'));
+    const featuredUrl = toAdminImageUrl(featured.imageUrl || formData.imageUrl);
+    const featuredAlt = formData.imageAlt || featured.imageAlt || 'Featured';
+    const featuredSizes = featuredSrcSet ? '320px' : undefined;
+
+    const cover = extractImage(imagesData, 'cover', 1200);
+    const coverSrcSet = toAdminSrcSet(getImageSrcSet(imagesData, 'cover'));
+    const coverUrl = toAdminImageUrl(cover.imageUrl || formData.coverUrl);
+    const coverAlt = formData.coverAlt || cover.imageAlt || 'Cover';
+    const coverSizes = coverSrcSet ? '320px' : undefined;
+
     return (
         <Card className="shadow-sm">
             <CardHeader className="pb-3">
@@ -18,11 +34,15 @@ export default function MediaSection({
                 {/* Featured Image */}
                 <div className="space-y-2">
                     <Label className="text-sm font-medium">Featured Image</Label>
-                    {formData.imageUrl ? (
+                    {featuredUrl ? (
                         <div className="relative group">
                             <img
-                                src={formData.imageUrl}
-                                alt={formData.imageAlt || 'Featured'}
+                                src={featuredUrl}
+                                alt={featuredAlt}
+                                width={featured.imageWidth || 720}
+                                height={featured.imageHeight || 405}
+                                srcSet={featuredSrcSet || undefined}
+                                sizes={featuredSizes}
                                 className="w-full h-36 object-cover rounded-lg border shadow-sm"
                             />
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
@@ -38,8 +58,7 @@ export default function MediaSection({
                                     size="sm"
                                     variant="secondary"
                                     onClick={() => {
-                                        onInputChange('imageUrl', '');
-                                        onInputChange('imageAlt', '');
+                                        onImageRemove?.('image');
                                     }}
                                     className="h-8"
                                 >
@@ -68,11 +87,15 @@ export default function MediaSection({
                 {/* Cover Image */}
                 <div className="space-y-2">
                     <Label className="text-sm font-medium">Cover Image (Optional)</Label>
-                    {formData.coverUrl ? (
+                    {coverUrl ? (
                         <div className="relative group">
                             <img
-                                src={formData.coverUrl}
-                                alt={formData.coverAlt || 'Cover'}
+                                src={coverUrl}
+                                alt={coverAlt}
+                                width={cover.imageWidth || 1200}
+                                height={cover.imageHeight || 675}
+                                srcSet={coverSrcSet || undefined}
+                                sizes={coverSizes}
                                 className="w-full h-28 object-cover rounded-lg border shadow-sm"
                             />
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
@@ -88,8 +111,7 @@ export default function MediaSection({
                                     size="sm"
                                     variant="secondary"
                                     onClick={() => {
-                                        onInputChange('coverUrl', '');
-                                        onInputChange('coverAlt', '');
+                                        onImageRemove?.('cover');
                                     }}
                                     className="h-8"
                                 >

@@ -4,10 +4,14 @@
  * Database operations for articles.
  */
 
-import { eq, and, or, like, desc, asc, isNull, inArray, sql } from 'drizzle-orm';
+import { eq, and, or, like, desc, asc, isNull, sql } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
+import { getTableColumns } from 'drizzle-orm';
 import { articles, type Article, type NewArticle } from '../schema/articles.schema';
+import { categories } from '../../categories/schema/categories.schema';
+import { authors } from '../../authors/schema/authors.schema';
 import { createDb } from '../../../shared/database/drizzle';
+import { hydrateArticle, hydrateArticles, type HydratedArticle } from '../../../shared/utils/hydration';
 
 export interface ArticleQueryOptions {
   categoryId?: number;
@@ -21,19 +25,14 @@ export interface ArticleQueryOptions {
   publishedAfter?: Date;
   isOnline?: boolean;
   search?: string;
+  sortBy?: 'publishedAt' | 'title' | 'viewCount';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface PaginatedArticles {
-  items: Article[];
+  items: HydratedArticle[];
   total: number;
 }
-
-/**
- * Get articles with filtering and pagination
- */
-import { getTableColumns } from 'drizzle-orm';
-import { categories } from '../../categories/schema/categories.schema';
-import { authors } from '../../authors/schema/authors.schema';
 
 /**
  * Get articles with filtering and pagination
@@ -86,6 +85,16 @@ export async function getArticles(
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  // Dynamic sorting based on options
+  const sortColumn = options?.sortBy === 'title'
+    ? articles.headline
+    : options?.sortBy === 'viewCount'
+      ? articles.viewCount
+      : articles.publishedAt;
+  const orderByClause = options?.sortOrder === 'asc'
+    ? asc(sortColumn)
+    : desc(sortColumn);
+
   const items = await drizzle
     .select({
       ...getTableColumns(articles),
@@ -94,12 +103,13 @@ export async function getArticles(
       categoryColor: categories.color,
       authorName: authors.name,
       authorSlug: authors.slug,
+      authorImagesJson: authors.imagesJson,
     })
     .from(articles)
     .leftJoin(categories, eq(articles.categoryId, categories.id))
     .leftJoin(authors, eq(articles.authorId, authors.id))
     .where(whereClause)
-    .orderBy(desc(articles.publishedAt))
+    .orderBy(orderByClause)
     .limit(options?.limit || 100)
     .offset(options?.offset || 0);
 
@@ -111,7 +121,7 @@ export async function getArticles(
     .where(whereClause);
 
   return {
-    items: items as Article[], // Cast to Article compatibility (HydratedArticle expects these optional fields)
+    items: hydrateArticles(items as any[]),
     total: Number(total),
   };
 }
@@ -123,7 +133,7 @@ export async function getArticleBySlug(
   db: D1Database,
   slug: string,
   type?: 'recipe' | 'article' | 'roundup'
-): Promise<Article | null> {
+): Promise<HydratedArticle | null> {
   const drizzle = createDb(db);
 
   const conditions = [eq(articles.slug, slug), isNull(articles.deletedAt)];
@@ -135,7 +145,7 @@ export async function getArticleBySlug(
     where: and(...conditions),
   });
 
-  return result || null;
+  return result ? hydrateArticle(result) : null;
 }
 
 /**
@@ -205,14 +215,14 @@ export async function incrementViewCount(db: D1Database, slug: string): Promise<
 export async function getArticleById(
   db: D1Database,
   id: number
-): Promise<Article | null> {
+): Promise<HydratedArticle | null> {
   const drizzle = createDb(db);
 
   const result = await drizzle.query.articles.findFirst({
     where: and(eq(articles.id, id), isNull(articles.deletedAt)),
   });
 
-  return result || null;
+  return result ? hydrateArticle(result) : null;
 }
 
 /**
@@ -227,12 +237,17 @@ export async function updateArticleById(
 
   // Stringify JSON fields if they are objects
   const processedPatch = { ...patch } as Record<string, unknown>;
-  const jsonFields = ['imagesJson', 'contentJson', 'recipeJson', 'roundupJson', 'faqsJson', 'seoJson', 'configJson', 'jsonldJson', 'relatedArticlesJson', 'cachedTagsJson', 'cachedCategoryJson', 'cachedAuthorJson', 'cachedEquipmentJson', 'cachedRatingJson', 'cachedTocJson', 'cachedRecipeJson', 'cachedCardJson'];
+  const jsonFields = [
+    'imagesJson', 'contentJson', 'recipeJson', 'roundupJson',
+    'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
+    'relatedArticlesJson', 'cachedTagsJson', 'cachedCategoryJson',
+    'cachedAuthorJson', 'cachedEquipmentJson', 'cachedRatingJson',
+    'cachedTocJson', 'cachedRecipeJson', 'cachedCardJson'
+  ];
 
   for (const field of jsonFields) {
     if (field in processedPatch && processedPatch[field] !== undefined) {
       const value = processedPatch[field];
-      // Only stringify if it's an object/array, not already a string
       if (typeof value === 'object' && value !== null) {
         processedPatch[field] = JSON.stringify(value);
       }
@@ -272,7 +287,6 @@ export async function deleteArticleById(db: D1Database, id: number): Promise<boo
 export async function toggleOnlineById(db: D1Database, id: number): Promise<{ isOnline: boolean } | null> {
   const drizzle = createDb(db);
 
-  // Get current state
   const current = await drizzle.query.articles.findFirst({
     where: and(eq(articles.id, id), isNull(articles.deletedAt)),
     columns: { isOnline: true }
@@ -295,7 +309,6 @@ export async function toggleOnlineById(db: D1Database, id: number): Promise<{ is
 export async function toggleFavoriteById(db: D1Database, id: number): Promise<{ isFavorite: boolean } | null> {
   const drizzle = createDb(db);
 
-  // Get current state
   const current = await drizzle.query.articles.findFirst({
     where: and(eq(articles.id, id), isNull(articles.deletedAt)),
     columns: { isFavorite: true }
@@ -310,4 +323,58 @@ export async function toggleFavoriteById(db: D1Database, id: number): Promise<{ 
     .where(eq(articles.id, id));
 
   return { isFavorite: newValue };
+}
+
+/**
+ * Synchronize cached JSON fields for an article
+ * Populates optimized fields like cachedAuthorJson and cachedCategoryJson
+ */
+export async function syncCachedFields(
+  db: D1Database,
+  id: number
+): Promise<boolean> {
+  const drizzle = createDb(db);
+
+  const article = await drizzle
+    .select({
+      ...getTableColumns(articles),
+      authorName: authors.name,
+      authorSlug: authors.slug,
+      authorAvatar: authors.imagesJson,
+      categoryLabel: categories.label,
+      categorySlug: categories.slug,
+      categoryColor: categories.color,
+    })
+    .from(articles)
+    .leftJoin(authors, eq(articles.authorId, authors.id))
+    .leftJoin(categories, eq(articles.categoryId, categories.id))
+    .where(eq(articles.id, id))
+    .get();
+
+  if (!article) return false;
+
+  const updateData: Partial<Article> = {};
+
+  if (article.authorId) {
+    const hydrator = hydrateArticle(article as any);
+    updateData.cachedAuthorJson = JSON.stringify({
+      name: article.authorName,
+      slug: article.authorSlug,
+      avatar: hydrator.authorAvatar || null,
+    });
+  }
+
+  if (article.categoryId) {
+    updateData.cachedCategoryJson = JSON.stringify({
+      label: article.categoryLabel,
+      slug: article.categorySlug,
+      color: article.categoryColor,
+    });
+  }
+
+  await drizzle.update(articles)
+    .set(updateData)
+    .where(eq(articles.id, id));
+
+  return true;
 }

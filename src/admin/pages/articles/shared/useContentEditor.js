@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../../services/api';
-import { generateSlug, isValidJSON } from '../../../utils/helpers';
+import { buildImageSlotFromMedia, generateSlug, isValidJSON } from '../../../utils/helpers';
 
 /**
  * Shared hook for content editors (articles, recipes, roundups)
@@ -26,7 +26,9 @@ export function useContentEditor({ slug, contentType = 'article' }) {
     const [formData, setFormData] = useState({
         slug: '',
         type: contentType,
+        categoryId: null,
         categorySlug: '',
+        authorId: null,
         authorSlug: '',
         label: '',
         headline: '',
@@ -55,6 +57,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
     const [keywordsJson, setKeywordsJson] = useState('[]');
     const [referencesJson, setReferencesJson] = useState('[]');
     const [mediaJson, setMediaJson] = useState('{}');
+    const [imagesData, setImagesData] = useState({});
 
     // Validation
     const [jsonErrors, setJsonErrors] = useState({});
@@ -117,24 +120,50 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             if (response.data.success) {
                 const article = response.data.data;
                 setArticleId(article.id);
+                const parsedImages = (() => {
+                    if (!article.imagesJson) return {};
+                    try {
+                        return typeof article.imagesJson === 'string'
+                            ? JSON.parse(article.imagesJson)
+                            : article.imagesJson;
+                    } catch {
+                        return {};
+                    }
+                })();
+
+                const parsedSeo = (() => {
+                    if (!article.seoJson) return {};
+                    try {
+                        return typeof article.seoJson === 'string'
+                            ? JSON.parse(article.seoJson)
+                            : article.seoJson;
+                    } catch {
+                        return {};
+                    }
+                })();
+
+                setImagesData(parsedImages || {});
+
                 setFormData({
                     slug: article.slug,
                     type: article.type,
+                    categoryId: article.categoryId ?? null,
                     categorySlug: article.categorySlug,
+                    authorId: article.authorId ?? null,
                     authorSlug: article.authorSlug,
                     label: article.label,
                     headline: article.headline,
-                    metaTitle: article.metaTitle,
-                    metaDescription: article.metaDescription,
-                    canonicalUrl: article.canonicalUrl || '',
+                    metaTitle: article.metaTitle || parsedSeo.metaTitle || '',
+                    metaDescription: article.metaDescription || parsedSeo.metaDescription || '',
+                    canonicalUrl: article.canonicalUrl || parsedSeo.canonical || '',
                     shortDescription: article.shortDescription,
                     tldr: article.tldr,
                     introduction: article.introduction || '',
                     summary: article.summary || '',
                     imageUrl: article.imageUrl || '',
-                    imageAlt: article.imageAlt || '',
+                    imageAlt: parsedImages?.thumbnail?.alt || article.imageAlt || '',
                     coverUrl: article.coverUrl || '',
-                    coverAlt: article.coverAlt || '',
+                    coverAlt: parsedImages?.cover?.alt || article.coverAlt || '',
                     isOnline: article.isOnline,
                     isFavorite: article.isFavorite,
                     publishedAt: article.publishedAt || '',
@@ -166,7 +195,35 @@ export function useContentEditor({ slug, contentType = 'article' }) {
     };
 
     const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(prev => {
+            const next = { ...prev, [field]: value };
+
+            if (field === 'categorySlug') {
+                const match = categories.find((c) => c.slug === value);
+                next.categoryId = match?.id ?? null;
+            }
+
+            if (field === 'authorSlug') {
+                const match = authors.find((a) => a.slug === value);
+                next.authorId = match?.id ?? null;
+            }
+
+            return next;
+        });
+
+        if (field === 'imageAlt') {
+            setImagesData(prev => {
+                if (!prev?.thumbnail) return prev;
+                return { ...prev, thumbnail: { ...prev.thumbnail, alt: value } };
+            });
+        }
+
+        if (field === 'coverAlt') {
+            setImagesData(prev => {
+                if (!prev?.cover) return prev;
+                return { ...prev, cover: { ...prev.cover, alt: value } };
+            });
+        }
 
         if (field === 'label' && !isEditMode) {
             setFormData(prev => ({ ...prev, slug: generateSlug(value) }));
@@ -175,16 +232,48 @@ export function useContentEditor({ slug, contentType = 'article' }) {
 
     const handleMediaSelect = (item) => {
         if (activeMediaField === 'image') {
+            const slot = buildImageSlotFromMedia(item, { alt: formData.imageAlt || formData.label });
+            setImagesData(prev => ({ ...prev, thumbnail: slot }));
             setFormData(prev => ({
                 ...prev,
-                imageUrl: item.url,
-                imageAlt: item.altText || prev.imageAlt
+                imageUrl: slot?.variants?.sm?.url || slot?.variants?.xs?.url || slot?.url || item.url,
+                imageAlt: slot?.alt || item.altText || prev.imageAlt
             }));
         } else if (activeMediaField === 'cover') {
+            const slot = buildImageSlotFromMedia(item, { alt: formData.coverAlt || formData.label });
+            setImagesData(prev => ({ ...prev, cover: slot }));
             setFormData(prev => ({
                 ...prev,
-                coverUrl: item.url,
-                coverAlt: item.altText || prev.coverAlt
+                coverUrl: slot?.variants?.md?.url || slot?.variants?.sm?.url || slot?.url || item.url,
+                coverAlt: slot?.alt || item.altText || prev.coverAlt
+            }));
+        }
+    };
+
+    const handleImageRemove = (field) => {
+        if (field === 'image') {
+            setImagesData(prev => {
+                const next = { ...prev };
+                delete next.thumbnail;
+                return next;
+            });
+            setFormData(prev => ({
+                ...prev,
+                imageUrl: '',
+                imageAlt: '',
+            }));
+        }
+
+        if (field === 'cover') {
+            setImagesData(prev => {
+                const next = { ...prev };
+                delete next.cover;
+                return next;
+            });
+            setFormData(prev => ({
+                ...prev,
+                coverUrl: '',
+                coverAlt: '',
             }));
         }
     };
@@ -231,8 +320,13 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             return;
         }
 
+        const { imageUrl, coverUrl, imageAlt, coverAlt, ...restFormData } = formData;
+        const categoryId = restFormData.categoryId ?? categories.find((c) => c.slug === restFormData.categorySlug)?.id ?? null;
+        const authorId = restFormData.authorId ?? authors.find((a) => a.slug === restFormData.authorSlug)?.id ?? null;
         const data = {
-            ...formData,
+            ...restFormData,
+            categoryId,
+            authorId,
             contentJson,
             recipeJson,
             roundupJson,
@@ -240,6 +334,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             keywordsJson,
             referencesJson,
             mediaJson,
+            imagesJson: JSON.stringify(imagesData),
         };
 
         try {
@@ -284,6 +379,8 @@ export function useContentEditor({ slug, contentType = 'article' }) {
         setReferencesJson,
         mediaJson,
         setMediaJson,
+        imagesData,
+        setImagesData,
 
         // Validation
         jsonErrors,
@@ -296,6 +393,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
         activeMediaField,
         openMediaDialog,
         handleMediaSelect,
+        handleImageRemove,
 
         // Editor
         useVisualEditor,

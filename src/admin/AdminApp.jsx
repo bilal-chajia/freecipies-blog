@@ -127,7 +127,7 @@ function AdminApp() {
               <Route path="homepage" element={<Homepage />} />
 
               {/* Articles */}
-              <Route path="articles" element={<ArticlesList fixedType="article" />} />
+              <Route path="articles" element={<ArticlesList />} />
               <Route path="articles/new" element={<ArticleEditor />} />
               <Route path="articles/:slug" element={<ArticleEditor />} />
 

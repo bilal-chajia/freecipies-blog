@@ -283,6 +283,25 @@ const Homepage = () => {
     }
   };
 
+  const handleReset = () => {
+    if (!homepage || Object.keys(homepage).length === 0) return;
+    setFormData(prev => ({ ...prev, ...homepage }));
+    toast.success('Changes reverted to last saved state');
+  };
+
+  const sectionStatus = [
+    { key: 'hero', label: 'Hero', enabled: formData.hero.enabled },
+    { key: 'featured', label: 'Featured', enabled: formData.featuredPosts.enabled },
+    { key: 'categories', label: 'Categories', enabled: formData.categories.enabled },
+    { key: 'latest', label: 'Latest', enabled: formData.latestPosts.enabled },
+    { key: 'popular', label: 'Popular', enabled: formData.popularPosts.enabled },
+    { key: 'newsletter', label: 'Newsletter', enabled: formData.newsletter.enabled },
+    { key: 'banners', label: 'Banners', enabled: formData.banners.enabled },
+  ];
+
+  const activeSections = sectionStatus.filter(section => section.enabled).length;
+  const totalSections = sectionStatus.length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -297,76 +316,118 @@ const Homepage = () => {
         <p>Error loading homepage settings: {error}</p>
       </div>
     );
-  }
+    }
 
   return (
-    <div className="space-y-8 pb-20">
-      {/* Premium Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-           <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
-              <Home className="h-4 w-4" />
+    <div className="space-y-6 pb-16">
+      {/* Header */}
+      <div className="rounded-3xl border border-border/40 bg-gradient-to-r from-background via-background to-accent/20 p-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-[0.2em]">
+              <Home className="h-3.5 w-3.5" />
               Storefront Management
-           </div>
-           <h1 className="text-3xl font-bold tracking-tight">Homepage Configuration</h1>
-           <p className="text-muted-foreground mt-1">
-              Customize your storefront experience with section-based layouts and real-time previews.
-           </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-           <Button 
-             variant="outline" 
-             className="h-11 px-6 rounded-xl border-border/60 hover:bg-accent/50 group"
-             onClick={() => window.open('/', '_blank')}
-           >
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">Homepage Configuration</h1>
+            <p className="text-muted-foreground text-sm max-w-2xl">
+              Curate your homepage sections, arrange featured content, and refine the storefront narrative.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
+            <Badge variant="secondary" className="h-8 px-3 rounded-full text-[10px] uppercase tracking-[0.16em]">
+              Active Sections {activeSections}/{totalSections}
+            </Badge>
+            <Button
+              variant="ghost"
+              className="h-9 px-3 rounded-full border border-border/50 hover:bg-accent/60"
+              onClick={handleReset}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reset
+            </Button>
+            <Button
+              variant="outline"
+              className="h-9 px-4 rounded-full border-border/60 hover:bg-accent/50 group"
+              onClick={() => window.open('/', '_blank')}
+            >
               <Eye className="h-4 w-4 mr-2 group-hover:text-primary transition-colors" />
               Live Site
-           </Button>
-           <Button 
-             onClick={handleSave} 
-             disabled={saving}
-             className="h-11 px-8 gap-2 shadow-lg shadow-primary/20 rounded-xl"
-           >
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="h-9 px-5 gap-2 shadow-lg shadow-primary/20 rounded-full"
+            >
               {saving ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
               ) : (
                 <Save className="h-4 w-4" />
               )}
               {saving ? 'Syncing...' : 'Publish Changes'}
-           </Button>
+            </Button>
+          </div>
         </div>
       </div>
 
-      <Tabs defaultValue="hero" className="w-full space-y-6">
-        <TabsList className="h-9 p-1 bg-muted/50 rounded-lg flex flex-wrap gap-1">
-          <TabsTrigger value="hero" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <LayoutPanelLeft className="w-3.5 h-3.5 mr-1.5" /> Hero
-          </TabsTrigger>
-          <TabsTrigger value="featured" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Star className="w-3.5 h-3.5 mr-1.5" /> Featured
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Grid className="w-3.5 h-3.5 mr-1.5" /> Categories
-          </TabsTrigger>
-          <TabsTrigger value="latest" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Newspaper className="w-3.5 h-3.5 mr-1.5" /> Latest
-          </TabsTrigger>
-          <TabsTrigger value="popular" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Popular
-          </TabsTrigger>
-          <TabsTrigger value="newsletter" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Mail className="w-3.5 h-3.5 mr-1.5" /> Newsletter
-          </TabsTrigger>
-          <TabsTrigger value="banners" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <AppWindow className="w-3.5 h-3.5 mr-1.5" /> Banners
-          </TabsTrigger>
-          <TabsTrigger value="seo" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Search className="w-3.5 h-3.5 mr-1.5" /> SEO
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="hero" className="w-full">
+        <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <aside className="space-y-4 lg:sticky lg:top-6 self-start">
+            <div className="rounded-2xl border border-border/40 bg-muted/30 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  Sections
+                </span>
+                <Badge variant="secondary" className="text-[10px] uppercase tracking-widest">
+                  {activeSections}/{totalSections} active
+                </Badge>
+              </div>
+              <TabsList className="grid gap-2 bg-transparent p-0 w-full h-auto">
+                <TabsTrigger value="hero" className="justify-start w-full rounded-xl px-3 py-2 text-xs text-left border border-transparent data-[state=active]:bg-background data-[state=active]:border-border/60 data-[state=active]:shadow-sm">
+                  <LayoutPanelLeft className="w-3.5 h-3.5 mr-2" /> Hero
+                </TabsTrigger>
+                <TabsTrigger value="featured" className="justify-start w-full rounded-xl px-3 py-2 text-xs text-left border border-transparent data-[state=active]:bg-background data-[state=active]:border-border/60 data-[state=active]:shadow-sm">
+                  <Star className="w-3.5 h-3.5 mr-2" /> Featured
+                </TabsTrigger>
+                <TabsTrigger value="categories" className="justify-start w-full rounded-xl px-3 py-2 text-xs text-left border border-transparent data-[state=active]:bg-background data-[state=active]:border-border/60 data-[state=active]:shadow-sm">
+                  <Grid className="w-3.5 h-3.5 mr-2" /> Categories
+                </TabsTrigger>
+                <TabsTrigger value="latest" className="justify-start w-full rounded-xl px-3 py-2 text-xs text-left border border-transparent data-[state=active]:bg-background data-[state=active]:border-border/60 data-[state=active]:shadow-sm">
+                  <Newspaper className="w-3.5 h-3.5 mr-2" /> Latest
+                </TabsTrigger>
+                <TabsTrigger value="popular" className="justify-start w-full rounded-xl px-3 py-2 text-xs text-left border border-transparent data-[state=active]:bg-background data-[state=active]:border-border/60 data-[state=active]:shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 mr-2" /> Popular
+                </TabsTrigger>
+                <TabsTrigger value="newsletter" className="justify-start w-full rounded-xl px-3 py-2 text-xs text-left border border-transparent data-[state=active]:bg-background data-[state=active]:border-border/60 data-[state=active]:shadow-sm">
+                  <Mail className="w-3.5 h-3.5 mr-2" /> Newsletter
+                </TabsTrigger>
+                <TabsTrigger value="banners" className="justify-start w-full rounded-xl px-3 py-2 text-xs text-left border border-transparent data-[state=active]:bg-background data-[state=active]:border-border/60 data-[state=active]:shadow-sm">
+                  <AppWindow className="w-3.5 h-3.5 mr-2" /> Banners
+                </TabsTrigger>
+                <TabsTrigger value="seo" className="justify-start w-full rounded-xl px-3 py-2 text-xs text-left border border-transparent data-[state=active]:bg-background data-[state=active]:border-border/60 data-[state=active]:shadow-sm">
+                  <Search className="w-3.5 h-3.5 mr-2" /> SEO
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-        <div className="space-y-8">
+            <div className="rounded-2xl border border-border/40 bg-background/60 p-4">
+              <div className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                Status Snapshot
+              </div>
+              <div className="mt-3 space-y-2">
+                {sectionStatus.map((section) => (
+                  <div key={section.key} className="flex items-center justify-between text-xs">
+                    <span className="font-medium">{section.label}</span>
+                    <span className={section.enabled ? 'text-emerald-600' : 'text-muted-foreground'}>
+                      {section.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          <div className="space-y-8">
 
         {/* Hero Section */}
         <TabsContent value="hero" className="space-y-6 outline-none">
@@ -1462,6 +1523,7 @@ const Homepage = () => {
             </Card>
           </motion.div>
         </TabsContent>
+          </div>
         </div>
       </Tabs>
     </div>

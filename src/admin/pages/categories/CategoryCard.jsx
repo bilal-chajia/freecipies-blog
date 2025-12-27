@@ -12,8 +12,9 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu.jsx';
 import ColorPicker from '../../components/ColorPicker';
-import { getContrastColor } from '../../utils/helpers';
+import { getContrastColor, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
 import { useSettingsStore } from '../../store/useStore';
+import { extractImage, getImageSrcSet } from '@shared/utils';
 
 const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
     const { settings } = useSettingsStore();
@@ -50,15 +51,26 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
 
     const badgeColor = pendingColor || category.color || '#ff6600';
     const textColor = getContrastColor(badgeColor);
+    const cover = extractImage(category.imagesJson, 'cover', 1200);
+    const thumbnail = extractImage(category.imagesJson, 'thumbnail', 720);
+    const slotName = cover.imageUrl ? 'cover' : 'thumbnail';
+    const selectedImage = cover.imageUrl ? cover : thumbnail;
+    const imageUrl = toAdminImageUrl(selectedImage.imageUrl || category.imageUrl);
+    const srcSet = toAdminSrcSet(getImageSrcSet(category.imagesJson, slotName));
+    const sizes = srcSet ? '320px' : undefined;
 
     return (
         <Card className="group relative overflow-hidden border-none bg-card shadow-sm hover:shadow-xl transition-all duration-500 rounded-2xl aspect-square flex flex-col p-0">
             {/* Background Image & Overlay */}
             <div className="absolute inset-0 z-0 overflow-hidden">
-                {category.imageUrl ? (
+                {imageUrl ? (
                     <img
-                        src={category.imageUrl}
+                        src={imageUrl}
                         alt={category.label}
+                        width={selectedImage.imageWidth || 720}
+                        height={selectedImage.imageHeight || 720}
+                        srcSet={srcSet || undefined}
+                        sizes={sizes}
                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                 ) : (
@@ -80,7 +92,7 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
                         <EyeOff className="h-3 w-3 text-white/60" />
                     </div>
                 )}
-                {category.isFavorite && (
+                {category.isFeatured && (
                     <div className="bg-yellow-400/90 backdrop-blur-sm p-1 rounded-full shadow-sm" title="Featured">
                         <Star className="h-3 w-3 text-black fill-black" />
                     </div>
@@ -102,21 +114,21 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
                                 Edit Details
                             </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                            onClick={() => handleToggle('isFavorite', !category.isFavorite)}
+                        <DropdownMenuItem
+                            onClick={() => handleToggle('isFeatured', !category.isFeatured)}
                             className="cursor-pointer text-yellow-600 dark:text-yellow-400"
                         >
-                            <Star className={`mr-2 h-4 w-4 ${category.isFavorite ? 'fill-current' : ''}`} />
-                            {category.isFavorite ? 'Unfeature' : 'Feature'}
+                            <Star className={`mr-2 h-4 w-4 ${category.isFeatured ? 'fill-current' : ''}`} />
+                            {category.isFeatured ? 'Unfeature' : 'Feature'}
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                             onClick={() => handleToggle('isOnline', !category.isOnline)}
                             className="cursor-pointer"
                         >
                             {category.isOnline ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
                             {category.isOnline ? 'Take Offline' : 'Go Online'}
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                             onClick={() => onDelete(category)}
                             className="cursor-pointer text-destructive focus:text-destructive"
                         >
@@ -130,13 +142,13 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
             {/* Bottom Content Area */}
             <div className="relative mt-auto p-4 z-10 flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                    <div 
+                    <div
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm"
                         style={{ backgroundColor: badgeColor, color: textColor }}
                     >
                         {category.label}
                     </div>
-                    
+
                     {/* Inline Color Picker Hook */}
                     <div className="relative pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                         <button
@@ -159,14 +171,14 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
                 </div>
 
                 <div className="space-y-0.5">
-                   <h3 className="text-white font-bold text-sm tracking-tight leading-tight line-clamp-1">
-                       {category.label}
-                   </h3>
-                   <p className="text-white/60 text-[11px] leading-relaxed line-clamp-2 italic">
-                       {category.shortDescription || "Master category for curated culinary content."}
-                   </p>
+                    <h3 className="text-white font-bold text-sm tracking-tight leading-tight line-clamp-1">
+                        {category.label}
+                    </h3>
+                    <p className="text-white/60 text-[11px] leading-relaxed line-clamp-2 italic">
+                        {category.shortDescription || "Master category for curated culinary content."}
+                    </p>
                 </div>
-                
+
                 <Link to={`/categories/${category.slug}`} className="pt-1 pointer-events-auto">
                     <div className="text-[10px] text-white/40 group-hover:text-primary transition-colors flex items-center gap-1 font-bold uppercase tracking-widest">
                         View Analytics

@@ -146,18 +146,16 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 
 ## Database Schema (Source of Truth)
 
-> **CRITICAL:** `schema-drizzle/schema.sql` is the **SINGLE SOURCE OF TRUTH** for the database schema.
+> **CRITICAL:** `db/schema.sql` is the **SINGLE SOURCE OF TRUTH** for the database schema.
 
-- **Source of truth:** `schema-drizzle/schema.sql`
-- **Documentation:** `schema-drizzle/DATABASE_SCHEMA.md`
-- **Drizzle types:** `src/lib/schema.ts` (generated from schema.sql)
+- **Source of truth:** `db/schema.sql`
+- **Documentation:** `db/DATABASE_SCHEMA.md`
+- **Drizzle schemas:** `src/modules/*/schema/*.schema.ts` (keep in sync with `db/schema.sql`)
 
 When modifying the database:
-1. Edit `schema-drizzle/schema.sql` first
-2. Update `DATABASE_SCHEMA.md` documentation
-3. Regenerate `src/lib/schema.ts` to match
-
-**Never edit `src/lib/schema.ts` directly** - it should always reflect `schema.sql`.
+1. Edit `db/schema.sql` first
+2. Update `db/DATABASE_SCHEMA.md` documentation
+3. Update the related Drizzle schemas in `src/modules/*/schema/*.schema.ts` to match
 
 ## TypeScript Content Types
 
@@ -248,9 +246,9 @@ async function saveArticle(articleData) {
 Optimized field selection for different use cases:
 
 ```typescript
-// ─────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 // LISTING PAGES (Minimal fields for cards)
-// ─────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 const listingFields = {
   slug: articles.slug,
   headline: articles.headline,
@@ -272,18 +270,18 @@ const recipes = await db
   .orderBy(desc(articles.published_at))
   .limit(20);
 
-// ─────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 // ARTICLE PAGE (Full data)
-// ─────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 const article = await db
   .select()
   .from(articles)
   .where(eq(articles.slug, slug))
   .get();
 
-// ─────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 // FILTERED RECIPES (By time, difficulty)
-// ─────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 const quickRecipes = await db
   .select(listingFields)
   .from(articles)
@@ -321,5 +319,4 @@ Standard responsive sizes (pixels):
 | `original` | >2048 | Optional, hero images only |
 
 **Avatar exception:** 50, 100, 200, 400 (smaller for profile images)
-
 

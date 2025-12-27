@@ -39,9 +39,12 @@ const readingTime = Math.max(5, Math.ceil(wordCount / 200));
 
 const heroCover = extractImage(recipe.imagesJson, "cover", 1200);
 const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);
-const heroSlotName = heroCover.imageUrl ? "cover" : "thumbnail";
-const heroImage = heroCover.imageUrl ? heroCover : heroThumb;
-const heroSrcSet = getImageSrcSet(recipe.imagesJson, heroSlotName);
+const coverSrcSet = getImageSrcSet(recipe.imagesJson, "cover");
+const thumbSrcSet = getImageSrcSet(recipe.imagesJson, "thumbnail");
+const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
+const heroSlotName = useCover ? "cover" : "thumbnail";
+const heroImage = useCover ? heroCover : heroThumb;
+const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
 const heroSizes = "(max-width: 768px) 100vw, 800px";
 
 const authorAvatar = author?.imagesJson

@@ -12,6 +12,18 @@ bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
 
+## Database Schema (Source of Truth)
+
+- **Source of truth:** `db/schema.sql`
+- **Documentation:** `db/DATABASE_SCHEMA.md`
+- **Drizzle schemas:** `src/modules/*/schema/*.schema.ts`
+- **Aggregate export:** `src/shared/database/schema.ts`
+
+When modifying the database:
+1. Edit `db/schema.sql` first
+2. Update `db/DATABASE_SCHEMA.md`
+3. Update the related Drizzle schemas in `src/modules/*/schema/*.schema.ts`
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
@@ -37,4 +49,3 @@ bd sync               # Sync with git
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
-
