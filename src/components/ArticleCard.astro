@@ -6,9 +6,12 @@ import FormattedDate from "./FormattedDate.astro";
 interface Props {
   article: HydratedArticle;
   loading?: "lazy" | "eager";
+  cardStyle?: "full" | "compact" | "minimal";
 }
 
-const { article, loading = "lazy" } = Astro.props;
+const { article, loading = "lazy", cardStyle = "full" } = Astro.props;
+const isCompact = cardStyle === "compact";
+const isMinimal = cardStyle === "minimal";
 
 const thumbnail = extractImage(article.imagesJson, "thumbnail", 720);
 const cover = extractImage(article.imagesJson, "cover", 720);
@@ -83,10 +86,20 @@ flex items-end p-4"
     </div>
   </a>
   <!-- Info -->
-  <div class="p-5 flex-grow flex flex-col">
+  <div
+    class:list={[
+      "flex-grow flex flex-col",
+      isMinimal || isCompact ? "p-4" : "p-5",
+    ]}
+  >
     <!--
 Category -->
-    <div class="flex items-center gap-2 mb-3">
+    <div
+      class:list={[
+        "flex items-center gap-2",
+        isMinimal || isCompact ? "mb-2" : "mb-3",
+      ]}
+    >
       <span
         class="text-xs
 font-semibold uppercase tracking-wide"
@@ -101,58 +114,71 @@ font-semibold uppercase tracking-wide"
     </div>
     <!-- Title -->
     <h3
-      class="text-xl font-bold text-gray-900
-dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600
-dark:group-hover:text-blue-400 transition-colors"
+      class:list={[
+        "font-bold text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors",
+        isMinimal || isCompact ? "text-lg mb-1" : "text-xl mb-2",
+      ]}
     >
       {article.headline}
     </h3>
     <!-- Description -->
-    <p
-      class="text-gray-600 dark:text-gray-300 text-sm mb-4
-line-clamp-2 flex-grow"
-    >
-      {article.shortDescription}
-    </p>
-    <!-- Meta Info -->
-    <div
-      class="flex items-center justify-between text-sm text-gray-500
-dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-4 mt-auto"
-    >
-      <div class="flex items-center gap-1">
-        <span
-          >{
-            new Date(
-              article.publishedAt ||
-                article.createdAt ||
-                new Date().toISOString()
-            ).toLocaleDateString()
-          }</span
+    {
+      !isMinimal && (
+        <p
+          class:list={[
+            "text-gray-600 dark:text-gray-300 line-clamp-2 flex-grow",
+            isCompact ? "text-xs mb-3" : "text-sm mb-4",
+          ]}
         >
-      </div>
-      {
-        recipe && (
+          {article.shortDescription}
+        </p>
+      )
+    }
+    <!-- Meta Info -->
+    {
+      !isMinimal && (
+        <div
+          class:list={[
+            "flex items-center justify-between text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-4 mt-auto",
+            isCompact ? "text-xs" : "text-sm",
+          ]}
+        >
           <div class="flex items-center gap-1">
-            {" "}
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            <span
+              >{
+                new Date(
+                  article.publishedAt ||
+                    article.createdAt ||
+                    new Date().toISOString()
+                ).toLocaleDateString()
+              }</span
             >
-              {" "}
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0
-0118 0z"
-              />{" "}
-            </svg>{" "}
-            <span>{recipe?.prepTime || "N/A"}</span>{" "}
           </div>
-        )
-      }
-    </div>
+          {
+            recipe && (
+              <div class="flex items-center gap-1">
+                {" "}
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  {" "}
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0
+0118 0z"
+                  />{" "}
+                </svg>{" "}
+                <span>{recipe?.prepTime || "N/A"}</span>{" "}
+              </div>
+            )
+          }
+        </div>
+      )
+    }
   </div>
 </article>

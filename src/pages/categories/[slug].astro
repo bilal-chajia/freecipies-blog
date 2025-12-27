@@ -1,14 +1,17 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import ArticleCard from "../../components/ArticleCard.astro";
+import CategoryHeader from "../../components/CategoryHeader.astro";
+import ArticleGrid from "../../components/ArticleGrid.astro";
 import Pagination from "../../components/Pagination.astro";
 import Breadcrumb from "../../components/Breadcrumb.astro";
+import PopularRecipes from "../../components/PopularRecipes.astro";
+import NewsletterWidget from "../../components/NewsletterWidget.astro";
 import {
   getCategories,
-  type Category,
+  type HydratedCategory,
 } from "@modules/categories";
-import { getArticles, type Article } from "@modules/articles";
-import { extractImage, getImageSrcSet, hydrateCategories } from "@shared/utils";
+import { getArticles } from "@modules/articles";
+import { hydrateCategories } from "@shared/utils";
 
 const { slug } = Astro.params;
 const { env } = Astro.locals.runtime;
@@ -31,14 +34,17 @@ if (!category) {
   return Astro.redirect("/404");
 }
 
-// All display settings come from admin config ONLY (no user overrides)
+// Display settings come from admin config only (no user overrides)
 const perPage = category.numEntriesPerPage || 12;
 const sortBy = category.sortBy || 'publishedAt';
 const sortOrder = category.sortOrder || 'desc';
 const layoutMode = category.layoutMode || 'grid';
 const showPagination = category.showPagination !== false;
 const showBreadcrumb = category.showBreadcrumb !== false;
+const showSidebar = category.showSidebar !== false;
 const headerStyle = category.headerStyle || 'hero';
+const cardStyle = category.cardStyle || 'full';
+const showHeader = headerStyle !== 'none';
 
 // Fetch articles with pagination and sorting
 const offset = (currentPage - 1) * perPage;
@@ -55,106 +61,20 @@ const totalPages = Math.ceil(total / perPage);
 const featuredArticle = currentPage === 1 && headerStyle === 'hero' ? articles[0] : null;
 const gridArticles = featuredArticle ? articles.slice(1) : articles;
 
-// Helper to parse recipeJson
-const parseRecipe = (json: string | null | undefined) => {
-  if (!json) return null;
-  try {
-    return typeof json === "string" ? JSON.parse(json) : json;
-  } catch {
-    return null;
-  }
-};
-const featuredRecipe = featuredArticle ? parseRecipe(featuredArticle.recipeJson) : null;
-
-// Base URL for pagination/filters
+// Base URL for pagination
 const baseUrl = `/categories/${slug}`;
-
-// Image helpers
-const getArticleImage = (article: Article, targetWidth: number, prefer: 'cover' | 'thumbnail' = 'cover') => {
-  const cover = extractImage(article.imagesJson, "cover", targetWidth);
-  const thumbnail = extractImage(article.imagesJson, "thumbnail", targetWidth);
-  const slotName = prefer === 'cover'
-    ? (cover.imageUrl ? 'cover' : 'thumbnail')
-    : (thumbnail.imageUrl ? 'thumbnail' : 'cover');
-  const selected = slotName === 'cover' ? cover : thumbnail;
-  const srcSet = getImageSrcSet(article.imagesJson, slotName);
-  return { selected, srcSet };
-};
-
-const getCategoryImage = (cat: Category, targetWidth: number, prefer: 'cover' | 'thumbnail' = 'thumbnail') => {
-  const cover = extractImage(cat.imagesJson, "cover", targetWidth);
-  const thumbnail = extractImage(cat.imagesJson, "thumbnail", targetWidth);
-  const slotName = prefer === 'cover'
-    ? (cover.imageUrl ? 'cover' : 'thumbnail')
-    : (thumbnail.imageUrl ? 'thumbnail' : 'cover');
-  const selected = slotName === 'cover' ? cover : thumbnail;
-  const srcSet = getImageSrcSet(cat.imagesJson, slotName);
-  return { selected, srcSet };
-};
-
-// Layout class helper
-const getLayoutClass = () => {
-  switch (layoutMode) {
-    case 'list': return 'recipe-list';
-    case 'masonry': return 'recipe-masonry';
-    default: return 'recipe-grid';
-  }
-};
 ---
 
 <Layout title={category.metaTitle || category.headline || category.label} description={category.metaDescription || category.shortDescription}>
-  <!-- Hero Section with Featured Article -->
-  <section class="category-hero">
-    <div class="hero-container">
-  {
-    featuredArticle && (() => {
-      const { selected, srcSet } = getArticleImage(featuredArticle, 1200, "cover");
-      const sizes = "(max-width: 1024px) 100vw, 50vw";
-      return (
-        <a href={`/recipes/${featuredArticle.slug}`} class="featured-card">
-          <div class="featured-image">
-            {(selected.imageUrl || featuredArticle.imageUrl) && (
-              <img
-                src={selected.imageUrl || featuredArticle.imageUrl}
-                alt={selected.imageAlt || featuredArticle.imageAlt || featuredArticle.label}
-                width={selected.imageWidth || featuredArticle.imageWidth || 1200}
-                height={selected.imageHeight || featuredArticle.imageHeight || 900}
-                srcset={srcSet || undefined}
-                sizes={srcSet ? sizes : undefined}
-                loading="eager"
-              />
-            )}
-            <div class="featured-overlay">
-              <span class="featured-badge">{category.label}</span>
-              <h2 class="featured-title">{featuredArticle.label}</h2>
-              <div class="featured-meta">
-                {featuredRecipe?.cookTime && (
-                  <span>�?� {featuredRecipe.cookTime}</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </a>
-      );
-    })()
-  }
-  <div class="hero-content">
-        <h1 class="category-title">{category.headline || category.label}</h1>
-        <p class="category-description">
-          {category.shortDescription || category.headline}
-        </p>
-        {category.tldr && (
-          <p class="category-tldr">
-            {category.tldr}
-          </p>
-        )}
-        <a href="#newsletter" class="cta-button"> Join My Mailing List </a>
-      </div>
-    </div>
-  </section>
+  <!-- Hero Section -->
+  <CategoryHeader
+    category={category}
+    featuredArticle={featuredArticle}
+    headerStyle={headerStyle}
+  />
 
   <!-- Recipe Grid -->
-<section class="recipes-section">
+<section class:list={["recipes-section", { "no-hero": !showHeader }]}>
   <div class="container">
     {showBreadcrumb && (
       <Breadcrumb items={[
@@ -167,44 +87,51 @@ const getLayoutClass = () => {
       <h2 class="section-title">{category.collectionTitle || `${category.label} Recipes`}</h2>
       <span class="recipe-count">{total} recette{total > 1 ? 's' : ''}</span>
     </div>
-    {
-      gridArticles.length > 0 ? (
-        <div class={getLayoutClass()}>
-            {gridArticles.map((article: Article) => (
-              <ArticleCard article={article} />
-            ))}
-          </div>
-        ) : articles.length === 0 ? (
-          <div class="empty-state">
-            <p>No recipes found in this category yet.</p>
-          </div>
-        ) : null
-      }
-    
-    {showPagination && totalPages > 1 && (
-      <Pagination 
-        currentPage={currentPage}
-        totalPages={totalPages}
-        baseUrl={baseUrl}
-        preserveParams={{ 
-          ...(sortBy !== 'publishedAt' ? { sortBy } : {}),
-          ...(sortOrder !== 'desc' ? { sortOrder } : {}),
-          ...(layoutMode !== 'grid' ? { layout: layoutMode } : {})
-        }}
-      />
-    )}
+
+    <div class:list={["recipes-layout", { "with-sidebar": showSidebar }]}>
+      <div class="recipes-main">
+        {
+          gridArticles.length > 0 ? (
+            <ArticleGrid
+              articles={gridArticles}
+              layoutMode={layoutMode}
+              cardStyle={cardStyle}
+            />
+          ) : articles.length === 0 ? (
+            <div class="empty-state">
+              <p>No recipes found in this category yet.</p>
+            </div>
+          ) : null
+        }
+        
+        {showPagination && totalPages > 1 && (
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            baseUrl={baseUrl}
+          />
+        )}
+      </div>
+
+      {showSidebar && (
+        <aside class="recipes-sidebar">
+          <PopularRecipes limit={5} />
+          <NewsletterWidget />
+        </aside>
+      )}
+    </div>
     </div>
   </section>
 
-  <!-- Category Navigation - Always visible, uses showInNav to filter which categories appear -->
+  <!-- Category Navigation - Always visible, excludes current category -->
   <section class="category-nav-section">
     <div class="container">
       <h2 class="nav-title">Explore More Categories</h2>
       <div class="category-chips">
         {allCategories
-          .filter((cat: Category) => cat.slug !== slug)
+          .filter((cat: HydratedCategory) => cat.slug !== slug)
           .slice(0, 6)
-          .map((cat: Category) => (
+          .map((cat: HydratedCategory) => (
           <a
             href={`/categories/${cat.slug}`}
             class="category-chip"
@@ -258,122 +185,6 @@ const getLayoutClass = () => {
 </Layout>
 
 <style>
-  /* Hero Section */
-  .category-hero {
-    background: #1a1a1a;
-    padding: 2rem 0;
-  }
-
-  .hero-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 clamp(1rem, 3vw, 2rem);
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    align-items: center;
-  }
-
-  @media (min-width: 1024px) {
-    .hero-container {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-
-  .featured-card {
-    display: block;
-    text-decoration: none;
-    border-radius: 16px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .featured-image {
-    position: relative;
-    aspect-ratio: 4/3;
-  }
-
-  .featured-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .featured-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 2rem;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
-  }
-
-  .featured-badge {
-    display: inline-block;
-    background: #ff3366;
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 0.375rem 0.75rem;
-    border-radius: 4px;
-    margin-bottom: 0.75rem;
-  }
-
-  .featured-title {
-    color: white;
-    font-size: clamp(1.25rem, 3vw, 1.75rem);
-    font-weight: 700;
-    line-height: 1.3;
-    margin: 0 0 0.5rem;
-  }
-
-  .featured-meta {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.875rem;
-  }
-
-  .hero-content {
-    color: white;
-    text-align: center;
-  }
-
-  @media (min-width: 1024px) {
-    .hero-content {
-      text-align: right;
-      padding-right: 2rem;
-    }
-  }
-
-  .category-title {
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    font-weight: 800;
-    margin: 0 0 1rem;
-  }
-
-  .category-description {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.8);
-    line-height: 1.7;
-    margin: 0 0 2rem;
-  }
-
-  .cta-button {
-    display: inline-block;
-    background: white;
-    color: #1a1a1a;
-    padding: 0.875rem 2rem;
-    border-radius: 8px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
-  }
-
-  .cta-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-  }
-
   /* Category Navigation */
   .category-nav-section {
     padding: 3rem 0;
@@ -475,6 +286,36 @@ const getLayoutClass = () => {
     background: #fafafa;
   }
 
+  .recipes-section.no-hero {
+    padding-top: 2rem;
+  }
+
+  .recipes-layout {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .recipes-layout.with-sidebar {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+
+  .recipes-main {
+    min-width: 0;
+  }
+
+  .recipes-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 1024px) {
+    .recipes-layout.with-sidebar {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .section-header {
     display: flex;
     align-items: center;
@@ -497,48 +338,6 @@ const getLayoutClass = () => {
     background: #e5e7eb;
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
-  }
-
-  /* Grid Layout (default) */
-  .recipe-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
-  }
-
-  /* List Layout */
-  .recipe-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .recipe-list :global(article) {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 1.5rem;
-    max-width: 100%;
-  }
-
-  .recipe-list :global(article > a) {
-    aspect-ratio: 4/3;
-  }
-
-  @media (max-width: 768px) {
-    .recipe-list :global(article) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* Masonry Layout */
-  .recipe-masonry {
-    columns: 3 280px;
-    column-gap: 1.5rem;
-  }
-
-  .recipe-masonry :global(article) {
-    break-inside: avoid;
-    margin-bottom: 1.5rem;
   }
 
   .empty-state {
@@ -632,6 +431,9 @@ const getLayoutClass = () => {
     transform: translateY(-1px);
   }
 </style>
+
+
+
 
 
 

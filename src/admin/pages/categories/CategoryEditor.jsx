@@ -1007,7 +1007,7 @@ const CategoryEditor = () => {
                     onChange={(e) => handleChange('iconSvg', e.target.value)}
                     rows={3}
                     placeholder="<svg viewBox='0 0 24 24'>...</svg>"
-                    className="resize-none"
+                    className="resize-none h-40 min-h-[160px] max-h-[160px]"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">

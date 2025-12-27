@@ -1,0 +1,69 @@
+---
+import type { HydratedArticle } from "@modules/articles";
+import ArticleCard from "./ArticleCard.astro";
+
+interface Props {
+  articles: HydratedArticle[];
+  layoutMode?: "grid" | "list" | "masonry";
+  cardStyle?: "full" | "compact" | "minimal";
+}
+
+const { articles, layoutMode = "grid", cardStyle = "full" } = Astro.props;
+
+const layoutClass =
+  layoutMode === "list"
+    ? "recipe-list"
+    : layoutMode === "masonry"
+      ? "recipe-masonry"
+      : "recipe-grid";
+---
+
+<div class:list={[layoutClass, `card-style-${cardStyle}`]}>
+  {articles.map((article) => (
+    <ArticleCard article={article} cardStyle={cardStyle} />
+  ))}
+</div>
+
+<style>
+  /* Grid Layout (default) */
+  .recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+  }
+
+  /* List Layout */
+  .recipe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .recipe-list :global(article) {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    max-width: 100%;
+  }
+
+  .recipe-list :global(article > a) {
+    aspect-ratio: 4/3;
+  }
+
+  @media (max-width: 768px) {
+    .recipe-list :global(article) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Masonry Layout */
+  .recipe-masonry {
+    columns: 3 280px;
+    column-gap: 1.5rem;
+  }
+
+  .recipe-masonry :global(article) {
+    break-inside: avoid;
+    margin-bottom: 1.5rem;
+  }
+</style>
