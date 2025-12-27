@@ -201,7 +201,10 @@ const getLayoutClass = () => {
     <div class="container">
       <h2 class="nav-title">Explore More Categories</h2>
       <div class="category-chips">
-        {allCategories.filter((cat: Category) => cat.slug !== slug).map((cat: Category) => (
+        {allCategories
+          .filter((cat: Category) => cat.slug !== slug)
+          .slice(0, 6)
+          .map((cat: Category) => (
           <a
             href={`/categories/${cat.slug}`}
             class="category-chip"
@@ -431,9 +434,9 @@ const getLayoutClass = () => {
 
   .chip-svg svg,
   .chip-svg :global(svg) {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    width: 70%;
+    height: 70%;
+    display: block;
   }
 
   /* Placeholder when no SVG (shows first letter) */
