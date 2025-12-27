@@ -19,6 +19,9 @@ export default defineConfig({
   output: 'server',
   vite: {
     plugins: [tailwindcss()],
+    ssr: {
+      external: ['node:fs/promises', 'node:path', 'node:worker_threads'],
+    },
     server: {
       watch: {
         // Ignore .wrangler directory to prevent SQLite WAL changes from triggering reloads
@@ -58,6 +61,7 @@ export default defineConfig({
     },
     build: {
       target: 'esnext',
+      chunkSizeWarningLimit: 1800,
     },
     worker: {
       format: 'es',
