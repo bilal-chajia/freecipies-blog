@@ -7,11 +7,13 @@ interface Props {
   article: HydratedArticle;
   loading?: "lazy" | "eager";
   cardStyle?: "full" | "compact" | "minimal";
+  layoutMode?: "grid" | "list" | "masonry";
 }
 
-const { article, loading = "lazy", cardStyle = "full" } = Astro.props;
+const { article, loading = "lazy", cardStyle = "full", layoutMode = "grid" } = Astro.props;
 const isCompact = cardStyle === "compact";
 const isMinimal = cardStyle === "minimal";
+const isList = layoutMode === "list";
 
 const thumbnail = extractImage(article.imagesJson, "thumbnail", 720);
 const cover = extractImage(article.imagesJson, "cover", 720);
@@ -19,6 +21,7 @@ const slotName = thumbnail.imageUrl ? "thumbnail" : "cover";
 const selected = thumbnail.imageUrl ? thumbnail : cover;
 const srcSet = getImageSrcSet(article.imagesJson, slotName);
 const sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px";
+const listSizes = "(max-width: 768px) 100vw, 320px";
 const image = {
   url:
     selected.imageUrl ||
@@ -35,150 +38,347 @@ const recipe = article.recipeJson
     ? JSON.parse(article.recipeJson)
     : article.recipeJson
   : null;
+
+const ratingValue = recipe?.aggregateRating?.ratingValue ?? null;
+const ratingCount = recipe?.aggregateRating?.ratingCount ?? 0;
+const normalizedRating = ratingValue ? Math.max(0, Math.min(5, ratingValue)) : 0;
+const hasRating = ratingValue !== null && ratingCount > 0;
+const authorLabel = article.authorName || article.authorSlug || "Unknown";
+const ratingStars = Array.from({ length: 5 });
 ---
 
-<article
-  class="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md
+{isList ? (
+  <article class="recipe-list-card">
+    <a href={article.route} class="list-image">
+      <img
+        src={image.url}
+        alt={image.alt || article.headline}
+        width={image.width || 800}
+        height={image.height || 600}
+        srcset={srcSet || undefined}
+        sizes={srcSet ? listSizes : undefined}
+        loading={loading}
+        class="list-image-img"
+      />
+    </a>
+    <div class="list-content">
+      <h3 class="list-title">{article.headline}</h3>
+      <div class="list-divider"></div>
+      <p class="list-excerpt">{article.shortDescription}</p>
+      <div class="list-meta">
+        <div class="list-meta-left">
+          <span class="meta-item">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"
+              />
+            </svg>
+            <span>{authorLabel}</span>
+          </span>
+          <span class="meta-item">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1zm12 8H5v8h14z"
+              />
+            </svg>
+            <FormattedDate date={article.publishedAt || article.createdAt} />
+          </span>
+        </div>
+        {hasRating && (
+          <div class="list-rating">
+            <div class="list-stars">
+              {ratingStars.map((_, index) => (
+                <svg
+                  class:list={["rating-star", { "is-active": normalizedRating >= index + 1 }]}
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M12 2l3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21l1.18-6.87-5-4.87 6.91-1L12 2z" />
+                </svg>
+              ))}
+            </div>
+            <span class="rating-text">{normalizedRating.toFixed(1)}/5</span>
+          </div>
+        )}
+      </div>
+    </div>
+  </article>
+) : (
+  <article
+    class="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md
 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex
 flex-col h-full"
->
-  <a href={article.route} class="block relative aspect-video
+  >
+    <a href={article.route} class="block relative aspect-video
 overflow-hidden">
-    <!-- Image -->
-    <img
-      src={image.url}
-      alt={image.alt || article.headline}
-      width={image.width || 800}
-      height={image.height || 600}
-      srcset={srcSet || undefined}
-      sizes={srcSet ? sizes : undefined}
-      loading={loading}
-      class="w-full h-full object-cover group-hover:scale-110
+      <!-- Image -->
+      <img
+        src={image.url}
+        alt={image.alt || article.headline}
+        width={image.width || 800}
+        height={image.height || 600}
+        srcset={srcSet || undefined}
+        sizes={srcSet ? sizes : undefined}
+        loading={loading}
+        class="w-full h-full object-cover group-hover:scale-110
 transition-transform duration-500"
-    />
-    <!-- Favorite Badge -->
-    {
-      article.isFavorite && (
-        <div
-          class="absolute top-3 right-3 bg-red-500 text-white
+      />
+      <!-- Favorite Badge -->
+      {
+        article.isFavorite && (
+          <div
+            class="absolute top-3 right-3 bg-red-500 text-white
 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 z-10"
-        >
-          {" "}
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          >
             {" "}
-            <path
-              d="M3.172
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              {" "}
+              <path
+                d="M3.172
 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10
 17.657l-6.828-6.829a4 4 0 010-5.656z"
-            />{" "}
-          </svg>{" "}
-          <span>Featured</span>{" "}
-        </div>
-      )
-    }
-    <!-- Overlay -->
-    <div
-      class="absolute inset-0 bg-gradient-to-t from-black/60
+              />{" "}
+            </svg>{" "}
+            <span>Featured</span>{" "}
+          </div>
+        )
+      }
+      <!-- Overlay -->
+      <div
+        class="absolute inset-0 bg-gradient-to-t from-black/60
 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300
 flex items-end p-4"
-    >
-      <span class="text-white font-medium">Read More</span>
-    </div>
-  </a>
-  <!-- Info -->
-  <div
-    class:list={[
-      "flex-grow flex flex-col",
-      isMinimal || isCompact ? "p-4" : "p-5",
-    ]}
-  >
-    <!--
-Category -->
+      >
+        <span class="text-white font-medium">Read More</span>
+      </div>
+    </a>
+    <!-- Info -->
     <div
       class:list={[
-        "flex items-center gap-2",
-        isMinimal || isCompact ? "mb-2" : "mb-3",
+        "flex-grow flex flex-col",
+        isMinimal || isCompact ? "p-4" : "p-5",
       ]}
     >
-      <span
-        class="text-xs
-font-semibold uppercase tracking-wide"
-        style={`color: ${article.categoryColor || "#2563eb"}`}
+      <!--
+Category -->
+      <div
+        class:list={[
+          "flex items-center gap-2",
+          isMinimal || isCompact ? "mb-2" : "mb-3",
+        ]}
       >
-        {
-          article.categoryLabel ||
-            article.categorySlug?.replace(/-/g, " ") ||
-            "Uncategorized"
-        }
-      </span>
-    </div>
-    <!-- Title -->
-    <h3
-      class:list={[
-        "font-bold text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors",
-        isMinimal || isCompact ? "text-lg mb-1" : "text-xl mb-2",
-      ]}
-    >
-      {article.headline}
-    </h3>
-    <!-- Description -->
-    {
-      !isMinimal && (
-        <p
-          class:list={[
-            "text-gray-600 dark:text-gray-300 line-clamp-2 flex-grow",
-            isCompact ? "text-xs mb-3" : "text-sm mb-4",
-          ]}
+        <span
+          class="text-xs
+font-semibold uppercase tracking-wide"
+          style={`color: ${article.categoryColor || "#2563eb"}`}
         >
-          {article.shortDescription}
-        </p>
-      )
-    }
-    <!-- Meta Info -->
-    {
-      !isMinimal && (
-        <div
-          class:list={[
-            "flex items-center justify-between text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-4 mt-auto",
-            isCompact ? "text-xs" : "text-sm",
-          ]}
-        >
-          <div class="flex items-center gap-1">
-            <span
-              >{
-                new Date(
-                  article.publishedAt ||
-                    article.createdAt ||
-                    new Date().toISOString()
-                ).toLocaleDateString()
-              }</span
-            >
-          </div>
           {
-            recipe && (
-              <div class="flex items-center gap-1">
-                {" "}
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  {" "}
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0
-0118 0z"
-                  />{" "}
-                </svg>{" "}
-                <span>{recipe?.prepTime || "N/A"}</span>{" "}
-              </div>
-            )
+            article.categoryLabel ||
+              article.categorySlug?.replace(/-/g, " ") ||
+              "Uncategorized"
           }
-        </div>
-      )
+        </span>
+      </div>
+      <!-- Title -->
+      <h3
+        class:list={[
+          "font-bold text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors",
+          isMinimal || isCompact ? "text-lg mb-1" : "text-xl mb-2",
+        ]}
+      >
+        {article.headline}
+      </h3>
+      <!-- Description -->
+      {
+        !isMinimal && (
+          <p
+            class:list={[
+              "text-gray-600 dark:text-gray-300 line-clamp-2 flex-grow",
+              isCompact ? "text-xs mb-3" : "text-sm mb-4",
+            ]}
+          >
+            {article.shortDescription}
+          </p>
+        )
+      }
+      <!-- Meta Info -->
+      {
+        !isMinimal && (
+          <div
+            class:list={[
+              "flex items-center justify-between text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-4 mt-auto",
+              isCompact ? "text-xs" : "text-sm",
+            ]}
+          >
+            <div class="flex items-center gap-1">
+              <span
+                >{
+                  new Date(
+                    article.publishedAt ||
+                      article.createdAt ||
+                      new Date().toISOString()
+                  ).toLocaleDateString()
+                }</span
+              >
+            </div>
+            {
+              recipe && (
+                <div class="flex items-center gap-1">
+                  {" "}
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    {" "}
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0
+0118 0z"
+                    />{" "}
+                  </svg>{" "}
+                  <span>{recipe?.prepTime || "N/A"}</span>{" "}
+                </div>
+              )
+            }
+          </div>
+        )
+      }
+    </div>
+  </article>
+)}
+
+<style>
+  .recipe-list-card {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  .list-image {
+    display: block;
+    position: relative;
+    height: 100%;
+    min-height: 200px;
+  }
+
+  .list-image-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .list-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border-left: 1px solid #e5e7eb;
+  }
+
+  .list-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #111;
+    margin: 0;
+  }
+
+  .list-divider {
+    width: 42px;
+    height: 3px;
+    background: #6db24a;
+  }
+
+  .list-excerpt {
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .list-meta {
+    margin-top: 0.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .list-meta-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #666;
+    font-size: 0.85rem;
+  }
+
+  .meta-item svg {
+    width: 16px;
+    height: 16px;
+    fill: #6b7280;
+  }
+
+  .list-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6db24a;
+    font-size: 0.85rem;
+  }
+
+  .list-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .rating-star {
+    width: 14px;
+    height: 14px;
+    fill: #e5e7eb;
+  }
+
+  .rating-star.is-active {
+    fill: #6db24a;
+  }
+
+  .rating-text {
+    color: #4b5563;
+  }
+
+  @media (max-width: 768px) {
+    .recipe-list-card {
+      grid-template-columns: 1fr;
     }
-  </div>
-</article>
+
+    .list-content {
+      border-left: 0;
+      border-top: 1px solid #e5e7eb;
+    }
+  }
+</style>
+
