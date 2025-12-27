@@ -1,14 +1,14 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import ArticleCard from "../../components/ArticleCard.astro";
-import NewsletterWidget from "../../components/NewsletterWidget.astro";
+import Pagination from "../../components/Pagination.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
 import {
-  getCategoryBySlug,
   getCategories,
   type Category,
 } from "@modules/categories";
 import { getArticles, type Article } from "@modules/articles";
-import { extractImage, getImageSrcSet } from "@shared/utils";
+import { extractImage, getImageSrcSet, hydrateCategories } from "@shared/utils";
 
 const { slug } = Astro.params;
 const { env } = Astro.locals.runtime;
@@ -17,21 +17,43 @@ if (!slug) {
   return Astro.redirect("/404");
 }
 
-// Fetch current category
-const category = await getCategoryBySlug(env.DB, slug);
+// Parse query parameters - only pagination is user-controllable
+const url = new URL(Astro.request.url);
+const currentPage = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+
+// Fetch all categories in a single query
+const allRawCategories = await getCategories(env.DB, { isOnline: true });
+const allCategories = hydrateCategories(allRawCategories);
+
+// Find current category
+const category = allCategories.find((c) => c.slug === slug);
 if (!category) {
   return Astro.redirect("/404");
 }
 
-// Fetch articles for this category
-const { items: articles } = await getArticles(env.DB, {
+// All display settings come from admin config ONLY (no user overrides)
+const perPage = category.numEntriesPerPage || 12;
+const sortBy = category.sortBy || 'publishedAt';
+const sortOrder = category.sortOrder || 'desc';
+const layoutMode = category.layoutMode || 'grid';
+const showPagination = category.showPagination !== false;
+const showBreadcrumb = category.showBreadcrumb !== false;
+const headerStyle = category.headerStyle || 'hero';
+
+// Fetch articles with pagination and sorting
+const offset = (currentPage - 1) * perPage;
+const { items: articles, total } = await getArticles(env.DB, {
   categorySlug: slug,
-  limit: 20,
+  isOnline: true,
+  limit: perPage,
+  offset,
+  sortBy,
+  sortOrder,
 });
 
-// Get featured article (first one or favorite)
-const featuredArticle = articles[0];
-const gridArticles = articles.slice(1);
+const totalPages = Math.ceil(total / perPage);
+const featuredArticle = currentPage === 1 && headerStyle === 'hero' ? articles[0] : null;
+const gridArticles = featuredArticle ? articles.slice(1) : articles;
 
 // Helper to parse recipeJson
 const parseRecipe = (json: string | null | undefined) => {
@@ -42,13 +64,12 @@ const parseRecipe = (json: string | null | undefined) => {
     return null;
   }
 };
-const featuredRecipe = featuredArticle
-  ? parseRecipe(featuredArticle.recipeJson)
-  : null;
+const featuredRecipe = featuredArticle ? parseRecipe(featuredArticle.recipeJson) : null;
 
-// Fetch all categories for navigation
-const allCategories = await getCategories(env.DB, { isOnline: true });
+// Base URL for pagination/filters
+const baseUrl = `/categories/${slug}`;
 
+// Image helpers
 const getArticleImage = (article: Article, targetWidth: number, prefer: 'cover' | 'thumbnail' = 'cover') => {
   const cover = extractImage(article.imagesJson, "cover", targetWidth);
   const thumbnail = extractImage(article.imagesJson, "thumbnail", targetWidth);
@@ -70,9 +91,18 @@ const getCategoryImage = (cat: Category, targetWidth: number, prefer: 'cover' | 
   const srcSet = getImageSrcSet(cat.imagesJson, slotName);
   return { selected, srcSet };
 };
+
+// Layout class helper
+const getLayoutClass = () => {
+  switch (layoutMode) {
+    case 'list': return 'recipe-list';
+    case 'masonry': return 'recipe-masonry';
+    default: return 'recipe-grid';
+  }
+};
 ---
 
-<Layout title={category.metaTitle} description={category.metaDescription}>
+<Layout title={category.metaTitle || category.headline || category.label} description={category.metaDescription || category.shortDescription}>
   <!-- Hero Section with Featured Article -->
   <section class="category-hero">
     <div class="hero-container">
@@ -99,7 +129,7 @@ const getCategoryImage = (cat: Category, targetWidth: number, prefer: 'cover' | 
               <h2 class="featured-title">{featuredArticle.label}</h2>
               <div class="featured-meta">
                 {featuredRecipe?.cookTime && (
-                  <span>ƒ?ñ {featuredRecipe.cookTime}</span>
+                  <span>ï¿½?ï¿½ {featuredRecipe.cookTime}</span>
                 )}
               </div>
             </div>
@@ -109,57 +139,37 @@ const getCategoryImage = (cat: Category, targetWidth: number, prefer: 'cover' | 
     })()
   }
   <div class="hero-content">
-        <h1 class="category-title">{category.label}</h1>
+        <h1 class="category-title">{category.headline || category.label}</h1>
         <p class="category-description">
           {category.shortDescription || category.headline}
         </p>
+        {category.tldr && (
+          <p class="category-tldr">
+            {category.tldr}
+          </p>
+        )}
         <a href="#newsletter" class="cta-button"> Join My Mailing List </a>
       </div>
     </div>
   </section>
 
-  <!-- Category Navigation -->
-  <section class="category-nav-section">
-    <div class="container">
-      <h2 class="nav-title">Want to Learn How to Make?</h2>
-      <div class="category-chips">
-        {
-          allCategories.map((cat: Category) => {
-  const { selected, srcSet } = getCategoryImage(cat, 80, "thumbnail");
-  const sizes = "70px";
-  return (
-    <a
-      href={`/categories/${cat.slug}`}
-      class:list={["category-chip", { active: cat.slug === slug }]}
-    >
-      {(selected.imageUrl || cat.imageUrl) && (
-        <img
-          src={selected.imageUrl || cat.imageUrl}
-          alt={selected.imageAlt || cat.imageAlt || cat.label}
-          class="chip-image"
-          width={selected.imageWidth || cat.imageWidth || 70}
-          height={selected.imageHeight || cat.imageHeight || 70}
-          srcset={srcSet || undefined}
-          sizes={srcSet ? sizes : undefined}
-          loading="lazy"
-        />
-      )}
-      <span class="chip-label">{cat.label}</span>
-      <span class="chip-type">Category</span>
-    </a>
-  );
-})
-        }
-      </div>
-    </div>
-  </section>
-
   <!-- Recipe Grid -->
-  <section class="recipes-section">
-    <div class="container">
-      {
-        gridArticles.length > 0 ? (
-          <div class="recipe-grid">
+<section class="recipes-section">
+  <div class="container">
+    {showBreadcrumb && (
+      <Breadcrumb items={[
+        { label: 'CatÃ©gories', href: '/categories' },
+        { label: category.label }
+      ]} />
+    )}
+    
+    <div class="section-header">
+      <h2 class="section-title">{category.collectionTitle || `${category.label} Recipes`}</h2>
+      <span class="recipe-count">{total} recette{total > 1 ? 's' : ''}</span>
+    </div>
+    {
+      gridArticles.length > 0 ? (
+        <div class={getLayoutClass()}>
             {gridArticles.map((article: Article) => (
               <ArticleCard article={article} />
             ))}
@@ -170,6 +180,45 @@ const getCategoryImage = (cat: Category, targetWidth: number, prefer: 'cover' | 
           </div>
         ) : null
       }
+    
+    {showPagination && totalPages > 1 && (
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        baseUrl={baseUrl}
+        preserveParams={{ 
+          ...(sortBy !== 'publishedAt' ? { sortBy } : {}),
+          ...(sortOrder !== 'desc' ? { sortOrder } : {}),
+          ...(layoutMode !== 'grid' ? { layout: layoutMode } : {})
+        }}
+      />
+    )}
+    </div>
+  </section>
+
+  <!-- Category Navigation - Always visible, uses showInNav to filter which categories appear -->
+  <section class="category-nav-section">
+    <div class="container">
+      <h2 class="nav-title">Explore More Categories</h2>
+      <div class="category-chips">
+        {allCategories.filter((cat: Category) => cat.slug !== slug).map((cat: Category) => (
+          <a
+            href={`/categories/${cat.slug}`}
+            class="category-chip"
+          >
+            <div class="chip-svg">
+              {cat.iconSvg ? (
+                <Fragment set:html={cat.iconSvg} />
+              ) : (
+                <div class="chip-placeholder" style={`background-color: ${cat.color || '#ff3366'}`}>
+                  <span>{cat.label.charAt(0)}</span>
+                </div>
+              )}
+            </div>
+            <span class="chip-label">{cat.label}</span>
+          </a>
+        ))}
+      </div>
     </div>
   </section>
 
@@ -366,31 +415,55 @@ const getCategoryImage = (cat: Category, targetWidth: number, prefer: 'cover' | 
     transform: translateY(-4px);
   }
 
-  .chip-image {
-    width: 70px;
-    height: 70px;
+  /* SVG illustration container */
+  .chip-svg {
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid transparent;
-    transition: border-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #f8f9fa;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
-  .category-chip:hover .chip-image,
-  .category-chip.active .chip-image {
-    border-color: #ff3366;
+  .chip-svg svg,
+  .chip-svg :global(svg) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* Placeholder when no SVG (shows first letter) */
+  .chip-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .chip-placeholder span {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+  }
+
+  .category-chip:hover .chip-svg {
+    transform: scale(1.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
 
   .chip-label {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: #222;
     text-align: center;
-  }
-
-  .chip-type {
-    font-size: 0.75rem;
-    color: #ff3366;
-    text-transform: uppercase;
+    max-width: 90px;
   }
 
   /* Recipes Section */
@@ -399,10 +472,70 @@ const getCategoryImage = (cat: Category, targetWidth: number, prefer: 'cover' | 
     background: #fafafa;
   }
 
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0;
+  }
+
+  .recipe-count {
+    font-size: 0.875rem;
+    color: #6b7280;
+    background: #e5e7eb;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+  }
+
+  /* Grid Layout (default) */
   .recipe-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 2rem;
+  }
+
+  /* List Layout */
+  .recipe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .recipe-list :global(article) {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    max-width: 100%;
+  }
+
+  .recipe-list :global(article > a) {
+    aspect-ratio: 4/3;
+  }
+
+  @media (max-width: 768px) {
+    .recipe-list :global(article) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Masonry Layout */
+  .recipe-masonry {
+    columns: 3 280px;
+    column-gap: 1.5rem;
+  }
+
+  .recipe-masonry :global(article) {
+    break-inside: avoid;
+    margin-bottom: 1.5rem;
   }
 
   .empty-state {
