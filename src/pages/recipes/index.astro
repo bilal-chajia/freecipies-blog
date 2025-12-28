@@ -95,11 +95,15 @@ const parseHexColor = (value?: string) => {
   if (!value) return null;
   const trimmed = value.trim();
   const match = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
-  if (match.length === 3) {
-    const [r, g, b] = match.split("");
+  if (!/^[0-9a-fA-F]+$/.test(match)) return null;
+  if (match.length === 3 || match.length === 4) {
+    const [r, g, b] = match.slice(0, 3).split("");
     return `${r}${r}${g}${g}${b}${b}`;
   }
-  return match.length === 6 ? match : null;
+  if (match.length === 6 || match.length === 8) {
+    return match.slice(0, 6);
+  }
+  return null;
 };
 
 const getBadgeTextColor = (background?: string) => {
@@ -113,7 +117,7 @@ const getBadgeTextColor = (background?: string) => {
 };
 
 const getBadgeColors = (color?: string) => {
-  const badgeColor = color && color.trim() ? color : "#ff3366";
+  const badgeColor = color && color.trim() ? color.trim() : "#ff3366";
   const badgeText = getBadgeTextColor(badgeColor);
   return { badgeColor, badgeText };
 };
