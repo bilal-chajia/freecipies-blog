@@ -69,6 +69,21 @@ export function getImageSlot(
   return images[slot] || null;
 }
 
+const LOCAL_IMAGE_HOST_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i;
+
+const normalizeImageUrl = (url?: string): string | undefined => {
+  if (!url) return url;
+  const trimmed = url.trim();
+  if (!trimmed || !LOCAL_IMAGE_HOST_RE.test(trimmed)) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed);
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return trimmed.replace(LOCAL_IMAGE_HOST_RE, '');
+  }
+};
+
 const buildSrcSet = (variants?: ImageSlot['variants']): string => {
   if (!variants) return '';
   const entries: string[] = [];
@@ -76,8 +91,9 @@ const buildSrcSet = (variants?: ImageSlot['variants']): string => {
 
   for (const key of ordered) {
     const variant = variants[key];
-    if (variant?.url && variant.width) {
-      entries.push(`${variant.url} ${variant.width}w`);
+    const normalizedUrl = normalizeImageUrl(variant?.url);
+    if (normalizedUrl && variant?.width) {
+      entries.push(`${normalizedUrl} ${variant.width}w`);
     }
   }
 
@@ -144,18 +160,20 @@ export function extractImage(
   if (!imageSlot) return {};
 
   const variant = pickVariantByWidth(imageSlot.variants, targetWidth);
-  if (variant?.url) {
+  const normalizedVariantUrl = normalizeImageUrl(variant?.url);
+  if (normalizedVariantUrl) {
     return {
-      imageUrl: variant.url,
+      imageUrl: normalizedVariantUrl,
       imageAlt: imageSlot.alt,
       imageWidth: variant.width,
       imageHeight: variant.height,
     };
   }
 
-  if (imageSlot.url) {
+  const normalizedSlotUrl = normalizeImageUrl(imageSlot.url);
+  if (normalizedSlotUrl) {
     return {
-      imageUrl: imageSlot.url,
+      imageUrl: normalizedSlotUrl,
       imageAlt: imageSlot.alt,
       imageWidth: imageSlot.width,
       imageHeight: imageSlot.height,
@@ -283,6 +301,7 @@ export function hydrateArticle<T extends {
   if (!authorAvatar && (article as any).author?.imagesJson) {
     authorAvatar = extractImage((article as any).author.imagesJson, 'avatar').imageUrl;
   }
+  authorAvatar = normalizeImageUrl(authorAvatar);
 
   const seo = extractSeo(article.seoJson);
   const route = article.type === 'recipe' ? `/recipes/${article.slug}` : `/articles/${article.slug}`;
