@@ -91,6 +91,33 @@ const getRecipeImage = (
   return { selected, srcSet };
 };
 
+const parseHexColor = (value?: string) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const match = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
+  if (match.length === 3) {
+    const [r, g, b] = match.split("");
+    return `${r}${r}${g}${g}${b}${b}`;
+  }
+  return match.length === 6 ? match : null;
+};
+
+const getBadgeTextColor = (background?: string) => {
+  const hex = parseHexColor(background);
+  if (!hex) return "#ffffff";
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 170 ? "#111111" : "#ffffff";
+};
+
+const getBadgeColors = (color?: string) => {
+  const badgeColor = color && color.trim() ? color : "#ff3366";
+  const badgeText = getBadgeTextColor(badgeColor);
+  return { badgeColor, badgeText };
+};
+
 const siteTitle = categoryFilter
   ? `${categories.find((c) => c.slug === categoryFilter)?.label || "Category"} Recipes - Freecipies`
   : "All Recipes - Freecipies";
@@ -229,6 +256,7 @@ const siteDescription =
               {recipes.map((recipe) => {
                 const { selected, srcSet } = getRecipeImage(recipe, 400, "cover");
                 const sizes = "(max-width: 768px) 50vw, 25vw";
+                const { badgeColor, badgeText } = getBadgeColors(recipe.categoryColor);
                 return (
                   <article class="recipe-card">
                     <a href={`/recipes/${recipe.slug}`} class="card-image-link">
@@ -243,7 +271,12 @@ const siteDescription =
                           loading="lazy"
                         />
                       )}
-                      <span class="card-badge">{recipe.categoryLabel}</span>
+                      <span
+                        class="card-badge"
+                        style={`background: ${badgeColor}; color: ${badgeText};`}
+                      >
+                        {recipe.categoryLabel}
+                      </span>
                     </a>
                     <div class="card-body">
                       <h3 class="card-title">
