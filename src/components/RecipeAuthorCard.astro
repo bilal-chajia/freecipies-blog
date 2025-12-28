@@ -2,6 +2,10 @@
 interface Props {
     authorName?: string;
     authorImage?: string;
+    authorImageSrcSet?: string;
+    authorImageSizes?: string;
+    authorImageWidth?: number;
+    authorImageHeight?: number;
     authorRole?: string;
     lastUpdated?: string | Date;
     viewCount?: number;
@@ -10,6 +14,10 @@ interface Props {
 const {
     authorName = "Freecipies Team",
     authorImage,
+    authorImageSrcSet,
+    authorImageSizes,
+    authorImageWidth = 48,
+    authorImageHeight = 48,
     authorRole = "Blogger",
     lastUpdated,
     viewCount,
@@ -53,9 +61,12 @@ const initials = authorName
             <img
                 src={authorImage}
                 alt={authorName}
-                width="48"
-                height="48"
+                width={authorImageWidth}
+                height={authorImageHeight}
+                srcset={authorImageSrcSet || undefined}
+                sizes={authorImageSizes || undefined}
                 loading="lazy"
+                decoding="async"
                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
             />
             <div class="avatar-fallback" style="display: none;">

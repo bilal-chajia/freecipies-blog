@@ -45,12 +45,18 @@ const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
 const heroSlotName = useCover ? "cover" : "thumbnail";
 const heroImage = useCover ? heroCover : heroThumb;
 const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
-const heroSizes = "(max-width: 768px) 100vw, 800px";
+const heroSizes = "(max-width: 768px) 90vw, 800px";
 
 const authorAvatar = author?.imagesJson
   ? extractImage(author.imagesJson, "avatar", 96)
   : {};
+const authorAvatarSrcSet = author?.imagesJson
+  ? getImageSrcSet(author.imagesJson, "avatar")
+  : "";
+const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
 const authorImage = authorAvatar.imageUrl || author?.imageUrl;
+const authorImageWidth = authorAvatar.imageWidth || 48;
+const authorImageHeight = authorAvatar.imageHeight || 48;
 ---
 
 <Layout
@@ -66,6 +72,9 @@ const authorImage = authorAvatar.imageUrl || author?.imageUrl;
         rel="preload"
         as="image"
         href={heroImage.imageUrl || recipe.imageUrl}
+        imagesrcset={heroSrcSet || undefined}
+        imagesizes={heroSrcSet ? heroSizes : undefined}
+        fetchpriority="high"
       />
     )
   }
@@ -106,6 +115,10 @@ const authorImage = authorAvatar.imageUrl || author?.imageUrl;
         <RecipeAuthorCard
           authorName={author?.name || recipe.authorName}
           authorImage={authorImage || undefined}
+          authorImageSrcSet={authorAvatarSrcSet || undefined}
+          authorImageSizes={authorAvatarSizes}
+          authorImageWidth={authorImageWidth}
+          authorImageHeight={authorImageHeight}
           authorRole={author?.job || "Blogger"}
           lastUpdated={recipe.publishedAt || undefined}
           viewCount={recipe.viewCount}
@@ -132,6 +145,7 @@ const authorImage = authorAvatar.imageUrl || author?.imageUrl;
                 sizes={heroSrcSet ? heroSizes : undefined}
                 loading="eager"
                 fetchpriority="high"
+                decoding="async"
               />
             </div>
           )
