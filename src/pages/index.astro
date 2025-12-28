@@ -522,7 +522,11 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   .slide .card-category {
     display: inline-block;
-    background: var(--badge-color, var(--primary));
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.35),
+        rgba(0, 0, 0, 0.35)
+      ),
+      var(--badge-color, var(--primary));
     color: white;
     padding: 6px 14px;
     border-radius: 4px;
@@ -563,18 +567,29 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   }
 
   .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: transparent;
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
     padding: 0;
+    display: grid;
+    place-items: center;
   }
 
-  .dot:hover,
-  .dot.active {
+  .dot::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transition: all 0.3s ease;
+  }
+
+  .dot:hover::before,
+  .dot.active::before {
     background: white;
     transform: scale(1.2);
   }
@@ -648,7 +663,11 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   .recipe-card .card-category {
     display: inline-block;
-    background: var(--badge-color, var(--primary));
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.35),
+        rgba(0, 0, 0, 0.35)
+      ),
+      var(--badge-color, var(--primary));
     color: white;
     padding: 5px 12px;
     border-radius: 4px;
@@ -758,7 +777,11 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     position: absolute;
     bottom: 12px;
     left: 12px;
-    background: var(--badge-color, #ff6600);
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.35),
+        rgba(0, 0, 0, 0.35)
+      ),
+      var(--badge-color, #ff6600);
     color: white;
     padding: 6px 14px;
     border-radius: 4px;
@@ -903,7 +926,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   .chip-type {
     font-size: 12px;
-    color: #ff3366;
+    color: #8a1c35;
     text-transform: uppercase;
   }
 
@@ -980,7 +1003,11 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     position: absolute;
     top: 12px;
     left: 12px;
-    background: var(--badge-color, var(--primary));
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.35),
+        rgba(0, 0, 0, 0.35)
+      ),
+      var(--badge-color, var(--primary));
     color: white;
     padding: 4px 10px;
     border-radius: 4px;
@@ -1067,7 +1094,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   .newsletter-form button {
     padding: 14px 28px;
-    background: var(--primary);
+    background: var(--primary-hover);
     color: white;
     border: none;
     border-radius: var(--radius);
@@ -1078,7 +1105,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   }
 
   .newsletter-form button:hover {
-    background: var(--primary-hover);
+    background: #992d22;
   }
 
   @media (max-width: 500px) {

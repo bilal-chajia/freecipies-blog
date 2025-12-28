@@ -11,6 +11,9 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://localhost:4321',
   integrations: [react()],
+  devToolbar: {
+    enabled: false,
+  },
   adapter: cloudflare({
     platformProxy: {
       enabled: true,
