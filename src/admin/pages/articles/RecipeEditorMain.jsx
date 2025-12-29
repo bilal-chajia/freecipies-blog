@@ -59,33 +59,53 @@ export default function RecipeEditorMain({
 
             <hr className="border-t-2 my-8" />
 
-            <Tabs defaultValue="content" className="flex flex-row gap-6 items-start">
-                <TabsList className="flex flex-col h-fit w-48 shrink-0 p-2">
-                    <TabsTrigger value="content" className="w-full justify-start">
+            <Tabs defaultValue="content" className="space-y-6">
+                <TabsList className="w-full h-auto flex flex-wrap items-end justify-start gap-2 rounded-none bg-transparent p-0 border-b border-border/60">
+                    <TabsTrigger
+                        value="content"
+                        className="flex-none h-10 -mb-px px-4 py-2 rounded-t-md border border-border bg-muted/30 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:border-b-background data-[state=active]:shadow-sm"
+                    >
                         Additional Content
                     </TabsTrigger>
-                    <TabsTrigger value="recipe" className="w-full justify-start">
+                    <TabsTrigger
+                        value="recipe"
+                        className="flex-none h-10 -mb-px px-4 py-2 rounded-t-md border border-border bg-muted/30 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:border-b-background data-[state=active]:shadow-sm"
+                    >
                         Recipe Data
                     </TabsTrigger>
-                    <TabsTrigger value="faqs" className="w-full justify-start">
+                    <TabsTrigger
+                        value="faqs"
+                        className="flex-none h-10 -mb-px px-4 py-2 rounded-t-md border border-border bg-muted/30 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:border-b-background data-[state=active]:shadow-sm"
+                    >
                         FAQs
                     </TabsTrigger>
-                    <TabsTrigger value="tags" className="w-full justify-start">
+                    <TabsTrigger
+                        value="tags"
+                        className="flex-none h-10 -mb-px px-4 py-2 rounded-t-md border border-border bg-muted/30 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:border-b-background data-[state=active]:shadow-sm"
+                    >
                         Tags
                     </TabsTrigger>
-                    <TabsTrigger value="media" className="w-full justify-start">
+                    <TabsTrigger
+                        value="media"
+                        className="flex-none h-10 -mb-px px-4 py-2 rounded-t-md border border-border bg-muted/30 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:border-b-background data-[state=active]:shadow-sm"
+                    >
                         Media
                     </TabsTrigger>
-                    <TabsTrigger value="seo" className="w-full justify-start">
+                    <TabsTrigger
+                        value="seo"
+                        className="flex-none h-10 -mb-px px-4 py-2 rounded-t-md border border-border bg-muted/30 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:border-b-background data-[state=active]:shadow-sm"
+                    >
                         SEO
                     </TabsTrigger>
-                    <TabsTrigger value="excerpts" className="w-full justify-start">
+                    <TabsTrigger
+                        value="excerpts"
+                        className="flex-none h-10 -mb-px px-4 py-2 rounded-t-md border border-border bg-muted/30 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:border-b-background data-[state=active]:shadow-sm"
+                    >
                         Excerpts
                     </TabsTrigger>
                 </TabsList>
 
-                <div className="flex-1">
-                    <TabsContent value="content" className="space-y-3">
+                <TabsContent value="content" className="space-y-3 pt-4">
                         <div className="flex items-center justify-between mb-2">
                             <Label className="text-base font-semibold">Additional Content (Optional)</Label>
                             <div className="flex items-center gap-2">
@@ -134,15 +154,12 @@ export default function RecipeEditorMain({
                                 />
                             </div>
                         )}
-                    </TabsContent>
+                </TabsContent>
 
-                    <TabsContent value="recipe" className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-base font-semibold">Recipe Data</Label>
-                            {jsonErrors.recipe && (
-                                <span className="text-sm text-destructive font-medium">{jsonErrors.recipe}</span>
-                            )}
-                        </div>
+                <TabsContent value="recipe" className="space-y-3 pt-4">
+                        {jsonErrors.recipe && (
+                            <span className="text-sm text-destructive font-medium">{jsonErrors.recipe}</span>
+                        )}
                         <div className="border rounded-lg overflow-hidden bg-muted/50 p-6 shadow-sm">
                             <RecipeBuilder
                                 value={recipeJson}
@@ -152,12 +169,9 @@ export default function RecipeEditorMain({
                                 }}
                             />
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Ingredients, instructions, nutrition, prep time, etc.
-                        </p>
-                    </TabsContent>
+                </TabsContent>
 
-                    <TabsContent value="faqs" className="space-y-3">
+                <TabsContent value="faqs" className="space-y-3 pt-4">
                         <div className="flex items-center justify-between">
                             <Label className="text-base font-semibold">FAQs (Optional)</Label>
                             {jsonErrors.faqs && (
@@ -183,17 +197,17 @@ export default function RecipeEditorMain({
                         <p className="text-xs text-muted-foreground italic">
                             Add FAQs for SEO schema (or use FAQ block in content)
                         </p>
-                    </TabsContent>
+                </TabsContent>
 
-                    <TabsContent value="tags" className="space-y-3">
+                <TabsContent value="tags" className="space-y-3 pt-4">
                         <TagsSection
                             formData={formData}
                             onInputChange={onInputChange}
                             tags={tags}
                         />
-                    </TabsContent>
+                </TabsContent>
 
-                    <TabsContent value="media" className="space-y-3">
+                <TabsContent value="media" className="space-y-3 pt-4">
                         <MediaSection
                             formData={formData}
                             imagesData={imagesData}
@@ -201,23 +215,22 @@ export default function RecipeEditorMain({
                             onImageRemove={onImageRemove}
                             onMediaDialogOpen={onMediaDialogOpen}
                         />
-                    </TabsContent>
+                </TabsContent>
 
-                    <TabsContent value="seo" className="space-y-3">
+                <TabsContent value="seo" className="space-y-3 pt-4">
                         <SEOSection
                             formData={formData}
                             onInputChange={onInputChange}
                             isEditMode={isEditMode}
                         />
-                    </TabsContent>
+                </TabsContent>
 
-                    <TabsContent value="excerpts" className="space-y-3">
+                <TabsContent value="excerpts" className="space-y-3 pt-4">
                         <ExcerptsSection
                             formData={formData}
                             onInputChange={onInputChange}
                         />
-                    </TabsContent>
-                </div>
+                </TabsContent>
             </Tabs>
         </main>
     );
