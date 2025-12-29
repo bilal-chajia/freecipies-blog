@@ -177,7 +177,7 @@ export default function EditorLayout({
             <div className="flex-1 grid grid-cols-12 overflow-hidden">
                 {/* Main Content Area */}
                 <motion.div
-                    className={`overflow-y-auto ${hasSidebar ? 'col-span-8 border-r' : 'col-span-12'}`}
+                    className={`overflow-y-scroll ${hasSidebar ? 'col-span-8 border-r' : 'col-span-12'}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.4, delay: 0.2 }}
