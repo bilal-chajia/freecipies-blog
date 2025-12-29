@@ -150,14 +150,23 @@ function contentJsonToBlocks(contentJson) {
                     return { id, type: 'paragraph', content: `> ${block.text || ''}` };
 
                 case 'image':
+                    // Read format per DATABASE_SCHEMA.md content_json spec
+                    const imgVariants = block.variants || {};
+                    const bestUrl = imgVariants.lg?.url || imgVariants.md?.url || imgVariants.sm?.url || '';
+                    const bestVariant = imgVariants.lg || imgVariants.md || imgVariants.sm || {};
+
                     return {
                         id,
                         type: 'customImage',
                         props: {
-                            url: block.variants?.lg?.url || block.url || '',
+                            url: bestUrl,
+                            alt: block.alt || '',
                             caption: block.caption || '',
-                            width: block.variants?.lg?.width || 512,
+                            width: bestVariant.width || 512,
+                            height: bestVariant.height || 0,
                             size: block.size || 'full',
+                            mediaId: block.media_id?.toString() || '',
+                            variantsJson: JSON.stringify(imgVariants),
                         },
                     };
 
@@ -268,12 +277,23 @@ function blocksToContentJson(blocks) {
 
             case 'customImage':
                 if (block.props?.url) {
+                    // Parse stored variants or create fallback
+                    let variants = { lg: { url: block.props.url } };
+                    try {
+                        const parsed = JSON.parse(block.props.variantsJson || '{}');
+                        if (Object.keys(parsed).length > 0) {
+                            variants = parsed;
+                        }
+                    } catch { }
+
+                    // Output per DATABASE_SCHEMA.md content_json image block spec
                     result.push({
                         type: 'image',
-                        url: block.props.url,
+                        media_id: block.props.mediaId ? parseInt(block.props.mediaId, 10) : null,
+                        alt: block.props.alt || '',
                         caption: block.props.caption || '',
-                        variants: { lg: { url: block.props.url } },
-                        size: block.props.size,
+                        size: block.props.size || 'full',
+                        variants,
                     });
                 }
                 break;

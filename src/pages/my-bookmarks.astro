@@ -1,0 +1,256 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const title = "My Bookmarks";
+const description = "Saved recipes from Freecipies.";
+---
+
+<Layout title={title} description={description}>
+  <section class="py-12 bg-gray-50 dark:bg-gray-900">
+    <div class="container mx-auto px-4 max-w-6xl">
+      <div class="flex flex-col gap-2 mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Bookmarked Recipes</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-300">Recipes you saved for later.</p>
+      </div>
+
+      <div id="bookmarks-loading" class="text-sm text-gray-500 hidden">Loading bookmarks...</div>
+      <div id="bookmarks-empty" class="text-sm text-gray-500 hidden">
+        No bookmarks yet. Save recipes by tapping the bookmark icon.
+      </div>
+      <div id="bookmarks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+  </section>
+
+  <script type="module">
+    const STORAGE_KEY = 'freecipies.bookmarks';
+    const grid = document.getElementById('bookmarks-grid');
+    const empty = document.getElementById('bookmarks-empty');
+    const loading = document.getElementById('bookmarks-loading');
+
+    const normalizeSlug = (slug) => {
+      if (!slug || typeof slug !== 'string') return '';
+      return slug.trim().toLowerCase();
+    };
+
+    const readBookmarks = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.map(normalizeSlug).filter(Boolean) : [];
+      } catch {
+        return [];
+      }
+    };
+
+    const parseJson = (value) => {
+      if (!value) return null;
+      if (typeof value === 'object') return value;
+      try {
+        return JSON.parse(value);
+      } catch {
+        return null;
+      }
+    };
+
+    const pickImage = (imagesJson) => {
+      const images = parseJson(imagesJson);
+      if (!images) return null;
+      const slot = images.thumbnail || images.cover;
+      if (!slot) return null;
+      const variants = slot.variants || {};
+      const variant = variants.sm || variants.md || variants.lg || variants.original || variants.xs;
+      return {
+        url: variant?.url || slot.url || '',
+        alt: slot.alt || '',
+        width: variant?.width || slot.width || 800,
+        height: variant?.height || slot.height || 600,
+      };
+    };
+
+    const buildCard = (article) => {
+      const card = document.createElement('article');
+      card.className = 'bookmark-card group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full';
+
+      const link = document.createElement('a');
+      link.href = `/recipes/${article.slug}`;
+      link.className = 'block relative aspect-video overflow-hidden';
+
+      const imageData = pickImage(article.imagesJson) || {
+        url: article.imageUrl || '',
+        alt: article.imageAlt || article.headline || '',
+        width: article.imageWidth || 800,
+        height: article.imageHeight || 600,
+      };
+
+      const img = document.createElement('img');
+      img.src = imageData.url || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&q=80';
+      img.alt = imageData.alt || article.headline || '';
+      img.width = imageData.width || 800;
+      img.height = imageData.height || 600;
+      img.loading = 'lazy';
+      img.className = 'w-full h-full object-cover group-hover:scale-110 transition-transform duration-500';
+
+      const bookmark = document.createElement('button');
+      bookmark.type = 'button';
+      bookmark.className = 'bookmark-chip';
+      bookmark.dataset.bookmarkButton = '';
+      bookmark.dataset.bookmarkSlug = article.slug;
+      bookmark.setAttribute('aria-pressed', 'true');
+      bookmark.setAttribute('aria-label', 'Remove bookmark');
+      bookmark.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-4-6 4V4z" /></svg>';
+
+      link.appendChild(img);
+      card.appendChild(link);
+      card.appendChild(bookmark);
+
+      const info = document.createElement('div');
+      info.className = 'p-5 flex flex-col gap-2';
+
+      const cachedCategory = parseJson(article.cachedCategoryJson) || {};
+      const categoryLabel = article.categoryLabel || cachedCategory.label || '';
+      const categoryColor = article.categoryColor || cachedCategory.color || '#2563eb';
+
+      if (categoryLabel) {
+        const category = document.createElement('span');
+        category.className = 'text-xs font-semibold uppercase tracking-wide';
+        category.style.color = categoryColor;
+        category.textContent = categoryLabel;
+        info.appendChild(category);
+      }
+
+      const title = document.createElement('h3');
+      title.className = 'text-lg font-bold text-gray-900 dark:text-white line-clamp-2';
+      title.textContent = article.headline || 'Untitled Recipe';
+      info.appendChild(title);
+
+      if (article.shortDescription) {
+        const desc = document.createElement('p');
+        desc.className = 'text-sm text-gray-600 dark:text-gray-300 line-clamp-2';
+        desc.textContent = article.shortDescription;
+        info.appendChild(desc);
+      }
+
+      card.appendChild(info);
+      return card;
+    };
+
+    const fetchRecipe = async (slug) => {
+      try {
+        const response = await fetch(`/api/recipes/${slug}`);
+        if (!response.ok) return null;
+        const payload = await response.json();
+        return payload?.data || null;
+      } catch {
+        return null;
+      }
+    };
+
+    const updateBookmarkButtons = () => {
+      const bookmarks = readBookmarks();
+      grid.querySelectorAll('[data-bookmark-button]').forEach((button) => {
+        const slug = normalizeSlug(button.dataset.bookmarkSlug);
+        const isActive = slug ? bookmarks.includes(slug) : false;
+        button.dataset.bookmarked = isActive ? 'true' : 'false';
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+    };
+
+    const removeBookmark = (slug) => {
+      const normalized = normalizeSlug(slug);
+      if (!normalized) return;
+      const next = readBookmarks().filter((item) => item !== normalized);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('bookmarks:updated', { detail: next }));
+    };
+
+    const renderBookmarks = async () => {
+      const slugs = readBookmarks();
+      grid.innerHTML = '';
+      empty.classList.add('hidden');
+      loading.classList.add('hidden');
+
+      if (!slugs.length) {
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      loading.classList.remove('hidden');
+      const results = await Promise.all(slugs.map(fetchRecipe));
+      const items = results.filter(Boolean);
+      loading.classList.add('hidden');
+
+      if (!items.length) {
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      items.forEach((item) => {
+        grid.appendChild(buildCard(item));
+      });
+      updateBookmarkButtons();
+    };
+
+    renderBookmarks();
+    grid.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-bookmark-button]');
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const card = button.closest('.bookmark-card');
+      if (card) {
+        card.classList.add('is-removing');
+        setTimeout(() => {
+          removeBookmark(button.dataset.bookmarkSlug);
+        }, 250);
+        return;
+      }
+      removeBookmark(button.dataset.bookmarkSlug);
+    });
+    window.addEventListener('bookmarks:updated', renderBookmarks);
+    window.addEventListener('storage', (event) => {
+      if (event.key === STORAGE_KEY) renderBookmarks();
+    });
+  </script>
+
+  <style>
+    :global(.bookmark-card) {
+      position: relative;
+      transition: opacity 0.25s ease, transform 0.25s ease, filter 0.25s ease;
+    }
+
+    :global(.bookmark-card.is-removing) {
+      opacity: 0;
+      transform: scale(0.97);
+      filter: blur(2px);
+    }
+
+    :global(.bookmark-chip) {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 9999px;
+      border: none;
+      background: #ef4444;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    :global(.bookmark-chip svg) {
+      width: 18px;
+      height: 18px;
+    }
+
+    :global(.bookmark-chip:hover) {
+      background: #dc2626;
+      transform: translateY(-1px);
+    }
+
+  </style>
+</Layout>

@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/dialog"
-import { categoriesAPI } from '../../services/api';
+import { articlesAPI, categoriesAPI } from '../../services/api';
 import { buildImageSlotFromMedia, generateSlug } from '../../utils/helpers';
 import MediaDialog from '../../components/MediaDialog';
 import ColorPicker from '../../components/ColorPicker';
@@ -43,6 +43,17 @@ const CategoryEditor = () => {
   const [mediaTarget, setMediaTarget] = useState('thumbnail');
   const [parentOptions, setParentOptions] = useState([]);
   const [parentLoading, setParentLoading] = useState(false);
+  const [featuredSlug, setFeaturedSlug] = useState('');
+  const [featuredSearchQuery, setFeaturedSearchQuery] = useState('');
+  const [featuredSearchResults, setFeaturedSearchResults] = useState([]);
+  const [featuredSearchLoading, setFeaturedSearchLoading] = useState(false);
+  const [featuredSearchError, setFeaturedSearchError] = useState('');
+  const [featuredLookup, setFeaturedLookup] = useState({
+    loading: false,
+    error: '',
+    article: null,
+  });
+  const skipFeaturedSearchRef = useRef(false);
 
   const [formData, setFormData] = useState({
     slug: '',
@@ -74,6 +85,11 @@ const CategoryEditor = () => {
     sortBy: 'publishedAt',
     sortOrder: 'desc',
     headerStyle: 'hero',
+    featuredArticleId: null,
+    showFeaturedRecipe: true,
+    showHeroCta: true,
+    heroCtaText: '',
+    heroCtaLink: '',
     isOnline: false,
     isFeatured: false,
     displayOrder: 0,
@@ -111,6 +127,59 @@ const CategoryEditor = () => {
     }
   }, [slug]);
 
+  useEffect(() => {
+    if (!formData.showFeaturedRecipe) {
+      setFeaturedSearchResults([]);
+      setFeaturedSearchError('');
+      return;
+    }
+    if (skipFeaturedSearchRef.current) {
+      skipFeaturedSearchRef.current = false;
+      return;
+    }
+
+    const query = featuredSearchQuery.trim();
+    if (query.length < 2) {
+      setFeaturedSearchResults([]);
+      setFeaturedSearchError('');
+      return;
+    }
+
+    let isActive = true;
+    const timeout = setTimeout(async () => {
+      setFeaturedSearchLoading(true);
+      setFeaturedSearchError('');
+      try {
+        const response = await articlesAPI.getAll({
+          search: query,
+          type: 'recipe',
+          status: 'online',
+          limit: 8,
+        });
+        const data = response.data?.data || response.data || [];
+        const items = Array.isArray(data) ? data : [];
+        if (isActive) {
+          setFeaturedSearchResults(items);
+        }
+      } catch (err) {
+        console.error('Failed to search recipes:', err);
+        if (isActive) {
+          setFeaturedSearchResults([]);
+          setFeaturedSearchError('Search failed');
+        }
+      } finally {
+        if (isActive) {
+          setFeaturedSearchLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      isActive = false;
+      clearTimeout(timeout);
+    };
+  }, [featuredSearchQuery, formData.showFeaturedRecipe]);
+
   const loadParentOptions = async () => {
     try {
       setParentLoading(true);
@@ -122,6 +191,25 @@ const CategoryEditor = () => {
       console.error('Failed to load categories list for parent selection:', err);
     } finally {
       setParentLoading(false);
+    }
+  };
+
+  const loadFeaturedArticleById = async (id) => {
+    if (!id) return;
+    setFeaturedLookup({ loading: true, error: '', article: null });
+    try {
+      const response = await articlesAPI.getById(id);
+      const article = response.data?.data || response.data;
+      if (!article?.id) {
+        throw new Error('Not found');
+      }
+      setFeaturedLookup({ loading: false, error: '', article });
+      setFeaturedSlug(article.slug || '');
+      skipFeaturedSearchRef.current = true;
+      setFeaturedSearchQuery(article.label || article.slug || '');
+    } catch (err) {
+      console.error('Failed to load featured article:', err);
+      setFeaturedLookup({ loading: false, error: 'Featured recipe not found', article: null });
     }
   };
 
@@ -186,6 +274,11 @@ const CategoryEditor = () => {
           sortBy: category.sortBy || 'publishedAt',
           sortOrder: category.sortOrder || 'desc',
           headerStyle: category.headerStyle || 'hero',
+          featuredArticleId: category.featuredArticleId ?? null,
+          showFeaturedRecipe: category.showFeaturedRecipe ?? true,
+          showHeroCta: category.showHeroCta ?? true,
+          heroCtaText: category.heroCtaText || '',
+          heroCtaLink: category.heroCtaLink || '',
           isOnline: category.isOnline || false,
           isFeatured: category.isFeatured || category.isFavorite || false,
           displayOrder: typeof category.sortOrder === 'number' ? category.sortOrder : 0,
@@ -193,6 +286,13 @@ const CategoryEditor = () => {
           parentId: category.parentId ?? null,
           iconSvg: category.iconSvg || '',
         });
+
+        if (typeof category.featuredArticleId === 'number') {
+          loadFeaturedArticleById(category.featuredArticleId);
+        } else {
+          setFeaturedLookup({ loading: false, error: '', article: null });
+          setFeaturedSlug('');
+        }
       }
     } catch (err) {
       console.error('Failed to load category:', err);
@@ -232,6 +332,39 @@ const CategoryEditor = () => {
       };
     });
     setMediaDialogOpen(false);
+  };
+
+  const handleFeaturedLookup = async () => {
+    const slugValue = featuredSlug.trim();
+    if (!slugValue) {
+      setFeaturedLookup({ loading: false, error: 'Enter a recipe slug', article: null });
+      return;
+    }
+
+    setFeaturedLookup({ loading: true, error: '', article: null });
+    try {
+      const response = await articlesAPI.getBySlug(slugValue);
+      const article = response.data?.data || response.data;
+      if (!article?.id) {
+        throw new Error('Not found');
+      }
+      setFormData(prev => ({ ...prev, featuredArticleId: article.id }));
+      setFeaturedLookup({ loading: false, error: '', article });
+      skipFeaturedSearchRef.current = true;
+      setFeaturedSearchQuery(article.label || article.slug || '');
+      setFeaturedSearchResults([]);
+    } catch (err) {
+      console.error('Failed to lookup featured recipe:', err);
+      setFeaturedLookup({ loading: false, error: 'Recipe not found', article: null });
+    }
+  };
+
+  const handleClearFeatured = () => {
+    setFormData(prev => ({ ...prev, featuredArticleId: null }));
+    setFeaturedLookup({ loading: false, error: '', article: null });
+    setFeaturedSlug('');
+    setFeaturedSearchQuery('');
+    setFeaturedSearchResults([]);
   };
 
   const handleSave = async () => {
@@ -653,6 +786,142 @@ const CategoryEditor = () => {
                       <option value="none">None</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Featured Recipe (Hero)</Label>
+                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium">Show Featured Recipe</p>
+                      <p className="text-xs text-muted-foreground">Hero style only</p>
+                    </div>
+                    <Switch
+                      checked={formData.showFeaturedRecipe}
+                      onCheckedChange={(checked) => handleChange('showFeaturedRecipe', checked)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Search Recipes</Label>
+                      <Input
+                        value={featuredSearchQuery}
+                        onChange={(e) => setFeaturedSearchQuery(e.target.value)}
+                        placeholder="Search recipe title..."
+                        className="h-9"
+                        disabled={!formData.showFeaturedRecipe}
+                      />
+                      <div className="rounded-md border bg-background max-h-56 overflow-auto">
+                        {featuredSearchLoading && (
+                          <p className="px-3 py-2 text-xs text-muted-foreground">Searching...</p>
+                        )}
+                        {!featuredSearchLoading && featuredSearchError && (
+                          <p className="px-3 py-2 text-xs text-destructive">{featuredSearchError}</p>
+                        )}
+                        {!featuredSearchLoading && !featuredSearchError && featuredSearchResults.length === 0 && featuredSearchQuery.trim().length >= 2 && (
+                          <p className="px-3 py-2 text-xs text-muted-foreground">No matches</p>
+                        )}
+                        {!featuredSearchLoading && !featuredSearchError && featuredSearchResults.length === 0 && featuredSearchQuery.trim().length > 0 && featuredSearchQuery.trim().length < 2 && (
+                          <p className="px-3 py-2 text-xs text-muted-foreground">Type at least 2 characters.</p>
+                        )}
+                        {!featuredSearchLoading && !featuredSearchError && featuredSearchResults.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted/40"
+                            onClick={() => {
+                              handleChange('featuredArticleId', item.id);
+                              setFeaturedLookup({ loading: false, error: '', article: item });
+                              setFeaturedSlug(item.slug || '');
+                              skipFeaturedSearchRef.current = true;
+                              setFeaturedSearchQuery(item.label || item.slug || '');
+                              setFeaturedSearchResults([]);
+                            }}
+                            disabled={!formData.showFeaturedRecipe}
+                          >
+                            <span className="block font-medium">{item.label || item.headline || item.slug}</span>
+                            <span className="block text-[11px] text-muted-foreground">/{item.slug}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">Searches online recipes only.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Lookup by Slug</Label>
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                        <Input
+                          value={featuredSlug}
+                          onChange={(e) => setFeaturedSlug(e.target.value)}
+                          placeholder="recipe-slug"
+                          className="h-9"
+                          disabled={!formData.showFeaturedRecipe}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleFeaturedLookup}
+                            disabled={featuredLookup.loading || !formData.showFeaturedRecipe}
+                            className="h-9"
+                          >
+                            {featuredLookup.loading ? 'Loading...' : 'Lookup'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={handleClearFeatured}
+                            disabled={!formData.featuredArticleId}
+                            className="h-9"
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {featuredLookup.error && (
+                    <p className="text-xs text-destructive">{featuredLookup.error}</p>
+                  )}
+                  {formData.featuredArticleId && (
+                    <div className="rounded-md border px-3 py-2">
+                      <p className="text-sm font-medium">
+                        Selected ID: {formData.featuredArticleId}
+                      </p>
+                      {featuredLookup.article?.label && (
+                        <p className="text-xs text-muted-foreground">{featuredLookup.article.label}</p>
+                      )}
+                      {featuredLookup.article?.slug && (
+                        <p className="text-xs text-muted-foreground">/{featuredLookup.article.slug}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Hero CTA</Label>
+                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium">Show CTA Button</p>
+                      <p className="text-xs text-muted-foreground">Hero style only</p>
+                    </div>
+                    <Switch
+                      checked={formData.showHeroCta}
+                      onCheckedChange={(checked) => handleChange('showHeroCta', checked)}
+                    />
+                  </div>
+                  <Input
+                    value={formData.heroCtaText}
+                    onChange={(e) => handleChange('heroCtaText', e.target.value)}
+                    placeholder="Join My Mailing List"
+                    className="h-9"
+                    disabled={!formData.showHeroCta}
+                  />
+                  <Input
+                    value={formData.heroCtaLink}
+                    onChange={(e) => handleChange('heroCtaLink', e.target.value)}
+                    placeholder="#newsletter"
+                    className="h-9"
+                    disabled={!formData.showHeroCta}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

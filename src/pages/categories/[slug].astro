@@ -3,14 +3,13 @@ import Layout from "../../layouts/Layout.astro";
 import CategoryHeader from "../../components/CategoryHeader.astro";
 import ArticleGrid from "../../components/ArticleGrid.astro";
 import Pagination from "../../components/Pagination.astro";
-import Breadcrumb from "../../components/Breadcrumb.astro";
 import PopularRecipes from "../../components/PopularRecipes.astro";
 import NewsletterWidget from "../../components/NewsletterWidget.astro";
 import {
   getCategories,
   type HydratedCategory,
 } from "@modules/categories";
-import { getArticles } from "@modules/articles";
+import { getArticles, getArticleById } from "@modules/articles";
 import { hydrateCategories } from "@shared/utils";
 
 const { slug } = Astro.params;
@@ -45,6 +44,14 @@ const showSidebar = category.showSidebar !== false;
 const headerStyle = category.headerStyle || 'hero';
 const cardStyle = category.cardStyle || 'full';
 const showHeader = headerStyle !== 'none';
+const showFeaturedRecipe = category.showFeaturedRecipe !== false;
+
+const breadcrumbItems = showBreadcrumb
+  ? [
+    { label: 'Categories', href: '/categories' },
+    { label: category.label },
+  ]
+  : [];
 
 // Fetch articles with pagination and sorting
 const offset = (currentPage - 1) * perPage;
@@ -58,8 +65,24 @@ const { items: articles, total } = await getArticles(env.DB, {
 });
 
 const totalPages = Math.ceil(total / perPage);
-const featuredArticle = currentPage === 1 && headerStyle === 'hero' ? articles[0] : null;
-const gridArticles = featuredArticle ? articles.slice(1) : articles;
+let featuredArticle = null;
+
+if (currentPage === 1 && headerStyle === 'hero' && showFeaturedRecipe) {
+  if (typeof category.featuredArticleId === 'number') {
+    const candidate = await getArticleById(env.DB, category.featuredArticleId);
+    if (candidate && candidate.isOnline && candidate.categoryId === category.id) {
+      featuredArticle = candidate;
+    }
+  }
+
+  if (!featuredArticle) {
+    featuredArticle = articles[0] || null;
+  }
+}
+
+const gridArticles = featuredArticle
+  ? articles.filter((article) => article.id !== featuredArticle.id)
+  : articles;
 
 // Base URL for pagination
 const baseUrl = `/categories/${slug}`;
@@ -71,17 +94,12 @@ const baseUrl = `/categories/${slug}`;
     category={category}
     featuredArticle={featuredArticle}
     headerStyle={headerStyle}
+    breadcrumbItems={breadcrumbItems}
   />
 
   <!-- Recipe Grid -->
 <section class:list={["recipes-section", { "no-hero": !showHeader }]}>
   <div class="container">
-    {showBreadcrumb && (
-      <Breadcrumb items={[
-        { label: 'Catégories', href: '/categories' },
-        { label: category.label }
-      ]} />
-    )}
     
     <div class="section-header">
       <h2 class="section-title">{category.collectionTitle || `${category.label} Recipes`}</h2>
@@ -431,6 +449,7 @@ const baseUrl = `/categories/${slug}`;
     transform: translateY(-1px);
   }
 </style>
+
 
 
 

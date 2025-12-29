@@ -34,6 +34,7 @@ export default function ImageUploader({
   onOpenChange,
   onUploadComplete,
   defaultFormat = 'webp',
+  variantSizes,
 }) {
   // State
   const [selectedFile, setSelectedFile] = useState(null);
@@ -64,7 +65,9 @@ export default function ImageUploader({
   
   const { settings } = useImageUploadSettings();
 
-  const { uploadWithVariants, progress, error, abortUpload } = useImageUpload();
+  const { uploadWithVariants, progress, error, abortUpload } = useImageUpload({
+    variantSizes,
+  });
 
   // Authors for credit selection
   const [authors, setAuthors] = useState([]);

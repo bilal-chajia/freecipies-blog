@@ -24,6 +24,11 @@ export type HydratedCategory = Category & ExtractedImage & ExtractedSeo & {
   sortBy?: 'publishedAt' | 'title' | 'viewCount';
   sortOrder?: 'asc' | 'desc';
   headerStyle?: 'hero' | 'minimal' | 'none';
+  featuredArticleId?: number;
+  showFeaturedRecipe?: boolean;
+  showHeroCta?: boolean;
+  heroCtaText?: string;
+  heroCtaLink?: string;
 };
 
 export interface CategoryConfig {
@@ -41,6 +46,11 @@ export interface CategoryConfig {
   headerStyle?: 'hero' | 'minimal' | 'none';
   tldr?: string;
   numEntriesPerPage?: number;
+  featuredArticleId?: number;
+  showFeaturedRecipe?: boolean;
+  showHeroCta?: boolean;
+  heroCtaText?: string;
+  heroCtaLink?: string;
 }
 
 export interface CategorySeo {

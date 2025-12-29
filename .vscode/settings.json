@@ -1,9 +1,9 @@
 {
     "Codegeex.RepoIndex": true,
     "Codegeex.Chat.LanguagePreference": "English",
-    "Codegeex.CompletionDelay": 1,
+    "Codegeex.CompletionDelay": 2,
     "css.lint.unknownAtRules": "ignore",
     "Codegeex.GenerationPreference": "line by line",
     "Codegeex.CommitMessageStyle": "ConventionalCommits",
-    "Codegeex.Chat.fontSize": 12
+    "Codegeex.Chat.fontSize": 13
 }

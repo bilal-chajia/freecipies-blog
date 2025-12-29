@@ -59,7 +59,8 @@ const yieldToMain = () => new Promise((resolve) => {
   }
 });
 
-export function useImageUpload() {
+export function useImageUpload(options = {}) {
+  const { variantSizes } = options;
   const [progress, setProgress] = useState({
     overall: 0,
     generating: 0,
@@ -78,28 +79,36 @@ export function useImageUpload() {
   
   // Helper to get config (defaulting to static config if settings not yet loaded)
   const getConfig = useCallback(() => {
-    if (isSettingsLoading || !settings) {
-      return {
-        variantSizes: VARIANT_SIZES,
-        encodingQuality: ENCODING_QUALITY,
-        maxSizeBytes: FILE_CONSTRAINTS.maxSizeBytes,
-      };
-    }
+    const baseConfig = isSettingsLoading || !settings
+      ? {
+          variantSizes: VARIANT_SIZES,
+          encodingQuality: ENCODING_QUALITY,
+          maxSizeBytes: FILE_CONSTRAINTS.maxSizeBytes,
+        }
+      : {
+          variantSizes: {
+            lg: settings.variantLg,
+            md: settings.variantMd,
+            sm: settings.variantSm,
+            xs: settings.variantXs,
+          },
+          encodingQuality: {
+            ...ENCODING_QUALITY,
+            webp: settings.webpQuality,
+            avif: settings.avifQuality,
+          },
+          maxSizeBytes: settings.maxFileSizeMB * 1024 * 1024,
+        };
+
+    const overrideVariants = variantSizes && Object.keys(variantSizes).length
+      ? variantSizes
+      : null;
+
     return {
-      variantSizes: {
-        lg: settings.variantLg,
-        md: settings.variantMd,
-        sm: settings.variantSm,
-        xs: settings.variantXs,
-      },
-      encodingQuality: {
-        ...ENCODING_QUALITY,
-        webp: settings.webpQuality,
-        avif: settings.avifQuality,
-      },
-      maxSizeBytes: settings.maxFileSizeMB * 1024 * 1024,
+      ...baseConfig,
+      variantSizes: overrideVariants || baseConfig.variantSizes,
     };
-  }, [settings, isSettingsLoading]);
+  }, [settings, isSettingsLoading, variantSizes]);
 
   const getEncoderWorker = useCallback(() => {
     if (typeof Worker === 'undefined') {

@@ -340,11 +340,14 @@ export function useContentEditor({ slug, contentType = 'article' }) {
         try {
             setSaving(true);
             if (isEditMode && articleId) {
+                // Update: stay on the same page
                 await articlesAPI.update(articleId, data);
             } else {
-                await articlesAPI.create(data);
+                // Create: navigate to the edit page of the new article
+                const response = await articlesAPI.create(data);
+                const newSlug = response?.data?.slug || data.slug;
+                navigate(`/${contentType}s/${newSlug}`);
             }
-            navigate(`/${contentType}s`);
         } catch (error) {
             console.error('Failed to save:', error);
             alert('Failed to save: ' + (error.response?.data?.message || error.message));

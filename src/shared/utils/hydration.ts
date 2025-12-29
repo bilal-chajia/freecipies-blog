@@ -5,6 +5,16 @@
  * These transform raw Drizzle types into enriched types with convenience fields.
  */
 
+import type {
+  ImageVariant,
+  ImageVariants,
+  ImageSlot,
+  ImageSlotName,
+} from '@shared/types/images';
+
+// Re-export for backwards compatibility
+export type { ImageVariant, ImageVariants, ImageSlot };
+
 // ============================================================================
 // JSON Parsing Helpers
 // ============================================================================
@@ -25,25 +35,7 @@ export function safeParseJson<T>(json: string | null | undefined): T | null {
 // Image Extraction
 // ============================================================================
 
-interface ImageVariant {
-  url: string;
-  width?: number;
-  height?: number;
-}
-
-interface ImageSlot {
-  alt?: string;
-  url?: string;
-  width?: number;
-  height?: number;
-  variants?: {
-    xs?: ImageVariant;
-    sm?: ImageVariant;
-    md?: ImageVariant;
-    lg?: ImageVariant;
-    original?: ImageVariant;
-  };
-}
+// ImageVariant and ImageSlot imported from @shared/types/images
 
 interface ImagesJson {
   thumbnail?: ImageSlot;
@@ -161,7 +153,7 @@ export function extractImage(
 
   const variant = pickVariantByWidth(imageSlot.variants, targetWidth);
   const normalizedVariantUrl = normalizeImageUrl(variant?.url);
-  if (normalizedVariantUrl) {
+  if (normalizedVariantUrl && variant) {
     return {
       imageUrl: normalizedVariantUrl,
       imageAlt: imageSlot.alt,
@@ -290,11 +282,14 @@ export function hydrateArticle<T extends {
 }>(article: T) {
   const image = extractImage(article.imagesJson);
 
+  const cachedAuthor = article.cachedAuthorJson
+    ? safeParseJson<any>(article.cachedAuthorJson)
+    : null;
+
   // Support multiple author source formats
   let authorAvatar = extractImage(article.authorImagesJson, 'avatar').imageUrl;
 
-  if (!authorAvatar && article.cachedAuthorJson) {
-    const cachedAuthor = safeParseJson<any>(article.cachedAuthorJson);
+  if (!authorAvatar && cachedAuthor) {
     authorAvatar = cachedAuthor?.avatar;
   }
 
@@ -302,6 +297,13 @@ export function hydrateArticle<T extends {
     authorAvatar = extractImage((article as any).author.imagesJson, 'avatar').imageUrl;
   }
   authorAvatar = normalizeImageUrl(authorAvatar);
+
+  const authorName = (article as any).authorName
+    ?? cachedAuthor?.name
+    ?? (article as any).author?.name;
+  const authorSlug = (article as any).authorSlug
+    ?? cachedAuthor?.slug
+    ?? (article as any).author?.slug;
 
   const seo = extractSeo(article.seoJson);
   const route = article.type === 'recipe' ? `/recipes/${article.slug}` : `/articles/${article.slug}`;
@@ -317,6 +319,8 @@ export function hydrateArticle<T extends {
     label: article.headline, // Alias for UI consistency
     route,
     authorAvatar,
+    ...(typeof authorName === 'string' ? { authorName } : {}),
+    ...(typeof authorSlug === 'string' ? { authorSlug } : {}),
   };
 }
 
@@ -346,6 +350,16 @@ export function hydrateCategory<T extends {
   const sortBy = config?.sortBy;
   const sortOrder = config?.sortOrder;
   const headerStyle = config?.headerStyle;
+  const featuredArticleIdRaw = config?.featuredArticleId ?? config?.featured_article_id;
+  const featuredArticleId = typeof featuredArticleIdRaw === 'number'
+    ? featuredArticleIdRaw
+    : typeof featuredArticleIdRaw === 'string'
+      ? parseInt(featuredArticleIdRaw, 10)
+      : undefined;
+  const showFeaturedRecipe = config?.showFeaturedRecipe ?? config?.show_featured_recipe;
+  const showHeroCta = config?.showHeroCta ?? config?.show_hero_cta;
+  const heroCtaText = config?.heroCtaText ?? config?.hero_cta_text;
+  const heroCtaLink = config?.heroCtaLink ?? config?.hero_cta_link;
   const rawIconSvg = (category as any).iconSvg
     ?? (category as any).icon_svg
     ?? config?.iconSvg
@@ -375,6 +389,11 @@ export function hydrateCategory<T extends {
     ...(sortBy ? { sortBy } : {}),
     ...(sortOrder ? { sortOrder } : {}),
     ...(headerStyle ? { headerStyle } : {}),
+    ...(Number.isFinite(featuredArticleId) ? { featuredArticleId: featuredArticleId as number } : {}),
+    ...(typeof showFeaturedRecipe === 'boolean' ? { showFeaturedRecipe } : {}),
+    ...(typeof showHeroCta === 'boolean' ? { showHeroCta } : {}),
+    ...(typeof heroCtaText === 'string' ? { heroCtaText } : {}),
+    ...(typeof heroCtaLink === 'string' ? { heroCtaLink } : {}),
   };
 }
 

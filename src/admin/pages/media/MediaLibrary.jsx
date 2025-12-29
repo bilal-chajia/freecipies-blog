@@ -182,7 +182,7 @@ const itemVariants = {
   show: { opacity: 1, scale: 1 }
 };
 
-const MediaLibrary = ({ onSelect, isDialog }) => {
+const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
   const { media, selectedMedia, loading, setMedia, toggleMediaSelection, clearSelection } = useMediaStore();
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -674,6 +674,7 @@ const MediaLibrary = ({ onSelect, isDialog }) => {
             loadMedia();
             toast.success('Image uploaded successfully!');
          }}
+         variantSizes={variantSizes}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogTitle } from '@/ui/dialog.jsx';
 import MediaLibrary from '../pages/media/MediaLibrary';
 
-export default function MediaDialog({ open, onOpenChange, onSelect }) {
+export default function MediaDialog({ open, onOpenChange, onSelect, variantSizes }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="!max-w-none w-[calc(100vw-120px)] h-[calc(100vh-40px)] flex flex-col p-6">
@@ -13,6 +13,7 @@ export default function MediaDialog({ open, onOpenChange, onSelect }) {
                             onOpenChange(false);
                         }}
                         isDialog
+                        variantSizes={variantSizes}
                     />
                 </div>
             </DialogContent>

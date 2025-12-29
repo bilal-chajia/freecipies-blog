@@ -1,65 +1,87 @@
+import { motion } from 'framer-motion';
 import { ScrollArea } from '@/ui/scroll-area.jsx';
-import PublishingSection from './PublishingSection';
-import OrganizationSection from './OrganizationSection';
 import MediaSection from './MediaSection';
 import SEOSection from './SEOSection';
 import ExcerptsSection from './ExcerptsSection';
+import TagsSection from './TagsSection';
+
+// Animation variants for staggered children
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.2,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 24,
+        }
+    },
+};
 
 export default function EditorSidebar({
     formData,
     onInputChange,
     imagesData,
     onImageRemove,
-    onSave,
-    saving,
-    isEditMode,
-    categories,
-    authors,
     tags,
     onMediaDialogOpen,
 }) {
     return (
         <aside className="sticky top-0 h-screen">
             <ScrollArea className="h-full">
-                <div className="space-y-5 p-6">
-                    <PublishingSection
-                        formData={formData}
-                        onInputChange={onInputChange}
-                        onSave={onSave}
-                        saving={saving}
-                        isEditMode={isEditMode}
-                    />
+                <motion.div
+                    className="space-y-5 p-6"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    <motion.div variants={itemVariants}>
+                        <TagsSection
+                            formData={formData}
+                            onInputChange={onInputChange}
+                            tags={tags}
+                        />
+                    </motion.div>
 
-                    <OrganizationSection
-                        formData={formData}
-                        onInputChange={onInputChange}
-                        categories={categories}
-                        authors={authors}
-                        tags={tags}
-                    />
+                    <motion.div variants={itemVariants}>
+                        <MediaSection
+                            formData={formData}
+                            imagesData={imagesData}
+                            onInputChange={onInputChange}
+                            onImageRemove={onImageRemove}
+                            onMediaDialogOpen={onMediaDialogOpen}
+                        />
+                    </motion.div>
 
-                    <MediaSection
-                        formData={formData}
-                        imagesData={imagesData}
-                        onInputChange={onInputChange}
-                        onImageRemove={onImageRemove}
-                        onMediaDialogOpen={onMediaDialogOpen}
-                    />
+                    <motion.div variants={itemVariants}>
+                        <SEOSection
+                            formData={formData}
+                            onInputChange={onInputChange}
+                        />
+                    </motion.div>
 
-                    <SEOSection
-                        formData={formData}
-                        onInputChange={onInputChange}
-                        isEditMode={isEditMode}
-                    />
-
-                    <ExcerptsSection
-                        formData={formData}
-                        onInputChange={onInputChange}
-                    />
+                    <motion.div variants={itemVariants}>
+                        <ExcerptsSection
+                            formData={formData}
+                            onInputChange={onInputChange}
+                        />
+                    </motion.div>
 
                     {/* Bottom padding for scroll */}
                     <div className="h-20" />
-                </div>
+                </motion.div>
             </ScrollArea>
         </aside>
     );

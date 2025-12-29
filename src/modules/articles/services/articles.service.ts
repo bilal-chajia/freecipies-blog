@@ -218,9 +218,21 @@ export async function getArticleById(
 ): Promise<HydratedArticle | null> {
   const drizzle = createDb(db);
 
-  const result = await drizzle.query.articles.findFirst({
-    where: and(eq(articles.id, id), isNull(articles.deletedAt)),
-  });
+  const result = await drizzle
+    .select({
+      ...getTableColumns(articles),
+      categoryLabel: categories.label,
+      categorySlug: categories.slug,
+      categoryColor: categories.color,
+      authorName: authors.name,
+      authorSlug: authors.slug,
+      authorImagesJson: authors.imagesJson,
+    })
+    .from(articles)
+    .leftJoin(categories, eq(articles.categoryId, categories.id))
+    .leftJoin(authors, eq(articles.authorId, authors.id))
+    .where(and(eq(articles.id, id), isNull(articles.deletedAt)))
+    .get();
 
   return result ? hydrateArticle(result) : null;
 }

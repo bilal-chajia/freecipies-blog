@@ -45,6 +45,7 @@ const normalizedRating = ratingValue ? Math.max(0, Math.min(5, ratingValue)) : 0
 const hasRating = ratingValue !== null && ratingCount > 0;
 const authorLabel = article.authorName || article.authorSlug || "Unknown";
 const ratingStars = Array.from({ length: 5 });
+const showBookmark = article.type === "recipe";
 ---
 
 {isList ? (
@@ -60,6 +61,20 @@ const ratingStars = Array.from({ length: 5 });
         loading={loading}
         class="list-image-img"
       />
+      {showBookmark && (
+        <button
+          type="button"
+          class="bookmark-chip"
+          data-bookmark-button
+          data-bookmark-slug={article.slug}
+          aria-pressed="false"
+          aria-label="Bookmark recipe"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-4-6 4V4z" />
+          </svg>
+        </button>
+      )}
     </a>
     <div class="list-content">
       <h3 class="list-title">{article.headline}</h3>
@@ -127,7 +142,7 @@ transition-transform duration-500"
       {
         article.isFavorite && (
           <div
-            class="absolute top-3 right-3 bg-red-600 text-white
+            class="absolute top-3 left-3 bg-red-600 text-white
 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 z-10"
           >
             {" "}
@@ -143,6 +158,20 @@ px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 z-10"
           </div>
         )
       }
+      {showBookmark && (
+        <button
+          type="button"
+          class="bookmark-chip"
+          data-bookmark-button
+          data-bookmark-slug={article.slug}
+          aria-pressed="false"
+          aria-label="Bookmark recipe"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-4-6 4V4z" />
+          </svg>
+        </button>
+      )}
       <!-- Overlay -->
       <div
         class="absolute inset-0 bg-gradient-to-t from-black/60
@@ -274,6 +303,34 @@ font-semibold uppercase tracking-wide"
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  .bookmark-chip {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+    pointer-events: auto;
+    border: none;
+    z-index: 2;
+  }
+
+  .bookmark-chip svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .bookmark-chip[data-bookmarked="true"] {
+    background: rgba(255, 255, 255, 0.9);
+    color: #111;
   }
 
   .list-content {

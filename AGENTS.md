@@ -166,6 +166,39 @@ For the `articles` module, we use polymorphic types to distinguish between conte
 - **Specifics:** Use `RecipeContent` or `RoundupContent` when the type is known.
 - **Do NOT** use the raw DB `Article` type for frontend components; use the hydrated types.
 
+## Image Types (Unified)
+
+> **CRITICAL:** Import ALL image types from `@shared/types/images` (single source of truth).
+
+**Public Types (Consumer code, API responses):**
+```typescript
+import type { 
+  ImageVariant,      // url, width, height, sizeBytes
+  ImageVariants,     // xs, sm, md, lg, original
+  ImageSlot,         // Full slot: media_id, alt, caption, variants, etc.
+  ArticleImagesJson, // { cover?, thumbnail?, pinterest?, gallery? }
+  ContentImageBlock, // { type: 'image', media_id, alt, variants, ... }
+} from '@shared/types/images';
+```
+
+**Storage Types (Media module ONLY - never expose to frontend):**
+```typescript
+import type { 
+  StorageVariant,    // Extends ImageVariant with r2_key
+  MediaVariantsJson, // { variants: StorageVariants, placeholder }
+} from '@shared/types/images';
+```
+
+**Utility Functions:**
+- `getBestVariantUrl(slot)` - Get best available URL
+- `getSrcSet(slot)` - Generate srcset string
+- `stripStorageKeys(variants)` - Remove r2_key for API responses
+
+**DO NOT:**
+- Create new image type definitions
+- Import from `modules/articles/types/images.types.ts` (re-exports only)
+- Expose `r2_key` to frontend code
+
 ## Quick Reference
 
 **Note:** `bd` is installed via Go. Full path: `C:\Users\Poste\go\bin\bd.exe`

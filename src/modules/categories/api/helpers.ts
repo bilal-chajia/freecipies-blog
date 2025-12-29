@@ -32,6 +32,11 @@ interface ConfigJson {
   sortBy?: 'publishedAt' | 'title' | 'viewCount';
   sortOrder?: 'asc' | 'desc';
   headerStyle?: 'hero' | 'minimal' | 'none';
+  featuredArticleId?: number;
+  showFeaturedRecipe?: boolean;
+  showHeroCta?: boolean;
+  heroCtaText?: string;
+  heroCtaLink?: string;
 }
 
 const getBestVariant = (variants?: ImageVariants) => {
@@ -82,6 +87,14 @@ const normalizeConfigJsonObject = (value: any): ConfigJson => {
 
   const postsPerPage = value.postsPerPage ?? value.numEntriesPerPage ?? value.entriesPerPage;
   const layout = value.layout ?? value.layoutMode;
+  const featuredArticleIdRaw = value.featuredArticleId ?? value.featured_article_id;
+  const featuredArticleId = typeof featuredArticleIdRaw === 'number'
+    ? featuredArticleIdRaw
+    : typeof featuredArticleIdRaw === 'string'
+      ? parseInt(featuredArticleIdRaw, 10)
+      : undefined;
+  const showFeaturedRecipe = value.showFeaturedRecipe ?? value.show_featured_recipe;
+  const showHeroCta = value.showHeroCta ?? value.show_hero_cta;
   const normalized: ConfigJson = {};
 
   if (typeof postsPerPage === 'number') normalized.postsPerPage = postsPerPage;
@@ -97,6 +110,11 @@ const normalizeConfigJsonObject = (value: any): ConfigJson => {
   if (typeof value.sortBy === 'string') normalized.sortBy = value.sortBy as ConfigJson['sortBy'];
   if (typeof value.sortOrder === 'string') normalized.sortOrder = value.sortOrder as ConfigJson['sortOrder'];
   if (typeof value.headerStyle === 'string') normalized.headerStyle = value.headerStyle as ConfigJson['headerStyle'];
+  if (Number.isFinite(featuredArticleId)) normalized.featuredArticleId = featuredArticleId as number;
+  if (typeof showFeaturedRecipe === 'boolean') normalized.showFeaturedRecipe = showFeaturedRecipe;
+  if (typeof showHeroCta === 'boolean') normalized.showHeroCta = showHeroCta;
+  if (typeof value.heroCtaText === 'string') normalized.heroCtaText = value.heroCtaText;
+  if (typeof value.heroCtaLink === 'string') normalized.heroCtaLink = value.heroCtaLink;
 
   return normalized;
 };
@@ -259,6 +277,29 @@ export function transformCategoryRequestBody(body: any): any {
     configOverrides.headerStyle = body.headerStyle;
     delete transformed.headerStyle;
   }
+  if (body.featuredArticleId !== undefined) {
+    const parsed = typeof body.featuredArticleId === 'string'
+      ? parseInt(body.featuredArticleId, 10)
+      : body.featuredArticleId;
+    configOverrides.featuredArticleId = Number.isFinite(parsed) ? parsed : null;
+    delete transformed.featuredArticleId;
+  }
+  if (body.showFeaturedRecipe !== undefined) {
+    configOverrides.showFeaturedRecipe = body.showFeaturedRecipe;
+    delete transformed.showFeaturedRecipe;
+  }
+  if (body.showHeroCta !== undefined) {
+    configOverrides.showHeroCta = body.showHeroCta;
+    delete transformed.showHeroCta;
+  }
+  if (body.heroCtaText !== undefined) {
+    configOverrides.heroCtaText = body.heroCtaText;
+    delete transformed.heroCtaText;
+  }
+  if (body.heroCtaLink !== undefined) {
+    configOverrides.heroCtaLink = body.heroCtaLink;
+    delete transformed.heroCtaLink;
+  }
 
   if (body.imagesJson !== undefined) {
     transformed.imagesJson = parseImagesJson(body.imagesJson);
@@ -414,6 +455,21 @@ export function transformCategoryResponse(category: any): any {
       }
       if (response.headerStyle === undefined && typeof config.headerStyle === 'string') {
         response.headerStyle = config.headerStyle;
+      }
+      if (response.featuredArticleId === undefined && typeof config.featuredArticleId === 'number') {
+        response.featuredArticleId = config.featuredArticleId;
+      }
+      if (response.showFeaturedRecipe === undefined && typeof config.showFeaturedRecipe === 'boolean') {
+        response.showFeaturedRecipe = config.showFeaturedRecipe;
+      }
+      if (response.showHeroCta === undefined && typeof config.showHeroCta === 'boolean') {
+        response.showHeroCta = config.showHeroCta;
+      }
+      if (response.heroCtaText === undefined && typeof config.heroCtaText === 'string') {
+        response.heroCtaText = config.heroCtaText;
+      }
+      if (response.heroCtaLink === undefined && typeof config.heroCtaLink === 'string') {
+        response.heroCtaLink = config.heroCtaLink;
       }
     } catch {
       // Invalid JSON, skip

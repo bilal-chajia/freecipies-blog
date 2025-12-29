@@ -417,7 +417,15 @@ CREATE TABLE IF NOT EXISTS categories (
     --   "showPagination": true,            <-- Show pagination controls
     --   "sortBy": "publishedAt",           <-- Default sort: "publishedAt" | "title" | "viewCount"
     --   "sortOrder": "desc",               <-- "asc" | "desc"
-    --   "headerStyle": "hero"              <-- "hero" | "minimal" | "none"
+    --   "headerStyle": "hero",             <-- "hero" | "minimal" | "none"
+    --   "tldr": "Quick summary text",      <-- Optional summary under the headline
+    --   "showInNav": true,                 <-- Category appears in navigation menu
+    --   "showInFooter": false,             <-- Category appears in footer
+    --   "featuredArticleId": 123,          <-- Featured recipe ID for hero
+    --   "showFeaturedRecipe": true,        <-- Show featured recipe card in hero
+    --   "showHeroCta": true,               <-- Show CTA button in hero
+    --   "heroCtaText": "Join My Mailing List", <-- CTA button label
+    --   "heroCtaLink": "#newsletter"       <-- CTA anchor or URL
     -- }
     config_json TEXT DEFAULT '{}' CHECK (json_valid(config_json)),
 

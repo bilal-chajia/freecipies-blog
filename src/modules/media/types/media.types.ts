@@ -1,24 +1,22 @@
 /**
  * Media Module - TypeScript Types
  * ================================
+ * Uses unified types from @shared/types/images
  */
 
-export interface MediaVariant {
-  url: string;
-  r2_key: string;
-  width: number;
-  height: number;
-  sizeBytes?: number;
-  size_bytes?: number;
-}
+import type {
+  ImageVariant,
+  StorageVariant,
+  StorageVariants,
+  MediaVariantsJson,
+} from '@shared/types/images';
 
-export interface MediaVariants {
-  original?: MediaVariant;
-  lg?: MediaVariant;
-  md?: MediaVariant;
-  sm?: MediaVariant;
-  xs?: MediaVariant;
-}
+// Re-export shared types for convenience
+export type { ImageVariant, StorageVariant, StorageVariants, MediaVariantsJson };
+
+// Legacy alias for backwards compatibility
+export type MediaVariant = StorageVariant;
+export type MediaVariants = StorageVariants;
 
 export interface MediaUploadOptions {
   file: File | Blob;
@@ -57,13 +55,9 @@ export interface MediaRecord {
   caption?: string | null;
   credit?: string | null;
   mimeType: string;
-  width?: number | null;
-  height?: number | null;
-  blurhash?: string | null;
-  dominantColor?: string | null;
+  aspectRatio?: string | null;
   variantsJson: string;
-  folder?: string | null;
-  tagsJson?: string | null;
+  focalPointJson?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   deletedAt?: string | null;

@@ -8,6 +8,13 @@ import MediaDialog from '../../components/MediaDialog';
 import AuthorSidebar from '../../components/AuthorSidebar';
 import AuthorEditorMain from '../../components/AuthorEditorMain';
 
+const AVATAR_VARIANT_SIZES = {
+  lg: 400,
+  md: 200,
+  sm: 100,
+  xs: 50,
+};
+
 const AuthorEditor = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -316,6 +323,7 @@ const AuthorEditor = () => {
         open={mediaDialogOpen}
         onOpenChange={setMediaDialogOpen}
         onSelect={handleMediaSelect}
+        variantSizes={activeImageType === 'avatar' ? AVATAR_VARIANT_SIZES : undefined}
       />
     </div>
   );

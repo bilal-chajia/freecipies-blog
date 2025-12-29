@@ -89,7 +89,7 @@ const RecipeEditor = () => {
         <EditorLayout
             title={title}
             subtitle={subtitle}
-            backPath="/articles"
+            backPath="/recipes"
             loading={loading}
             mainContent={mainContent}
             sidebarContent={sidebarContent}
@@ -97,6 +97,18 @@ const RecipeEditor = () => {
             setMediaDialogOpen={setMediaDialogOpen}
             handleMediaSelect={handleMediaSelect}
             navigate={navigate}
+            // Preview props
+            formData={formData}
+            contentJson={contentJson}
+            recipeJson={recipeJson}
+            imagesData={imagesData}
+            categories={categories}
+            authors={authors}
+            // Topbar props
+            onInputChange={handleInputChange}
+            onSave={handleSave}
+            saving={saving}
+            isEditMode={isEditMode}
         />
     );
 };

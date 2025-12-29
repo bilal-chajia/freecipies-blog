@@ -1,6 +1,7 @@
 import { Label } from '@/ui/label.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Textarea } from '@/ui/textarea.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Select,
     SelectContent,
@@ -14,6 +15,36 @@ import RoundupBuilder from '../RoundupBuilder';
 import { Code } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import Editor from '@monaco-editor/react';
+
+// Animation variants
+const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+        }
+    },
+    exit: {
+        opacity: 0,
+        y: -10,
+        transition: { duration: 0.2 }
+    }
+};
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.08,
+            delayChildren: 0.1,
+        },
+    },
+};
 
 export default function EditorMain({
     formData,
@@ -33,10 +64,22 @@ export default function EditorMain({
     isValidJSON,
 }) {
     return (
-        <main className="space-y-8 p-8 max-w-4xl mx-auto pb-20">
+        <motion.main
+            className="space-y-8 p-8 max-w-4xl mx-auto pb-20"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
             {/* Type Selector */}
-            <div className="flex items-center gap-4">
-                <div className="flex-1">
+            <motion.div
+                className="flex items-center gap-4"
+                variants={sectionVariants}
+            >
+                <motion.div
+                    className="flex-1"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                >
                     <Select
                         value={formData.type}
                         onValueChange={(value) => onInputChange('type', value)}
@@ -50,148 +93,231 @@ export default function EditorMain({
                             <SelectItem value="roundup">📚 Roundup</SelectItem>
                         </SelectContent>
                     </Select>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
 
             {/* Title */}
-            <div className="space-y-3">
-                <Input
-                    value={formData.label}
-                    onChange={(e) => onInputChange('label', e.target.value)}
-                    placeholder="Article title..."
-                    className="text-5xl font-bold border-none px-0 focus-visible:ring-0 placeholder:text-muted-foreground/40 h-auto leading-tight"
-                />
-            </div>
+            <motion.div
+                className="space-y-3"
+                variants={sectionVariants}
+            >
+                <motion.div
+                    initial={{ opacity: 0.5 }}
+                    whileFocus={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    <Input
+                        value={formData.label}
+                        onChange={(e) => onInputChange('label', e.target.value)}
+                        placeholder="Article title..."
+                        className="text-5xl font-bold border-none px-0 focus-visible:ring-0 placeholder:text-muted-foreground/40 h-auto leading-tight"
+                    />
+                </motion.div>
+            </motion.div>
 
             {/* Headline */}
-            <div className="space-y-3">
+            <motion.div
+                className="space-y-3"
+                variants={sectionVariants}
+            >
                 <Input
                     value={formData.headline}
                     onChange={(e) => onInputChange('headline', e.target.value)}
                     placeholder="Add a compelling headline..."
                     className="text-2xl text-muted-foreground border-none px-0 focus-visible:ring-0 placeholder:text-muted-foreground/30 h-auto"
                 />
-            </div>
+            </motion.div>
 
-            <hr className="border-t-2 my-8" />
+            <motion.hr
+                className="border-t-2 my-8"
+                variants={sectionVariants}
+            />
 
             {/* Block Editor / Content */}
-            <div className="space-y-3">
+            <motion.div
+                className="space-y-3"
+                variants={sectionVariants}
+            >
                 <div className="flex items-center justify-between mb-2">
                     <Label className="text-base font-semibold">Content</Label>
                     <div className="flex items-center gap-2">
                         {jsonErrors.content && (
-                            <span className="text-sm text-destructive font-medium">{jsonErrors.content}</span>
+                            <motion.span
+                                className="text-sm text-destructive font-medium"
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                            >
+                                {jsonErrors.content}
+                            </motion.span>
                         )}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setUseVisualEditor(!useVisualEditor)}
-                            className="gap-1.5 text-xs h-8"
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                         >
-                            <Code className="h-3.5 w-3.5" />
-                            {useVisualEditor ? 'JSON Mode' : 'Visual Mode'}
-                        </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setUseVisualEditor(!useVisualEditor)}
+                                className="gap-1.5 text-xs h-8"
+                            >
+                                <Code className="h-3.5 w-3.5" />
+                                {useVisualEditor ? 'JSON Mode' : 'Visual Mode'}
+                            </Button>
+                        </motion.div>
                     </div>
                 </div>
 
-                {useVisualEditor ? (
-                    <BlockEditor
-                        value={contentJson}
-                        onChange={(value) => {
-                            setContentJson(value);
-                            validateJSON('content', value);
-                        }}
-                        placeholder="Start writing your article content..."
-                    />
-                ) : (
-                    <div className="border rounded-lg overflow-hidden shadow-sm">
-                        <Editor
-                            height="500px"
-                            language="json"
-                            theme="vs-dark"
-                            value={contentJson}
-                            onChange={(value) => {
-                                setContentJson(value);
-                                validateJSON('content', value);
-                            }}
-                            options={{
-                                minimap: { enabled: false },
-                                fontSize: 14,
-                                lineNumbers: 'on',
-                                scrollBeyondLastLine: false,
-                                automaticLayout: true,
-                            }}
-                        />
-                    </div>
-                )}
+                <AnimatePresence mode="wait">
+                    {useVisualEditor ? (
+                        <motion.div
+                            key="visual"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <BlockEditor
+                                value={contentJson}
+                                onChange={(value) => {
+                                    setContentJson(value);
+                                    validateJSON('content', value);
+                                }}
+                                placeholder="Start writing your article content..."
+                            />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="json"
+                            className="border rounded-lg overflow-hidden shadow-sm"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <Editor
+                                height="500px"
+                                language="json"
+                                theme="vs-dark"
+                                value={contentJson}
+                                onChange={(value) => {
+                                    setContentJson(value);
+                                    validateJSON('content', value);
+                                }}
+                                options={{
+                                    minimap: { enabled: false },
+                                    fontSize: 14,
+                                    lineNumbers: 'on',
+                                    scrollBeyondLastLine: false,
+                                    automaticLayout: true,
+                                }}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
                 <p className="text-xs text-muted-foreground mt-2">
                     {useVisualEditor
                         ? 'Use the toolbar to add paragraphs, headings, images and more'
                         : 'Edit the raw JSON content directly'}
                 </p>
-            </div>
+            </motion.div>
 
             {/* Recipe Builder (conditional) */}
-            {formData.type === 'recipe' && (
-                <div className="space-y-3 pt-8 border-t-2">
-                    <div className="flex items-center justify-between">
-                        <Label className="text-base font-semibold">Recipe Data</Label>
-                        {jsonErrors.recipe && (
-                            <span className="text-sm text-destructive font-medium">{jsonErrors.recipe}</span>
-                        )}
-                    </div>
-                    <div className="border rounded-lg overflow-hidden bg-muted/50 p-6 shadow-sm">
-                        <RecipeBuilder
-                            value={recipeJson}
-                            onChange={(newValue) => {
-                                setRecipeJson(newValue);
-                                if (isValidJSON(newValue)) {
-                                    const newErrors = { ...jsonErrors };
-                                    delete newErrors.recipe;
-                                }
-                            }}
-                        />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                        Include ingredients, instructions, nutrition, prep time, etc.
-                    </p>
-                </div>
-            )}
+            <AnimatePresence>
+                {formData.type === 'recipe' && (
+                    <motion.div
+                        className="space-y-3 pt-8 border-t-2"
+                        initial={{ opacity: 0, height: 0, y: 20 }}
+                        animate={{ opacity: 1, height: 'auto', y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -20 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                        <div className="flex items-center justify-between">
+                            <Label className="text-base font-semibold">Recipe Data</Label>
+                            {jsonErrors.recipe && (
+                                <motion.span
+                                    className="text-sm text-destructive font-medium"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                >
+                                    {jsonErrors.recipe}
+                                </motion.span>
+                            )}
+                        </div>
+                        <div className="border rounded-lg overflow-hidden bg-muted/50 p-6 shadow-sm">
+                            <RecipeBuilder
+                                value={recipeJson}
+                                onChange={(newValue) => {
+                                    setRecipeJson(newValue);
+                                    if (isValidJSON(newValue)) {
+                                        const newErrors = { ...jsonErrors };
+                                        delete newErrors.recipe;
+                                    }
+                                }}
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Include ingredients, instructions, nutrition, prep time, etc.
+                        </p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Roundup Builder (conditional) */}
-            {formData.type === 'roundup' && (
-                <div className="space-y-3 pt-8 border-t-2">
-                    <div className="flex items-center justify-between">
-                        <Label className="text-base font-semibold">Roundup Items</Label>
-                        {jsonErrors.roundup && (
-                            <span className="text-sm text-destructive font-medium">{jsonErrors.roundup}</span>
-                        )}
-                    </div>
-                    <div className="border rounded-lg overflow-hidden bg-muted/50 p-6 shadow-sm">
-                        <RoundupBuilder
-                            value={roundupJson}
-                            onChange={(newValue) => {
-                                setRoundupJson(newValue);
-                                if (isValidJSON(newValue)) {
-                                    const newErrors = { ...jsonErrors };
-                                    delete newErrors.roundup;
-                                }
-                            }}
-                        />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                        Add recipes and articles to your curated list
-                    </p>
-                </div>
-            )}
+            <AnimatePresence>
+                {formData.type === 'roundup' && (
+                    <motion.div
+                        className="space-y-3 pt-8 border-t-2"
+                        initial={{ opacity: 0, height: 0, y: 20 }}
+                        animate={{ opacity: 1, height: 'auto', y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -20 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                        <div className="flex items-center justify-between">
+                            <Label className="text-base font-semibold">Roundup Items</Label>
+                            {jsonErrors.roundup && (
+                                <motion.span
+                                    className="text-sm text-destructive font-medium"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                >
+                                    {jsonErrors.roundup}
+                                </motion.span>
+                            )}
+                        </div>
+                        <div className="border rounded-lg overflow-hidden bg-muted/50 p-6 shadow-sm">
+                            <RoundupBuilder
+                                value={roundupJson}
+                                onChange={(newValue) => {
+                                    setRoundupJson(newValue);
+                                    if (isValidJSON(newValue)) {
+                                        const newErrors = { ...jsonErrors };
+                                        delete newErrors.roundup;
+                                    }
+                                }}
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Add recipes and articles to your curated list
+                        </p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* FAQs (optional, collapsible) */}
-            <div className="space-y-3 pt-8 border-t-2">
+            <motion.div
+                className="space-y-3 pt-8 border-t-2"
+                variants={sectionVariants}
+            >
                 <div className="flex items-center justify-between">
                     <Label className="text-base font-semibold">FAQs (Optional)</Label>
                     {jsonErrors.faqs && (
-                        <span className="text-sm text-destructive font-medium">{jsonErrors.faqs}</span>
+                        <motion.span
+                            className="text-sm text-destructive font-medium"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                        >
+                            {jsonErrors.faqs}
+                        </motion.span>
                     )}
                 </div>
                 <div className="border rounded-lg overflow-hidden shadow-sm">
@@ -213,7 +339,7 @@ export default function EditorMain({
                 <p className="text-xs text-muted-foreground italic">
                     💡 Legacy FAQ JSON (use FAQ block in content instead for better editing)
                 </p>
-            </div>
-        </main>
+            </motion.div>
+        </motion.main>
     );
 }

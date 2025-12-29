@@ -742,25 +742,35 @@ contact_info    → Contact details
   "headerStyle": "hero",
   "tldr": "Quick summary text",
   "showInNav": true,
-  "showInFooter": false
+  "showInFooter": false,
+  "featuredArticleId": 123,
+  "showFeaturedRecipe": true,
+  "showHeroCta": true,
+  "heroCtaText": "Join My Mailing List",
+  "heroCtaLink": "#newsletter"
 }
 ```
 
-| Field          | Type    | Options                             | Default       |
-| -------------- | ------- | ----------------------------------- | ------------- |
-| postsPerPage   | number  | -                                   | 12            |
-| layoutMode     | string  | `grid`, `list`, `masonry`           | `grid`        |
-| cardStyle      | string  | `compact`, `full`, `minimal`        | `full`        |
-| showSidebar    | boolean | -                                   | true          |
-| showFilters    | boolean | -                                   | true          |
-| showBreadcrumb | boolean | -                                   | true          |
-| showPagination | boolean | -                                   | true          |
-| sortBy         | string  | `publishedAt`, `title`, `viewCount` | `publishedAt` |
-| sortOrder      | string  | `asc`, `desc`                       | `desc`        |
-| headerStyle    | string  | `hero`, `minimal`, `none`           | `hero`        |
-| tldr           | string  | -                                   | null          |
-| showInNav      | boolean | -                                   | null          |
-| showInFooter   | boolean | -                                   | null          |
+| Field            | Type    | Options                             | Default       |
+| ---------------- | ------- | ----------------------------------- | ------------- |
+| postsPerPage     | number  | -                                   | 12            |
+| layoutMode       | string  | `grid`, `list`, `masonry`           | `grid`        |
+| cardStyle        | string  | `compact`, `full`, `minimal`        | `full`        |
+| showSidebar      | boolean | -                                   | true          |
+| showFilters      | boolean | -                                   | true          |
+| showBreadcrumb   | boolean | -                                   | true          |
+| showPagination   | boolean | -                                   | true          |
+| sortBy           | string  | `publishedAt`, `title`, `viewCount` | `publishedAt` |
+| sortOrder        | string  | `asc`, `desc`                       | `desc`        |
+| headerStyle      | string  | `hero`, `minimal`, `none`           | `hero`        |
+| tldr             | string  | -                                   | null          |
+| showInNav        | boolean | -                                   | null          |
+| showInFooter     | boolean | -                                   | null          |
+| featuredArticleId | number  | -                                   | null          |
+| showFeaturedRecipe | boolean | -                                   | true          |
+| showHeroCta      | boolean | -                                   | true          |
+| heroCtaText      | string  | -                                   | null          |
+| heroCtaLink      | string  | -                                   | null          |
 
 ---
 

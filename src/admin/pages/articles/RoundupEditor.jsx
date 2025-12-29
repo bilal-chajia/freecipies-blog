@@ -89,7 +89,7 @@ const RoundupEditor = () => {
         <EditorLayout
             title={title}
             subtitle={subtitle}
-            backPath="/articles"
+            backPath="/roundups"
             loading={loading}
             mainContent={mainContent}
             sidebarContent={sidebarContent}
@@ -97,6 +97,18 @@ const RoundupEditor = () => {
             setMediaDialogOpen={setMediaDialogOpen}
             handleMediaSelect={handleMediaSelect}
             navigate={navigate}
+            // Preview props
+            formData={formData}
+            contentJson={contentJson}
+            roundupJson={roundupJson}
+            imagesData={imagesData}
+            categories={categories}
+            authors={authors}
+            // Topbar props
+            onInputChange={handleInputChange}
+            onSave={handleSave}
+            saving={saving}
+            isEditMode={isEditMode}
         />
     );
 };

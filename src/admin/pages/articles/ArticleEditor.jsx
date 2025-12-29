@@ -111,6 +111,19 @@ const ArticleEditor = () => {
       setMediaDialogOpen={setMediaDialogOpen}
       handleMediaSelect={handleMediaSelect}
       navigate={navigate}
+      // Preview props
+      formData={formData}
+      contentJson={contentJson}
+      recipeJson={recipeJson}
+      roundupJson={roundupJson}
+      imagesData={imagesData}
+      categories={categories}
+      authors={authors}
+      // Topbar props
+      onInputChange={handleInputChange}
+      onSave={handleSave}
+      saving={saving}
+      isEditMode={isEditMode}
     />
   );
 };
