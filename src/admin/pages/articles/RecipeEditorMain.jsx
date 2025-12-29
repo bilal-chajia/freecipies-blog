@@ -36,7 +36,7 @@ export default function RecipeEditorMain({
     isEditMode,
 }) {
     return (
-        <main className="space-y-8 p-8 max-w-4xl mx-auto pb-20">
+        <main className="space-y-8 p-8 w-full max-w-none pb-20">
             {/* Title */}
             <div className="space-y-3">
                 <Input
