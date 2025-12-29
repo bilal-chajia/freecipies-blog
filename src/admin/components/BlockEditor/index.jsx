@@ -118,6 +118,36 @@ const EditorToolbar = ({ editor }) => {
     );
 };
 
+const normalizeTipVariant = (variant) => {
+    if (variant === 'error') return 'warning';
+    if (variant === 'success') return 'tip';
+    if (variant === 'note' || variant === 'tip' || variant === 'info' || variant === 'warning') {
+        return variant;
+    }
+    return 'warning';
+};
+
+const resolveCoverUrl = (cover) => {
+    if (!cover) return '';
+    if (typeof cover === 'string') return cover;
+    const variants = cover.variants || {};
+    return (
+        variants.md?.url ||
+        variants.sm?.url ||
+        variants.lg?.url ||
+        variants.xs?.url ||
+        cover.url ||
+        ''
+    );
+};
+
+const buildVideoUrl = (provider, videoId) => {
+    if (!provider || !videoId) return '';
+    if (provider === 'youtube') return `https://www.youtube.com/watch?v=${videoId}`;
+    if (provider === 'vimeo') return `https://vimeo.com/${videoId}`;
+    return '';
+};
+
 // ... JSON conversion functions remain the same ...
 function contentJsonToBlocks(contentJson) {
     if (!contentJson || !Array.isArray(contentJson)) {
@@ -136,7 +166,11 @@ function contentJsonToBlocks(contentJson) {
                     return { id, type: 'heading', props: { level: block.level || 2 }, content: block.text || '' };
 
                 case 'list':
-                    const listType = block.style === 'ordered' ? 'numberedListItem' : 'bulletListItem';
+                    const listType = block.style === 'ordered'
+                        ? 'numberedListItem'
+                        : block.style === 'checklist'
+                            ? 'checkListItem'
+                            : 'bulletListItem';
                     if (Array.isArray(block.items)) {
                         return block.items.map((item, i) => ({
                             id: `${id}-${i}`,
@@ -147,7 +181,7 @@ function contentJsonToBlocks(contentJson) {
                     return { id, type: listType, content: '' };
 
                 case 'blockquote':
-                    return { id, type: 'paragraph', content: `> ${block.text || ''}` };
+                    return { id, type: 'blockquote', content: block.text || '' };
 
                 case 'image':
                     // Read format per DATABASE_SCHEMA.md content_json spec
@@ -170,24 +204,26 @@ function contentJsonToBlocks(contentJson) {
                         },
                     };
 
-                case 'video':
+                case 'video': {
+                    const url = block.url || buildVideoUrl(block.provider, block.videoId);
                     return {
                         id,
                         type: 'video',
                         props: {
-                            url: block.url || '',
+                            url,
                             provider: block.provider || '',
                             videoId: block.videoId || '',
                             aspectRatio: block.aspectRatio || '16:9',
                         }
                     };
+                }
 
                 case 'tip_box':
                 case 'alert':
                     return {
                         id,
                         type: 'alert',
-                        props: { type: block.variant || 'warning' },
+                        props: { type: normalizeTipVariant(block.variant) },
                         content: block.text || '',
                     };
 
@@ -208,7 +244,8 @@ function contentJsonToBlocks(contentJson) {
                         props: { style: block.style || 'solid' }
                     };
 
-                case 'recipe_card':
+                case 'recipe_card': {
+                    const coverUrl = resolveCoverUrl(block.cover || block.thumbnail);
                     return {
                         id,
                         type: 'recipeCard',
@@ -216,11 +253,12 @@ function contentJsonToBlocks(contentJson) {
                             articleId: block.article_id,
                             slug: block.slug,
                             headline: block.headline,
-                            thumbnail: block.thumbnail,
+                            thumbnail: coverUrl,
                             difficulty: block.difficulty,
                             totalTime: block.total_time,
                         }
                     };
+                }
 
                 default:
                     return { id, type: 'paragraph', content: block.text || `[${block.type}]` };
@@ -241,8 +279,12 @@ function blocksToContentJson(blocks) {
     let currentList = null;
 
     for (const block of blocks) {
-        if (block.type === 'bulletListItem' || block.type === 'numberedListItem') {
-            const style = block.type === 'numberedListItem' ? 'ordered' : 'unordered';
+        if (block.type === 'bulletListItem' || block.type === 'numberedListItem' || block.type === 'checkListItem') {
+            const style = block.type === 'numberedListItem'
+                ? 'ordered'
+                : block.type === 'checkListItem'
+                    ? 'checklist'
+                    : 'unordered';
             const text = extractText(block.content);
 
             if (currentList && currentList.style === style) {
@@ -265,6 +307,13 @@ function blocksToContentJson(blocks) {
                 if (text.trim()) {
                     result.push({ type: 'paragraph', text });
                 }
+                break;
+
+            case 'blockquote':
+                result.push({
+                    type: 'blockquote',
+                    text: extractText(block.content),
+                });
                 break;
 
             case 'heading':
@@ -302,7 +351,6 @@ function blocksToContentJson(blocks) {
                 if (block.props?.videoId) {
                     result.push({
                         type: 'video',
-                        url: block.props.url,
                         provider: block.props.provider,
                         videoId: block.props.videoId,
                         aspectRatio: block.props.aspectRatio,
@@ -315,7 +363,7 @@ function blocksToContentJson(blocks) {
                 if (alertText.trim()) {
                     result.push({
                         type: 'tip_box',
-                        variant: block.props?.type || 'warning',
+                        variant: normalizeTipVariant(block.props?.type),
                         text: alertText,
                     });
                 }
@@ -331,19 +379,19 @@ function blocksToContentJson(blocks) {
                 break;
 
             case 'divider':
-                result.push({ type: 'divider', style: block.props.style });
+                result.push({ type: 'divider' });
                 break;
 
             case 'recipeCard':
                 if (block.props.articleId) {
+                    const articleId = parseInt(block.props.articleId, 10);
+                    if (!Number.isFinite(articleId)) break;
+                    const cover = block.props.thumbnail ? { url: block.props.thumbnail } : undefined;
                     result.push({
                         type: 'recipe_card',
-                        article_id: block.props.articleId,
-                        slug: block.props.slug,
-                        headline: block.props.headline,
-                        thumbnail: block.props.thumbnail,
-                        difficulty: block.props.difficulty,
-                        total_time: block.props.totalTime,
+                        article_id: articleId,
+                        headline: block.props.headline || '',
+                        ...(cover ? { cover } : {}),
                     });
                 }
                 break;

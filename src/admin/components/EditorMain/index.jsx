@@ -248,10 +248,7 @@ export default function EditorMain({
                                 value={recipeJson}
                                 onChange={(newValue) => {
                                     setRecipeJson(newValue);
-                                    if (isValidJSON(newValue)) {
-                                        const newErrors = { ...jsonErrors };
-                                        delete newErrors.recipe;
-                                    }
+                                    validateJSON('recipe', newValue);
                                 }}
                             />
                         </div>
@@ -289,10 +286,7 @@ export default function EditorMain({
                                 value={roundupJson}
                                 onChange={(newValue) => {
                                     setRoundupJson(newValue);
-                                    if (isValidJSON(newValue)) {
-                                        const newErrors = { ...jsonErrors };
-                                        delete newErrors.roundup;
-                                    }
+                                    validateJSON('roundup', newValue);
                                 }}
                             />
                         </div>

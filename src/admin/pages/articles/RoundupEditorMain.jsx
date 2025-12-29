@@ -113,10 +113,7 @@ export default function RoundupEditorMain({
                         value={roundupJson}
                         onChange={(newValue) => {
                             setRoundupJson(newValue);
-                            if (isValidJSON(newValue)) {
-                                const newErrors = { ...jsonErrors };
-                                delete newErrors.roundup;
-                            }
+                            validateJSON('roundup', newValue);
                         }}
                     />
                 </div>

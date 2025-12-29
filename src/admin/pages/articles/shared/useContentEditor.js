@@ -11,6 +11,14 @@ export function useContentEditor({ slug, contentType = 'article' }) {
     const navigate = useNavigate();
     const isEditMode = !!slug;
     const articleLoadedRef = useRef(false);
+    const normalizeId = (value) => {
+        if (typeof value === 'number' && Number.isFinite(value)) return value;
+        if (typeof value === 'string' && value.trim() !== '') {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+        return null;
+    };
 
     // Core states
     const [loading, setLoading] = useState(false);
@@ -27,9 +35,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
         slug: '',
         type: contentType,
         categoryId: null,
-        categorySlug: '',
         authorId: null,
-        authorSlug: '',
         label: '',
         headline: '',
         metaTitle: '',
@@ -144,15 +150,16 @@ export function useContentEditor({ slug, contentType = 'article' }) {
 
                 setImagesData(parsedImages || {});
 
+                const categoryId = normalizeId(article.categoryId);
+                const authorId = normalizeId(article.authorId);
+
                 setFormData({
                     slug: article.slug,
                     type: article.type,
-                    categoryId: article.categoryId ?? null,
-                    categorySlug: article.categorySlug,
-                    authorId: article.authorId ?? null,
-                    authorSlug: article.authorSlug,
+                    categoryId,
+                    authorId,
                     label: article.label,
-                    headline: article.headline,
+                    headline: article.subtitle || '',
                     metaTitle: article.metaTitle || parsedSeo.metaTitle || '',
                     metaDescription: article.metaDescription || parsedSeo.metaDescription || '',
                     canonicalUrl: article.canonicalUrl || parsedSeo.canonical || '',
@@ -195,17 +202,15 @@ export function useContentEditor({ slug, contentType = 'article' }) {
     };
 
     const handleInputChange = (field, value) => {
+        const normalizedValue = (field === 'categoryId' || field === 'authorId')
+            ? normalizeId(value)
+            : value;
+
         setFormData(prev => {
-            const next = { ...prev, [field]: value };
+            const next = { ...prev, [field]: normalizedValue };
 
-            if (field === 'categorySlug') {
-                const match = categories.find((c) => c.slug === value);
-                next.categoryId = match?.id ?? null;
-            }
-
-            if (field === 'authorSlug') {
-                const match = authors.find((a) => a.slug === value);
-                next.authorId = match?.id ?? null;
+            if (field === 'label' && !isEditMode) {
+                next.slug = generateSlug(String(value ?? ''));
             }
 
             return next;
@@ -225,9 +230,6 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             });
         }
 
-        if (field === 'label' && !isEditMode) {
-            setFormData(prev => ({ ...prev, slug: generateSlug(value) }));
-        }
     };
 
     const handleMediaSelect = (item) => {
@@ -320,13 +322,28 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             return;
         }
 
-        const { imageUrl, coverUrl, imageAlt, coverAlt, ...restFormData } = formData;
-        const categoryId = restFormData.categoryId ?? categories.find((c) => c.slug === restFormData.categorySlug)?.id ?? null;
-        const authorId = restFormData.authorId ?? authors.find((a) => a.slug === restFormData.authorSlug)?.id ?? null;
+        const { imageUrl, coverUrl, imageAlt, coverAlt, label, headline, ...restFormData } = formData;
+        const requiredFields = [];
+        const trimmedLabel = (label || '').trim();
+        const trimmedSlug = (restFormData.slug || '').trim();
+        const computedSlug = trimmedSlug || generateSlug(trimmedLabel);
+
+        if (!trimmedLabel) requiredFields.push('Title');
+        if (!computedSlug) requiredFields.push('Slug');
+        if (!restFormData.shortDescription?.trim()) requiredFields.push('Short Description');
+        if (restFormData.categoryId == null) requiredFields.push('Category');
+        if (restFormData.authorId == null) requiredFields.push('Author');
+
+        if (requiredFields.length > 0) {
+            alert(`Please fill required fields: ${requiredFields.join(', ')}`);
+            return;
+        }
+
         const data = {
             ...restFormData,
-            categoryId,
-            authorId,
+            slug: computedSlug,
+            headline: trimmedLabel,
+            subtitle: headline?.trim() || null,
             contentJson,
             recipeJson,
             roundupJson,
@@ -345,7 +362,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             } else {
                 // Create: navigate to the edit page of the new article
                 const response = await articlesAPI.create(data);
-                const newSlug = response?.data?.slug || data.slug;
+                const newSlug = response?.data?.data?.slug || data.slug;
                 navigate(`/${contentType}s/${newSlug}`);
             }
         } catch (error) {

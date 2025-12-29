@@ -3,7 +3,7 @@ import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 import { Textarea } from "@/ui/textarea";
-import { Plus, Trash2, ArrowUp, ArrowDown, Upload, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -16,15 +16,6 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/ui/collapsible";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/ui/dialog";
 
 // Default recipe matching schema.sql structure
 const defaultRecipe = {
@@ -70,9 +61,9 @@ export default function RecipeBuilder({ value, onChange }) {
     const [data, setData] = useState(defaultRecipe);
     const [nutritionOpen, setNutritionOpen] = useState(false);
     const [tipsOpen, setTipsOpen] = useState(false);
-    const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
-    const [jsonImportValue, setJsonImportValue] = useState('');
     const [jsonError, setJsonError] = useState('');
+    const [jsonMode, setJsonMode] = useState(false);
+    const [jsonEditValue, setJsonEditValue] = useState('');
 
     useEffect(() => {
         try {
@@ -147,22 +138,6 @@ export default function RecipeBuilder({ value, onChange }) {
     const handleNumberChange = (field, val) => {
         const num = val === '' ? null : parseInt(val);
         updateData({ [field]: isNaN(num) ? null : num });
-    };
-
-    // --- JSON Import ---
-    const handleJsonImport = () => {
-        try {
-            const parsed = JSON.parse(jsonImportValue);
-            setJsonError('');
-            // Merge with current data
-            const merged = { ...data, ...parsed };
-            setData(merged);
-            onChange(JSON.stringify(merged, null, 2));
-            setJsonDialogOpen(false);
-            setJsonImportValue('');
-        } catch (e) {
-            setJsonError('Invalid JSON: ' + e.message);
-        }
     };
 
     // --- Ingredients ---
@@ -296,465 +271,499 @@ export default function RecipeBuilder({ value, onChange }) {
 
     return (
         <div className="space-y-6">
-            {/* Header with JSON Import */}
+            {/* Header with Mode Toggle */}
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Recipe Details</h3>
-                <Dialog open={jsonDialogOpen} onOpenChange={setJsonDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-2">
-                            <Upload className="w-4 h-4" /> Import JSON
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-                        <DialogHeader>
-                            <DialogTitle>Import Recipe from JSON</DialogTitle>
-                            <DialogDescription>
-                                Paste recipe JSON to merge with current data
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="flex-1 overflow-hidden">
-                            <Textarea
-                                value={jsonImportValue}
-                                onChange={(e) => setJsonImportValue(e.target.value)}
-                                placeholder='{"prep": 15, "cook": 30, "ingredients": [...], "instructions": [...]}'
-                                className="font-mono text-sm h-[50vh] resize-none"
-                            />
-                        </div>
-                        {jsonError && <p className="text-sm text-destructive">{jsonError}</p>}
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setJsonDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleJsonImport}>Import</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </div>
-
-            {/* Time & Servings */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-card">
-                <div className="space-y-2">
-                    <Label>Prep (mins)</Label>
-                    <Input
-                        type="number"
-                        value={data.prep ?? ''}
-                        onChange={(e) => handleNumberChange('prep', e.target.value)}
-                        placeholder="15"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Cook (mins)</Label>
-                    <Input
-                        type="number"
-                        value={data.cook ?? ''}
-                        onChange={(e) => handleNumberChange('cook', e.target.value)}
-                        placeholder="30"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Total (mins)</Label>
-                    <Input
-                        type="number"
-                        value={data.total ?? ''}
-                        onChange={(e) => handleNumberChange('total', e.target.value)}
-                        placeholder="45"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Servings</Label>
-                    <Input
-                        type="number"
-                        value={data.servings ?? ''}
-                        onChange={(e) => handleNumberChange('servings', e.target.value)}
-                        placeholder="4"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Yield</Label>
-                    <Input
-                        value={data.recipeYield || ''}
-                        onChange={(e) => handleInputChange('recipeYield', e.target.value)}
-                        placeholder="12 cookies"
-                    />
-                </div>
-            </div>
-
-            {/* Metadata */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-lg bg-card">
-                <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Input
-                        value={data.recipeCategory || ''}
-                        onChange={(e) => handleInputChange('recipeCategory', e.target.value)}
-                        placeholder="Dessert"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Cuisine</Label>
-                    <Input
-                        value={data.recipeCuisine || ''}
-                        onChange={(e) => handleInputChange('recipeCuisine', e.target.value)}
-                        placeholder="Italian"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Method</Label>
-                    <Input
-                        value={data.cookingMethod || ''}
-                        onChange={(e) => handleInputChange('cookingMethod', e.target.value)}
-                        placeholder="baking"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Difficulty</Label>
-                    <Select
-                        value={data.difficulty || 'Medium'}
-                        onValueChange={(value) => handleInputChange('difficulty', value)}
-                    >
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Easy">Easy</SelectItem>
-                            <SelectItem value="Medium">Medium</SelectItem>
-                            <SelectItem value="Hard">Hard</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-
-            {/* Diet Labels */}
-            <div className="p-4 border rounded-lg bg-card">
-                <Label className="mb-2 block">Suitable For Diet</Label>
-                <div className="flex flex-wrap gap-2">
-                    {dietOptions.map(diet => (
-                        <Button
-                            key={diet.value}
-                            variant={data.suitableForDiet?.includes(diet.value) ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => toggleDiet(diet.value)}
-                        >
-                            {diet.label}
-                        </Button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Ingredients - Multi-Section */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Ingredients</h3>
+                {/* Mode Toggle */}
+                <div className="flex p-1 bg-muted rounded-lg">
                     <Button
-                        onClick={() => {
-                            const newIngredients = [...data.ingredients, { group_title: `Group ${data.ingredients.length + 1}`, items: [] }];
-                            updateData({ ingredients: newIngredients });
-                        }}
+                        variant={!jsonMode ? "default" : "ghost"}
                         size="sm"
-                        variant="outline"
-                        className="gap-2"
+                        className="gap-1.5 h-7"
+                        onClick={() => setJsonMode(false)}
                     >
-                        <Plus className="w-4 h-4" /> Add Section
+                        <Eye className="w-3.5 h-3.5" /> Visual
+                    </Button>
+                    <Button
+                        variant={jsonMode ? "default" : "ghost"}
+                        size="sm"
+                        className="gap-1.5 h-7"
+                        onClick={() => {
+                            setJsonEditValue(JSON.stringify(data, null, 2));
+                            setJsonMode(true);
+                        }}
+                    >
+                        <Code className="w-3.5 h-3.5" /> JSON
                     </Button>
                 </div>
+            </div>
 
-                {data.ingredients.map((group, groupIndex) => (
-                    <div key={groupIndex} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex items-center gap-2">
+            {/* JSON Mode Editor */}
+            {jsonMode ? (
+                <div className="space-y-3">
+                    <Textarea
+                        value={jsonEditValue}
+                        onChange={(e) => setJsonEditValue(e.target.value)}
+                        className="font-mono text-sm min-h-[500px] resize-y"
+                        placeholder="Edit recipe JSON directly..."
+                    />
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setJsonEditValue(JSON.stringify(data, null, 2));
+                            }}
+                        >
+                            Reset
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                try {
+                                    const parsed = JSON.parse(jsonEditValue);
+                                    setData(parsed);
+                                    onChange(JSON.stringify(parsed, null, 2));
+                                    setJsonError('');
+                                } catch (e) {
+                                    setJsonError('Invalid JSON: ' + e.message);
+                                }
+                            }}
+                        >
+                            Apply Changes
+                        </Button>
+                    </div>
+                    {jsonError && <p className="text-sm text-destructive">{jsonError}</p>}
+                </div>
+            ) : (
+                <>
+
+                    {/* Time & Servings */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-card">
+                        <div className="space-y-2">
+                            <Label>Prep (mins)</Label>
                             <Input
-                                value={group.group_title || ''}
-                                onChange={(e) => {
-                                    const newIngredients = [...data.ingredients];
-                                    newIngredients[groupIndex] = { ...newIngredients[groupIndex], group_title: e.target.value };
+                                type="number"
+                                value={data.prep ?? ''}
+                                onChange={(e) => handleNumberChange('prep', e.target.value)}
+                                placeholder="15"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Cook (mins)</Label>
+                            <Input
+                                type="number"
+                                value={data.cook ?? ''}
+                                onChange={(e) => handleNumberChange('cook', e.target.value)}
+                                placeholder="30"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Total (mins)</Label>
+                            <Input
+                                type="number"
+                                value={data.total ?? ''}
+                                onChange={(e) => handleNumberChange('total', e.target.value)}
+                                placeholder="45"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Servings</Label>
+                            <Input
+                                type="number"
+                                value={data.servings ?? ''}
+                                onChange={(e) => handleNumberChange('servings', e.target.value)}
+                                placeholder="4"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Yield</Label>
+                            <Input
+                                value={data.recipeYield || ''}
+                                onChange={(e) => handleInputChange('recipeYield', e.target.value)}
+                                placeholder="12 cookies"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-lg bg-card">
+                        <div className="space-y-2">
+                            <Label>Category</Label>
+                            <Input
+                                value={data.recipeCategory || ''}
+                                onChange={(e) => handleInputChange('recipeCategory', e.target.value)}
+                                placeholder="Dessert"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Cuisine</Label>
+                            <Input
+                                value={data.recipeCuisine || ''}
+                                onChange={(e) => handleInputChange('recipeCuisine', e.target.value)}
+                                placeholder="Italian"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Method</Label>
+                            <Input
+                                value={data.cookingMethod || ''}
+                                onChange={(e) => handleInputChange('cookingMethod', e.target.value)}
+                                placeholder="baking"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Difficulty</Label>
+                            <Select
+                                value={data.difficulty || 'Medium'}
+                                onValueChange={(value) => handleInputChange('difficulty', value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Easy">Easy</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="Hard">Hard</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {/* Diet Labels */}
+                    <div className="p-4 border rounded-lg bg-card">
+                        <Label className="mb-2 block">Suitable For Diet</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {dietOptions.map(diet => (
+                                <Button
+                                    key={diet.value}
+                                    variant={data.suitableForDiet?.includes(diet.value) ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => toggleDiet(diet.value)}
+                                >
+                                    {diet.label}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Ingredients - Multi-Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold">Ingredients</h3>
+                            <Button
+                                onClick={() => {
+                                    const newIngredients = [...data.ingredients, { group_title: `Group ${data.ingredients.length + 1}`, items: [] }];
                                     updateData({ ingredients: newIngredients });
                                 }}
-                                placeholder="Section title (e.g., For the Dough)"
-                                className="font-semibold"
-                            />
-                            <Button onClick={() => addIngredient(groupIndex)} size="sm" variant="outline">
-                                <Plus className="w-4 h-4" />
+                                size="sm"
+                                variant="outline"
+                                className="gap-2"
+                            >
+                                <Plus className="w-4 h-4" /> Add Section
                             </Button>
-                            {data.ingredients.length > 1 && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        updateData({ ingredients: data.ingredients.filter((_, i) => i !== groupIndex) });
-                                    }}
-                                    className="text-destructive"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
-                            )}
                         </div>
-                        <div className="space-y-2 pl-2">
-                            {(group.items || []).map((ing, index) => (
-                                <div key={index} className="flex gap-2 items-center">
-                                    <div className="flex flex-col gap-1">
-                                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveIngredient(groupIndex, index, 'up')} disabled={index === 0}>
-                                            <ArrowUp className="w-3 h-3" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveIngredient(groupIndex, index, 'down')} disabled={index === (group.items?.length || 1) - 1}>
-                                            <ArrowDown className="w-3 h-3" />
-                                        </Button>
-                                    </div>
+
+                        {data.ingredients.map((group, groupIndex) => (
+                            <div key={groupIndex} className="border rounded-lg p-4 space-y-3">
+                                <div className="flex items-center gap-2">
                                     <Input
-                                        type="number"
-                                        value={ing.amount || ''}
-                                        onChange={(e) => updateIngredient(groupIndex, index, 'amount', parseFloat(e.target.value) || 0)}
-                                        placeholder="2"
-                                        className="w-20"
+                                        value={group.group_title || ''}
+                                        onChange={(e) => {
+                                            const newIngredients = [...data.ingredients];
+                                            newIngredients[groupIndex] = { ...newIngredients[groupIndex], group_title: e.target.value };
+                                            updateData({ ingredients: newIngredients });
+                                        }}
+                                        placeholder="Section title (e.g., For the Dough)"
+                                        className="font-semibold"
                                     />
+                                    <Button onClick={() => addIngredient(groupIndex)} size="sm" variant="outline">
+                                        <Plus className="w-4 h-4" />
+                                    </Button>
+                                    {data.ingredients.length > 1 && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                updateData({ ingredients: data.ingredients.filter((_, i) => i !== groupIndex) });
+                                            }}
+                                            className="text-destructive"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="space-y-2 pl-2">
+                                    {(group.items || []).map((ing, index) => (
+                                        <div key={index} className="flex gap-2 items-center">
+                                            <div className="flex flex-col gap-1">
+                                                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveIngredient(groupIndex, index, 'up')} disabled={index === 0}>
+                                                    <ArrowUp className="w-3 h-3" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveIngredient(groupIndex, index, 'down')} disabled={index === (group.items?.length || 1) - 1}>
+                                                    <ArrowDown className="w-3 h-3" />
+                                                </Button>
+                                            </div>
+                                            <Input
+                                                type="number"
+                                                value={ing.amount || ''}
+                                                onChange={(e) => updateIngredient(groupIndex, index, 'amount', parseFloat(e.target.value) || 0)}
+                                                placeholder="2"
+                                                className="w-20"
+                                            />
+                                            <Input
+                                                value={ing.unit || ''}
+                                                onChange={(e) => updateIngredient(groupIndex, index, 'unit', e.target.value)}
+                                                placeholder="cups"
+                                                className="w-24"
+                                            />
+                                            <Input
+                                                value={ing.name || ''}
+                                                onChange={(e) => updateIngredient(groupIndex, index, 'name', e.target.value)}
+                                                placeholder="all-purpose flour"
+                                                className="flex-1"
+                                            />
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeIngredient(groupIndex, index)}
+                                                className="text-destructive hover:bg-destructive/10"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    {(group.items || []).length === 0 && (
+                                        <p className="text-sm text-muted-foreground italic">No ingredients in this section.</p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Instructions - Multi-Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold">Instructions</h3>
+                            <Button
+                                onClick={() => {
+                                    const newInstructions = [...data.instructions, { section_title: `Section ${data.instructions.length + 1}`, steps: [] }];
+                                    updateData({ instructions: newInstructions });
+                                }}
+                                size="sm"
+                                variant="outline"
+                                className="gap-2"
+                            >
+                                <Plus className="w-4 h-4" /> Add Section
+                            </Button>
+                        </div>
+
+                        {data.instructions.map((section, sectionIndex) => (
+                            <div key={sectionIndex} className="border rounded-lg p-4 space-y-3">
+                                <div className="flex items-center gap-2">
                                     <Input
-                                        value={ing.unit || ''}
-                                        onChange={(e) => updateIngredient(groupIndex, index, 'unit', e.target.value)}
-                                        placeholder="cups"
-                                        className="w-24"
+                                        value={section.section_title || ''}
+                                        onChange={(e) => {
+                                            const newInstructions = [...data.instructions];
+                                            newInstructions[sectionIndex] = { ...newInstructions[sectionIndex], section_title: e.target.value };
+                                            updateData({ instructions: newInstructions });
+                                        }}
+                                        placeholder="Section title (e.g., Prepare the Dough)"
+                                        className="font-semibold"
                                     />
-                                    <Input
-                                        value={ing.name || ''}
-                                        onChange={(e) => updateIngredient(groupIndex, index, 'name', e.target.value)}
-                                        placeholder="all-purpose flour"
-                                        className="flex-1"
+                                    <Button onClick={() => addInstruction(sectionIndex)} size="sm" variant="outline">
+                                        <Plus className="w-4 h-4" />
+                                    </Button>
+                                    {data.instructions.length > 1 && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                updateData({ instructions: data.instructions.filter((_, i) => i !== sectionIndex) });
+                                            }}
+                                            className="text-destructive"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="space-y-3 pl-2">
+                                    {(section.steps || []).map((step, stepIndex) => (
+                                        <div key={stepIndex} className="flex gap-2 items-center p-3 border rounded-md bg-accent/20">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveInstruction(sectionIndex, stepIndex, 'up')} disabled={stepIndex === 0}>
+                                                    <ArrowUp className="w-3 h-3" />
+                                                </Button>
+                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                                                    {stepIndex + 1}
+                                                </span>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveInstruction(sectionIndex, stepIndex, 'down')} disabled={stepIndex === (section.steps?.length || 1) - 1}>
+                                                    <ArrowDown className="w-3 h-3" />
+                                                </Button>
+                                            </div>
+                                            <div className="flex-1 space-y-2">
+                                                <Textarea
+                                                    value={step.text || ''}
+                                                    onChange={(e) => updateInstruction(sectionIndex, stepIndex, 'text', e.target.value)}
+                                                    placeholder={`Step ${stepIndex + 1} description...`}
+                                                    rows={2}
+                                                />
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeInstruction(sectionIndex, stepIndex)}
+                                                className="text-destructive hover:bg-destructive/10 mt-1"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    {(section.steps || []).length === 0 && (
+                                        <p className="text-sm text-muted-foreground italic">No steps in this section.</p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Tips (Collapsible) */}
+                    <Collapsible open={tipsOpen} onOpenChange={setTipsOpen}>
+                        <CollapsibleTrigger asChild>
+                            <Button variant="ghost" className="w-full justify-between p-4 border rounded-lg">
+                                <span className="font-semibold">Chef's Tips ({data.tips?.length || 0})</span>
+                                {tipsOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                            </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="space-y-4 pt-4">
+                            <div className="flex justify-end">
+                                <Button onClick={addTip} size="sm" variant="outline" className="gap-2">
+                                    <Plus className="w-4 h-4" /> Add Tip
+                                </Button>
+                            </div>
+                            {(data.tips || []).map((tip, index) => (
+                                <div key={index} className="flex gap-2">
+                                    <Textarea
+                                        value={tip}
+                                        onChange={(e) => updateTip(index, e.target.value)}
+                                        placeholder="Pro tip..."
+                                        rows={2}
                                     />
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() => removeIngredient(groupIndex, index)}
+                                        onClick={() => removeTip(index)}
                                         className="text-destructive hover:bg-destructive/10"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
                                 </div>
                             ))}
-                            {(group.items || []).length === 0 && (
-                                <p className="text-sm text-muted-foreground italic">No ingredients in this section.</p>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
 
-            {/* Instructions - Multi-Section */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Instructions</h3>
-                    <Button
-                        onClick={() => {
-                            const newInstructions = [...data.instructions, { section_title: `Section ${data.instructions.length + 1}`, steps: [] }];
-                            updateData({ instructions: newInstructions });
-                        }}
-                        size="sm"
-                        variant="outline"
-                        className="gap-2"
-                    >
-                        <Plus className="w-4 h-4" /> Add Section
-                    </Button>
-                </div>
-
-                {data.instructions.map((section, sectionIndex) => (
-                    <div key={sectionIndex} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex items-center gap-2">
-                            <Input
-                                value={section.section_title || ''}
-                                onChange={(e) => {
-                                    const newInstructions = [...data.instructions];
-                                    newInstructions[sectionIndex] = { ...newInstructions[sectionIndex], section_title: e.target.value };
-                                    updateData({ instructions: newInstructions });
-                                }}
-                                placeholder="Section title (e.g., Prepare the Dough)"
-                                className="font-semibold"
-                            />
-                            <Button onClick={() => addInstruction(sectionIndex)} size="sm" variant="outline">
-                                <Plus className="w-4 h-4" />
+                    {/* Nutrition (Collapsible) */}
+                    <Collapsible open={nutritionOpen} onOpenChange={setNutritionOpen}>
+                        <CollapsibleTrigger asChild>
+                            <Button variant="ghost" className="w-full justify-between p-4 border rounded-lg">
+                                <span className="font-semibold">Nutrition Information</span>
+                                {nutritionOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                             </Button>
-                            {data.instructions.length > 1 && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        updateData({ instructions: data.instructions.filter((_, i) => i !== sectionIndex) });
-                                    }}
-                                    className="text-destructive"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
-                            )}
-                        </div>
-                        <div className="space-y-3 pl-2">
-                            {(section.steps || []).map((step, stepIndex) => (
-                                <div key={stepIndex} className="flex gap-2 items-start p-3 border rounded-md bg-accent/20">
-                                    <div className="flex flex-col gap-1 mt-2">
-                                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold mb-2">
-                                            {stepIndex + 1}
-                                        </span>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveInstruction(sectionIndex, stepIndex, 'up')} disabled={stepIndex === 0}>
-                                            <ArrowUp className="w-3 h-3" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveInstruction(sectionIndex, stepIndex, 'down')} disabled={stepIndex === (section.steps?.length || 1) - 1}>
-                                            <ArrowDown className="w-3 h-3" />
-                                        </Button>
-                                    </div>
-                                    <div className="flex-1 space-y-2">
-                                        <Textarea
-                                            value={step.text || ''}
-                                            onChange={(e) => updateInstruction(sectionIndex, stepIndex, 'text', e.target.value)}
-                                            placeholder={`Step ${stepIndex + 1} description...`}
-                                            rows={2}
-                                        />
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => removeInstruction(sectionIndex, stepIndex)}
-                                        className="text-destructive hover:bg-destructive/10 mt-1"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="p-4 border rounded-lg mt-2">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Calories (kcal)</Label>
+                                    <Input
+                                        type="number"
+                                        value={data.nutrition?.calories ?? ''}
+                                        onChange={(e) => updateNutrition('calories', e.target.value)}
+                                        placeholder="320"
+                                    />
                                 </div>
-                            ))}
-                            {(section.steps || []).length === 0 && (
-                                <p className="text-sm text-muted-foreground italic">No steps in this section.</p>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Tips (Collapsible) */}
-            <Collapsible open={tipsOpen} onOpenChange={setTipsOpen}>
-                <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-between p-4 border rounded-lg">
-                        <span className="font-semibold">Chef's Tips ({data.tips?.length || 0})</span>
-                        {tipsOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 pt-4">
-                    <div className="flex justify-end">
-                        <Button onClick={addTip} size="sm" variant="outline" className="gap-2">
-                            <Plus className="w-4 h-4" /> Add Tip
-                        </Button>
-                    </div>
-                    {(data.tips || []).map((tip, index) => (
-                        <div key={index} className="flex gap-2">
-                            <Textarea
-                                value={tip}
-                                onChange={(e) => updateTip(index, e.target.value)}
-                                placeholder="Pro tip..."
-                                rows={2}
-                            />
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeTip(index)}
-                                className="text-destructive hover:bg-destructive/10"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    ))}
-                </CollapsibleContent>
-            </Collapsible>
-
-            {/* Nutrition (Collapsible) */}
-            <Collapsible open={nutritionOpen} onOpenChange={setNutritionOpen}>
-                <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-between p-4 border rounded-lg">
-                        <span className="font-semibold">Nutrition Information</span>
-                        {nutritionOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="p-4 border rounded-lg mt-2">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                            <Label>Calories (kcal)</Label>
-                            <Input
-                                type="number"
-                                value={data.nutrition?.calories ?? ''}
-                                onChange={(e) => updateNutrition('calories', e.target.value)}
-                                placeholder="320"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Fat (g)</Label>
-                            <Input
-                                type="number"
-                                value={data.nutrition?.fatContent ?? ''}
-                                onChange={(e) => updateNutrition('fatContent', e.target.value)}
-                                placeholder="15"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Saturated Fat (g)</Label>
-                            <Input
-                                type="number"
-                                value={data.nutrition?.saturatedFatContent ?? ''}
-                                onChange={(e) => updateNutrition('saturatedFatContent', e.target.value)}
-                                placeholder="3"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Carbs (g)</Label>
-                            <Input
-                                type="number"
-                                value={data.nutrition?.carbohydrateContent ?? ''}
-                                onChange={(e) => updateNutrition('carbohydrateContent', e.target.value)}
-                                placeholder="40"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Sugar (g)</Label>
-                            <Input
-                                type="number"
-                                value={data.nutrition?.sugarContent ?? ''}
-                                onChange={(e) => updateNutrition('sugarContent', e.target.value)}
-                                placeholder="12"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Fiber (g)</Label>
-                            <Input
-                                type="number"
-                                value={data.nutrition?.fiberContent ?? ''}
-                                onChange={(e) => updateNutrition('fiberContent', e.target.value)}
-                                placeholder="2"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Protein (g)</Label>
-                            <Input
-                                type="number"
-                                value={data.nutrition?.proteinContent ?? ''}
-                                onChange={(e) => updateNutrition('proteinContent', e.target.value)}
-                                placeholder="4"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Sodium (mg)</Label>
-                            <Input
-                                type="number"
-                                value={data.nutrition?.sodiumContent ?? ''}
-                                onChange={(e) => updateNutrition('sodiumContent', e.target.value)}
-                                placeholder="220"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Cholesterol (mg)</Label>
-                            <Input
-                                type="number"
-                                value={data.nutrition?.cholesterolContent ?? ''}
-                                onChange={(e) => updateNutrition('cholesterolContent', e.target.value)}
-                                placeholder="25"
-                            />
-                        </div>
-                        <div className="space-y-2 col-span-2 md:col-span-3">
-                            <Label>Serving Size</Label>
-                            <Input
-                                value={data.nutrition?.servingSize ?? ''}
-                                onChange={(e) => updateData({ nutrition: { ...data.nutrition, servingSize: e.target.value } })}
-                                placeholder="1 serving (150g)"
-                            />
-                        </div>
-                    </div>
-                </CollapsibleContent>
-            </Collapsible>
+                                <div className="space-y-2">
+                                    <Label>Fat (g)</Label>
+                                    <Input
+                                        type="number"
+                                        value={data.nutrition?.fatContent ?? ''}
+                                        onChange={(e) => updateNutrition('fatContent', e.target.value)}
+                                        placeholder="15"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Saturated Fat (g)</Label>
+                                    <Input
+                                        type="number"
+                                        value={data.nutrition?.saturatedFatContent ?? ''}
+                                        onChange={(e) => updateNutrition('saturatedFatContent', e.target.value)}
+                                        placeholder="3"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Carbs (g)</Label>
+                                    <Input
+                                        type="number"
+                                        value={data.nutrition?.carbohydrateContent ?? ''}
+                                        onChange={(e) => updateNutrition('carbohydrateContent', e.target.value)}
+                                        placeholder="40"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Sugar (g)</Label>
+                                    <Input
+                                        type="number"
+                                        value={data.nutrition?.sugarContent ?? ''}
+                                        onChange={(e) => updateNutrition('sugarContent', e.target.value)}
+                                        placeholder="12"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Fiber (g)</Label>
+                                    <Input
+                                        type="number"
+                                        value={data.nutrition?.fiberContent ?? ''}
+                                        onChange={(e) => updateNutrition('fiberContent', e.target.value)}
+                                        placeholder="2"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Protein (g)</Label>
+                                    <Input
+                                        type="number"
+                                        value={data.nutrition?.proteinContent ?? ''}
+                                        onChange={(e) => updateNutrition('proteinContent', e.target.value)}
+                                        placeholder="4"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Sodium (mg)</Label>
+                                    <Input
+                                        type="number"
+                                        value={data.nutrition?.sodiumContent ?? ''}
+                                        onChange={(e) => updateNutrition('sodiumContent', e.target.value)}
+                                        placeholder="220"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Cholesterol (mg)</Label>
+                                    <Input
+                                        type="number"
+                                        value={data.nutrition?.cholesterolContent ?? ''}
+                                        onChange={(e) => updateNutrition('cholesterolContent', e.target.value)}
+                                        placeholder="25"
+                                    />
+                                </div>
+                                <div className="space-y-2 col-span-2 md:col-span-3">
+                                    <Label>Serving Size</Label>
+                                    <Input
+                                        value={data.nutrition?.servingSize ?? ''}
+                                        onChange={(e) => updateData({ nutrition: { ...data.nutrition, servingSize: e.target.value } })}
+                                        placeholder="1 serving (150g)"
+                                    />
+                                </div>
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
+                </>
+            )}
         </div>
     );
 }

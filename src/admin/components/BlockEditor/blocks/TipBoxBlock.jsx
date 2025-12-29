@@ -9,20 +9,20 @@ import { createReactBlockSpec } from '@blocknote/react';
 import { defaultProps } from '@blocknote/core';
 import { AlertTriangle, Info, Lightbulb, AlertCircle } from 'lucide-react';
 
-const alertTypes = ['warning', 'error', 'info', 'success'];
+const alertTypes = ['tip', 'warning', 'info', 'note'];
 
 const alertIcons = {
+    tip: Lightbulb,
     warning: AlertTriangle,
-    error: AlertCircle,
     info: Info,
-    success: Lightbulb,
+    note: AlertCircle,
 };
 
 const alertColors = {
+    tip: 'bg-emerald-50 border-emerald-200 text-emerald-800',
     warning: 'bg-amber-50 border-amber-200 text-amber-800',
-    error: 'bg-red-50 border-red-200 text-red-800',
     info: 'bg-blue-50 border-blue-200 text-blue-800',
-    success: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+    note: 'bg-slate-50 border-slate-200 text-slate-800',
 };
 
 // Create the Alert block following BlockNote docs pattern
@@ -62,10 +62,10 @@ export const Alert = createReactBlockSpec(
                             className="text-xs bg-transparent border-none font-medium cursor-pointer focus:outline-none mb-1 block"
                             contentEditable={false}
                         >
-                            <option value="warning">⚠️ Warning</option>
-                            <option value="error">❌ Error</option>
-                            <option value="info">ℹ️ Info</option>
-                            <option value="success">✅ Success</option>
+                            <option value="tip">Tip</option>
+                            <option value="warning">Warning</option>
+                            <option value="info">Info</option>
+                            <option value="note">Note</option>
                         </select>
                         <div
                             ref={props.contentRef}

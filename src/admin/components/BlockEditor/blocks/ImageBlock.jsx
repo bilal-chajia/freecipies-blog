@@ -21,6 +21,7 @@ import {
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
+import { parseVariantsJson, getVariantMap, getLargestVariant } from '@shared/types/images';
 import ImageUploader from '../../ImageUploader';
 import MediaDialog from '../../MediaDialog';
 
@@ -47,23 +48,7 @@ export const ImageBlock = createReactBlockSpec(
             const [uploaderOpen, setUploaderOpen] = useState(false);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
 
-            // Helper to parse variantsJson from API (DB stores { variants: {...}, placeholder })
-            const parseVariantsJson = (item) => {
-                const json = item.variants_json || item.variantsJson;
-                if (!json) return null;
-                if (typeof json === 'object') return json;
-                try { return JSON.parse(json); } catch { return null; }
-            };
-
-            // Get the actual variants map (handles nested structure)
-            const getVariantMap = (parsed) => {
-                if (!parsed || typeof parsed !== 'object') return {};
-                // DB schema stores { variants: {...}, placeholder: "..." }
-                if (parsed.variants && typeof parsed.variants === 'object') {
-                    return parsed.variants;
-                }
-                return parsed;
-            };
+            // Parse and get variants using shared helpers
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data) => {

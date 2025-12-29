@@ -63,43 +63,43 @@ export default function RecipeEditorMain({
                 <TabsList className="w-full h-auto flex flex-wrap items-end justify-start gap-6 rounded-none bg-transparent p-0 border-b border-border/60">
                     <TabsTrigger
                         value="content"
-                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                     >
                         Additional Content
                     </TabsTrigger>
                     <TabsTrigger
                         value="recipe"
-                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                     >
                         Recipe Data
                     </TabsTrigger>
                     <TabsTrigger
                         value="faqs"
-                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                     >
                         FAQs
                     </TabsTrigger>
                     <TabsTrigger
                         value="tags"
-                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                     >
                         Tags
                     </TabsTrigger>
                     <TabsTrigger
                         value="media"
-                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                     >
                         Media
                     </TabsTrigger>
                     <TabsTrigger
                         value="seo"
-                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                     >
                         SEO
                     </TabsTrigger>
                     <TabsTrigger
                         value="excerpts"
-                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                     >
                         Excerpts
                     </TabsTrigger>

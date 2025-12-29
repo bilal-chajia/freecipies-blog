@@ -25,15 +25,15 @@ export default function OrganizationSection({
                 <div className="space-y-1.5">
                     <Label htmlFor="category" className="text-sm font-medium">Category *</Label>
                     <Select
-                        value={formData.categorySlug}
-                        onValueChange={(value) => onInputChange('categorySlug', value)}
+                        value={formData.categoryId ? String(formData.categoryId) : undefined}
+                        onValueChange={(value) => onInputChange('categoryId', value)}
                     >
                         <SelectTrigger className="text-sm h-9">
                             <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
                             {categories.map((cat) => (
-                                <SelectItem key={cat.slug} value={cat.slug}>
+                                <SelectItem key={cat.id} value={String(cat.id)}>
                                     {cat.label}
                                 </SelectItem>
                             ))}
@@ -44,15 +44,15 @@ export default function OrganizationSection({
                 <div className="space-y-1.5">
                     <Label htmlFor="author" className="text-sm font-medium">Author *</Label>
                     <Select
-                        value={formData.authorSlug}
-                        onValueChange={(value) => onInputChange('authorSlug', value)}
+                        value={formData.authorId ? String(formData.authorId) : undefined}
+                        onValueChange={(value) => onInputChange('authorId', value)}
                     >
                         <SelectTrigger className="text-sm h-9">
                             <SelectValue placeholder="Select author" />
                         </SelectTrigger>
                         <SelectContent>
                             {authors.map((author) => (
-                                <SelectItem key={author.slug} value={author.slug}>
+                                <SelectItem key={author.id} value={String(author.id)}>
                                     {author.name}
                                 </SelectItem>
                             ))}

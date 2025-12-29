@@ -315,6 +315,14 @@ contact_info    → Contact details
 > - `placeholder` is a base64 blur hash < 1KB.
 > - Heights are auto-calculated from aspect ratio.
 
+> **TYPESCRIPT TYPES:**
+>
+> Import from `@shared/types/images`:
+> - `StorageVariant` - Full variant with `r2_key` (internal use only)
+> - `ImageVariant` - Public variant without `r2_key` (API responses)
+> - `MediaVariantsJson` - Complete `{ variants, placeholder }` structure
+
+
 #### focal_point_json Schema
 
 ```json

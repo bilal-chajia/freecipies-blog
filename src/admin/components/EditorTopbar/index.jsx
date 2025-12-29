@@ -82,15 +82,15 @@ export default function EditorTopbar({
                         >
                             <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
                             <Select
-                                value={formData.categorySlug}
-                                onValueChange={(value) => onInputChange('categorySlug', value)}
+                                value={formData.categoryId ? String(formData.categoryId) : undefined}
+                                onValueChange={(value) => onInputChange('categoryId', value)}
                             >
                                 <SelectTrigger className="w-[120px] h-8 text-xs">
                                     <SelectValue placeholder="Category" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {categories.map((cat) => (
-                                        <SelectItem key={cat.slug} value={cat.slug}>
+                                        <SelectItem key={cat.id} value={String(cat.id)}>
                                             {cat.label}
                                         </SelectItem>
                                     ))}
@@ -115,15 +115,15 @@ export default function EditorTopbar({
                         >
                             <User className="h-3.5 w-3.5 text-muted-foreground" />
                             <Select
-                                value={formData.authorSlug}
-                                onValueChange={(value) => onInputChange('authorSlug', value)}
+                                value={formData.authorId ? String(formData.authorId) : undefined}
+                                onValueChange={(value) => onInputChange('authorId', value)}
                             >
                                 <SelectTrigger className="w-[110px] h-8 text-xs">
                                     <SelectValue placeholder="Author" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {authors.map((author) => (
-                                        <SelectItem key={author.slug} value={author.slug}>
+                                        <SelectItem key={author.id} value={String(author.id)}>
                                             {author.name}
                                         </SelectItem>
                                     ))}

@@ -164,6 +164,11 @@ CREATE TABLE IF NOT EXISTS media (
     --               Preserves full quality for high-res outputs.
     --
     -- AGENT RULE: When source < 2048px, use source as "lg" and skip "original".
+    -- TYPESCRIPT: Import from @shared/types/images
+    --   - StorageVariant (with r2_key) for internal processing
+    --   - ImageVariant (without r2_key) for API responses
+    --   - MediaVariantsJson for full { variants, placeholder } structure
+    
     variants_json TEXT NOT NULL,
 
     -- 3. SMART DISPLAY (Design Control)
@@ -322,11 +327,11 @@ CREATE TABLE IF NOT EXISTS categories (
     --     "focal_point": { "x": 50, "y": 30 },  <-- Optional override for cropping
     --     "aspectRatio": "16:9",           <-- Layout hint for space reservation
     --     "variants": {                    <-- FULL SET copied from Media
-    --        "original": { "url": "...", "width": 4000, "height": 3000 },  <-- OPTIONAL
-    --        "lg": { "url": "...", "width": 2048, "height": 1365 },
-    --        "md": { "url": "...", "width": 1200, "height": 800 },
-    --        "sm": { "url": "...", "width": 720, "height": 480 },
-    --        "xs": { "url": "...", "width": 360, "height": 240 }
+    --        "original": { "url": "...", "width": 4000, "height": 3000, "sizeBytes": 50000 },  <-- OPTIONAL
+    --        "lg": { "url": "...", "width": 2048, "height": 1365, "sizeBytes": 50000 },
+    --        "md": { "url": "...", "width": 1200, "height": 800, "sizeBytes": 102345 },
+    --        "sm": { "url": "...", "width": 720, "height": 480, "sizeBytes": 54321 },
+    --        "xs": { "url": "...", "width": 360, "height": 240, "sizeBytes": 23123 }
     --     }
     --   },
     --   "cover": {                         <-- Slot 2: Hero Background Image
@@ -336,11 +341,11 @@ CREATE TABLE IF NOT EXISTS categories (
     --     "focal_point": { "x": 50, "y": 50 },
     --     "aspectRatio": "16:9",
     --     "variants": {
-    --        "original": { "url": "...", "width": 4000, "height": 2250 },
-    --        "lg": { "url": "...", "width": 2048, "height": 1152 },
-    --        "md": { "url": "...", "width": 1200, "height": 675 },
-    --        "sm": { "url": "...", "width": 720, "height": 405 },
-    --        "xs": { "url": "...", "width": 360, "height": 203 }
+    --        "original": { "url": "...", "width": 4000, "height": 2250, "sizeBytes": 50000 },
+    --        "lg": { "url": "...", "width": 2048, "height": 1152, "sizeBytes": 198765 },
+    --        "md": { "url": "...", "width": 1200, "height": 675, "sizeBytes": 102345 },
+    --        "sm": { "url": "...", "width": 720, "height": 405, "sizeBytes": 54321 },
+    --        "xs": { "url": "...", "width": 360, "height": 203, "sizeBytes": 23123 }
     --     }
     --   }
     -- }
@@ -357,6 +362,8 @@ CREATE TABLE IF NOT EXISTS categories (
     --               Used for Pin Creator templates and high-quality exports.
     --
     -- FUTURE FIELDS (Reserved for later):
+        -- TYPESCRIPT: Import CategoryImagesJson, ImageSlot from @shared/types/images
+    --
     --   - format: "webp" | "avif" | "jpeg" (for multi-format serving)
     --   - avif: { "url": "...", ... } (alternative AVIF variants)
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
@@ -584,31 +591,37 @@ CREATE TABLE IF NOT EXISTS authors (
     -- =========================================================================
     -- Standardized format matching categories table.
     --
-    -- SCHEMA (images_json):
+    -- SCHEMA (images_json) - Matches ImageSlot from @shared/types/images:
     -- {
     --   "avatar": {                        <-- Slot 1: Profile photos, byline
-    --     "media_id": 105,
-    --     "alt": "Jane Doe headshot",
-    --     "placeholder": "data:image/...",
+    --     "media_id": 105,                 <-- Reference to source Media ID
+    --     "alt": "Jane Doe headshot",      <-- SEO / Accessibility text
+    --     "caption": "Chef Jane Doe",      <-- Optional visible caption
+    --     "credit": "� Photo Studio",      <-- Optional attribution
+    --     "placeholder": "data:image/...", <-- Blurhash/LQIP (<1KB)
+    --     "focal_point": { "x": 50, "y": 30 },  <-- Cropping hint (0-100)
     --     "aspectRatio": "1:1",            <-- Square for avatars
-    --     "variants": {
-    --        "original": { "url": "...", "width": 800, "height": 800 },
-    --        "lg": { "url": "...", "width": 400, "height": 400 },
-    --        "md": { "url": "...", "width": 200, "height": 200 },
-    --        "sm": { "url": "...", "width": 100, "height": 100 },
-    --        "xs": { "url": "...", "width": 50, "height": 50 }
+    --     "variants": {                    <-- SPECIAL SIZES for avatars!
+    --        "original": { "url": "...", "width": 800, "height": 800, "sizeBytes": 50000 },
+    --        "lg": { "url": "...", "width": 400, "height": 400, "sizeBytes": 50000 },
+    --        "md": { "url": "...", "width": 200, "height": 200, "sizeBytes": 50000 },
+    --        "sm": { "url": "...", "width": 100, "height": 100, "sizeBytes": 50000 },
+    --        "xs": { "url": "...", "width": 50, "height": 50, "sizeBytes": 50000 }
     --     }
     --   },
     --   "cover": {                         <-- Slot 2: Profile page hero
     --     "media_id": 202,
     --     "alt": "Jane in her kitchen",
+    --     "caption": "...",
+    --     "credit": "...",
     --     "placeholder": "...",
+    --     "focal_point": { "x": 50, "y": 50 },
     --     "aspectRatio": "16:9",
-    --     "variants": {
-    --        "lg": { "url": "...", "width": 2048, "height": 1152 },
-    --        "md": { "url": "...", "width": 1200, "height": 675 },
-    --        "sm": { "url": "...", "width": 720, "height": 405 },
-    --        "xs": { "url": "...", "width": 360, "height": 203 }
+    --     "variants": {                    <-- Standard breakpoints
+    --        "lg": { "url": "...", "width": 2048, "height": 1152, "sizeBytes": 198765 },
+    --        "md": { "url": "...", "width": 1200, "height": 675, "sizeBytes": 102345 },
+    --        "sm": { "url": "...", "width": 720, "height": 405, "sizeBytes": 54321 },
+    --        "xs": { "url": "...", "width": 360, "height": 203, "sizeBytes": 23123 }
     --     }
     --   }
     -- }
@@ -618,6 +631,16 @@ CREATE TABLE IF NOT EXISTS authors (
     --           because avatars display at 32-120px typically (bylines, comments).
     --           Saves R2 storage. Original (800px) kept for profile page.
     --   COVER:  Uses standard breakpoints (360, 720, 1200, 2048) for hero sections.
+    --
+    --  AGENT WARNING: Avatar variants use DIFFERENT sizes than standard images!
+    -- Standard: xs=360, sm=720, md=1200, lg=2048
+    -- Avatar:   xs=50,  sm=100, md=200,  lg=400 (smaller for profile photos)
+    -- Use AuthorImagesJson type which documents these special sizes.
+    
+    --
+    -- TYPESCRIPT: Import AuthorImagesJson from @shared/types/images
+    --             Use ImageSlot for avatar/cover slots (no r2_key in variants)
+    
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
     -- =========================================================================
@@ -1085,11 +1108,11 @@ CREATE TABLE IF NOT EXISTS articles (
     --     "focal_point": { "x": 50, "y": 50 },  <-- Cropping hint
     --     "aspectRatio": "16:9",            <-- Layout hint
     --     "variants": {
-    --        "original": { "url": "...", "width": 4000, "height": 2250 },  <-- Optional
-    --        "lg": { "url": "...", "width": 2048, "height": 1152 },
-    --        "md": { "url": "...", "width": 1200, "height": 675 },
-    --        "sm": { "url": "...", "width": 720, "height": 405 },
-    --        "xs": { "url": "...", "width": 360, "height": 203 }
+    --        "original": { "url": "...", "width": 4000, "height": 2250, "sizeBytes": 50000 },  <-- Optional
+    --        "lg": { "url": "...", "width": 2048, "height": 1152, "sizeBytes": 198765 },
+    --        "md": { "url": "...", "width": 1200, "height": 675, "sizeBytes": 102345 },
+    --        "sm": { "url": "...", "width": 720, "height": 405, "sizeBytes": 54321 },
+    --        "xs": { "url": "...", "width": 360, "height": 203, "sizeBytes": 23123 }
     --     }
     --   },
     --   "thumbnail": {                      <-- Optional: For cards if different from cover
@@ -1116,6 +1139,8 @@ CREATE TABLE IF NOT EXISTS articles (
     --   - Standard breakpoints: 360, 720, 1200, 2048 (xs, sm, md, lg).
     --   - Include height for CLS prevention.
     --   - "original" only if source > 2048px (for Pin Creator).
+    --
+        -- TYPESCRIPT: Import ArticleImagesJson, ImageSlot from @shared/types/images
     --
     -- NOTE: cover.variants is mirrored into related_articles_json
     --       for zero-join card rendering.
@@ -1528,10 +1553,10 @@ CREATE TABLE IF NOT EXISTS articles (
     --       "thumbnail": {
     --         "alt": "Lemon Blueberry Biscuits",
     --         "variants": {
-    --           "xs": { "url": "...", "width": 360 },
-    --           "sm": { "url": "...", "width": 720 },
-    --           "md": { "url": "...", "width": 1200 },
-    --           "lg": { "url": "...", "width": 2048 }
+    --           "xs": { "url": "...", "width": 360, "height": 0, "sizeBytes": 0 },
+    --           "sm": { "url": "...", "width": 720, "height": 0, "sizeBytes": 0 },
+    --           "md": { "url": "...", "width": 1200, "height": 0, "sizeBytes": 0 },
+    --           "lg": { "url": "...", "width": 2048, "height": 0, "sizeBytes": 0 }
     --         }
     --       },
     --       "total_time": 35,
@@ -1691,10 +1716,10 @@ CREATE TABLE IF NOT EXISTS articles (
     --   "thumbnail": {
     --     "alt": "Lemon Blueberry Biscuits",
     --     "variants": {
-    --       "xs": { "url": "...", "width": 360 },
-    --       "sm": { "url": "...", "width": 720 },
-    --       "md": { "url": "...", "width": 1200 },
-    --       "lg": { "url": "...", "width": 2048 }
+    --       "xs": { "url": "...", "width": 360, "height": 0, "sizeBytes": 0 },
+    --       "sm": { "url": "...", "width": 720, "height": 0, "sizeBytes": 0 },
+    --       "md": { "url": "...", "width": 1200, "height": 0, "sizeBytes": 0 },
+    --       "lg": { "url": "...", "width": 2048, "height": 0, "sizeBytes": 0 }
     --     }
     --   },
     --   "total_time": 35,

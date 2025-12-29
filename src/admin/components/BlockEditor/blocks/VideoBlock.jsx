@@ -48,7 +48,7 @@ export const VideoBlock = createReactBlockSpec(
             },
             aspectRatio: {
                 default: '16:9',
-                values: ['16:9', '4:3', '1:1'],
+                values: ['16:9', '4:3', '1:1', '9:16'],
             },
         },
         content: 'none',
@@ -93,8 +93,13 @@ export const VideoBlock = createReactBlockSpec(
             }
 
             const embedUrl = getEmbedUrl(props.block.props.provider, props.block.props.videoId);
-            const aspectClass = props.block.props.aspectRatio === '16:9' ? 'aspect-video' :
-                props.block.props.aspectRatio === '4:3' ? 'aspect-[4/3]' : 'aspect-square';
+            const aspectClass = props.block.props.aspectRatio === '16:9'
+                ? 'aspect-video'
+                : props.block.props.aspectRatio === '4:3'
+                    ? 'aspect-[4/3]'
+                    : props.block.props.aspectRatio === '9:16'
+                        ? 'aspect-[9/16]'
+                        : 'aspect-square';
 
             return (
                 <div className="my-2">

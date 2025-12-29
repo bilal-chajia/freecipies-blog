@@ -3,19 +3,231 @@ import Layout from "../../layouts/Layout.astro";
 import CategoryCard from "../../components/CategoryCard.astro";
 import { getCategories } from "@modules/categories";
 import { hydrateCategory } from "@shared/utils";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 
 const { env } = Astro.locals.runtime;
 const rawCategories = await getCategories(env.DB, { isOnline: true });
 const categories = rawCategories.map(hydrateCategory);
+
+// Featured category (first one or one marked as featured)
+const featured = categories.find((c) => c.isFeatured) || categories[0];
+const otherCategories = categories.filter((c) => c.id !== featured?.id);
+
+// Get featured image
+const featuredImage = featured
+  ? extractImage(featured.imagesJson, "cover", 1200)
+  : null;
+const featuredSrcSet = featured
+  ? getImageSrcSet(featured.imagesJson, "cover")
+  : "";
 ---
 
 <Layout title="All Categories" description="Browse all recipe categories">
-  <div class="container mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold text-center mb-12">Browse Categories</h1>
-    <h2 class="sr-only">Category list</h2>
+  <section class="categories-page">
+    <!-- Hero Section -->
+    {
+      featured && (
+        <a href={`/categories/${featured.slug}`} class="hero-category">
+          <div class="hero-image">
+            <img
+              src={
+                featuredImage?.imageUrl ||
+                "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200"
+              }
+              alt={featuredImage?.imageAlt || featured.label}
+              srcset={featuredSrcSet || undefined}
+              sizes="100vw"
+              loading="eager"
+            />
+            <div class="hero-overlay" />
+          </div>
+          <div class="hero-content">
+            <span class="hero-badge">Featured Collection</span>
+            <h1 class="hero-title">{featured.label}</h1>
+            <p class="hero-description">{featured.shortDescription}</p>
+            <span class="hero-cta">
+              Explore Collection
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </span>
+          </div>
+        </a>
+      )
+    }
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {categories.map((category) => <CategoryCard category={category} />)}
+    <!-- Grid Section -->
+    <div class="categories-grid-section">
+      <h2 class="section-title">All Categories</h2>
+      <div class="categories-grid">
+        {
+          otherCategories.map((category) => (
+            <CategoryCard category={category} />
+          ))
+        }
+      </div>
     </div>
-  </div>
+  </section>
 </Layout>
+
+<style>
+  .categories-page {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    min-height: 100vh;
+  }
+
+  /* Hero Section */
+  .hero-category {
+    display: block;
+    position: relative;
+    height: 60vh;
+    min-height: 400px;
+    max-height: 600px;
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  .hero-image {
+    position: absolute;
+    inset: 0;
+  }
+
+  .hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s ease;
+  }
+
+  .hero-category:hover .hero-image img {
+    transform: scale(1.05);
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.8) 0%,
+      rgba(0, 0, 0, 0.4) 50%,
+      rgba(0, 0, 0, 0.2) 100%
+    );
+  }
+
+  .hero-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 2rem;
+    color: white;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    margin: 0 0 0.75rem 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .hero-description {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    margin: 0 0 1.5rem 0;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    color: #1a1a1a;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .hero-cta svg {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.3s ease;
+  }
+
+  .hero-category:hover .hero-cta {
+    background: #ff6b35;
+    color: white;
+  }
+
+  .hero-category:hover .hero-cta svg {
+    transform: translateX(4px);
+  }
+
+  /* Grid Section */
+  .categories-grid-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 2rem 0;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .categories-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .hero-content {
+      padding: 3rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .categories-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .hero-content {
+      padding: 4rem;
+    }
+
+    .categories-grid-section {
+      padding: 4rem 2rem 5rem;
+    }
+  }
+</style>

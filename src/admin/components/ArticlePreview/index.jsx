@@ -97,10 +97,10 @@ function ContentRenderer({ contentJson }) {
                     case 'alert':
                         const variant = block.variant || 'warning';
                         const bgColors = {
-                            tip: 'bg-blue-50 border-blue-200',
+                            tip: 'bg-emerald-50 border-emerald-200',
                             warning: 'bg-amber-50 border-amber-200',
                             info: 'bg-sky-50 border-sky-200',
-                            success: 'bg-green-50 border-green-200',
+                            note: 'bg-slate-50 border-slate-200',
                         };
                         return (
                             <div
@@ -128,11 +128,17 @@ function ContentRenderer({ contentJson }) {
                         );
 
                     case 'recipe_card':
+                        const coverUrl = block.cover?.variants?.md?.url
+                            || block.cover?.variants?.sm?.url
+                            || block.cover?.variants?.lg?.url
+                            || block.cover?.variants?.xs?.url
+                            || block.cover?.url
+                            || block.thumbnail;
                         return (
                             <div key={index} className="bg-muted rounded-lg p-4 my-4 flex gap-4">
-                                {block.thumbnail && (
+                                {coverUrl && (
                                     <img
-                                        src={block.thumbnail}
+                                        src={coverUrl}
                                         alt={block.headline}
                                         className="w-24 h-24 rounded object-cover"
                                     />
