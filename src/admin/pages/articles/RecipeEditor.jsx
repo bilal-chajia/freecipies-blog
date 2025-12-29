@@ -1,7 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useContentEditor } from './shared';
 import EditorLayout from './shared/EditorLayout';
-import EditorSidebar from '../../components/EditorSidebar';
 import RecipeEditorMain from './RecipeEditorMain';
 
 /**
@@ -57,6 +56,10 @@ const RecipeEditor = () => {
             onInputChange={handleInputChange}
             contentJson={contentJson}
             setContentJson={setContentJson}
+            imagesData={imagesData}
+            onImageRemove={handleImageRemove}
+            onMediaDialogOpen={openMediaDialog}
+            tags={tags}
             recipeJson={recipeJson}
             setRecipeJson={setRecipeJson}
             faqsJson={faqsJson}
@@ -66,22 +69,7 @@ const RecipeEditor = () => {
             useVisualEditor={useVisualEditor}
             setUseVisualEditor={setUseVisualEditor}
             isValidJSON={isValidJSON}
-        />
-    );
-
-    const sidebarContent = (
-        <EditorSidebar
-            formData={formData}
-            imagesData={imagesData}
-            onInputChange={handleInputChange}
-            onImageRemove={handleImageRemove}
-            onSave={handleSave}
-            saving={saving}
             isEditMode={isEditMode}
-            categories={categories}
-            authors={authors}
-            tags={tags}
-            onMediaDialogOpen={openMediaDialog}
         />
     );
 
@@ -92,7 +80,7 @@ const RecipeEditor = () => {
             backPath="/recipes"
             loading={loading}
             mainContent={mainContent}
-            sidebarContent={sidebarContent}
+            sidebarContent={null}
             mediaDialogOpen={mediaDialogOpen}
             setMediaDialogOpen={setMediaDialogOpen}
             handleMediaSelect={handleMediaSelect}

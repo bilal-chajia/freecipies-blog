@@ -37,6 +37,7 @@ export default function EditorLayout({
     isEditMode,
 }) {
     const [previewOpen, setPreviewOpen] = useState(false);
+    const hasSidebar = sidebarContent !== null && sidebarContent !== undefined;
 
     if (loading) {
         return (
@@ -176,7 +177,7 @@ export default function EditorLayout({
             <div className="flex-1 grid grid-cols-12 overflow-hidden">
                 {/* Main Content Area */}
                 <motion.div
-                    className="col-span-8 overflow-y-auto border-r"
+                    className={`overflow-y-auto ${hasSidebar ? 'col-span-8 border-r' : 'col-span-12'}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.4, delay: 0.2 }}
@@ -185,14 +186,16 @@ export default function EditorLayout({
                 </motion.div>
 
                 {/* Sidebar */}
-                <motion.div
-                    className="col-span-4 overflow-y-auto bg-muted/30"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: 0.3 }}
-                >
-                    {sidebarContent}
-                </motion.div>
+                {hasSidebar && (
+                    <motion.div
+                        className="col-span-4 overflow-y-auto bg-muted/30"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.4, delay: 0.3 }}
+                    >
+                        {sidebarContent}
+                    </motion.div>
+                )}
             </div>
 
             <MediaDialog

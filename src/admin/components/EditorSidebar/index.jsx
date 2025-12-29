@@ -37,12 +37,13 @@ export default function EditorSidebar({
     onImageRemove,
     tags,
     onMediaDialogOpen,
+    isEditMode,
 }) {
     return (
         <aside className="sticky top-0 h-screen">
             <ScrollArea className="h-full">
                 <motion.div
-                    className="space-y-5 p-6"
+                    className="p-6 space-y-6"
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
@@ -69,6 +70,7 @@ export default function EditorSidebar({
                         <SEOSection
                             formData={formData}
                             onInputChange={onInputChange}
+                            isEditMode={isEditMode}
                         />
                     </motion.div>
 
