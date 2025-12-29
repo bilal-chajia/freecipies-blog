@@ -59,132 +59,155 @@ export default function RecipeEditorMain({
 
             <hr className="border-t-2 my-8" />
 
-            <div className="grid gap-8 lg:grid-cols-12">
-                <div className="space-y-6 lg:col-span-8">
-                    <Tabs defaultValue="content" className="space-y-4">
-                        <TabsList className="w-full h-auto flex flex-wrap items-end justify-start gap-6 rounded-none bg-transparent p-0 border-b border-border/60">
-                            <TabsTrigger
-                                value="content"
-                                className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
-                            >
-                                Additional Content
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="recipe"
-                                className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
-                            >
-                                Recipe Data
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="faqs"
-                                className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
-                            >
-                                FAQs
-                            </TabsTrigger>
-                        </TabsList>
+            <Tabs defaultValue="content" className="space-y-4">
+                <TabsList className="w-full h-auto flex flex-wrap items-end justify-start gap-6 rounded-none bg-transparent p-0 border-b border-border/60">
+                    <TabsTrigger
+                        value="content"
+                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                    >
+                        Additional Content
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="recipe"
+                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                    >
+                        Recipe Data
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="faqs"
+                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                    >
+                        FAQs
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="tags"
+                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                    >
+                        Tags
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="media"
+                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                    >
+                        Media
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="seo"
+                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                    >
+                        SEO
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="excerpts"
+                        className="h-9 rounded-none border-b-2 border-transparent px-1 pb-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground"
+                    >
+                        Excerpts
+                    </TabsTrigger>
+                </TabsList>
 
-                        <TabsContent value="content" className="space-y-3 pt-2">
-                            <div className="flex items-center justify-between mb-2">
-                                <Label className="text-base font-semibold">Additional Content (Optional)</Label>
-                                <div className="flex items-center gap-2">
-                                    {jsonErrors.content && (
-                                        <span className="text-sm text-destructive font-medium">{jsonErrors.content}</span>
-                                    )}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setUseVisualEditor(!useVisualEditor)}
-                                        className="gap-1.5 text-xs h-8"
-                                    >
-                                        <Code className="h-3.5 w-3.5" />
-                                        {useVisualEditor ? 'JSON Mode' : 'Visual Mode'}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {useVisualEditor ? (
-                                <BlockEditor
-                                    value={contentJson}
-                                    onChange={(value) => {
-                                        setContentJson(value);
-                                        validateJSON('content', value);
-                                    }}
-                                    placeholder="Add intro text, tips, or extra content..."
-                                />
-                            ) : (
-                                <div className="border rounded-lg overflow-hidden shadow-sm">
-                                    <Editor
-                                        height="500px"
-                                        language="json"
-                                        theme="vs-dark"
-                                        value={contentJson}
-                                        onChange={(value) => {
-                                            setContentJson(value);
-                                            validateJSON('content', value);
-                                        }}
-                                        options={{
-                                            minimap: { enabled: false },
-                                            fontSize: 14,
-                                            lineNumbers: 'on',
-                                            scrollBeyondLastLine: false,
-                                            automaticLayout: true,
-                                        }}
-                                    />
-                                </div>
+                <TabsContent value="content" className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between mb-2">
+                        <Label className="text-base font-semibold">Additional Content (Optional)</Label>
+                        <div className="flex items-center gap-2">
+                            {jsonErrors.content && (
+                                <span className="text-sm text-destructive font-medium">{jsonErrors.content}</span>
                             )}
-                        </TabsContent>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setUseVisualEditor(!useVisualEditor)}
+                                className="gap-1.5 text-xs h-8"
+                            >
+                                <Code className="h-3.5 w-3.5" />
+                                {useVisualEditor ? 'JSON Mode' : 'Visual Mode'}
+                            </Button>
+                        </div>
+                    </div>
 
-                        <TabsContent value="recipe" className="space-y-3 pt-2">
-                            {jsonErrors.recipe && (
-                                <span className="text-sm text-destructive font-medium">{jsonErrors.recipe}</span>
-                            )}
-                            <div className="border rounded-lg overflow-hidden bg-muted/50 p-6 shadow-sm">
-                                <RecipeBuilder
-                                    value={recipeJson}
-                                    onChange={(newValue) => {
-                                        setRecipeJson(newValue);
-                                        validateJSON('recipe', newValue);
-                                    }}
-                                />
-                            </div>
-                        </TabsContent>
+                    {useVisualEditor ? (
+                        <BlockEditor
+                            value={contentJson}
+                            onChange={(value) => {
+                                setContentJson(value);
+                                validateJSON('content', value);
+                            }}
+                            placeholder="Add intro text, tips, or extra content..."
+                        />
+                    ) : (
+                        <div className="border rounded-lg overflow-hidden shadow-sm">
+                            <Editor
+                                height="500px"
+                                language="json"
+                                theme="vs-dark"
+                                value={contentJson}
+                                onChange={(value) => {
+                                    setContentJson(value);
+                                    validateJSON('content', value);
+                                }}
+                                options={{
+                                    minimap: { enabled: false },
+                                    fontSize: 14,
+                                    lineNumbers: 'on',
+                                    scrollBeyondLastLine: false,
+                                    automaticLayout: true,
+                                }}
+                            />
+                        </div>
+                    )}
+                </TabsContent>
 
-                        <TabsContent value="faqs" className="space-y-3 pt-2">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-base font-semibold">FAQs (Optional)</Label>
-                                {jsonErrors.faqs && (
-                                    <span className="text-sm text-destructive font-medium">{jsonErrors.faqs}</span>
-                                )}
-                            </div>
-                            <div className="border rounded-lg overflow-hidden shadow-sm">
-                                <Editor
-                                    height="300px"
-                                    language="json"
-                                    theme="vs-dark"
-                                    value={faqsJson}
-                                    onChange={(value) => {
-                                        setFaqsJson(value);
-                                        validateJSON('faqs', value);
-                                    }}
-                                    options={{
-                                        minimap: { enabled: false },
-                                        fontSize: 14,
-                                    }}
-                                />
-                            </div>
-                            <p className="text-xs text-muted-foreground italic">
-                                Add FAQs for SEO schema (or use FAQ block in content)
-                            </p>
-                        </TabsContent>
-                    </Tabs>
-                </div>
+                <TabsContent value="recipe" className="space-y-3 pt-2">
+                    {jsonErrors.recipe && (
+                        <span className="text-sm text-destructive font-medium">{jsonErrors.recipe}</span>
+                    )}
+                    <div className="border rounded-lg overflow-hidden bg-muted/50 p-6 shadow-sm">
+                        <RecipeBuilder
+                            value={recipeJson}
+                            onChange={(newValue) => {
+                                setRecipeJson(newValue);
+                                validateJSON('recipe', newValue);
+                            }}
+                        />
+                    </div>
+                </TabsContent>
 
-                <aside className="space-y-6 lg:col-span-4">
+                <TabsContent value="faqs" className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-base font-semibold">FAQs (Optional)</Label>
+                        {jsonErrors.faqs && (
+                            <span className="text-sm text-destructive font-medium">{jsonErrors.faqs}</span>
+                        )}
+                    </div>
+                    <div className="border rounded-lg overflow-hidden shadow-sm">
+                        <Editor
+                            height="300px"
+                            language="json"
+                            theme="vs-dark"
+                            value={faqsJson}
+                            onChange={(value) => {
+                                setFaqsJson(value);
+                                validateJSON('faqs', value);
+                            }}
+                            options={{
+                                minimap: { enabled: false },
+                                fontSize: 14,
+                            }}
+                        />
+                    </div>
+                    <p className="text-xs text-muted-foreground italic">
+                        Add FAQs for SEO schema (or use FAQ block in content)
+                    </p>
+                </TabsContent>
+
+                <TabsContent value="tags" className="space-y-3 pt-2">
                     <TagsSection
                         formData={formData}
                         onInputChange={onInputChange}
                         tags={tags}
                     />
+                </TabsContent>
+
+                <TabsContent value="media" className="space-y-3 pt-2">
                     <MediaSection
                         formData={formData}
                         imagesData={imagesData}
@@ -192,17 +215,23 @@ export default function RecipeEditorMain({
                         onImageRemove={onImageRemove}
                         onMediaDialogOpen={onMediaDialogOpen}
                     />
+                </TabsContent>
+
+                <TabsContent value="seo" className="space-y-3 pt-2">
                     <SEOSection
                         formData={formData}
                         onInputChange={onInputChange}
                         isEditMode={isEditMode}
                     />
+                </TabsContent>
+
+                <TabsContent value="excerpts" className="space-y-3 pt-2">
                     <ExcerptsSection
                         formData={formData}
                         onInputChange={onInputChange}
                     />
-                </aside>
-            </div>
+                </TabsContent>
+            </Tabs>
         </main>
     );
 }
