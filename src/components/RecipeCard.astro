@@ -13,6 +13,7 @@ const slotName = thumbnail.imageUrl ? "thumbnail" : "cover";
 const selectedImage = thumbnail.imageUrl ? thumbnail : cover;
 const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
 const sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px";
+const imageStyle = selectedImage.imageStyle;
 ---
 
 <article
@@ -31,6 +32,7 @@ hover:-translate-y-1"
         height={selectedImage.imageHeight || recipe.imageHeight || 480}
         srcset={srcSet || undefined}
         sizes={srcSet ? sizes : undefined}
+        style={imageStyle || undefined}
         class="w-full h-full object-cover
 group-hover:scale-110 transition-transform duration-300"
         loading="lazy"

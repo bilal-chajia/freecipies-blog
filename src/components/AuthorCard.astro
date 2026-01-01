@@ -29,6 +29,7 @@ const avatarSizes = "120px";
             srcset={avatarSrcSet || undefined}
             sizes={avatarSrcSet ? avatarSizes : undefined}
             loading="lazy"
+            style={avatar.imageStyle || undefined}
           />
         ) : (
           <div class="avatar-placeholder">

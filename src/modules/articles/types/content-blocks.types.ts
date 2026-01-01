@@ -20,7 +20,7 @@ export interface ParagraphBlock {
 export interface HeadingBlock {
     type: 'heading';
     /** Heading level (H1 reserved for headline) */
-    level: 2 | 3 | 4;
+    level: 2 | 3 | 4 | 5 | 6;
     /** Heading text */
     text: string;
     /** Auto-generated anchor ID */
@@ -55,24 +55,10 @@ export interface ImageBlock {
     alt: string;
     /** Optional caption */
     caption?: string;
-    /** Display size */
-    size: 'full' | 'medium' | 'small';
+    /** Optional credit/attribution */
+    credit?: string;
     /** Responsive variants */
     variants?: ImageVariants;
-}
-
-export interface GalleryImage {
-    media_id: number;
-    alt: string;
-    variants?: ImageVariants;
-}
-
-export interface GalleryBlock {
-    type: 'gallery';
-    /** Gallery layout style */
-    layout: 'grid' | 'carousel' | 'masonry';
-    /** Images in gallery */
-    images: GalleryImage[];
 }
 
 export interface VideoBlock {
@@ -81,8 +67,6 @@ export interface VideoBlock {
     provider: 'youtube' | 'vimeo' | 'self';
     /** Video ID */
     videoId: string;
-    /** Poster/thumbnail image */
-    poster?: ImageSlot;
     /** Display aspect ratio */
     aspectRatio: '16:9' | '4:3' | '1:1' | '9:16';
 }
@@ -99,16 +83,6 @@ export interface TipBoxBlock {
     title?: string;
     /** Content (Markdown enabled) */
     text: string;
-}
-
-export interface CTAButtonBlock {
-    type: 'cta_button';
-    /** Button text */
-    text: string;
-    /** Link URL */
-    url: string;
-    /** Button style */
-    style: 'primary' | 'secondary' | 'outline';
 }
 
 // ============================================
@@ -246,6 +220,10 @@ export interface RelatedContentBlock {
     title?: string;
     /** Display layout */
     layout: 'grid' | 'carousel' | 'list';
+    /** Selection mode */
+    mode?: 'manual' | 'auto';
+    /** Max items per type */
+    limit?: number;
     /** Related recipes */
     recipes?: RelatedArticleCard[];
     /** Related articles */
@@ -266,11 +244,9 @@ export type ContentBlock =
     | ListBlock
     // Media
     | ImageBlock
-    | GalleryBlock
     | VideoBlock
     // Callouts
     | TipBoxBlock
-    | CTAButtonBlock
     // Embeds
     | EmbedBlock
     | RecipeCardBlock
@@ -300,10 +276,6 @@ export function isFAQSectionBlock(block: ContentBlock): block is FAQSectionBlock
 
 export function isImageBlock(block: ContentBlock): block is ImageBlock {
     return block.type === 'image';
-}
-
-export function isGalleryBlock(block: ContentBlock): block is GalleryBlock {
-    return block.type === 'gallery';
 }
 
 // ============================================
@@ -342,7 +314,7 @@ export function slugify(text: string): string {
 export interface TocItem {
     id: string;
     text: string;
-    level: 2 | 3 | 4;
+    level: 2 | 3 | 4 | 5 | 6;
 }
 
 export function generateTOC(content: ContentBlock[]): TocItem[] {

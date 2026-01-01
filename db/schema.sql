@@ -1122,7 +1122,7 @@ CREATE TABLE IF NOT EXISTS articles (
     --     "aspectRatio": "4:3",
     --     "variants": { ... }
     --   },
-    --   "gallery": [                        <-- Array for additional images
+    --   "contentImages": [                  <-- Images referenced in content_json
     --     {
     --       "media_id": 301,
     --       "alt": "Step 1: Mixing the dough",
@@ -1165,7 +1165,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- │ { "type": "paragraph", "text": "Rich text with **markdown**..." }  │
     -- │                                                                    │
     -- │ { "type": "heading", "level": 2, "text": "Section Title" }         │
-    -- │   level: 2 | 3 | 4 (H1 reserved for headline)                      │
+    -- │   level: 2 | 3 | 4 | 5 | 6 (H1 reserved for headline)              │
     -- │                                                                    │
     -- │ { "type": "blockquote", "text": "Quote...", "cite": "Author" }     │
     -- │                                                                    │
@@ -1178,19 +1178,13 @@ CREATE TABLE IF NOT EXISTS articles (
     -- │   "media_id": 123,                                                 │
     -- │   "alt": "...",                                                    │
     -- │   "caption": "...",                                                │
-    -- │   "size": "full",           -- "full" | "medium" | "small"         │
+    -- │   "credit": "(c) Photographer",                                    │
     -- │   "variants": { "lg": {...}, "md": {...}, ... }                    │
-    -- │ }                                                                  │
-    -- │                                                                    │
-    -- │ { "type": "gallery",                                               │
-    -- │   "layout": "grid",         -- "grid" | "carousel" | "masonry"     │
-    -- │   "images": [ { "media_id": 1, "alt": "...", "variants": {...} } ] │
     -- │ }                                                                  │
     -- │                                                                    │
     -- │ { "type": "video",                                                 │
     -- │   "provider": "youtube",    -- "youtube" | "vimeo" | "self"        │
     -- │   "videoId": "dQw4w9WgXcQ",                                        │
-    -- │   "poster": { "variants": {...} },                                 │
     -- │   "aspectRatio": "16:9"                                            │
     -- │ }                                                                  │
     -- │                                                                    │
@@ -1204,10 +1198,6 @@ CREATE TABLE IF NOT EXISTS articles (
     -- │   TEXT FIELD: Supports full Markdown (bold, lists, links).         │
     -- │   Use \n for line breaks. Render with react-markdown or marked.   │                                                                  │
     -- │                                                                    │
-    -- │ { "type": "cta_button",                                            │
-    -- │   "text": "Get the Recipe",                                        │
-    -- │   "url": "#recipe",                                                │
-    -- │   "style": "primary"        -- "primary" | "secondary" | "outline" │
     -- │ }                                                                  │
     -- │                                                                    │
     -- │ EMBED BLOCKS:                                                      │
@@ -1286,6 +1276,8 @@ CREATE TABLE IF NOT EXISTS articles (
     -- │ { "type": "related_content",                                       │
     -- │   "title": "You Might Also Like",  -- Optional heading             │
     -- │   "layout": "grid",                -- "grid", "carousel", "list"   │
+    -- ?   "mode": "manual",                 -- "manual" | "auto"             ?
+    -- ?   "limit": 4,                       -- Max items per type             ?
     -- │   "recipes": [                     -- Related recipes              │
     -- │     { "id": 42, "slug": "...", "headline": "...",                  │
     -- │       "thumbnail": {...}, "total_time": 35, "difficulty": "Easy" } │
@@ -1654,7 +1646,7 @@ CREATE TABLE IF NOT EXISTS articles (
     --     .map(heading => ({
     --       id: slugify(heading.text),           // "dry-ingredients"
     --       text: heading.text,                  // "Dry Ingredients"
-    --       level: heading.level                 // 2, 3, or 4
+    --       level: heading.level                 // 2-6
     --     }));
     -- }
     --

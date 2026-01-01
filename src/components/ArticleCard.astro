@@ -30,6 +30,7 @@ const image = {
   alt: selected.imageAlt || article.imageAlt || article.headline,
   width: selected.imageWidth || article.imageWidth || 800,
   height: selected.imageHeight || article.imageHeight || 600,
+  style: selected.imageStyle,
 };
 
 // Parse recipeJson if it's a string
@@ -59,6 +60,7 @@ const showBookmark = article.type === "recipe";
         srcset={srcSet || undefined}
         sizes={srcSet ? listSizes : undefined}
         loading={loading}
+        style={image.style || undefined}
         class="list-image-img"
       />
       {showBookmark && (
@@ -135,6 +137,7 @@ overflow-hidden">
         srcset={srcSet || undefined}
         sizes={srcSet ? sizes : undefined}
         loading={loading}
+        style={image.style || undefined}
         class="w-full h-full object-cover group-hover:scale-110
 transition-transform duration-500"
       />

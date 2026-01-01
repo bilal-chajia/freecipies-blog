@@ -94,15 +94,7 @@ export interface ImageSlot {
     aspectRatio?: string;
 
     /** Responsive image variants */
-    variants?: ImageVariants;
-
-    // Legacy fields for backwards compatibility (deprecated, use variants instead)
-    /** @deprecated Use variants.lg.url instead */
-    url?: string;
-    /** @deprecated Use variants.lg.width instead */
-    width?: number;
-    /** @deprecated Use variants.lg.height instead */
-    height?: number;
+    variants: ImageVariants;
 }
 
 /**
@@ -118,8 +110,8 @@ export interface ArticleImagesJson {
     /** Pinterest-optimized image */
     pinterest?: ImageSlot;
 
-    /** Gallery for step photos etc */
-    gallery?: ImageSlot[];
+    /** Images referenced in content_json */
+    contentImages?: ImageSlot[];
 }
 
 /**
@@ -206,7 +198,7 @@ export interface ContentImageBlock {
     media_id: number | null;
     alt: string;
     caption?: string;
-    size: 'full' | 'medium' | 'small';
+    credit?: string;
     variants: ImageVariants;
 }
 

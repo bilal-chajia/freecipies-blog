@@ -6,7 +6,59 @@
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+
+const escapeHtml = (value) => (
+    String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+);
+
+const sanitizeHref = (href) => {
+    if (!href) return '';
+    if (href.startsWith('/') || href.startsWith('#')) return href;
+    try {
+        const url = new URL(href);
+        if (['http:', 'https:', 'mailto:', 'tel:'].includes(url.protocol)) {
+            return href;
+        }
+    } catch {
+        return '';
+    }
+    return '';
+};
+
+const renderInlineMarkdown = (text) => {
+    const source = String(text || '');
+    if (!source) return { __html: '' };
+    const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+    let lastIndex = 0;
+    let match;
+    let html = '';
+
+    while ((match = pattern.exec(source)) !== null) {
+        if (match.index > lastIndex) {
+            html += escapeHtml(source.slice(lastIndex, match.index));
+        }
+        const label = escapeHtml(match[1]);
+        const href = sanitizeHref(match[2].trim());
+        if (href) {
+            html += `<a href="${escapeHtml(href)}">${label}</a>`;
+        } else {
+            html += label;
+        }
+        lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < source.length) {
+        html += escapeHtml(source.slice(lastIndex));
+    }
+
+    return { __html: html.replace(/\n/g, '<br />') };
+};
 
 export const FAQSectionBlock = createReactBlockSpec(
     {
@@ -28,6 +80,8 @@ export const FAQSectionBlock = createReactBlockSpec(
             })();
 
             const [expanded, setExpanded] = useState({});
+            const [editing, setEditing] = useState({});
+            const answerRefs = useRef({});
 
             const updateItems = (newItems) => {
                 props.editor.updateBlock(props.block, {
@@ -39,10 +93,20 @@ export const FAQSectionBlock = createReactBlockSpec(
             const addItem = () => {
                 updateItems([...items, { q: '', a: '' }]);
                 setExpanded({ ...expanded, [items.length]: true });
+                setEditing((prev) => ({ ...prev, [items.length]: true }));
+                requestAnimationFrame(() => {
+                    const textarea = answerRefs.current[items.length];
+                    if (textarea) textarea.focus();
+                });
             };
 
             const removeItem = (idx) => {
                 updateItems(items.filter((_, i) => i !== idx));
+                setEditing((prev) => {
+                    const next = { ...prev };
+                    delete next[idx];
+                    return next;
+                });
             };
 
             const updateItem = (idx, field, value) => {
@@ -55,8 +119,20 @@ export const FAQSectionBlock = createReactBlockSpec(
                 setExpanded(prev => ({ ...prev, [idx]: !prev[idx] }));
             };
 
+            const startEditing = (idx) => {
+                setEditing((prev) => ({ ...prev, [idx]: true }));
+                requestAnimationFrame(() => {
+                    const textarea = answerRefs.current[idx];
+                    if (textarea) textarea.focus();
+                });
+            };
+
+            const stopEditing = (idx) => {
+                setEditing((prev) => ({ ...prev, [idx]: false }));
+            };
+
             return (
-                <div className="my-6 border rounded-lg overflow-hidden bg-white shadow-sm">
+                <div className="my-6 border rounded-lg overflow-hidden bg-white shadow-sm w-full">
                     <div className="bg-gray-50 p-4 border-b">
                         <input
                             type="text"
@@ -81,12 +157,46 @@ export const FAQSectionBlock = createReactBlockSpec(
                                             placeholder="Question"
                                             className="w-full font-medium text-sm bg-transparent border-none focus:ring-0 p-0 placeholder:text-gray-300"
                                         />
-                                        {expanded[idx] && (
-                                            <textarea
-                                                value={item.a}
-                                                onChange={(e) => updateItem(idx, 'a', e.target.value)}
-                                                placeholder="Answer"
-                                                className="w-full text-sm text-gray-600 bg-transparent border-none focus:ring-0 p-0 resize-y min-h-[60px]"
+                                        {expanded[idx] && editing[idx] && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-end">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => stopEditing(idx)}
+                                                        className="text-xs text-gray-500 hover:text-gray-700"
+                                                    >
+                                                        Done
+                                                    </button>
+                                                </div>
+                                                <textarea
+                                                    ref={(node) => {
+                                                        if (node) {
+                                                            answerRefs.current[idx] = node;
+                                                        } else {
+                                                            delete answerRefs.current[idx];
+                                                        }
+                                                    }}
+                                                    data-faq-answer="true"
+                                                    value={item.a}
+                                                    onChange={(e) => updateItem(idx, 'a', e.target.value)}
+                                                    placeholder="Answer"
+                                                    className="w-full text-sm text-gray-600 bg-transparent border-none focus:ring-0 p-0 resize-y min-h-[80px]"
+                                                />
+                                            </div>
+                                        )}
+                                        {expanded[idx] && !editing[idx] && (
+                                            <div
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => startEditing(idx)}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter' || event.key === ' ') {
+                                                        event.preventDefault();
+                                                        startEditing(idx);
+                                                    }
+                                                }}
+                                                className="text-xs text-gray-500 [&_a]:text-blue-600 [&_a]:underline [&_a]:underline-offset-2"
+                                                dangerouslySetInnerHTML={renderInlineMarkdown(item.a || 'Click to add an answer')}
                                             />
                                         )}
                                     </div>

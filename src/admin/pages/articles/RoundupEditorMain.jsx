@@ -24,9 +24,10 @@ export default function RoundupEditorMain({
     useVisualEditor,
     setUseVisualEditor,
     isValidJSON,
+    relatedContext,
 }) {
     return (
-        <main className="space-y-8 p-8 max-w-4xl mx-auto pb-20">
+        <main className="space-y-8 px-4 py-6 w-full max-w-none pb-20">
             {/* Title */}
             <div className="space-y-3">
                 <Input
@@ -77,6 +78,7 @@ export default function RoundupEditorMain({
                             validateJSON('content', value);
                         }}
                         placeholder="Introduce your roundup..."
+                        context={relatedContext}
                     />
                 ) : (
                     <div className="border rounded-lg overflow-hidden shadow-sm">

@@ -1,0 +1,264 @@
+---
+import type { ImageVariants } from '@shared/types/images';
+import { getBestVariantUrl, getSrcSet } from '@shared/types/images';
+
+type BeforeAfterImage = {
+  media_id: number;
+  alt: string;
+  label?: string;
+  variants?: ImageVariants;
+};
+
+const { block } = Astro.props as {
+  block: {
+    type: 'before_after';
+    layout?: 'slider' | 'side_by_side';
+    before: BeforeAfterImage;
+    after: BeforeAfterImage;
+  };
+};
+
+const layout = block.layout || 'slider';
+const before = block.before;
+const after = block.after;
+const beforeUrl = before?.variants ? getBestVariantUrl(before) : null;
+const afterUrl = after?.variants ? getBestVariantUrl(after) : null;
+const beforeSrcSet = before?.variants ? getSrcSet(before) : '';
+const afterSrcSet = after?.variants ? getSrcSet(after) : '';
+const beforeLabel = before?.label || 'Before';
+const afterLabel = after?.label || 'After';
+const pickVariant = (image?: BeforeAfterImage) => {
+  if (!image?.variants) return null;
+  return (
+    image.variants.lg ||
+    image.variants.md ||
+    image.variants.sm ||
+    image.variants.xs ||
+    image.variants.original ||
+    null
+  );
+};
+const baseVariant = pickVariant(after) || pickVariant(before);
+const aspectRatio = baseVariant?.width && baseVariant?.height
+  ? `${baseVariant.width} / ${baseVariant.height}`
+  : '16 / 9';
+---
+
+{before && after && (
+  <section
+    class:list={["before-after", `layout-${layout}`]}
+    data-before-after
+    style={`--ba-aspect: ${aspectRatio};`}
+  >
+    {layout === 'side_by_side' ? (
+      <div class="ba-grid">
+        <figure>
+          {beforeUrl ? (
+            <img src={beforeUrl} alt={before.alt || ''} srcset={beforeSrcSet || undefined} sizes="(max-width: 768px) 100vw, 50vw" />
+          ) : (
+            <div class="ba-placeholder" />
+          )}
+          <figcaption>{beforeLabel}</figcaption>
+        </figure>
+        <figure>
+          {afterUrl ? (
+            <img src={afterUrl} alt={after.alt || ''} srcset={afterSrcSet || undefined} sizes="(max-width: 768px) 100vw, 50vw" />
+          ) : (
+            <div class="ba-placeholder" />
+          )}
+          <figcaption>{afterLabel}</figcaption>
+        </figure>
+      </div>
+    ) : (
+      <div class="ba-slider">
+        <div class="ba-images">
+          {afterUrl ? (
+            <img class="ba-image" src={afterUrl} alt={after.alt || ''} srcset={afterSrcSet || undefined} sizes="(max-width: 768px) 100vw, 720px" />
+          ) : (
+            <div class="ba-placeholder" />
+          )}
+          <div class="ba-before">
+            {beforeUrl ? (
+              <img class="ba-image" src={beforeUrl} alt={before.alt || ''} srcset={beforeSrcSet || undefined} sizes="(max-width: 768px) 100vw, 720px" />
+            ) : (
+              <div class="ba-placeholder" />
+            )}
+          </div>
+          <div class="ba-handle" aria-hidden="true">
+            <div class="ba-handle-knob"></div>
+          </div>
+        </div>
+        <div class="ba-labels">
+          <span>{beforeLabel}</span>
+          <span>{afterLabel}</span>
+        </div>
+      </div>
+    )}
+  </section>
+)}
+
+<script>
+  document.querySelectorAll('[data-before-after]').forEach((el) => {
+    const images = el.querySelector('.ba-images');
+    if (!images) return;
+    let isDragging = false;
+
+    const setPosition = (clientX) => {
+      const rect = images.getBoundingClientRect();
+      const raw = ((clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.min(100, Math.max(0, raw));
+      el.style.setProperty('--ba-position', `${clamped}%`);
+    };
+
+    const onPointerMove = (event) => {
+      if (event.pointerType === 'mouse' || isDragging) {
+        setPosition(event.clientX);
+      }
+    };
+
+    images.addEventListener('pointerdown', (event) => {
+      isDragging = true;
+      images.setPointerCapture?.(event.pointerId);
+      setPosition(event.clientX);
+    });
+
+    images.addEventListener('pointermove', onPointerMove);
+
+    images.addEventListener('pointerleave', () => {
+      if (!isDragging) return;
+      isDragging = false;
+    });
+
+    window.addEventListener('pointerup', () => {
+      isDragging = false;
+    });
+  });
+</script>
+
+<style>
+  .before-after {
+    margin: 1.5rem 0;
+    --ba-position: 50%;
+  }
+
+  .ba-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .ba-grid figure {
+    margin: 0;
+  }
+
+  .ba-grid img {
+    width: 100%;
+    display: block;
+    border-radius: 12px;
+    object-fit: cover;
+  }
+
+  .ba-grid figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+  }
+
+  .ba-slider {
+    position: relative;
+  }
+
+  .ba-images {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f3f4f6;
+    aspect-ratio: var(--ba-aspect, 16 / 9);
+    cursor: ew-resize;
+    user-select: none;
+  }
+
+  .ba-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ba-before {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    overflow: hidden;
+    height: 100%;
+    clip-path: inset(0 calc(100% - var(--ba-position)) 0 0);
+  }
+
+  .ba-handle {
+    position: absolute;
+    top: 0;
+    left: var(--ba-position);
+    width: 2px;
+    height: 100%;
+    background: #2563eb;
+    transform: translateX(-1px);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+    pointer-events: none;
+  }
+
+  .ba-handle-knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: #fff;
+    border: 2px solid #2563eb;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+  }
+
+  .ba-handle-knob::before,
+  .ba-handle-knob::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    transform: translateY(-50%);
+  }
+
+  .ba-handle-knob::before {
+    left: 7px;
+    border-right: 7px solid #2563eb;
+  }
+
+  .ba-handle-knob::after {
+    right: 7px;
+    border-left: 7px solid #2563eb;
+  }
+
+  .ba-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+
+  .ba-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  }
+
+  @media (min-width: 768px) {
+    .ba-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

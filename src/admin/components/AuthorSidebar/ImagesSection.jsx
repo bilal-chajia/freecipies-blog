@@ -4,7 +4,7 @@ import { Label } from '@/ui/label.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { extractImage, getImageSrcSet } from '@shared/utils';
-import { toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
+import { buildImageStyle, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
 
 export default function ImagesSection({
     imagesData,
@@ -20,6 +20,7 @@ export default function ImagesSection({
         const previewUrl = toAdminImageUrl(preview.imageUrl || image?.url);
         const sizes = srcSet ? '320px' : undefined;
         const fallbackHeight = type === 'avatar' ? targetWidth : Math.round(targetWidth * 0.56);
+        const previewStyle = buildImageStyle(preview);
 
         return (
             <div className="space-y-2">
@@ -34,6 +35,7 @@ export default function ImagesSection({
                             srcSet={srcSet || undefined}
                             sizes={sizes}
                             className={`w-full ${heightClass} object-cover rounded-lg border shadow-sm`}
+                            style={previewStyle}
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                             <Button

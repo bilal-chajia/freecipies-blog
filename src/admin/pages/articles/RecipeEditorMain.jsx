@@ -1,5 +1,6 @@
 import { Label } from '@/ui/label.jsx';
 import { Input } from '@/ui/input.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import BlockEditor from '../../components/BlockEditor';
 import RecipeBuilder from '../../components/RecipeBuilder';
 import ExcerptsSection from '../../components/EditorSidebar/ExcerptsSection';
@@ -10,6 +11,13 @@ import { Code } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
 import Editor from '@monaco-editor/react';
+
+// Animation variants for tab content
+const tabContentVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
+    exit: { opacity: 0, y: -10, transition: { duration: 0.15 } }
+};
 
 /**
  * Main content area for Recipe Editor
@@ -34,9 +42,12 @@ export default function RecipeEditorMain({
     setUseVisualEditor,
     isValidJSON,
     isEditMode,
+    relatedContext,
 }) {
+    const tabTriggerClass = "h-10 px-4 pb-2 text-sm font-medium text-muted-foreground !bg-transparent !rounded-none border-b-2 border-transparent transition-colors hover:text-foreground data-[state=active]:text-foreground data-[state=active]:!border-b-2 data-[state=active]:!border-b-primary";
+
     return (
-        <main className="space-y-8 p-8 w-full max-w-none pb-20">
+        <main className="space-y-8 px-4 py-6 w-full max-w-none pb-20">
             {/* Title */}
             <div className="space-y-3">
                 <Input
@@ -59,177 +70,222 @@ export default function RecipeEditorMain({
 
             <hr className="border-t-2 my-8" />
 
-            <Tabs defaultValue="content" className="space-y-4">
-                <TabsList className="w-full h-auto flex flex-wrap items-end justify-start gap-6 rounded-none bg-transparent p-0 border-b border-border/60">
+            <Tabs defaultValue="recipe" className="space-y-6">
+                <TabsList className="w-full h-auto flex items-center justify-start gap-0 rounded-none bg-transparent p-0 border-b border-border">
                     <TabsTrigger
                         value="content"
-                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        className={tabTriggerClass}
                     >
                         Additional Content
                     </TabsTrigger>
                     <TabsTrigger
                         value="recipe"
-                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        className={tabTriggerClass}
                     >
                         Recipe Data
                     </TabsTrigger>
                     <TabsTrigger
                         value="faqs"
-                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        className={tabTriggerClass}
                     >
                         FAQs
                     </TabsTrigger>
                     <TabsTrigger
                         value="tags"
-                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        className={tabTriggerClass}
                     >
                         Tags
                     </TabsTrigger>
                     <TabsTrigger
                         value="media"
-                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        className={tabTriggerClass}
                     >
                         Media
                     </TabsTrigger>
                     <TabsTrigger
                         value="seo"
-                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        className={tabTriggerClass}
                     >
                         SEO
                     </TabsTrigger>
                     <TabsTrigger
                         value="excerpts"
-                        className="h-9 rounded-md border-b-2 border-transparent px-2 pb-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-muted/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        className={tabTriggerClass}
                     >
                         Excerpts
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="content" className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between mb-2">
-                        <Label className="text-base font-semibold">Additional Content (Optional)</Label>
-                        <div className="flex items-center gap-2">
-                            {jsonErrors.content && (
-                                <span className="text-sm text-destructive font-medium">{jsonErrors.content}</span>
-                            )}
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setUseVisualEditor(!useVisualEditor)}
-                                className="gap-1.5 text-xs h-8"
-                            >
-                                <Code className="h-3.5 w-3.5" />
-                                {useVisualEditor ? 'JSON Mode' : 'Visual Mode'}
-                            </Button>
+                <TabsContent value="content" className="space-y-3 pt-2" asChild>
+                    <motion.div
+                        variants={tabContentVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <Label className="text-base font-semibold">Additional Content (Optional)</Label>
+                            <div className="flex items-center gap-2">
+                                {jsonErrors.content && (
+                                    <span className="text-sm text-destructive font-medium">{jsonErrors.content}</span>
+                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setUseVisualEditor(!useVisualEditor)}
+                                    className="gap-1.5 text-xs h-8"
+                                >
+                                    <Code className="h-3.5 w-3.5" />
+                                    {useVisualEditor ? 'JSON Mode' : 'Visual Mode'}
+                                </Button>
+                            </div>
                         </div>
-                    </div>
 
-                    {useVisualEditor ? (
-                        <BlockEditor
-                            value={contentJson}
-                            onChange={(value) => {
-                                setContentJson(value);
-                                validateJSON('content', value);
-                            }}
-                            placeholder="Add intro text, tips, or extra content..."
-                        />
-                    ) : (
-                        <div className="border rounded-lg overflow-hidden shadow-sm">
-                            <Editor
-                                height="500px"
-                                language="json"
-                                theme="vs-dark"
+                        {useVisualEditor ? (
+                            <BlockEditor
                                 value={contentJson}
                                 onChange={(value) => {
                                     setContentJson(value);
                                     validateJSON('content', value);
                                 }}
-                                options={{
-                                    minimap: { enabled: false },
-                                    fontSize: 14,
-                                    lineNumbers: 'on',
-                                    scrollBeyondLastLine: false,
-                                    automaticLayout: true,
+                                placeholder="Add intro text, tips, or extra content..."
+                                context={relatedContext}
+                            />
+                        ) : (
+                            <div className="border rounded-lg overflow-hidden shadow-sm">
+                                <Editor
+                                    height="500px"
+                                    language="json"
+                                    theme="vs-dark"
+                                    value={contentJson}
+                                    onChange={(value) => {
+                                        setContentJson(value);
+                                        validateJSON('content', value);
+                                    }}
+                                    options={{
+                                        minimap: { enabled: false },
+                                        fontSize: 14,
+                                        lineNumbers: 'on',
+                                        scrollBeyondLastLine: false,
+                                        automaticLayout: true,
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </motion.div>
+                </TabsContent>
+
+                <TabsContent value="recipe" className="space-y-3 pt-2" asChild>
+                    <motion.div
+                        variants={tabContentVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                    >
+                        {jsonErrors.recipe && (
+                            <span className="text-sm text-destructive font-medium">{jsonErrors.recipe}</span>
+                        )}
+                        <div className="border rounded-lg overflow-hidden bg-muted/50 p-6 shadow-sm">
+                            <RecipeBuilder
+                                value={recipeJson}
+                                onChange={(newValue) => {
+                                    setRecipeJson(newValue);
+                                    validateJSON('recipe', newValue);
                                 }}
                             />
                         </div>
-                    )}
+                    </motion.div>
                 </TabsContent>
 
-                <TabsContent value="recipe" className="space-y-3 pt-2">
-                    {jsonErrors.recipe && (
-                        <span className="text-sm text-destructive font-medium">{jsonErrors.recipe}</span>
-                    )}
-                    <div className="border rounded-lg overflow-hidden bg-muted/50 p-6 shadow-sm">
-                        <RecipeBuilder
-                            value={recipeJson}
-                            onChange={(newValue) => {
-                                setRecipeJson(newValue);
-                                validateJSON('recipe', newValue);
-                            }}
+                <TabsContent value="faqs" className="space-y-3 pt-2" asChild>
+                    <motion.div
+                        variants={tabContentVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <div className="flex items-center justify-between">
+                            <Label className="text-base font-semibold">FAQs (Optional)</Label>
+                            {jsonErrors.faqs && (
+                                <span className="text-sm text-destructive font-medium">{jsonErrors.faqs}</span>
+                            )}
+                        </div>
+                        <div className="border rounded-lg overflow-hidden shadow-sm">
+                            <Editor
+                                height="300px"
+                                language="json"
+                                theme="vs-dark"
+                                value={faqsJson}
+                                onChange={(value) => {
+                                    setFaqsJson(value);
+                                    validateJSON('faqs', value);
+                                }}
+                                options={{
+                                    minimap: { enabled: false },
+                                    fontSize: 14,
+                                }}
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground italic">
+                            Add FAQs for SEO schema (or use FAQ block in content)
+                        </p>
+                    </motion.div>
+                </TabsContent>
+
+                <TabsContent value="tags" className="space-y-3 pt-2" asChild>
+                    <motion.div
+                        variants={tabContentVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <TagsSection
+                            formData={formData}
+                            onInputChange={onInputChange}
+                            tags={tags}
                         />
-                    </div>
+                    </motion.div>
                 </TabsContent>
 
-                <TabsContent value="faqs" className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between">
-                        <Label className="text-base font-semibold">FAQs (Optional)</Label>
-                        {jsonErrors.faqs && (
-                            <span className="text-sm text-destructive font-medium">{jsonErrors.faqs}</span>
-                        )}
-                    </div>
-                    <div className="border rounded-lg overflow-hidden shadow-sm">
-                        <Editor
-                            height="300px"
-                            language="json"
-                            theme="vs-dark"
-                            value={faqsJson}
-                            onChange={(value) => {
-                                setFaqsJson(value);
-                                validateJSON('faqs', value);
-                            }}
-                            options={{
-                                minimap: { enabled: false },
-                                fontSize: 14,
-                            }}
+                <TabsContent value="media" className="space-y-3 pt-2" asChild>
+                    <motion.div
+                        variants={tabContentVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <MediaSection
+                            formData={formData}
+                            imagesData={imagesData}
+                            onInputChange={onInputChange}
+                            onImageRemove={onImageRemove}
+                            onMediaDialogOpen={onMediaDialogOpen}
                         />
-                    </div>
-                    <p className="text-xs text-muted-foreground italic">
-                        Add FAQs for SEO schema (or use FAQ block in content)
-                    </p>
+                    </motion.div>
                 </TabsContent>
 
-                <TabsContent value="tags" className="space-y-3 pt-2">
-                    <TagsSection
-                        formData={formData}
-                        onInputChange={onInputChange}
-                        tags={tags}
-                    />
+                <TabsContent value="seo" className="space-y-3 pt-2" asChild>
+                    <motion.div
+                        variants={tabContentVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <SEOSection
+                            formData={formData}
+                            onInputChange={onInputChange}
+                            isEditMode={isEditMode}
+                        />
+                    </motion.div>
                 </TabsContent>
 
-                <TabsContent value="media" className="space-y-3 pt-2">
-                    <MediaSection
-                        formData={formData}
-                        imagesData={imagesData}
-                        onInputChange={onInputChange}
-                        onImageRemove={onImageRemove}
-                        onMediaDialogOpen={onMediaDialogOpen}
-                    />
-                </TabsContent>
-
-                <TabsContent value="seo" className="space-y-3 pt-2">
-                    <SEOSection
-                        formData={formData}
-                        onInputChange={onInputChange}
-                        isEditMode={isEditMode}
-                    />
-                </TabsContent>
-
-                <TabsContent value="excerpts" className="space-y-3 pt-2">
-                    <ExcerptsSection
-                        formData={formData}
-                        onInputChange={onInputChange}
-                    />
+                <TabsContent value="excerpts" className="space-y-3 pt-2" asChild>
+                    <motion.div
+                        variants={tabContentVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <ExcerptsSection
+                            formData={formData}
+                            onInputChange={onInputChange}
+                        />
+                    </motion.div>
                 </TabsContent>
             </Tabs>
         </main>

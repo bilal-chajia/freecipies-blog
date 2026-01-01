@@ -107,8 +107,8 @@ export interface CachedTocItem {
     /** Heading text */
     text: string;
 
-    /** Heading level (2-4) */
-    level: 2 | 3 | 4;
+    /** Heading level (2-6) */
+    level: 2 | 3 | 4 | 5 | 6;
 }
 
 export type CachedTocJson = CachedTocItem[];

@@ -63,3 +63,50 @@ table {
     padding-right: 1rem;
   }
 }
+
+/* BlockNote popover fallback styles (for portaled dropdowns) */
+.bn-form-popover {
+  background-color: var(--bn-colors-menu-background, #ffffff);
+  border: var(--bn-border, 1px solid #e5e7eb);
+  border-radius: var(--bn-border-radius-medium, 8px);
+  box-shadow: var(--bn-shadow-medium, 0 10px 25px rgba(0, 0, 0, 0.12));
+  color: var(--bn-colors-menu-text, #111827);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  padding: 6px;
+}
+
+.bn-form-popover .mantine-TextInput-label,
+.bn-form-popover .mantine-FileInput-label {
+  color: var(--bn-colors-menu-text, #6b7280);
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.bn-form-popover .bn-text-input {
+  width: 300px;
+  max-width: min(320px, 75vw);
+}
+
+.bn-form-popover input,
+.bn-form-popover textarea,
+.bn-form-popover select {
+  background-color: var(--bn-colors-background, #ffffff);
+  border: 1px solid var(--bn-border-color, #e5e7eb);
+  border-radius: 6px;
+  color: var(--bn-colors-menu-text, #111827);
+  font-size: 12px;
+  padding: 6px 10px 6px 28px;
+  width: 100%;
+}
+
+.bn-form-popover input::placeholder,
+.bn-form-popover textarea::placeholder {
+  color: var(--bn-colors-menu-text, #6b7280);
+}
+
+.bn-form-popover svg {
+  color: var(--bn-colors-menu-text, #6b7280);
+}

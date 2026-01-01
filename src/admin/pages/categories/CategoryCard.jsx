@@ -12,7 +12,7 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu.jsx';
 import ColorPicker from '../../components/ColorPicker';
-import { getContrastColor, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
+import { buildImageStyle, getContrastColor, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
 import { useSettingsStore } from '../../store/useStore';
 import { extractImage, getImageSrcSet } from '@shared/utils';
 
@@ -58,6 +58,7 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
     const imageUrl = toAdminImageUrl(selectedImage.imageUrl || category.imageUrl);
     const srcSet = toAdminSrcSet(getImageSrcSet(category.imagesJson, slotName));
     const sizes = srcSet ? '320px' : undefined;
+    const imageStyle = buildImageStyle(selectedImage);
 
     return (
         <Card className="group relative overflow-hidden border-none bg-card shadow-sm hover:shadow-xl transition-all duration-500 rounded-2xl aspect-square flex flex-col p-0">
@@ -72,6 +73,7 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
                         srcSet={srcSet || undefined}
                         sizes={sizes}
                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        style={imageStyle}
                     />
                 ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted/50 to-muted text-muted-foreground">

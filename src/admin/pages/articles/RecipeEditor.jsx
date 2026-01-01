@@ -50,6 +50,16 @@ const RecipeEditor = () => {
         ? formData.label || 'Untitled'
         : 'Create a new recipe with ingredients and instructions';
 
+    const categorySlug = categories.find((category) => category.id === formData.categoryId)?.slug || null;
+    const tagSlugs = tags
+        .filter((tag) => formData.selectedTags?.includes(tag.id))
+        .map((tag) => tag.slug);
+    const relatedContext = {
+        categorySlug,
+        tagSlugs,
+        currentSlug: formData.slug,
+    };
+
     const mainContent = (
         <RecipeEditorMain
             formData={formData}
@@ -70,6 +80,7 @@ const RecipeEditor = () => {
             setUseVisualEditor={setUseVisualEditor}
             isValidJSON={isValidJSON}
             isEditMode={isEditMode}
+            relatedContext={relatedContext}
         />
     );
 

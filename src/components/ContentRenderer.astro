@@ -1,0 +1,126 @@
+---
+import RelatedContent from "./RelatedContent.astro";
+import TableBlock from "./TableBlock.astro";
+import BeforeAfter from "./BeforeAfter.astro";
+
+const { content } = Astro.props as { content?: unknown };
+
+const sanitizeHref = (href: string) => {
+  if (!href) return "";
+  if (href.startsWith("/") || href.startsWith("#")) return href;
+  try {
+    const url = new URL(href);
+    if (["http:", "https:", "mailto:", "tel:"].includes(url.protocol)) {
+      return href;
+    }
+  } catch {
+    return "";
+  }
+  return "";
+};
+
+const renderInlineMarkdown = (text?: string): string => {
+  const source = String(text || "");
+  if (!source) return "";
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+  return source.replace(pattern, (_, label, href) => {
+    const safeHref = sanitizeHref(href || "");
+    if (!safeHref) return label;
+    const isExternal = safeHref.startsWith("http");
+    const target = isExternal ? ' target="_blank"' : "";
+    const rel = isExternal ? ' rel="noreferrer noopener"' : "";
+    return `<a href="${safeHref}" class="text-blue-600 underline underline-offset-2"${target}${rel}>${label}</a>`;
+  });
+};
+
+const parsed = (() => {
+  if (!content) return [];
+  if (Array.isArray(content)) return content;
+  if (typeof content === "string") {
+    try {
+      const json = JSON.parse(content);
+      return Array.isArray(json) ? json : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+})();
+---
+
+{
+  parsed.map((block) => {
+    if (!block?.type) return null;
+    if (block.type === "paragraph")
+      return <p set:html={renderInlineMarkdown(block.text)} />;
+    if (block.type === "heading") {
+      const HeadingTag = `h${block.level || 2}` as keyof HTMLElementTagNameMap;
+      return <HeadingTag set:html={renderInlineMarkdown(block.text)} />;
+    }
+    if (block.type === "list") {
+      const ListTag = block.style === "ordered" ? "ol" : "ul";
+      return (
+        <ListTag>
+          {Array.isArray(block.items) &&
+            block.items.map((item: string, idx: number) => (
+              <li set:html={renderInlineMarkdown(item)} />
+            ))}
+        </ListTag>
+      );
+    }
+    if (block.type === "blockquote") {
+      return (
+        <blockquote>
+          <p set:html={renderInlineMarkdown(block.text)} />
+        </blockquote>
+      );
+    }
+    if (block.type === "tip_box") {
+      return (
+        <div
+          class="rounded-lg border border-amber-200 bg-amber-50 p-4"
+          set:html={renderInlineMarkdown(block.text)}
+        />
+      );
+    }
+    if (block.type === "faq_section") {
+      return (
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold">{block.title || "FAQs"}</h3>
+          {Array.isArray(block.items) &&
+            block.items.map((faq: { q?: string; a?: string }, idx: number) => (
+              <div class="border-b pb-3">
+                <p class="font-medium" set:html={renderInlineMarkdown(faq.q)} />
+                <p
+                  class="text-gray-600"
+                  set:html={renderInlineMarkdown(faq.a)}
+                />
+              </div>
+            ))}
+        </div>
+      );
+    }
+    if (block.type === "related_content")
+      return <RelatedContent block={block} />;
+    if (block.type === "table")
+      return <TableBlock headers={block.headers} rows={block.rows} />;
+    if (block.type === "before_after") return <BeforeAfter block={block} />;
+    if (block.type === "divider") {
+      const style = block.style || "solid";
+      return (
+        <div class="py-4">
+          <hr
+            class="w-full border-0 m-0"
+            style={{
+              borderTopWidth: style === "double" ? "4px" : "2px",
+              borderTopStyle: style,
+              borderTopColor: "#9ca3af"
+            }}
+          />
+        </div>
+      );
+    }
+    return null;
+  })
+}

@@ -22,33 +22,40 @@ export const DividerBlock = createReactBlockSpec(
     },
     {
         render: (props) => {
-            const getStyleClass = () => {
-                switch (props.block.props.style) {
-                    case 'dashed': return 'border-dashed';
-                    case 'dotted': return 'border-dotted';
-                    case 'double': return 'border-double border-t-4';
-                    default: return 'border-solid';
-                }
-            };
+            const style = props.block.props.style;
+            const isActive = props.editor.getTextCursorPosition().block.id === props.block.id;
 
             return (
-                <div className="py-4 cursor-pointer group relative"
-                    title="Click to change style">
-                    <hr
-                        className={`border-t-2 border-gray-200 w-full ${getStyleClass()}`}
-                    />
+                <div
+                    className="py-4 cursor-pointer group relative"
+                    title="Click to change style"
+                >
                     {/* Style switcher visible on hover/select */}
-                    <div className={`absolute -top-6 left-1/2 -translate-x-1/2 bg-popover border border-border shadow-sm rounded-md px-1 py-0.5 flex gap-1 ${props.editor.getTextCursorPosition().block.id === props.block.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity z-10`}>
+                    <div
+                        className={`absolute -top-1 left-0 bg-popover border border-border shadow-sm rounded-md px-1 py-0.5 flex gap-1 transition-opacity z-10 ${isActive ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'}`}
+                    >
                         <select
-                            value={props.block.props.style}
+                            value={style}
                             onChange={(e) => props.editor.updateBlock(props.block, { props: { ...props.block.props, style: e.target.value } })}
-                            className="text-xs border-none bg-transparent h-6 focus:ring-0"
+                            value={style}
+                            className="text-xs border-none bg-transparent h-6 focus:ring-0 cursor-pointer"
                         >
                             <option value="solid">Solid</option>
                             <option value="dashed">Dashed</option>
                             <option value="dotted">Dotted</option>
                             <option value="double">Double</option>
                         </select>
+                    </div>
+
+                    <div className="flex items-center w-full h-4">
+                        <hr
+                            className="w-full border-0 m-0"
+                            style={{
+                                borderTopWidth: style === 'double' ? '4px' : '2px',
+                                borderTopStyle: style,
+                                borderTopColor: '#9ca3af' // gray-400 for better visibility
+                            }}
+                        />
                     </div>
                 </div>
             );

@@ -663,7 +663,7 @@ contact_info    → Contact details
     "aspectRatio": "4:3",
     "variants": { ... }
   },
-  "gallery": [
+  "contentImages": [
     {
       "media_id": 125,
       "alt": "Step 1: Mixing ingredients",
@@ -673,6 +673,8 @@ contact_info    → Contact details
   ]
 }
 ```
+
+Note: `contentImages` holds images referenced in `content_json`.
 
 ### images_json (Authors - Different breakpoints for avatars)
 
@@ -1012,23 +1014,14 @@ LowFatDiet, LowLactoseDiet, LowSaltDiet
     "media_id": 123,
     "alt": "Description",
     "caption": "Photo caption",
-    "size": "full",
+    "credit": "(c) Photographer",
     "variants": { ... }
-  },
-
-  {
-    "type": "gallery",
-    "layout": "grid",
-    "images": [
-      { "media_id": 1, "alt": "...", "variants": {...} }
-    ]
   },
 
   {
     "type": "video",
     "provider": "youtube",
     "videoId": "dQw4w9WgXcQ",
-    "poster": { "variants": {...} },
     "aspectRatio": "16:9"
   },
 
@@ -1039,12 +1032,6 @@ LowFatDiet, LowLactoseDiet, LowSaltDiet
     "text": "**Bold** and lists:\n1. Item\n2. Item"
   },
 
-  {
-    "type": "cta_button",
-    "text": "Get the Recipe",
-    "url": "#recipe",
-    "style": "primary"
-  },
 
   { "type": "divider" },
 
@@ -1076,14 +1063,12 @@ LowFatDiet, LowLactoseDiet, LowSaltDiet
 | Type          | Required Fields         | Optional Fields     |
 | ------------- | ----------------------- | ------------------- |
 | `paragraph`   | text                    | -                   |
-| `heading`     | level (2-4), text       | -                   |
+| `heading`     | level (2-6), text       | -                   |
 | `blockquote`  | text                    | cite                |
 | `list`        | style, items            | -                   |
-| `image`       | media_id, alt, variants | caption, size       |
-| `gallery`     | layout, images          | -                   |
-| `video`       | provider, videoId       | poster, aspectRatio |
+| `image`       | media_id, alt, variants | caption, credit     |
+| `video`       | provider, videoId       | aspectRatio         |
 | `tip_box`     | variant, text           | title               |
-| `cta_button`  | text, url               | style               |
 | `divider`     | -                       | -                   |
 | `spacer`      | size                    | -                   |
 | `faq_section` | items                   | title               |

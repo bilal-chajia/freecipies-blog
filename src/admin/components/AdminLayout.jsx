@@ -53,15 +53,20 @@ const AdminLayout = () => {
   const breadcrumbs = getBreadcrumbs(location.pathname);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const isSettingsPage = location.pathname.includes("/settings");
+  const isEditorPage = /\/(articles|recipes|roundups)\/(new|[^/]+)$/.test(location.pathname);
   const headerClassName = isSettingsPage
     ? "flex h-12 shrink-0 items-center justify-between border-b px-2"
     : "flex h-12 shrink-0 items-center justify-between border-b px-4";
   const mainClassName = isSettingsPage
     ? "flex-1 overflow-auto px-2 py-4"
-    : "flex-1 overflow-auto p-6";
+    : isEditorPage
+      ? "flex-1 overflow-auto px-3 py-4"
+      : "flex-1 overflow-auto p-6";
   const contentClassName = isSettingsPage
     ? "mx-auto w-full max-w-none"
-    : "mx-auto max-w-6xl";
+    : isEditorPage
+      ? "mx-auto w-full max-w-none"
+      : "mx-auto max-w-6xl";
 
   return (
     <SidebarProvider>

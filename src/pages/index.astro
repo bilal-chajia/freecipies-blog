@@ -100,6 +100,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
                           sizes={srcSet ? sizes : undefined}
                           loading={index === 0 ? "eager" : "lazy"}
                           fetchpriority={index === 0 ? "high" : "auto"}
+                          style={selected.imageStyle || undefined}
                         />
                       )}
                       <div class="card-overlay" />
@@ -148,6 +149,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
                         srcset={srcSet || undefined}
                         sizes={srcSet ? sizes : undefined}
                         loading="lazy"
+                        style={selected.imageStyle || undefined}
                       />
                     )}
                     <div class="card-overlay" />
@@ -194,6 +196,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
                         srcset={srcSet || undefined}
                         sizes={srcSet ? sizes : undefined}
                         loading="lazy"
+                        style={selected.imageStyle || undefined}
                       />
                     )}
                     <span 
@@ -269,6 +272,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
                         srcset={srcSet || undefined}
                         sizes={srcSet ? sizes : undefined}
                         loading="lazy"
+                        style={selected.imageStyle || undefined}
                       />
                     ) : (
                       <div class="chip-placeholder">
@@ -317,6 +321,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
                         srcset={srcSet || undefined}
                         sizes={srcSet ? sizes : undefined}
                         loading="lazy"
+                        style={selected.imageStyle || undefined}
                       />
                     )}
                     <span 

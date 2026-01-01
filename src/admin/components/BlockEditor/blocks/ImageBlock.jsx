@@ -5,7 +5,7 @@
  * - Full ImageUploader dialog (crop, focal point, metadata)
  * - MediaDialog for library selection
  * - URL input
- * - Caption and resize options
+ * - Caption and credit metadata
  * - Full variants data for responsive images
  */
 
@@ -32,10 +32,10 @@ export const ImageBlock = createReactBlockSpec(
             url: { default: '' },
             caption: { default: '' },
             alt: { default: '' },
+            credit: { default: '' },
             width: { default: 512 },
             height: { default: 0 },
             mediaId: { default: '' },
-            size: { default: 'full', values: ['small', 'medium', 'full'] },
             // Store variants as JSON string for full responsive image support
             variantsJson: { default: '{}' },
         },
@@ -64,6 +64,7 @@ export const ImageBlock = createReactBlockSpec(
                         url,
                         mediaId: data.id?.toString() || '',
                         alt: data.altText || '',
+                        credit: data.credit || '',
                         width: bestVariant?.width || data.width || 512,
                         height: bestVariant?.height || data.height || 0,
                         // Store variants directly (not wrapped in { variants: {...} })
@@ -88,6 +89,7 @@ export const ImageBlock = createReactBlockSpec(
                         url,
                         mediaId: item.id?.toString() || '',
                         alt: item.altText || item.alt_text || item.name || '',
+                        credit: item.credit || item.credit_text || '',
                         width: bestVariant?.width || 512,
                         height: bestVariant?.height || 0,
                         // Store variants directly (not wrapped in { variants: {...} })
@@ -104,6 +106,7 @@ export const ImageBlock = createReactBlockSpec(
                         props: {
                             ...props.block.props,
                             url: inputUrl,
+                            credit: props.block.props.credit || '',
                             variantsJson: JSON.stringify({ lg: { url: inputUrl } }),
                         },
                     });
@@ -240,11 +243,6 @@ export const ImageBlock = createReactBlockSpec(
                             src={props.block.props.url}
                             alt={props.block.props.alt}
                             className="w-full h-auto rounded-lg border border-gray-200"
-                            style={{
-                                maxWidth: props.block.props.size === 'small' ? '300px'
-                                    : props.block.props.size === 'medium' ? '500px'
-                                        : '100%'
-                            }}
                         />
                         {/* Overlay controls */}
                         <motion.div
@@ -252,17 +250,6 @@ export const ImageBlock = createReactBlockSpec(
                             initial={{ opacity: 0 }}
                             whileHover={{ opacity: 1 }}
                         >
-                            <select
-                                value={props.block.props.size}
-                                onChange={(e) => props.editor.updateBlock(props.block, {
-                                    props: { ...props.block.props, size: e.target.value }
-                                })}
-                                className="text-xs bg-transparent text-white border-none focus:ring-0 cursor-pointer"
-                            >
-                                <option value="full" className="text-black">Full</option>
-                                <option value="medium" className="text-black">Medium</option>
-                                <option value="small" className="text-black">Small</option>
-                            </select>
                             <button
                                 onClick={() => props.editor.updateBlock(props.block, {
                                     props: { ...props.block.props, url: '', variantsJson: '{}' }
@@ -282,6 +269,15 @@ export const ImageBlock = createReactBlockSpec(
                         })}
                         placeholder="Write a caption..."
                         className="w-full mt-2 text-center text-sm text-gray-500 bg-transparent border-none focus:ring-0 placeholder:text-gray-300"
+                    />
+                    <input
+                        type="text"
+                        value={props.block.props.credit}
+                        onChange={(e) => props.editor.updateBlock(props.block, {
+                            props: { ...props.block.props, credit: e.target.value }
+                        })}
+                        placeholder="Photo credit (optional)"
+                        className="w-full mt-1 text-center text-xs text-gray-400 bg-transparent border-none focus:ring-0 placeholder:text-gray-300"
                     />
                 </motion.div>
             );

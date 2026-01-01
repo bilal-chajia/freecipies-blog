@@ -30,7 +30,7 @@ import { authorsAPI } from '../../services/api';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
 import { toast } from 'sonner';
 import { extractImage, getImageSrcSet } from '@shared/utils';
-import { toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
+import { buildImageStyle, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
 
 const AuthorsList = () => {
   const location = useLocation();
@@ -192,6 +192,7 @@ const AuthorsList = () => {
                               const avatar = extractImage(author.imagesJson, 'avatar', 120);
                               const avatarUrl = toAdminImageUrl(avatar.imageUrl || author.imageUrl || '');
                               const avatarSrcSet = toAdminSrcSet(getImageSrcSet(author.imagesJson, 'avatar'));
+                              const avatarStyle = buildImageStyle(avatar);
                               return (
                                 <AvatarImage
                                   src={avatarUrl}
@@ -199,6 +200,7 @@ const AuthorsList = () => {
                                   srcSet={avatarSrcSet || undefined}
                                   sizes={avatarSrcSet ? '44px' : undefined}
                                   className="object-cover"
+                                  style={avatarStyle}
                                 />
                               );
                             })()}

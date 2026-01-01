@@ -50,6 +50,9 @@ export interface ExtractedImage {
   imageAlt?: string;
   imageWidth?: number;
   imageHeight?: number;
+  imageAspectRatio?: string;
+  imageObjectPosition?: string;
+  imageStyle?: string;
 }
 
 export function getImageSlot(
@@ -90,6 +93,29 @@ const buildSrcSet = (variants?: ImageSlot['variants']): string => {
   }
 
   return entries.join(', ');
+};
+
+const toCssAspectRatio = (value?: string): string | undefined => {
+  if (!value) return undefined;
+  if (value.includes('/')) return value;
+  if (value.includes(':')) return value.replace(':', ' / ');
+  return value;
+};
+
+const buildImageStyle = (imageSlot?: ImageSlot): string | undefined => {
+  if (!imageSlot) return undefined;
+  const styles: string[] = [];
+
+  if (imageSlot.focal_point) {
+    styles.push(`object-position: ${imageSlot.focal_point.x}% ${imageSlot.focal_point.y}%`);
+  }
+
+  const aspectRatio = toCssAspectRatio(imageSlot.aspectRatio);
+  if (aspectRatio) {
+    styles.push(`aspect-ratio: ${aspectRatio}`);
+  }
+
+  return styles.length ? styles.join('; ') : undefined;
 };
 
 export function getImageSrcSet(
@@ -152,6 +178,11 @@ export function extractImage(
   if (!imageSlot) return {};
 
   const variant = pickVariantByWidth(imageSlot.variants, targetWidth);
+  const imageStyle = buildImageStyle(imageSlot);
+  const imageAspectRatio = toCssAspectRatio(imageSlot.aspectRatio);
+  const imageObjectPosition = imageSlot.focal_point
+    ? `${imageSlot.focal_point.x}% ${imageSlot.focal_point.y}%`
+    : undefined;
   const normalizedVariantUrl = normalizeImageUrl(variant?.url);
   if (normalizedVariantUrl && variant) {
     return {
@@ -159,16 +190,9 @@ export function extractImage(
       imageAlt: imageSlot.alt,
       imageWidth: variant.width,
       imageHeight: variant.height,
-    };
-  }
-
-  const normalizedSlotUrl = normalizeImageUrl(imageSlot.url);
-  if (normalizedSlotUrl) {
-    return {
-      imageUrl: normalizedSlotUrl,
-      imageAlt: imageSlot.alt,
-      imageWidth: imageSlot.width,
-      imageHeight: imageSlot.height,
+      imageAspectRatio,
+      imageObjectPosition,
+      imageStyle,
     };
   }
 

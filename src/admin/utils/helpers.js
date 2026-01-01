@@ -164,14 +164,8 @@ export const buildImageSlotFromMedia = (item, overrides = {}) => {
     placeholder: placeholder || undefined,
     aspectRatio: aspectRatio || undefined,
     focal_point: focalPoint,
-    variants: Object.keys(variants).length ? variants : undefined,
+    variants,
   };
-
-  if (!slot.variants && item?.url) {
-    slot.url = item.url;
-    if (item.width != null) slot.width = item.width;
-    if (item.height != null) slot.height = item.height;
-  }
 
   return slot;
 };
@@ -211,6 +205,21 @@ export const toAdminSrcSet = (srcSet) => {
     })
     .filter(Boolean)
     .join(', ');
+};
+
+export const buildImageStyle = (image) => {
+  if (!image) return undefined;
+  const style = {};
+
+  if (image.imageObjectPosition) {
+    style.objectPosition = image.imageObjectPosition;
+  }
+
+  if (image.imageAspectRatio) {
+    style.aspectRatio = image.imageAspectRatio;
+  }
+
+  return Object.keys(style).length ? style : undefined;
 };
 
 // ============================================
@@ -459,4 +468,5 @@ export default {
   debounce,
   parseVariantsJson,
   buildImageSlotFromMedia,
+  buildImageStyle,
 };

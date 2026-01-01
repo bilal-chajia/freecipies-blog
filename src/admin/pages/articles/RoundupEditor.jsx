@@ -51,6 +51,16 @@ const RoundupEditor = () => {
         ? formData.label || 'Untitled'
         : 'Create a curated list of recipes or articles';
 
+    const categorySlug = categories.find((category) => category.id === formData.categoryId)?.slug || null;
+    const tagSlugs = tags
+        .filter((tag) => formData.selectedTags?.includes(tag.id))
+        .map((tag) => tag.slug);
+    const relatedContext = {
+        categorySlug,
+        tagSlugs,
+        currentSlug: formData.slug,
+    };
+
     const mainContent = (
         <RoundupEditorMain
             formData={formData}
@@ -66,6 +76,7 @@ const RoundupEditor = () => {
             useVisualEditor={useVisualEditor}
             setUseVisualEditor={setUseVisualEditor}
             isValidJSON={isValidJSON}
+            relatedContext={relatedContext}
         />
     );
 

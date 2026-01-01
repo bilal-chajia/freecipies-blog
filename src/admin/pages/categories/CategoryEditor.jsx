@@ -20,7 +20,7 @@ import { buildImageSlotFromMedia, generateSlug } from '../../utils/helpers';
 import MediaDialog from '../../components/MediaDialog';
 import ColorPicker from '../../components/ColorPicker';
 import { extractImage, getImageSrcSet } from '@shared/utils';
-import { toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
+import { buildImageStyle, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
 import ImageUploader from '../../components/ImageUploader';
 
 
@@ -474,12 +474,14 @@ const CategoryEditor = () => {
   const previewThumbUrl = toAdminImageUrl(previewThumb.imageUrl || formData.imageThumbnail?.url);
   const previewThumbAlt = formData.imageThumbnail?.alt || formData.label || '';
   const previewThumbSizes = previewThumbSrcSet ? '400px' : undefined;
+  const previewThumbStyle = buildImageStyle(previewThumb);
 
   const previewCover = extractImage(coverSlot, 'cover', 1200);
   const previewCoverSrcSet = toAdminSrcSet(getImageSrcSet(coverSlot, 'cover'));
   const previewCoverUrl = toAdminImageUrl(previewCover.imageUrl || formData.imageCover?.url);
   const previewCoverAlt = formData.imageCover?.alt || formData.label || '';
   const previewCoverSizes = previewCoverSrcSet ? '400px' : undefined;
+  const previewCoverStyle = buildImageStyle(previewCover);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -1013,6 +1015,7 @@ const CategoryEditor = () => {
                       srcSet={previewThumbSrcSet || undefined}
                       sizes={previewThumbSizes}
                       className="w-full aspect-video object-cover transition-opacity"
+                      style={previewThumbStyle}
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
                       <Button
@@ -1107,6 +1110,7 @@ const CategoryEditor = () => {
                       srcSet={previewCoverSrcSet || undefined}
                       sizes={previewCoverSizes}
                       className="w-full aspect-video object-cover transition-opacity"
+                      style={previewCoverStyle}
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
                       <Button

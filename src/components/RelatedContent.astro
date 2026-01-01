@@ -1,0 +1,246 @@
+---
+import type { ImageSlot } from '@shared/types/images';
+import { getBestVariantUrl, getSrcSet } from '@shared/types/images';
+
+const { block } = Astro.props as {
+  block: {
+    type: 'related_content';
+    title?: string;
+    layout?: 'grid' | 'carousel' | 'list';
+    recipes?: any[];
+    articles?: any[];
+    roundups?: any[];
+  };
+};
+
+const layout = block.layout || 'grid';
+const title = block.title?.trim();
+
+const withType = (items: any[] | undefined, itemType: 'recipe' | 'article' | 'roundup') =>
+  Array.isArray(items) ? items.map((item) => ({ ...item, __type: itemType })) : [];
+
+const groups = [
+  { type: 'recipe', label: 'Recipes', items: withType(block.recipes, 'recipe') },
+  { type: 'article', label: 'Articles', items: withType(block.articles, 'article') },
+  { type: 'roundup', label: 'Roundups', items: withType(block.roundups, 'roundup') },
+].filter((group) => group.items.length > 0);
+
+const buildImageStyle = (slot?: ImageSlot) => {
+  if (!slot) return undefined;
+  const styles: string[] = [];
+  if (slot.focal_point) {
+    styles.push(`object-position: ${slot.focal_point.x}% ${slot.focal_point.y}%`);
+  }
+  if (slot.aspectRatio) {
+    const ratio = slot.aspectRatio.includes(':')
+      ? slot.aspectRatio.replace(':', ' / ')
+      : slot.aspectRatio;
+    styles.push(`aspect-ratio: ${ratio}`);
+  }
+  return styles.length ? styles.join('; ') : undefined;
+};
+
+const buildMeta = (item: any) => {
+  if (item.__type === 'recipe') {
+    const meta = [];
+    if (typeof item.total_time === 'number') meta.push(`${item.total_time} min`);
+    if (item.difficulty) meta.push(String(item.difficulty));
+    return meta.join(' · ');
+  }
+  if (item.__type === 'article') {
+    if (typeof item.reading_time === 'number') return `${item.reading_time} min read`;
+  }
+  if (item.__type === 'roundup') {
+    if (typeof item.item_count === 'number') return `${item.item_count} items`;
+  }
+  return '';
+};
+
+const buildHref = (item: any) => {
+  if (!item?.slug) return '#';
+  if (item.__type === 'recipe') return `/recipes/${item.slug}`;
+  if (item.__type === 'roundup') return `/roundups/${item.slug}`;
+  return `/articles/${item.slug}`;
+};
+---
+
+<section class:list={["related-content", `is-${layout}`]}>
+  {title && <h2 class="related-title">{title}</h2>}
+
+  {groups.map((group) => (
+    <div class="related-group">
+      {groups.length > 1 && <h3 class="related-group-title">{group.label}</h3>}
+      <div class:list={["related-list", `layout-${layout}`]}>
+        {group.items.map((item) => {
+          const thumbnail = item.thumbnail as ImageSlot | undefined;
+          const imageUrl = thumbnail ? getBestVariantUrl(thumbnail) : null;
+          const srcSet = thumbnail ? getSrcSet(thumbnail) : '';
+          const imageStyle = buildImageStyle(thumbnail);
+          const meta = buildMeta(item);
+          const href = buildHref(item);
+          return (
+            <a href={href} class="related-card">
+              <div class="related-media">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={item.headline || ''}
+                    srcset={srcSet || undefined}
+                    sizes={layout === 'list' ? '120px' : '(max-width: 768px) 100vw, 260px'}
+                    loading="lazy"
+                    style={imageStyle}
+                  />
+                ) : (
+                  <div class="related-placeholder" />
+                )}
+              </div>
+              <div class="related-body">
+                <span class="related-kicker">{group.label}</span>
+                <h4 class="related-headline">{item.headline}</h4>
+                {meta && <p class="related-meta">{meta}</p>}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  ))}
+</section>
+
+<style>
+  .related-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .related-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0;
+    color: #111;
+  }
+
+  .related-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .related-group-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #666;
+    margin: 0;
+  }
+
+  .related-list {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .layout-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .layout-list {
+    grid-template-columns: 1fr;
+  }
+
+  .layout-carousel {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(220px, 260px);
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .layout-carousel .related-card {
+    scroll-snap-align: start;
+  }
+
+  .related-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .layout-list .related-card {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .related-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  .related-media {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f2f2f2;
+  }
+
+  .layout-list .related-media {
+    width: 120px;
+    flex-shrink: 0;
+    aspect-ratio: 1 / 1;
+  }
+
+  .related-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .related-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #f1f1f1, #e5e5e5);
+  }
+
+  .related-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .related-kicker {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #999;
+  }
+
+  .related-headline {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #222;
+  }
+
+  .related-meta {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    .layout-carousel {
+      grid-auto-columns: minmax(200px, 80vw);
+    }
+  }
+</style>

@@ -69,6 +69,7 @@ const featuredAuthorAvatar = featuredAuthorSlot.imageUrl || featuredArticle?.aut
           srcset={categorySrcSet || undefined}
           sizes={categorySrcSet ? "100vw" : undefined}
           loading="eager"
+          style={categoryImage.imageStyle || undefined}
         />
         <div class="hero-bg-overlay"></div>
       </div>
@@ -113,6 +114,7 @@ const featuredAuthorAvatar = featuredAuthorSlot.imageUrl || featuredArticle?.aut
                   sizes={featuredImage.srcSet ? featuredSizes : undefined}
                   loading="eager"
                   class="featured-hero-image"
+                  style={featuredImage.selected.imageStyle || undefined}
                 />
               )}
               <div class="featured-overlay">
@@ -130,6 +132,7 @@ const featuredAuthorAvatar = featuredAuthorSlot.imageUrl || featuredArticle?.aut
                         height="28"
                         class="featured-avatar"
                         loading="lazy"
+                        style={featuredAuthorSlot.imageStyle || undefined}
                       />
                     ) : (
                       <span class="featured-avatar placeholder">{featuredAuthorName.charAt(0)}</span>

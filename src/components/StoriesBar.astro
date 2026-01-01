@@ -42,6 +42,7 @@ const storiesWithPages = stories.map((story) => {
       imageAlt: preview.imageAlt || story.headline,
       imageWidth: preview.imageWidth || 80,
       imageHeight: preview.imageHeight || 80,
+      imageStyle: preview.imageStyle,
       srcSet: getImageSrcSet(story.imagesJson, "thumbnail"),
     },
     storyPages: [
@@ -94,6 +95,7 @@ const storiesWithPages = stories.map((story) => {
                       srcset={story.storyPreview.srcSet || undefined}
                       sizes={story.storyPreview.srcSet ? "80px" : undefined}
                       loading="lazy"
+                      style={story.storyPreview.imageStyle || undefined}
                     />
                   ) : (
                     <div class="story-placeholder">

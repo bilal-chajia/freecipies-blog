@@ -21,6 +21,7 @@ const image = {
   alt: selected.imageAlt || category.imageAlt || category.label,
   width: selected.imageWidth || category.imageWidth || 800,
   height: selected.imageHeight || category.imageHeight || 600,
+  style: selected.imageStyle,
 };
 ---
 
@@ -38,6 +39,7 @@ const image = {
         srcset={srcSet || undefined}
         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
         loading="lazy"
+        style={image.style || undefined}
       />
       <div class="card-overlay"></div>
     </div>

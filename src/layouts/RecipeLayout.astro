@@ -5,6 +5,7 @@ import SocialShareBar from "../components/SocialShareBar.astro";
 import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
 import PopularRecipes from "../components/PopularRecipes.astro";
 import NewsletterWidget from "../components/NewsletterWidget.astro";
+import ContentRenderer from "../components/ContentRenderer.astro";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 
 interface Props {
@@ -57,6 +58,8 @@ const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
 const authorImage = authorAvatar.imageUrl || author?.imageUrl;
 const authorImageWidth = authorAvatar.imageWidth || 48;
 const authorImageHeight = authorAvatar.imageHeight || 48;
+const authorImageStyle = authorAvatar.imageStyle;
+const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [];
 ---
 
 <Layout
@@ -119,6 +122,7 @@ const authorImageHeight = authorAvatar.imageHeight || 48;
           authorImageSizes={authorAvatarSizes}
           authorImageWidth={authorImageWidth}
           authorImageHeight={authorImageHeight}
+          authorImageStyle={authorImageStyle}
           authorRole={author?.job || "Blogger"}
           lastUpdated={recipe.publishedAt || undefined}
           viewCount={recipe.viewCount}
@@ -146,6 +150,7 @@ const authorImageHeight = authorAvatar.imageHeight || 48;
                 loading="eager"
                 fetchpriority="high"
                 decoding="async"
+                style={heroImage.imageStyle || undefined}
               />
             </div>
           )
@@ -229,6 +234,14 @@ const authorImageHeight = authorAvatar.imageHeight || 48;
             <section class="content-section tldr-section">
               <h2>Quick Overview</h2>
               <div class="prose" set:html={recipe.tldr} />
+            </section>
+          )
+        }
+
+        {
+          contentBlocks.length > 0 && (
+            <section class="content-section content-json-section">
+              <ContentRenderer content={contentBlocks} />
             </section>
           )
         }

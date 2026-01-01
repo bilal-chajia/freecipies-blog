@@ -1,0 +1,79 @@
+---
+const { headers, rows } = Astro.props as {
+  headers?: string[];
+  rows?: string[][];
+};
+
+const safeHeaders = Array.isArray(headers) ? headers : [];
+const safeRows = Array.isArray(rows) ? rows : [];
+const columnCount = safeHeaders.length > 0
+  ? safeHeaders.length
+  : safeRows.reduce((max, row) => (Array.isArray(row) ? Math.max(max, row.length) : max), 0);
+const normalizedRows = safeRows.map((row) => {
+  const cells = Array.isArray(row) ? [...row] : [];
+  while (cells.length < columnCount) cells.push('');
+  return cells.slice(0, columnCount);
+});
+---
+
+{(safeHeaders.length > 0 || normalizedRows.length > 0) && (
+  <div class="content-table">
+    <table>
+      {safeHeaders.length > 0 && (
+        <thead>
+          <tr>
+            {safeHeaders.map((header) => (
+              <th>{header}</th>
+            ))}
+          </tr>
+        </thead>
+      )}
+      <tbody>
+        {normalizedRows.map((row) => (
+          <tr>
+            {row.map((cell) => (
+              <td>{cell}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
+<style>
+  .content-table {
+    width: 100%;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    display: table;
+    min-width: 100%;
+  }
+
+  th,
+  td {
+    border: 1px solid #e5e7eb;
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: #fcfcfd;
+  }
+
+  tbody tr:hover td {
+    background: #f4f5f7;
+  }
+</style>

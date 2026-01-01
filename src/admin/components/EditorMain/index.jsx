@@ -62,10 +62,11 @@ export default function EditorMain({
     useVisualEditor,
     setUseVisualEditor,
     isValidJSON,
+    relatedContext,
 }) {
     return (
         <motion.main
-            className="space-y-8 p-8 max-w-4xl mx-auto pb-20"
+            className="space-y-8 px-4 py-6 w-full max-w-none pb-20"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -183,6 +184,7 @@ export default function EditorMain({
                                     validateJSON('content', value);
                                 }}
                                 placeholder="Start writing your article content..."
+                                context={relatedContext}
                             />
                         </motion.div>
                     ) : (

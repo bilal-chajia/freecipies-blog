@@ -177,10 +177,10 @@ export function useContentEditor({ slug, contentType = 'article' }) {
                     selectedTags: article.tags?.map(t => t.id) || [],
                 });
 
-                setContentJson(JSON.stringify(article.content || {}, null, 2));
-                setRecipeJson(JSON.stringify(article.recipe || article.recipeJson || {}, null, 2));
-                setRoundupJson(JSON.stringify(article.roundup || article.roundupJson || { "listType": "ItemList", "items": [] }, null, 2));
-                setFaqsJson(JSON.stringify(article.faqs || [], null, 2));
+                setContentJson(JSON.stringify(article.contentJson || {}, null, 2));
+                setRecipeJson(JSON.stringify(article.recipeJson || {}, null, 2));
+                setRoundupJson(JSON.stringify(article.roundupJson || { "listType": "ItemList", "items": [] }, null, 2));
+                setFaqsJson(JSON.stringify(article.faqsJson || [], null, 2));
                 setKeywordsJson(JSON.stringify(article.keywords || [], null, 2));
                 setReferencesJson(JSON.stringify(article.references || [], null, 2));
                 setMediaJson(JSON.stringify(article.media || {}, null, 2));
