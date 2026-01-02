@@ -17,9 +17,9 @@ const searchRecipes = async (query) => {
     ].filter(r => r.headline.toLowerCase().includes(query.toLowerCase()));
 };
 
-export const RecipeCardBlock = createReactBlockSpec(
+export const RecipeEmbedBlock = createReactBlockSpec(
     {
-        type: 'recipeCard',
+        type: 'recipeEmbed',
         propSchema: {
             articleId: { default: null },
             slug: { default: '' },
@@ -49,7 +49,7 @@ export const RecipeCardBlock = createReactBlockSpec(
 
             const selectRecipe = (recipe) => {
                 props.editor.updateBlock(props.block, {
-                    type: 'recipeCard',
+                    type: 'recipeEmbed',
                     props: {
                         ...props.block.props,
                         articleId: recipe.id,

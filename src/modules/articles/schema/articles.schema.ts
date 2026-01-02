@@ -35,7 +35,6 @@ export const articles = sqliteTable('articles', {
   faqsJson: text('faqs_json'),
 
   // Cached Fields (Zero-Join)
-  relatedArticlesJson: text('related_articles_json'),
   cachedTagsJson: text('cached_tags_json'),
   cachedCategoryJson: text('cached_category_json'),
   cachedAuthorJson: text('cached_author_json'),

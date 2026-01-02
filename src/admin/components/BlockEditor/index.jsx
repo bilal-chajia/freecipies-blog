@@ -19,6 +19,7 @@ import {
 import { BlockNoteSchema, defaultBlockSpecs } from '@blocknote/core';
 import { SuggestionMenuController, getDefaultReactSlashMenuItems } from "@blocknote/react";
 import '@blocknote/mantine/style.css';
+import { cn } from '@/lib/utils';
 import {
     Plus,
     Image as ImageIcon,
@@ -50,11 +51,16 @@ import {
     ImageBlock,
     FAQSectionBlock,
     DividerBlock,
-    RecipeCardBlock,
+    RecipeEmbedBlock,
+    MainRecipeBlock,
+    RoundupListBlock,
     RelatedContentBlock,
     TableBlock,
     BeforeAfterBlock
 } from './blocks';
+
+import { RecipeDataContext } from './blocks/MainRecipeBlock';
+import { RoundupDataContext } from './blocks/RoundupListBlock';
 
 // Create custom schema with our blocks
 const schema = BlockNoteSchema.create({
@@ -65,62 +71,100 @@ const schema = BlockNoteSchema.create({
         customImage: ImageBlock(),
         faqSection: FAQSectionBlock(),
         divider: DividerBlock(),
-        recipeCard: RecipeCardBlock(),
+        recipeEmbed: RecipeEmbedBlock(),
+        mainRecipe: MainRecipeBlock(),
+        roundupList: RoundupListBlock(),
         relatedContent: RelatedContentBlock(),
         simpleTable: TableBlock(),
         beforeAfter: BeforeAfterBlock(),
     },
 });
-
 // Custom slash menu items
-const getCustomSlashMenuItems = (editor) => [
-    ...getDefaultReactSlashMenuItems(editor).filter((item) => item.title !== 'Table'),
-    // Custom items are added automatically by defaultBlockSpecs/schema usually, 
-    // but we defining explicit ones ensures they appear with correct metadata
-    {
-        title: 'Alert Box',
-        onItemClick: () => editor.insertBlocks([{ type: 'alert', props: { type: 'warning' } }], editor.getTextCursorPosition().block, 'after'),
-        aliases: ['alert', 'tip', 'warning'],
-        group: 'Food Blog',
-        subtext: 'Insert a tip/warning box',
-    },
-    {
-        title: 'Recipe Card',
-        onItemClick: () => editor.insertBlocks([{ type: 'recipeCard' }], editor.getTextCursorPosition().block, 'after'),
-        aliases: ['recipe'],
-        group: 'Food Blog',
-        subtext: 'Link to a recipe',
-    },
-    {
-        title: 'Related Content',
-        onItemClick: () => editor.insertBlocks([{ type: 'relatedContent' }], editor.getTextCursorPosition().block, 'after'),
-        aliases: ['related', 'recommend'],
-        group: 'Food Blog',
-        subtext: 'Curate related recipes or articles',
-    },
-    {
-        title: 'Before / After',
-        onItemClick: () => editor.insertBlocks([{ type: 'beforeAfter' }], editor.getTextCursorPosition().block, 'after'),
-        aliases: ['before', 'after', 'compare'],
-        group: 'Food Blog',
-        subtext: 'Compare two images',
-    },
-    {
-        title: 'Table',
-        onItemClick: () => editor.insertBlocks([{ type: 'simpleTable' }], editor.getTextCursorPosition().block, 'after'),
-        aliases: ['table', 'grid', 'matrix'],
-        group: 'Layout',
-        subtext: 'Add a table',
-    },
-    {
-        title: 'Divider',
-        onItemClick: () => editor.insertBlocks([{ type: 'divider' }], editor.getTextCursorPosition().block, 'after'),
-        aliases: ['divider', 'separator', 'line'],
-        group: 'Layout',
-        subtext: 'Add a horizontal divider',
-    },
-    // Add other custom blocks here if needed...
-];
+const getCustomSlashMenuItems = (editor, options = {}) => {
+    const {
+        contentType = 'article',
+        hasRecipeContext = false,
+        hasRoundupContext = false,
+    } = options;
+
+    const items = [
+        {
+            title: 'Alert Box',
+            onItemClick: () =>
+                editor.insertBlocks([{ type: 'alert', props: { type: 'warning' } }], editor.getTextCursorPosition().block, 'after'),
+            aliases: ['alert', 'tip', 'warning'],
+            group: 'Food Blog',
+            subtext: 'Insert a tip/warning box',
+        },
+        {
+            title: 'Embed Recipe',
+            onItemClick: () =>
+                editor.insertBlocks([{ type: 'recipeEmbed' }], editor.getTextCursorPosition().block, 'after'),
+            aliases: ['recipe', 'embed', 'link'],
+            group: 'Food Blog',
+            subtext: 'Link to another recipe',
+        },
+        {
+            title: 'Related Content',
+            onItemClick: () =>
+                editor.insertBlocks([{ type: 'relatedContent' }], editor.getTextCursorPosition().block, 'after'),
+            aliases: ['related', 'recommend'],
+            group: 'Food Blog',
+            subtext: 'Curate related recipes or articles',
+        },
+        {
+            title: 'Before / After',
+            onItemClick: () =>
+                editor.insertBlocks([{ type: 'beforeAfter' }], editor.getTextCursorPosition().block, 'after'),
+            aliases: ['before', 'after', 'compare'],
+            group: 'Food Blog',
+            subtext: 'Compare two images',
+        },
+        {
+            title: 'Table',
+            onItemClick: () =>
+                editor.insertBlocks([{ type: 'simpleTable' }], editor.getTextCursorPosition().block, 'after'),
+            aliases: ['table', 'grid', 'matrix'],
+            group: 'Layout',
+            subtext: 'Add a table',
+        },
+        {
+            title: 'Divider',
+            onItemClick: () =>
+                editor.insertBlocks([{ type: 'divider' }], editor.getTextCursorPosition().block, 'after'),
+            aliases: ['divider', 'separator', 'line'],
+            group: 'Layout',
+            subtext: 'Add a horizontal divider',
+        },
+    ];
+
+    if (contentType === 'recipe' && hasRecipeContext) {
+        items.unshift({
+            title: 'Recipe Details',
+            onItemClick: () =>
+                editor.insertBlocks([{ type: 'mainRecipe' }], editor.getTextCursorPosition().block, 'after'),
+            aliases: ['recipe', 'main', 'details'],
+            group: 'Food Blog',
+            subtext: 'The main recipe editor for this post',
+        });
+    }
+
+    if (contentType === 'roundup' && hasRoundupContext) {
+        items.unshift({
+            title: 'Roundup List',
+            onItemClick: () =>
+                editor.insertBlocks([{ type: 'roundupList' }], editor.getTextCursorPosition().block, 'after'),
+            aliases: ['roundup', 'list', 'curated'],
+            group: 'Food Blog',
+            subtext: 'Manage the curated items list for this roundup',
+        });
+    }
+
+    return [
+        ...getDefaultReactSlashMenuItems(editor).filter((item) => item.title !== 'Table'),
+        ...items,
+    ];
+};
 
 const MAX_STRUCTURE_LABEL = 48;
 
@@ -164,8 +208,8 @@ const getBlockLabel = (block) => {
             return 'Divider';
         case 'simpleTable':
             return 'Table';
-        case 'recipeCard':
-            return truncateLabel(block.props?.headline || 'Recipe card');
+        case 'recipeEmbed':
+            return truncateLabel(block.props?.headline || 'Embedded recipe');
         case 'relatedContent':
             return truncateLabel(block.props?.title || 'Related content');
         case 'beforeAfter':
@@ -197,7 +241,7 @@ const getBlockIcon = (type) => {
             return Minus;
         case 'simpleTable':
             return Table;
-        case 'recipeCard':
+        case 'recipeEmbed':
             return Utensils;
         case 'relatedContent':
             return LayoutGrid;
@@ -377,7 +421,7 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
 
                 {/* Food Blog specific */}
                 <button onClick={() => insertBlock('alert', { type: 'tip' })} className="p-1.5 hover:bg-gray-200 rounded text-amber-600" title="Tip/Alert"><AlertTriangle className="w-4 h-4" /></button>
-                <button onClick={() => insertBlock('recipeCard')} className="p-1.5 hover:bg-gray-200 rounded text-green-600" title="Recipe Card"><Utensils className="w-4 h-4" /></button>
+                <button onClick={() => insertBlock('recipeEmbed')} className="p-1.5 hover:bg-gray-200 rounded text-green-600" title="Embed Recipe"><Utensils className="w-4 h-4" /></button>
                 <button onClick={() => insertBlock('faqSection')} className="p-1.5 hover:bg-gray-200 rounded text-blue-600" title="FAQ"><HelpCircle className="w-4 h-4" /></button>
                 <button onClick={() => insertBlock('relatedContent')} className="p-1.5 hover:bg-gray-200 rounded text-purple-600" title="Related Content"><LayoutGrid className="w-4 h-4" /></button>
                 <button onClick={() => insertBlock('beforeAfter')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Before/After"><SplitSquareVertical className="w-4 h-4" /></button>
@@ -601,12 +645,30 @@ const serializeInlineContent = (content) => {
 
 // ... JSON conversion functions remain the same ...
 function contentJsonToBlocks(contentJson) {
-    if (!contentJson || !Array.isArray(contentJson)) {
+    // Handle string input (from useContentEditor which stores as JSON string)
+    let parsed = contentJson;
+    if (typeof contentJson === 'string') {
+        try {
+            parsed = JSON.parse(contentJson);
+        } catch (e) {
+            console.warn('contentJsonToBlocks: failed to parse JSON string', e);
+            return undefined;
+        }
+    }
+
+    // Handle both { blocks: [...] } and direct array formats
+    let blocks = parsed;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        blocks = parsed.blocks;
+    }
+
+    if (!blocks || !Array.isArray(blocks)) {
         return undefined;
     }
 
+
     try {
-        return contentJson.map((block, index) => {
+        const rawBlocks = blocks.map((block, index) => {
             const id = block.id || `block-${index}`;
 
             switch (block.type) {
@@ -704,7 +766,7 @@ function contentJsonToBlocks(contentJson) {
                     const coverUrl = resolveCoverUrl(block.cover || block.thumbnail);
                     return {
                         id,
-                        type: 'recipeCard',
+                        type: 'recipeEmbed',
                         props: {
                             articleId: block.article_id,
                             slug: block.slug,
@@ -758,6 +820,9 @@ function contentJsonToBlocks(contentJson) {
                     return { id, type: 'paragraph', content: block.text || `[${block.type}]` };
             }
         }).flat();
+
+        const cleanBlocks = rawBlocks.filter(b => b && typeof b === 'object' && typeof b.type === 'string');
+        return cleanBlocks.length > 0 ? cleanBlocks : undefined;
     } catch (error) {
         console.error('Error converting contentJson to blocks:', error);
         return undefined;
@@ -818,28 +883,28 @@ function blocksToContentJson(blocks) {
                 });
                 break;
 
-                case 'customImage':
-                    if (block.props?.url) {
-                        // Parse stored variants or create fallback
-                        let variants = { lg: { url: block.props.url } };
-                        try {
-                            const parsed = JSON.parse(block.props.variantsJson || '{}');
-                            if (Object.keys(parsed).length > 0) {
-                                variants = parsed;
-                            }
-                        } catch { }
+            case 'customImage':
+                if (block.props?.url) {
+                    // Parse stored variants or create fallback
+                    let variants = { lg: { url: block.props.url } };
+                    try {
+                        const parsed = JSON.parse(block.props.variantsJson || '{}');
+                        if (Object.keys(parsed).length > 0) {
+                            variants = parsed;
+                        }
+                    } catch { }
 
-                        // Output per DATABASE_SCHEMA.md content_json image block spec
-                        result.push({
-                            type: 'image',
-                            media_id: block.props.mediaId ? parseInt(block.props.mediaId, 10) : null,
-                            alt: block.props.alt || '',
-                            caption: block.props.caption || '',
-                            credit: block.props.credit || '',
-                            variants,
-                        });
-                    }
-                    break;
+                    // Output per DATABASE_SCHEMA.md content_json image block spec
+                    result.push({
+                        type: 'image',
+                        media_id: block.props.mediaId ? parseInt(block.props.mediaId, 10) : null,
+                        alt: block.props.alt || '',
+                        caption: block.props.caption || '',
+                        credit: block.props.credit || '',
+                        variants,
+                    });
+                }
+                break;
 
             case 'video':
                 if (block.props?.videoId) {
@@ -876,15 +941,20 @@ function blocksToContentJson(blocks) {
                 result.push({ type: 'divider' });
                 break;
 
-            case 'recipeCard':
+            case 'recipeEmbed':
                 if (block.props.articleId) {
                     const articleId = parseInt(block.props.articleId, 10);
                     if (!Number.isFinite(articleId)) break;
-                    const cover = block.props.thumbnail ? { url: block.props.thumbnail } : undefined;
+                    const cover = block.props.thumbnail
+                        ? { variants: { lg: { url: block.props.thumbnail } } }
+                        : undefined;
                     result.push({
                         type: 'recipe_card',
                         article_id: articleId,
                         headline: block.props.headline || '',
+                        ...(block.props.slug ? { slug: block.props.slug } : {}),
+                        ...(block.props.totalTime ? { total_time: block.props.totalTime } : {}),
+                        ...(block.props.difficulty ? { difficulty: block.props.difficulty } : {}),
                         ...(cover ? { cover } : {}),
                     });
                 }
@@ -1015,6 +1085,12 @@ function extractText(content) {
 export default function BlockEditor({
     value,
     onChange,
+    contentType = 'article',
+    recipe,
+    onRecipeChange,
+    roundup,
+    onRoundupChange,
+    onEditorReady,
     placeholder = 'Start writing your article...',
     className = '',
     context,
@@ -1022,22 +1098,74 @@ export default function BlockEditor({
     const wrapperRef = useRef(null);
     const onChangeRef = useRef(onChange);
     const lastSerializedRef = useRef('');
-    const initialContent = useMemo(() => {
-        if (!value) return undefined;
-        try {
-            const parsed = typeof value === 'string' ? JSON.parse(value) : value;
-            return contentJsonToBlocks(parsed);
-        } catch (error) {
-            console.error('Error parsing initial content:', error);
-            return undefined;
-        }
-    }, []);
+    const [structurePanelOpen, setStructurePanelOpen] = useState(false);
 
+    // Initial content setup
+    const initialContent = useMemo(() => {
+        return contentJsonToBlocks(value);
+    }, []); // Only run once on mount
+
+    // Create editor instance
     const editor = useCreateBlockNote({
         schema,
         initialContent,
+        domAttributes: {
+            editor: {
+                class: 'min-h-[500px] pb-[30vh]',
+            },
+        },
+        uploadFile: async (file) => {
+            // TODO: Implement file upload
+            return URL.createObjectURL(file);
+        },
     });
-    const [structurePanelOpen, setStructurePanelOpen] = useState(false);
+
+    // Expose editor instance
+    useEffect(() => {
+        if (editor && onEditorReady) {
+            onEditorReady(editor);
+        }
+    }, [editor, onEditorReady]);
+
+    // Update content when value changes (for initial load)
+    useEffect(() => {
+        if (!editor || !value) return;
+
+        // If editor is empty or we want to force update
+        // We need to check if the content is actually different to avoid loops
+        // For now, we'll trust that the parent component only passes loaded content
+
+        async function updateContent() {
+            const currentBlocks = editor.document;
+            // Only update if editor is effectively empty (just has one empty paragraph)
+            const isEmpty = currentBlocks.length === 0 ||
+                (currentBlocks.length === 1 &&
+                    currentBlocks[0].type === 'paragraph' &&
+                    (!currentBlocks[0].content || currentBlocks[0].content.length === 0));
+
+            // Check if value has blocks (handle string, array, or object with .blocks)
+            let parsedValue = value;
+            if (typeof value === 'string') {
+                try {
+                    parsedValue = JSON.parse(value);
+                } catch {
+                    parsedValue = null;
+                }
+            }
+            const hasBlocks = Array.isArray(parsedValue) ? parsedValue.length > 0 :
+                (parsedValue?.blocks && Array.isArray(parsedValue.blocks) && parsedValue.blocks.length > 0);
+
+            if (isEmpty && hasBlocks) {
+                const newBlocks = contentJsonToBlocks(value);
+                if (newBlocks && newBlocks.length > 0) {
+                    await editor.replaceBlocks(editor.document, newBlocks);
+                }
+            }
+        }
+
+        updateContent();
+    }, [editor, value]);
+
     const [structureTab, setStructureTab] = useState('list');
     const [structureItems, setStructureItems] = useState([]);
     const [activeBlockId, setActiveBlockId] = useState(null);
@@ -1201,64 +1329,74 @@ export default function BlockEditor({
 
     return (
         <RelatedContentProvider value={relatedContext}>
-            <div
-                ref={wrapperRef}
-                className={`block-editor-wrapper ${className} relative group flex flex-col ${structurePanelOpen ? 'structure-panel-open' : ''}`}
-            >
-                <EditorToolbar
-                    editor={editor}
-                    structureOpen={structurePanelOpen}
-                    onToggleStructurePanel={() => setStructurePanelOpen((prev) => !prev)}
-                />
-                <div className="flex-1 min-h-0 relative">
-                    <StructurePanel
-                        open={structurePanelOpen}
-                        tab={structureTab}
-                        items={structureItems}
-                        activeBlockId={activeBlockId}
-                        onTabChange={setStructureTab}
-                        onSelectBlock={handleSelectStructureBlock}
-                        onClose={() => setStructurePanelOpen(false)}
-                    />
-                    <BlockNoteViewWithPortal
-                        editor={editor}
-                        theme="light"
-                        slashMenu={false}
-                        formattingToolbar={false}
-                        linkToolbar={false}
+            <RecipeDataContext.Provider value={{ recipe, setRecipe: onRecipeChange }}>
+                <RoundupDataContext.Provider value={{ roundup, setRoundup: onRoundupChange }}>
+                    <div
+                        ref={wrapperRef}
+                        className={cn(
+                            "block-editor-wrapper relative",
+                            structurePanelOpen && "structure-panel-open",
+                            className
+                        )}
                     >
-                        <SideMenuController />
-                        <FormattingToolbarController formattingToolbar={LinkFormattingToolbar} />
-                        <LinkToolbarController />
-                        <SuggestionMenuController
-                            triggerCharacter="/"
-                            getItems={async (query) => getCustomSlashMenuItems(editor).filter(item => item.title.toLowerCase().includes(query.toLowerCase()))}
+                        <EditorToolbar
+                            editor={editor}
+                            structureOpen={structurePanelOpen}
+                            onToggleStructurePanel={() => setStructurePanelOpen((prev) => !prev)}
                         />
-                    </BlockNoteViewWithPortal>
-                    {insertHandle && (
-                        <div
-                            className="block-insert-handle"
-                            style={{
-                                top: `${insertHandle.top}px`,
-                                left: `${insertHandle.left}px`,
-                                width: `${insertHandle.width}px`,
-                            }}
-                        >
-                            <div className="block-insert-line" />
-                            <button
-                                type="button"
-                                className="block-insert-button"
-                                onMouseDown={(event) => event.preventDefault()}
-                                onClick={handleInsertBetween}
-                                title="Insert block"
+                        <div className="flex-1 min-h-0 relative">
+                            <StructurePanel
+                                open={structurePanelOpen}
+                                tab={structureTab}
+                                items={structureItems}
+                                activeBlockId={activeBlockId}
+                                onTabChange={setStructureTab}
+                                onSelectBlock={handleSelectStructureBlock}
+                                onClose={() => setStructurePanelOpen(false)}
+                            />
+                            <BlockNoteViewWithPortal
+                                editor={editor}
+                                theme="light"
+                                slashMenu={false}
+                                formattingToolbar={false}
+                                linkToolbar={false}
                             >
-                                <Plus className="w-4 h-4" />
-                            </button>
+                                <SideMenuController />
+                                <FormattingToolbarController formattingToolbar={LinkFormattingToolbar} />
+                                <LinkToolbarController />
+                                <SuggestionMenuController
+                                    triggerCharacter="/"
+                                    getItems={async (query) => getCustomSlashMenuItems(editor, {
+                                        contentType,
+                                        hasRecipeContext: typeof onRecipeChange === 'function',
+                                        hasRoundupContext: typeof onRoundupChange === 'function',
+                                    }).filter(item => item.title.toLowerCase().includes(query.toLowerCase()))}
+                                />
+                            </BlockNoteViewWithPortal>
+                            {insertHandle && (
+                                <div
+                                    className="block-insert-handle"
+                                    style={{
+                                        top: `${insertHandle.top}px`,
+                                        left: `${insertHandle.left}px`,
+                                        width: `${insertHandle.width}px`,
+                                    }}
+                                >
+                                    <div className="block-insert-line" />
+                                    <button
+                                        type="button"
+                                        className="block-insert-button"
+                                        onMouseDown={(event) => event.preventDefault()}
+                                        onClick={handleInsertBetween}
+                                        title="Insert block"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                <style>{`
+                        <style>{`
         .block-editor-wrapper {
           border: 1px solid hsl(var(--border));
           border-radius: 0.5rem;
@@ -1570,7 +1708,9 @@ export default function BlockEditor({
           width: 12px;
         }
       `}</style>
-            </div>
+                    </div>
+                </RoundupDataContext.Provider>
+            </RecipeDataContext.Provider>
         </RelatedContentProvider>
     );
 }

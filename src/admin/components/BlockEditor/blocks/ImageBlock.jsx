@@ -7,23 +7,45 @@
  * - URL input
  * - Caption and credit metadata
  * - Full variants data for responsive images
+ * 
+ * REFACTORED for WordPress Block Editor design:
+ * - Clean placeholder state using BlockPlaceholder
+ * - Toolbar controls for edit/replace/remove
+ * - Proper selected/unselected states
+ * 
+ * Based on WordPress Block Editor design:
+ * https://developer.wordpress.org/block-editor/
  */
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
+    Image,
     Upload,
     Link,
     FolderOpen,
-    X
+    X,
+    Edit3,
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
-import { parseVariantsJson, getVariantMap, getLargestVariant } from '@shared/types/images';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
+import { parseVariantsJson, getVariantMap } from '@shared/types/images';
 import ImageUploader from '../../ImageUploader';
 import MediaDialog from '../../MediaDialog';
+
+// Alignment options
+const alignments = [
+    { value: 'left', icon: AlignLeft, label: 'Align left' },
+    { value: 'center', icon: AlignCenter, label: 'Align center' },
+    { value: 'right', icon: AlignRight, label: 'Align right' },
+];
 
 export const ImageBlock = createReactBlockSpec(
     {
@@ -36,91 +58,101 @@ export const ImageBlock = createReactBlockSpec(
             width: { default: 512 },
             height: { default: 0 },
             mediaId: { default: '' },
-            // Store variants as JSON string for full responsive image support
             variantsJson: { default: '{}' },
+            alignment: { default: 'center' },
         },
         content: 'none',
     },
     {
         render: (props) => {
-            const [inputUrl, setInputUrl] = useState(props.block.props.url);
+            const { block, editor } = props;
+            const [inputUrl, setInputUrl] = useState(block.props.url);
             const [activeTab, setActiveTab] = useState('upload');
             const [uploaderOpen, setUploaderOpen] = useState(false);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
-
-            // Parse and get variants using shared helpers
+            const [isSelected, setIsSelected] = useState(false);
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data) => {
-                // ImageUploader returns data.variants directly (already extracted)
                 const variants = data.variants || {};
                 const url = variants.md?.url || variants.sm?.url || variants.lg?.url || data.url;
                 const bestVariant = variants.md || variants.lg || variants.original;
 
-                props.editor.updateBlock(props.block, {
+                editor.updateBlock(block, {
                     type: 'customImage',
                     props: {
-                        ...props.block.props,
+                        ...block.props,
                         url,
                         mediaId: data.id?.toString() || '',
                         alt: data.altText || '',
                         credit: data.credit || '',
                         width: bestVariant?.width || data.width || 512,
                         height: bestVariant?.height || data.height || 0,
-                        // Store variants directly (not wrapped in { variants: {...} })
                         variantsJson: JSON.stringify(variants),
                     },
                 });
                 setUploaderOpen(false);
-            }, [props.block, props.editor]);
+            }, [block, editor]);
 
             // Handle media selection from MediaDialog
             const handleMediaSelect = useCallback((item) => {
-                // MediaLibrary returns item with variantsJson as string
                 const parsed = parseVariantsJson(item);
                 const variants = getVariantMap(parsed);
                 const url = variants.md?.url || variants.sm?.url || variants.lg?.url || item.url;
                 const bestVariant = variants.md || variants.lg || variants.original;
 
-                props.editor.updateBlock(props.block, {
+                editor.updateBlock(block, {
                     type: 'customImage',
                     props: {
-                        ...props.block.props,
+                        ...block.props,
                         url,
                         mediaId: item.id?.toString() || '',
                         alt: item.altText || item.alt_text || item.name || '',
                         credit: item.credit || item.credit_text || '',
                         width: bestVariant?.width || 512,
                         height: bestVariant?.height || 0,
-                        // Store variants directly (not wrapped in { variants: {...} })
                         variantsJson: JSON.stringify(variants),
                     },
                 });
-            }, [props.block, props.editor]);
+            }, [block, editor]);
 
-            // Handle URL submit (external images - no variants)
+            // Handle URL submit
             const handleUrlSubmit = useCallback(() => {
                 if (inputUrl) {
-                    props.editor.updateBlock(props.block, {
+                    editor.updateBlock(block, {
                         type: 'customImage',
                         props: {
-                            ...props.block.props,
+                            ...block.props,
                             url: inputUrl,
-                            credit: props.block.props.credit || '',
                             variantsJson: JSON.stringify({ lg: { url: inputUrl } }),
                         },
                     });
                 }
-            }, [inputUrl, props.block, props.editor]);
+            }, [inputUrl, block, editor]);
 
-            if (!props.block.props.url) {
+            const handleRemove = () => {
+                editor.updateBlock(block, {
+                    type: 'customImage',
+                    props: { ...block.props, url: '', variantsJson: '{}' },
+                });
+            };
+
+            const handleAlignmentChange = (alignment) => {
+                editor.updateBlock(block, {
+                    type: 'customImage',
+                    props: { ...block.props, alignment },
+                });
+            };
+
+            // Placeholder state - no image
+            if (!block.props.url) {
                 return (
                     <>
-                        <motion.div
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-4 my-2 bg-gray-50"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                        >
+                        <div className={cn(
+                            'wp-block-placeholder',
+                            'border border-dashed border-[var(--wp-placeholder-border)]',
+                            'rounded-lg p-4 my-2 bg-[var(--wp-placeholder-bg)]'
+                        )}>
                             <Tabs value={activeTab} onValueChange={setActiveTab}>
                                 <TabsList className="grid w-full grid-cols-3 h-9 mb-3">
                                     <TabsTrigger value="upload" className="text-xs gap-1.5">
@@ -137,57 +169,48 @@ export const ImageBlock = createReactBlockSpec(
                                     </TabsTrigger>
                                 </TabsList>
 
-                                {/* Upload Tab - Opens ImageUploader Dialog */}
                                 <TabsContent value="upload" className="mt-0">
-                                    <motion.div
-                                        className="flex flex-col items-center gap-3 py-4"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                    >
+                                    <div className="flex flex-col items-center gap-3 py-4">
+                                        <div className="p-3 rounded-full bg-muted">
+                                            <Image className="w-6 h-6 text-muted-foreground" />
+                                        </div>
                                         <Button
-                                            variant="outline"
+                                            variant="secondary"
                                             size="sm"
                                             onClick={() => setUploaderOpen(true)}
                                             className="gap-2"
                                         >
                                             <Upload className="h-4 w-4" />
-                                            Upload New Image
+                                            Upload Image
                                         </Button>
                                         <p className="text-xs text-muted-foreground">
                                             Crop, resize, and add metadata
                                         </p>
-                                    </motion.div>
+                                    </div>
                                 </TabsContent>
 
-                                {/* Media Library Tab - Opens MediaDialog */}
                                 <TabsContent value="library" className="mt-0">
-                                    <motion.div
-                                        className="flex flex-col items-center gap-3 py-4"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                    >
+                                    <div className="flex flex-col items-center gap-3 py-4">
+                                        <div className="p-3 rounded-full bg-muted">
+                                            <FolderOpen className="w-6 h-6 text-muted-foreground" />
+                                        </div>
                                         <Button
-                                            variant="outline"
+                                            variant="secondary"
                                             size="sm"
                                             onClick={() => setMediaDialogOpen(true)}
                                             className="gap-2"
                                         >
                                             <FolderOpen className="h-4 w-4" />
-                                            Browse Media Library
+                                            Media Library
                                         </Button>
                                         <p className="text-xs text-muted-foreground">
                                             Select from existing images
                                         </p>
-                                    </motion.div>
+                                    </div>
                                 </TabsContent>
 
-                                {/* URL Tab */}
                                 <TabsContent value="url" className="mt-0">
-                                    <motion.div
-                                        className="flex flex-col items-center gap-3 py-4"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                    >
+                                    <div className="flex flex-col items-center gap-3 py-4">
                                         <div className="flex w-full max-w-sm gap-2">
                                             <Input
                                                 type="text"
@@ -198,30 +221,21 @@ export const ImageBlock = createReactBlockSpec(
                                                 onClick={(e) => e.stopPropagation()}
                                                 onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
                                             />
-                                            <Button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleUrlSubmit();
-                                                }}
-                                                size="sm"
-                                                className="h-9"
-                                            >
+                                            <Button onClick={handleUrlSubmit} size="sm" className="h-9">
                                                 Add
                                             </Button>
                                         </div>
-                                    </motion.div>
+                                    </div>
                                 </TabsContent>
                             </Tabs>
-                        </motion.div>
+                        </div>
 
-                        {/* ImageUploader Dialog */}
                         <ImageUploader
                             open={uploaderOpen}
                             onOpenChange={setUploaderOpen}
                             onUploadComplete={handleUploadComplete}
                         />
 
-                        {/* MediaDialog for Library Selection */}
                         <MediaDialog
                             open={mediaDialogOpen}
                             onOpenChange={setMediaDialogOpen}
@@ -231,56 +245,185 @@ export const ImageBlock = createReactBlockSpec(
                 );
             }
 
-            // Image display with controls
+            // Image display with toolbar
+            const alignment = block.props.alignment || 'center';
+            const alignmentClass = {
+                left: 'mr-auto',
+                center: 'mx-auto',
+                right: 'ml-auto',
+            }[alignment];
+
             return (
-                <motion.div
-                    className="my-4 group relative"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                <div
+                    className={cn(
+                        'wp-block',
+                        isSelected && 'is-selected',
+                        'relative my-4',
+                        'transition-shadow duration-[var(--wp-transition-duration)]',
+                        !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
+                        isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]',
+                        'rounded-lg'
+                    )}
+                    data-block-type="image"
+                    tabIndex={0}
+                    onFocus={() => setIsSelected(true)}
+                    onBlur={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget)) {
+                            setIsSelected(false);
+                        }
+                    }}
                 >
+                    {/* Toolbar */}
+                    <AnimatePresence>
+                        {isSelected && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 4 }}
+                                className={cn(
+                                    'absolute -top-[44px] left-1/2 -translate-x-1/2',
+                                    'flex items-center h-10 px-1',
+                                    'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
+                                    'rounded-[var(--wp-toolbar-border-radius)]',
+                                    'shadow-[var(--wp-toolbar-shadow)]',
+                                    'z-[var(--wp-z-block-toolbar)]'
+                                )}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Block type icon */}
+                                <div className="flex items-center px-1.5 text-muted-foreground">
+                                    <Image className="w-4 h-4" />
+                                </div>
+
+                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
+
+                                {/* Alignment buttons */}
+                                <div className="flex items-center gap-0.5">
+                                    {alignments.map((align) => (
+                                        <Tooltip key={align.value}>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAlignmentChange(align.value)}
+                                                    className={cn(
+                                                        'flex items-center justify-center',
+                                                        'w-8 h-8 rounded-sm',
+                                                        'hover:bg-[var(--wp-toolbar-button-hover-bg)]',
+                                                        alignment === align.value && 'bg-[var(--wp-toolbar-button-active-bg)]'
+                                                    )}
+                                                >
+                                                    <align.icon className="w-4 h-4" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="bottom" className="text-xs">
+                                                {align.label}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    ))}
+                                </div>
+
+                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
+
+                                {/* Replace button */}
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMediaDialogOpen(true)}
+                                            className={cn(
+                                                'flex items-center justify-center',
+                                                'w-8 h-8 rounded-sm',
+                                                'hover:bg-[var(--wp-toolbar-button-hover-bg)]'
+                                            )}
+                                        >
+                                            <Edit3 className="w-4 h-4" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">
+                                        Replace
+                                    </TooltipContent>
+                                </Tooltip>
+
+                                {/* Remove button */}
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            onClick={handleRemove}
+                                            className={cn(
+                                                'flex items-center justify-center',
+                                                'w-8 h-8 rounded-sm',
+                                                'text-destructive hover:bg-destructive/10'
+                                            )}
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">
+                                        Remove
+                                    </TooltipContent>
+                                </Tooltip>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Image */}
                     <div className="relative">
                         <img
-                            src={props.block.props.url}
-                            alt={props.block.props.alt}
-                            className="w-full h-auto rounded-lg border border-gray-200"
+                            src={block.props.url}
+                            alt={block.props.alt}
+                            className={cn(
+                                'max-w-full h-auto rounded-lg',
+                                alignmentClass
+                            )}
+                            style={{ display: 'block' }}
                         />
-                        {/* Overlay controls */}
-                        <motion.div
-                            className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 p-1.5 rounded-lg backdrop-blur-sm"
-                            initial={{ opacity: 0 }}
-                            whileHover={{ opacity: 1 }}
-                        >
-                            <button
-                                onClick={() => props.editor.updateBlock(props.block, {
-                                    props: { ...props.block.props, url: '', variantsJson: '{}' }
-                                })}
-                                className="text-xs text-white hover:text-red-300 px-2 flex items-center gap-1"
-                            >
-                                <X className="h-3 w-3" />
-                                Change
-                            </button>
-                        </motion.div>
                     </div>
+
+                    {/* Caption */}
                     <input
                         type="text"
-                        value={props.block.props.caption}
-                        onChange={(e) => props.editor.updateBlock(props.block, {
-                            props: { ...props.block.props, caption: e.target.value }
+                        value={block.props.caption}
+                        onChange={(e) => editor.updateBlock(block, {
+                            type: 'customImage',
+                            props: { ...block.props, caption: e.target.value }
                         })}
                         placeholder="Write a caption..."
-                        className="w-full mt-2 text-center text-sm text-gray-500 bg-transparent border-none focus:ring-0 placeholder:text-gray-300"
+                        className={cn(
+                            'w-full mt-2 text-center text-sm',
+                            'bg-transparent border-none',
+                            'text-muted-foreground placeholder:text-muted-foreground/50',
+                            'focus:outline-none focus:ring-0'
+                        )}
                     />
+
+                    {/* Credit */}
                     <input
                         type="text"
-                        value={props.block.props.credit}
-                        onChange={(e) => props.editor.updateBlock(props.block, {
-                            props: { ...props.block.props, credit: e.target.value }
+                        value={block.props.credit}
+                        onChange={(e) => editor.updateBlock(block, {
+                            type: 'customImage',
+                            props: { ...block.props, credit: e.target.value }
                         })}
                         placeholder="Photo credit (optional)"
-                        className="w-full mt-1 text-center text-xs text-gray-400 bg-transparent border-none focus:ring-0 placeholder:text-gray-300"
+                        className={cn(
+                            'w-full mt-1 text-center text-xs',
+                            'bg-transparent border-none',
+                            'text-muted-foreground/70 placeholder:text-muted-foreground/40',
+                            'focus:outline-none focus:ring-0'
+                        )}
                     />
-                </motion.div>
+
+                    {/* Media dialogs */}
+                    <MediaDialog
+                        open={mediaDialogOpen}
+                        onOpenChange={setMediaDialogOpen}
+                        onSelect={handleMediaSelect}
+                    />
+                </div>
             );
         },
     }
 );
+
+export default ImageBlock;

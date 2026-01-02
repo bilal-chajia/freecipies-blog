@@ -192,37 +192,6 @@ export interface CachedCardJson {
 }
 
 // ============================================
-// Related Articles
-// ============================================
-
-export interface CachedRelatedCard {
-    id: number;
-    slug: string;
-    headline: string;
-    thumbnail?: {
-        alt?: string;
-        variants?: ImageVariants;
-    };
-
-    // Type-specific fields
-    total_time?: number;
-    difficulty?: string;
-    reading_time?: number;
-    item_count?: number;
-}
-
-export interface RelatedArticlesJson {
-    /** Related recipe cards */
-    recipes?: CachedRelatedCard[];
-
-    /** Related article cards */
-    articles?: CachedRelatedCard[];
-
-    /** Related roundup cards */
-    roundups?: CachedRelatedCard[];
-}
-
-// ============================================
 // FAQs JSON (aggregated from content blocks)
 // ============================================
 

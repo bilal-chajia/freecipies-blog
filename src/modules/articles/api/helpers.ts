@@ -17,7 +17,7 @@ export function transformArticleRequestBody(body: any): any {
     const jsonFields = [
         'imagesJson', 'contentJson', 'recipeJson', 'roundupJson',
         'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
-        'relatedArticlesJson', 'cachedTagsJson', 'cachedCategoryJson',
+        'cachedTagsJson', 'cachedCategoryJson',
         'cachedAuthorJson', 'cachedEquipmentJson', 'cachedRecipeJson',
         'cachedCardJson'
     ];

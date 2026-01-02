@@ -618,11 +618,10 @@ export const RelatedContentBlock = createReactBlockSpec(
                                                 key={type}
                                                 type="button"
                                                 onClick={() => setActiveType(type)}
-                                                className={`px-3 py-1 text-xs rounded-full border ${
-                                                    activeType === type
+                                                className={`px-3 py-1 text-xs rounded-full border ${activeType === type
                                                         ? 'bg-gray-900 text-white border-gray-900'
                                                         : 'bg-white text-gray-600 border-gray-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 {TYPE_LABELS[type]}
                                             </button>

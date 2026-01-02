@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* WordPress Block Editor Design System */
+@import "./components/BlockEditor/styles/block-editor-tokens.css";
+
 /* Define theme variables for Tailwind v4 */
 @theme {
   --color-background: hsl(var(--background));

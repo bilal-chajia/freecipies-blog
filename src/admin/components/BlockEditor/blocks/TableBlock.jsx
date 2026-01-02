@@ -2,11 +2,22 @@
  * Custom Block: Table
  *
  * Simple editable table for content_json.
+ * 
+ * REFACTORED for WordPress Block Editor design:
+ * - Proper selected/unselected visual states
+ * - Block toolbar with row/column add buttons
+ * - Clean visual styling
+ * 
+ * Based on WordPress Block Editor design:
+ * https://developer.wordpress.org/block-editor/
  */
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { useMemo, useRef, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Table2, Plus, Trash2, Columns, Rows } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 
 const parseList = (value, fallback = []) => {
     if (!value) return fallback;
@@ -40,15 +51,18 @@ export const TableBlock = createReactBlockSpec(
     },
     {
         render: (props) => {
+            const { block, editor } = props;
             const wrapperRef = useRef(null);
             const tableRef = useRef(null);
+            const [isSelected, setIsSelected] = useState(false);
+
             const headers = useMemo(
-                () => parseList(props.block.props.headersJson),
-                [props.block.props.headersJson]
+                () => parseList(block.props.headersJson),
+                [block.props.headersJson]
             );
             const rows = useMemo(
-                () => parseList(props.block.props.rowsJson),
-                [props.block.props.rowsJson]
+                () => parseList(block.props.rowsJson),
+                [block.props.rowsJson]
             );
             const [rowInsert, setRowInsert] = useState(null);
             const [colInsert, setColInsert] = useState(null);
@@ -57,9 +71,9 @@ export const TableBlock = createReactBlockSpec(
             const safeRows = normalizeRows(rows, safeHeaders.length);
 
             const updateBlockProps = (updates) => {
-                props.editor.updateBlock(props.block, {
+                editor.updateBlock(block, {
                     type: 'simpleTable',
-                    props: { ...props.block.props, ...updates },
+                    props: { ...block.props, ...updates },
                 });
             };
 
@@ -124,6 +138,7 @@ export const TableBlock = createReactBlockSpec(
             };
 
             const updateHoverIndicators = (event) => {
+                if (!isSelected) return;
                 const wrapper = wrapperRef.current;
                 const table = tableRef.current;
                 if (!wrapper || !table) return;
@@ -226,12 +241,107 @@ export const TableBlock = createReactBlockSpec(
             };
 
             return (
-                <div className="border border-gray-200 rounded-lg p-4 my-2 bg-white shadow-sm space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-medium text-gray-700">Table</h4>
-                            <span className="text-[11px] text-gray-400">Hover between cells to add rows/columns</span>
-                        </div>
+                <div
+                    className={cn(
+                        'wp-block',
+                        isSelected && 'is-selected',
+                        'relative my-2',
+                        'border rounded-lg p-4 bg-card shadow-sm',
+                        'transition-shadow duration-[var(--wp-transition-duration)]',
+                        !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
+                        isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]'
+                    )}
+                    data-block-type="table"
+                    tabIndex={0}
+                    onFocus={() => setIsSelected(true)}
+                    onBlur={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget)) {
+                            setIsSelected(false);
+                            clearIndicators();
+                        }
+                    }}
+                >
+                    {/* Toolbar */}
+                    <AnimatePresence>
+                        {isSelected && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 4 }}
+                                className={cn(
+                                    'absolute -top-[44px] left-0',
+                                    'flex items-center h-10 px-1',
+                                    'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
+                                    'rounded-[var(--wp-toolbar-border-radius)]',
+                                    'shadow-[var(--wp-toolbar-shadow)]',
+                                    'z-[var(--wp-z-block-toolbar)]'
+                                )}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex items-center px-1.5 text-muted-foreground">
+                                    <Table2 className="w-4 h-4" />
+                                </div>
+
+                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
+
+                                <span className="px-2 text-xs text-muted-foreground">
+                                    {safeHeaders.length}×{safeRows.length}
+                                </span>
+
+                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            onClick={addColumn}
+                                            className={cn(
+                                                'flex items-center justify-center gap-1',
+                                                'h-8 px-2 rounded-sm text-xs',
+                                                'hover:bg-[var(--wp-toolbar-button-hover-bg)]'
+                                            )}
+                                        >
+                                            <Columns className="w-3.5 h-3.5" />
+                                            <Plus className="w-3 h-3" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">
+                                        Add column
+                                    </TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            onClick={addRow}
+                                            className={cn(
+                                                'flex items-center justify-center gap-1',
+                                                'h-8 px-2 rounded-sm text-xs',
+                                                'hover:bg-[var(--wp-toolbar-button-hover-bg)]'
+                                            )}
+                                        >
+                                            <Rows className="w-3.5 h-3.5" />
+                                            <Plus className="w-3 h-3" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">
+                                        Add row
+                                    </TooltipContent>
+                                </Tooltip>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Header */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <Table2 className="w-4 h-4 text-muted-foreground" />
+                        <h4 className="text-sm font-medium">Table</h4>
+                        {isSelected && (
+                            <span className="text-[11px] text-muted-foreground">
+                                Hover between cells to add rows/columns
+                            </span>
+                        )}
                     </div>
 
                     <div
@@ -240,6 +350,7 @@ export const TableBlock = createReactBlockSpec(
                         onMouseMove={updateHoverIndicators}
                         onMouseLeave={clearIndicators}
                     >
+                        {/* Column insert indicator */}
                         {colInsert && (
                             <>
                                 <div
@@ -254,7 +365,7 @@ export const TableBlock = createReactBlockSpec(
                                 <button
                                     type="button"
                                     onClick={() => insertColumnAt(Math.min(colInsert.index, safeHeaders.length))}
-                                    className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-white text-primary shadow-sm hover:bg-primary hover:text-white"
+                                    className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-background text-primary shadow-sm hover:bg-primary hover:text-primary-foreground"
                                     style={{ top: Math.max(0, colInsert.top - 14), left: Math.max(0, colInsert.left - 9) }}
                                     title="Insert column"
                                 >
@@ -262,6 +373,8 @@ export const TableBlock = createReactBlockSpec(
                                 </button>
                             </>
                         )}
+
+                        {/* Row insert indicator */}
                         {rowInsert && (
                             <>
                                 <div
@@ -276,7 +389,7 @@ export const TableBlock = createReactBlockSpec(
                                 <button
                                     type="button"
                                     onClick={() => insertRowAt(Math.min(rowInsert.index, safeRows.length))}
-                                    className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-white text-primary shadow-sm hover:bg-primary hover:text-white"
+                                    className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-background text-primary shadow-sm hover:bg-primary hover:text-primary-foreground"
                                     style={{ left: Math.max(0, rowInsert.left - 14), top: Math.max(0, rowInsert.top - 9) }}
                                     title="Insert row"
                                 >
@@ -284,11 +397,12 @@ export const TableBlock = createReactBlockSpec(
                                 </button>
                             </>
                         )}
+
                         <table ref={tableRef} className="w-full border-collapse text-sm">
                             <thead>
                                 <tr>
                                     {safeHeaders.map((header, index) => (
-                                        <th key={`h-${index}`} className="table-col border border-gray-200 p-2 bg-gray-50">
+                                        <th key={`h-${index}`} className="table-col border border-border p-2 bg-muted/50">
                                             <div className="flex items-center gap-2">
                                                 <input
                                                     type="text"
@@ -298,29 +412,37 @@ export const TableBlock = createReactBlockSpec(
                                                         next[index] = e.target.value;
                                                         updateHeaders(next);
                                                     }}
-                                                    className="w-full bg-white px-2 py-1 text-xs border rounded-md"
+                                                    className={cn(
+                                                        'w-full px-2 py-1 text-xs font-medium',
+                                                        'bg-background border border-input rounded-md',
+                                                        'focus:outline-none focus:ring-2 focus:ring-ring'
+                                                    )}
                                                 />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeColumn(index)}
-                                                    className="text-gray-400 hover:text-red-500"
-                                                    title="Remove column"
-                                                >
-                                                    <Trash2 className="w-3 h-3" />
-                                                </button>
+                                                {isSelected && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeColumn(index)}
+                                                        className="text-muted-foreground hover:text-destructive"
+                                                        title="Remove column"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </th>
                                     ))}
-                                    <th className="table-action-col border border-gray-200 p-2 bg-gray-50 text-center text-xs text-gray-400">
-                                        Row
-                                    </th>
+                                    {isSelected && (
+                                        <th className="table-action-col border border-border p-2 bg-muted/50 text-center text-xs text-muted-foreground">
+                                            Row
+                                        </th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody>
                                 {safeRows.map((row, rowIndex) => (
                                     <tr key={`r-${rowIndex}`}>
                                         {row.map((cell, cellIndex) => (
-                                            <td key={`c-${rowIndex}-${cellIndex}`} className="table-col border border-gray-200 p-2">
+                                            <td key={`c-${rowIndex}-${cellIndex}`} className="table-col border border-border p-2">
                                                 <input
                                                     type="text"
                                                     value={cell || ''}
@@ -329,27 +451,33 @@ export const TableBlock = createReactBlockSpec(
                                                         nextRows[rowIndex][cellIndex] = e.target.value;
                                                         updateRows(nextRows);
                                                     }}
-                                                    className="w-full bg-white px-2 py-1 text-xs border rounded-md"
+                                                    className={cn(
+                                                        'w-full px-2 py-1 text-xs',
+                                                        'bg-background border border-input rounded-md',
+                                                        'focus:outline-none focus:ring-2 focus:ring-ring'
+                                                    )}
                                                 />
                                             </td>
                                         ))}
-                                        <td className="border border-gray-200 p-2 text-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => removeRow(rowIndex)}
-                                                className="text-gray-400 hover:text-red-500"
-                                                title="Remove row"
-                                            >
-                                                <Trash2 className="w-3 h-3" />
-                                            </button>
-                                        </td>
+                                        {isSelected && (
+                                            <td className="border border-border p-2 text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeRow(rowIndex)}
+                                                    className="text-muted-foreground hover:text-destructive"
+                                                    title="Remove row"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                                 {safeRows.length === 0 && (
                                     <tr>
                                         <td
-                                            className="border border-gray-200 p-3 text-xs text-gray-400"
-                                            colSpan={safeHeaders.length + 1}
+                                            className="border border-border p-3 text-xs text-muted-foreground text-center"
+                                            colSpan={safeHeaders.length + (isSelected ? 1 : 0)}
                                         >
                                             No rows yet. Add one to start.
                                         </td>
@@ -363,3 +491,5 @@ export const TableBlock = createReactBlockSpec(
         },
     }
 );
+
+export default TableBlock;

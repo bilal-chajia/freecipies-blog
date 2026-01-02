@@ -252,7 +252,7 @@ export async function updateArticleById(
   const jsonFields = [
     'imagesJson', 'contentJson', 'recipeJson', 'roundupJson',
     'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
-    'relatedArticlesJson', 'cachedTagsJson', 'cachedCategoryJson',
+    'cachedTagsJson', 'cachedCategoryJson',
     'cachedAuthorJson', 'cachedEquipmentJson', 'cachedRatingJson',
     'cachedTocJson', 'cachedRecipeJson', 'cachedCardJson'
   ];

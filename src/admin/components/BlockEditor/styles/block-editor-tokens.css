@@ -1,0 +1,501 @@
+/**
+ * Block Editor Design Tokens
+ * Based on WordPress Block Editor (Gutenberg) design system
+ * https://developer.wordpress.org/block-editor/
+ */
+
+:root {
+    /* ========================================
+   * Block States (WordPress Gutenberg colors)
+   * ======================================== */
+
+    /* Selected block - WordPress blue */
+    --wp-block-border-selected: #007cba;
+    --wp-block-border-selected-width: 2px;
+
+    /* Hover state - subtle gray */
+    --wp-block-border-hover: #e0e0e0;
+    --wp-block-border-hover-width: 1px;
+
+    /* Unselected - no border (only outline on focus) */
+    --wp-block-border-unselected: transparent;
+
+    /* Focus ring for accessibility */
+    --wp-block-focus-ring: rgba(0, 124, 186, 0.25);
+
+    /* ========================================
+   * Placeholder / Setup States
+   * ======================================== */
+    --wp-placeholder-bg: #f0f0f0;
+    --wp-placeholder-border: #ddd;
+    --wp-placeholder-text: #757575;
+    --wp-placeholder-icon: #949494;
+
+    /* ========================================
+   * Block Toolbar
+   * ======================================== */
+    --wp-toolbar-bg: #fff;
+    --wp-toolbar-border: #e0e0e0;
+    --wp-toolbar-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    --wp-toolbar-border-radius: 2px;
+    --wp-toolbar-height: 48px;
+    --wp-toolbar-button-size: 36px;
+    --wp-toolbar-separator-color: #e0e0e0;
+
+    /* Toolbar button states */
+    --wp-toolbar-button-hover-bg: #f0f0f0;
+    --wp-toolbar-button-active-bg: #e0e0e0;
+    --wp-toolbar-button-active-color: #1e1e1e;
+
+    /* ========================================
+   * Block Inserter Panel
+   * ======================================== */
+    --wp-inserter-width: 280px;
+    --wp-inserter-bg: #fff;
+    --wp-inserter-border: #e0e0e0;
+    --wp-inserter-item-hover-bg: #f0f0f0;
+    --wp-inserter-item-hover: #f0f0f0;
+    --wp-inserter-category-color: #757575;
+
+    /* ========================================
+   * Content Canvas
+   * ======================================== */
+    --wp-canvas-max-width: 840px;
+    --wp-canvas-padding-x: 48px;
+    --wp-canvas-padding-y: 32px;
+    --wp-canvas-bg: #fff;
+
+    /* ========================================
+   * Settings Sidebar
+   * ======================================== */
+    --wp-sidebar-width: 320px;
+    --wp-sidebar-bg: #fff;
+    --wp-sidebar-border: #e0e0e0;
+    --wp-sidebar-section-spacing: 16px;
+
+    /* ========================================
+   * Block Mover Controls
+   * ======================================== */
+    --wp-mover-button-size: 24px;
+    --wp-mover-color: #757575;
+    --wp-mover-hover-color: #1e1e1e;
+
+    /* ========================================
+   * Typography
+   * ======================================== */
+    --wp-editor-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    --wp-editor-font-size: 16px;
+    --wp-editor-line-height: 1.6;
+
+    /* Title block */
+    --wp-title-font-size: 2.5rem;
+    --wp-title-font-weight: 700;
+    --wp-title-line-height: 1.2;
+
+    /* Headline block */
+    --wp-headline-font-size: 1.25rem;
+    --wp-headline-font-weight: 400;
+    --wp-headline-color: #757575;
+
+    /* ========================================
+   * Animations
+   * ======================================== */
+    --wp-transition-duration: 0.12s;
+    --wp-transition-timing: ease-out;
+
+    /* ========================================
+   * Z-Index Layers
+   * ======================================== */
+    --wp-z-block-toolbar: 100;
+    --wp-z-inserter: 90;
+    --wp-z-sidebar: 80;
+    --wp-z-popover: 110;
+}
+
+/* ========================================
+ * Dark Mode Support
+ * ======================================== */
+.dark,
+[data-theme="dark"] {
+    --wp-block-border-selected: #4dabf5;
+    --wp-block-border-hover: #3c3c3c;
+    --wp-block-focus-ring: rgba(77, 171, 245, 0.25);
+
+    --wp-placeholder-bg: #2c2c2c;
+    --wp-placeholder-border: #3c3c3c;
+    --wp-placeholder-text: #a0a0a0;
+    --wp-placeholder-icon: #808080;
+
+    --wp-toolbar-bg: #1e1e1e;
+    --wp-toolbar-border: #3c3c3c;
+    --wp-toolbar-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    --wp-toolbar-separator-color: #3c3c3c;
+    --wp-toolbar-button-hover-bg: #2c2c2c;
+    --wp-toolbar-button-active-bg: #3c3c3c;
+    --wp-toolbar-button-active-color: #fff;
+
+    --wp-inserter-bg: #1e1e1e;
+    --wp-inserter-border: #3c3c3c;
+    --wp-inserter-item-hover-bg: #2c2c2c;
+    --wp-inserter-category-color: #a0a0a0;
+
+    --wp-canvas-bg: #1e1e1e;
+
+    --wp-sidebar-bg: #1e1e1e;
+    --wp-sidebar-border: #3c3c3c;
+
+    --wp-mover-color: #a0a0a0;
+    --wp-mover-hover-color: #fff;
+
+    --wp-headline-color: #a0a0a0;
+}
+
+/* ========================================
+ * Base Block Styles (Applied to .wp-block)
+ * ======================================== */
+.wp-block {
+    position: relative;
+    outline: none;
+    transition: box-shadow var(--wp-transition-duration) var(--wp-transition-timing);
+}
+
+.wp-block:hover:not(.is-selected) {
+    box-shadow: 0 0 0 var(--wp-block-border-hover-width) var(--wp-block-border-hover);
+}
+
+.wp-block.is-selected {
+    box-shadow: 0 0 0 var(--wp-block-border-selected-width) var(--wp-block-border-selected);
+}
+
+.wp-block:focus-visible {
+    box-shadow:
+        0 0 0 var(--wp-block-border-selected-width) var(--wp-block-border-selected),
+        0 0 0 4px var(--wp-block-focus-ring);
+}
+
+/* ========================================
+ * Placeholder Block Styles
+ * ======================================== */
+.wp-block-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    background: var(--wp-placeholder-bg);
+    border: 1px dashed var(--wp-placeholder-border);
+    border-radius: 4px;
+    color: var(--wp-placeholder-text);
+    text-align: center;
+}
+
+.wp-block-placeholder__icon {
+    color: var(--wp-placeholder-icon);
+}
+
+.wp-block-placeholder__label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.wp-block-placeholder__instructions {
+    font-size: 13px;
+    color: var(--wp-placeholder-text);
+}
+
+/* ========================================
+ * Block Toolbar Base Styles
+ * ======================================== */
+.wp-block-toolbar {
+    position: absolute;
+    top: -52px;
+    left: 0;
+    display: flex;
+    align-items: center;
+    height: var(--wp-toolbar-height);
+    padding: 0 4px;
+    background: var(--wp-toolbar-bg);
+    border: 1px solid var(--wp-toolbar-border);
+    border-radius: var(--wp-toolbar-border-radius);
+    box-shadow: var(--wp-toolbar-shadow);
+    z-index: var(--wp-z-block-toolbar);
+}
+
+.wp-block-toolbar__group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.wp-block-toolbar__separator {
+    width: 1px;
+    height: 24px;
+    margin: 0 4px;
+    background: var(--wp-toolbar-separator-color);
+}
+
+.wp-block-toolbar__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--wp-toolbar-button-size);
+    height: var(--wp-toolbar-button-size);
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 2px;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color var(--wp-transition-duration) var(--wp-transition-timing);
+}
+
+.wp-block-toolbar__button:hover {
+    background: var(--wp-toolbar-button-hover-bg);
+}
+
+.wp-block-toolbar__button:active,
+.wp-block-toolbar__button.is-active {
+    background: var(--wp-toolbar-button-active-bg);
+    color: var(--wp-toolbar-button-active-color);
+}
+
+/* ========================================
+ * Content Canvas Layout
+ * ======================================== */
+.wp-block-editor-canvas {
+    max-width: var(--wp-canvas-max-width);
+    margin: 0 auto;
+    padding: var(--wp-canvas-padding-y) var(--wp-canvas-padding-x);
+    background: var(--wp-canvas-bg);
+}
+
+/* ========================================
+ * Block Inserter Styles
+ * ======================================== */
+.wp-block-inserter {
+    width: var(--wp-inserter-width);
+    height: 100%;
+    background: var(--wp-inserter-bg);
+    border-right: 1px solid var(--wp-inserter-border);
+    overflow-y: auto;
+}
+
+.wp-block-inserter__search {
+    padding: 16px;
+    border-bottom: 1px solid var(--wp-inserter-border);
+}
+
+.wp-block-inserter__category {
+    padding: 12px 16px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--wp-inserter-category-color);
+}
+
+.wp-block-inserter__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background-color var(--wp-transition-duration) var(--wp-transition-timing);
+}
+
+.wp-block-inserter__item:hover {
+    background: var(--wp-inserter-item-hover-bg);
+}
+
+.wp-block-inserter__item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--wp-placeholder-bg);
+    border-radius: 4px;
+}
+
+.wp-block-inserter__item-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ========================================
+ * Title Block Specific
+ * ======================================== */
+.wp-block-post-title {
+    font-family: var(--wp-editor-font-family);
+    font-size: var(--wp-title-font-size);
+    font-weight: var(--wp-title-font-weight);
+    line-height: var(--wp-title-line-height);
+}
+
+.wp-block-post-title:empty::before {
+    content: attr(data-placeholder);
+    color: var(--wp-placeholder-text);
+}
+
+/* ========================================
+ * Headline Block Specific
+ * ======================================== */
+.wp-block-headline {
+    font-family: var(--wp-editor-font-family);
+    font-size: var(--wp-headline-font-size);
+    font-weight: var(--wp-headline-font-weight);
+    line-height: 1.4;
+    color: var(--wp-headline-color);
+}
+
+.wp-block-headline:empty::before {
+    content: attr(data-placeholder);
+    color: var(--wp-placeholder-text);
+    opacity: 0.6;
+}
+
+/* ========================================
+ * Mobile Responsiveness (< 768px)
+ * ======================================== */
+@media (max-width: 767px) {
+    :root {
+        /* Reduced canvas padding */
+        --wp-canvas-padding-x: 16px;
+        --wp-canvas-padding-y: 16px;
+
+        /* Smaller typography */
+        --wp-title-font-size: 1.75rem;
+        --wp-headline-font-size: 1rem;
+
+        /* Compact toolbar */
+        --wp-toolbar-height: 44px;
+        --wp-toolbar-button-size: 32px;
+        --wp-mover-button-size: 20px;
+
+        /* Full-width panels */
+        --wp-inserter-width: 100vw;
+        --wp-sidebar-width: 100vw;
+    }
+
+    /* Mobile sidebar overlays */
+    .wp-block-inserter,
+    .wp-settings-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50;
+        border: none;
+    }
+
+    .wp-settings-sidebar {
+        left: auto;
+    }
+
+    /* Toolbar adjustments */
+    .wp-block-toolbar {
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: calc(100vw - 32px);
+    }
+
+    /* Canvas full width */
+    .wp-canvas-inner {
+        padding: var(--wp-canvas-padding-y) var(--wp-canvas-padding-x);
+    }
+
+    /* Placeholder smaller padding */
+    .wp-block-placeholder {
+        padding: 16px;
+    }
+}
+
+/* ========================================
+ * Tablet Responsiveness (768px - 1024px)
+ * ======================================== */
+@media (min-width: 768px) and (max-width: 1024px) {
+    :root {
+        /* Narrower panels */
+        --wp-inserter-width: 240px;
+        --wp-sidebar-width: 280px;
+
+        /* Reduced canvas padding */
+        --wp-canvas-padding-x: 24px;
+        --wp-canvas-padding-y: 24px;
+
+        /* Slightly smaller title */
+        --wp-title-font-size: 2rem;
+    }
+}
+
+/* ========================================
+ * Large screens (> 1440px)
+ * ======================================== */
+@media (min-width: 1440px) {
+    :root {
+        /* Wider canvas */
+        --wp-canvas-max-width: 960px;
+        --wp-canvas-padding-x: 64px;
+
+        /* Wider panels */
+        --wp-inserter-width: 320px;
+        --wp-sidebar-width: 360px;
+    }
+}
+
+/* ========================================
+ * Touch Device Optimizations
+ * ======================================== */
+@media (hover: none) and (pointer: coarse) {
+
+    /* Larger touch targets */
+    .wp-block-toolbar__button {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* More spacing for touch */
+    .wp-block-inserter__item {
+        padding: 12px 16px;
+    }
+
+    /* Disable hover states on touch */
+    .wp-block:hover:not(.is-selected) {
+        box-shadow: none;
+    }
+}
+
+/* ========================================
+ * Reduced Motion Preference
+ * ======================================== */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --wp-transition-duration: 0s;
+    }
+
+    .wp-block,
+    .wp-block-toolbar,
+    .wp-block-placeholder {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* ========================================
+ * Print Styles
+ * ======================================== */
+@media print {
+
+    .wp-block-toolbar,
+    .wp-block-inserter,
+    .wp-settings-sidebar {
+        display: none !important;
+    }
+
+    .wp-block {
+        box-shadow: none !important;
+        border: none !important;
+    }
+}

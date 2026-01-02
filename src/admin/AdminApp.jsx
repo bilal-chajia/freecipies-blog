@@ -13,10 +13,13 @@ import { lazy, Suspense, useEffect } from 'react';
 const Homepage = lazy(() => import('./pages/homepage/Homepage'));
 const ArticlesList = lazy(() => import('./pages/articles/ArticlesList'));
 const ArticleEditor = lazy(() => import('./pages/articles/ArticleEditor'));
+const GutenbergArticleEditor = lazy(() => import('./pages/articles/GutenbergArticleEditor'));
 const RecipesList = lazy(() => import('./pages/recipes/RecipesList'));
 const RecipeEditor = lazy(() => import('./pages/articles/RecipeEditor'));
+const GutenbergRecipeEditor = lazy(() => import('./pages/articles/GutenbergRecipeEditor'));
 const RoundupsList = lazy(() => import('./pages/roundups/RoundupsList'));
 const RoundupEditor = lazy(() => import('./pages/articles/RoundupEditor'));
+const GutenbergRoundupEditor = lazy(() => import('./pages/articles/GutenbergRoundupEditor'));
 const CategoriesList = lazy(() => import('./pages/categories/CategoriesList'));
 const CategoryEditor = lazy(() => import('./pages/categories/CategoryEditor'));
 const AuthorsList = lazy(() => import('./pages/authors/AuthorsList'));
@@ -126,20 +129,32 @@ function AdminApp() {
               {/* Homepage */}
               <Route path="homepage" element={<Homepage />} />
 
-              {/* Articles */}
+              {/* Articles - Gutenberg Editor (default) */}
               <Route path="articles" element={<ArticlesList />} />
-              <Route path="articles/new" element={<ArticleEditor />} />
-              <Route path="articles/:slug" element={<ArticleEditor />} />
+              <Route path="articles/new" element={<GutenbergArticleEditor />} />
+              <Route path="articles/:slug" element={<GutenbergArticleEditor />} />
 
-              {/* Recipes (dedicated list and editor) */}
+              {/* Articles Legacy - Old Editor */}
+              <Route path="articles-legacy/new" element={<ArticleEditor />} />
+              <Route path="articles-legacy/:slug" element={<ArticleEditor />} />
+
+              {/* Recipes - Gutenberg Editor (default) */}
               <Route path="recipes" element={<RecipesList />} />
-              <Route path="recipes/new" element={<RecipeEditor />} />
-              <Route path="recipes/:slug" element={<RecipeEditor />} />
+              <Route path="recipes/new" element={<GutenbergRecipeEditor />} />
+              <Route path="recipes/:slug" element={<GutenbergRecipeEditor />} />
 
-              {/* Roundups (dedicated list and editor) */}
+              {/* Recipes Legacy - Old Editor */}
+              <Route path="recipes-legacy/new" element={<RecipeEditor />} />
+              <Route path="recipes-legacy/:slug" element={<RecipeEditor />} />
+
+              {/* Roundups - Gutenberg Editor (default) */}
               <Route path="roundups" element={<RoundupsList />} />
-              <Route path="roundups/new" element={<RoundupEditor />} />
-              <Route path="roundups/:slug" element={<RoundupEditor />} />
+              <Route path="roundups/new" element={<GutenbergRoundupEditor />} />
+              <Route path="roundups/:slug" element={<GutenbergRoundupEditor />} />
+
+              {/* Roundups Legacy - Old Editor */}
+              <Route path="roundups-legacy/new" element={<RoundupEditor />} />
+              <Route path="roundups-legacy/:slug" element={<RoundupEditor />} />
 
               {/* Categories */}
               <Route path="categories" element={<CategoriesList />} />

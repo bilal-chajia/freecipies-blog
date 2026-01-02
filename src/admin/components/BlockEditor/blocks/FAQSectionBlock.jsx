@@ -1,13 +1,34 @@
 /**
  * Custom Block: FAQ Section
  * 
- * Expandable FAQ items.
+ * Expandable FAQ items with question/answer pairs.
+ * 
+ * REFACTORED for WordPress Block Editor design:
+ * - Collapsed preview showing FAQ count when unselected
+ * - Expanded editing mode when selected
+ * - Proper block toolbar
+ * - Clean visual states
+ * 
+ * Based on WordPress Block Editor design:
+ * https://developer.wordpress.org/block-editor/
  */
 
 import { createReactBlockSpec } from '@blocknote/react';
-import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+    HelpCircle,
+    Plus,
+    Trash2,
+    ChevronDown,
+    ChevronRight,
+    GripVertical
+} from 'lucide-react';
 import { useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { Button } from '@/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 
+// HTML escape for safe rendering
 const escapeHtml = (value) => (
     String(value || '')
         .replace(/&/g, '&amp;')
@@ -65,28 +86,30 @@ export const FAQSectionBlock = createReactBlockSpec(
         type: 'faqSection',
         propSchema: {
             title: { default: 'Frequently Asked Questions' },
-            items: { default: '[]' }, // Storing complex data as string due to prop limitations
+            items: { default: '[]' },
         },
         content: 'none',
     },
     {
         render: (props) => {
+            const { block, editor } = props;
             const items = (() => {
                 try {
-                    return JSON.parse(props.block.props.items || '[]');
+                    return JSON.parse(block.props.items || '[]');
                 } catch {
                     return [];
                 }
             })();
 
+            const [isSelected, setIsSelected] = useState(false);
             const [expanded, setExpanded] = useState({});
             const [editing, setEditing] = useState({});
             const answerRefs = useRef({});
 
             const updateItems = (newItems) => {
-                props.editor.updateBlock(props.block, {
+                editor.updateBlock(block, {
                     type: 'faqSection',
-                    props: { ...props.block.props, items: JSON.stringify(newItems) },
+                    props: { ...block.props, items: JSON.stringify(newItems) },
                 });
             };
 
@@ -132,92 +155,255 @@ export const FAQSectionBlock = createReactBlockSpec(
             };
 
             return (
-                <div className="my-6 border rounded-lg overflow-hidden bg-white shadow-sm w-full">
-                    <div className="bg-gray-50 p-4 border-b">
+                <div
+                    className={cn(
+                        'wp-block',
+                        isSelected && 'is-selected',
+                        'relative my-6',
+                        'border rounded-lg overflow-hidden',
+                        'bg-card shadow-sm',
+                        'transition-shadow duration-[var(--wp-transition-duration)]',
+                        !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
+                        isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]'
+                    )}
+                    data-block-type="faq"
+                    tabIndex={0}
+                    onFocus={() => setIsSelected(true)}
+                    onBlur={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget)) {
+                            setIsSelected(false);
+                        }
+                    }}
+                >
+                    {/* Toolbar */}
+                    <AnimatePresence>
+                        {isSelected && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 4 }}
+                                className={cn(
+                                    'absolute -top-[44px] left-0',
+                                    'flex items-center h-10 px-1',
+                                    'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
+                                    'rounded-[var(--wp-toolbar-border-radius)]',
+                                    'shadow-[var(--wp-toolbar-shadow)]',
+                                    'z-[var(--wp-z-block-toolbar)]'
+                                )}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex items-center px-1.5 text-muted-foreground">
+                                    <HelpCircle className="w-4 h-4" />
+                                </div>
+
+                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
+
+                                <span className="px-2 text-xs text-muted-foreground">
+                                    {items.length} {items.length === 1 ? 'question' : 'questions'}
+                                </span>
+
+                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            onClick={addItem}
+                                            className={cn(
+                                                'flex items-center justify-center gap-1',
+                                                'h-8 px-2 rounded-sm',
+                                                'text-xs font-medium',
+                                                'hover:bg-[var(--wp-toolbar-button-hover-bg)]'
+                                            )}
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            Add
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">
+                                        Add question
+                                    </TooltipContent>
+                                </Tooltip>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Header */}
+                    <div className="bg-muted/50 p-4 border-b">
                         <input
                             type="text"
-                            value={props.block.props.title}
-                            onChange={(e) => props.editor.updateBlock(props.block, { props: { ...props.block.props, title: e.target.value } })}
-                            className="text-lg font-semibold bg-transparent border-none p-0 focus:ring-0 w-full"
+                            value={block.props.title}
+                            onChange={(e) => editor.updateBlock(block, {
+                                type: 'faqSection',
+                                props: { ...block.props, title: e.target.value }
+                            })}
+                            className={cn(
+                                'text-lg font-semibold w-full',
+                                'bg-transparent border-none p-0',
+                                'focus:outline-none focus:ring-0',
+                                'placeholder:text-muted-foreground/50'
+                            )}
                             placeholder="FAQ Section Title"
                         />
                     </div>
+
+                    {/* FAQ Items */}
                     <div className="divide-y">
-                        {items.map((item, idx) => (
-                            <div key={idx} className="p-4 group">
-                                <div className="flex items-start gap-2">
-                                    <button onClick={() => toggleExpand(idx)} className="mt-1 text-gray-400 hover:text-gray-600">
-                                        {expanded[idx] ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                    </button>
-                                    <div className="flex-1 space-y-2">
-                                        <input
-                                            type="text"
-                                            value={item.q}
-                                            onChange={(e) => updateItem(idx, 'q', e.target.value)}
-                                            placeholder="Question"
-                                            className="w-full font-medium text-sm bg-transparent border-none focus:ring-0 p-0 placeholder:text-gray-300"
-                                        />
-                                        {expanded[idx] && editing[idx] && (
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-end">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => stopEditing(idx)}
-                                                        className="text-xs text-gray-500 hover:text-gray-700"
-                                                    >
-                                                        Done
-                                                    </button>
-                                                </div>
-                                                <textarea
-                                                    ref={(node) => {
-                                                        if (node) {
-                                                            answerRefs.current[idx] = node;
-                                                        } else {
-                                                            delete answerRefs.current[idx];
-                                                        }
-                                                    }}
-                                                    data-faq-answer="true"
-                                                    value={item.a}
-                                                    onChange={(e) => updateItem(idx, 'a', e.target.value)}
-                                                    placeholder="Answer"
-                                                    className="w-full text-sm text-gray-600 bg-transparent border-none focus:ring-0 p-0 resize-y min-h-[80px]"
-                                                />
+                        {items.length === 0 ? (
+                            <div className="p-8 text-center text-muted-foreground">
+                                <HelpCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">No questions yet</p>
+                                {isSelected && (
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={addItem}
+                                        className="mt-3 gap-1"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Add first question
+                                    </Button>
+                                )}
+                            </div>
+                        ) : (
+                            items.map((item, idx) => (
+                                <div key={idx} className="p-4 group">
+                                    <div className="flex items-start gap-2">
+                                        {/* Drag handle - only when selected */}
+                                        {isSelected && (
+                                            <div className="mt-1 text-muted-foreground/50 cursor-grab">
+                                                <GripVertical className="w-4 h-4" />
                                             </div>
                                         )}
-                                        {expanded[idx] && !editing[idx] && (
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => startEditing(idx)}
-                                                onKeyDown={(event) => {
-                                                    if (event.key === 'Enter' || event.key === ' ') {
-                                                        event.preventDefault();
-                                                        startEditing(idx);
-                                                    }
-                                                }}
-                                                className="text-xs text-gray-500 [&_a]:text-blue-600 [&_a]:underline [&_a]:underline-offset-2"
-                                                dangerouslySetInnerHTML={renderInlineMarkdown(item.a || 'Click to add an answer')}
+
+                                        {/* Expand toggle */}
+                                        <button
+                                            onClick={() => toggleExpand(idx)}
+                                            className="mt-1 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {expanded[idx]
+                                                ? <ChevronDown className="w-4 h-4" />
+                                                : <ChevronRight className="w-4 h-4" />
+                                            }
+                                        </button>
+
+                                        {/* Question/Answer */}
+                                        <div className="flex-1 space-y-2 min-w-0">
+                                            <input
+                                                type="text"
+                                                value={item.q}
+                                                onChange={(e) => updateItem(idx, 'q', e.target.value)}
+                                                placeholder="Question"
+                                                className={cn(
+                                                    'w-full font-medium text-sm',
+                                                    'bg-transparent border-none p-0',
+                                                    'focus:outline-none focus:ring-0',
+                                                    'placeholder:text-muted-foreground/50'
+                                                )}
                                             />
+
+                                            <AnimatePresence>
+                                                {expanded[idx] && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: 'auto', opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        transition={{ duration: 0.15 }}
+                                                    >
+                                                        {editing[idx] ? (
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center justify-end">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => stopEditing(idx)}
+                                                                        className="text-xs text-primary hover:underline"
+                                                                    >
+                                                                        Done
+                                                                    </button>
+                                                                </div>
+                                                                <textarea
+                                                                    ref={(node) => {
+                                                                        if (node) {
+                                                                            answerRefs.current[idx] = node;
+                                                                        } else {
+                                                                            delete answerRefs.current[idx];
+                                                                        }
+                                                                    }}
+                                                                    value={item.a}
+                                                                    onChange={(e) => updateItem(idx, 'a', e.target.value)}
+                                                                    placeholder="Answer (supports [text](url) for links)"
+                                                                    className={cn(
+                                                                        'w-full text-sm text-muted-foreground',
+                                                                        'bg-muted/50 border border-input rounded-md',
+                                                                        'p-2 resize-y min-h-[80px]',
+                                                                        'focus:outline-none focus:ring-2 focus:ring-ring'
+                                                                    )}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div
+                                                                role="button"
+                                                                tabIndex={0}
+                                                                onClick={() => startEditing(idx)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.preventDefault();
+                                                                        startEditing(idx);
+                                                                    }
+                                                                }}
+                                                                className={cn(
+                                                                    'text-sm text-muted-foreground',
+                                                                    'cursor-pointer hover:bg-muted/50 rounded p-1 -m-1',
+                                                                    '[&_a]:text-primary [&_a]:underline'
+                                                                )}
+                                                                dangerouslySetInnerHTML={
+                                                                    renderInlineMarkdown(item.a || 'Click to add an answer...')
+                                                                }
+                                                            />
+                                                        )}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+
+                                        {/* Delete button */}
+                                        {isSelected && (
+                                            <button
+                                                onClick={() => removeItem(idx)}
+                                                className={cn(
+                                                    'text-muted-foreground/50',
+                                                    'hover:text-destructive',
+                                                    'opacity-0 group-hover:opacity-100',
+                                                    'transition-opacity'
+                                                )}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         )}
                                     </div>
-                                    <button
-                                        onClick={() => removeItem(idx)}
-                                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
-                    <button
-                        onClick={addItem}
-                        className="w-full p-3 text-sm text-center text-primary hover:bg-primary/5 transition-colors flex items-center justify-center gap-2 border-t"
-                    >
-                        <Plus className="w-4 h-4" /> Add Question
-                    </button>
+
+                    {/* Add button footer - only when selected and has items */}
+                    {isSelected && items.length > 0 && (
+                        <button
+                            onClick={addItem}
+                            className={cn(
+                                'w-full p-3 text-sm text-center',
+                                'text-primary hover:bg-primary/5',
+                                'transition-colors flex items-center justify-center gap-2',
+                                'border-t'
+                            )}
+                        >
+                            <Plus className="w-4 h-4" /> Add Question
+                        </button>
+                    )}
                 </div>
             );
         },
     }
 );
+
+export default FAQSectionBlock;

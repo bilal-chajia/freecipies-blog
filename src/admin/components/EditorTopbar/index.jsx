@@ -8,37 +8,16 @@
  * Save button is placed in the main header (between Preview and Cancel)
  */
 
-import { Calendar, Star, Globe, FolderOpen, User, Check } from 'lucide-react';
+import { Calendar, Star, Globe, FolderOpen, User, Check, Code, LayoutTemplate } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/ui/button.jsx';
-import { Badge } from '@/ui/badge.jsx';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/ui/select.jsx';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/ui/popover.jsx';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/ui/tooltip.jsx';
-import { Input } from '@/ui/input.jsx';
-import { Label } from '@/ui/label.jsx';
-import { Separator } from '@/ui/separator.jsx';
-
-// Animation variants
-const itemVariants = {
-    initial: { opacity: 0, y: -10 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: 10 },
-};
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
+import { Separator } from '@/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
+import { Badge } from '@/ui/badge';
+import { Label } from '@/ui/label';
+import { Input } from '@/ui/input';
 
 const containerVariants = {
     initial: { opacity: 0 },
@@ -50,12 +29,9 @@ const containerVariants = {
     },
 };
 
-const pulseVariants = {
-    initial: { scale: 1 },
-    pulse: {
-        scale: [1, 1.1, 1],
-        transition: { duration: 0.3 }
-    },
+const itemVariants = {
+    initial: { opacity: 0, y: -10 },
+    animate: { opacity: 1, y: 0 },
 };
 
 export default function EditorTopbar({
@@ -63,6 +39,8 @@ export default function EditorTopbar({
     onInputChange,
     categories,
     authors,
+    viewMode = 'visual',
+    onViewModeChange,
 }) {
     return (
         <motion.div
@@ -246,10 +224,48 @@ export default function EditorTopbar({
                             </Popover>
                         </motion.div>
                     </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Schedule publish date</p>
-                    </TooltipContent>
                 </Tooltip>
+            </motion.div>
+
+            {/* 6. View Mode Toggle */}
+            <motion.div variants={itemVariants}>
+                <Separator orientation="vertical" className="h-6" />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+                <div className="flex bg-muted/50 p-0.5 rounded-lg border">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                type="button"
+                                onClick={() => onViewModeChange?.('visual')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'visual'
+                                    ? 'bg-background shadow-sm text-foreground'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                            >
+                                <LayoutTemplate className="h-3.5 w-3.5" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Visual Editor</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                type="button"
+                                onClick={() => onViewModeChange?.('json')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'json'
+                                    ? 'bg-background shadow-sm text-foreground'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                            >
+                                <Code className="h-3.5 w-3.5" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>JSON Data</TooltipContent>
+                    </Tooltip>
+                </div>
             </motion.div>
         </motion.div>
     );

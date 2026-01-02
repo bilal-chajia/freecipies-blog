@@ -1142,8 +1142,8 @@ CREATE TABLE IF NOT EXISTS articles (
     --
         -- TYPESCRIPT: Import ArticleImagesJson, ImageSlot from @shared/types/images
     --
-    -- NOTE: cover.variants is mirrored into related_articles_json
-    --       for zero-join card rendering.
+    -- NOTE: cover.variants is used by related_content block in content_json
+    --       and cached_card_json for zero-join card rendering.
 
     -- --------------------------------------------------------------------
     -- 4. RICH CONTENT (BLOCK-BASED BODY)
@@ -1293,7 +1293,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- │ }                                                                  │
     -- │   USE CASES: Inline "related recipes" section, mid-article         │
     -- │              recommendations, "See Also" callouts.                 │
-    -- │   NOTE: Same format as related_articles_json for end-of-page.      │
+    -- │   NOTE: This is the primary way to add related content in articles.│
     -- │                                                                    │
     -- └────────────────────────────────────────────────────────────────────┘
     --
@@ -1534,48 +1534,6 @@ CREATE TABLE IF NOT EXISTS articles (
     -- 8. SNAPSHOTS & CACHES (ZERO-JOIN RENDERING)
     -- --------------------------------------------------------------------
 
-    related_articles_json TEXT DEFAULT '{}' CHECK (json_valid(related_articles_json)),
-    -- Related content organized by type for "You Might Also Like" sections.
-    -- {
-    --   "recipes": [
-    --     {
-    --       "id": 42,
-    --       "slug": "lemon-blueberry-biscuits",
-    --       "headline": "Lemon Blueberry Biscuits",
-    --       "thumbnail": {
-    --         "alt": "Lemon Blueberry Biscuits",
-    --         "variants": {
-    --           "xs": { "url": "...", "width": 360, "height": 0, "sizeBytes": 0 },
-    --           "sm": { "url": "...", "width": 720, "height": 0, "sizeBytes": 0 },
-    --           "md": { "url": "...", "width": 1200, "height": 0, "sizeBytes": 0 },
-    --           "lg": { "url": "...", "width": 2048, "height": 0, "sizeBytes": 0 }
-    --         }
-    --       },
-    --       "total_time": 35,
-    --       "difficulty": "Easy"
-    --     }
-    --   ],
-    --   "articles": [
-    --     {
-    --       "id": 87,
-    --       "slug": "how-to-bake-better",
-    --       "headline": "How to Bake Better Bread",
-    --       "thumbnail": { "alt": "...", "variants": {...} },
-    --       "reading_time": 8
-    --     }
-    --   ],
-    --   "roundups": [
-    --     {
-    --       "id": 123,
-    --       "slug": "best-breakfast-ideas",
-    --       "headline": "15 Best Breakfast Ideas",
-    --       "thumbnail": { "alt": "...", "variants": {...} },
-    --       "item_count": 15
-    --     }
-    --   ]
-    -- }
-    -- POPULATION: Can be manually curated or auto-generated.
-    -- UPDATE STRATEGY: Rebuild on article save or when related articles update.
 
     cached_tags_json TEXT DEFAULT '[]' CHECK (json_valid(cached_tags_json)),
     -- Flattened label set for fast tag filters & card badges.
@@ -1744,7 +1702,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- }
     --
     -- UPDATE STRATEGY: Rebuild on every article save.
-    -- USAGE: When populating related_articles_json, copy from target's cached_card_json.
+    -- USAGE: Used by related_content blocks in content_json for inline recommendations.
 
     total_time_minutes INTEGER,
     -- Scalar helper for D1 indexing & fast filters (mirrors totalTimeMinutes).

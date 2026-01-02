@@ -488,7 +488,6 @@ contact_info    → Contact details
 
 | Column                  | Type    | Description                               |
 | ----------------------- | ------- | ----------------------------------------- |
-| `related_articles_json` | TEXT    | Related content by type                   |
 | `cached_tags_json`      | TEXT    | Flattened tag labels `["Vegan", "Quick"]` |
 | `cached_category_json`  | TEXT    | Category snapshot                         |
 | `cached_author_json`    | TEXT    | Author snapshot with avatar               |

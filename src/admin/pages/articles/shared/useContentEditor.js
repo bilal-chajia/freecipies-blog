@@ -55,8 +55,8 @@ export function useContentEditor({ slug, contentType = 'article' }) {
         selectedTags: [],
     });
 
-    // JSON fields
-    const [contentJson, setContentJson] = useState('{}');
+    // JSON fields (stored as strings for Monaco + validation compatibility)
+    const [contentJson, setContentJson] = useState('[]');
     const [recipeJson, setRecipeJson] = useState('{}');
     const [roundupJson, setRoundupJson] = useState('{"listType":"ItemList","items":[]}');
     const [faqsJson, setFaqsJson] = useState('[]');
@@ -126,29 +126,43 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             if (response.data.success) {
                 const article = response.data.data;
                 setArticleId(article.id);
-                const parsedImages = (() => {
-                    if (!article.imagesJson) return {};
-                    try {
-                        return typeof article.imagesJson === 'string'
-                            ? JSON.parse(article.imagesJson)
-                            : article.imagesJson;
-                    } catch {
-                        return {};
-                    }
-                })();
 
-                const parsedSeo = (() => {
-                    if (!article.seoJson) return {};
-                    try {
-                        return typeof article.seoJson === 'string'
-                            ? JSON.parse(article.seoJson)
-                            : article.seoJson;
-                    } catch {
-                        return {};
-                    }
-                })();
+                // Helper to safely parse JSON, handling double/triple-encoding
+                const safeParse = (data, fallback) => {
+                    if (data === null || data === undefined) return fallback;
+                    if (typeof data === 'object') return data;
 
-                setImagesData(parsedImages || {});
+                    let parsed = data;
+                    // Try parsing up to 3 times to unwrap nested strings
+                    for (let i = 0; i < 3; i++) {
+                        try {
+                            const result = JSON.parse(parsed);
+                            if (typeof result === 'object' && result !== null) {
+                                return result;
+                            }
+                            parsed = result; // It was a string, try parsing again
+                        } catch {
+                            // Parsing failed, stop and return fallback or last string
+                            break;
+                        }
+                    }
+                    // We expect objects for these fields. If still string, it's failed.
+                    return typeof parsed === 'object' ? parsed : fallback;
+                };
+
+                const safeStringify = (data, fallback) => {
+                    const parsed = safeParse(data, fallback);
+                    try {
+                        return JSON.stringify(parsed ?? fallback, null, 2);
+                    } catch {
+                        return JSON.stringify(fallback, null, 2);
+                    }
+                };
+
+                const parsedImages = safeParse(article.imagesJson, {});
+                const parsedSeo = safeParse(article.seoJson, {});
+
+                setImagesData(parsedImages);
 
                 const categoryId = normalizeId(article.categoryId);
                 const authorId = normalizeId(article.authorId);
@@ -177,13 +191,13 @@ export function useContentEditor({ slug, contentType = 'article' }) {
                     selectedTags: article.tags?.map(t => t.id) || [],
                 });
 
-                setContentJson(JSON.stringify(article.contentJson || {}, null, 2));
-                setRecipeJson(JSON.stringify(article.recipeJson || {}, null, 2));
-                setRoundupJson(JSON.stringify(article.roundupJson || { "listType": "ItemList", "items": [] }, null, 2));
-                setFaqsJson(JSON.stringify(article.faqsJson || [], null, 2));
-                setKeywordsJson(JSON.stringify(article.keywords || [], null, 2));
-                setReferencesJson(JSON.stringify(article.references || [], null, 2));
-                setMediaJson(JSON.stringify(article.media || {}, null, 2));
+                setContentJson(safeStringify(article.contentJson, []));
+                setRecipeJson(safeStringify(article.recipeJson, {}));
+                setRoundupJson(safeStringify(article.roundupJson, { listType: "ItemList", items: [] }));
+                setFaqsJson(safeStringify(article.faqsJson, []));
+                setKeywordsJson(safeStringify(article.keywords, []));
+                setReferencesJson(safeStringify(article.references, []));
+                setMediaJson(safeStringify(article.media, {}));
             } else {
                 alert(`Content "${slug}" not found.`);
                 navigate(`/${contentType}s`);
