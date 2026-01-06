@@ -66,9 +66,8 @@ export const ImageBlock = createReactBlockSpec(
             const captionRef = useRef(null);
             const handleSelect = useCallback(() => {
                 selectBlock();
-                editor.setTextCursorPosition(block.id, 'start');
                 editor.focus();
-            }, [block.id, editor, selectBlock]);
+            }, [editor, selectBlock]);
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data) => {

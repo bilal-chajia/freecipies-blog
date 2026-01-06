@@ -860,6 +860,7 @@ function contentJsonToBlocks(contentJson) {
 
     try {
         const rawBlocks = blocks.map((block, index) => {
+            if (!block || typeof block !== 'object') return null;
             const id = block.id || `block-${index}`;
 
             switch (block.type) {
@@ -1293,6 +1294,7 @@ export default function BlockEditor({
     const canvasRef = useRef(null);
     const onChangeRef = useRef(onChange);
     const lastSerializedRef = useRef('');
+    const lastPointerBlockIdRef = useRef(null);
 
     // Initial content setup
     const initialContent = useMemo(() => {
@@ -1461,10 +1463,43 @@ export default function BlockEditor({
 
     useEffect(() => {
         if (!editor) return undefined;
+        const getBlockIdFromDom = () => {
+            const selection = window.getSelection();
+            if (!selection || !selection.anchorNode) return null;
+            const anchorNode = selection.anchorNode.nodeType === Node.ELEMENT_NODE
+                ? selection.anchorNode
+                : selection.anchorNode.parentElement;
+            if (!(anchorNode instanceof HTMLElement)) return null;
+            const wrapper = anchorNode.closest('[data-block]');
+            return wrapper?.getAttribute('data-block') || null;
+        };
         const handleSelection = () => {
-            const block = editor.getTextCursorPosition().block;
+            const manualId = lastPointerBlockIdRef.current;
+            if (manualId) {
+                const manualBlock = editor.getBlock(manualId) || null;
+                setActiveBlockId(manualId);
+                onSelectedBlockChange?.(manualBlock);
+                lastPointerBlockIdRef.current = null;
+                return;
+            }
+
+            let block = null;
+            try {
+                block = editor.getTextCursorPosition().block;
+            } catch {
+                const domId = getBlockIdFromDom();
+                if (domId) {
+                    const domBlock = editor.getBlock(domId) || null;
+                    setActiveBlockId(domId);
+                    onSelectedBlockChange?.(domBlock);
+                    lastPointerBlockIdRef.current = null;
+                    return;
+                }
+            }
+
             setActiveBlockId(block?.id || null);
             onSelectedBlockChange?.(block || null);
+            lastPointerBlockIdRef.current = null;
         };
         handleSelection();
         const unsubscribe = editor.onSelectionChange(handleSelection);
@@ -1472,6 +1507,34 @@ export default function BlockEditor({
             if (typeof unsubscribe === 'function') unsubscribe();
         };
     }, [editor, insertMenuOpen, onSelectedBlockChange]);
+
+    useEffect(() => {
+        const wrapper = wrapperRef.current;
+        if (!wrapper) return undefined;
+
+        const handlePointerDown = (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const customBlock = target.closest('.wp-block--custom');
+            if (customBlock) {
+                const blockId = customBlock.getAttribute('data-block');
+                if (blockId) {
+                    lastPointerBlockIdRef.current = blockId;
+                    if (blockId !== activeBlockId) {
+                        setActiveBlockId(blockId);
+                        onSelectedBlockChange?.(editor?.getBlock(blockId) || null);
+                    }
+                    return;
+                }
+            }
+            lastPointerBlockIdRef.current = null;
+        };
+
+        wrapper.addEventListener('pointerdown', handlePointerDown, true);
+        return () => {
+            wrapper.removeEventListener('pointerdown', handlePointerDown, true);
+        };
+    }, [activeBlockId, editor, onSelectedBlockChange]);
 
     useEffect(() => {
         if (!editor) return undefined;
@@ -1543,6 +1606,16 @@ export default function BlockEditor({
             activeBlockId,
         });
     }, [structureItems, activeBlockId, onStructureUpdate]);
+
+    useEffect(() => {
+        if (!onSelectedBlockChange) return;
+        if (!editor || !activeBlockId) {
+            onSelectedBlockChange(null);
+            return;
+        }
+        const block = editor.getBlock(activeBlockId) || null;
+        onSelectedBlockChange(block);
+    }, [editor, activeBlockId, onSelectedBlockChange]);
 
     useEffect(() => {
         if (!editor?.domElement) return;
