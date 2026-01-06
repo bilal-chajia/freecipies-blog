@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useContentEditor } from './shared';
 import EditorLayout from './shared/EditorLayout';
-import EditorSidebar from '../../components/EditorSidebar';
+import EditorSidebar from '@/components/EditorSidebar';
 import RoundupEditorMain from './RoundupEditorMain';
 
 /**

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FormField, ToggleCard } from '../../../components/settings';
+import { FormField, ToggleCard } from '@/components/settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
 import { Mail, Server, Shield, Send, BellRing, Info } from 'lucide-react';
 
@@ -78,7 +78,7 @@ const EmailSettings = ({ formData, handleInputChange }) => {
                     checked={formData.emailNotifications}
                     onCheckedChange={(checked) => handleInputChange('emailNotifications', checked)}
                 />
-                
+
                 <div className="flex items-start gap-2 p-2.5 bg-amber-500/10 rounded-md text-xs text-amber-700 dark:text-amber-400">
                     <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
                     Verify SMTP credentials before enabling production notifications.

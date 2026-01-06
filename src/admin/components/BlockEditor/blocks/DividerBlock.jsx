@@ -12,7 +12,6 @@
  * https://developer.wordpress.org/block-editor/
  */
 
-import { useState } from 'react';
 import { createReactBlockSpec } from '@blocknote/react';
 import { Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +22,9 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
+import BlockToolbar from '../components/BlockToolbar';
+import BlockWrapper from '../components/BlockWrapper';
+import { useBlockSelection } from '../selection-context';
 
 // Divider style definitions
 const dividerStyles = [
@@ -104,7 +106,7 @@ export const DividerBlock = createReactBlockSpec(
         render: (props) => {
             const { block, editor } = props;
             const style = block.props.style || 'solid';
-            const [isSelected, setIsSelected] = useState(false);
+            const { isSelected, selectBlock } = useBlockSelection(block.id);
 
             const handleStyleChange = (newStyle) => {
                 editor.updateBlock(block, {
@@ -113,64 +115,56 @@ export const DividerBlock = createReactBlockSpec(
                 });
             };
 
-            return (
-                <div
-                    className={cn(
-                        // WordPress block classes
-                        'wp-block',
-                        isSelected && 'is-selected',
+            const moveBlockUp = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksUp();
+                editor.focus();
+            };
 
-                        // Divider wrapper
-                        'relative py-4 cursor-pointer',
+            const moveBlockDown = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksDown();
+                editor.focus();
+            };
 
-                        // Selection states
-                        'transition-shadow duration-[var(--wp-transition-duration)]',
-                        'rounded-sm',
-                        !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
-                        isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]'
-                    )}
-                    data-block-type="divider"
-                    data-divider-style={style}
-                    tabIndex={0}
-                    onFocus={() => setIsSelected(true)}
-                    onBlur={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget)) {
-                            setIsSelected(false);
-                        }
-                    }}
-                    onClick={() => setIsSelected(true)}
+            const sideMenu = editor.extensions?.sideMenu;
+            const handleDragStart = (event) => {
+                sideMenu?.blockDragStart?.(event, block);
+            };
+            const handleDragEnd = () => {
+                sideMenu?.blockDragEnd?.();
+            };
+
+            const toolbar = (
+                <BlockToolbar
+                    blockIcon={Minus}
+                    blockLabel="Divider"
+                    onMoveUp={moveBlockUp}
+                    onMoveDown={moveBlockDown}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    showMoreMenu={false}
                 >
-                    {/* Toolbar - shown when selected */}
-                    {isSelected && (
-                        <div
-                            className={cn(
-                                'absolute -top-[44px] left-1/2 -translate-x-1/2',
-                                'flex items-center h-10 px-1',
-                                'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
-                                'rounded-[var(--wp-toolbar-border-radius)]',
-                                'shadow-[var(--wp-toolbar-shadow)]',
-                                'z-[var(--wp-z-block-toolbar)]'
-                            )}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {/* Block type icon */}
-                            <div className="flex items-center px-1.5 text-muted-foreground">
-                                <Minus className="w-4 h-4" />
-                            </div>
+                    <DividerStyleToolbar
+                        currentStyle={style}
+                        onChange={handleStyleChange}
+                    />
+                </BlockToolbar>
+            );
 
-                            {/* Separator */}
-                            <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
-
-                            {/* Style selector */}
-                            <DividerStyleToolbar
-                                currentStyle={style}
-                                onChange={handleStyleChange}
-                            />
-                        </div>
-                    )}
-
+            return (
+                <BlockWrapper
+                    isSelected={isSelected}
+                    toolbar={toolbar}
+                    onClick={selectBlock}
+                    onFocus={selectBlock}
+                    onPointerDownCapture={selectBlock}
+                    blockType="divider"
+                    blockId={block.id}
+                    className="py-4"
+                >
                     {/* Divider line */}
-                    <div className="flex items-center w-full h-4">
+                    <div className="flex items-center w-full h-4" data-divider-style={style}>
                         <hr
                             className="w-full border-0 m-0"
                             style={{
@@ -180,7 +174,7 @@ export const DividerBlock = createReactBlockSpec(
                             }}
                         />
                     </div>
-                </div>
+                </BlockWrapper>
             );
         },
     }

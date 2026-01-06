@@ -20,12 +20,13 @@ import {
     SplitSquareHorizontal,
     GalleryHorizontal
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { parseVariantsJson, getVariantMap, getBestVariantUrl } from '@shared/types/images';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { Button } from '@/ui/button';
 import MediaDialog from '../../MediaDialog';
+import BlockToolbar, { ToolbarButton } from '../components/BlockToolbar';
+import BlockWrapper from '../components/BlockWrapper';
+import { useBlockSelection } from '../selection-context';
 
 const parseSlot = (value) => {
     if (!value) return null;
@@ -60,7 +61,7 @@ export const BeforeAfterBlock = createReactBlockSpec(
             const { block, editor } = props;
             const before = useMemo(() => parseSlot(block.props.beforeJson), [block.props.beforeJson]);
             const after = useMemo(() => parseSlot(block.props.afterJson), [block.props.afterJson]);
-            const [isSelected, setIsSelected] = useState(false);
+            const { isSelected, selectBlock } = useBlockSelection(block.id);
             const [activeSlot, setActiveSlot] = useState(null);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
 
@@ -186,97 +187,81 @@ export const BeforeAfterBlock = createReactBlockSpec(
 
             const currentLayout = layouts.find(l => l.value === block.props.layout) || layouts[0];
 
+            const moveBlockUp = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksUp();
+                editor.focus();
+            };
+
+            const moveBlockDown = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksDown();
+                editor.focus();
+            };
+
+            const sideMenu = editor.extensions?.sideMenu;
+            const handleDragStart = (event) => {
+                sideMenu?.blockDragStart?.(event, block);
+            };
+            const handleDragEnd = () => {
+                sideMenu?.blockDragEnd?.();
+            };
+
+            const toolbar = (
+                <BlockToolbar
+                    blockIcon={SplitSquareHorizontal}
+                    blockLabel="Before / After"
+                    onMoveUp={moveBlockUp}
+                    onMoveDown={moveBlockDown}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    showMoreMenu={false}
+                >
+                    {layouts.map((layout) => (
+                        <ToolbarButton
+                            key={layout.value}
+                            icon={layout.icon}
+                            label={layout.label}
+                            isActive={block.props.layout === layout.value}
+                            onClick={() => updateBlockProps({ layout: layout.value })}
+                        />
+                    ))}
+                </BlockToolbar>
+            );
+
             return (
                 <>
-                    <div
-                        className={cn(
-                            'wp-block',
-                            isSelected && 'is-selected',
-                            'relative my-2',
-                            'border rounded-lg p-4 bg-card shadow-sm space-y-4',
-                            'transition-shadow duration-[var(--wp-transition-duration)]',
-                            !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
-                            isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]'
-                        )}
-                        data-block-type="before-after"
-                        tabIndex={0}
-                        onFocus={() => setIsSelected(true)}
-                        onBlur={(e) => {
-                            if (!e.currentTarget.contains(e.relatedTarget)) {
-                                setIsSelected(false);
-                            }
-                        }}
+                    <BlockWrapper
+                        isSelected={isSelected}
+                        toolbar={toolbar}
+                        onClick={selectBlock}
+                        onFocus={selectBlock}
+                        onPointerDownCapture={selectBlock}
+                        blockType="before-after"
+                        blockId={block.id}
+                        className="my-2"
                     >
-                        {/* Toolbar */}
-                        <AnimatePresence>
-                            {isSelected && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 4 }}
-                                    className={cn(
-                                        'absolute -top-[44px] left-0',
-                                        'flex items-center h-10 px-1',
-                                        'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
-                                        'rounded-[var(--wp-toolbar-border-radius)]',
-                                        'shadow-[var(--wp-toolbar-shadow)]',
-                                        'z-[var(--wp-z-block-toolbar)]'
-                                    )}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <div className="flex items-center px-1.5 text-muted-foreground">
-                                        <SplitSquareHorizontal className="w-4 h-4" />
-                                    </div>
-
-                                    <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
-
-                                    {/* Layout toggle */}
-                                    <div className="flex items-center gap-0.5">
-                                        {layouts.map((layout) => (
-                                            <Tooltip key={layout.value}>
-                                                <TooltipTrigger asChild>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => updateBlockProps({ layout: layout.value })}
-                                                        className={cn(
-                                                            'flex items-center justify-center',
-                                                            'w-8 h-8 rounded-sm',
-                                                            'hover:bg-[var(--wp-toolbar-button-hover-bg)]',
-                                                            block.props.layout === layout.value && 'bg-[var(--wp-toolbar-button-active-bg)]'
-                                                        )}
-                                                    >
-                                                        <layout.icon className="w-4 h-4" />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="bottom" className="text-xs">
-                                                    {layout.label}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <SplitSquareHorizontal className="w-4 h-4 text-muted-foreground" />
-                                <h4 className="text-sm font-medium">Before / After</h4>
+                        <div className="border rounded-lg p-4 bg-card shadow-sm space-y-4">
+                            {/* Header */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <SplitSquareHorizontal className="w-4 h-4 text-muted-foreground" />
+                                    <h4 className="text-sm font-medium">Before / After</h4>
+                                </div>
+                                {!isSelected && (
+                                    <span className="text-xs text-muted-foreground capitalize">
+                                        {currentLayout.label}
+                                    </span>
+                                )}
                             </div>
-                            {!isSelected && (
-                                <span className="text-xs text-muted-foreground capitalize">
-                                    {currentLayout.label}
-                                </span>
-                            )}
-                        </div>
 
-                        {/* Slots */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {renderSlot('before', before)}
-                            {renderSlot('after', after)}
+                            {/* Slots */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {renderSlot('before', before)}
+                                {renderSlot('after', after)}
+                            </div>
                         </div>
-                    </div>
+                    </BlockWrapper>
 
                     <MediaDialog
                         open={mediaDialogOpen}

@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Label } from '@/ui/label.jsx';
 import { Button } from '@/ui/button.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
-import ColorPicker from '../../../components/ColorPicker';
-import BrandingCards from '../../../components/BrandingCards';
+import ColorPicker from '@/components/ColorPicker';
+import BrandingCards from '@/components/BrandingCards';
 import { brandingAPI } from '../../../services/api';
 import { Palette, Layout, Sparkles, Loader2, Info, Image } from 'lucide-react';
 
@@ -113,7 +113,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                             className="w-10 h-10 p-1 border border-border/60 rounded-md"
                             onClick={() => setShowColorPicker(!showColorPicker)}
                         >
-                            <div 
+                            <div
                                 className="w-full h-full rounded"
                                 style={{ backgroundColor: formData.badgeColor || '#3b82f6' }}
                             />

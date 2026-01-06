@@ -9,8 +9,8 @@ import {
   pickVariantByWidth,
   CONTAINER_SIZES
 } from '@shared/types/images';
-import ImageEditor from '../../components/ImageEditor.jsx';
-import ImageUploader from '../../components/ImageUploader';
+import ImageEditor from '@/components/ImageEditor.jsx';
+import ImageUploader from '@/components/ImageUploader';
 import {
   Upload,
   Search,

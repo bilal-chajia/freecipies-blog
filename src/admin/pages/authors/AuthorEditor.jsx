@@ -4,9 +4,9 @@ import { Button } from '@/ui/button.jsx';
 import { ArrowLeft } from 'lucide-react';
 import { authorsAPI } from '../../services/api';
 import { buildImageSlotFromMedia, generateSlug } from '../../utils/helpers';
-import MediaDialog from '../../components/MediaDialog';
-import AuthorSidebar from '../../components/AuthorSidebar';
-import AuthorEditorMain from '../../components/AuthorEditorMain';
+import MediaDialog from '@/components/MediaDialog';
+import AuthorSidebar from '@/components/AuthorSidebar';
+import AuthorEditorMain from '@/components/AuthorEditorMain';
 
 const AVATAR_VARIANT_SIZES = {
   lg: 400,

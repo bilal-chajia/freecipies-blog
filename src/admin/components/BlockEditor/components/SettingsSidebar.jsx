@@ -8,11 +8,10 @@
  * https://developer.wordpress.org/block-editor/
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, FileText, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs';
 import { ScrollArea } from '@/ui/scroll-area';
 import {
     Collapsible,
@@ -56,14 +55,37 @@ function SidebarSection({ title, defaultOpen = true, children }) {
 export default function SettingsSidebar({
     isOpen = true,
     onClose,
-    activeTab = 'document',
+    activeTab,
     onTabChange,
     documentSettings,
     blockSettings,
     selectedBlock,
     className,
 }) {
-    const [tab, setTab] = useState(activeTab);
+    const [tab, setTab] = useState(activeTab ?? 'document');
+    const resolvedTab = activeTab ?? tab;
+    const lastSelectedIdRef = useRef(null);
+
+    useEffect(() => {
+        if (activeTab !== undefined && activeTab !== tab) {
+            setTab(activeTab);
+        }
+    }, [activeTab, tab]);
+
+    useEffect(() => {
+        const selectedId = selectedBlock?.id || null;
+        if (!selectedId) {
+            lastSelectedIdRef.current = null;
+            return;
+        }
+        if (lastSelectedIdRef.current === selectedId) return;
+        lastSelectedIdRef.current = selectedId;
+        if (activeTab !== undefined) {
+            if (activeTab !== 'block') onTabChange?.('block');
+            return;
+        }
+        if (tab !== 'block') setTab('block');
+    }, [selectedBlock?.id, activeTab, tab, onTabChange]);
 
     const handleTabChange = (value) => {
         setTab(value);
@@ -80,62 +102,61 @@ export default function SettingsSidebar({
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className={cn(
                 'wp-settings-sidebar',
-                'w-[320px] h-full',
+                'w-[320px] h-full min-h-0 overflow-hidden',
                 'bg-[var(--wp-sidebar-bg)] border-l border-[var(--wp-sidebar-border)]',
                 'flex flex-col',
                 className
             )}
         >
             {/* Header with tabs */}
-            <div className="flex items-center justify-between px-1 border-b border-border">
-                <Tabs value={tab} onValueChange={handleTabChange} className="flex-1">
-                    <TabsList className="w-full h-12 bg-transparent rounded-none p-0">
-                        <TabsTrigger
-                            value="document"
-                            className={cn(
-                                'flex-1 h-12 rounded-none border-b-2 border-transparent',
-                                'data-[state=active]:border-primary data-[state=active]:bg-transparent',
-                                'data-[state=active]:shadow-none'
-                            )}
-                        >
-                            <FileText className="w-4 h-4 mr-1.5" />
-                            Document
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="block"
-                            disabled={!selectedBlock}
-                            className={cn(
-                                'flex-1 h-12 rounded-none border-b-2 border-transparent',
-                                'data-[state=active]:border-primary data-[state=active]:bg-transparent',
-                                'data-[state=active]:shadow-none'
-                            )}
-                        >
-                            <Settings className="w-4 h-4 mr-1.5" />
-                            Block
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
-
-                {onClose && (
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className={cn(
-                            'flex items-center justify-center',
-                            'w-7 h-7 mr-2 rounded-sm',
-                            'text-muted-foreground hover:text-foreground',
-                            'hover:bg-muted'
+            <div className="structure-panel-header">
+                <div className="structure-tabs justify-between w-full">
+                    <div className="flex items-center gap-1">
+                        {/* Only show Post tab if documentSettings is provided */}
+                        {documentSettings && (
+                            <button
+                                type="button"
+                                className={cn('structure-tab', resolvedTab === 'document' && 'is-active')}
+                                onClick={() => handleTabChange('document')}
+                            >
+                                Post
+                            </button>
                         )}
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                )}
+                        {/* Only show Block tab if there's potential for block settings */}
+                        {(blockSettings !== undefined || selectedBlock) && (
+                            <button
+                                type="button"
+                                disabled={!selectedBlock}
+                                className={cn(
+                                    'structure-tab',
+                                    resolvedTab === 'block' && 'is-active',
+                                    !selectedBlock && 'opacity-50 cursor-not-allowed'
+                                )}
+                                onClick={() => {
+                                    if (!selectedBlock) return;
+                                    handleTabChange('block');
+                                }}
+                            >
+                                {documentSettings ? 'Block' : 'Settings'}
+                            </button>
+                        )}
+                    </div>
+                    {onClose && (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="structure-close"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Content */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
                 <AnimatePresence mode="wait">
-                    {tab === 'document' && (
+                    {resolvedTab === 'document' && (
                         <motion.div
                             key="document"
                             initial={{ opacity: 0 }}
@@ -151,7 +172,7 @@ export default function SettingsSidebar({
                         </motion.div>
                     )}
 
-                    {tab === 'block' && (
+                    {resolvedTab === 'block' && (
                         <motion.div
                             key="block"
                             initial={{ opacity: 0 }}

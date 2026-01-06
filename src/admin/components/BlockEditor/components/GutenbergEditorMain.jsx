@@ -2,7 +2,7 @@
  * Gutenberg Editor Main Content
  * 
  * WordPress Block Editor-style main content area.
- * Contains the title, headline, and block editor within a clean canvas.
+ * Contains the block editor within a clean canvas.
  * 
  * Based on WordPress Block Editor design:
  * https://developer.wordpress.org/block-editor/
@@ -16,9 +16,9 @@ import BlockEditor from '..';
 /**
  * WordPress-style inline title input
  */
-function TitleInput({ value, onChange, placeholder = "Add title" }) {
+function TitleInput({ value, onChange, placeholder = "Add title", className, containerClassName }) {
     return (
-        <div className="wp-block-post-title-wrapper">
+        <div className={cn("wp-block-post-title-wrapper", containerClassName)}>
             <input
                 type="text"
                 value={value || ''}
@@ -28,7 +28,8 @@ function TitleInput({ value, onChange, placeholder = "Add title" }) {
                     'w-full bg-transparent border-none outline-none',
                     'text-4xl md:text-5xl font-bold leading-tight',
                     'placeholder:text-muted-foreground/40',
-                    'focus:outline-none focus:ring-0'
+                    'focus:outline-none focus:ring-0',
+                    className
                 )}
                 style={{
                     fontFamily: 'var(--wp-editor-font-family)',
@@ -95,8 +96,11 @@ export default function GutenbergEditorMain({
     validateJSON,
     relatedContext,
     onEditorReady,
+    onStructureUpdate,
+    onSelectedBlockChange,
     className,
     viewMode = 'visual',
+    sidebarOpen = true,
 }) {
     return (
         <>
@@ -110,28 +114,6 @@ export default function GutenbergEditorMain({
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
             >
-                {/* Content Type Badge */}
-                <div className="mb-6">
-                    <ContentTypeBadge type={formData.type} />
-                </div>
-
-                {/* Title */}
-                <TitleInput
-                    value={formData.label}
-                    onChange={(value) => onInputChange('label', value)}
-                    placeholder="Add title"
-                />
-
-                {/* Headline */}
-                <HeadlineInput
-                    value={formData.headline}
-                    onChange={(value) => onInputChange('headline', value)}
-                    placeholder="Add a compelling headline..."
-                />
-
-                {/* Separator */}
-                <div className="my-8 border-t border-border" />
-
                 {/* Block Editor or JSON Editor */}
                 <div className="gutenberg-block-editor">
                     {viewMode === 'json' ? (
@@ -162,6 +144,9 @@ export default function GutenbergEditorMain({
                                 validateJSON?.('content', nextValue);
                             }}
                             contentType={formData.type}
+                            isSidebarOpen={sidebarOpen}
+                            onStructureUpdate={onStructureUpdate}
+                            onSelectedBlockChange={onSelectedBlockChange}
                             placeholder="Start writing..."
                             context={relatedContext}
                             onEditorReady={onEditorReady}

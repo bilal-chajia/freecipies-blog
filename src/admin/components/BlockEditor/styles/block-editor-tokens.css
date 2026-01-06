@@ -10,18 +10,23 @@
    * ======================================== */
 
     /* Selected block - WordPress blue */
-    --wp-block-border-selected: #007cba;
+    --wp-block-border-selected: rgba(56, 88, 233, 0.759);
     --wp-block-border-selected-width: 2px;
+    --wp-block-selected-shadow: none;
 
     /* Hover state - subtle gray */
-    --wp-block-border-hover: #e0e0e0;
+    --wp-block-border-hover: #dcdcde;
     --wp-block-border-hover-width: 1px;
+
+    /* Outline geometry */
+    --wp-block-border-radius: 4px;
+    --wp-block-outline-offset: 0px;
 
     /* Unselected - no border (only outline on focus) */
     --wp-block-border-unselected: transparent;
 
     /* Focus ring for accessibility */
-    --wp-block-focus-ring: rgba(0, 124, 186, 0.25);
+    --wp-block-focus-ring: rgba(0, 124, 186, 0.605);
 
     /* ========================================
    * Placeholder / Setup States
@@ -41,6 +46,7 @@
     --wp-toolbar-height: 48px;
     --wp-toolbar-button-size: 36px;
     --wp-toolbar-separator-color: #e0e0e0;
+    --wp-toolbar-gap: 8px;
 
     /* Toolbar button states */
     --wp-toolbar-button-hover-bg: #f0f0f0;
@@ -50,7 +56,7 @@
     /* ========================================
    * Block Inserter Panel
    * ======================================== */
-    --wp-inserter-width: 280px;
+    --wp-inserter-width: 230px;
     --wp-inserter-bg: #fff;
     --wp-inserter-border: #e0e0e0;
     --wp-inserter-item-hover-bg: #f0f0f0;
@@ -117,9 +123,10 @@
  * ======================================== */
 .dark,
 [data-theme="dark"] {
-    --wp-block-border-selected: #4dabf5;
+    --wp-block-border-selected: rgb(140 180 255 / 0.55);
     --wp-block-border-hover: #3c3c3c;
     --wp-block-focus-ring: rgba(77, 171, 245, 0.25);
+    --wp-block-selected-shadow: none;
 
     --wp-placeholder-bg: #2c2c2c;
     --wp-placeholder-border: #3c3c3c;
@@ -159,18 +166,100 @@
     transition: box-shadow var(--wp-transition-duration) var(--wp-transition-timing);
 }
 
-.wp-block:hover:not(.is-selected) {
-    box-shadow: 0 0 0 var(--wp-block-border-hover-width) var(--wp-block-border-hover);
+.wp-block--custom {
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: 0;
+    padding-right: 0;
+    overflow: visible;
 }
 
-.wp-block.is-selected {
-    box-shadow: 0 0 0 var(--wp-block-border-selected-width) var(--wp-block-border-selected);
+.wp-block--custom .wp-block__content {
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.wp-block:focus-visible {
-    box-shadow:
-        0 0 0 var(--wp-block-border-selected-width) var(--wp-block-border-selected),
-        0 0 0 4px var(--wp-block-focus-ring);
+.block-editor-wrapper .bn-editor [data-block-root="true"] {
+    position: relative;
+    box-sizing: border-box;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.block-editor-wrapper .bn-editor [data-block-root="true"]::after {
+    content: '';
+    position: absolute;
+    inset: calc(-1 * var(--wp-block-outline-offset));
+    border: 0;
+    outline: var(--wp-block-border-selected-width) solid transparent;
+    outline-offset: calc(-1 * var(--wp-block-outline-offset));
+    border-radius: var(--wp-block-border-radius);
+    pointer-events: none;
+    transition: border-color var(--wp-transition-duration) var(--wp-transition-timing),
+        box-shadow var(--wp-transition-duration) var(--wp-transition-timing);
+}
+
+.block-editor-wrapper .bn-editor [data-block-root="true"].ProseMirror-selectednode,
+.block-editor-wrapper .bn-editor [data-block-root="true"][data-selected="true"],
+.block-editor-wrapper .bn-editor [data-block-root="true"][aria-selected="true"] {
+    border-radius: var(--wp-block-border-radius);
+}
+
+.block-editor-wrapper .bn-editor [data-block-root="true"].ProseMirror-selectednode::after,
+.block-editor-wrapper .bn-editor [data-block-root="true"][data-selected="true"]::after,
+.block-editor-wrapper .bn-editor [data-block-root="true"][aria-selected="true"]::after {
+    outline-color: var(--wp-block-border-selected);
+}
+
+.block-editor-wrapper .bn-editor [data-block-root="true"]:hover::after {
+    outline-color: transparent;
+}
+
+.block-editor-wrapper .bn-editor [data-block-root="true"]:focus-visible::after {
+    outline-color: var(--wp-block-border-selected);
+    box-shadow: 0 0 0 3px var(--wp-block-focus-ring);
+}
+
+.block-editor-wrapper .bn-editor [data-block-root="true"][data-custom-block="true"]::after {
+    outline-color: transparent;
+    box-shadow: none;
+}
+
+.block-editor-wrapper .bn-editor [data-block-root="true"][data-custom-block="true"]:focus-visible::after {
+    outline-color: transparent;
+    box-shadow: none;
+}
+
+.wp-block--custom::after {
+    content: '';
+    position: absolute;
+    inset: calc(-1 * var(--wp-block-outline-offset));
+    border: 0;
+    outline: var(--wp-block-border-selected-width) solid transparent;
+    outline-offset: calc(-1 * var(--wp-block-outline-offset));
+    border-radius: var(--wp-block-border-radius);
+    pointer-events: none;
+    transition:
+        outline-color var(--wp-transition-duration) var(--wp-transition-timing),
+        box-shadow var(--wp-transition-duration) var(--wp-transition-timing);
+}
+
+.wp-block--custom.is-selected::after,
+.wp-block--custom[data-selected="true"]::after {
+    outline-color: var(--wp-block-border-selected);
+}
+
+/* Disable any default BlockNote/ProseMirror selection outlines */
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.block-editor-wrapper .block-editor-block-list__block,
+.block-editor-wrapper .block-editor-block-list__block.is-selected {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
 }
 
 /* ========================================
@@ -207,10 +296,15 @@
 /* ========================================
  * Block Toolbar Base Styles
  * ======================================== */
-.wp-block-toolbar {
+.wp-block-toolbar-wrap {
     position: absolute;
-    top: -52px;
-    left: 0;
+    top: calc(-1 * var(--wp-toolbar-height) - var(--wp-toolbar-gap));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--wp-z-block-toolbar);
+}
+
+.wp-block-toolbar {
     display: flex;
     align-items: center;
     height: var(--wp-toolbar-height);
@@ -219,7 +313,6 @@
     border: 1px solid var(--wp-toolbar-border);
     border-radius: var(--wp-toolbar-border-radius);
     box-shadow: var(--wp-toolbar-shadow);
-    z-index: var(--wp-z-block-toolbar);
 }
 
 .wp-block-toolbar__group {
@@ -258,6 +351,19 @@
 .wp-block-toolbar__button.is-active {
     background: var(--wp-toolbar-button-active-bg);
     color: var(--wp-toolbar-button-active-color);
+}
+
+/* ========================================
+ * Hide BlockNote Default Toolbars/Handles
+ * ======================================== */
+.block-editor-wrapper .bn-toolbar,
+.block-editor-wrapper .bn-action-toolbar,
+.block-editor-wrapper .bn-side-menu,
+.block-editor-wrapper .bn-drag-handle-menu,
+.block-editor-wrapper .bn-table-handle,
+.block-editor-wrapper .bn-table-handle-menu,
+.block-editor-wrapper .bn-extend-button {
+    display: none !important;
 }
 
 /* ========================================
@@ -321,6 +427,114 @@
 .wp-block-inserter__item-title {
     font-size: 14px;
     font-weight: 500;
+}
+
+/* ========================================
+ * Structure Panel (List View / Outline)
+ * ======================================== */
+.structure-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 8px 10px;
+    gap: 8px;
+}
+
+.structure-tabs {
+    display: flex;
+    gap: 4px;
+    background: #f3f4f6;
+    border-radius: 0;
+    padding: 3px;
+}
+
+.structure-tab {
+    border-radius: 0;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #4b5563;
+    background: transparent;
+}
+
+.structure-tab.is-active {
+    background: #ffffff;
+    color: #111827;
+    font-weight: 600;
+    border-bottom: 2px solid #3b82f6;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.structure-close {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+}
+
+.structure-close:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.structure-panel-list {
+    padding: 8px 6px 12px;
+}
+
+.structure-empty {
+    padding: 16px;
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+}
+
+.structure-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #374151;
+    text-align: left;
+}
+
+.structure-item:hover {
+    background: #f3f4f6;
+}
+
+.structure-item.is-active {
+    background: #e0e7ff;
+    color: #1f2937;
+}
+
+.structure-item-icon {
+    width: 14px;
+    height: 14px;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+
+.structure-item-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.structure-item-label a {
+    color: inherit;
+    text-decoration: none;
+    pointer-events: none;
+}
+
+.structure-item-meta {
+    font-size: 10px;
+    color: #9ca3af;
 }
 
 /* ========================================
@@ -395,9 +609,7 @@
     }
 
     /* Toolbar adjustments */
-    .wp-block-toolbar {
-        left: 50%;
-        transform: translateX(-50%);
+    .wp-block-toolbar-wrap {
         max-width: calc(100vw - 32px);
     }
 
@@ -498,4 +710,40 @@
         box-shadow: none !important;
         border: none !important;
     }
+}
+
+.gutenberg-canvas-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.gutenberg-canvas-scroll::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.block-editor-wrapper .bn-editor {
+    scrollbar-width: none;
+}
+
+.block-editor-wrapper .bn-editor::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.wp-block-inserter [data-slot="scroll-area-scrollbar"],
+.wp-settings-sidebar [data-slot="scroll-area-scrollbar"] {
+    display: none;
+}
+
+.wp-block-inserter [data-slot="scroll-area-viewport"],
+.wp-settings-sidebar [data-slot="scroll-area-viewport"] {
+    scrollbar-width: none;
+    overscroll-behavior: contain;
+}
+
+.wp-block-inserter [data-slot="scroll-area-viewport"]::-webkit-scrollbar,
+.wp-settings-sidebar [data-slot="scroll-area-viewport"]::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }

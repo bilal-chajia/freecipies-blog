@@ -81,6 +81,7 @@ const BlockWrapper = forwardRef(({
             className={cn(
                 // Base WordPress block classes
                 'wp-block',
+                'wp-block--custom',
                 'block-editor-block-list__block',
 
                 // Selection state
@@ -89,15 +90,6 @@ const BlockWrapper = forwardRef(({
                 // Custom wrapper styles
                 'relative outline-none',
                 'transition-shadow duration-[var(--wp-transition-duration)] ease-[var(--wp-transition-timing)]',
-
-                // Hover state (when not selected)
-                !isSelected && 'hover:shadow-[0_0_0_var(--wp-block-border-hover-width)_var(--wp-block-border-hover)]',
-
-                // Selected state
-                isSelected && 'shadow-[0_0_0_var(--wp-block-border-selected-width)_var(--wp-block-border-selected)]',
-
-                // Focus ring
-                'focus-visible:shadow-[0_0_0_var(--wp-block-border-selected-width)_var(--wp-block-border-selected),0_0_0_4px_var(--wp-block-focus-ring)]',
 
                 className
             )}
@@ -110,26 +102,17 @@ const BlockWrapper = forwardRef(({
             {/* Block Toolbar - appears above the block when selected */}
             <AnimatePresence>
                 {showToolbar && toolbar && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 4 }}
-                        transition={{ duration: 0.12, ease: 'easeOut' }}
-                        className={cn(
-                            'wp-block-toolbar',
-                            'absolute -top-[52px] left-0',
-                            'flex items-center h-[var(--wp-toolbar-height)]',
-                            'px-1 bg-[var(--wp-toolbar-bg)]',
-                            'border border-[var(--wp-toolbar-border)]',
-                            'rounded-[var(--wp-toolbar-border-radius)]',
-                            'shadow-[var(--wp-toolbar-shadow)]',
-                            'z-[var(--wp-z-block-toolbar)]'
-                        )}
-                        // Prevent toolbar clicks from bubbling
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {toolbar}
-                    </motion.div>
+                    <div className="wp-block-toolbar-wrap" onClick={(e) => e.stopPropagation()}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 4 }}
+                            transition={{ duration: 0.12, ease: 'easeOut' }}
+                            className="wp-block-toolbar"
+                        >
+                            {toolbar}
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 

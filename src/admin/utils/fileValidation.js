@@ -5,7 +5,7 @@
  * Centralizes logic that was previously duplicated across components.
  */
 
-import { FILE_CONSTRAINTS } from '../components/ImageUploader/config';
+import { FILE_CONSTRAINTS } from '@/components/ImageUploader/config';
 
 /**
  * Check if a File object is a valid image type

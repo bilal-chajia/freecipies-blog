@@ -13,9 +13,13 @@
  * https://developer.wordpress.org/block-editor/
  */
 
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef } from 'react';
 import { createReactBlockSpec } from '@blocknote/react';
+import { Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import BlockWrapper from '../components/BlockWrapper';
+import BlockToolbar from '../components/BlockToolbar';
+import { useBlockSelection } from '../selection-context';
 
 /**
  * Generate URL-friendly slug from title
@@ -112,6 +116,39 @@ export const TitleBlock = createReactBlockSpec(
         render: (props) => {
             const { block, editor } = props;
             const value = block.props.value || '';
+            const { isSelected, selectBlock } = useBlockSelection(block.id);
+
+            const moveBlockUp = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksUp();
+                editor.focus();
+            };
+
+            const moveBlockDown = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksDown();
+                editor.focus();
+            };
+
+            const sideMenu = editor.extensions?.sideMenu;
+            const handleDragStart = (event) => {
+                sideMenu?.blockDragStart?.(event, block);
+            };
+            const handleDragEnd = () => {
+                sideMenu?.blockDragEnd?.();
+            };
+
+            const toolbar = (
+                <BlockToolbar
+                    blockIcon={Type}
+                    blockLabel="Title"
+                    onMoveUp={moveBlockUp}
+                    onMoveDown={moveBlockDown}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    showMoreMenu={false}
+                />
+            );
 
             const handleChange = (newValue) => {
                 editor.updateBlock(block, {
@@ -121,13 +158,22 @@ export const TitleBlock = createReactBlockSpec(
             };
 
             return (
-                <div className="mb-4">
+                <BlockWrapper
+                    isSelected={isSelected}
+                    toolbar={toolbar}
+                    onClick={selectBlock}
+                    onFocus={selectBlock}
+                    onPointerDownCapture={selectBlock}
+                    blockType="title"
+                    blockId={block.id}
+                    className="mb-4"
+                >
                     <TitleInput
                         value={value}
                         onChange={handleChange}
                         placeholder="Add title"
                     />
-                </div>
+                </BlockWrapper>
             );
         },
     }

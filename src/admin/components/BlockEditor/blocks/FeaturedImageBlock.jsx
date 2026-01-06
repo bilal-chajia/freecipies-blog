@@ -21,6 +21,7 @@ import { Button } from '@/ui/button';
 import { MediaPlaceholder } from '../components/BlockPlaceholder';
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
+import { useBlockSelection } from '../selection-context';
 
 /**
  * FeaturedImage - Standalone component for use outside BlockNote
@@ -39,6 +40,7 @@ export function FeaturedImage({
     className,
     isSelected = false,
     onSelect,
+    onPointerDownCapture,
 }) {
     const [isHovered, setIsHovered] = useState(false);
 
@@ -96,11 +98,12 @@ export function FeaturedImage({
             isSelected={isSelected}
             toolbar={toolbar}
             onClick={onSelect}
+            onPointerDownCapture={onPointerDownCapture}
             blockType="featured-image"
-            className={cn('rounded-lg overflow-hidden', className)}
+            className={cn('rounded-lg', className)}
         >
             <div
-                className="relative group"
+                className="relative group rounded-lg overflow-hidden"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
@@ -202,6 +205,7 @@ export const FeaturedImageBlock = createReactBlockSpec(
                 focalX,
                 focalY,
             } = block.props;
+            const { isSelected, selectBlock } = useBlockSelection(block.id);
 
             const updateProps = (updates) => {
                 editor.updateBlock(block, {
@@ -217,6 +221,9 @@ export const FeaturedImageBlock = createReactBlockSpec(
                     imageWidth={imageWidth}
                     imageHeight={imageHeight}
                     focalPoint={{ x: focalX, y: focalY }}
+                    isSelected={isSelected}
+                    onSelect={selectBlock}
+                    onPointerDownCapture={selectBlock}
                     onImageSelect={(img) => updateProps({
                         imageUrl: img.url,
                         imageAlt: img.alt || '',

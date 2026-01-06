@@ -24,6 +24,9 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
+import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
+import BlockWrapper from '../components/BlockWrapper';
+import { useBlockSelection } from '../selection-context';
 
 // Video provider extraction
 function extractVideoId(url) {
@@ -128,7 +131,7 @@ export const VideoBlock = createReactBlockSpec(
         render: (props) => {
             const { block, editor } = props;
             const [inputUrl, setInputUrl] = useState(block.props.url);
-            const [isSelected, setIsSelected] = useState(false);
+            const { isSelected, selectBlock } = useBlockSelection(block.id);
             const hasVideo = block.props.provider && block.props.videoId;
 
             const handleUrlChange = (url) => {
@@ -165,18 +168,73 @@ export const VideoBlock = createReactBlockSpec(
                 });
             };
 
+            const moveBlockUp = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksUp();
+                editor.focus();
+            };
+
+            const moveBlockDown = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksDown();
+                editor.focus();
+            };
+
+            const sideMenu = editor.extensions?.sideMenu;
+            const handleDragStart = (event) => {
+                sideMenu?.blockDragStart?.(event, block);
+            };
+            const handleDragEnd = () => {
+                sideMenu?.blockDragEnd?.();
+            };
+
+            const toolbar = (
+                <BlockToolbar
+                    blockIcon={Video}
+                    blockLabel="Video"
+                    onMoveUp={moveBlockUp}
+                    onMoveDown={moveBlockDown}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    showMoreMenu={false}
+                >
+                    <AspectRatioToolbar
+                        current={block.props.aspectRatio}
+                        onChange={handleAspectChange}
+                    />
+                    <ToolbarSeparator />
+                    <ToolbarButton
+                        icon={X}
+                        label="Remove video"
+                        onClick={handleRemove}
+                        className="text-destructive"
+                    />
+                </BlockToolbar>
+            );
+
             // Placeholder state - no video
             if (!hasVideo) {
                 return (
-                    <EmbedPlaceholder
-                        icon={Video}
-                        label="Video"
-                        instructions="Paste a YouTube or Vimeo URL"
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        value={inputUrl}
-                        onChange={handleUrlChange}
-                        onEmbed={handleEmbed}
-                    />
+                    <BlockWrapper
+                        isSelected={isSelected}
+                        toolbar={toolbar}
+                        onClick={selectBlock}
+                        onFocus={selectBlock}
+                        onPointerDownCapture={selectBlock}
+                        blockType="video"
+                        blockId={block.id}
+                        className="my-2"
+                    >
+                        <EmbedPlaceholder
+                            icon={Video}
+                            label="Video"
+                            instructions="Paste a YouTube or Vimeo URL"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            value={inputUrl}
+                            onChange={handleUrlChange}
+                            onEmbed={handleEmbed}
+                        />
+                    </BlockWrapper>
                 );
             }
 
@@ -185,76 +243,16 @@ export const VideoBlock = createReactBlockSpec(
             const aspectConfig = aspectRatios.find(r => r.value === block.props.aspectRatio) || aspectRatios[0];
 
             return (
-                <div
-                    className={cn(
-                        'wp-block',
-                        isSelected && 'is-selected',
-                        'relative my-2',
-                        'transition-shadow duration-[var(--wp-transition-duration)]',
-                        !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
-                        isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]',
-                        'rounded-lg'
-                    )}
-                    data-block-type="video"
-                    tabIndex={0}
-                    onFocus={() => setIsSelected(true)}
-                    onBlur={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget)) {
-                            setIsSelected(false);
-                        }
-                    }}
+                <BlockWrapper
+                    isSelected={isSelected}
+                    toolbar={toolbar}
+                    onClick={selectBlock}
+                    onFocus={selectBlock}
+                    onPointerDownCapture={selectBlock}
+                    blockType="video"
+                    blockId={block.id}
+                    className="my-2"
                 >
-                    {/* Toolbar */}
-                    {isSelected && (
-                        <div
-                            className={cn(
-                                'absolute -top-[44px] left-0',
-                                'flex items-center h-10 px-1',
-                                'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
-                                'rounded-[var(--wp-toolbar-border-radius)]',
-                                'shadow-[var(--wp-toolbar-shadow)]',
-                                'z-[var(--wp-z-block-toolbar)]'
-                            )}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {/* Block type icon */}
-                            <div className="flex items-center px-1.5 text-muted-foreground">
-                                <Video className="w-4 h-4" />
-                            </div>
-
-                            <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
-
-                            {/* Aspect ratio */}
-                            <AspectRatioToolbar
-                                current={block.props.aspectRatio}
-                                onChange={handleAspectChange}
-                            />
-
-                            <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
-
-                            {/* Remove button */}
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        type="button"
-                                        onClick={handleRemove}
-                                        className={cn(
-                                            'flex items-center justify-center',
-                                            'w-[var(--wp-toolbar-button-size)] h-[var(--wp-toolbar-button-size)]',
-                                            'bg-transparent border-none rounded-sm cursor-pointer',
-                                            'text-destructive hover:bg-destructive/10'
-                                        )}
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="text-xs">
-                                    Remove video
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-                    )}
-
                     {/* Video embed */}
                     <div className={cn(
                         'relative w-full rounded-lg overflow-hidden bg-black',
@@ -275,7 +273,7 @@ export const VideoBlock = createReactBlockSpec(
                             {block.props.provider}
                         </span>
                     </div>
-                </div>
+                </BlockWrapper>
             );
         },
     }

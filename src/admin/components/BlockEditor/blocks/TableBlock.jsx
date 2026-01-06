@@ -13,11 +13,13 @@
  */
 
 import { createReactBlockSpec } from '@blocknote/react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Table2, Plus, Trash2, Columns, Rows } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
+import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
+import BlockWrapper from '../components/BlockWrapper';
+import { useBlockSelection } from '../selection-context';
 
 const parseList = (value, fallback = []) => {
     if (!value) return fallback;
@@ -54,7 +56,7 @@ export const TableBlock = createReactBlockSpec(
             const { block, editor } = props;
             const wrapperRef = useRef(null);
             const tableRef = useRef(null);
-            const [isSelected, setIsSelected] = useState(false);
+            const { isSelected, selectBlock } = useBlockSelection(block.id);
 
             const headers = useMemo(
                 () => parseList(block.props.headersJson),
@@ -240,253 +242,226 @@ export const TableBlock = createReactBlockSpec(
                 setColInsert(null);
             };
 
-            return (
-                <div
-                    className={cn(
-                        'wp-block',
-                        isSelected && 'is-selected',
-                        'relative my-2',
-                        'border rounded-lg p-4 bg-card shadow-sm',
-                        'transition-shadow duration-[var(--wp-transition-duration)]',
-                        !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
-                        isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]'
-                    )}
-                    data-block-type="table"
-                    tabIndex={0}
-                    onFocus={() => setIsSelected(true)}
-                    onBlur={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget)) {
-                            setIsSelected(false);
-                            clearIndicators();
-                        }
-                    }}
+            useEffect(() => {
+                if (!isSelected) {
+                    clearIndicators();
+                }
+            }, [isSelected]);
+
+            const moveBlockUp = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksUp();
+                editor.focus();
+            };
+
+            const moveBlockDown = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksDown();
+                editor.focus();
+            };
+
+            const sideMenu = editor.extensions?.sideMenu;
+            const handleDragStart = (event) => {
+                sideMenu?.blockDragStart?.(event, block);
+            };
+            const handleDragEnd = () => {
+                sideMenu?.blockDragEnd?.();
+            };
+
+            const toolbar = (
+                <BlockToolbar
+                    blockIcon={Table2}
+                    blockLabel="Table"
+                    onMoveUp={moveBlockUp}
+                    onMoveDown={moveBlockDown}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    showMoreMenu={false}
                 >
-                    {/* Toolbar */}
-                    <AnimatePresence>
-                        {isSelected && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 4 }}
-                                className={cn(
-                                    'absolute -top-[44px] left-0',
-                                    'flex items-center h-10 px-1',
-                                    'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
-                                    'rounded-[var(--wp-toolbar-border-radius)]',
-                                    'shadow-[var(--wp-toolbar-shadow)]',
-                                    'z-[var(--wp-z-block-toolbar)]'
-                                )}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="flex items-center px-1.5 text-muted-foreground">
-                                    <Table2 className="w-4 h-4" />
-                                </div>
+                    <span className="px-2 text-xs text-muted-foreground">
+                        {safeHeaders.length}x{safeRows.length}
+                    </span>
+                    <ToolbarSeparator />
+                    <ToolbarButton
+                        icon={Columns}
+                        label="Add column"
+                        onClick={addColumn}
+                    />
+                    <ToolbarButton
+                        icon={Rows}
+                        label="Add row"
+                        onClick={addRow}
+                    />
+                </BlockToolbar>
+            );
 
-                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
-
-                                <span className="px-2 text-xs text-muted-foreground">
-                                    {safeHeaders.length}×{safeRows.length}
+            return (
+                <BlockWrapper
+                    isSelected={isSelected}
+                    toolbar={toolbar}
+                    onClick={selectBlock}
+                    onFocus={selectBlock}
+                    onPointerDownCapture={selectBlock}
+                    blockType="table"
+                    blockId={block.id}
+                    className="my-2"
+                >
+                    <div className="border rounded-lg p-4 bg-card shadow-sm">
+                        {/* Header */}
+                        <div className="flex items-center gap-2 mb-3">
+                            <Table2 className="w-4 h-4 text-muted-foreground" />
+                            <h4 className="text-sm font-medium">Table</h4>
+                            {isSelected && (
+                                <span className="text-[11px] text-muted-foreground">
+                                    Hover between cells to add rows/columns
                                 </span>
+                            )}
+                        </div>
 
-                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
+                        <div
+                            ref={wrapperRef}
+                            className="relative overflow-x-auto"
+                            onMouseMove={updateHoverIndicators}
+                            onMouseLeave={clearIndicators}
+                        >
+                            {/* Column insert indicator */}
+                            {colInsert && (
+                                <>
+                                    <div
+                                        className="absolute z-10 bg-primary/70"
+                                        style={{
+                                            left: colInsert.left,
+                                            top: colInsert.top,
+                                            height: colInsert.height,
+                                            width: 2,
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => insertColumnAt(Math.min(colInsert.index, safeHeaders.length))}
+                                        className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-background text-primary shadow-sm hover:bg-primary hover:text-primary-foreground"
+                                        style={{ top: Math.max(0, colInsert.top - 14), left: Math.max(0, colInsert.left - 9) }}
+                                        title="Insert column"
+                                    >
+                                        <Plus className="w-3 h-3 mx-auto" />
+                                    </button>
+                                </>
+                            )}
 
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            onClick={addColumn}
-                                            className={cn(
-                                                'flex items-center justify-center gap-1',
-                                                'h-8 px-2 rounded-sm text-xs',
-                                                'hover:bg-[var(--wp-toolbar-button-hover-bg)]'
-                                            )}
-                                        >
-                                            <Columns className="w-3.5 h-3.5" />
-                                            <Plus className="w-3 h-3" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-xs">
-                                        Add column
-                                    </TooltipContent>
-                                </Tooltip>
+                            {/* Row insert indicator */}
+                            {rowInsert && (
+                                <>
+                                    <div
+                                        className="absolute z-10 bg-primary/70"
+                                        style={{
+                                            top: rowInsert.top,
+                                            left: rowInsert.left,
+                                            width: rowInsert.width,
+                                            height: 2,
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => insertRowAt(Math.min(rowInsert.index, safeRows.length))}
+                                        className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-background text-primary shadow-sm hover:bg-primary hover:text-primary-foreground"
+                                        style={{ left: Math.max(0, rowInsert.left - 14), top: Math.max(0, rowInsert.top - 9) }}
+                                        title="Insert row"
+                                    >
+                                        <Plus className="w-3 h-3 mx-auto" />
+                                    </button>
+                                </>
+                            )}
 
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            onClick={addRow}
-                                            className={cn(
-                                                'flex items-center justify-center gap-1',
-                                                'h-8 px-2 rounded-sm text-xs',
-                                                'hover:bg-[var(--wp-toolbar-button-hover-bg)]'
-                                            )}
-                                        >
-                                            <Rows className="w-3.5 h-3.5" />
-                                            <Plus className="w-3 h-3" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-xs">
-                                        Add row
-                                    </TooltipContent>
-                                </Tooltip>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* Header */}
-                    <div className="flex items-center gap-2 mb-3">
-                        <Table2 className="w-4 h-4 text-muted-foreground" />
-                        <h4 className="text-sm font-medium">Table</h4>
-                        {isSelected && (
-                            <span className="text-[11px] text-muted-foreground">
-                                Hover between cells to add rows/columns
-                            </span>
-                        )}
-                    </div>
-
-                    <div
-                        ref={wrapperRef}
-                        className="relative overflow-x-auto"
-                        onMouseMove={updateHoverIndicators}
-                        onMouseLeave={clearIndicators}
-                    >
-                        {/* Column insert indicator */}
-                        {colInsert && (
-                            <>
-                                <div
-                                    className="absolute z-10 bg-primary/70"
-                                    style={{
-                                        left: colInsert.left,
-                                        top: colInsert.top,
-                                        height: colInsert.height,
-                                        width: 2,
-                                    }}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => insertColumnAt(Math.min(colInsert.index, safeHeaders.length))}
-                                    className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-background text-primary shadow-sm hover:bg-primary hover:text-primary-foreground"
-                                    style={{ top: Math.max(0, colInsert.top - 14), left: Math.max(0, colInsert.left - 9) }}
-                                    title="Insert column"
-                                >
-                                    <Plus className="w-3 h-3 mx-auto" />
-                                </button>
-                            </>
-                        )}
-
-                        {/* Row insert indicator */}
-                        {rowInsert && (
-                            <>
-                                <div
-                                    className="absolute z-10 bg-primary/70"
-                                    style={{
-                                        top: rowInsert.top,
-                                        left: rowInsert.left,
-                                        width: rowInsert.width,
-                                        height: 2,
-                                    }}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => insertRowAt(Math.min(rowInsert.index, safeRows.length))}
-                                    className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-background text-primary shadow-sm hover:bg-primary hover:text-primary-foreground"
-                                    style={{ left: Math.max(0, rowInsert.left - 14), top: Math.max(0, rowInsert.top - 9) }}
-                                    title="Insert row"
-                                >
-                                    <Plus className="w-3 h-3 mx-auto" />
-                                </button>
-                            </>
-                        )}
-
-                        <table ref={tableRef} className="w-full border-collapse text-sm">
-                            <thead>
-                                <tr>
-                                    {safeHeaders.map((header, index) => (
-                                        <th key={`h-${index}`} className="table-col border border-border p-2 bg-muted/50">
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={header}
-                                                    onChange={(e) => {
-                                                        const next = [...safeHeaders];
-                                                        next[index] = e.target.value;
-                                                        updateHeaders(next);
-                                                    }}
-                                                    className={cn(
-                                                        'w-full px-2 py-1 text-xs font-medium',
-                                                        'bg-background border border-input rounded-md',
-                                                        'focus:outline-none focus:ring-2 focus:ring-ring'
+                            <table ref={tableRef} className="w-full border-collapse text-sm">
+                                <thead>
+                                    <tr>
+                                        {safeHeaders.map((header, index) => (
+                                            <th key={`h-${index}`} className="table-col border border-border p-2 bg-muted/50">
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={header}
+                                                        onChange={(e) => {
+                                                            const next = [...safeHeaders];
+                                                            next[index] = e.target.value;
+                                                            updateHeaders(next);
+                                                        }}
+                                                        className={cn(
+                                                            'w-full px-2 py-1 text-xs font-medium',
+                                                            'bg-background border border-input rounded-md',
+                                                            'focus:outline-none focus:ring-2 focus:ring-ring'
+                                                        )}
+                                                    />
+                                                    {isSelected && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeColumn(index)}
+                                                            className="text-muted-foreground hover:text-destructive"
+                                                            title="Remove column"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" />
+                                                        </button>
                                                     )}
-                                                />
-                                                {isSelected && (
+                                                </div>
+                                            </th>
+                                        ))}
+                                        {isSelected && (
+                                            <th className="table-action-col border border-border p-2 bg-muted/50 text-center text-xs text-muted-foreground">
+                                                Row
+                                            </th>
+                                        )}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {safeRows.map((row, rowIndex) => (
+                                        <tr key={`r-${rowIndex}`}>
+                                            {row.map((cell, cellIndex) => (
+                                                <td key={`c-${rowIndex}-${cellIndex}`} className="table-col border border-border p-2">
+                                                    <input
+                                                        type="text"
+                                                        value={cell || ''}
+                                                        onChange={(e) => {
+                                                            const nextRows = safeRows.map((r) => [...r]);
+                                                            nextRows[rowIndex][cellIndex] = e.target.value;
+                                                            updateRows(nextRows);
+                                                        }}
+                                                        className={cn(
+                                                            'w-full px-2 py-1 text-xs',
+                                                            'bg-background border border-input rounded-md',
+                                                            'focus:outline-none focus:ring-2 focus:ring-ring'
+                                                        )}
+                                                    />
+                                                </td>
+                                            ))}
+                                            {isSelected && (
+                                                <td className="border border-border p-2 text-center">
                                                     <button
                                                         type="button"
-                                                        onClick={() => removeColumn(index)}
+                                                        onClick={() => removeRow(rowIndex)}
                                                         className="text-muted-foreground hover:text-destructive"
-                                                        title="Remove column"
+                                                        title="Remove row"
                                                     >
                                                         <Trash2 className="w-3 h-3" />
                                                     </button>
-                                                )}
-                                            </div>
-                                        </th>
+                                                </td>
+                                            )}
+                                        </tr>
                                     ))}
-                                    {isSelected && (
-                                        <th className="table-action-col border border-border p-2 bg-muted/50 text-center text-xs text-muted-foreground">
-                                            Row
-                                        </th>
+                                    {safeRows.length === 0 && (
+                                        <tr>
+                                            <td
+                                                className="border border-border p-3 text-xs text-muted-foreground text-center"
+                                                colSpan={safeHeaders.length + (isSelected ? 1 : 0)}
+                                            >
+                                                No rows yet. Add one to start.
+                                            </td>
+                                        </tr>
                                     )}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {safeRows.map((row, rowIndex) => (
-                                    <tr key={`r-${rowIndex}`}>
-                                        {row.map((cell, cellIndex) => (
-                                            <td key={`c-${rowIndex}-${cellIndex}`} className="table-col border border-border p-2">
-                                                <input
-                                                    type="text"
-                                                    value={cell || ''}
-                                                    onChange={(e) => {
-                                                        const nextRows = safeRows.map((r) => [...r]);
-                                                        nextRows[rowIndex][cellIndex] = e.target.value;
-                                                        updateRows(nextRows);
-                                                    }}
-                                                    className={cn(
-                                                        'w-full px-2 py-1 text-xs',
-                                                        'bg-background border border-input rounded-md',
-                                                        'focus:outline-none focus:ring-2 focus:ring-ring'
-                                                    )}
-                                                />
-                                            </td>
-                                        ))}
-                                        {isSelected && (
-                                            <td className="border border-border p-2 text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeRow(rowIndex)}
-                                                    className="text-muted-foreground hover:text-destructive"
-                                                    title="Remove row"
-                                                >
-                                                    <Trash2 className="w-3 h-3" />
-                                                </button>
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))}
-                                {safeRows.length === 0 && (
-                                    <tr>
-                                        <td
-                                            className="border border-border p-3 text-xs text-muted-foreground text-center"
-                                            colSpan={safeHeaders.length + (isSelected ? 1 : 0)}
-                                        >
-                                            No rows yet. Add one to start.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                </BlockWrapper>
             );
         },
     }

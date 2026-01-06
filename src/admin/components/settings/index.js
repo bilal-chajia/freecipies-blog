@@ -4,3 +4,4 @@
 export { SettingsSection } from './SettingsSection';
 export { FormField } from './FormField';
 export { ToggleCard } from './ToggleCard';
+export { default as SettingsLayout, settingsTabs } from './SettingsLayout';

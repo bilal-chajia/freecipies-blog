@@ -7,7 +7,7 @@ import { Label } from '@/ui/label.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { tagsAPI } from '../../services/api';
 import { generateSlug } from '../../utils/helpers';
-import ColorPicker from '../../components/ColorPicker';
+import ColorPicker from '@/components/ColorPicker';
 
 const TagEditor = () => {
   const { slug } = useParams();

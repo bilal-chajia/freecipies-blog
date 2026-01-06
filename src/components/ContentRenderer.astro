@@ -24,7 +24,7 @@ const renderInlineMarkdown = (text?: string): string => {
   if (!source) return "";
   const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
 
-  return source.replace(pattern, (_, label, href) => {
+  const withLinks = source.replace(pattern, (_, label, href) => {
     const safeHref = sanitizeHref(href || "");
     if (!safeHref) return label;
     const isExternal = safeHref.startsWith("http");
@@ -32,6 +32,11 @@ const renderInlineMarkdown = (text?: string): string => {
     const rel = isExternal ? ' rel="noreferrer noopener"' : "";
     return `<a href="${safeHref}" class="text-blue-600 underline underline-offset-2"${target}${rel}>${label}</a>`;
   });
+
+  return withLinks
+    .replace(/\*\*\*([\s\S]+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+    .replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+?)\*/g, "<em>$1</em>");
 };
 
 const parsed = (() => {

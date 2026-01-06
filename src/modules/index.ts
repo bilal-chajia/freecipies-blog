@@ -14,3 +14,4 @@ export * as pinterest from './pinterest';
 export * as templates from './templates';
 export * as settings from './settings';
 export * as auth from './auth';
+export * as menus from './menus';

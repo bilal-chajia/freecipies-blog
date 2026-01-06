@@ -9,14 +9,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BlockNoteViewWithPortal } from './BlockNoteViewWithPortal';
 import {
     useCreateBlockNote,
-    FormattingToolbarController,
-    FormattingToolbar,
-    CreateLinkButton,
-    SideMenuController,
-    LinkToolbarController,
-    BasicTextStyleButton
 } from '@blocknote/react';
-import { BlockNoteSchema, defaultBlockSpecs } from '@blocknote/core';
+import { BlockNoteSchema, defaultBlockSpecs, getBlockInfo, getNearestBlockPos } from '@blocknote/core';
 import { SuggestionMenuController, getDefaultReactSlashMenuItems } from "@blocknote/react";
 import '@blocknote/mantine/style.css';
 import { cn } from '@/lib/utils';
@@ -29,7 +23,15 @@ import {
     Heading1,
     Heading2,
     Heading3,
+    Heading4,
+    Heading5,
+    Heading6,
     Link as LinkIcon,
+    Bold,
+    Italic,
+    Check,
+    X,
+    Pilcrow,
     Quote,
     ListTree,
     Minus,
@@ -39,10 +41,17 @@ import {
     LayoutGrid,
     Table,
     FileText,
-    X,
     SplitSquareVertical
 } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/ui/dropdown-menu';
 import { RelatedContentProvider } from './related-content-context';
+import { BlockSelectionProvider } from './selection-context';
 
 // Custom blocks
 import {
@@ -175,11 +184,79 @@ const truncateLabel = (text = '') => {
     return `${value.slice(0, MAX_STRUCTURE_LABEL - 3)}...`;
 };
 
-const flattenBlocks = (blocks, depth = 0, acc = []) => {
+const getInlineTextLength = (content) => {
+    if (!content) return 0;
+    if (typeof content === 'string') return content.length;
+    if (!Array.isArray(content)) return 0;
+    return content.reduce((total, node) => {
+        if (!node) return total;
+        if (typeof node === 'string') return total + node.length;
+        if (node.type === 'text') return total + (node.text || '').length;
+        if (node.type === 'link') return total + getInlineTextLength(node.content);
+        return total;
+    }, 0);
+};
+
+const truncateInlineContent = (content, limit) => {
+    if (!content) return '';
+    if (!limit || limit <= 0) return '';
+    if (typeof content === 'string') {
+        return content.slice(0, limit);
+    }
+    if (!Array.isArray(content)) return '';
+
+    let remaining = limit;
+    const nodes = [];
+
+    const takeText = (text, styles = {}) => {
+        if (!text || remaining <= 0) return;
+        const slice = text.slice(0, remaining);
+        if (!slice) return;
+        remaining -= slice.length;
+        nodes.push({ type: 'text', text: slice, styles });
+    };
+
+    for (const node of content) {
+        if (remaining <= 0) break;
+        if (!node) continue;
+        if (typeof node === 'string') {
+            takeText(node);
+            continue;
+        }
+        if (node.type === 'text') {
+            takeText(node.text || '', node.styles || {});
+            continue;
+        }
+        if (node.type === 'link') {
+            const labelContent = Array.isArray(node.content)
+                ? node.content
+                : typeof node.content === 'string'
+                    ? [{ type: 'text', text: node.content, styles: {} }]
+                    : [];
+            if (!labelContent.length) continue;
+            const truncated = truncateInlineContent(labelContent, remaining);
+            if (!truncated || (Array.isArray(truncated) && truncated.length === 0)) continue;
+            const labelNodes = Array.isArray(truncated)
+                ? truncated
+                : [{ type: 'text', text: truncated, styles: {} }];
+            const labelLength = getInlineTextLength(labelNodes);
+            remaining -= Math.min(remaining, Math.max(0, labelLength));
+            nodes.push({
+                type: 'link',
+                href: node.href,
+                content: labelNodes,
+            });
+        }
+    }
+
+    return nodes;
+};
+
+const flattenBlocks = (blocks, depth = 0, acc = [], parentId = null) => {
     (blocks || []).forEach((block) => {
-        acc.push({ block, depth });
+        acc.push({ block, depth, parentId });
         if (Array.isArray(block.children) && block.children.length > 0) {
-            flattenBlocks(block.children, depth + 1, acc);
+            flattenBlocks(block.children, depth + 1, acc, block.id);
         }
     });
     return acc;
@@ -190,8 +267,13 @@ const getBlockLabel = (block) => {
     switch (block.type) {
         case 'heading':
             return truncateLabel(contentText || `Heading ${block.props?.level || ''}`);
-        case 'paragraph':
-            return truncateLabel(contentText || 'Paragraph');
+        case 'paragraph': {
+            const previewNodes = truncateInlineContent(block.content, 15);
+            const previewText = serializeInlineContent(previewNodes);
+            const trimmed = (previewText || '').trim();
+            if (!trimmed) return 'Paragraph';
+            return `Paragraph (${trimmed})`;
+        }
         case 'bulletListItem':
             return truncateLabel(contentText || 'Bullet item');
         case 'numberedListItem':
@@ -221,10 +303,25 @@ const getBlockLabel = (block) => {
     }
 };
 
-const getBlockIcon = (type) => {
+const getBlockIcon = (blockOrType) => {
+    const type = typeof blockOrType === 'string' ? blockOrType : blockOrType?.type;
+    const level = typeof blockOrType === 'object' ? blockOrType?.props?.level : undefined;
     switch (type) {
         case 'heading':
-            return Heading1;
+            switch (level) {
+                case 2:
+                    return Heading2;
+                case 3:
+                    return Heading3;
+                case 4:
+                    return Heading4;
+                case 5:
+                    return Heading5;
+                case 6:
+                    return Heading6;
+                default:
+                    return Heading1;
+            }
         case 'bulletListItem':
             return List;
         case 'numberedListItem':
@@ -249,10 +346,29 @@ const getBlockIcon = (type) => {
             return SplitSquareVertical;
         case 'blockquote':
             return Quote;
+        case 'paragraph':
+            return Pilcrow;
         default:
             return FileText;
     }
 };
+
+const CUSTOM_BLOCK_TYPES = new Set([
+    'title',
+    'headline',
+    'customImage',
+    'alert',
+    'divider',
+    'faqSection',
+    'beforeAfter',
+    'simpleTable',
+    'video',
+    'recipeEmbed',
+    'relatedContent',
+    'featuredImage',
+    'mainRecipe',
+    'roundupList',
+]);
 
 /**
  * Editor Toolbar Component
@@ -404,32 +520,50 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
                 >
                     <LinkIcon className="w-4 h-4" />
                 </button>
-                <button onClick={() => {
-                    const currentBlock = editor.getTextCursorPosition().block;
-                    // Toggle block type logic is complex, simpler to just insert for now or use editor capabilities
-                    // For simplistic toolbar we just insert 'after'
-                    insertBlock('paragraph'); // This is just 'Reset' essentially if used on empty
-                }} className="p-1.5 hover:bg-gray-200 rounded text-gray-700 hidden" title="Text"><span className="text-xs font-serif font-bold">T</span></button>
-
                 <div className="w-px h-4 bg-gray-300 mx-1" />
 
-                {/* Media */}
-                <button onClick={() => insertBlock('customImage')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Image"><ImageIcon className="w-4 h-4" /></button>
-                <button onClick={() => insertBlock('video')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Video"><Video className="w-4 h-4" /></button>
-
-                <div className="w-px h-4 bg-gray-300 mx-1" />
-
-                {/* Food Blog specific */}
-                <button onClick={() => insertBlock('alert', { type: 'tip' })} className="p-1.5 hover:bg-gray-200 rounded text-amber-600" title="Tip/Alert"><AlertTriangle className="w-4 h-4" /></button>
-                <button onClick={() => insertBlock('recipeEmbed')} className="p-1.5 hover:bg-gray-200 rounded text-green-600" title="Embed Recipe"><Utensils className="w-4 h-4" /></button>
-                <button onClick={() => insertBlock('faqSection')} className="p-1.5 hover:bg-gray-200 rounded text-blue-600" title="FAQ"><HelpCircle className="w-4 h-4" /></button>
-                <button onClick={() => insertBlock('relatedContent')} className="p-1.5 hover:bg-gray-200 rounded text-purple-600" title="Related Content"><LayoutGrid className="w-4 h-4" /></button>
-                <button onClick={() => insertBlock('beforeAfter')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Before/After"><SplitSquareVertical className="w-4 h-4" /></button>
-                <button onClick={() => insertBlock('simpleTable')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Table"><Table className="w-4 h-4" /></button>
-
-                <div className="w-px h-4 bg-gray-300 mx-1" />
-
-                <button onClick={() => insertBlock('divider')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Divider"><Minus className="w-4 h-4" /></button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            className="p-1.5 hover:bg-gray-200 rounded text-gray-700 inline-flex items-center gap-1"
+                            title="Insert block"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-xs font-medium">Insert</span>
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52">
+                        <DropdownMenuItem onClick={() => insertBlock('customImage')}>
+                            <ImageIcon className="w-4 h-4 mr-2" /> Image
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => insertBlock('video')}>
+                            <Video className="w-4 h-4 mr-2" /> Video
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => insertBlock('alert', { type: 'tip' })}>
+                            <AlertTriangle className="w-4 h-4 mr-2 text-amber-600" /> Alert / Tip
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => insertBlock('faqSection')}>
+                            <HelpCircle className="w-4 h-4 mr-2 text-blue-600" /> FAQ Section
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => insertBlock('recipeEmbed')}>
+                            <Utensils className="w-4 h-4 mr-2 text-green-600" /> Embed Recipe
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => insertBlock('relatedContent')}>
+                            <LayoutGrid className="w-4 h-4 mr-2 text-purple-600" /> Related Content
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => insertBlock('beforeAfter')}>
+                            <SplitSquareVertical className="w-4 h-4 mr-2" /> Before / After
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => insertBlock('simpleTable')}>
+                            <Table className="w-4 h-4 mr-2" /> Table
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => insertBlock('divider')}>
+                            <Minus className="w-4 h-4 mr-2" /> Divider
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
             {faqLinkOpen && (
                 <div className="px-2 pb-2">
@@ -486,84 +620,6 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
     );
 };
 
-const StructurePanel = ({
-    open,
-    tab,
-    items,
-    activeBlockId,
-    onTabChange,
-    onSelectBlock,
-    onClose,
-}) => {
-    if (!open) return null;
-
-    const outlineItems = items.filter((item) => item.type === 'heading');
-    const visibleItems = tab === 'outline' ? outlineItems : items;
-
-    return (
-        <div className="block-editor-structure-panel">
-            <div className="structure-panel-header">
-                <div className="structure-tabs">
-                    <button
-                        type="button"
-                        className={`structure-tab ${tab === 'list' ? 'is-active' : ''}`}
-                        onClick={() => onTabChange('list')}
-                    >
-                        List View
-                    </button>
-                    <button
-                        type="button"
-                        className={`structure-tab ${tab === 'outline' ? 'is-active' : ''}`}
-                        onClick={() => onTabChange('outline')}
-                    >
-                        Outline
-                    </button>
-                </div>
-                <button
-                    type="button"
-                    className="structure-close"
-                    onClick={onClose}
-                    title="Close"
-                >
-                    <X className="w-4 h-4" />
-                </button>
-            </div>
-            <div className="structure-panel-list">
-                {visibleItems.length === 0 ? (
-                    <div className="structure-empty">No blocks yet.</div>
-                ) : (
-                    visibleItems.map((item) => {
-                        const Icon = getBlockIcon(item.type);
-                        return (
-                            <button
-                                key={item.id}
-                                type="button"
-                                className={`structure-item ${activeBlockId === item.id ? 'is-active' : ''}`}
-                                style={{ paddingLeft: `${12 + item.depth * 14}px` }}
-                                onClick={() => onSelectBlock(item.id)}
-                            >
-                                <Icon className="structure-item-icon" />
-                                <span className="structure-item-label">{item.label}</span>
-                                {item.type === 'heading' && item.level ? (
-                                    <span className="structure-item-meta">H{item.level}</span>
-                                ) : null}
-                            </button>
-                        );
-                    })
-                )}
-            </div>
-        </div>
-    );
-};
-
-const LinkFormattingToolbar = () => (
-    <FormattingToolbar>
-        <BasicTextStyleButton basicTextStyle="bold" />
-        <BasicTextStyleButton basicTextStyle="italic" />
-        <CreateLinkButton />
-    </FormattingToolbar>
-);
-
 const normalizeTipVariant = (variant) => {
     if (variant === 'error') return 'warning';
     if (variant === 'success') return 'tip';
@@ -594,38 +650,173 @@ const buildVideoUrl = (provider, videoId) => {
     return '';
 };
 
+const parseInlineStyles = (text = '') => {
+    const nodes = [];
+    let hasStyle = false;
+    let index = 0;
+
+    const pushPlain = (value) => {
+        if (!value) return;
+        nodes.push({ type: 'text', text: value, styles: {} });
+    };
+
+    while (index < text.length) {
+        const nextTriple = text.indexOf('***', index);
+        const nextBold = text.indexOf('**', index);
+        const nextItalic = text.indexOf('*', index);
+        let tokenIndex = -1;
+        let token = null;
+
+        const candidates = [
+            { type: 'triple', index: nextTriple },
+            { type: 'bold', index: nextBold },
+            { type: 'italic', index: nextItalic },
+        ].filter((candidate) => candidate.index !== -1);
+
+        if (candidates.length > 0) {
+            candidates.sort((a, b) => {
+                if (a.index !== b.index) return a.index - b.index;
+                const order = { triple: 0, bold: 1, italic: 2 };
+                return order[a.type] - order[b.type];
+            });
+            tokenIndex = candidates[0].index;
+            token = candidates[0].type;
+        }
+
+        if (tokenIndex === -1) {
+            pushPlain(text.slice(index));
+            break;
+        }
+
+        if (tokenIndex > index) {
+            pushPlain(text.slice(index, tokenIndex));
+        }
+
+        if (token === 'triple') {
+            const end = text.indexOf('***', tokenIndex + 3);
+            if (end === -1) {
+                pushPlain(text.slice(tokenIndex));
+                break;
+            }
+            const inner = text.slice(tokenIndex + 3, end);
+            nodes.push({ type: 'text', text: inner, styles: { bold: true, italic: true } });
+            hasStyle = true;
+            index = end + 3;
+            continue;
+        }
+
+        if (token === 'bold') {
+            const end = text.indexOf('**', tokenIndex + 2);
+            if (end === -1) {
+                pushPlain(text.slice(tokenIndex));
+                break;
+            }
+            const inner = text.slice(tokenIndex + 2, end);
+            nodes.push({ type: 'text', text: inner, styles: { bold: true } });
+            hasStyle = true;
+            index = end + 2;
+            continue;
+        }
+
+        if (token === 'italic') {
+            let end = text.indexOf('*', tokenIndex + 1);
+            while (end !== -1 && text[end + 1] === '*') {
+                end = text.indexOf('*', end + 2);
+            }
+            if (end === -1) {
+                pushPlain(text.slice(tokenIndex));
+                break;
+            }
+            const inner = text.slice(tokenIndex + 1, end);
+            nodes.push({ type: 'text', text: inner, styles: { italic: true } });
+            hasStyle = true;
+            index = end + 1;
+            continue;
+        }
+    }
+
+    return { nodes, hasStyle };
+};
+
 const parseInlineMarkdown = (text) => {
     if (!text) return '';
     const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
     let match;
     let lastIndex = 0;
     const parts = [];
-    let hasLink = false;
+    let hasRich = false;
 
     while ((match = pattern.exec(text)) !== null) {
         if (match.index > lastIndex) {
-            parts.push(text.slice(lastIndex, match.index));
+            const segment = text.slice(lastIndex, match.index);
+            const parsed = parseInlineStyles(segment);
+            if (parsed.hasStyle) {
+                parts.push(...parsed.nodes);
+                hasRich = true;
+            } else {
+                parts.push(segment);
+            }
         }
+
+        const label = match[1];
+        const href = match[2];
+        const labelParsed = parseInlineStyles(label);
+        const linkContent = labelParsed.nodes.length
+            ? labelParsed.nodes
+            : [{ type: 'text', text: label, styles: {} }];
         parts.push({
             type: 'link',
-            href: match[2],
-            content: match[1],
+            href,
+            content: linkContent,
         });
-        hasLink = true;
+        hasRich = true;
         lastIndex = match.index + match[0].length;
     }
 
     if (lastIndex < text.length) {
-        parts.push(text.slice(lastIndex));
+        const tail = text.slice(lastIndex);
+        const parsed = parseInlineStyles(tail);
+        if (parsed.hasStyle) {
+            parts.push(...parsed.nodes);
+            hasRich = true;
+        } else {
+            parts.push(tail);
+        }
     }
 
-    return hasLink ? parts : text;
+    if (!hasRich) {
+        return text;
+    }
+
+    const normalized = [];
+    parts.forEach((part) => {
+        if (!part) return;
+        if (typeof part === 'string') {
+            if (!part) return;
+            normalized.push({ type: 'text', text: part, styles: {} });
+        } else {
+            normalized.push(part);
+        }
+    });
+
+    return normalized;
+};
+
+const applyInlineStyles = (text, styles = {}) => {
+    let output = text;
+    if (styles.italic) {
+        output = `*${output}*`;
+    }
+    if (styles.bold) {
+        output = `**${output}**`;
+    }
+    return output;
 };
 
 const serializeInlineNode = (node) => {
     if (!node) return '';
     if (typeof node === 'string') return node;
-    if (node.type === 'text') return node.text || '';
+    if (node.type === 'text') return applyInlineStyles(node.text || '', node.styles || {});
     if (node.type === 'link') {
         const label = serializeInlineContent(node.content || '');
         const href = node.href || '';
@@ -1086,6 +1277,9 @@ export default function BlockEditor({
     value,
     onChange,
     contentType = 'article',
+    isSidebarOpen = true,
+    onStructureUpdate,
+    onSelectedBlockChange,
     recipe,
     onRecipeChange,
     roundup,
@@ -1096,9 +1290,9 @@ export default function BlockEditor({
     context,
 }) {
     const wrapperRef = useRef(null);
+    const canvasRef = useRef(null);
     const onChangeRef = useRef(onChange);
     const lastSerializedRef = useRef('');
-    const [structurePanelOpen, setStructurePanelOpen] = useState(false);
 
     // Initial content setup
     const initialContent = useMemo(() => {
@@ -1166,10 +1360,22 @@ export default function BlockEditor({
         updateContent();
     }, [editor, value]);
 
-    const [structureTab, setStructureTab] = useState('list');
     const [structureItems, setStructureItems] = useState([]);
     const [activeBlockId, setActiveBlockId] = useState(null);
     const [insertHandle, setInsertHandle] = useState(null);
+    const [insertMenuOpen, setInsertMenuOpen] = useState(false);
+    const insertMenuOpenRef = useRef(false);
+    const [linkToolbar, setLinkToolbar] = useState({
+        open: false,
+        top: 0,
+        left: 0,
+        text: '',
+        url: '',
+        selection: null,
+        mode: 'buttons',
+    });
+    const linkToolbarRef = useRef(linkToolbar);
+    const [activeStyles, setActiveStyles] = useState({});
 
     useEffect(() => {
         onChangeRef.current = onChange;
@@ -1181,14 +1387,61 @@ export default function BlockEditor({
         const handleChange = () => {
             const blocks = editor.document;
             const flatBlocks = flattenBlocks(blocks);
-            const nextItems = flatBlocks.map(({ block, depth }) => ({
+            const nextItems = flatBlocks.map(({ block, depth, parentId }) => ({
                 id: block.id,
                 type: block.type,
                 depth,
+                parentId,
                 level: block.props?.level,
                 label: getBlockLabel(block),
+                icon: getBlockIcon(block),
             }));
             setStructureItems(nextItems);
+            if (editor.domElement) {
+                const blockIds = new Set(flatBlocks.map(({ block }) => block.id));
+                const customIds = new Set(
+                    flatBlocks
+                        .filter(({ block }) => CUSTOM_BLOCK_TYPES.has(block.type))
+                        .map(({ block }) => block.id)
+                );
+
+                editor.domElement.querySelectorAll('[data-id][data-block-root]').forEach((node) => {
+                    node.removeAttribute('data-block-root');
+                });
+                editor.domElement.querySelectorAll('[data-id][data-custom-block]').forEach((node) => {
+                    node.removeAttribute('data-custom-block');
+                });
+
+                const escapeSelector = (value) => {
+                    try {
+                        return CSS.escape(value);
+                    } catch {
+                        return value.replace(/["\\]/g, '\\$&');
+                    }
+                };
+
+                const nodesById = new Map();
+                editor.domElement.querySelectorAll('[data-id]').forEach((node) => {
+                    const id = node.getAttribute('data-id');
+                    if (!id || !blockIds.has(id)) return;
+                    if (!nodesById.has(id)) nodesById.set(id, []);
+                    nodesById.get(id).push(node);
+                });
+
+                nodesById.forEach((nodes, id) => {
+                    const selector = `[data-id="${escapeSelector(id)}"]`;
+                    const rootNode = nodes.find((node) => !node.parentElement?.closest(selector)) || nodes[0];
+                    if (!rootNode) return;
+                    rootNode.setAttribute('data-block-root', 'true');
+                    if (customIds.has(id)) {
+                        rootNode.setAttribute('data-custom-block', 'true');
+                    }
+                });
+            }
+            if (onSelectedBlockChange && activeBlockId) {
+                const activeBlock = flatBlocks.find(({ block }) => block.id === activeBlockId)?.block || null;
+                onSelectedBlockChange(activeBlock);
+            }
             if (onChangeRef.current) {
                 const contentJson = blocksToContentJson(blocks);
                 const serialized = JSON.stringify(contentJson, null, 2);
@@ -1211,13 +1464,106 @@ export default function BlockEditor({
         const handleSelection = () => {
             const block = editor.getTextCursorPosition().block;
             setActiveBlockId(block?.id || null);
+            onSelectedBlockChange?.(block || null);
         };
         handleSelection();
         const unsubscribe = editor.onSelectionChange(handleSelection);
         return () => {
             if (typeof unsubscribe === 'function') unsubscribe();
         };
-    }, [editor]);
+    }, [editor, insertMenuOpen, onSelectedBlockChange]);
+
+    useEffect(() => {
+        if (!editor) return undefined;
+
+        const handleSelection = () => {
+            if (linkToolbarRef.current.mode === 'link') {
+                return;
+            }
+            const text = editor.getSelectedText() || '';
+            if (!text) {
+                setLinkToolbar((prev) => (prev.open ? { ...prev, open: false, mode: 'buttons', selection: null } : prev));
+                setActiveStyles({});
+                return;
+            }
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) {
+                setLinkToolbar((prev) => (prev.open ? { ...prev, open: false, mode: 'buttons', selection: null } : prev));
+                setActiveStyles({});
+                return;
+            }
+            const anchorNode = selection.anchorNode;
+            if (anchorNode && editor.domElement && !editor.domElement.contains(anchorNode)) {
+                setLinkToolbar((prev) => (prev.open ? { ...prev, open: false, mode: 'buttons', selection: null } : prev));
+                setActiveStyles({});
+                return;
+            }
+            const range = selection.getRangeAt(0);
+            if (range.collapsed) {
+                setLinkToolbar((prev) => (prev.open ? { ...prev, open: false, mode: 'buttons', selection: null } : prev));
+                setActiveStyles({});
+                return;
+            }
+            const rect = range.getBoundingClientRect();
+            if (!rect || (!rect.width && !rect.height)) {
+                setLinkToolbar((prev) => (prev.open ? { ...prev, open: false, mode: 'buttons', selection: null } : prev));
+                setActiveStyles({});
+                return;
+            }
+            const wrapper = wrapperRef.current;
+            if (!wrapper) return;
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const left = rect.left - wrapperRect.left + rect.width / 2;
+            const top = rect.top - wrapperRect.top - 10;
+            const url = editor.getSelectedLinkUrl() || '';
+            const selectionState = editor._tiptapEditor?.state?.selection;
+            const selectionRange = selectionState ? { from: selectionState.from, to: selectionState.to } : null;
+            setLinkToolbar({
+                open: true,
+                top,
+                left,
+                text,
+                url,
+                selection: selectionRange,
+                mode: 'buttons',
+            });
+            setActiveStyles(editor.getActiveStyles() || {});
+        };
+
+        handleSelection();
+        const unsubscribe = editor.onSelectionChange(handleSelection);
+        return () => {
+            if (typeof unsubscribe === 'function') unsubscribe();
+        };
+    }, [editor, activeBlockId, onSelectedBlockChange]);
+
+    useEffect(() => {
+        onStructureUpdate?.({
+            items: structureItems,
+            activeBlockId,
+        });
+    }, [structureItems, activeBlockId, onStructureUpdate]);
+
+    useEffect(() => {
+        if (!editor?.domElement) return;
+        const root = editor.domElement;
+        const prevSelected = root.querySelector('[data-selected="true"]');
+        if (prevSelected) {
+            prevSelected.removeAttribute('data-selected');
+        }
+        if (activeBlockId) {
+            const byRoot = root.querySelector(`[data-block-root="true"][data-id="${activeBlockId}"]`);
+            const byId = root.querySelector(`[data-id="${activeBlockId}"]`);
+            const bySelection = root.querySelector('.ProseMirror-selectednode')?.closest('[data-id]');
+            const nextSelected = byRoot || byId || bySelection;
+            if (nextSelected) {
+                nextSelected.setAttribute('data-selected', 'true');
+                if (!nextSelected.hasAttribute('data-block-root')) {
+                    nextSelected.setAttribute('data-block-root', 'true');
+                }
+            }
+        }
+    }, [editor, activeBlockId]);
 
     useEffect(() => {
         if (!editor?.domElement) return;
@@ -1242,11 +1588,13 @@ export default function BlockEditor({
     }, [editor]);
 
     useEffect(() => {
-        if (!editor?.domElement || !wrapperRef.current) return;
-        const root = editor.domElement;
+        if (!editor?.prosemirrorView || !wrapperRef.current) return;
+        const root = editor.prosemirrorView?.dom || editor.domElement;
         const wrapper = wrapperRef.current;
+        const canvas = canvasRef.current;
 
         const updateHandle = (event) => {
+            if (insertMenuOpenRef.current) return;
             const target = event.target;
             if (!(target instanceof HTMLElement)) return;
             if (
@@ -1260,22 +1608,62 @@ export default function BlockEditor({
                 return;
             }
 
-            const blockOuter = target.closest('.bn-block-outer');
-            if (!blockOuter || !root.contains(blockOuter)) {
+            const isInsideEditor = (root instanceof HTMLElement && root.contains(target)) || wrapper.contains(target);
+            if (!isInsideEditor) {
                 setInsertHandle(null);
                 return;
             }
-            const blockId = blockOuter.getAttribute('data-id');
-            if (!blockId) {
+
+            const blockOuter = target.closest('[data-id]');
+            let blockId = blockOuter?.getAttribute('data-id') || null;
+            let rect = blockOuter instanceof HTMLElement ? blockOuter.getBoundingClientRect() : null;
+            const edgeThreshold = 10;
+
+            if (!blockId || !rect) {
+                const view = editor.prosemirrorView;
+                const coords = view.posAtCoords({
+                    left: event.clientX,
+                    top: event.clientY,
+                });
+                if (!coords) {
+                    setInsertHandle(null);
+                    return;
+                }
+                const nearest = getNearestBlockPos(view.state.doc, coords.pos);
+                if (!nearest) {
+                    setInsertHandle(null);
+                    return;
+                }
+                const info = getBlockInfo(nearest);
+                blockId = info?.bnBlock?.node?.attrs?.id || null;
+                if (!blockId) {
+                    setInsertHandle(null);
+                    return;
+                }
+                let dom = view.nodeDOM(info.bnBlock.beforePos + 1) || view.nodeDOM(info.bnBlock.beforePos);
+                if (!(dom instanceof HTMLElement)) {
+                    const domAtPos = view.domAtPos(coords.pos).node;
+                    dom = domAtPos instanceof HTMLElement ? domAtPos.closest('.bn-block-content') : null;
+                }
+                if (!(dom instanceof HTMLElement)) {
+                    setInsertHandle(null);
+                    return;
+                }
+                rect = dom.getBoundingClientRect();
+            }
+
+            const distanceTop = Math.abs(event.clientY - rect.top);
+            const distanceBottom = Math.abs(rect.bottom - event.clientY);
+            const isNearEdge = distanceTop <= edgeThreshold || distanceBottom <= edgeThreshold;
+
+            if (!isNearEdge) {
                 setInsertHandle(null);
                 return;
             }
-            const rect = blockOuter.getBoundingClientRect();
-            const wrapperRect = wrapper.getBoundingClientRect();
-            const midpoint = rect.top + rect.height / 2;
-            const placement = event.clientY < midpoint ? 'before' : 'after';
-            const top = (placement === 'before' ? rect.top : rect.bottom) - wrapperRect.top;
-            const left = rect.left - wrapperRect.left;
+            const containerRect = (canvas || wrapper).getBoundingClientRect();
+            const placement = distanceTop <= distanceBottom ? 'before' : 'after';
+            const top = (placement === 'before' ? rect.top : rect.bottom) - containerRect.top;
+            const left = rect.left - containerRect.left;
             const width = rect.width;
             setInsertHandle({
                 blockId,
@@ -1286,16 +1674,24 @@ export default function BlockEditor({
             });
         };
 
-        const clearHandle = () => setInsertHandle(null);
+        const clearHandle = () => {
+            if (!insertMenuOpenRef.current) {
+                setInsertHandle(null);
+            }
+        };
 
-        root.addEventListener('mousemove', updateHandle);
-        root.addEventListener('mouseleave', clearHandle);
-        root.addEventListener('scroll', clearHandle);
+        wrapper.addEventListener('mousemove', updateHandle);
+        wrapper.addEventListener('pointermove', updateHandle);
+        wrapper.addEventListener('mouseleave', clearHandle);
+        wrapper.addEventListener('pointerleave', clearHandle);
+        wrapper.addEventListener('scroll', clearHandle);
 
         return () => {
-            root.removeEventListener('mousemove', updateHandle);
-            root.removeEventListener('mouseleave', clearHandle);
-            root.removeEventListener('scroll', clearHandle);
+            wrapper.removeEventListener('mousemove', updateHandle);
+            wrapper.removeEventListener('pointermove', updateHandle);
+            wrapper.removeEventListener('mouseleave', clearHandle);
+            wrapper.removeEventListener('pointerleave', clearHandle);
+            wrapper.removeEventListener('scroll', clearHandle);
         };
     }, [editor]);
 
@@ -1307,10 +1703,10 @@ export default function BlockEditor({
         currentSlug: context?.currentSlug || null,
     };
 
-    const handleInsertBetween = () => {
+    const insertBlockAtHandle = (type, props = {}) => {
         if (!insertHandle) return;
         const inserted = editor.insertBlocks(
-            [{ type: 'paragraph' }],
+            [{ type, props }],
             insertHandle.blockId,
             insertHandle.placement,
         );
@@ -1318,110 +1714,343 @@ export default function BlockEditor({
             editor.setTextCursorPosition(inserted[0].id, 'start');
         }
         editor.focus();
+        setInsertMenuOpen(false);
         setInsertHandle(null);
     };
 
-    const handleSelectStructureBlock = (blockId) => {
-        if (!blockId) return;
-        editor.setTextCursorPosition(blockId, 'start');
-        editor.focus();
-    };
+    useEffect(() => {
+        if (!insertHandle) {
+            setInsertMenuOpen(false);
+        }
+    }, [insertHandle]);
+
+    useEffect(() => {
+        insertMenuOpenRef.current = insertMenuOpen;
+    }, [insertMenuOpen]);
+
+    useEffect(() => {
+        linkToolbarRef.current = linkToolbar;
+    }, [linkToolbar]);
 
     return (
         <RelatedContentProvider value={relatedContext}>
-            <RecipeDataContext.Provider value={{ recipe, setRecipe: onRecipeChange }}>
-                <RoundupDataContext.Provider value={{ roundup, setRoundup: onRoundupChange }}>
-                    <div
-                        ref={wrapperRef}
-                        className={cn(
-                            "block-editor-wrapper relative",
-                            structurePanelOpen && "structure-panel-open",
-                            className
-                        )}
-                    >
-                        <EditorToolbar
-                            editor={editor}
-                            structureOpen={structurePanelOpen}
-                            onToggleStructurePanel={() => setStructurePanelOpen((prev) => !prev)}
-                        />
-                        <div className="flex-1 min-h-0 relative">
-                            <StructurePanel
-                                open={structurePanelOpen}
-                                tab={structureTab}
-                                items={structureItems}
-                                activeBlockId={activeBlockId}
-                                onTabChange={setStructureTab}
-                                onSelectBlock={handleSelectStructureBlock}
-                                onClose={() => setStructurePanelOpen(false)}
-                            />
-                            <BlockNoteViewWithPortal
-                                editor={editor}
-                                theme="light"
-                                slashMenu={false}
-                                formattingToolbar={false}
-                                linkToolbar={false}
-                            >
-                                <SideMenuController />
-                                <FormattingToolbarController formattingToolbar={LinkFormattingToolbar} />
-                                <LinkToolbarController />
-                                <SuggestionMenuController
-                                    triggerCharacter="/"
-                                    getItems={async (query) => getCustomSlashMenuItems(editor, {
-                                        contentType,
-                                        hasRecipeContext: typeof onRecipeChange === 'function',
-                                        hasRoundupContext: typeof onRoundupChange === 'function',
-                                    }).filter(item => item.title.toLowerCase().includes(query.toLowerCase()))}
-                                />
-                            </BlockNoteViewWithPortal>
-                            {insertHandle && (
-                                <div
-                                    className="block-insert-handle"
-                                    style={{
-                                        top: `${insertHandle.top}px`,
-                                        left: `${insertHandle.left}px`,
-                                        width: `${insertHandle.width}px`,
-                                    }}
-                                >
-                                    <div className="block-insert-line" />
-                                    <button
-                                        type="button"
-                                        className="block-insert-button"
-                                        onMouseDown={(event) => event.preventDefault()}
-                                        onClick={handleInsertBetween}
-                                        title="Insert block"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </button>
-                                </div>
+            <BlockSelectionProvider activeBlockId={activeBlockId} setActiveBlockId={setActiveBlockId}>
+                <RecipeDataContext.Provider value={{ recipe, setRecipe: onRecipeChange }}>
+                    <RoundupDataContext.Provider value={{ roundup, setRoundup: onRoundupChange }}>
+                        <div
+                            ref={wrapperRef}
+                            className={cn(
+                                "block-editor-wrapper relative",
+                                isSidebarOpen && "sidebar-open",
+                                className
                             )}
-                        </div>
+                        >
+                            <div className="block-editor-main flex min-h-0">
+                                <div ref={canvasRef} className="block-editor-canvas flex-1 min-h-0 relative">
+                                    <BlockNoteViewWithPortal
+                                        editor={editor}
+                                        theme="light"
+                                        slashMenu={false}
+                                        formattingToolbar={false}
+                                        linkToolbar={false}
+                                    >
+                                        <SuggestionMenuController
+                                            triggerCharacter="/"
+                                            getItems={async (query) => getCustomSlashMenuItems(editor, {
+                                                contentType,
+                                                hasRecipeContext: typeof onRecipeChange === 'function',
+                                                hasRoundupContext: typeof onRoundupChange === 'function',
+                                            }).filter(item => item.title.toLowerCase().includes(query.toLowerCase()))}
+                                        />
+                                    </BlockNoteViewWithPortal>
+                                    {linkToolbar.open && (
+                                        <div
+                                            className="inline-link-toolbar"
+                                            style={{
+                                                top: `${linkToolbar.top}px`,
+                                                left: `${linkToolbar.left}px`,
+                                            }}
+                                            onMouseDown={(event) => {
+                                                if (!(event.target instanceof HTMLInputElement)) {
+                                                    event.preventDefault();
+                                                }
+                                            }}
+                                        >
+                                            <div className="inline-link-toolbar-inner">
+                                                <button
+                                                    type="button"
+                                                    className={cn('inline-link-button', activeStyles?.bold && 'is-active')}
+                                                    onClick={() => {
+                                                        editor.toggleStyles({ bold: true });
+                                                        editor.focus();
+                                                        setActiveStyles(editor.getActiveStyles() || {});
+                                                    }}
+                                                    title="Bold"
+                                                >
+                                                    <Bold className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={cn('inline-link-button', activeStyles?.italic && 'is-active')}
+                                                    onClick={() => {
+                                                        editor.toggleStyles({ italic: true });
+                                                        editor.focus();
+                                                        setActiveStyles(editor.getActiveStyles() || {});
+                                                    }}
+                                                    title="Italic"
+                                                >
+                                                    <Italic className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={cn('inline-link-button', linkToolbar.mode === 'link' && 'is-active')}
+                                                    onClick={() => {
+                                                        setLinkToolbar((prev) => ({
+                                                            ...prev,
+                                                            mode: 'link',
+                                                            url: prev.url || 'https://',
+                                                        }));
+                                                    }}
+                                                    title="Insert link"
+                                                >
+                                                    <LinkIcon className="w-4 h-4" />
+                                                </button>
+                                                {linkToolbar.mode === 'link' && (
+                                                    <div className="inline-link-input">
+                                                        <input
+                                                            type="url"
+                                                            value={linkToolbar.url}
+                                                            onChange={(event) => {
+                                                                const value = event.target.value;
+                                                                setLinkToolbar((prev) => ({ ...prev, url: value }));
+                                                            }}
+                                                            onKeyDown={(event) => {
+                                                                if (event.key === 'Enter') {
+                                                                    event.preventDefault();
+                                                                    const selectedText = linkToolbar.text || editor.getSelectedText();
+                                                                    if (!selectedText || !linkToolbar.url) return;
+                                                                    const selectionRange = linkToolbar.selection;
+                                                                    if (selectionRange && editor._tiptapEditor?.commands?.setTextSelection) {
+                                                                        editor._tiptapEditor.commands.setTextSelection(selectionRange);
+                                                                    }
+                                                                    editor.createLink(linkToolbar.url, selectedText);
+                                                                    editor.focus();
+                                                                    setLinkToolbar((prev) => ({ ...prev, open: false, mode: 'buttons' }));
+                                                                }
+                                                                if (event.key === 'Escape') {
+                                                                    event.preventDefault();
+                                                                    setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }));
+                                                                }
+                                                            }}
+                                                            className="inline-link-input-field"
+                                                            placeholder="https://"
+                                                            autoFocus
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className="inline-link-action"
+                                                            onClick={() => {
+                                                                const selectedText = linkToolbar.text || editor.getSelectedText();
+                                                                if (!selectedText || !linkToolbar.url) return;
+                                                                const selectionRange = linkToolbar.selection;
+                                                                if (selectionRange && editor._tiptapEditor?.commands?.setTextSelection) {
+                                                                    editor._tiptapEditor.commands.setTextSelection(selectionRange);
+                                                                }
+                                                                editor.createLink(linkToolbar.url, selectedText);
+                                                                editor.focus();
+                                                                setLinkToolbar((prev) => ({ ...prev, open: false, mode: 'buttons' }));
+                                                            }}
+                                                            title="Apply link"
+                                                        >
+                                                            <Check className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="inline-link-action"
+                                                            onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }))}
+                                                            title="Cancel"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {insertHandle && (
+                                        <div
+                                            className="block-insert-handle"
+                                            style={{
+                                                top: `${insertHandle.top}px`,
+                                                left: `${insertHandle.left}px`,
+                                                width: `${insertHandle.width}px`,
+                                            }}
+                                        >
+                                            <div className="block-insert-line" />
+                                            <DropdownMenu
+                                                open={insertMenuOpen}
+                                                onOpenChange={(open) => {
+                                                    insertMenuOpenRef.current = open;
+                                                    setInsertMenuOpen(open);
+                                                    if (!open) {
+                                                        setInsertHandle(null);
+                                                    }
+                                                }}
+                                            >
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        className="block-insert-button"
+                                                        onMouseDown={(event) => {
+                                                            event.preventDefault();
+                                                            event.stopPropagation();
+                                                            insertMenuOpenRef.current = true;
+                                                            setInsertMenuOpen(true);
+                                                        }}
+                                                        title="Insert block"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="center" className="w-56">
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('paragraph')}>
+                                                        <FileText className="w-4 h-4 mr-2" />
+                                                        Paragraph
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 2 })}>
+                                                        <Heading2 className="w-4 h-4 mr-2" />
+                                                        Heading 2
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 3 })}>
+                                                        <Heading3 className="w-4 h-4 mr-2" />
+                                                        Heading 3
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 4 })}>
+                                                        <Heading3 className="w-4 h-4 mr-2" />
+                                                        Heading 4
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 5 })}>
+                                                        <Heading3 className="w-4 h-4 mr-2" />
+                                                        Heading 5
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 6 })}>
+                                                        <Heading3 className="w-4 h-4 mr-2" />
+                                                        Heading 6
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('bulletListItem')}>
+                                                        <List className="w-4 h-4 mr-2" />
+                                                        Bulleted list
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('numberedListItem')}>
+                                                        <ListOrdered className="w-4 h-4 mr-2" />
+                                                        Numbered list
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('blockquote')}>
+                                                        <Quote className="w-4 h-4 mr-2" />
+                                                        Quote
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('customImage')}>
+                                                        <ImageIcon className="w-4 h-4 mr-2" />
+                                                        Image
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('video')}>
+                                                        <Video className="w-4 h-4 mr-2" />
+                                                        Video
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('beforeAfter')}>
+                                                        <SplitSquareVertical className="w-4 h-4 mr-2" />
+                                                        Before / After
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('alert', { type: 'tip' })}>
+                                                        <AlertTriangle className="w-4 h-4 mr-2" />
+                                                        Tip box
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('faqSection')}>
+                                                        <HelpCircle className="w-4 h-4 mr-2" />
+                                                        FAQ
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('simpleTable')}>
+                                                        <Table className="w-4 h-4 mr-2" />
+                                                        Table
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('divider')}>
+                                                        <Minus className="w-4 h-4 mr-2" />
+                                                        Divider
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    {contentType === 'recipe' && typeof onRecipeChange === 'function' && (
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('mainRecipe')}>
+                                                            <Utensils className="w-4 h-4 mr-2" />
+                                                            Recipe details
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {contentType === 'roundup' && typeof onRoundupChange === 'function' && (
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('roundupList')}>
+                                                            <LayoutGrid className="w-4 h-4 mr-2" />
+                                                            Roundup list
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('recipeEmbed')}>
+                                                        <Utensils className="w-4 h-4 mr-2" />
+                                                        Embed recipe
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('relatedContent')}>
+                                                        <LayoutGrid className="w-4 h-4 mr-2" />
+                                                        Related content
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-                        <style>{`
+                            <style>{`
         .block-editor-wrapper {
-          border: 1px solid hsl(var(--border));
-          border-radius: 0.5rem;
+          border: none;
+          border-radius: 0;
           overflow: visible;
           min-height: 500px;
-          height: 600px;
-          background: white;
+          background: transparent;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          --gutter: 12px;
+          --sidebar: 300px;
+          --inserter: 220px;
+        }
+
+        .block-editor-main {
+          display: flex;
+          min-height: inherit;
+          height: 100%;
+          overflow: visible;
+          position: relative;
+        }
+
+        .block-editor-canvas {
+          position: relative;
+          flex: 1;
+          min-height: inherit;
+          min-width: 0;
+          overflow: visible;
         }
 
         .block-editor-wrapper .bn-container {
-          height: 100%;
+          min-height: inherit;
         }
         
         /* Remove default min-height from editor as wrapper handles it */
         .block-editor-wrapper .bn-editor {
-          padding: 1rem; 
-          padding-left: 2.75rem;
+          padding: 16px var(--gutter) 72px;
           min-height: 100%;
-          height: 100%;
+          height: auto;
           overflow-y: auto;
           overflow-x: visible;
-        }
-
-        .block-editor-wrapper.structure-panel-open .bn-editor {
-          padding-left: calc(2.75rem + 280px);
+          max-width: clamp(1000px, 98vw, 1500px);
+          margin: 0 auto;
         }
 
         .block-editor-wrapper .bn-editor a {
@@ -1430,122 +2059,83 @@ export default function BlockEditor({
           text-underline-offset: 2px;
         }
 
-        .block-editor-structure-panel {
+        .inline-link-toolbar {
           position: absolute;
-          top: 0;
-          left: 0;
-          bottom: 0;
-          width: 280px;
-          background: #ffffff;
-          border-right: 1px solid #e5e7eb;
-          z-index: 25;
-          display: flex;
-          flex-direction: column;
+          transform: translate(-50%, -100%);
+          z-index: 30;
+          pointer-events: auto;
         }
 
-        .structure-panel-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 1px solid #e5e7eb;
-          padding: 8px 10px;
-          gap: 8px;
-        }
-
-        .structure-tabs {
-          display: flex;
-          gap: 4px;
-          background: #f3f4f6;
-          border-radius: 8px;
-          padding: 3px;
-        }
-
-        .structure-tab {
-          border-radius: 6px;
-          padding: 4px 10px;
-          font-size: 12px;
-          color: #4b5563;
-          background: transparent;
-        }
-
-        .structure-tab.is-active {
-          background: #ffffff;
-          color: #111827;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-        }
-
-        .structure-close {
-          width: 26px;
-          height: 26px;
-          border-radius: 6px;
+        .inline-link-toolbar-inner {
           display: inline-flex;
           align-items: center;
-          justify-content: center;
-          color: #6b7280;
+          gap: 6px;
+          padding: 6px;
+          border-radius: 999px;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
         }
 
-        .structure-close:hover {
+        .inline-link-button {
+          align-items: center;
+          background: transparent;
+          border: none;
+          border-radius: 6px;
+          color: #4b5563;
+          display: inline-flex;
+          height: 26px;
+          justify-content: center;
+          width: 26px;
+        }
+
+        .inline-link-button:hover,
+        .inline-link-button.is-active {
           background: #f3f4f6;
           color: #111827;
         }
 
-        .structure-panel-list {
-          flex: 1;
-          overflow-y: auto;
-          padding: 8px 6px 12px;
-        }
-
-        .structure-empty {
-          padding: 16px;
-          font-size: 12px;
-          color: #9ca3af;
-          text-align: center;
-        }
-
-        .structure-item {
-          width: 100%;
-          display: flex;
+        .inline-link-input {
+          display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 6px 8px;
+          gap: 6px;
+          padding-left: 4px;
+          border-left: 1px solid #e5e7eb;
+        }
+
+        .inline-link-input-field {
+          border: 1px solid #e5e7eb;
           border-radius: 6px;
+          height: 26px;
+          padding: 0 8px;
           font-size: 12px;
-          color: #374151;
-          text-align: left;
+          min-width: 160px;
         }
 
-        .structure-item:hover {
+        .inline-link-action {
+          align-items: center;
           background: #f3f4f6;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          color: #374151;
+          display: inline-flex;
+          height: 26px;
+          justify-content: center;
+          width: 26px;
         }
 
-        .structure-item.is-active {
-          background: #e0e7ff;
-          color: #1f2937;
+        .inline-link-action:hover {
+          background: #e5e7eb;
         }
 
-        .structure-item-icon {
-          width: 14px;
-          height: 14px;
-          color: #6b7280;
-          flex-shrink: 0;
-        }
-
-        .structure-item-label {
-          flex: 1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .structure-item-meta {
-          font-size: 10px;
-          color: #9ca3af;
+        .block-editor-canvas .bn-editor {
+          overflow-y: auto;
         }
 
         .block-insert-handle {
           position: absolute;
           height: 0;
-          pointer-events: none;
+          pointer-events: auto;
           z-index: 20;
         }
 
@@ -1553,8 +2143,21 @@ export default function BlockEditor({
           position: absolute;
           left: 0;
           right: 0;
-          height: 1px;
-          background: #e5e7eb;
+          height: 2px;
+          --block-insert-gap: 18px;
+          background: linear-gradient(
+            to right,
+            var(--wp-block-border-selected) 0,
+            var(--wp-block-border-selected) calc(50% - var(--block-insert-gap)),
+            transparent calc(50% - var(--block-insert-gap)),
+            transparent calc(50% + var(--block-insert-gap)),
+            var(--wp-block-border-selected) calc(50% + var(--block-insert-gap)),
+            var(--wp-block-border-selected) 100%
+          );
+          pointer-events: none;
+          transform-origin: center;
+          animation: blockInsertLine 640ms cubic-bezier(0.2, 0, 0, 1);
+          will-change: transform, opacity;
         }
 
         .block-insert-button {
@@ -1573,6 +2176,8 @@ export default function BlockEditor({
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
           color: #4b5563;
           pointer-events: auto;
+          animation: blockInsertPop 640ms cubic-bezier(0.2, 0, 0, 1);
+          will-change: transform, opacity;
         }
 
         .block-insert-button:hover {
@@ -1580,11 +2185,41 @@ export default function BlockEditor({
           color: #111827;
         }
 
+        @keyframes blockInsertPop {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.85);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+        }
+
+        @keyframes blockInsertLine {
+          from {
+            opacity: 0;
+            transform: scaleX(0);
+          }
+          to {
+            opacity: 1;
+            transform: scaleX(1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .block-insert-line,
+          .block-insert-button {
+            animation: none;
+          }
+        }
+
         .block-editor-wrapper .bn-side-menu {
           display: flex;
           gap: 6px;
           align-items: center;
           padding: 2px;
+          z-index: 30;
         }
 
         .block-editor-wrapper .bn-side-menu .bn-button {
@@ -1618,6 +2253,7 @@ export default function BlockEditor({
           border-radius: 999px;
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
           padding: 4px 6px;
+          z-index: 40;
         }
 
         .block-editor-wrapper .bn-formatting-toolbar .bn-button {
@@ -1708,9 +2344,10 @@ export default function BlockEditor({
           width: 12px;
         }
       `}</style>
-                    </div>
-                </RoundupDataContext.Provider>
-            </RecipeDataContext.Provider>
+                        </div>
+                    </RoundupDataContext.Provider>
+                </RecipeDataContext.Provider>
+            </BlockSelectionProvider>
         </RelatedContentProvider>
     );
 }

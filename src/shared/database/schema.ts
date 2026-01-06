@@ -11,6 +11,7 @@ export * from '@modules/authors/schema/authors.schema';
 export * from '@modules/tags/schema/tags.schema';
 export * from '@modules/media/schema/media.schema';
 export * from '@modules/settings/schema/settings.schema';
+// Note: menus module uses site_settings table, no separate schema needed
 
 // Feature Modules
 export * from '@modules/templates/schema/templates.schema';

@@ -39,6 +39,18 @@ const getBreadcrumbs = (pathname) => {
     new: "New",
   };
 
+  // For Settings pages, only show "Settings" (sub-tabs handled internally)
+  if (segments[0] === "settings") {
+    breadcrumbs.push({ label: "Settings", path: "/settings/general" });
+    return breadcrumbs;
+  }
+
+  // For Homepage pages, only show "Homepage" (sections handled internally)
+  if (segments[0] === "homepage") {
+    breadcrumbs.push({ label: "Homepage", path: "/homepage/hero" });
+    return breadcrumbs;
+  }
+
   segments.forEach((segment) => {
     currentPath += `/${segment}`;
     const label = labelMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
@@ -53,25 +65,31 @@ const AdminLayout = () => {
   const breadcrumbs = getBreadcrumbs(location.pathname);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const isSettingsPage = location.pathname.includes("/settings");
+  const isHomepagePage = location.pathname.includes("/homepage");
   const isEditorPage = /\/(articles|recipes|roundups)\/(new|[^/]+)$/.test(location.pathname);
-  const headerClassName = isSettingsPage
+  const isPanelLayout = isSettingsPage || isHomepagePage;
+
+  const headerClassName = isPanelLayout
     ? "flex h-12 shrink-0 items-center justify-between border-b px-2"
     : "flex h-12 shrink-0 items-center justify-between border-b px-4";
-  const mainClassName = isSettingsPage
-    ? "flex-1 overflow-auto px-2 py-4"
+  const insetClassName = isEditorPage || isPanelLayout
+    ? "min-h-0 overflow-hidden h-[100svh]"
+    : undefined;
+  const mainClassName = isPanelLayout
+    ? "flex-1 overflow-hidden min-h-0 flex flex-col"
     : isEditorPage
-      ? "flex-1 overflow-auto px-3 py-4"
+      ? "flex-1 overflow-hidden px-3 py-4 min-h-0 flex flex-col"
       : "flex-1 overflow-auto p-6";
-  const contentClassName = isSettingsPage
-    ? "mx-auto w-full max-w-none"
+  const contentClassName = isPanelLayout
+    ? "w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col"
     : isEditorPage
-      ? "mx-auto w-full max-w-none"
+      ? "mx-auto w-full max-w-none flex-1 min-h-0 overflow-hidden flex flex-col"
       : "mx-auto max-w-6xl";
 
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className={insetClassName}>
         {/* Header with Breadcrumb */}
         <header className={headerClassName}>
           <Breadcrumb>

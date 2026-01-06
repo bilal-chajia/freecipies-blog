@@ -1,7 +1,36 @@
 ---
+import MegaMenu from "./MegaMenu.astro";
+import { getMenuItems } from "@modules/menus/services/menus.service";
+import type { MenuItem } from "@modules/menus/types/menus.types";
+
 const currentPath = Astro.url.pathname;
 const logoMain = "/logos/logo-main.png";
 const logoDark = null;
+
+// Default menu items (fallback if database is not available)
+const defaultHeaderMenu: MenuItem[] = [
+  { id: "nav-1", label: "Categories", type: "link", url: "/categories" },
+  { id: "nav-2", label: "Recipes", type: "link", url: "/recipes" },
+  { id: "nav-3", label: "Bookmarks", type: "link", url: "/my-bookmarks" },
+  { id: "nav-4", label: "Authors", type: "link", url: "/authors" },
+  { id: "nav-5", label: "About", type: "link", url: "/about" },
+  { id: "nav-6", label: "Contact", type: "link", url: "/contact" },
+];
+
+// Try to load menu from database
+let headerMenu: MenuItem[] = defaultHeaderMenu;
+try {
+  const db = Astro.locals?.runtime?.env?.DB;
+  if (db) {
+    const storedMenu = await getMenuItems(db, "header");
+    if (storedMenu && Array.isArray(storedMenu) && storedMenu.length > 0) {
+      headerMenu = storedMenu;
+    }
+  }
+} catch (error) {
+  console.error("Failed to load menu from database:", error);
+  // Use default menu as fallback
+}
 ---
 
 <header class="site-header">
@@ -44,54 +73,8 @@ const logoDark = null;
         }
       </a>
 
-      <!-- Desktop Navigation -->
-      <nav class="desktop-nav">
-        <a
-          href="/categories"
-          class:list={[
-            "nav-link",
-            { active: currentPath.startsWith("/categories") },
-          ]}
-        >
-          Categories
-        </a>
-        <a
-          href="/recipes"
-          class:list={[
-            "nav-link",
-            { active: currentPath.startsWith("/recipes") },
-          ]}
-        >
-          Explore
-        </a>
-        <a
-          href="/my-bookmarks"
-          class:list={["nav-link", { active: currentPath === "/my-bookmarks" }]}
-        >
-          Bookmarks
-        </a>
-        <a
-          href="/authors"
-          class:list={[
-            "nav-link",
-            { active: currentPath.startsWith("/authors") },
-          ]}
-        >
-          Authors
-        </a>
-        <a
-          href="/about"
-          class:list={["nav-link", { active: currentPath === "/about" }]}
-        >
-          About
-        </a>
-        <a
-          href="/contact"
-          class:list={["nav-link", { active: currentPath === "/contact" }]}
-        >
-          Contact
-        </a>
-      </nav>
+      <!-- Desktop Navigation - Dynamic Mega Menu -->
+      <MegaMenu items={headerMenu} currentPath={currentPath} />
 
       <!-- Search & Mobile Menu -->
       <div class="header-actions">

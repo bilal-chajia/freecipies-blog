@@ -1,7 +1,7 @@
 import { Label } from '@/ui/label.jsx';
 import { Input } from '@/ui/input.jsx';
-import BlockEditor from '../../components/BlockEditor';
-import RoundupBuilder from '../../components/RoundupBuilder';
+import BlockEditor from '@/components/BlockEditor';
+import RoundupBuilder from '@/components/RoundupBuilder';
 import { Code } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import Editor from '@monaco-editor/react';

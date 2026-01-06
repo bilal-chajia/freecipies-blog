@@ -21,7 +21,6 @@ import {
     Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -187,6 +186,9 @@ export function BlockMover({
     canMoveUp = true,
     canMoveDown = true,
     showDragHandle = true,
+    draggable = true,
+    onDragStart,
+    onDragEnd,
 }) {
     return (
         <ToolbarGroup>
@@ -196,6 +198,9 @@ export function BlockMover({
                         <button
                             type="button"
                             aria-label="Drag to move"
+                            draggable={draggable}
+                            onDragStart={onDragStart}
+                            onDragEnd={onDragEnd}
                             className={cn(
                                 'flex items-center justify-center',
                                 'w-[var(--wp-mover-button-size)] h-[var(--wp-toolbar-button-size)]',
@@ -336,6 +341,10 @@ const BlockToolbar = forwardRef(({
     onMoveDown,
     canMoveUp = true,
     canMoveDown = true,
+    showDragHandle = true,
+    draggable = true,
+    onDragStart,
+    onDragEnd,
 
     // Custom controls (block-specific)
     children,
@@ -380,6 +389,10 @@ const BlockToolbar = forwardRef(({
                         onMoveDown={onMoveDown}
                         canMoveUp={canMoveUp}
                         canMoveDown={canMoveDown}
+                        showDragHandle={showDragHandle}
+                        draggable={draggable}
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
                     />
                     <ToolbarSeparator />
                 </>

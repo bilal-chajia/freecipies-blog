@@ -127,7 +127,8 @@ function AdminApp() {
               <Route index element={<Dashboard />} />
 
               {/* Homepage */}
-              <Route path="homepage" element={<Homepage />} />
+              <Route path="homepage" element={<Navigate to="/homepage/hero" replace />} />
+              <Route path="homepage/:section" element={<Homepage />} />
 
               {/* Articles - Gutenberg Editor (default) */}
               <Route path="articles" element={<ArticlesList />} />

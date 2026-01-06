@@ -1,4 +1,4 @@
-import ContentListBase from '../../components/shared/ContentListBase';
+import ContentListBase from '@/components/shared/ContentListBase';
 import { Layers } from 'lucide-react';
 
 const RoundupsList = () => {

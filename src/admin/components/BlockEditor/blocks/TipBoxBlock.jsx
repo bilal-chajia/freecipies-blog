@@ -12,7 +12,6 @@
  * https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/block-design/
  */
 
-import { useState } from 'react';
 import { createReactBlockSpec } from '@blocknote/react';
 import { defaultProps } from '@blocknote/core';
 import { AlertTriangle, Info, Lightbulb, AlertCircle } from 'lucide-react';
@@ -24,6 +23,9 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
+import BlockToolbar from '../components/BlockToolbar';
+import BlockWrapper from '../components/BlockWrapper';
+import { useBlockSelection } from '../selection-context';
 
 // Alert type definitions
 const alertTypes = ['tip', 'warning', 'info', 'note'];
@@ -135,7 +137,7 @@ export const Alert = createReactBlockSpec(
             const config = alertConfig[alertType] || alertConfig.warning;
             const Icon = config.icon;
 
-            const [isSelected, setIsSelected] = useState(false);
+            const { isSelected, selectBlock } = useBlockSelection(block.id);
 
             const handleTypeChange = (newType) => {
                 editor.updateBlock(block, {
@@ -144,75 +146,75 @@ export const Alert = createReactBlockSpec(
                 });
             };
 
-            return (
-                <div
-                    className={cn(
-                        // WordPress block wrapper classes
-                        'wp-block',
-                        isSelected && 'is-selected',
+            const moveBlockUp = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksUp();
+                editor.focus();
+            };
 
-                        // Alert box styling
-                        'relative flex gap-3 p-4 rounded-lg border my-2',
-                        config.colors,
+            const moveBlockDown = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksDown();
+                editor.focus();
+            };
 
-                        // Selection outline
-                        'transition-shadow duration-[var(--wp-transition-duration)]',
-                        !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
-                        isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]'
-                    )}
-                    data-block-type="alert"
-                    data-alert-type={alertType}
-                    onFocus={() => setIsSelected(true)}
-                    onBlur={(e) => {
-                        // Only blur if focus moved outside this block
-                        if (!e.currentTarget.contains(e.relatedTarget)) {
-                            setIsSelected(false);
-                        }
-                    }}
-                    tabIndex={-1}
+            const sideMenu = editor.extensions?.sideMenu;
+            const handleDragStart = (event) => {
+                sideMenu?.blockDragStart?.(event, block);
+            };
+            const handleDragEnd = () => {
+                sideMenu?.blockDragEnd?.();
+            };
+
+            const toolbar = (
+                <BlockToolbar
+                    blockIcon={Icon}
+                    blockLabel={`${config.label} alert`}
+                    onMoveUp={moveBlockUp}
+                    onMoveDown={moveBlockDown}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    showMoreMenu={false}
                 >
-                    {/* Toolbar - shown when selected */}
-                    {isSelected && (
-                        <div
-                            className={cn(
-                                'absolute -top-[44px] left-0',
-                                'flex items-center h-10 px-1',
-                                'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
-                                'rounded-[var(--wp-toolbar-border-radius)]',
-                                'shadow-[var(--wp-toolbar-shadow)]',
-                                'z-[var(--wp-z-block-toolbar)]'
-                            )}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {/* Block type icon */}
-                            <div className="flex items-center px-1.5 text-muted-foreground">
-                                <Icon className="w-4 h-4" />
-                            </div>
+                    <AlertTypeToolbar
+                        currentType={alertType}
+                        onChange={handleTypeChange}
+                    />
+                </BlockToolbar>
+            );
 
-                            {/* Separator */}
-                            <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
+            return (
+                <BlockWrapper
+                    isSelected={isSelected}
+                    toolbar={toolbar}
+                    onClick={selectBlock}
+                    onFocus={selectBlock}
+                    onPointerDownCapture={selectBlock}
+                    blockType="alert"
+                    blockId={block.id}
+                    className="my-2"
+                >
+                    <div
+                        className={cn(
+                            'relative flex gap-3 p-4 rounded-lg border',
+                            config.colors
+                        )}
+                        data-alert-type={alertType}
+                    >
+                        {/* Icon */}
+                        <div className={cn('flex-shrink-0 mt-0.5', config.iconColor)}>
+                            <Icon className="w-5 h-5" />
+                        </div>
 
-                            {/* Alert type selector */}
-                            <AlertTypeToolbar
-                                currentType={alertType}
-                                onChange={handleTypeChange}
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                            <div
+                                ref={contentRef}
+                                className="prose prose-sm max-w-none focus:outline-none"
                             />
                         </div>
-                    )}
-
-                    {/* Icon */}
-                    <div className={cn('flex-shrink-0 mt-0.5', config.iconColor)}>
-                        <Icon className="w-5 h-5" />
                     </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                        <div
-                            ref={contentRef}
-                            className="prose prose-sm max-w-none focus:outline-none"
-                        />
-                    </div>
-                </div>
+                </BlockWrapper>
             );
         },
     }

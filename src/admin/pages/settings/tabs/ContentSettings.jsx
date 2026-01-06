@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FormField, ToggleCard } from '../../../components/settings';
+import { FormField, ToggleCard } from '@/components/settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
 import { FileText, MessageSquare, Rocket, Camera, LayoutGrid, Info } from 'lucide-react';
 

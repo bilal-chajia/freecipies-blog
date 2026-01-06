@@ -11,7 +11,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu.jsx';
-import ColorPicker from '../../components/ColorPicker';
+import ColorPicker from '@/components/ColorPicker';
 import { buildImageStyle, getContrastColor, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
 import { useSettingsStore } from '../../store/useStore';
 import { extractImage, getImageSrcSet } from '@shared/utils';

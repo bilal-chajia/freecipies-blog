@@ -56,6 +56,14 @@ export default function GutenbergEditorLayout({
         }
     }, [isMobile]);
 
+    // Auto-open sidebar when a block is selected
+    useEffect(() => {
+        if (selectedBlock) {
+            setSidebarOpen(true);
+            setSidebarTab('block');
+        }
+    }, [selectedBlock?.id]);
+
     const toggleInserter = useCallback(() => {
         setInserterOpen(prev => !prev);
     }, []);
@@ -95,27 +103,29 @@ export default function GutenbergEditorLayout({
             </AnimatePresence>
 
             {/* Toggle buttons when panels are closed */}
-            <div className={cn(
-                'absolute top-2 left-2 z-30',
-                'flex items-center gap-1',
-                inserterOpen && 'hidden'
-            )}>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={toggleInserter}
-                        >
-                            <Plus className="w-4 h-4" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                        Toggle block inserter
-                    </TooltipContent>
-                </Tooltip>
-            </div>
+            {contentType !== 'menu' && (
+                <div className={cn(
+                    'absolute top-2 left-2 z-30',
+                    'flex items-center gap-1',
+                    inserterOpen && 'hidden'
+                )}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={toggleInserter}
+                            >
+                                <Plus className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            Toggle block inserter
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
+            )}
 
             <div className={cn(
                 'absolute top-2 right-2 z-30',

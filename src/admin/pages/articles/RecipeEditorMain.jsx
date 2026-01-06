@@ -1,12 +1,12 @@
 import { Label } from '@/ui/label.jsx';
 import { Input } from '@/ui/input.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import BlockEditor from '../../components/BlockEditor';
-import RecipeBuilder from '../../components/RecipeBuilder';
-import ExcerptsSection from '../../components/EditorSidebar/ExcerptsSection';
-import MediaSection from '../../components/EditorSidebar/MediaSection';
-import SEOSection from '../../components/EditorSidebar/SEOSection';
-import TagsSection from '../../components/EditorSidebar/TagsSection';
+import BlockEditor from '@/components/BlockEditor';
+import RecipeBuilder from '@/components/RecipeBuilder';
+import ExcerptsSection from '@/components/EditorSidebar/ExcerptsSection';
+import MediaSection from '@/components/EditorSidebar/MediaSection';
+import SEOSection from '@/components/EditorSidebar/SEOSection';
+import TagsSection from '@/components/EditorSidebar/TagsSection';
 import { Code } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';

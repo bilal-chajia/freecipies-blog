@@ -3,9 +3,9 @@ import { ArrowLeft, Eye, Save, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/ui/button.jsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip.jsx';
-import MediaDialog from '../../../components/MediaDialog';
-import ArticlePreview from '../../../components/ArticlePreview';
-import EditorTopbar from '../../../components/EditorTopbar';
+import MediaDialog from '@/components/MediaDialog';
+import ArticlePreview from '@/components/ArticlePreview';
+import EditorTopbar from '@/components/EditorTopbar';
 
 /**
  * Shared layout wrapper for content editors

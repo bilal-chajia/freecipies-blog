@@ -18,8 +18,7 @@
  */
 
 import { createReactBlockSpec } from '@blocknote/react';
-import { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useCallback, useRef } from 'react';
 import {
     Image,
     Upload,
@@ -27,25 +26,18 @@ import {
     FolderOpen,
     X,
     Edit3,
-    AlignLeft,
-    AlignCenter,
-    AlignRight,
+    Type,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { parseVariantsJson, getVariantMap } from '@shared/types/images';
 import ImageUploader from '../../ImageUploader';
 import MediaDialog from '../../MediaDialog';
-
-// Alignment options
-const alignments = [
-    { value: 'left', icon: AlignLeft, label: 'Align left' },
-    { value: 'center', icon: AlignCenter, label: 'Align center' },
-    { value: 'right', icon: AlignRight, label: 'Align right' },
-];
+import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
+import BlockWrapper from '../components/BlockWrapper';
+import { useBlockSelection } from '../selection-context';
 
 export const ImageBlock = createReactBlockSpec(
     {
@@ -70,7 +62,13 @@ export const ImageBlock = createReactBlockSpec(
             const [activeTab, setActiveTab] = useState('upload');
             const [uploaderOpen, setUploaderOpen] = useState(false);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
-            const [isSelected, setIsSelected] = useState(false);
+            const { isSelected, selectBlock } = useBlockSelection(block.id);
+            const captionRef = useRef(null);
+            const handleSelect = useCallback(() => {
+                selectBlock();
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.focus();
+            }, [block.id, editor, selectBlock]);
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data) => {
@@ -137,98 +135,101 @@ export const ImageBlock = createReactBlockSpec(
                 });
             };
 
-            const handleAlignmentChange = (alignment) => {
-                editor.updateBlock(block, {
-                    type: 'customImage',
-                    props: { ...block.props, alignment },
-                });
-            };
-
             // Placeholder state - no image
             if (!block.props.url) {
                 return (
                     <>
-                        <div className={cn(
-                            'wp-block-placeholder',
-                            'border border-dashed border-[var(--wp-placeholder-border)]',
-                            'rounded-lg p-4 my-2 bg-[var(--wp-placeholder-bg)]'
-                        )}>
-                            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                <TabsList className="grid w-full grid-cols-3 h-9 mb-3">
-                                    <TabsTrigger value="upload" className="text-xs gap-1.5">
-                                        <Upload className="h-3.5 w-3.5" />
-                                        Upload
-                                    </TabsTrigger>
-                                    <TabsTrigger value="library" className="text-xs gap-1.5">
-                                        <FolderOpen className="h-3.5 w-3.5" />
-                                        Library
-                                    </TabsTrigger>
-                                    <TabsTrigger value="url" className="text-xs gap-1.5">
-                                        <Link className="h-3.5 w-3.5" />
-                                        URL
-                                    </TabsTrigger>
-                                </TabsList>
+                        <BlockWrapper
+                            isSelected={isSelected}
+                            onClick={handleSelect}
+                            onFocus={handleSelect}
+                            onPointerDownCapture={handleSelect}
+                            blockType="image"
+                            blockId={block.id}
+                            className="my-2"
+                        >
+                            <div className={cn(
+                                'wp-block-placeholder',
+                                'border border-dashed border-[var(--wp-placeholder-border)]',
+                                'rounded-lg p-4 bg-[var(--wp-placeholder-bg)]'
+                            )}>
+                                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                                    <TabsList className="grid w-full grid-cols-3 h-9 mb-3">
+                                        <TabsTrigger value="upload" className="text-xs gap-1.5">
+                                            <Upload className="h-3.5 w-3.5" />
+                                            Upload
+                                        </TabsTrigger>
+                                        <TabsTrigger value="library" className="text-xs gap-1.5">
+                                            <FolderOpen className="h-3.5 w-3.5" />
+                                            Library
+                                        </TabsTrigger>
+                                        <TabsTrigger value="url" className="text-xs gap-1.5">
+                                            <Link className="h-3.5 w-3.5" />
+                                            URL
+                                        </TabsTrigger>
+                                    </TabsList>
 
-                                <TabsContent value="upload" className="mt-0">
-                                    <div className="flex flex-col items-center gap-3 py-4">
-                                        <div className="p-3 rounded-full bg-muted">
-                                            <Image className="w-6 h-6 text-muted-foreground" />
-                                        </div>
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => setUploaderOpen(true)}
-                                            className="gap-2"
-                                        >
-                                            <Upload className="h-4 w-4" />
-                                            Upload Image
-                                        </Button>
-                                        <p className="text-xs text-muted-foreground">
-                                            Crop, resize, and add metadata
-                                        </p>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="library" className="mt-0">
-                                    <div className="flex flex-col items-center gap-3 py-4">
-                                        <div className="p-3 rounded-full bg-muted">
-                                            <FolderOpen className="w-6 h-6 text-muted-foreground" />
-                                        </div>
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => setMediaDialogOpen(true)}
-                                            className="gap-2"
-                                        >
-                                            <FolderOpen className="h-4 w-4" />
-                                            Media Library
-                                        </Button>
-                                        <p className="text-xs text-muted-foreground">
-                                            Select from existing images
-                                        </p>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="url" className="mt-0">
-                                    <div className="flex flex-col items-center gap-3 py-4">
-                                        <div className="flex w-full max-w-sm gap-2">
-                                            <Input
-                                                type="text"
-                                                value={inputUrl}
-                                                onChange={(e) => setInputUrl(e.target.value)}
-                                                placeholder="https://example.com/image.jpg"
-                                                className="flex-1 h-9 text-sm"
-                                                onClick={(e) => e.stopPropagation()}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-                                            />
-                                            <Button onClick={handleUrlSubmit} size="sm" className="h-9">
-                                                Add
+                                    <TabsContent value="upload" className="mt-0">
+                                        <div className="flex flex-col items-center gap-3 py-4">
+                                            <div className="p-3 rounded-full bg-muted">
+                                                <Image className="w-6 h-6 text-muted-foreground" />
+                                            </div>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => setUploaderOpen(true)}
+                                                className="gap-2"
+                                            >
+                                                <Upload className="h-4 w-4" />
+                                                Upload Image
                                             </Button>
+                                            <p className="text-xs text-muted-foreground">
+                                                Crop, resize, and add metadata
+                                            </p>
                                         </div>
-                                    </div>
-                                </TabsContent>
-                            </Tabs>
-                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="library" className="mt-0">
+                                        <div className="flex flex-col items-center gap-3 py-4">
+                                            <div className="p-3 rounded-full bg-muted">
+                                                <FolderOpen className="w-6 h-6 text-muted-foreground" />
+                                            </div>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => setMediaDialogOpen(true)}
+                                                className="gap-2"
+                                            >
+                                                <FolderOpen className="h-4 w-4" />
+                                                Media Library
+                                            </Button>
+                                            <p className="text-xs text-muted-foreground">
+                                                Select from existing images
+                                            </p>
+                                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="url" className="mt-0">
+                                        <div className="flex flex-col items-center gap-3 py-4">
+                                            <div className="flex w-full max-w-sm gap-2">
+                                                <Input
+                                                    type="text"
+                                                    value={inputUrl}
+                                                    onChange={(e) => setInputUrl(e.target.value)}
+                                                    placeholder="https://example.com/image.jpg"
+                                                    className="flex-1 h-9 text-sm"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                                                />
+                                                <Button onClick={handleUrlSubmit} size="sm" className="h-9">
+                                                    Add
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+                                </Tabs>
+                            </div>
+                        </BlockWrapper>
 
                         <ImageUploader
                             open={uploaderOpen}
@@ -253,120 +254,67 @@ export const ImageBlock = createReactBlockSpec(
                 right: 'ml-auto',
             }[alignment];
 
-            return (
-                <div
-                    className={cn(
-                        'wp-block',
-                        isSelected && 'is-selected',
-                        'relative my-4',
-                        'transition-shadow duration-[var(--wp-transition-duration)]',
-                        !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
-                        isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]',
-                        'rounded-lg'
-                    )}
-                    data-block-type="image"
-                    tabIndex={0}
-                    onFocus={() => setIsSelected(true)}
-                    onBlur={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget)) {
-                            setIsSelected(false);
-                        }
-                    }}
+            const moveBlockUp = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksUp();
+                editor.focus();
+            };
+
+            const moveBlockDown = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksDown();
+                editor.focus();
+            };
+
+            const sideMenu = editor.extensions?.sideMenu;
+            const handleDragStart = (event) => {
+                sideMenu?.blockDragStart?.(event, block);
+            };
+            const handleDragEnd = () => {
+                sideMenu?.blockDragEnd?.();
+            };
+
+            const toolbar = (
+                <BlockToolbar
+                    blockIcon={Image}
+                    blockLabel="Image"
+                    onMoveUp={moveBlockUp}
+                    onMoveDown={moveBlockDown}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    showMoreMenu={false}
                 >
-                    {/* Toolbar */}
-                    <AnimatePresence>
-                        {isSelected && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 4 }}
-                                className={cn(
-                                    'absolute -top-[44px] left-1/2 -translate-x-1/2',
-                                    'flex items-center h-10 px-1',
-                                    'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
-                                    'rounded-[var(--wp-toolbar-border-radius)]',
-                                    'shadow-[var(--wp-toolbar-shadow)]',
-                                    'z-[var(--wp-z-block-toolbar)]'
-                                )}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                {/* Block type icon */}
-                                <div className="flex items-center px-1.5 text-muted-foreground">
-                                    <Image className="w-4 h-4" />
-                                </div>
+                    <ToolbarButton
+                        icon={Edit3}
+                        label="Replace image"
+                        onClick={() => setMediaDialogOpen(true)}
+                    />
+                    <ToolbarButton
+                        icon={Type}
+                        label="Edit caption"
+                        onClick={() => captionRef.current?.focus()}
+                    />
+                    <ToolbarSeparator />
+                    <ToolbarButton
+                        icon={X}
+                        label="Remove image"
+                        onClick={handleRemove}
+                        className="text-destructive"
+                    />
+                </BlockToolbar>
+            );
 
-                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
-
-                                {/* Alignment buttons */}
-                                <div className="flex items-center gap-0.5">
-                                    {alignments.map((align) => (
-                                        <Tooltip key={align.value}>
-                                            <TooltipTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleAlignmentChange(align.value)}
-                                                    className={cn(
-                                                        'flex items-center justify-center',
-                                                        'w-8 h-8 rounded-sm',
-                                                        'hover:bg-[var(--wp-toolbar-button-hover-bg)]',
-                                                        alignment === align.value && 'bg-[var(--wp-toolbar-button-active-bg)]'
-                                                    )}
-                                                >
-                                                    <align.icon className="w-4 h-4" />
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="bottom" className="text-xs">
-                                                {align.label}
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    ))}
-                                </div>
-
-                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
-
-                                {/* Replace button */}
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            onClick={() => setMediaDialogOpen(true)}
-                                            className={cn(
-                                                'flex items-center justify-center',
-                                                'w-8 h-8 rounded-sm',
-                                                'hover:bg-[var(--wp-toolbar-button-hover-bg)]'
-                                            )}
-                                        >
-                                            <Edit3 className="w-4 h-4" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-xs">
-                                        Replace
-                                    </TooltipContent>
-                                </Tooltip>
-
-                                {/* Remove button */}
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            onClick={handleRemove}
-                                            className={cn(
-                                                'flex items-center justify-center',
-                                                'w-8 h-8 rounded-sm',
-                                                'text-destructive hover:bg-destructive/10'
-                                            )}
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-xs">
-                                        Remove
-                                    </TooltipContent>
-                                </Tooltip>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
+            return (
+                <BlockWrapper
+                    isSelected={isSelected}
+                    toolbar={toolbar}
+                    onClick={handleSelect}
+                    onFocus={handleSelect}
+                    onPointerDownCapture={handleSelect}
+                    blockType="image"
+                    blockId={block.id}
+                    className="my-4"
+                >
                     {/* Image */}
                     <div className="relative">
                         <img
@@ -395,6 +343,7 @@ export const ImageBlock = createReactBlockSpec(
                             'text-muted-foreground placeholder:text-muted-foreground/50',
                             'focus:outline-none focus:ring-0'
                         )}
+                        ref={captionRef}
                     />
 
                     {/* Credit */}
@@ -420,7 +369,7 @@ export const ImageBlock = createReactBlockSpec(
                         onOpenChange={setMediaDialogOpen}
                         onSelect={handleMediaSelect}
                     />
-                </div>
+                </BlockWrapper>
             );
         },
     }

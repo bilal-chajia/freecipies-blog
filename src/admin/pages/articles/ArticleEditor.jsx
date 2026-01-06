@@ -1,8 +1,8 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useContentEditor } from './shared';
 import EditorLayout from './shared/EditorLayout';
-import EditorSidebar from '../../components/EditorSidebar';
-import EditorMain from '../../components/EditorMain';
+import EditorSidebar from '@/components/EditorSidebar';
+import EditorMain from '@/components/EditorMain';
 
 /**
  * Simplified Article Editor - now handles only articles

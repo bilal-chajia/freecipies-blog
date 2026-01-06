@@ -27,6 +27,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
+import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
+import BlockWrapper from '../components/BlockWrapper';
+import { useBlockSelection } from '../selection-context';
 
 // HTML escape for safe rendering
 const escapeHtml = (value) => (
@@ -101,7 +104,7 @@ export const FAQSectionBlock = createReactBlockSpec(
                 }
             })();
 
-            const [isSelected, setIsSelected] = useState(false);
+            const { isSelected, selectBlock } = useBlockSelection(block.id);
             const [expanded, setExpanded] = useState({});
             const [editing, setEditing] = useState({});
             const answerRefs = useRef({});
@@ -111,6 +114,26 @@ export const FAQSectionBlock = createReactBlockSpec(
                     type: 'faqSection',
                     props: { ...block.props, items: JSON.stringify(newItems) },
                 });
+            };
+
+            const moveBlockUp = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksUp();
+                editor.focus();
+            };
+
+            const moveBlockDown = () => {
+                editor.setTextCursorPosition(block.id, 'start');
+                editor.moveBlocksDown();
+                editor.focus();
+            };
+
+            const sideMenu = editor.extensions?.sideMenu;
+            const handleDragStart = (event) => {
+                sideMenu?.blockDragStart?.(event, block);
+            };
+            const handleDragEnd = () => {
+                sideMenu?.blockDragEnd?.();
             };
 
             const addItem = () => {
@@ -154,80 +177,39 @@ export const FAQSectionBlock = createReactBlockSpec(
                 setEditing((prev) => ({ ...prev, [idx]: false }));
             };
 
-            return (
-                <div
-                    className={cn(
-                        'wp-block',
-                        isSelected && 'is-selected',
-                        'relative my-6',
-                        'border rounded-lg overflow-hidden',
-                        'bg-card shadow-sm',
-                        'transition-shadow duration-[var(--wp-transition-duration)]',
-                        !isSelected && 'hover:shadow-[0_0_0_1px_var(--wp-block-border-hover)]',
-                        isSelected && 'shadow-[0_0_0_2px_var(--wp-block-border-selected)]'
-                    )}
-                    data-block-type="faq"
-                    tabIndex={0}
-                    onFocus={() => setIsSelected(true)}
-                    onBlur={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget)) {
-                            setIsSelected(false);
-                        }
-                    }}
+            const toolbar = (
+                <BlockToolbar
+                    blockIcon={HelpCircle}
+                    blockLabel="FAQ Section"
+                    onMoveUp={moveBlockUp}
+                    onMoveDown={moveBlockDown}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    showMoreMenu={false}
                 >
-                    {/* Toolbar */}
-                    <AnimatePresence>
-                        {isSelected && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 4 }}
-                                className={cn(
-                                    'absolute -top-[44px] left-0',
-                                    'flex items-center h-10 px-1',
-                                    'bg-[var(--wp-toolbar-bg)] border border-[var(--wp-toolbar-border)]',
-                                    'rounded-[var(--wp-toolbar-border-radius)]',
-                                    'shadow-[var(--wp-toolbar-shadow)]',
-                                    'z-[var(--wp-z-block-toolbar)]'
-                                )}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="flex items-center px-1.5 text-muted-foreground">
-                                    <HelpCircle className="w-4 h-4" />
-                                </div>
+                    <span className="px-2 text-xs text-muted-foreground">
+                        {items.length} {items.length === 1 ? 'question' : 'questions'}
+                    </span>
+                    <ToolbarSeparator />
+                    <ToolbarButton
+                        icon={Plus}
+                        label="Add question"
+                        onClick={addItem}
+                    />
+                </BlockToolbar>
+            );
 
-                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
-
-                                <span className="px-2 text-xs text-muted-foreground">
-                                    {items.length} {items.length === 1 ? 'question' : 'questions'}
-                                </span>
-
-                                <div className="w-px h-5 mx-1 bg-[var(--wp-toolbar-separator-color)]" />
-
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            onClick={addItem}
-                                            className={cn(
-                                                'flex items-center justify-center gap-1',
-                                                'h-8 px-2 rounded-sm',
-                                                'text-xs font-medium',
-                                                'hover:bg-[var(--wp-toolbar-button-hover-bg)]'
-                                            )}
-                                        >
-                                            <Plus className="w-3.5 h-3.5" />
-                                            Add
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-xs">
-                                        Add question
-                                    </TooltipContent>
-                                </Tooltip>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
+            return (
+                <BlockWrapper
+                    isSelected={isSelected}
+                    toolbar={toolbar}
+                    onClick={selectBlock}
+                    onFocus={selectBlock}
+                    onPointerDownCapture={selectBlock}
+                    blockType="faq"
+                    blockId={block.id}
+                    className="my-6"
+                >
                     {/* Header */}
                     <div className="bg-muted/50 p-4 border-b">
                         <input
@@ -400,7 +382,7 @@ export const FAQSectionBlock = createReactBlockSpec(
                             <Plus className="w-4 h-4" /> Add Question
                         </button>
                     )}
-                </div>
+                </BlockWrapper>
             );
         },
     }

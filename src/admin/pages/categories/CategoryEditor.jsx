@@ -17,11 +17,11 @@ import {
 } from "@/ui/dialog"
 import { articlesAPI, categoriesAPI } from '../../services/api';
 import { buildImageSlotFromMedia, generateSlug } from '../../utils/helpers';
-import MediaDialog from '../../components/MediaDialog';
-import ColorPicker from '../../components/ColorPicker';
+import MediaDialog from '@/components/MediaDialog';
+import ColorPicker from '@/components/ColorPicker';
 import { extractImage, getImageSrcSet } from '@shared/utils';
 import { buildImageStyle, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
-import ImageUploader from '../../components/ImageUploader';
+import ImageUploader from '@/components/ImageUploader';
 
 
 const CategoryEditor = () => {

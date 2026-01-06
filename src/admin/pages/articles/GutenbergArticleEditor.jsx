@@ -10,12 +10,13 @@
  * - Right: Settings Sidebar (Document/Block tabs)
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, Save, Loader2, Plus, PanelRight } from 'lucide-react';
+import { ArrowLeft, Eye, Save, Loader2, Menu, Settings, LayoutTemplate, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
+import { Badge } from '@/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 
 // Hooks
@@ -27,13 +28,13 @@ import {
     SettingsSidebar,
     DocumentSettings,
     BlockSettings,
-} from '../../components/BlockEditor/components';
-import GutenbergEditorMain from '../../components/BlockEditor/components/GutenbergEditorMain';
+} from '@/components/BlockEditor/components';
+import GutenbergEditorMain, { TitleInput } from '@/components/BlockEditor/components/GutenbergEditorMain';
+import { insertBlockFromInserter } from '@/components/BlockEditor/utils/insert-block';
 
 // Existing components for preview and media
-import MediaDialog from '../../components/MediaDialog';
-import ArticlePreview from '../../components/ArticlePreview';
-import EditorTopbar from '../../components/EditorTopbar';
+import MediaDialog from '@/components/MediaDialog';
+import ArticlePreview from '@/components/ArticlePreview';
 
 /**
  * Gutenberg Article Editor Page
@@ -79,6 +80,11 @@ export default function GutenbergArticleEditor() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [selectedBlock, setSelectedBlock] = useState(null);
+    const [structureItems, setStructureItems] = useState([]);
+    const [activeBlockId, setActiveBlockId] = useState(null);
+    const canvasWidthClass = (!sidebarOpen && !inserterOpen)
+        ? 'max-w-6xl'
+        : (!sidebarOpen || !inserterOpen ? 'max-w-5xl' : 'max-w-4xl');
 
     // Related content context
     const categorySlug = categories.find((c) => c.id === formData.categoryId)?.slug || null;
@@ -102,8 +108,104 @@ export default function GutenbergArticleEditor() {
 
     // Handle block insertion from inserter
     const handleInsertBlock = useCallback((blockType) => {
-        // TODO: Integrate with BlockNote to insert block at cursor
-        console.log('Insert block:', blockType);
+        insertBlockFromInserter(editorInstance, blockType);
+    }, [editorInstance]);
+
+    const handleStructureUpdate = useCallback(({ items, activeBlockId: nextActiveId }) => {
+        setStructureItems(items || []);
+        setActiveBlockId(nextActiveId || null);
+    }, []);
+
+    const handleSelectStructureBlock = useCallback((blockId) => {
+        if (!blockId || !editorInstance) return;
+        editorInstance.setTextCursorPosition(blockId, 'start');
+        editorInstance.focus();
+    }, [editorInstance]);
+
+    const handleReorderBlock = useCallback((draggedId, targetId, position) => {
+        if (!editorInstance || !draggedId || !targetId) return;
+        const dragged = structureItems.find((item) => item.id === draggedId);
+        const target = structureItems.find((item) => item.id === targetId);
+        if (!dragged || !target) return;
+        if (dragged.parentId !== target.parentId) return;
+
+        const siblings = structureItems
+            .filter((item) => item.parentId === dragged.parentId)
+            .map((item) => item.id);
+        const fromIndex = siblings.indexOf(draggedId);
+        const targetIndex = siblings.indexOf(targetId);
+        if (fromIndex < 0 || targetIndex < 0) return;
+        let desiredIndex = targetIndex + (position === 'after' ? 1 : 0);
+        if (fromIndex < targetIndex) desiredIndex -= 1;
+        desiredIndex = Math.max(0, Math.min(siblings.length - 1, desiredIndex));
+        let steps = desiredIndex - fromIndex;
+        editorInstance.setTextCursorPosition(draggedId, 'start');
+        while (steps < 0) {
+            editorInstance.moveBlocksUp();
+            steps += 1;
+        }
+        while (steps > 0) {
+            editorInstance.moveBlocksDown();
+            steps -= 1;
+        }
+        editorInstance.focus();
+    }, [editorInstance, structureItems]);
+
+    const handleBlockAction = useCallback((action, blockId) => {
+        if (!editorInstance || !blockId) return;
+        switch (action) {
+            case 'delete':
+                editorInstance.removeBlocks([blockId]);
+                break;
+            case 'duplicate': {
+                const block = editorInstance.getBlock(blockId);
+                if (!block) return;
+                const { type, props, content, children } = block;
+                editorInstance.insertBlocks([{ type, props, content, children }], blockId, 'after');
+                break;
+            }
+            case 'add-before':
+                editorInstance.insertBlocks([{ type: 'paragraph' }], blockId, 'before');
+                break;
+            case 'add-after':
+                editorInstance.insertBlocks([{ type: 'paragraph' }], blockId, 'after');
+                break;
+            default:
+                break;
+        }
+        editorInstance.focus();
+    }, [editorInstance]);
+
+    const handleConvertBlock = useCallback((blockId, next) => {
+        if (!editorInstance || !blockId || !next) return;
+        const block = editorInstance.getBlock(blockId);
+        if (!block) return;
+        if (next.type === 'heading') {
+            editorInstance.updateBlock(block, {
+                type: 'heading',
+                props: { level: next.level || 2 },
+                content: block.content,
+            });
+        } else if (next.type === 'paragraph') {
+            editorInstance.updateBlock(block, {
+                type: 'paragraph',
+                content: block.content,
+            });
+        }
+        editorInstance.focus();
+    }, [editorInstance]);
+
+    useEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
+        const prevHtmlOverflow = html.style.overflow;
+        const prevBodyOverflow = body.style.overflow;
+        html.style.overflow = 'hidden';
+        body.style.overflow = 'hidden';
+        return () => {
+            html.style.overflow = prevHtmlOverflow;
+            body.style.overflow = prevBodyOverflow;
+        };
     }, []);
 
     // Loading state
@@ -121,7 +223,7 @@ export default function GutenbergArticleEditor() {
     }
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="flex-1 min-h-0 flex flex-col">
             {/* Header */}
             <header className={cn(
                 'flex items-center justify-between',
@@ -139,57 +241,57 @@ export default function GutenbergArticleEditor() {
                         <ArrowLeft className="w-4 h-4" />
                     </Button>
                     <div>
-                        <h1 className="text-sm font-semibold">{title}</h1>
-                        <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                            {formData.label || 'Untitled'}
-                        </p>
+                        <Badge variant="secondary" className="text-[11px] px-2 py-0.5">
+                            {title}
+                        </Badge>
                     </div>
                 </div>
 
-                {/* Center: Topbar controls */}
-                <EditorTopbar
-                    formData={formData}
-                    onInputChange={handleInputChange}
-                    categories={categories}
-                    authors={authors}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
-                />
+                <div className="flex-1 flex justify-center px-4 min-w-0">
+                    <TitleInput
+                        value={formData.label}
+                        onChange={(value) => handleInputChange('label', value)}
+                        placeholder="Add title"
+                        containerClassName="w-full max-w-[520px]"
+                        className="text-lg md:text-xl font-semibold"
+                    />
+                </div>
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-2">
-                    {/* Toggle Inserter */}
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant={inserterOpen ? "secondary" : "ghost"}
-                                size="icon"
-                                onClick={() => setInserterOpen(!inserterOpen)}
-                                className="h-8 w-8"
-                            >
-                                <Plus className="w-4 h-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Toggle block inserter</TooltipContent>
-                    </Tooltip>
+                    <div className="flex bg-muted/50 p-0.5 rounded-lg border">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('visual')}
+                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'visual'
+                                        ? 'bg-background shadow-sm text-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                >
+                                    <LayoutTemplate className="h-3.5 w-3.5" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>Visual Editor</TooltipContent>
+                        </Tooltip>
 
-                    {/* Toggle Sidebar */}
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant={sidebarOpen ? "secondary" : "ghost"}
-                                size="icon"
-                                onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="h-8 w-8"
-                            >
-                                <PanelRight className="w-4 h-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Toggle settings</TooltipContent>
-                    </Tooltip>
-
-                    <div className="w-px h-6 bg-border mx-1" />
-
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('json')}
+                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'json'
+                                        ? 'bg-background shadow-sm text-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                >
+                                    <Code className="h-3.5 w-3.5" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>JSON Data</TooltipContent>
+                        </Tooltip>
+                    </div>
                     {/* Preview */}
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -232,7 +334,27 @@ export default function GutenbergArticleEditor() {
             </header>
 
             {/* Main 3-Panel Layout */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex overflow-hidden min-h-0 relative">
+                {!inserterOpen && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute left-2 top-2 z-20 h-8 w-8"
+                        onClick={() => setInserterOpen(true)}
+                    >
+                        <Menu className="w-4 h-4" />
+                    </Button>
+                )}
+                {!sidebarOpen && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-2 z-20 h-8 w-8"
+                        onClick={() => setSidebarOpen(true)}
+                    >
+                        <Settings className="w-4 h-4" />
+                    </Button>
+                )}
                 {/* Left: Block Inserter */}
                 <AnimatePresence>
                     {inserterOpen && (
@@ -241,16 +363,25 @@ export default function GutenbergArticleEditor() {
                             onClose={() => setInserterOpen(false)}
                             onInsertBlock={handleInsertBlock}
                             contentType={formData.type}
+                            structureItems={structureItems}
+                            activeBlockId={activeBlockId}
+                            onSelectBlock={handleSelectStructureBlock}
+                            onReorderBlock={handleReorderBlock}
+                            onBlockAction={handleBlockAction}
+                            onConvertBlock={handleConvertBlock}
                         />
                     )}
                 </AnimatePresence>
 
                 {/* Center: Content Canvas */}
                 <main className={cn(
-                    'flex-1 overflow-y-auto overflow-x-hidden',
+                    'flex-1 overflow-y-auto overflow-x-hidden min-h-0 gutenberg-canvas-scroll',
                     'bg-[var(--wp-canvas-bg)]'
                 )}>
-                    <div className="max-w-3xl mx-auto py-8 px-6">
+                    <div className={cn(
+                        'mx-auto py-8 px-6 w-full',
+                        canvasWidthClass
+                    )}>
                         <GutenbergEditorMain
                             formData={formData}
                             onInputChange={handleInputChange}
@@ -260,6 +391,9 @@ export default function GutenbergArticleEditor() {
                             relatedContext={relatedContext}
                             onEditorReady={setEditorInstance}
                             viewMode={viewMode}
+                            sidebarOpen={sidebarOpen}
+                            onStructureUpdate={handleStructureUpdate}
+                            onSelectedBlockChange={setSelectedBlock}
                         />
                     </div>
                 </main>
@@ -288,6 +422,7 @@ export default function GutenbergArticleEditor() {
                                 <BlockSettings
                                     editor={editorInstance}
                                     selectedBlock={selectedBlock}
+                                    relatedContext={relatedContext}
                                 />
                             }
                         />

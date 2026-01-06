@@ -105,17 +105,7 @@ const navGroups = [
   {
     title: "Settings",
     icon: Settings,
-    items: [
-      { title: "General", url: "/settings/general", icon: Globe },
-      { title: "Media & Uploads", url: "/settings/media", icon: Image },
-      { title: "SEO", url: "/settings/seo", icon: Search },
-      { title: "Email", url: "/settings/email", icon: Mail },
-      { title: "Social", url: "/settings/social", icon: Share2 },
-      { title: "Content", url: "/settings/content", icon: FileText },
-      { title: "Ads", url: "/settings/ads", icon: Monitor },
-      { title: "Appearance", url: "/settings/appearance", icon: Laptop },
-      { title: "Advanced", url: "/settings/advanced", icon: ShieldCheck },
-    ],
+    url: "/settings/general",  // Single link - sub-navigation handled by SettingsLayout
   },
   {
     title: "General",
@@ -199,7 +189,23 @@ export function AppSidebar({ ...props }) {
                   </SidebarMenu>
                 </SidebarGroupContent>
               </>
-            ) : (
+            ) : group.url ? (
+              /* Direct link group (e.g., Settings with internal navigation) */
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname.startsWith(group.url.replace('/general', ''))}
+                    tooltip={group.title}
+                  >
+                    <Link to={group.url}>
+                      <group.icon />
+                      <span>{group.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            ) : group.items ? (
               /* Collapsible group */
               <Collapsible
                 defaultOpen={isGroupActive(group.items)}
@@ -264,7 +270,7 @@ export function AppSidebar({ ...props }) {
                   </SidebarMenuItem>
                 </SidebarMenu>
               </Collapsible>
-            )}
+            ) : null}
           </SidebarGroup>
         ))}
       </SidebarContent>
