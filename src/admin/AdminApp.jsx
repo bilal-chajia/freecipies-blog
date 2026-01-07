@@ -6,32 +6,33 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/dashboard/Dashboard';
 import './App.css';
 import './index.css'; // Import global styles including Tailwind
+import { importWithRetry } from './utils/importWithRetry';
 
 // Lazy load pages for better performance
 import { lazy, Suspense, useEffect } from 'react';
 
-const Homepage = lazy(() => import('./pages/homepage/Homepage'));
-const ArticlesList = lazy(() => import('./pages/articles/ArticlesList'));
-const ArticleEditor = lazy(() => import('./pages/articles/ArticleEditor'));
-const GutenbergArticleEditor = lazy(() => import('./pages/articles/GutenbergArticleEditor'));
-const RecipesList = lazy(() => import('./pages/recipes/RecipesList'));
-const RecipeEditor = lazy(() => import('./pages/articles/RecipeEditor'));
-const GutenbergRecipeEditor = lazy(() => import('./pages/articles/GutenbergRecipeEditor'));
-const RoundupsList = lazy(() => import('./pages/roundups/RoundupsList'));
-const RoundupEditor = lazy(() => import('./pages/articles/RoundupEditor'));
-const GutenbergRoundupEditor = lazy(() => import('./pages/articles/GutenbergRoundupEditor'));
-const CategoriesList = lazy(() => import('./pages/categories/CategoriesList'));
-const CategoryEditor = lazy(() => import('./pages/categories/CategoryEditor'));
-const AuthorsList = lazy(() => import('./pages/authors/AuthorsList'));
-const AuthorEditor = lazy(() => import('./pages/authors/AuthorEditor'));
-const TagsList = lazy(() => import('./pages/tags/TagsList'));
-const MediaLibrary = lazy(() => import('./pages/media/MediaLibrary'));
-const Settings = lazy(() => import('./pages/settings/Settings'));
-const Login = lazy(() => import('./pages/auth/Login'));
-const BoardsList = lazy(() => import('./pages/pinterest/BoardsList'));
-const BoardEditor = lazy(() => import('./pages/pinterest/BoardEditor'));
-const TemplatesList = lazy(() => import('@modules/templates/components').then(m => ({ default: m.TemplatesList })));
-const TemplateEditor = lazy(() => import('@modules/templates/components').then(m => ({ default: m.TemplateEditor })));
+const Homepage = lazy(() => importWithRetry(() => import('./pages/homepage/Homepage')));
+const ArticlesList = lazy(() => importWithRetry(() => import('./pages/articles/ArticlesList')));
+const ArticleEditor = lazy(() => importWithRetry(() => import('./pages/articles/ArticleEditor')));
+const GutenbergArticleEditor = lazy(() => importWithRetry(() => import('./pages/articles/GutenbergArticleEditor')));
+const RecipesList = lazy(() => importWithRetry(() => import('./pages/recipes/RecipesList')));
+const RecipeEditor = lazy(() => importWithRetry(() => import('./pages/articles/RecipeEditor')));
+const GutenbergRecipeEditor = lazy(() => importWithRetry(() => import('./pages/articles/GutenbergRecipeEditor')));
+const RoundupsList = lazy(() => importWithRetry(() => import('./pages/roundups/RoundupsList')));
+const RoundupEditor = lazy(() => importWithRetry(() => import('./pages/articles/RoundupEditor')));
+const GutenbergRoundupEditor = lazy(() => importWithRetry(() => import('./pages/articles/GutenbergRoundupEditor')));
+const CategoriesList = lazy(() => importWithRetry(() => import('./pages/categories/CategoriesList')));
+const CategoryEditor = lazy(() => importWithRetry(() => import('./pages/categories/CategoryEditor')));
+const AuthorsList = lazy(() => importWithRetry(() => import('./pages/authors/AuthorsList')));
+const AuthorEditor = lazy(() => importWithRetry(() => import('./pages/authors/AuthorEditor')));
+const TagsList = lazy(() => importWithRetry(() => import('./pages/tags/TagsList')));
+const MediaLibrary = lazy(() => importWithRetry(() => import('./pages/media/MediaLibrary')));
+const Settings = lazy(() => importWithRetry(() => import('./pages/settings/Settings')));
+const Login = lazy(() => importWithRetry(() => import('./pages/auth/Login')));
+const BoardsList = lazy(() => importWithRetry(() => import('./pages/pinterest/BoardsList')));
+const BoardEditor = lazy(() => importWithRetry(() => import('./pages/pinterest/BoardEditor')));
+const TemplatesList = lazy(() => importWithRetry(() => import('@modules/templates/components').then(m => ({ default: m.TemplatesList }))));
+const TemplateEditor = lazy(() => importWithRetry(() => import('@modules/templates/components').then(m => ({ default: m.TemplateEditor }))));
 
 // Loading component with skeleton
 const PageLoader = () => (
