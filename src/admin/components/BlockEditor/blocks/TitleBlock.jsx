@@ -16,6 +16,8 @@
 import { useCallback, useRef } from 'react';
 import { createReactBlockSpec } from '@blocknote/react';
 import { Type } from 'lucide-react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
@@ -130,13 +132,15 @@ export const TitleBlock = createReactBlockSpec(
                 requestAnimationFrame(() => selectBlock());
             };
 
-            const sideMenu = editor.extensions?.sideMenu;
-            const handleDragStart = (event) => {
-                sideMenu?.blockDragStart?.(event, block);
-            };
-            const handleDragEnd = () => {
-                sideMenu?.blockDragEnd?.();
-            };
+            const {
+                attributes: dragAttributes,
+                listeners: dragListeners,
+                setNodeRef: setDragNodeRef,
+                transform: dragTransform,
+                isDragging,
+            } = useDraggable({ id: block.id });
+            const dragHandleProps = { ...dragAttributes, ...dragListeners };
+            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
 
             const toolbar = (
                 <BlockToolbar
@@ -144,8 +148,7 @@ export const TitleBlock = createReactBlockSpec(
                     blockLabel="Title"
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+                    dragHandleProps={dragHandleProps}
                     showMoreMenu={false}
                 />
             );
@@ -159,6 +162,7 @@ export const TitleBlock = createReactBlockSpec(
 
             return (
                 <BlockWrapper
+                    ref={setDragNodeRef}
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={selectBlock}
@@ -167,6 +171,11 @@ export const TitleBlock = createReactBlockSpec(
                     blockType="title"
                     blockId={block.id}
                     className="mb-4"
+                    style={{
+                        ...dragStyle,
+                        opacity: isDragging ? 0.5 : undefined,
+                        pointerEvents: isDragging ? 'none' : undefined,
+                    }}
                 >
                     <TitleInput
                         value={value}

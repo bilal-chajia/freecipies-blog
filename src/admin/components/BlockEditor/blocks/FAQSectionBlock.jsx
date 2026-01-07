@@ -22,6 +22,8 @@ import {
     ChevronRight,
     GripVertical
 } from 'lucide-react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -128,13 +130,15 @@ export const FAQSectionBlock = createReactBlockSpec(
                 requestAnimationFrame(() => selectBlock());
             };
 
-            const sideMenu = editor.extensions?.sideMenu;
-            const handleDragStart = (event) => {
-                sideMenu?.blockDragStart?.(event, block);
-            };
-            const handleDragEnd = () => {
-                sideMenu?.blockDragEnd?.();
-            };
+            const {
+                attributes: dragAttributes,
+                listeners: dragListeners,
+                setNodeRef: setDragNodeRef,
+                transform: dragTransform,
+                isDragging,
+            } = useDraggable({ id: block.id });
+            const dragHandleProps = { ...dragAttributes, ...dragListeners };
+            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
 
             const addItem = () => {
                 updateItems([...items, { q: '', a: '' }]);
@@ -183,8 +187,7 @@ export const FAQSectionBlock = createReactBlockSpec(
                     blockLabel="FAQ Section"
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+                    dragHandleProps={dragHandleProps}
                     showMoreMenu={false}
                 >
                     <span className="px-2 text-xs text-muted-foreground">
@@ -201,6 +204,7 @@ export const FAQSectionBlock = createReactBlockSpec(
 
             return (
                 <BlockWrapper
+                    ref={setDragNodeRef}
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={selectBlock}
@@ -209,6 +213,11 @@ export const FAQSectionBlock = createReactBlockSpec(
                     blockType="faq"
                     blockId={block.id}
                     className="my-6"
+                    style={{
+                        ...dragStyle,
+                        opacity: isDragging ? 0.5 : undefined,
+                        pointerEvents: isDragging ? 'none' : undefined,
+                    }}
                 >
                     {/* Header */}
                     <div className="bg-muted/50 p-4 border-b">

@@ -15,6 +15,8 @@
 import { createReactBlockSpec } from '@blocknote/react';
 import { Video, X, RectangleHorizontal, Square, RectangleVertical } from 'lucide-react';
 import { useState } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { EmbedPlaceholder } from '../components/BlockPlaceholder';
 import {
@@ -180,13 +182,15 @@ export const VideoBlock = createReactBlockSpec(
                 requestAnimationFrame(() => selectBlock());
             };
 
-            const sideMenu = editor.extensions?.sideMenu;
-            const handleDragStart = (event) => {
-                sideMenu?.blockDragStart?.(event, block);
-            };
-            const handleDragEnd = () => {
-                sideMenu?.blockDragEnd?.();
-            };
+            const {
+                attributes: dragAttributes,
+                listeners: dragListeners,
+                setNodeRef: setDragNodeRef,
+                transform: dragTransform,
+                isDragging,
+            } = useDraggable({ id: block.id });
+            const dragHandleProps = { ...dragAttributes, ...dragListeners };
+            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
 
             const toolbar = (
                 <BlockToolbar
@@ -194,8 +198,7 @@ export const VideoBlock = createReactBlockSpec(
                     blockLabel="Video"
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+                    dragHandleProps={dragHandleProps}
                     showMoreMenu={false}
                 >
                     <AspectRatioToolbar
@@ -216,6 +219,7 @@ export const VideoBlock = createReactBlockSpec(
             if (!hasVideo) {
                 return (
                     <BlockWrapper
+                        ref={setDragNodeRef}
                         isSelected={isSelected}
                         toolbar={toolbar}
                         onClick={selectBlock}
@@ -224,6 +228,11 @@ export const VideoBlock = createReactBlockSpec(
                         blockType="video"
                         blockId={block.id}
                         className="my-2"
+                        style={{
+                            ...dragStyle,
+                            opacity: isDragging ? 0.5 : undefined,
+                            pointerEvents: isDragging ? 'none' : undefined,
+                        }}
                     >
                         <EmbedPlaceholder
                             icon={Video}
@@ -244,6 +253,7 @@ export const VideoBlock = createReactBlockSpec(
 
             return (
                 <BlockWrapper
+                    ref={setDragNodeRef}
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={selectBlock}
@@ -252,6 +262,11 @@ export const VideoBlock = createReactBlockSpec(
                     blockType="video"
                     blockId={block.id}
                     className="my-2"
+                    style={{
+                        ...dragStyle,
+                        opacity: isDragging ? 0.5 : undefined,
+                        pointerEvents: isDragging ? 'none' : undefined,
+                    }}
                 >
                     {/* Video embed */}
                     <div className={cn(

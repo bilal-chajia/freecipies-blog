@@ -22,6 +22,8 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import BlockToolbar from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
@@ -127,13 +129,15 @@ export const DividerBlock = createReactBlockSpec(
                 requestAnimationFrame(() => selectBlock());
             };
 
-            const sideMenu = editor.extensions?.sideMenu;
-            const handleDragStart = (event) => {
-                sideMenu?.blockDragStart?.(event, block);
-            };
-            const handleDragEnd = () => {
-                sideMenu?.blockDragEnd?.();
-            };
+            const {
+                attributes: dragAttributes,
+                listeners: dragListeners,
+                setNodeRef: setDragNodeRef,
+                transform: dragTransform,
+                isDragging,
+            } = useDraggable({ id: block.id });
+            const dragHandleProps = { ...dragAttributes, ...dragListeners };
+            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
 
             const toolbar = (
                 <BlockToolbar
@@ -141,8 +145,7 @@ export const DividerBlock = createReactBlockSpec(
                     blockLabel="Divider"
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+                    dragHandleProps={dragHandleProps}
                     showMoreMenu={false}
                 >
                     <DividerStyleToolbar
@@ -154,6 +157,7 @@ export const DividerBlock = createReactBlockSpec(
 
             return (
                 <BlockWrapper
+                    ref={setDragNodeRef}
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={selectBlock}
@@ -162,6 +166,11 @@ export const DividerBlock = createReactBlockSpec(
                     blockType="divider"
                     blockId={block.id}
                     className="py-4"
+                    style={{
+                        ...dragStyle,
+                        opacity: isDragging ? 0.5 : undefined,
+                        pointerEvents: isDragging ? 'none' : undefined,
+                    }}
                 >
                     {/* Divider line */}
                     <div className="flex items-center w-full h-4" data-divider-style={style}>

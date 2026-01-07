@@ -7,6 +7,8 @@
 import { createReactBlockSpec } from '@blocknote/react';
 import { useMemo } from 'react';
 import { LayoutGrid } from 'lucide-react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { getBestVariantUrl, getSrcSet } from '@shared/types/images';
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
@@ -59,13 +61,15 @@ export const RelatedContentBlock = createReactBlockSpec(
                 requestAnimationFrame(() => selectBlock());
             };
 
-            const sideMenu = editor.extensions?.sideMenu;
-            const handleDragStart = (event) => {
-                sideMenu?.blockDragStart?.(event, block);
-            };
-            const handleDragEnd = () => {
-                sideMenu?.blockDragEnd?.();
-            };
+            const {
+                attributes: dragAttributes,
+                listeners: dragListeners,
+                setNodeRef: setDragNodeRef,
+                transform: dragTransform,
+                isDragging,
+            } = useDraggable({ id: block.id });
+            const dragHandleProps = { ...dragAttributes, ...dragListeners };
+            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
 
             const toolbar = (
                 <BlockToolbar
@@ -73,8 +77,7 @@ export const RelatedContentBlock = createReactBlockSpec(
                     blockLabel="Related Content"
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+                    dragHandleProps={dragHandleProps}
                     showMoreMenu={false}
                 />
             );
@@ -220,6 +223,7 @@ export const RelatedContentBlock = createReactBlockSpec(
 
             return (
                 <BlockWrapper
+                    ref={setDragNodeRef}
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={selectBlock}
@@ -227,6 +231,11 @@ export const RelatedContentBlock = createReactBlockSpec(
                     onPointerDownCapture={selectBlock}
                     blockType="related-content"
                     blockId={block.id}
+                    style={{
+                        ...dragStyle,
+                        opacity: isDragging ? 0.5 : undefined,
+                        pointerEvents: isDragging ? 'none' : undefined,
+                    }}
                 >
                     <div className="border border-gray-200 rounded-lg p-4 my-2 bg-white shadow-sm">
                         <div className="flex items-center gap-2 mb-3">

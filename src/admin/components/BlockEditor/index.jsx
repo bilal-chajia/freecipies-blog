@@ -5,8 +5,9 @@
  * Built on BlockNote for React with custom blocks.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BlockNoteViewWithPortal } from './BlockNoteViewWithPortal';
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import {
     useCreateBlockNote,
 } from '@blocknote/react';
@@ -1366,12 +1367,15 @@ export default function BlockEditor({
     }, [editor, value]);
 
     const [structureItems, setStructureItems] = useState([]);
+    const structureItemsRef = useRef(structureItems);
     const [activeBlockId, setActiveBlockId] = useState(null);
     const [insertHandle, setInsertHandle] = useState(null);
     const [insertMenuOpen, setInsertMenuOpen] = useState(false);
     const insertMenuOpenRef = useRef(false);
     const toolbarActionBlockIdRef = useRef(null);
     const moveActionBlockIdRef = useRef(null);
+    const canvasDragPointerRef = useRef({ x: 0, y: 0 });
+    const canvasDragPointerListenerRef = useRef(null);
     const [linkToolbar, setLinkToolbar] = useState({
         open: false,
         top: 0,
@@ -1387,6 +1391,10 @@ export default function BlockEditor({
     useEffect(() => {
         onChangeRef.current = onChange;
     }, [onChange]);
+
+    useEffect(() => {
+        structureItemsRef.current = structureItems;
+    }, [structureItems]);
 
     useEffect(() => {
         if (!editor) return;
@@ -1845,6 +1853,120 @@ export default function BlockEditor({
         setInsertHandle(null);
     };
 
+    const canvasSensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 6 },
+        })
+    );
+
+    const updateCanvasDragPointer = useCallback((event) => {
+        if (!event) return;
+        if (typeof event.clientX === 'number' && typeof event.clientY === 'number') {
+            canvasDragPointerRef.current = { x: event.clientX, y: event.clientY };
+            return;
+        }
+        const touches = event.touches || event.changedTouches;
+        if (touches && touches[0]) {
+            canvasDragPointerRef.current = { x: touches[0].clientX, y: touches[0].clientY };
+        }
+    }, []);
+
+    const startCanvasDragPointerTracking = useCallback((initialEvent) => {
+        if (canvasDragPointerListenerRef.current) return;
+        updateCanvasDragPointer(initialEvent);
+        const handler = (event) => updateCanvasDragPointer(event);
+        window.addEventListener('pointermove', handler, { capture: true });
+        window.addEventListener('mousemove', handler, { capture: true });
+        window.addEventListener('touchmove', handler, { capture: true, passive: true });
+        canvasDragPointerListenerRef.current = handler;
+    }, [updateCanvasDragPointer]);
+
+    const stopCanvasDragPointerTracking = useCallback(() => {
+        const handler = canvasDragPointerListenerRef.current;
+        if (!handler) return;
+        window.removeEventListener('pointermove', handler, { capture: true });
+        window.removeEventListener('mousemove', handler, { capture: true });
+        window.removeEventListener('touchmove', handler, { capture: true });
+        canvasDragPointerListenerRef.current = null;
+    }, []);
+
+    useEffect(() => stopCanvasDragPointerTracking, [stopCanvasDragPointerTracking]);
+
+    const reorderBlockRelativeToTarget = useCallback((draggedId, targetId, position) => {
+        if (!editor || !draggedId || !targetId) return;
+        if (draggedId === targetId) return;
+        const items = structureItemsRef.current || [];
+        const dragged = items.find((item) => item.id === draggedId);
+        const target = items.find((item) => item.id === targetId);
+        if (!dragged || !target) return;
+        if (dragged.parentId !== target.parentId) return;
+
+        const siblings = items
+            .filter((item) => item.parentId === dragged.parentId)
+            .map((item) => item.id);
+        const fromIndex = siblings.indexOf(draggedId);
+        const targetIndex = siblings.indexOf(targetId);
+        if (fromIndex < 0 || targetIndex < 0) return;
+
+        let desiredIndex = targetIndex + (position === 'after' ? 1 : 0);
+        if (fromIndex < targetIndex) desiredIndex -= 1;
+        desiredIndex = Math.max(0, Math.min(siblings.length - 1, desiredIndex));
+
+        let steps = desiredIndex - fromIndex;
+        editor.setTextCursorPosition(draggedId, 'start');
+        while (steps < 0) {
+            editor.moveBlocksUp();
+            steps += 1;
+        }
+        while (steps > 0) {
+            editor.moveBlocksDown();
+            steps -= 1;
+        }
+        moveActionBlockIdRef.current = draggedId;
+        setActiveBlockId(draggedId);
+        editor.focus();
+    }, [editor]);
+
+    const getBlockFromPoint = useCallback((x, y) => {
+        const root = editor?.domElement;
+        if (!root) return null;
+        const element = document.elementFromPoint(x, y);
+        if (!(element instanceof HTMLElement)) return null;
+        const candidate = element.closest('[data-id]');
+        if (!(candidate instanceof HTMLElement)) return null;
+        if (!root.contains(candidate)) return null;
+        const id = candidate.getAttribute('data-id');
+        if (!id) return null;
+        return { id, element: candidate };
+    }, [editor]);
+
+    const handleCanvasDragStart = useCallback((event) => {
+        startCanvasDragPointerTracking(event?.activatorEvent);
+        const draggedId = event?.active?.id ? String(event.active.id) : null;
+        if (draggedId) {
+            setActiveBlockId(draggedId);
+            toolbarActionBlockIdRef.current = draggedId;
+        }
+    }, [startCanvasDragPointerTracking]);
+
+    const handleCanvasDragCancel = useCallback(() => {
+        stopCanvasDragPointerTracking();
+    }, [stopCanvasDragPointerTracking]);
+
+    const handleCanvasDragEnd = useCallback((event) => {
+        stopCanvasDragPointerTracking();
+        const draggedId = event?.active?.id ? String(event.active.id) : null;
+        if (!draggedId) return;
+        const { x, y } = canvasDragPointerRef.current || {};
+        if (typeof x !== 'number' || typeof y !== 'number') return;
+        const target = getBlockFromPoint(x, y);
+        const targetId = target?.id || null;
+        if (!targetId || targetId === draggedId) return;
+        const rect = target?.element?.getBoundingClientRect?.();
+        const position = rect && rect.height ? (y < rect.top + rect.height / 2 ? 'before' : 'after') : 'after';
+        reorderBlockRelativeToTarget(draggedId, targetId, position);
+    }, [getBlockFromPoint, reorderBlockRelativeToTarget, stopCanvasDragPointerTracking]);
+
     useEffect(() => {
         if (!insertHandle) {
             setInsertMenuOpen(false);
@@ -1874,22 +1996,29 @@ export default function BlockEditor({
                         >
                             <div className="block-editor-main flex min-h-0">
                                 <div ref={canvasRef} className="block-editor-canvas flex-1 min-h-0 relative">
-                                    <BlockNoteViewWithPortal
-                                        editor={editor}
-                                        theme="light"
-                                        slashMenu={false}
-                                        formattingToolbar={false}
-                                        linkToolbar={false}
+                                    <DndContext
+                                        sensors={canvasSensors}
+                                        onDragStart={handleCanvasDragStart}
+                                        onDragEnd={handleCanvasDragEnd}
+                                        onDragCancel={handleCanvasDragCancel}
                                     >
-                                        <SuggestionMenuController
-                                            triggerCharacter="/"
-                                            getItems={async (query) => getCustomSlashMenuItems(editor, {
-                                                contentType,
-                                                hasRecipeContext: typeof onRecipeChange === 'function',
-                                                hasRoundupContext: typeof onRoundupChange === 'function',
-                                            }).filter(item => item.title.toLowerCase().includes(query.toLowerCase()))}
-                                        />
-                                    </BlockNoteViewWithPortal>
+                                        <BlockNoteViewWithPortal
+                                            editor={editor}
+                                            theme="light"
+                                            slashMenu={false}
+                                            formattingToolbar={false}
+                                            linkToolbar={false}
+                                        >
+                                            <SuggestionMenuController
+                                                triggerCharacter="/"
+                                                getItems={async (query) => getCustomSlashMenuItems(editor, {
+                                                    contentType,
+                                                    hasRecipeContext: typeof onRecipeChange === 'function',
+                                                    hasRoundupContext: typeof onRoundupChange === 'function',
+                                                }).filter(item => item.title.toLowerCase().includes(query.toLowerCase()))}
+                                            />
+                                        </BlockNoteViewWithPortal>
+                                    </DndContext>
                                     {linkToolbar.open && (
                                         <div
                                             className="inline-link-toolbar"

@@ -19,6 +19,8 @@
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import {
     Image,
     Upload,
@@ -64,6 +66,16 @@ export const ImageBlock = createReactBlockSpec(
             const { isSelected, selectBlock } = useBlockSelection(block.id);
             const captionRef = useRef(null);
             const autoOpenedRef = useRef(false);
+            const isOverlayOpen = mediaDialogOpen || uploaderOpen || choiceDialogOpen;
+            const {
+                attributes: dragAttributes,
+                listeners: dragListeners,
+                setNodeRef: setDragNodeRef,
+                transform: dragTransform,
+                isDragging,
+            } = useDraggable({ id: block.id, disabled: isOverlayOpen });
+            const dragHandleProps = { ...dragAttributes, ...dragListeners };
+            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
             const handleSelect = useCallback((event) => {
                 if (event?.target instanceof HTMLElement) {
                     if (event.target.closest('.wp-block-toolbar') || event.target.closest('.wp-block-toolbar-wrap')) {
@@ -179,6 +191,7 @@ export const ImageBlock = createReactBlockSpec(
                 return (
                     <>
                         <BlockWrapper
+                            ref={setDragNodeRef}
                             isSelected={isSelected}
                             onClick={handleSelect}
                             onFocus={handleSelect}
@@ -186,6 +199,11 @@ export const ImageBlock = createReactBlockSpec(
                             blockType="image"
                             blockId={block.id}
                             className="my-2"
+                            style={{
+                                ...dragStyle,
+                                opacity: isDragging ? 0.5 : undefined,
+                                pointerEvents: isDragging ? 'none' : undefined,
+                            }}
                         >
                             <div className={cn(
                                 'wp-block-placeholder',
@@ -268,7 +286,6 @@ export const ImageBlock = createReactBlockSpec(
                 center: 'mx-auto',
                 right: 'ml-auto',
             }[alignment];
-            const isOverlayOpen = mediaDialogOpen || uploaderOpen || choiceDialogOpen;
 
             const moveBlockUp = () => {
                 editor.setTextCursorPosition(block.id, 'start');
@@ -282,22 +299,13 @@ export const ImageBlock = createReactBlockSpec(
                 requestAnimationFrame(() => selectBlock());
             };
 
-            const sideMenu = editor.extensions?.sideMenu;
-            const handleDragStart = (event) => {
-                sideMenu?.blockDragStart?.(event, block);
-            };
-            const handleDragEnd = () => {
-                sideMenu?.blockDragEnd?.();
-            };
-
             const toolbar = isOverlayOpen ? null : (
                 <BlockToolbar
                     blockIcon={Image}
                     blockLabel="Image"
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+                    dragHandleProps={dragHandleProps}
                     showMoreMenu={false}
                 >
                     <ToolbarButton
@@ -325,6 +333,7 @@ export const ImageBlock = createReactBlockSpec(
 
             return (
                 <BlockWrapper
+                    ref={setDragNodeRef}
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={handleSelect}
@@ -333,6 +342,11 @@ export const ImageBlock = createReactBlockSpec(
                     blockType="image"
                     blockId={block.id}
                     className="my-4"
+                    style={{
+                        ...dragStyle,
+                        opacity: isDragging ? 0.5 : undefined,
+                        pointerEvents: isDragging ? 'none' : undefined,
+                    }}
                 >
                     {/* Image */}
                     <div className="relative">

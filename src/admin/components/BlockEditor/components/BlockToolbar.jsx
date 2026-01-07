@@ -186,9 +186,7 @@ export function BlockMover({
     canMoveUp = true,
     canMoveDown = true,
     showDragHandle = true,
-    draggable = true,
-    onDragStart,
-    onDragEnd,
+    dragHandleProps,
 }) {
     return (
         <ToolbarGroup>
@@ -198,9 +196,7 @@ export function BlockMover({
                         <button
                             type="button"
                             aria-label="Drag to move"
-                            draggable={draggable}
-                            onDragStart={onDragStart}
-                            onDragEnd={onDragEnd}
+                            {...(dragHandleProps || {})}
                             className={cn(
                                 'flex items-center justify-center',
                                 'w-[var(--wp-mover-button-size)] h-[var(--wp-toolbar-button-size)]',
@@ -342,9 +338,7 @@ const BlockToolbar = forwardRef(({
     canMoveUp = true,
     canMoveDown = true,
     showDragHandle = true,
-    draggable = true,
-    onDragStart,
-    onDragEnd,
+    dragHandleProps,
 
     // Custom controls (block-specific)
     children,
@@ -390,9 +384,7 @@ const BlockToolbar = forwardRef(({
                         canMoveUp={canMoveUp}
                         canMoveDown={canMoveDown}
                         showDragHandle={showDragHandle}
-                        draggable={draggable}
-                        onDragStart={onDragStart}
-                        onDragEnd={onDragEnd}
+                        dragHandleProps={dragHandleProps}
                     />
                     <ToolbarSeparator />
                 </>

@@ -7,6 +7,8 @@
 import { createReactBlockSpec } from '@blocknote/react';
 import { BookOpen, Edit3, Search, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar, { ToolbarButton } from '../components/BlockToolbar';
 import { useBlockSelection } from '../selection-context';
@@ -54,13 +56,15 @@ export const RecipeEmbedBlock = createReactBlockSpec(
                 requestAnimationFrame(() => selectBlock());
             };
 
-            const sideMenu = editor.extensions?.sideMenu;
-            const handleDragStart = (event) => {
-                sideMenu?.blockDragStart?.(event, block);
-            };
-            const handleDragEnd = () => {
-                sideMenu?.blockDragEnd?.();
-            };
+            const {
+                attributes: dragAttributes,
+                listeners: dragListeners,
+                setNodeRef: setDragNodeRef,
+                transform: dragTransform,
+                isDragging,
+            } = useDraggable({ id: block.id });
+            const dragHandleProps = { ...dragAttributes, ...dragListeners };
+            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
 
             const toolbar = (
                 <BlockToolbar
@@ -68,8 +72,7 @@ export const RecipeEmbedBlock = createReactBlockSpec(
                     blockLabel="Recipe Card"
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+                    dragHandleProps={dragHandleProps}
                     showMoreMenu={false}
                 >
                     <ToolbarButton
@@ -109,6 +112,7 @@ export const RecipeEmbedBlock = createReactBlockSpec(
             if (showSearch) {
                 return (
                     <BlockWrapper
+                        ref={setDragNodeRef}
                         isSelected={isSelected}
                         toolbar={toolbar}
                         onClick={selectBlock}
@@ -116,6 +120,11 @@ export const RecipeEmbedBlock = createReactBlockSpec(
                         onPointerDownCapture={selectBlock}
                         blockType="recipe-embed"
                         blockId={block.id}
+                        style={{
+                            ...dragStyle,
+                            opacity: isDragging ? 0.5 : undefined,
+                            pointerEvents: isDragging ? 'none' : undefined,
+                        }}
                     >
                         <div className="border border-gray-200 rounded-lg p-4 my-2 bg-white shadow-sm">
                             <h4 className="font-medium mb-2 text-sm text-gray-700">Embed Recipe Card</h4>
@@ -160,6 +169,7 @@ export const RecipeEmbedBlock = createReactBlockSpec(
 
             return (
                 <BlockWrapper
+                    ref={setDragNodeRef}
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={selectBlock}
@@ -167,6 +177,11 @@ export const RecipeEmbedBlock = createReactBlockSpec(
                     onPointerDownCapture={selectBlock}
                     blockType="recipe-embed"
                     blockId={block.id}
+                    style={{
+                        ...dragStyle,
+                        opacity: isDragging ? 0.5 : undefined,
+                        pointerEvents: isDragging ? 'none' : undefined,
+                    }}
                 >
                     <div className="flex items-start gap-4 p-4 border rounded-lg bg-card text-card-foreground shadow-sm my-4 group relative">
                         <div className="w-24 h-24 bg-muted rounded-md overflow-hidden flex-shrink-0">

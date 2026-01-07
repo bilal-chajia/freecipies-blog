@@ -14,6 +14,8 @@
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { useMemo, useState } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import {
     Image as ImageIcon,
     Trash2,
@@ -199,13 +201,15 @@ export const BeforeAfterBlock = createReactBlockSpec(
                 requestAnimationFrame(() => selectBlock());
             };
 
-            const sideMenu = editor.extensions?.sideMenu;
-            const handleDragStart = (event) => {
-                sideMenu?.blockDragStart?.(event, block);
-            };
-            const handleDragEnd = () => {
-                sideMenu?.blockDragEnd?.();
-            };
+            const {
+                attributes: dragAttributes,
+                listeners: dragListeners,
+                setNodeRef: setDragNodeRef,
+                transform: dragTransform,
+                isDragging,
+            } = useDraggable({ id: block.id, disabled: mediaDialogOpen });
+            const dragHandleProps = { ...dragAttributes, ...dragListeners };
+            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
 
             const toolbar = (
                 <BlockToolbar
@@ -213,8 +217,7 @@ export const BeforeAfterBlock = createReactBlockSpec(
                     blockLabel="Before / After"
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+                    dragHandleProps={dragHandleProps}
                     showMoreMenu={false}
                 >
                     {layouts.map((layout) => (
@@ -232,6 +235,7 @@ export const BeforeAfterBlock = createReactBlockSpec(
             return (
                 <>
                     <BlockWrapper
+                        ref={setDragNodeRef}
                         isSelected={isSelected}
                         toolbar={toolbar}
                         onClick={selectBlock}
@@ -240,6 +244,11 @@ export const BeforeAfterBlock = createReactBlockSpec(
                         blockType="before-after"
                         blockId={block.id}
                         className="my-2"
+                        style={{
+                            ...dragStyle,
+                            opacity: isDragging ? 0.5 : undefined,
+                            pointerEvents: isDragging ? 'none' : undefined,
+                        }}
                     >
                         <div className="border rounded-lg p-4 bg-card shadow-sm space-y-4">
                             {/* Header */}
