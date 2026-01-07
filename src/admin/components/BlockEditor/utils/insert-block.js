@@ -22,11 +22,17 @@ export const insertBlockFromInserter = (editor, blockType) => {
     const spec = buildSpec ? buildSpec() : { type: 'paragraph' };
     const current = editor.getTextCursorPosition().block;
     try {
-        editor.insertBlocks([spec], current, 'after');
+        const inserted = editor.insertBlocks([spec], current, 'after');
+        if (inserted?.[0]?.id) {
+            editor.setTextCursorPosition(inserted[0].id, 'start');
+        }
         editor.focus();
         return true;
     } catch {
-        editor.insertBlocks([{ type: 'paragraph' }], current, 'after');
+        const inserted = editor.insertBlocks([{ type: 'paragraph' }], current, 'after');
+        if (inserted?.[0]?.id) {
+            editor.setTextCursorPosition(inserted[0].id, 'start');
+        }
         editor.focus();
         return false;
     }

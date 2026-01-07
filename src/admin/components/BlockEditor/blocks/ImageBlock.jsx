@@ -18,7 +18,7 @@
  */
 
 import { createReactBlockSpec } from '@blocknote/react';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
     Image,
     Upload,
@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/ui/dialog.jsx';
 import { parseVariantsJson, getVariantMap } from '@shared/types/images';
 import ImageUploader from '../../ImageUploader';
 import MediaDialog from '../../MediaDialog';
@@ -59,26 +60,61 @@ export const ImageBlock = createReactBlockSpec(
         render: (props) => {
             const { block, editor } = props;
             const [inputUrl, setInputUrl] = useState(block.props.url);
-            const [activeTab, setActiveTab] = useState('upload');
+            const [activeTab, setActiveTab] = useState('library');
             const [uploaderOpen, setUploaderOpen] = useState(false);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
+            const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
             const { isSelected, selectBlock } = useBlockSelection(block.id);
             const captionRef = useRef(null);
-            const handleSelect = useCallback(() => {
+            const autoOpenedRef = useRef(false);
+            const handleSelect = useCallback((event) => {
+                if (event?.target instanceof HTMLElement) {
+                    if (event.target.closest('.wp-block-toolbar') || event.target.closest('.wp-block-toolbar-wrap')) {
+                        return;
+                    }
+                }
                 selectBlock();
-                editor.focus();
-            }, [editor, selectBlock]);
+            }, [selectBlock]);
+
+            const scheduleBlockSelection = useCallback((blockId) => {
+                if (!blockId) return;
+                requestAnimationFrame(() => {
+                    try {
+                        editor.setTextCursorPosition(blockId, 'start');
+                    } catch {
+                        // Ignore if selection fails while dialog is closing.
+                    }
+                });
+            }, [editor]);
+
+            useEffect(() => {
+                if (block.props.url) return;
+                if (!isSelected) return;
+                if (mediaDialogOpen || uploaderOpen || choiceDialogOpen) return;
+                if (autoOpenedRef.current) return;
+                let cursorBlockId = null;
+                try {
+                    cursorBlockId = editor.getTextCursorPosition().block?.id || null;
+                } catch {
+                    cursorBlockId = null;
+                }
+                if (cursorBlockId !== block.id) return;
+                autoOpenedRef.current = true;
+                setActiveTab('library');
+                setChoiceDialogOpen(true);
+            }, [block.id, block.props.url, choiceDialogOpen, editor, isSelected, mediaDialogOpen, uploaderOpen]);
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data) => {
                 const variants = data.variants || {};
                 const url = variants.md?.url || variants.sm?.url || variants.lg?.url || data.url;
                 const bestVariant = variants.md || variants.lg || variants.original;
+                const currentBlock = editor.getBlock(block.id) || block;
 
-                editor.updateBlock(block, {
+                editor.updateBlock(currentBlock, {
                     type: 'customImage',
                     props: {
-                        ...block.props,
+                        ...currentBlock.props,
                         url,
                         mediaId: data.id?.toString() || '',
                         alt: data.altText || '',
@@ -88,8 +124,11 @@ export const ImageBlock = createReactBlockSpec(
                         variantsJson: JSON.stringify(variants),
                     },
                 });
+                setInputUrl(url || '');
                 setUploaderOpen(false);
-            }, [block, editor]);
+                scheduleBlockSelection(currentBlock.id);
+                selectBlock();
+            }, [block, editor, scheduleBlockSelection, selectBlock]);
 
             // Handle media selection from MediaDialog
             const handleMediaSelect = useCallback((item) => {
@@ -97,11 +136,12 @@ export const ImageBlock = createReactBlockSpec(
                 const variants = getVariantMap(parsed);
                 const url = variants.md?.url || variants.sm?.url || variants.lg?.url || item.url;
                 const bestVariant = variants.md || variants.lg || variants.original;
+                const currentBlock = editor.getBlock(block.id) || block;
 
-                editor.updateBlock(block, {
+                editor.updateBlock(currentBlock, {
                     type: 'customImage',
                     props: {
-                        ...block.props,
+                        ...currentBlock.props,
                         url,
                         mediaId: item.id?.toString() || '',
                         alt: item.altText || item.alt_text || item.name || '',
@@ -111,27 +151,31 @@ export const ImageBlock = createReactBlockSpec(
                         variantsJson: JSON.stringify(variants),
                     },
                 });
-            }, [block, editor]);
+                setInputUrl(url || '');
+                setMediaDialogOpen(false);
+                scheduleBlockSelection(currentBlock.id);
+                selectBlock();
+            }, [block, editor, scheduleBlockSelection, selectBlock]);
 
             // Handle URL submit
             const handleUrlSubmit = useCallback(() => {
-                if (inputUrl) {
-                    editor.updateBlock(block, {
-                        type: 'customImage',
-                        props: {
-                            ...block.props,
-                            url: inputUrl,
-                            variantsJson: JSON.stringify({ lg: { url: inputUrl } }),
-                        },
-                    });
-                }
+                if (!inputUrl) return;
+                const currentBlock = editor.getBlock(block.id) || block;
+                editor.updateBlock(currentBlock, {
+                    type: 'customImage',
+                    props: {
+                        ...currentBlock.props,
+                        url: inputUrl,
+                        mediaId: '',
+                        variantsJson: JSON.stringify({ lg: { url: inputUrl } }),
+                    },
+                });
             }, [inputUrl, block, editor]);
 
             const handleRemove = () => {
-                editor.updateBlock(block, {
-                    type: 'customImage',
-                    props: { ...block.props, url: '', variantsJson: '{}' },
-                });
+                editor.removeBlocks([block.id]);
+                setMediaDialogOpen(false);
+                setUploaderOpen(false);
             };
 
             // Placeholder state - no image
@@ -194,13 +238,13 @@ export const ImageBlock = createReactBlockSpec(
                                                 <FolderOpen className="w-6 h-6 text-muted-foreground" />
                                             </div>
                                             <Button
-                                                variant="secondary"
+                                                variant="default"
                                                 size="sm"
-                                                onClick={() => setMediaDialogOpen(true)}
+                                                onClick={() => setChoiceDialogOpen(true)}
                                                 className="gap-2"
                                             >
                                                 <FolderOpen className="h-4 w-4" />
-                                                Media Library
+                                                Choose Image
                                             </Button>
                                             <p className="text-xs text-muted-foreground">
                                                 Select from existing images
@@ -241,6 +285,40 @@ export const ImageBlock = createReactBlockSpec(
                             onOpenChange={setMediaDialogOpen}
                             onSelect={handleMediaSelect}
                         />
+
+                        <Dialog open={choiceDialogOpen} onOpenChange={setChoiceDialogOpen}>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogTitle>Add image</DialogTitle>
+                                <DialogDescription>
+                                    Choose an upload or select from your media library.
+                                </DialogDescription>
+                                <div className="mt-4 grid grid-cols-1 gap-2">
+                                    <Button
+                                        type="button"
+                                        className="justify-start gap-2"
+                                        onClick={() => {
+                                            setChoiceDialogOpen(false);
+                                            setUploaderOpen(true);
+                                        }}
+                                    >
+                                        <Upload className="h-4 w-4" />
+                                        Upload image
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        className="justify-start gap-2"
+                                        onClick={() => {
+                                            setChoiceDialogOpen(false);
+                                            setMediaDialogOpen(true);
+                                        }}
+                                    >
+                                        <FolderOpen className="h-4 w-4" />
+                                        Media library
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                     </>
                 );
             }
@@ -252,17 +330,18 @@ export const ImageBlock = createReactBlockSpec(
                 center: 'mx-auto',
                 right: 'ml-auto',
             }[alignment];
+            const isOverlayOpen = mediaDialogOpen || uploaderOpen || choiceDialogOpen;
 
             const moveBlockUp = () => {
                 editor.setTextCursorPosition(block.id, 'start');
                 editor.moveBlocksUp();
-                editor.focus();
+                requestAnimationFrame(() => selectBlock());
             };
 
             const moveBlockDown = () => {
                 editor.setTextCursorPosition(block.id, 'start');
                 editor.moveBlocksDown();
-                editor.focus();
+                requestAnimationFrame(() => selectBlock());
             };
 
             const sideMenu = editor.extensions?.sideMenu;
@@ -273,7 +352,7 @@ export const ImageBlock = createReactBlockSpec(
                 sideMenu?.blockDragEnd?.();
             };
 
-            const toolbar = (
+            const toolbar = isOverlayOpen ? null : (
                 <BlockToolbar
                     blockIcon={Image}
                     blockLabel="Image"
@@ -286,7 +365,10 @@ export const ImageBlock = createReactBlockSpec(
                     <ToolbarButton
                         icon={Edit3}
                         label="Replace image"
-                        onClick={() => setMediaDialogOpen(true)}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setMediaDialogOpen(true);
+                        }}
                     />
                     <ToolbarButton
                         icon={Type}
@@ -375,3 +457,7 @@ export const ImageBlock = createReactBlockSpec(
 );
 
 export default ImageBlock;
+
+
+
+

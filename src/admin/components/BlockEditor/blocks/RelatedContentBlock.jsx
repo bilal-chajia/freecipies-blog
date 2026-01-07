@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Custom Block: Related Content
  *
  * Curate related recipes, articles, or roundups to show inside content_json.
@@ -50,13 +50,13 @@ export const RelatedContentBlock = createReactBlockSpec(
             const moveBlockUp = () => {
                 editor.setTextCursorPosition(block.id, 'start');
                 editor.moveBlocksUp();
-                editor.focus();
+                requestAnimationFrame(() => selectBlock());
             };
 
             const moveBlockDown = () => {
                 editor.setTextCursorPosition(block.id, 'start');
                 editor.moveBlocksDown();
-                editor.focus();
+                requestAnimationFrame(() => selectBlock());
             };
 
             const sideMenu = editor.extensions?.sideMenu;
@@ -252,3 +252,7 @@ export const RelatedContentBlock = createReactBlockSpec(
         },
     }
 );
+
+
+
+

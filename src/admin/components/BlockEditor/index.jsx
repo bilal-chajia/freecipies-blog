@@ -400,7 +400,10 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
 
     const insertBlock = (type, props = {}) => {
         const currentBlock = editor.getTextCursorPosition().block;
-        editor.insertBlocks([{ type, props }], currentBlock, 'after');
+        const inserted = editor.insertBlocks([{ type, props }], currentBlock, 'after');
+        if (inserted?.[0]?.id) {
+            editor.setTextCursorPosition(inserted[0].id, 'start');
+        }
         editor.focus();
     };
 
@@ -1367,6 +1370,8 @@ export default function BlockEditor({
     const [insertHandle, setInsertHandle] = useState(null);
     const [insertMenuOpen, setInsertMenuOpen] = useState(false);
     const insertMenuOpenRef = useRef(false);
+    const toolbarActionBlockIdRef = useRef(null);
+    const moveActionBlockIdRef = useRef(null);
     const [linkToolbar, setLinkToolbar] = useState({
         open: false,
         top: 0,
@@ -1474,6 +1479,40 @@ export default function BlockEditor({
             return wrapper?.getAttribute('data-block') || null;
         };
         const handleSelection = () => {
+            if (moveActionBlockIdRef.current) {
+                const moveId = moveActionBlockIdRef.current;
+                moveActionBlockIdRef.current = null;
+                const moveBlock = editor.getBlock(moveId) || null;
+                if (moveBlock) {
+                    setActiveBlockId(moveId);
+                    onSelectedBlockChange?.(moveBlock);
+                    requestAnimationFrame(() => {
+                        try {
+                            editor.setTextCursorPosition(moveId, 'start');
+                        } catch {
+                            // Ignore selection errors during block move.
+                        }
+                    });
+                    return;
+                }
+            }
+            if (toolbarActionBlockIdRef.current) {
+                const toolbarId = toolbarActionBlockIdRef.current;
+                const toolbarBlock = editor.getBlock(toolbarId) || null;
+                if (toolbarBlock) {
+                    setActiveBlockId(toolbarId);
+                    onSelectedBlockChange?.(toolbarBlock);
+                    toolbarActionBlockIdRef.current = null;
+                    return;
+                }
+                toolbarActionBlockIdRef.current = null;
+            }
+            const activeElement = document.activeElement;
+            if (activeElement instanceof HTMLElement) {
+                if (activeElement.closest('.wp-block-toolbar-wrap') || activeElement.closest('.wp-block-toolbar')) {
+                    return;
+                }
+            }
             const manualId = lastPointerBlockIdRef.current;
             if (manualId) {
                 const manualBlock = editor.getBlock(manualId) || null;
@@ -1515,6 +1554,21 @@ export default function BlockEditor({
         const handlePointerDown = (event) => {
             const target = event.target;
             if (!(target instanceof HTMLElement)) return;
+            const moveButton = target.closest('button[aria-label="Move up"], button[aria-label="Move down"]');
+            if (moveButton) {
+                const blockRoot = moveButton.closest('[data-block]');
+                const blockId = blockRoot?.getAttribute('data-block');
+                if (blockId) {
+                    moveActionBlockIdRef.current = blockId;
+                }
+                return;
+            }
+            if (target.closest('.wp-block-toolbar-wrap') || target.closest('.wp-block-toolbar')) {
+                if (activeBlockId) {
+                    toolbarActionBlockIdRef.current = activeBlockId;
+                }
+                return;
+            }
             const customBlock = target.closest('.wp-block--custom');
             if (customBlock) {
                 const blockId = customBlock.getAttribute('data-block');

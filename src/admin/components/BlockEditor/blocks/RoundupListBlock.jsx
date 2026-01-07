@@ -37,13 +37,13 @@ export const RoundupListBlock = createReactBlockSpec(
             const moveBlockUp = () => {
                 editor.setTextCursorPosition(block.id, 'start');
                 editor.moveBlocksUp();
-                editor.focus();
+                requestAnimationFrame(() => selectBlock());
             };
 
             const moveBlockDown = () => {
                 editor.setTextCursorPosition(block.id, 'start');
                 editor.moveBlocksDown();
-                editor.focus();
+                requestAnimationFrame(() => selectBlock());
             };
 
             const sideMenu = editor.extensions?.sideMenu;
@@ -100,3 +100,7 @@ export const RoundupListBlock = createReactBlockSpec(
         }
     }
 );
+
+
+
+

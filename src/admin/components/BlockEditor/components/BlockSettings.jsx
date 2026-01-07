@@ -1,13 +1,15 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { Image, Plus, Settings, Type, AlignLeft, AlignCenter, AlignRight, Trash2 } from 'lucide-react';
+import { Image, Plus, Settings, Type, AlignLeft, AlignCenter, AlignRight, Trash2, Upload, FolderOpen } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Label } from '@/ui/label';
 import { Input } from '@/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import { SettingsSection } from './DocumentSettings';
 import { articlesAPI } from '../../../services/api';
+import MediaDialog from '@/components/MediaDialog';
+import ImageUploader from '@/components/ImageUploader';
 import { getImageSlot } from '@shared/utils';
-import { getBestVariantUrl } from '@shared/types/images';
+import { getBestVariantUrl, parseVariantsJson, getVariantMap } from '@shared/types/images';
 
 /**
  * Block Settings Component
@@ -450,6 +452,8 @@ function RelatedContentSettings({
 
 export default function BlockSettings({ editor, selectedBlock: initialSelectedBlock, relatedContext }) {
     const [, setBlockVersion] = useState(0);
+    const [imageDialogOpen, setImageDialogOpen] = useState(false);
+    const [imageUploaderOpen, setImageUploaderOpen] = useState(false);
 
     useEffect(() => {
         if (!editor || !initialSelectedBlock?.id) return undefined;
@@ -466,6 +470,11 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
         ? (editor?.getBlock(initialSelectedBlock.id) ?? initialSelectedBlock)
         : null;
 
+    useEffect(() => {
+        setImageDialogOpen(false);
+        setImageUploaderOpen(false);
+    }, [selectedBlock?.id]);
+
     if (!selectedBlock) return null;
 
     const updateBlock = (updates) => {
@@ -478,6 +487,43 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
     const updateProps = (props) => {
         const currentBlock = editor?.getBlock(selectedBlock.id) || selectedBlock;
         updateBlock({ props: { ...currentBlock.props, ...props } });
+    };
+
+    const handleImageReplaceSelect = (item) => {
+        if (!item || selectedBlock.type !== 'customImage') return;
+        const parsed = parseVariantsJson(item);
+        const variants = getVariantMap(parsed);
+        const url = variants.md?.url || variants.sm?.url || variants.lg?.url || item.url || '';
+        const bestVariant = variants.md || variants.lg || variants.original;
+
+        updateProps({
+            url,
+            mediaId: item.id?.toString() || '',
+            alt: item.altText || item.alt_text || item.name || '',
+            credit: item.credit || item.credit_text || '',
+            width: bestVariant?.width || selectedBlock.props.width || 512,
+            height: bestVariant?.height || selectedBlock.props.height || 0,
+            variantsJson: JSON.stringify(variants),
+        });
+        setImageDialogOpen(false);
+    };
+
+    const handleImageUploadComplete = (data) => {
+        if (!data || selectedBlock.type !== 'customImage') return;
+        const variants = data.variants || {};
+        const url = variants.md?.url || variants.sm?.url || variants.lg?.url || data.url;
+        const bestVariant = variants.md || variants.lg || variants.original;
+
+        updateProps({
+            url,
+            mediaId: data.id?.toString() || '',
+            alt: data.altText || '',
+            credit: data.credit || '',
+            width: bestVariant?.width || data.width || selectedBlock.props.width || 512,
+            height: bestVariant?.height || data.height || selectedBlock.props.height || 0,
+            variantsJson: JSON.stringify(variants),
+        });
+        setImageUploaderOpen(false);
     };
 
     const deleteBlock = () => {
@@ -607,6 +653,29 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                 <SettingsSection title="Image Settings" icon={Settings} defaultOpen>
                     <div className="space-y-4">
                         <div className="space-y-2">
+                            <Label className="text-xs">Replace image</Label>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-8 gap-1.5"
+                                    onClick={() => setImageDialogOpen(true)}
+                                >
+                                    <FolderOpen className="w-3.5 h-3.5" />
+                                    Media Library
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-8 gap-1.5"
+                                    onClick={() => setImageUploaderOpen(true)}
+                                >
+                                    <Upload className="w-3.5 h-3.5" />
+                                    Upload
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
                             <Label className="text-xs">Width</Label>
                             <Input
                                 className="h-8 text-sm w-full"
@@ -659,6 +728,16 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                             />
                         </div>
                     </div>
+                    <MediaDialog
+                        open={imageDialogOpen}
+                        onOpenChange={setImageDialogOpen}
+                        onSelect={handleImageReplaceSelect}
+                    />
+                    <ImageUploader
+                        open={imageUploaderOpen}
+                        onOpenChange={setImageUploaderOpen}
+                        onUploadComplete={handleImageUploadComplete}
+                    />
                 </SettingsSection>
             )}
 
