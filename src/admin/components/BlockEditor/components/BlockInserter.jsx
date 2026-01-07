@@ -8,8 +8,21 @@
  * https://developer.wordpress.org/block-editor/
  */
 
-import { useState, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+    closestCenter,
+    DndContext,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
     Search,
     X,
@@ -46,6 +59,133 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
+
+function SortableStructureItem({
+    item,
+    activeBlockId,
+    onSelectBlock,
+    onConvertBlock,
+    onBlockAction,
+    dropTarget,
+    isSortableEnabled,
+    indentDepth,
+    showConvertOptions,
+}) {
+    const isActive = activeBlockId === item.id;
+    const isDropTarget = dropTarget?.targetId === item.id;
+    const dropPosition = isDropTarget ? dropTarget.position : null;
+    const Icon = item.icon || FileText;
+
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        setActivatorNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id: item.id,
+        disabled: !isSortableEnabled,
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={cn(
+                'structure-item group',
+                isActive && 'is-active',
+                isDragging && 'opacity-60',
+                dropPosition === 'before' && 'border-t border-primary/60',
+                dropPosition === 'after' && 'border-b border-primary/60'
+            )}
+            style={{
+                paddingLeft: `${12 + indentDepth * 14}px`,
+                transform: CSS.Transform.toString(transform),
+                transition,
+            }}
+            onClick={() => onSelectBlock?.(item.id)}
+        >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+                <button
+                    ref={setActivatorNodeRef}
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={(event) => event.stopPropagation()}
+                    title={isSortableEnabled ? 'Drag to reorder' : 'Reorder disabled'}
+                    {...attributes}
+                    {...listeners}
+                >
+                    <GripVertical className="w-3.5 h-3.5" />
+                </button>
+                <Icon className="structure-item-icon" />
+                <span
+                    className="structure-item-label"
+                    dangerouslySetInnerHTML={{ __html: renderInlineLabel(item.label) }}
+                />
+            </div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <button
+                        type="button"
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+                        onClick={(event) => event.stopPropagation()}
+                        title="Block actions"
+                    >
+                        <MoreVertical className="w-4 h-4" />
+                    </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                        onClick={() => onBlockAction?.('duplicate', item.id)}
+                    >
+                        <Copy className="w-4 h-4 mr-2" />
+                        Duplicate
+                    </DropdownMenuItem>
+                    {showConvertOptions && (
+                        <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                onClick={() => onConvertBlock?.(item.id, { type: 'paragraph' })}
+                            >
+                                Paragraph
+                            </DropdownMenuItem>
+                            {[2, 3, 4, 5, 6].map((level) => (
+                                <DropdownMenuItem
+                                    key={`heading-${item.id}-${level}`}
+                                    onClick={() => onConvertBlock?.(item.id, { type: 'heading', level })}
+                                >
+                                    Heading {level}
+                                </DropdownMenuItem>
+                            ))}
+                        </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                        onClick={() => onBlockAction?.('add-before', item.id)}
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add before
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onClick={() => onBlockAction?.('add-after', item.id)}
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add after
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => onBlockAction?.('delete', item.id)}
+                    >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    );
+}
 
 const escapeHtml = (value) => (
     String(value || '')
@@ -170,7 +310,6 @@ export default function BlockInserter({
 }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [panelTab, setPanelTab] = useState('blocks');
-    const [draggedId, setDraggedId] = useState(null);
     const [dropTarget, setDropTarget] = useState(null);
     const [expandedCategories, setExpandedCategories] = useState(
         blockCategories.reduce((acc, cat) => ({ ...acc, [cat.id]: true }), {})
@@ -218,7 +357,64 @@ export default function BlockInserter({
     );
 
     const visibleStructureItems = panelTab === 'outline' ? outlineItems : structureItems;
-    const draggedItem = draggedId ? structureItems.find((item) => item.id === draggedId) : null;
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    );
+
+    const isSortableEnabled = Boolean(onReorderBlock) && panelTab === 'list';
+
+    const handleDragStart = useCallback((event) => {
+        if (!isSortableEnabled) return;
+        setDropTarget(null);
+    }, [isSortableEnabled]);
+
+    const handleDragOver = useCallback((event) => {
+        if (!isSortableEnabled) return;
+        const activeId = event.active?.id;
+        const overId = event.over?.id;
+        if (!activeId || !overId || activeId === overId) {
+            setDropTarget(null);
+            return;
+        }
+        const activeItem = structureItems.find((item) => item.id === activeId);
+        const overItem = structureItems.find((item) => item.id === overId);
+        if (!activeItem || !overItem || activeItem.parentId !== overItem.parentId) {
+            setDropTarget(null);
+            return;
+        }
+        const activeIndex = visibleStructureItems.findIndex((item) => item.id === activeId);
+        const overIndex = visibleStructureItems.findIndex((item) => item.id === overId);
+        const position = activeIndex < overIndex ? 'after' : 'before';
+        setDropTarget({ targetId: overId, position });
+    }, [isSortableEnabled, structureItems, visibleStructureItems]);
+
+    const handleDragCancel = useCallback(() => {
+        setDropTarget(null);
+    }, []);
+
+    const handleDragEnd = useCallback((event) => {
+        if (!isSortableEnabled) return;
+        const activeId = event.active?.id;
+        const overId = event.over?.id;
+
+        if (!activeId || !overId || activeId === overId) {
+            setDropTarget(null);
+            return;
+        }
+
+        const activeItem = structureItems.find((item) => item.id === activeId);
+        const overItem = structureItems.find((item) => item.id === overId);
+        if (!activeItem || !overItem || activeItem.parentId !== overItem.parentId) {
+            setDropTarget(null);
+            return;
+        }
+
+        const activeIndex = visibleStructureItems.findIndex((item) => item.id === activeId);
+        const overIndex = visibleStructureItems.findIndex((item) => item.id === overId);
+        const position = activeIndex < overIndex ? 'after' : 'before';
+        setDropTarget(null);
+        onReorderBlock?.(activeId, overId, position);
+    }, [isSortableEnabled, onReorderBlock, structureItems, visibleStructureItems]);
 
     if (!isOpen) return null;
 
@@ -367,134 +563,40 @@ export default function BlockInserter({
                         {visibleStructureItems.length === 0 ? (
                             <div className="structure-empty">No blocks yet.</div>
                         ) : (
-                            visibleStructureItems.map((item) => {
-                                const Icon = item.icon || FileText;
-                                const isActive = activeBlockId === item.id;
-                                const isDropTarget = dropTarget?.targetId === item.id;
-                                const dropPosition = isDropTarget ? dropTarget.position : null;
-                                const isOutline = panelTab === 'outline';
-                                const headingDepth = Math.max(0, (item.level || 2) - 2);
-                                const indentDepth = isOutline ? headingDepth : (item.depth || 0);
-                                return (
-                                    <div
-                                        key={item.id}
-                                        className={cn(
-                                            'structure-item group',
-                                            isActive && 'is-active',
-                                            dropPosition === 'before' && 'border-t border-primary/60',
-                                            dropPosition === 'after' && 'border-b border-primary/60'
-                                        )}
-                                        style={{ paddingLeft: `${12 + indentDepth * 14}px` }}
-                                        onClick={() => onSelectBlock?.(item.id)}
-                                        onDragOver={(event) => {
-                                            if (!draggedItem || draggedItem.id === item.id) return;
-                                            if (draggedItem.parentId !== item.parentId) return;
-                                            event.preventDefault();
-                                            const rect = event.currentTarget.getBoundingClientRect();
-                                            const position = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
-                                            setDropTarget({ targetId: item.id, position });
-                                        }}
-                                        onDragLeave={() => {
-                                            if (dropTarget?.targetId === item.id) {
-                                                setDropTarget(null);
-                                            }
-                                        }}
-                                        onDrop={(event) => {
-                                            event.preventDefault();
-                                            if (!draggedItem || draggedItem.id === item.id) return;
-                                            if (draggedItem.parentId !== item.parentId) return;
-                                            onReorderBlock?.(draggedItem.id, item.id, dropTarget?.position || 'after');
-                                            setDraggedId(null);
-                                            setDropTarget(null);
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                                            <button
-                                                type="button"
-                                                draggable
-                                                className="text-muted-foreground hover:text-foreground"
-                                                onClick={(event) => event.stopPropagation()}
-                                                onDragStart={(event) => {
-                                                    event.dataTransfer.setData('text/plain', item.id);
-                                                    event.dataTransfer.effectAllowed = 'move';
-                                                    setDraggedId(item.id);
-                                                }}
-                                                onDragEnd={() => {
-                                                    setDraggedId(null);
-                                                    setDropTarget(null);
-                                                }}
-                                                title="Drag to reorder"
-                                            >
-                                                <GripVertical className="w-3.5 h-3.5" />
-                                            </button>
-                                            <Icon className="structure-item-icon" />
-                                            <span
-                                                className="structure-item-label"
-                                                dangerouslySetInnerHTML={{ __html: renderInlineLabel(item.label) }}
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragStart={handleDragStart}
+                                onDragOver={handleDragOver}
+                                onDragEnd={handleDragEnd}
+                                onDragCancel={handleDragCancel}
+                            >
+                                <SortableContext
+                                    items={visibleStructureItems.map((item) => item.id)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    {visibleStructureItems.map((item) => {
+                                        const isOutline = panelTab === 'outline';
+                                        const headingDepth = Math.max(0, (item.level || 2) - 2);
+                                        const indentDepth = isOutline ? headingDepth : (item.depth || 0);
+                                        const showConvertOptions = item.type === 'heading' || item.type === 'paragraph';
+                                        return (
+                                            <SortableStructureItem
+                                                key={item.id}
+                                                item={item}
+                                                activeBlockId={activeBlockId}
+                                                onSelectBlock={onSelectBlock}
+                                                onConvertBlock={onConvertBlock}
+                                                onBlockAction={onBlockAction}
+                                                dropTarget={dropTarget}
+                                                isSortableEnabled={isSortableEnabled}
+                                                indentDepth={indentDepth}
+                                                showConvertOptions={showConvertOptions}
                                             />
-                                        </div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
-                                                    onClick={(event) => event.stopPropagation()}
-                                                    title="Block actions"
-                                                >
-                                                    <MoreVertical className="w-4 h-4" />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem
-                                                    onClick={() => onBlockAction?.('duplicate', item.id)}
-                                                >
-                                                    <Copy className="w-4 h-4 mr-2" />
-                                                    Duplicate
-                                                </DropdownMenuItem>
-                                                {(item.type === 'heading' || item.type === 'paragraph') && (
-                                                    <>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
-                                                            onClick={() => onConvertBlock?.(item.id, { type: 'paragraph' })}
-                                                        >
-                                                            Paragraph
-                                                        </DropdownMenuItem>
-                                                        {[2, 3, 4, 5, 6].map((level) => (
-                                                            <DropdownMenuItem
-                                                                key={`heading-${item.id}-${level}`}
-                                                                onClick={() => onConvertBlock?.(item.id, { type: 'heading', level })}
-                                                            >
-                                                                Heading {level}
-                                                            </DropdownMenuItem>
-                                                        ))}
-                                                    </>
-                                                )}
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem
-                                                    onClick={() => onBlockAction?.('add-before', item.id)}
-                                                >
-                                                    <Plus className="w-4 h-4 mr-2" />
-                                                    Add before
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => onBlockAction?.('add-after', item.id)}
-                                                >
-                                                    <Plus className="w-4 h-4 mr-2" />
-                                                    Add after
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem
-                                                    className="text-destructive"
-                                                    onClick={() => onBlockAction?.('delete', item.id)}
-                                                >
-                                                    <Trash2 className="w-4 h-4 mr-2" />
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                );
-                            })
+                                        );
+                                    })}
+                                </SortableContext>
+                            </DndContext>
                         )}
                     </div>
                 )}
