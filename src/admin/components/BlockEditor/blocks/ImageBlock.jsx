@@ -22,7 +22,6 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
     Image,
     Upload,
-    Link,
     FolderOpen,
     X,
     Edit3,
@@ -31,7 +30,6 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/ui/dialog.jsx';
 import { parseVariantsJson, getVariantMap } from '@shared/types/images';
 import ImageUploader from '../../ImageUploader';
@@ -60,7 +58,6 @@ export const ImageBlock = createReactBlockSpec(
         render: (props) => {
             const { block, editor } = props;
             const [inputUrl, setInputUrl] = useState(block.props.url);
-            const [activeTab, setActiveTab] = useState('library');
             const [uploaderOpen, setUploaderOpen] = useState(false);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
             const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
@@ -100,7 +97,6 @@ export const ImageBlock = createReactBlockSpec(
                 }
                 if (cursorBlockId !== block.id) return;
                 autoOpenedRef.current = true;
-                setActiveTab('library');
                 setChoiceDialogOpen(true);
             }, [block.id, block.props.url, choiceDialogOpen, editor, isSelected, mediaDialogOpen, uploaderOpen]);
 
@@ -196,81 +192,23 @@ export const ImageBlock = createReactBlockSpec(
                                 'border border-dashed border-[var(--wp-placeholder-border)]',
                                 'rounded-lg p-4 bg-[var(--wp-placeholder-bg)]'
                             )}>
-                                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                    <TabsList className="grid w-full grid-cols-3 h-9 mb-3">
-                                        <TabsTrigger value="upload" className="text-xs gap-1.5">
-                                            <Upload className="h-3.5 w-3.5" />
-                                            Upload
-                                        </TabsTrigger>
-                                        <TabsTrigger value="library" className="text-xs gap-1.5">
-                                            <FolderOpen className="h-3.5 w-3.5" />
-                                            Library
-                                        </TabsTrigger>
-                                        <TabsTrigger value="url" className="text-xs gap-1.5">
-                                            <Link className="h-3.5 w-3.5" />
-                                            URL
-                                        </TabsTrigger>
-                                    </TabsList>
-
-                                    <TabsContent value="upload" className="mt-0">
-                                        <div className="flex flex-col items-center gap-3 py-4">
-                                            <div className="p-3 rounded-full bg-muted">
-                                                <Image className="w-6 h-6 text-muted-foreground" />
-                                            </div>
-                                            <Button
-                                                variant="secondary"
-                                                size="sm"
-                                                onClick={() => setUploaderOpen(true)}
-                                                className="gap-2"
-                                            >
-                                                <Upload className="h-4 w-4" />
-                                                Upload Image
-                                            </Button>
-                                            <p className="text-xs text-muted-foreground">
-                                                Crop, resize, and add metadata
-                                            </p>
-                                        </div>
-                                    </TabsContent>
-
-                                    <TabsContent value="library" className="mt-0">
-                                        <div className="flex flex-col items-center gap-3 py-4">
-                                            <div className="p-3 rounded-full bg-muted">
-                                                <FolderOpen className="w-6 h-6 text-muted-foreground" />
-                                            </div>
-                                            <Button
-                                                variant="default"
-                                                size="sm"
-                                                onClick={() => setChoiceDialogOpen(true)}
-                                                className="gap-2"
-                                            >
-                                                <FolderOpen className="h-4 w-4" />
-                                                Choose Image
-                                            </Button>
-                                            <p className="text-xs text-muted-foreground">
-                                                Select from existing images
-                                            </p>
-                                        </div>
-                                    </TabsContent>
-
-                                    <TabsContent value="url" className="mt-0">
-                                        <div className="flex flex-col items-center gap-3 py-4">
-                                            <div className="flex w-full max-w-sm gap-2">
-                                                <Input
-                                                    type="text"
-                                                    value={inputUrl}
-                                                    onChange={(e) => setInputUrl(e.target.value)}
-                                                    placeholder="https://example.com/image.jpg"
-                                                    className="flex-1 h-9 text-sm"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-                                                />
-                                                <Button onClick={handleUrlSubmit} size="sm" className="h-9">
-                                                    Add
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </TabsContent>
-                                </Tabs>
+                                <div className="flex flex-col items-center gap-3 py-6">
+                                    <div className="p-3 rounded-full bg-muted">
+                                        <Image className="w-6 h-6 text-muted-foreground" />
+                                    </div>
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => setChoiceDialogOpen(true)}
+                                        className="gap-2"
+                                    >
+                                        <FolderOpen className="h-4 w-4" />
+                                        Add image
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        Upload a new image or select from your library.
+                                    </p>
+                                </div>
                             </div>
                         </BlockWrapper>
 
