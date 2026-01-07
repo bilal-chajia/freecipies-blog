@@ -4,14 +4,60 @@
  * Database operations for articles.
  */
 
-import { eq, and, or, like, desc, asc, isNull, sql } from 'drizzle-orm';
+import { eq, and, or, like, desc, asc, isNull, sql, inArray } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { getTableColumns } from 'drizzle-orm';
 import { articles, type Article, type NewArticle } from '../schema/articles.schema';
+import { articlesToTags } from '../schema/articles-to-tags.schema';
 import { categories } from '../../categories/schema/categories.schema';
 import { authors } from '../../authors/schema/authors.schema';
+import { tags as tagsTable } from '../../tags/schema/tags.schema';
 import { createDb } from '../../../shared/database/drizzle';
-import { hydrateArticle, hydrateArticles, type HydratedArticle } from '../../../shared/utils/hydration';
+import { hydrateArticle, hydrateArticles, hydrateTag, type HydratedArticle, type HydratedTag } from '../../../shared/utils/hydration';
+
+async function getTagsForArticleId(drizzle: any, articleId: number): Promise<HydratedTag[]> {
+  const rows = await drizzle
+    .select({ ...getTableColumns(tagsTable) })
+    .from(articlesToTags)
+    .innerJoin(tagsTable, eq(articlesToTags.tagId, tagsTable.id))
+    .where(and(eq(articlesToTags.articleId, articleId), isNull(tagsTable.deletedAt)))
+    .orderBy(asc(tagsTable.label));
+
+  return rows.map(hydrateTag);
+}
+
+export async function setArticleTagsById(
+  db: D1Database,
+  articleId: number,
+  tagIds: number[]
+): Promise<HydratedTag[]> {
+  const drizzle = createDb(db);
+  const uniqueTagIds = Array.from(new Set(tagIds.filter((id) => Number.isFinite(id) && id > 0)));
+
+  // Resolve to existing (non-deleted) tags only (prevents FK failures + keeps cache clean)
+  const resolvedTags = uniqueTagIds.length
+    ? await drizzle
+      .select({ id: tagsTable.id, label: tagsTable.label })
+      .from(tagsTable)
+      .where(and(inArray(tagsTable.id, uniqueTagIds), isNull(tagsTable.deletedAt)))
+    : [];
+
+  // Replace join rows
+  await drizzle.delete(articlesToTags).where(eq(articlesToTags.articleId, articleId));
+  if (resolvedTags.length) {
+    await drizzle.insert(articlesToTags).values(
+      resolvedTags.map((tag) => ({ articleId, tagId: tag.id }))
+    );
+  }
+
+  // Update zero-join cache (used by search indexing + UI)
+  const cachedTagsJson = JSON.stringify(resolvedTags.map((tag) => tag.label));
+  await drizzle.update(articles)
+    .set({ cachedTagsJson, updatedAt: new Date().toISOString() })
+    .where(eq(articles.id, articleId));
+
+  return getTagsForArticleId(drizzle, articleId);
+}
 
 export interface ArticleQueryOptions {
   categoryId?: number;
@@ -71,6 +117,17 @@ export async function getArticles(
 
   if (options?.authorSlug && !options.authorId) {
     conditions.push(eq(authors.slug, options.authorSlug));
+  }
+
+  if (options?.tagSlug) {
+    conditions.push(sql`exists(
+      select 1
+      from ${articlesToTags}
+      inner join ${tagsTable} on ${tagsTable.id} = ${articlesToTags.tagId}
+      where ${articlesToTags.articleId} = ${articles.id}
+        and ${tagsTable.slug} = ${options.tagSlug}
+        and ${tagsTable.deletedAt} is null
+    )`);
   }
 
   if (options?.search) {
@@ -145,7 +202,11 @@ export async function getArticleBySlug(
     where: and(...conditions),
   });
 
-  return result ? hydrateArticle(result) : null;
+  if (!result) return null;
+
+  const hydrated = hydrateArticle(result);
+  const articleTags = await getTagsForArticleId(drizzle, (result as any).id);
+  return { ...hydrated, tags: articleTags } as any;
 }
 
 /**
@@ -234,7 +295,11 @@ export async function getArticleById(
     .where(and(eq(articles.id, id), isNull(articles.deletedAt)))
     .get();
 
-  return result ? hydrateArticle(result) : null;
+  if (!result) return null;
+
+  const hydrated = hydrateArticle(result);
+  const articleTags = await getTagsForArticleId(drizzle, id);
+  return { ...hydrated, tags: articleTags } as any;
 }
 
 /**

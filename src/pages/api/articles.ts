@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getArticles, getArticleBySlug, createArticle, syncCachedFields } from '@modules/articles';
+import { getArticles, getArticleBySlug, createArticle, setArticleTagsById, syncCachedFields } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, validatePaginationParams, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -110,13 +110,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const reqBody = await request.json();
+    const { selectedTags, ...rest } = reqBody ?? {};
 
     // Normalization
-    const transformedData = transformArticleRequestBody(reqBody);
+    const transformedData = transformArticleRequestBody(rest);
 
     const article = await createArticle(env.DB, transformedData);
 
     if (article?.id) {
+      if (selectedTags !== undefined) {
+        const tagIds = Array.isArray(selectedTags)
+          ? selectedTags
+            .map((value: unknown) => Number(value))
+            .filter((value: number) => Number.isFinite(value) && value > 0)
+          : [];
+        await setArticleTagsById(env.DB, article.id, tagIds);
+      }
+
       // Sync cached fields immediately after creation
       await syncCachedFields(env.DB, article.id);
     }

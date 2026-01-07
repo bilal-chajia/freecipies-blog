@@ -5,6 +5,7 @@ import {
     deleteArticleById,
     toggleOnlineById,
     toggleFavoriteById,
+    setArticleTagsById,
     syncCachedFields
 } from '@modules/articles';
 import type { Env } from '@shared/types';
@@ -90,9 +91,10 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
         }
 
         const requestBody = await request.json();
+        const { selectedTags, ...rest } = requestBody ?? {};
 
         // Standardized normalization using helper
-        const transformedData = transformArticleRequestBody(requestBody);
+        const transformedData = transformArticleRequestBody(rest);
 
         const success = await updateArticleById(env.DB, id, transformedData);
 
@@ -101,6 +103,16 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
                 new AppError(ErrorCodes.NOT_FOUND, 'Article not found', 404)
             );
             return new Response(body, { status, headers });
+        }
+
+        // Tags (articles_to_tags + cached_tags_json)
+        if (selectedTags !== undefined) {
+            const tagIds = Array.isArray(selectedTags)
+                ? selectedTags
+                    .map((value: unknown) => Number(value))
+                    .filter((value: number) => Number.isFinite(value) && value > 0)
+                : [];
+            await setArticleTagsById(env.DB, id, tagIds);
         }
 
         // Automatically synchronize cached fields (zero-join optimization)
