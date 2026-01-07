@@ -71,6 +71,9 @@
     --wp-canvas-padding-y: 32px;
     --wp-canvas-bg: #fff;
 
+    /* Spacing between blocks */
+    --wp-block-spacing: 12px;
+
     /* ========================================
    * Settings Sidebar
    * ======================================== */
@@ -260,6 +263,18 @@
     outline: none !important;
     box-shadow: none !important;
     border-color: transparent !important;
+}
+
+/* ========================================
+ * Block Spacing
+ * ======================================== */
+.block-editor-wrapper .bn-editor .bn-block-group > .bn-block-outer {
+    margin-top: 0 !important;
+    margin-bottom: var(--wp-block-spacing) !important;
+}
+
+.block-editor-wrapper .bn-editor .bn-block-group > .bn-block-outer:last-child {
+    margin-bottom: 0 !important;
 }
 
 /* ========================================
