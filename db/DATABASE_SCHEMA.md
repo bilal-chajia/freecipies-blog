@@ -189,6 +189,80 @@ interface ErrorResponse {
 
 ---
 
+## Database Performance & Automation
+
+### Key Indexes
+
+The database includes optimized indexes for common query patterns:
+
+| Table | Index | Purpose |
+|-------|-------|---------|
+| `site_settings` | `idx_site_settings_category` | Admin settings page organization |
+| `media` | `idx_media_search` | Media library search (name, alt_text, credit) |
+| `media` | `idx_media_date` | Most recent uploads sorting |
+| `media` | `idx_media_active` | Soft delete filtering |
+| `categories` | `idx_categories_slug` | Routing lookups |
+| `categories` | `idx_categories_parent` | Hierarchy queries |
+| `categories` | `idx_categories_display` | Navigation menus (online + sort_order) |
+| `categories` | `idx_categories_featured` | Featured categories widgets |
+| `categories` | `idx_categories_active` | Soft delete filtering |
+| `authors` | `idx_authors_slug` | Routing lookups |
+| `authors` | `idx_authors_role` | Team page filtering |
+| `authors` | `idx_authors_email` | Admin lookups |
+| `authors` | `idx_authors_featured` | Featured authors widgets |
+| `authors` | `idx_authors_display` | Team page sorting |
+| `authors` | `idx_authors_active` | Soft delete filtering |
+| `tags` | `idx_tags_slug` | Routing lookups |
+| `tags` | `idx_tags_popular` | Tag cloud sorting (by post count) |
+| `tags` | `idx_tags_label` | Admin autocomplete |
+| `tags` | `idx_tags_active` | Soft delete filtering |
+| `equipment` | `idx_equipment_slug` | Routing lookups |
+| `equipment` | `idx_equipment_category` | Category filtering |
+| `equipment` | `idx_equipment_active` | Active equipment filtering |
+| `articles` | `idx_articles_slug` | Routing lookups |
+| `articles` | `idx_articles_feed` | Main feed (online + published_at DESC) |
+| `articles` | `idx_articles_cat` | Category archive filtering |
+| `articles` | `idx_articles_author` | Author archive filtering |
+| `articles` | `idx_articles_parent` | Pillar/cluster queries |
+| `articles` | `idx_articles_workflow` | Admin workflow filtering |
+| `articles` | `idx_articles_total_time` | Recipe time filtering |
+| `articles` | `idx_articles_difficulty` | Recipe difficulty filtering |
+| `articles` | `idx_articles_active` | Soft delete filtering |
+| `articles_to_tags` | `idx_tag_to_article` | Tag-based article queries |
+| `pinterest_boards` | `idx_pinterest_boards_active` | Active board filtering |
+| `pinterest_pins` | `idx_pinterest_pins_board` | Board-based pin queries |
+| `pinterest_pins` | `idx_pinterest_pins_article` | Article-based pin queries |
+| `pinterest_pins` | `idx_pinterest_pins_status` | Status-based pin filtering |
+| `pinterest_pins` | `idx_pinterest_pins_batch` | Export batch queries |
+| `pin_templates` | `idx_pin_templates_slug` | Routing lookups |
+| `pin_templates` | `idx_pin_templates_category` | Category filtering |
+| `pin_templates` | `idx_pin_templates_active` | Active template filtering |
+| `redirects` | `idx_redirects_from_path` | Redirect matching |
+| `redirects` | `idx_redirects_active` | Active redirect filtering |
+
+### Important Triggers
+
+Database triggers automate common operations and maintain data integrity:
+
+#### Auto-Timestamp Updates
+- `update_*_timestamp`: Automatically update `updated_at` on any row modification
+- `trg_articles_updated_at`: Same for articles table
+
+#### Workflow Automation (Articles)
+- `trg_articles_set_published_at`: Sets `published_at` when article first goes online
+- `trg_articles_online_workflow`: Forces `workflow_status = 'published'` when `is_online = 1`
+- `trg_articles_prevent_delete`: Converts hard DELETE to soft delete (sets `deleted_at`)
+
+#### Full-Text Search Synchronization
+- `trg_articles_search_ai`: Syncs FTS index on INSERT
+- `trg_articles_search_au`: Syncs FTS index on UPDATE (handles soft deletes)
+- `trg_articles_search_ad`: Cleans FTS index on hard DELETE
+
+#### Soft Delete Protection
+All tables support soft deletes via `deleted_at` column. The articles table has additional protection via `trg_articles_prevent_delete` trigger, which prevents accidental hard deletes of published content.
+
+---
+
 ## Table of Contents
 
 1. [Tables](#tables)
@@ -207,6 +281,7 @@ interface ErrorResponse {
 2. [Complete JSON Schemas](#complete-json-schemas)
 3. [FTS5 Search Indexes](#fts5-search-indexes)
 4. [Relationships](#relationships)
+5. [Database Performance & Automation](#database-performance--automation)
 
 ---
 
@@ -449,6 +524,7 @@ contact_info    → Contact details
 > 2. Use block-based `content_json` with flattened structure (no `data` wrapper).
 > 3. Never auto-insert `ad_slot` blocks unless explicitly requested.
 > 4. Cached fields are rebuilt on save - don't manually update them.
+> 5. **Soft Delete Protection:** Articles cannot be hard-deleted due to database triggers. Use `deleted_at` for logical deletion.
 
 #### Identity & Relations
 
@@ -1206,6 +1282,8 @@ WHERE idx_articles_search MATCH 'vegan chocolate quick'
 ORDER BY rank
 LIMIT 20;
 ```
+
+**Synchronization:** The FTS indexes are automatically maintained via database triggers that sync with article changes (INSERT/UPDATE/DELETE). Soft-deleted articles are removed from search results.
 
 ### idx_media_search_fts
 
