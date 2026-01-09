@@ -7,6 +7,7 @@
         "@upstash/context7-mcp"
       ],
       "env": {
+        "CONTEXT7_API_KEY": "ctx7sk-41b75bb8-5a88-4a55-9b35-d3ebc3b27265",
         "DEFAULT_MINIMUM_TOKENS": ""
       }
     }
