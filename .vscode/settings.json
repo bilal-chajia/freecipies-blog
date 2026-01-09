@@ -3,7 +3,7 @@
     "Codegeex.Chat.LanguagePreference": "English",
     "Codegeex.CompletionDelay": 2,
     "css.lint.unknownAtRules": "ignore",
-    "Codegeex.GenerationPreference": "line by line",
+    "Codegeex.GenerationPreference": "block",
     "Codegeex.CommitMessageStyle": "ConventionalCommits",
     "Codegeex.Chat.fontSize": 13
 }
