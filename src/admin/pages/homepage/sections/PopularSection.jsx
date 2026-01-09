@@ -53,7 +53,7 @@ const PopularSection = ({ formData, handleNestedInputChange }) => {
                         value={formData.popularPosts.timeRange}
                         onValueChange={(value) => handleNestedInputChange('popularPosts', 'timeRange', value)}
                     >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger className="h-8">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

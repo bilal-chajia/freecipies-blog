@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/ui/alert.jsx';
 import { AlertCircle, CheckCircle2, Image as ImageIcon, Zap, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { ASPECT_RATIO_OPTIONS } from '../../../../shared/constants/image-upload';
+import { Input } from '@/ui/input.jsx';
 
 const ImageUploadSettings = ({ onRegisterActions }) => {
   const { settings, updateSettings, resetSettings, isLoading, defaults } = useImageUploadSettings();
@@ -287,15 +288,15 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
             <div className="space-y-1">
               <Label htmlFor="max-file-size">Max Upload Size</Label>
               <div className="relative">
-                <input
+                <Input
                   id="max-file-size"
                   name="maxFileSizeMB"
                   type="number"
                   value={localSettings?.maxFileSizeMB ?? 50}
                   onChange={(e) => handleChange('maxFileSizeMB', parseInt(e.target.value))}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="h-8 w-full pr-8"
                 />
-                <span className="absolute right-3 top-3 text-xs text-muted-foreground">MB</span>
+                <span className="absolute right-3 top-2 text-xs text-muted-foreground">MB</span>
               </div>
               <p className="text-[11px] text-muted-foreground">Maximum allowed file size per upload.</p>
             </div>
@@ -314,57 +315,57 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
               <div className="space-y-1">
                 <Label htmlFor="variant-lg" className="text-xs text-muted-foreground">Large (lg)</Label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="variant-lg"
                     name="variantLg"
                     type="number"
                     value={localSettings?.variantLg ?? 2048}
                     onChange={(e) => handleChange('variantLg', parseInt(e.target.value))}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="h-8 w-full pr-8"
                   />
-                  <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">px</span>
+                  <span className="absolute right-3 top-2 text-xs text-muted-foreground">px</span>
                 </div>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="variant-md" className="text-xs text-muted-foreground">Medium (md)</Label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="variant-md"
                     name="variantMd"
                     type="number"
                     value={localSettings?.variantMd ?? 1200}
                     onChange={(e) => handleChange('variantMd', parseInt(e.target.value))}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="h-8 w-full pr-8"
                   />
-                  <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">px</span>
+                  <span className="absolute right-3 top-2 text-xs text-muted-foreground">px</span>
                 </div>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="variant-sm" className="text-xs text-muted-foreground">Small (sm)</Label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="variant-sm"
                     name="variantSm"
                     type="number"
                     value={localSettings?.variantSm ?? 720}
                     onChange={(e) => handleChange('variantSm', parseInt(e.target.value))}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="h-8 w-full pr-8"
                   />
-                  <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">px</span>
+                  <span className="absolute right-3 top-2 text-xs text-muted-foreground">px</span>
                 </div>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="variant-xs" className="text-xs text-muted-foreground">Thumbnail (xs)</Label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="variant-xs"
                     name="variantXs"
                     type="number"
                     value={localSettings?.variantXs ?? 360}
                     onChange={(e) => handleChange('variantXs', parseInt(e.target.value))}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="h-8 w-full pr-8"
                   />
-                  <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">px</span>
+                  <span className="absolute right-3 top-2 text-xs text-muted-foreground">px</span>
                 </div>
               </div>
             </div>

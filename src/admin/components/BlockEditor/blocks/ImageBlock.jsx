@@ -348,53 +348,56 @@ export const ImageBlock = createReactBlockSpec(
                         pointerEvents: isDragging ? 'none' : undefined,
                     }}
                 >
-                    {/* Image */}
-                    <div className="relative">
-                        <img
-                            src={block.props.url}
-                            alt={block.props.alt}
-                            className={cn(
-                                'max-w-full h-auto rounded-lg',
-                                alignmentClass
-                            )}
-                            style={{ display: 'block' }}
-                        />
+                    <div className="border rounded-lg overflow-hidden bg-card">
+                        {/* Image */}
+                        <div className="relative">
+                            <img
+                                src={block.props.url}
+                                alt={block.props.alt}
+                                className={cn(
+                                    'max-w-full h-auto',
+                                    alignmentClass
+                                )}
+                                style={{ display: 'block' }}
+                            />
+                        </div>
+
+                        {/* Caption & Credit */}
+                        <div className="p-2 space-y-1 bg-muted/20">
+                            <input
+                                type="text"
+                                value={block.props.caption}
+                                onChange={(e) => editor.updateBlock(block, {
+                                    type: 'customImage',
+                                    props: { ...block.props, caption: e.target.value }
+                                })}
+                                placeholder="Write a caption..."
+                                className={cn(
+                                    'w-full text-center text-sm',
+                                    'bg-transparent border-none',
+                                    'text-muted-foreground placeholder:text-muted-foreground/50',
+                                    'focus:outline-none focus:ring-0'
+                                )}
+                                ref={captionRef}
+                            />
+
+                            <input
+                                type="text"
+                                value={block.props.credit}
+                                onChange={(e) => editor.updateBlock(block, {
+                                    type: 'customImage',
+                                    props: { ...block.props, credit: e.target.value }
+                                })}
+                                placeholder="Photo credit (optional)"
+                                className={cn(
+                                    'w-full text-center text-xs',
+                                    'bg-transparent border-none',
+                                    'text-muted-foreground/70 placeholder:text-muted-foreground/40',
+                                    'focus:outline-none focus:ring-0'
+                                )}
+                            />
+                        </div>
                     </div>
-
-                    {/* Caption */}
-                    <input
-                        type="text"
-                        value={block.props.caption}
-                        onChange={(e) => editor.updateBlock(block, {
-                            type: 'customImage',
-                            props: { ...block.props, caption: e.target.value }
-                        })}
-                        placeholder="Write a caption..."
-                        className={cn(
-                            'w-full mt-2 text-center text-sm',
-                            'bg-transparent border-none',
-                            'text-muted-foreground placeholder:text-muted-foreground/50',
-                            'focus:outline-none focus:ring-0'
-                        )}
-                        ref={captionRef}
-                    />
-
-                    {/* Credit */}
-                    <input
-                        type="text"
-                        value={block.props.credit}
-                        onChange={(e) => editor.updateBlock(block, {
-                            type: 'customImage',
-                            props: { ...block.props, credit: e.target.value }
-                        })}
-                        placeholder="Photo credit (optional)"
-                        className={cn(
-                            'w-full mt-1 text-center text-xs',
-                            'bg-transparent border-none',
-                            'text-muted-foreground/70 placeholder:text-muted-foreground/40',
-                            'focus:outline-none focus:ring-0'
-                        )}
-                    />
 
                     {/* Media dialogs */}
                     <MediaDialog

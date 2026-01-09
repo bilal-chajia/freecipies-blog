@@ -49,7 +49,7 @@ const SeoSettings = ({ formData, handleInputChange, activeSection = 'meta' }) =>
                             id="defaultMetaTitle"
                             value={formData.defaultMetaTitle}
                             onChange={(e) => handleInputChange('defaultMetaTitle', e.target.value)}
-                            className="h-9 px-3 text-sm bg-background border border-border/60 rounded-md"
+                            className="h-8 text-sm"
                             placeholder="Enter global meta title..."
                         />
                     </div>
@@ -66,7 +66,7 @@ const SeoSettings = ({ formData, handleInputChange, activeSection = 'meta' }) =>
                             value={formData.defaultMetaDescription}
                             onChange={(e) => handleInputChange('defaultMetaDescription', e.target.value)}
                             rows={3}
-                            className="p-3 text-sm bg-background border border-border/60 rounded-md resize-none"
+                            className="text-sm resize-none"
                             placeholder="Write a compelling description..."
                         />
                     </div>

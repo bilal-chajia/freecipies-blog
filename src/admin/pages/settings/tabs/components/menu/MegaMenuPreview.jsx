@@ -34,7 +34,7 @@ const MegaMenuPreview = ({ items, setHeaderActions }) => {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsOpen(true)}
-                    className="h-9 px-3 gap-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                    className="h-8 px-3 gap-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
                     title="Preview Menu"
                 >
                     <Eye className="w-4 h-4" />

@@ -19,6 +19,7 @@ import AdsSettings from './tabs/AdsSettings';
 import AppearanceSettings from './tabs/AppearanceSettings';
 import AdvancedSettings, { advancedSettingsTabs } from './tabs/AdvancedSettings';
 import ImageUploadSettings from './tabs/ImageUploadSettings';
+import AISettings, { aiSettingsTabs } from './tabs/AISettings';
 
 // Map main tabs to their sub-tabs config
 const subTabsConfig = {
@@ -26,6 +27,7 @@ const subTabsConfig = {
   seo: seoSettingsTabs,
   menus: menuSettingsTabs,
   advanced: advancedSettingsTabs,
+  ai: aiSettingsTabs,
   // Other tabs don't have sub-tabs
 };
 
@@ -35,6 +37,7 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
   const [mediaActions, setMediaActions] = useState(null);
+  const [aiActions, setAiActions] = useState(null);
   const [headerActions, setHeaderActions] = useState(null); // Custom header buttons from child tabs
 
   // Sub-tab state - get default from config or use first tab
@@ -401,13 +404,20 @@ const Settings = () => {
       case 'media':
         // Media tab handles actions differently
         return <ImageUploadSettings onRegisterActions={setMediaActions} />;
+      case 'ai':
+        return <AISettings {...props} onRegisterActions={setAiActions} />;
       default:
         return <GeneralSettings {...props} />;
     }
   };
 
-  // Determine if this is the media tab (special buttons)
+  // Determine if this is the media or AI tab (special buttons)
   const isMediaTab = tab === 'media';
+  const isAiTab = tab === 'ai';
+
+  const aiSaving = aiActions?.isSaving ?? false;
+  const aiHasChanges = aiActions?.hasChanges ?? false;
+  const aiOnSave = aiActions?.onSave;
 
   // Create header tabs JSX if current tab has sub-tabs
   const headerTabsJsx = currentSubTabs.length > 0 ? (
@@ -431,13 +441,30 @@ const Settings = () => {
       activeTab={tab}
       headerTabs={headerTabsJsx}
       headerActions={headerActions} // Pass custom header buttons
-      onSave={isMediaTab ? mediaActions?.onSave : handleSave}
-      saving={isMediaTab ? mediaActions?.isSaving : saving}
-      saveDisabled={isMediaTab && !mediaActions?.hasChanges}
-      saveLabel={isMediaTab && mediaActions?.isSaving ? 'Saving...' : 'Save'}
+      onSave={
+        isMediaTab
+          ? mediaActions?.onSave
+          : isAiTab
+            ? aiOnSave || handleSave
+            : handleSave
+      }
+      saving={isMediaTab ? mediaActions?.isSaving : isAiTab ? aiSaving : saving}
+      saveDisabled={
+        (isMediaTab && !mediaActions?.hasChanges) ||
+        (isAiTab && !aiHasChanges)
+      }
+      saveLabel={
+        isMediaTab
+          ? (mediaActions?.isSaving ? 'Saving...' : 'Save')
+          : isAiTab
+            ? (aiSaving ? 'Saving...' : 'Save')
+            : 'Save'
+      }
       showResetButton={isMediaTab}
       onReset={mediaActions?.onReset}
-      hasChanges={isMediaTab ? mediaActions?.hasChanges : true}
+      hasChanges={
+        isMediaTab ? mediaActions?.hasChanges : isAiTab ? aiHasChanges : true
+      }
     >
       {renderTabContent()}
     </SettingsLayout>

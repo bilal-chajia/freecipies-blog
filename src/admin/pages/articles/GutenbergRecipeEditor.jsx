@@ -31,6 +31,7 @@ import {
     BlockSettings,
 } from '@/components/BlockEditor/components';
 import { TitleInput } from '@/components/BlockEditor/components/GutenbergEditorMain';
+import AISettings from '@/components/BlockEditor/components/AISettings';
 import { insertBlockFromInserter } from '@/components/BlockEditor/utils/insert-block';
 
 // Existing components
@@ -191,6 +192,44 @@ export default function GutenbergRecipeEditor() {
         }
         editorInstance.focus();
     }, [editorInstance]);
+
+    // Handle AI-generated content
+    const handleAIContentGenerated = useCallback((aiContent) => {
+        if (!aiContent) return;
+
+        // Update form fields if provided
+        if (aiContent.label) {
+            handleInputChange('label', aiContent.label);
+        }
+        if (aiContent.headline) {
+            handleInputChange('headline', aiContent.headline);
+        }
+        if (aiContent.shortDescription) {
+            handleInputChange('shortDescription', aiContent.shortDescription);
+        }
+        if (aiContent.metaTitle) {
+            handleInputChange('metaTitle', aiContent.metaTitle);
+        }
+        if (aiContent.metaDescription) {
+            handleInputChange('metaDescription', aiContent.metaDescription);
+        }
+
+        // Update recipe data if provided
+        if (aiContent.recipe) {
+            setRecipeJson(aiContent.recipe);
+        }
+
+        // Insert blocks if provided
+        if (aiContent.blocks && Array.isArray(aiContent.blocks) && editorInstance) {
+            // Clear existing content and insert new blocks
+            const currentBlocks = editorInstance.document;
+            if (currentBlocks.length > 0) {
+                editorInstance.replaceBlocks(currentBlocks, aiContent.blocks);
+            } else {
+                editorInstance.insertBlocks(aiContent.blocks);
+            }
+        }
+    }, [handleInputChange, setRecipeJson, editorInstance]);
 
     useEffect(() => {
         const html = document.documentElement;
@@ -454,6 +493,12 @@ export default function GutenbergRecipeEditor() {
                                     editor={editorInstance}
                                     selectedBlock={selectedBlock}
                                     relatedContext={relatedContext}
+                                />
+                            }
+                            aiSettings={
+                                <AISettings
+                                    contentType="recipe"
+                                    onContentGenerated={handleAIContentGenerated}
                                 />
                             }
                         />

@@ -124,6 +124,8 @@ function RelatedContentSettings({
             id: item.id,
             slug: item.slug,
             headline,
+            categoryName: item.categoryLabel || item.categoryName || item.category?.label || null,
+            categoryColor: item.categoryColor || item.category?.color || null,
         };
 
         const thumbnail = getImageSlot(item.imagesJson, 'thumbnail')
@@ -328,9 +330,9 @@ function RelatedContentSettings({
                 </div>
             </div>
 
-            <div className="structure-item items-start">
+            <div className="structure-item items-center">
                 <span className="structure-item-label">Type</span>
-                <div className="ml-auto w-[170px] flex flex-wrap justify-end gap-2">
+                <div className="ml-auto flex flex-nowrap justify-end gap-1.5">
                     {Object.keys(RELATED_TYPE_LABELS).map((type) => (
                         <button
                             key={type}

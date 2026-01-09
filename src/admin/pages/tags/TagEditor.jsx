@@ -95,7 +95,7 @@ const TagEditor = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center h-86">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
@@ -160,7 +160,7 @@ const TagEditor = () => {
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
                   placeholder="e.g., Quick Recipes"
-                  className="h-9"
+                  className="h-8"
                 />
               </div>
               <div className="space-y-2">
@@ -171,7 +171,7 @@ const TagEditor = () => {
                     value={formData.slug}
                     onChange={(e) => handleChange('slug', e.target.value)}
                     disabled={isEditMode}
-                    className="pl-6 h-9 font-mono text-sm"
+                    className="pl-6 h-8 font-mono text-sm"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -221,7 +221,7 @@ const TagEditor = () => {
                     value={formData.color}
                     onChange={(e) => handleChange('color', e.target.value)}
                     placeholder="#FF6B6B"
-                    className="font-mono h-9 flex-1"
+                    className="font-mono h-8 flex-1"
                   />
                   <div
                     className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex-shrink-0"

@@ -62,7 +62,7 @@ const HeroSection = ({ formData, handleNestedInputChange }) => {
                     <Label className="text-xs font-medium text-foreground/80">
                         Background Color
                     </Label>
-                    <div className="flex items-center gap-2 h-9 px-2 border border-border/60 rounded-md bg-background">
+                    <div className="flex items-center gap-2 h-8 px-2 border border-input rounded-md">
                         <div
                             ref={colorTriggerRef}
                             className="w-6 h-6 rounded border border-border/40 cursor-pointer hover:scale-105 transition-transform"

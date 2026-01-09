@@ -236,32 +236,36 @@ export default function EditorTopbar({
                 <div className="flex bg-muted/50 p-0.5 rounded-lg border">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button
+                            <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => onViewModeChange?.('visual')}
-                                className={`p-1.5 rounded-md transition-all ${viewMode === 'visual'
+                                className={`h-7 w-7 rounded-md transition-all ${viewMode === 'visual'
                                     ? 'bg-background shadow-sm text-foreground'
                                     : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 <LayoutTemplate className="h-3.5 w-3.5" />
-                            </button>
+                            </Button>
                         </TooltipTrigger>
                         <TooltipContent>Visual Editor</TooltipContent>
                     </Tooltip>
 
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button
+                            <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => onViewModeChange?.('json')}
-                                className={`p-1.5 rounded-md transition-all ${viewMode === 'json'
+                                className={`h-7 w-7 rounded-md transition-all ${viewMode === 'json'
                                     ? 'bg-background shadow-sm text-foreground'
                                     : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 <Code className="h-3.5 w-3.5" />
-                            </button>
+                            </Button>
                         </TooltipTrigger>
                         <TooltipContent>JSON Data</TooltipContent>
                     </Tooltip>

@@ -23,9 +23,9 @@ const SocialSettings = ({ formData, handleInputChange }) => {
                                 {platform.label}
                             </Label>
                             {formData[platform.id] && (
-                                <a 
-                                    href={formData[platform.id]} 
-                                    target="_blank" 
+                                <a
+                                    href={formData[platform.id]}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-[10px] text-primary flex items-center gap-0.5 hover:underline"
                                 >
@@ -38,7 +38,7 @@ const SocialSettings = ({ formData, handleInputChange }) => {
                             value={formData[platform.id]}
                             onChange={(e) => handleInputChange(platform.id, e.target.value)}
                             placeholder={platform.placeholder}
-                            className="h-9 px-3 text-sm bg-background border border-border/60 rounded-md"
+                            className="h-8 text-sm"
                         />
                     </div>
                 ))}

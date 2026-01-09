@@ -168,7 +168,7 @@ const TagsList = () => {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="flex flex-col gap-2">
-          <div className="h-9 w-64 bg-muted rounded-lg" />
+          <div className="h-8 w-64 bg-muted rounded-lg" />
           <div className="h-4 w-96 bg-muted rounded-md" />
         </div>
         <div className="h-12 w-full bg-muted rounded-xl" />
@@ -243,7 +243,7 @@ const TagsList = () => {
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   placeholder="Enter tag name..."
-                  className="h-9 px-3 bg-background border-none ring-1 ring-border/50 text-sm font-bold"
+                  className="h-8 px-3 bg-background border-none ring-1 ring-border/50 text-sm font-bold"
                   autoFocus
                 />
                 <div className="flex items-center gap-3">
@@ -288,7 +288,7 @@ const TagsList = () => {
                       <Input
                         value={editingName}
                         onChange={(e) => setEditingName(e.target.value)}
-                        className="h-9 px-3 bg-background border-none ring-1 ring-border/50 text-sm font-bold"
+                        className="h-8 px-3 bg-background border-none ring-1 ring-border/50 text-sm font-bold"
                         autoFocus
                       />
                       <div className="flex items-center gap-2">

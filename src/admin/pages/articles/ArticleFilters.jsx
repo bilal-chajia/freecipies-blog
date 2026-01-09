@@ -91,7 +91,7 @@ const ArticleFilters = ({
                                 value={localFilters.type}
                                 onValueChange={(value) => onFilterChange('type', value)}
                             >
-                                <SelectTrigger className="h-10 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg">
+                                <SelectTrigger className="h-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg">
                                     <SelectValue placeholder="All Types" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -162,7 +162,7 @@ const ArticleFilters = ({
 
                     <div className="space-y-1.5 lg:col-span-2">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 ml-1">Tags Selection</label>
-                        <div className="flex flex-wrap gap-2 p-2 min-h-10 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg">
+                        <div className="flex flex-wrap gap-2 p-2 min-h-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg">
                             {localFilters.tags.length === 0 && (
                                 <span className="text-xs text-muted-foreground/60 py-1 px-2 italic">No tags selected</span>
                             )}
@@ -209,14 +209,14 @@ const ArticleFilters = ({
 
                     <div className="space-y-1.5 lg:col-span-2">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 ml-1">Published Within</label>
-                        <div className="flex items-center gap-2 h-10">
+                        <div className="flex items-center gap-2 h-8">
                             <div className="relative flex-1">
                                 <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                                 <Input
                                     type="date"
                                     value={localFilters.dateFrom}
                                     onChange={(e) => onFilterChange('dateFrom', e.target.value)}
-                                    className="h-10 pl-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg text-xs"
+                                    className="h-8 pl-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg text-xs"
                                 />
                             </div>
                             <span className="text-muted-foreground/40 text-xs">to</span>

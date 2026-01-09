@@ -110,7 +110,7 @@ const CategoriesList = () => {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="flex flex-col gap-2">
-          <div className="h-9 w-64 bg-muted rounded-lg" />
+          <div className="h-8 w-64 bg-muted rounded-lg" />
           <div className="h-4 w-96 bg-muted rounded-md" />
         </div>
         <div className="flex gap-4">
@@ -163,8 +163,8 @@ const CategoriesList = () => {
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" className="h-12 px-4 gap-2 rounded-xl bg-card border-none ring-1 ring-border/50">
-             <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-             <span className="text-sm font-medium">Grid View</span>
+            <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Grid View</span>
           </Button>
           <div className="h-6 w-px bg-border/50 mx-1 hidden sm:block" />
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/50 rounded-lg border border-border/30">
@@ -195,8 +195,8 @@ const CategoriesList = () => {
             </div>
           ) : (
             filteredCategories.map((category) => (
-              <motion.div 
-                key={category.slug} 
+              <motion.div
+                key={category.slug}
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}

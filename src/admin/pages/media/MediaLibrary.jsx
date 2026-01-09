@@ -576,10 +576,10 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
                 <span className="text-sm text-muted-foreground">
                   {selectedMedia.length} selected
                 </span>
-                <Button variant="ghost" size="sm" onClick={clearSelection} className="h-9 px-3">
+                <Button variant="ghost" size="sm" onClick={clearSelection} className="h-8 px-3">
                   Clear
                 </Button>
-                <Button onClick={handleBulkDelete} size="sm" variant="destructive" className="h-9 px-3 gap-1.5">
+                <Button onClick={handleBulkDelete} size="sm" variant="destructive" className="h-8 px-3 gap-1.5">
                   <Trash2 className="h-3.5 w-3.5" /> Delete
                 </Button>
               </motion.div>
@@ -635,12 +635,12 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
           </Select>
 
           <div className="flex p-1 bg-accent/50 rounded-2xl border border-border/30 h-12">
-            <button onClick={() => setViewMode('grid')} className={`h-full w-10 flex items-center justify-center rounded-xl transition-all ${viewMode === 'grid' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
+            <Button variant="ghost" onClick={() => setViewMode('grid')} className={`h-full w-10 p-0 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
               <Grid className="h-4 w-4" />
-            </button>
-            <button onClick={() => setViewMode('list')} className={`h-full w-10 flex items-center justify-center rounded-xl transition-all ${viewMode === 'list' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
+            </Button>
+            <Button variant="ghost" onClick={() => setViewMode('list')} className={`h-full w-10 p-0 rounded-xl transition-all ${viewMode === 'list' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
               <List className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>

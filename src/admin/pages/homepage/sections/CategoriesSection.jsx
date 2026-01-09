@@ -43,7 +43,7 @@ const CategoriesSection = ({ formData, handleNestedInputChange }) => {
                         value={formData.categories.displayType}
                         onValueChange={(value) => handleNestedInputChange('categories', 'displayType', value)}
                     >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger className="h-8">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

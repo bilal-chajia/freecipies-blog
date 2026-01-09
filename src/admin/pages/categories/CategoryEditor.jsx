@@ -6,6 +6,7 @@ import { Input } from '@/ui/input.jsx';
 import { Label } from '@/ui/label.jsx';
 import { Textarea } from '@/ui/textarea.jsx';
 import { Switch } from '@/ui/switch.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card.jsx';
 import {
   Dialog,
@@ -460,7 +461,7 @@ const CategoryEditor = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center h-86">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
@@ -550,7 +551,7 @@ const CategoryEditor = () => {
                       value={formData.label}
                       onChange={(e) => handleChange('label', e.target.value)}
                       placeholder="e.g., Breakfast Recipes"
-                      className="h-9"
+                      className="h-8"
                     />
                   </div>
                   <div className="space-y-2">
@@ -561,7 +562,7 @@ const CategoryEditor = () => {
                         value={formData.slug}
                         onChange={(e) => handleChange('slug', e.target.value)}
                         disabled={isEditMode}
-                        className="pl-6 h-9 font-mono text-sm"
+                        className="pl-6 h-8 font-mono text-sm"
                       />
                     </div>
                   </div>
@@ -573,7 +574,7 @@ const CategoryEditor = () => {
                     value={formData.headline}
                     onChange={(e) => handleChange('headline', e.target.value)}
                     placeholder="Catchy headline for the category page"
-                    className="h-9"
+                    className="h-8"
                   />
                 </div>
 
@@ -618,7 +619,7 @@ const CategoryEditor = () => {
                     value={formData.metaTitle}
                     onChange={(e) => handleChange('metaTitle', e.target.value)}
                     placeholder="SEO optimized title"
-                    className="h-9"
+                    className="h-8"
                   />
                   <p className="text-[10px] text-muted-foreground text-right">
                     {formData.metaTitle.length}/60 characters
@@ -643,7 +644,7 @@ const CategoryEditor = () => {
                     value={formData.canonicalUrl}
                     onChange={(e) => handleChange('canonicalUrl', e.target.value)}
                     placeholder="https://example.com/categories/breakfast"
-                    className="h-9"
+                    className="h-8"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -653,7 +654,7 @@ const CategoryEditor = () => {
                       value={formData.ogImage}
                       onChange={(e) => handleChange('ogImage', e.target.value)}
                       placeholder="https://cdn.example.com/og-image.jpg"
-                      className="h-9"
+                      className="h-8"
                     />
                   </div>
                   <div className="space-y-2">
@@ -662,7 +663,7 @@ const CategoryEditor = () => {
                       value={formData.ogTitle}
                       onChange={(e) => handleChange('ogTitle', e.target.value)}
                       placeholder="Social share title"
-                      className="h-9"
+                      className="h-8"
                     />
                   </div>
                 </div>
@@ -679,14 +680,18 @@ const CategoryEditor = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Twitter Card</Label>
-                    <select
+                    <Select
                       value={formData.twitterCard}
-                      onChange={(e) => handleChange('twitterCard', e.target.value)}
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onValueChange={(value) => handleChange('twitterCard', value)}
                     >
-                      <option value="summary">summary</option>
-                      <option value="summary_large_image">summary_large_image</option>
-                    </select>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="summary">summary</SelectItem>
+                        <SelectItem value="summary_large_image">summary_large_image</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Robots</Label>
@@ -694,7 +699,7 @@ const CategoryEditor = () => {
                       value={formData.robots}
                       onChange={(e) => handleChange('robots', e.target.value)}
                       placeholder="e.g., noindex,nofollow"
-                      className="h-9"
+                      className="h-8"
                     />
                   </div>
                 </div>
@@ -725,68 +730,88 @@ const CategoryEditor = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Layout Mode</Label>
-                    <select
+                    <Select
                       value={formData.layoutMode}
-                      onChange={(e) => handleChange('layoutMode', e.target.value)}
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onValueChange={(value) => handleChange('layoutMode', value)}
                     >
-                      <option value="grid">Grid</option>
-                      <option value="list">List</option>
-                      <option value="masonry">Masonry</option>
-                    </select>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="grid">Grid</SelectItem>
+                        <SelectItem value="list">List</SelectItem>
+                        <SelectItem value="masonry">Masonry</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Card Style</Label>
-                    <select
+                    <Select
                       value={formData.cardStyle}
-                      onChange={(e) => handleChange('cardStyle', e.target.value)}
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onValueChange={(value) => handleChange('cardStyle', value)}
                     >
-                      <option value="full">Full</option>
-                      <option value="compact">Compact</option>
-                      <option value="minimal">Minimal</option>
-                    </select>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full">Full</SelectItem>
+                        <SelectItem value="compact">Compact</SelectItem>
+                        <SelectItem value="minimal">Minimal</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Sort By</Label>
-                    <select
+                    <Select
                       value={formData.sortBy}
-                      onChange={(e) => handleChange('sortBy', e.target.value)}
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onValueChange={(value) => handleChange('sortBy', value)}
                     >
-                      <option value="publishedAt">Published At</option>
-                      <option value="title">Title</option>
-                      <option value="viewCount">View Count</option>
-                    </select>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="publishedAt">Published At</SelectItem>
+                        <SelectItem value="title">Title</SelectItem>
+                        <SelectItem value="viewCount">View Count</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Sort Order</Label>
-                    <select
+                    <Select
                       value={formData.sortOrder}
-                      onChange={(e) => handleChange('sortOrder', e.target.value)}
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onValueChange={(value) => handleChange('sortOrder', value)}
                     >
-                      <option value="desc">Descending</option>
-                      <option value="asc">Ascending</option>
-                    </select>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="desc">Descending</SelectItem>
+                        <SelectItem value="asc">Ascending</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Header Style</Label>
-                    <select
+                    <Select
                       value={formData.headerStyle}
-                      onChange={(e) => handleChange('headerStyle', e.target.value)}
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onValueChange={(value) => handleChange('headerStyle', value)}
                     >
-                      <option value="hero">Hero</option>
-                      <option value="minimal">Minimal</option>
-                      <option value="none">None</option>
-                    </select>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hero">Hero</SelectItem>
+                        <SelectItem value="minimal">Minimal</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -809,7 +834,7 @@ const CategoryEditor = () => {
                         value={featuredSearchQuery}
                         onChange={(e) => setFeaturedSearchQuery(e.target.value)}
                         placeholder="Search recipe title..."
-                        className="h-9"
+                        className="h-8"
                         disabled={!formData.showFeaturedRecipe}
                       />
                       <div className="rounded-md border bg-background max-h-56 overflow-auto">
@@ -854,7 +879,7 @@ const CategoryEditor = () => {
                           value={featuredSlug}
                           onChange={(e) => setFeaturedSlug(e.target.value)}
                           placeholder="recipe-slug"
-                          className="h-9"
+                          className="h-8"
                           disabled={!formData.showFeaturedRecipe}
                         />
                         <div className="flex gap-2">
@@ -863,7 +888,7 @@ const CategoryEditor = () => {
                             variant="secondary"
                             onClick={handleFeaturedLookup}
                             disabled={featuredLookup.loading || !formData.showFeaturedRecipe}
-                            className="h-9"
+                            className="h-8"
                           >
                             {featuredLookup.loading ? 'Loading...' : 'Lookup'}
                           </Button>
@@ -872,7 +897,7 @@ const CategoryEditor = () => {
                             variant="ghost"
                             onClick={handleClearFeatured}
                             disabled={!formData.featuredArticleId}
-                            className="h-9"
+                            className="h-8"
                           >
                             Clear
                           </Button>
@@ -914,14 +939,14 @@ const CategoryEditor = () => {
                     value={formData.heroCtaText}
                     onChange={(e) => handleChange('heroCtaText', e.target.value)}
                     placeholder="Join My Mailing List"
-                    className="h-9"
+                    className="h-8"
                     disabled={!formData.showHeroCta}
                   />
                   <Input
                     value={formData.heroCtaLink}
                     onChange={(e) => handleChange('heroCtaLink', e.target.value)}
                     placeholder="#newsletter"
-                    className="h-9"
+                    className="h-8"
                     disabled={!formData.showHeroCta}
                   />
                 </div>
@@ -1198,21 +1223,25 @@ const CategoryEditor = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Parent Category</Label>
-                    <select
-                      value={formData.parentId ?? ''}
-                      onChange={(e) => handleChange('parentId', e.target.value === '' ? null : parseInt(e.target.value))}
+                    <Select
+                      value={formData.parentId === null ? '' : String(formData.parentId)}
+                      onValueChange={(value) => handleChange('parentId', value === '' ? null : parseInt(value))}
                       disabled={parentLoading}
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <option value="">None</option>
-                      {parentOptions
-                        .filter((cat) => !isEditMode || cat.slug !== slug)
-                        .map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.label}
-                          </option>
-                        ))}
-                    </select>
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="None" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {parentOptions
+                          .filter((cat) => !isEditMode || cat.slug !== slug)
+                          .map((cat) => (
+                            <SelectItem key={cat.id} value={String(cat.id)}>
+                              {cat.label}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Sort Order</Label>
@@ -1220,7 +1249,7 @@ const CategoryEditor = () => {
                       type="number"
                       value={formData.sortOrder}
                       onChange={(e) => handleChange('sortOrder', parseInt(e.target.value) || 0)}
-                      className="h-9"
+                      className="h-8"
                     />
                   </div>
                 </div>
@@ -1230,7 +1259,7 @@ const CategoryEditor = () => {
                     value={formData.collectionTitle}
                     onChange={(e) => handleChange('collectionTitle', e.target.value)}
                     placeholder="e.g. Latest Recipes"
-                    className="h-9"
+                    className="h-8"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1239,7 +1268,7 @@ const CategoryEditor = () => {
                     type="number"
                     value={formData.numEntriesPerPage}
                     onChange={(e) => handleChange('numEntriesPerPage', parseInt(e.target.value) || 12)}
-                    className="h-9"
+                    className="h-8"
                   />
                 </div>
 
@@ -1247,7 +1276,7 @@ const CategoryEditor = () => {
                   <Label className="text-sm font-medium text-muted-foreground">Badge Color</Label>
                   <div className="flex items-center gap-3 relative">
                     <div
-                      className="w-10 h-9 rounded border cursor-pointer hover:ring-2 hover:ring-primary/50"
+                      className="w-10 h-8 rounded border cursor-pointer hover:ring-2 hover:ring-primary/50"
                       style={{ backgroundColor: formData.color || '#ff6600ff' }}
                       onClick={() => setShowColorPicker(!showColorPicker)}
                       title="Click to change color"
@@ -1256,7 +1285,7 @@ const CategoryEditor = () => {
                       value={formData.color || '#ff6600ff'}
                       onChange={(e) => handleChange('color', e.target.value)}
                       placeholder="#ff6600ff"
-                      className="h-9 font-mono text-sm flex-1"
+                      className="h-8 font-mono text-sm flex-1"
                     />
                     <div
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex-shrink-0"

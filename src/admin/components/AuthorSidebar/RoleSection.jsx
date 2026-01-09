@@ -21,7 +21,7 @@ export default function RoleSection({ formData, onInputChange }) {
                         value={formData.role || 'guest'}
                         onValueChange={(value) => onInputChange('role', value)}
                     >
-                        <SelectTrigger className="text-sm h-9">
+                        <SelectTrigger className="text-sm h-8">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

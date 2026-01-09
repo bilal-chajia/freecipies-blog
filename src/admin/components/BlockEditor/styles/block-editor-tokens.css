@@ -56,7 +56,7 @@
     /* ========================================
    * Block Inserter Panel
    * ======================================== */
-    --wp-inserter-width: 230px;
+    --wp-inserter-width: 200px;
     --wp-inserter-bg: #fff;
     --wp-inserter-border: #e0e0e0;
     --wp-inserter-item-hover-bg: #f0f0f0;
@@ -268,12 +268,12 @@
 /* ========================================
  * Block Spacing
  * ======================================== */
-.block-editor-wrapper .bn-editor .bn-block-group > .bn-block-outer {
+.block-editor-wrapper .bn-editor .bn-block-group>.bn-block-outer {
     margin-top: 0 !important;
     margin-bottom: var(--wp-block-spacing) !important;
 }
 
-.block-editor-wrapper .bn-editor .bn-block-group > .bn-block-outer:last-child {
+.block-editor-wrapper .bn-editor .bn-block-group>.bn-block-outer:last-child {
     margin-bottom: 0 !important;
 }
 
@@ -465,6 +465,9 @@
 }
 
 .structure-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     border-radius: 0;
     padding: 4px 10px;
     font-size: 12px;

@@ -194,11 +194,11 @@ const BoardEditor = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <input
+              <Input
                 type="text"
                 value={getRSSFeedURL()}
                 readOnly
-                className="w-full bg-background px-3 py-2 rounded border font-mono text-sm"
+                className="w-full font-mono text-sm"
                 onClick={(e) => e.target.select()}
               />
               <p className="text-xs text-muted-foreground">

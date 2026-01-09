@@ -30,6 +30,20 @@ const GROUP_LABELS = {
     roundup: 'Roundups',
 };
 
+const TYPE_LABEL_SINGULAR = {
+    recipe: 'Recipe',
+    article: 'Article',
+    roundup: 'Roundup',
+};
+
+// Normalize hex color - strip alpha if 8 chars (#rrggbbaa -> #rrggbb)
+const normalizeCategoryColor = (color) => {
+    if (!color) return '#ff6600';
+    const hex = color.startsWith('#') ? color : `#${color}`;
+    // If 9 chars (#rrggbbaa), strip last 2 (alpha)
+    return hex.length === 9 ? hex.slice(0, 7) : hex;
+};
+
 export const RelatedContentBlock = createReactBlockSpec(
     {
         type: 'relatedContent',
@@ -203,8 +217,11 @@ export const RelatedContentBlock = createReactBlockSpec(
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0 space-y-1">
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">
-                                                {group.label}
+                                            <div
+                                                className="text-[11px] font-bold uppercase tracking-wide text-white px-2 py-1 rounded w-fit"
+                                                style={{ backgroundColor: normalizeCategoryColor(item.categoryColor) }}
+                                            >
+                                                {item.categoryName || TYPE_LABEL_SINGULAR[item.__type] || group.label}
                                             </div>
                                             <div className="text-sm font-semibold text-gray-900 line-clamp-2">
                                                 {item.headline}
@@ -237,7 +254,7 @@ export const RelatedContentBlock = createReactBlockSpec(
                         pointerEvents: isDragging ? 'none' : undefined,
                     }}
                 >
-                    <div className="border border-gray-200 rounded-lg p-4 my-2 bg-white shadow-sm">
+                    <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
                         <div className="flex items-center gap-2 mb-3">
                             <LayoutGrid className="w-4 h-4 text-gray-500" />
                             <h4 className="font-medium text-sm text-gray-700">Related Content</h4>

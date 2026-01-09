@@ -33,7 +33,7 @@ export default function AuthorEditorMain({
                             value={formData.email}
                             onChange={(e) => onInputChange('email', e.target.value)}
                             placeholder="author@example.com"
-                            className="h-10"
+                            className="h-8"
                         />
                     </div>
 
@@ -44,7 +44,7 @@ export default function AuthorEditorMain({
                             value={formData.slug}
                             onChange={(e) => onInputChange('slug', e.target.value)}
                             placeholder="author-slug"
-                            className="h-10"
+                            className="h-8"
                             disabled={formData.isEditMode}
                         />
                         {formData.isEditMode && (
@@ -60,7 +60,7 @@ export default function AuthorEditorMain({
                         value={formData.jobTitle || ''}
                         onChange={(e) => onInputChange('jobTitle', e.target.value)}
                         placeholder="e.g., Food Blogger, Chef, Recipe Developer"
-                        className="h-10"
+                        className="h-8"
                     />
                 </div>
             </div>
@@ -81,7 +81,7 @@ export default function AuthorEditorMain({
                             value={bioData?.headline || ''}
                             onChange={(e) => onBioChange({ ...bioData, headline: e.target.value })}
                             placeholder="Award-winning Food Blogger"
-                            className="h-10"
+                            className="h-8"
                         />
                         <p className="text-xs text-muted-foreground">Short catchy tagline</p>
                     </div>
@@ -94,7 +94,7 @@ export default function AuthorEditorMain({
                             value={bioData?.subtitle || ''}
                             onChange={(e) => onBioChange({ ...bioData, subtitle: e.target.value })}
                             placeholder="Specializing in Italian Cuisine"
-                            className="h-10"
+                            className="h-8"
                         />
                         <p className="text-xs text-muted-foreground">Specialization or focus area</p>
                     </div>
@@ -139,7 +139,7 @@ export default function AuthorEditorMain({
                                 onBioChange({ ...bioData, expertise });
                             }}
                             placeholder="Italian, Desserts, Vegan Cooking"
-                            className="h-10"
+                            className="h-8"
                         />
                         <p className="text-xs text-muted-foreground">Comma-separated list</p>
                     </div>

@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Sparkles, FileText, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
 import {
@@ -59,6 +59,7 @@ export default function SettingsSidebar({
     onTabChange,
     documentSettings,
     blockSettings,
+    aiSettings,
     selectedBlock,
     className,
 }) {
@@ -119,6 +120,7 @@ export default function SettingsSidebar({
                                 className={cn('structure-tab', resolvedTab === 'document' && 'is-active')}
                                 onClick={() => handleTabChange('document')}
                             >
+                                <FileText className="w-3.5 h-3.5" />
                                 Post
                             </button>
                         )}
@@ -137,7 +139,19 @@ export default function SettingsSidebar({
                                     handleTabChange('block');
                                 }}
                             >
+                                <Settings className="w-3.5 h-3.5" />
                                 {documentSettings ? 'Block' : 'Settings'}
+                            </button>
+                        )}
+                        {/* AI tab */}
+                        {aiSettings && (
+                            <button
+                                type="button"
+                                className={cn('structure-tab', resolvedTab === 'ai' && 'is-active')}
+                                onClick={() => handleTabChange('ai')}
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                AI
                             </button>
                         )}
                     </div>
@@ -191,6 +205,18 @@ export default function SettingsSidebar({
                                     Select a block to see its settings.
                                 </div>
                             )}
+                        </motion.div>
+                    )}
+
+                    {resolvedTab === 'ai' && aiSettings && (
+                        <motion.div
+                            key="ai"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                        >
+                            {aiSettings}
                         </motion.div>
                     )}
                 </AnimatePresence>

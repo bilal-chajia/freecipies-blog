@@ -394,4 +394,26 @@ export const statsAPI = {
   getPopularArticles: (limit = 10) => api.get(`/stats/popular?limit=${limit}`),
 };
 
+// ============================================
+// AI API
+// ============================================
+
+export const aiAPI = {
+  // Get AI settings (admin only)
+  getSettings: () => api.get('/admin/ai/settings'),
+
+  // Update AI settings (admin only)
+  updateSettings: (settings) => api.put('/admin/ai/settings', settings),
+
+  // Validate API key for a provider
+  validateApiKey: (provider, apiKey) => api.post('/admin/ai/settings', { provider, apiKey }),
+
+  // Get available providers (for editor sidebar)
+  getProviders: () => api.get('/admin/ai/providers'),
+
+  // Generate content
+  generate: (params) => api.post('/admin/ai/generate', params),
+};
+
 export default api;
+

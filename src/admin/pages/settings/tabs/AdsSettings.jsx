@@ -51,11 +51,10 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                                     key={network.id}
                                     disabled={!formData.adsEnabled && network.id !== 'none'}
                                     onClick={() => handleInputChange('adNetwork', network.id)}
-                                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-3 ${
-                                        formData.adNetwork === network.id 
-                                            ? 'border-primary bg-primary/5 shadow-sm' 
+                                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-3 ${formData.adNetwork === network.id
+                                            ? 'border-primary bg-primary/5 shadow-sm'
                                             : 'border-transparent bg-muted/20 hover:bg-muted/30'
-                                    } ${(!formData.adsEnabled && network.id !== 'none') ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                                        } ${(!formData.adsEnabled && network.id !== 'none') ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                                 >
                                     <network.icon className={`w-6 h-6 ${formData.adNetwork === network.id ? 'text-primary' : network.color}`} />
                                     <span className={`text-[11px] font-bold uppercase tracking-tighter ${formData.adNetwork === network.id ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -164,7 +163,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                                                                 [position]: { ...config, placementId: e.target.value }
                                                             }
                                                         })}
-                                                        className="h-9 px-3 bg-background border-none ring-1 ring-border/50 rounded-lg text-xs"
+                                                        className="h-8 px-3 bg-background border-none ring-1 ring-border/50 rounded-lg text-xs"
                                                         placeholder="123456"
                                                     />
                                                 </div>
@@ -184,7 +183,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                                                             })}
                                                             min="1"
                                                             max="10"
-                                                            className="h-9 px-3 bg-background border-none ring-1 ring-border/50 rounded-lg text-xs"
+                                                            className="h-8 px-3 bg-background border-none ring-1 ring-border/50 rounded-lg text-xs"
                                                         />
                                                     </div>
                                                 )}
@@ -389,7 +388,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                                                                     [position]: { ...config, adSlotId: e.target.value }
                                                                 }
                                                             })}
-                                                            className="h-9 px-3 bg-background border-none ring-1 ring-border/50 rounded-lg text-xs"
+                                                            className="h-8 px-3 bg-background border-none ring-1 ring-border/50 rounded-lg text-xs"
                                                             placeholder="1234567890"
                                                         />
                                                     </div>

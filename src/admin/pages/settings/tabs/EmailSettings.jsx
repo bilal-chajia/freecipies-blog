@@ -8,7 +8,7 @@ const EmailSettings = ({ formData, handleInputChange }) => {
 
     return (
         <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-4">
-            <TabsList className="h-9 p-1 bg-muted/50 rounded-lg">
+            <TabsList className="h-8 p-1 bg-muted/50 rounded-lg">
                 <TabsTrigger value="smtp" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
                     <Server className="w-3.5 h-3.5 mr-1.5" />
                     SMTP

@@ -29,7 +29,7 @@ export default function SEOSection({ seoData, onSeoChange }) {
                                     value={seoData?.metaTitle || ''}
                                     onChange={(e) => onSeoChange({ ...seoData, metaTitle: e.target.value })}
                                     placeholder="SEO title (defaults to author name)"
-                                    className="text-sm h-9"
+                                    className="text-sm h-8"
                                 />
                                 <p className="text-xs text-muted-foreground">
                                     {(seoData?.metaTitle || '').length}/60 characters
@@ -58,7 +58,7 @@ export default function SEOSection({ seoData, onSeoChange }) {
                                     value={seoData?.canonicalUrl || ''}
                                     onChange={(e) => onSeoChange({ ...seoData, canonicalUrl: e.target.value })}
                                     placeholder="https://..."
-                                    className="text-sm h-9"
+                                    className="text-sm h-8"
                                 />
                             </div>
 
@@ -72,7 +72,7 @@ export default function SEOSection({ seoData, onSeoChange }) {
                                         onSeoChange({ ...seoData, keywords });
                                     }}
                                     placeholder="keyword1, keyword2, keyword3"
-                                    className="text-sm h-9"
+                                    className="text-sm h-8"
                                 />
                                 <p className="text-xs text-muted-foreground">Comma-separated</p>
                             </div>

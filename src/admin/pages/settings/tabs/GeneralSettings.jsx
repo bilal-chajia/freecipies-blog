@@ -73,7 +73,7 @@ const GeneralSettings = ({ formData, handleInputChange, activeSection = 'site' }
                                 value={formData.timezone}
                                 onValueChange={(value) => handleInputChange('timezone', value)}
                             >
-                                <SelectTrigger className="h-9 px-3 text-sm bg-background border border-border/60 rounded-md">
+                                <SelectTrigger className="h-8">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-md border-border/60">
@@ -97,7 +97,7 @@ const GeneralSettings = ({ formData, handleInputChange, activeSection = 'site' }
                         value={formData.language}
                         onValueChange={(value) => handleInputChange('language', value)}
                     >
-                        <SelectTrigger className="h-9 px-3 text-sm bg-background border border-border/60 rounded-md">
+                        <SelectTrigger className="h-8 px-3 text-sm bg-background border border-border/60 rounded-md">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-md border-border/60">

@@ -13,7 +13,7 @@ export default function SEOSection({ formData, onInputChange, isEditMode }) {
                     onChange={(e) => onInputChange('slug', e.target.value)}
                     placeholder="article-slug"
                     disabled={isEditMode}
-                    className="text-sm h-9"
+                    className="text-sm h-8"
                 />
             </div>
 
@@ -24,7 +24,7 @@ export default function SEOSection({ formData, onInputChange, isEditMode }) {
                     value={formData.metaTitle}
                     onChange={(e) => onInputChange('metaTitle', e.target.value)}
                     placeholder="SEO title"
-                    className="text-sm h-9"
+                    className="text-sm h-8"
                 />
             </div>
 
@@ -47,7 +47,7 @@ export default function SEOSection({ formData, onInputChange, isEditMode }) {
                     value={formData.canonicalUrl}
                     onChange={(e) => onInputChange('canonicalUrl', e.target.value)}
                     placeholder="https://..."
-                    className="text-sm h-9"
+                    className="text-sm h-8"
                 />
             </div>
         </div>

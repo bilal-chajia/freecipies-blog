@@ -28,7 +28,7 @@ export default function OrganizationSection({
                         value={formData.categoryId ? String(formData.categoryId) : undefined}
                         onValueChange={(value) => onInputChange('categoryId', value)}
                     >
-                        <SelectTrigger className="text-sm h-9">
+                        <SelectTrigger className="text-sm h-8">
                             <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -47,7 +47,7 @@ export default function OrganizationSection({
                         value={formData.authorId ? String(formData.authorId) : undefined}
                         onValueChange={(value) => onInputChange('authorId', value)}
                     >
-                        <SelectTrigger className="text-sm h-9">
+                        <SelectTrigger className="text-sm h-8">
                             <SelectValue placeholder="Select author" />
                         </SelectTrigger>
                         <SelectContent>

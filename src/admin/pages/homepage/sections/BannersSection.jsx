@@ -68,7 +68,7 @@ const BannerConfig = ({ banner, bannerKey, formData, handleBannerChange }) => (
                             value={banner.position}
                             onValueChange={(value) => handleBannerChange(bannerKey, 'position', value)}
                         >
-                            <SelectTrigger className="h-9">
+                            <SelectTrigger className="h-8">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -84,7 +84,7 @@ const BannerConfig = ({ banner, bannerKey, formData, handleBannerChange }) => (
                             value={banner.size}
                             onValueChange={(value) => handleBannerChange(bannerKey, 'size', value)}
                         >
-                            <SelectTrigger className="h-9">
+                            <SelectTrigger className="h-8">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

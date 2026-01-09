@@ -85,7 +85,7 @@ export default function EditorMain({
                         value={formData.type}
                         onValueChange={(value) => onInputChange('type', value)}
                     >
-                        <SelectTrigger className="w-48 h-10 font-medium">
+                        <SelectTrigger className="w-48 h-8 font-medium">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

@@ -33,25 +33,21 @@ const FormField = React.forwardRef(({
   const descriptionId = `${fieldId}-description`;
 
   const inputStyles = cn(
-    "h-9 px-3 text-sm bg-background border border-border/60 rounded-md",
-    "focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-ring",
-    "transition-colors placeholder:text-muted-foreground/50",
+    "h-8",
     suffix && "pr-14",
     inputClassName
   );
 
   const textareaStyles = cn(
-    "px-3 py-2 text-sm bg-background border border-border/60 rounded-md",
-    "focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-ring",
-    "transition-colors placeholder:text-muted-foreground/50 resize-none",
+    "resize-none",
     inputClassName
   );
 
   return (
     <div className={cn("space-y-1.5", className)} {...props}>
       <div className="flex items-center justify-between">
-        <Label 
-          htmlFor={fieldId} 
+        <Label
+          htmlFor={fieldId}
           className="text-xs font-medium text-foreground/80 flex items-center gap-1.5"
         >
           {Icon && <Icon className="w-3 h-3 text-muted-foreground" aria-hidden="true" />}
@@ -66,7 +62,7 @@ const FormField = React.forwardRef(({
           </span>
         )}
       </div>
-      
+
       <div className="relative">
         {multiline ? (
           <Textarea
@@ -96,7 +92,7 @@ const FormField = React.forwardRef(({
           />
         )}
         {suffix && (
-          <div 
+          <div
             className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground"
             aria-hidden="true"
           >
@@ -106,7 +102,7 @@ const FormField = React.forwardRef(({
       </div>
 
       {description && (
-        <p 
+        <p
           id={descriptionId}
           className="text-[11px] text-muted-foreground/70"
         >

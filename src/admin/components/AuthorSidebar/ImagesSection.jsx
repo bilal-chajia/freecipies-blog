@@ -71,7 +71,7 @@ export default function ImagesSection({
                         placeholder="Alt text"
                         value={image?.alt || ''}
                         onChange={(e) => onImageChange(type, { ...image, alt: e.target.value })}
-                        className="text-sm h-9"
+                        className="text-sm h-8"
                     />
                 )}
             </div>

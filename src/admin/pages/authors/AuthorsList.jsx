@@ -4,25 +4,25 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Switch } from '@/ui/switch.jsx';
-import { 
-  Plus, 
-  Search, 
-  Users, 
-  Star, 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  Mail, 
+import {
+  Plus,
+  Search,
+  Users,
+  Star,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Mail,
   Briefcase,
   Eye,
   EyeOff,
   LayoutGrid
 } from 'lucide-react';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from '@/ui/dropdown-menu.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar.jsx';
 import { Badge } from '@/ui/badge.jsx';
@@ -115,8 +115,8 @@ const AuthorsList = () => {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="flex flex-col gap-2">
-            <div className="h-9 w-64 bg-muted rounded-lg" />
-            <div className="h-4 w-96 bg-muted rounded-md" />
+          <div className="h-8 w-64 bg-muted rounded-lg" />
+          <div className="h-4 w-96 bg-muted rounded-md" />
         </div>
         <div className="h-12 w-full bg-muted rounded-xl" />
         <div className="bg-card rounded-2xl border border-border/50 h-[400px]" />
@@ -177,42 +177,42 @@ const AuthorsList = () => {
                 <AnimatePresence mode="popLayout">
                   {filteredAuthors.length > 0 ? (
                     filteredAuthors.map((author) => (
-                      <motion.tr 
+                      <motion.tr
                         key={author.slug}
                         layout
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                      className="hover:bg-accent/30 transition-colors group"
-                    >
-                      <td className="px-6 py-5 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-11 w-11 border-2 border-background shadow-sm ring-1 ring-border/50">
-                            {(() => {
-                              const avatar = extractImage(author.imagesJson, 'avatar', 120);
-                              const avatarUrl = toAdminImageUrl(avatar.imageUrl || author.imageUrl || '');
-                              const avatarSrcSet = toAdminSrcSet(getImageSrcSet(author.imagesJson, 'avatar'));
-                              const avatarStyle = buildImageStyle(avatar);
-                              return (
-                                <AvatarImage
-                                  src={avatarUrl}
-                                  alt={author.name}
-                                  srcSet={avatarSrcSet || undefined}
-                                  sizes={avatarSrcSet ? '44px' : undefined}
-                                  className="object-cover"
-                                  style={avatarStyle}
-                                />
-                              );
-                            })()}
-                            <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold uppercase">
-                              {author.name?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
+                        className="hover:bg-accent/30 transition-colors group"
+                      >
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-11 w-11 border-2 border-background shadow-sm ring-1 ring-border/50">
+                              {(() => {
+                                const avatar = extractImage(author.imagesJson, 'avatar', 120);
+                                const avatarUrl = toAdminImageUrl(avatar.imageUrl || author.imageUrl || '');
+                                const avatarSrcSet = toAdminSrcSet(getImageSrcSet(author.imagesJson, 'avatar'));
+                                const avatarStyle = buildImageStyle(avatar);
+                                return (
+                                  <AvatarImage
+                                    src={avatarUrl}
+                                    alt={author.name}
+                                    srcSet={avatarSrcSet || undefined}
+                                    sizes={avatarSrcSet ? '44px' : undefined}
+                                    className="object-cover"
+                                    style={avatarStyle}
+                                  />
+                                );
+                              })()}
+                              <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold uppercase">
+                                {author.name?.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
                             <div>
                               <div className="font-bold text-sm tracking-tight">{author.name}</div>
                               <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] mt-0.5">
-                                 <Briefcase className="h-3 w-3" />
-                                 {author.job || 'Contributor'}
+                                <Briefcase className="h-3 w-3" />
+                                {author.job || 'Contributor'}
                               </div>
                             </div>
                           </div>
@@ -234,19 +234,19 @@ const AuthorsList = () => {
                           </div>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
-                           <div className="flex items-center justify-center gap-3">
-                              <Switch
-                                checked={author.isOnline}
-                                onCheckedChange={(checked) => handleToggle(author.slug, 'isOnline', checked)}
-                                disabled={updating === author.slug}
-                                className="data-[state=checked]:bg-emerald-500"
-                              />
-                              {author.isOnline ? (
-                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none text-[10px] font-bold uppercase">Live</Badge>
-                              ) : (
-                                <Badge variant="secondary" className="bg-muted text-muted-foreground border-none text-[10px] font-bold uppercase">Hidden</Badge>
-                              )}
-                           </div>
+                          <div className="flex items-center justify-center gap-3">
+                            <Switch
+                              checked={author.isOnline}
+                              onCheckedChange={(checked) => handleToggle(author.slug, 'isOnline', checked)}
+                              disabled={updating === author.slug}
+                              className="data-[state=checked]:bg-emerald-500"
+                            />
+                            {author.isOnline ? (
+                              <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none text-[10px] font-bold uppercase">Live</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="bg-muted text-muted-foreground border-none text-[10px] font-bold uppercase">Hidden</Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-right">
                           <DropdownMenu>
@@ -268,14 +268,14 @@ const AuthorsList = () => {
                                   View Articles
                                 </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => handleToggle(author.slug, 'isFavorite', !author.isFavorite)}
                                 className="cursor-pointer text-yellow-600 dark:text-yellow-400"
                               >
                                 <Star className={`mr-2 h-4 w-4 ${author.isFavorite ? 'fill-current' : ''}`} />
                                 {author.isFavorite ? 'Remove Featured' : 'Make Featured'}
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => setDeleteModal({ isOpen: true, authorToDelete: author })}
                                 className="cursor-pointer text-destructive focus:text-destructive"
                               >
@@ -291,8 +291,8 @@ const AuthorsList = () => {
                     <tr>
                       <td colSpan="5" className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2 opacity-50">
-                           <Users className="h-10 w-10 text-muted-foreground" />
-                           <p className="font-medium text-sm">No authors found matching your criteria</p>
+                          <Users className="h-10 w-10 text-muted-foreground" />
+                          <p className="font-medium text-sm">No authors found matching your criteria</p>
                         </div>
                       </td>
                     </tr>

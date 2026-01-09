@@ -29,7 +29,7 @@ export default function SocialLinksSection({ socialLinks, onSocialChange }) {
                             value={socialLinks?.[id] || ''}
                             onChange={(e) => onSocialChange({ ...socialLinks, [id]: e.target.value })}
                             placeholder={placeholder}
-                            className="text-sm h-9"
+                            className="text-sm h-8"
                         />
                     </div>
                 ))}

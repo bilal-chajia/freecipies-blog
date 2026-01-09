@@ -1374,6 +1374,7 @@ export default function BlockEditor({
     const insertMenuOpenRef = useRef(false);
     const toolbarActionBlockIdRef = useRef(null);
     const moveActionBlockIdRef = useRef(null);
+    const activeBlockIdRef = useRef(activeBlockId);
     const canvasDragPointerRef = useRef({ x: 0, y: 0 });
     const canvasDragPointerListenerRef = useRef(null);
     const [linkToolbar, setLinkToolbar] = useState({
@@ -1474,6 +1475,11 @@ export default function BlockEditor({
         };
     }, [editor]);
 
+    // Keep activeBlockIdRef in sync with activeBlockId
+    useEffect(() => {
+        activeBlockIdRef.current = activeBlockId;
+    }, [activeBlockId]);
+
     useEffect(() => {
         if (!editor) return undefined;
         const getBlockIdFromDom = () => {
@@ -1516,9 +1522,15 @@ export default function BlockEditor({
                 toolbarActionBlockIdRef.current = null;
             }
             const activeElement = document.activeElement;
-            if (activeElement instanceof HTMLElement) {
-                if (activeElement.closest('.wp-block-toolbar-wrap') || activeElement.closest('.wp-block-toolbar')) {
-                    return;
+            const editorWrapper = wrapperRef.current;
+            if (activeElement instanceof HTMLElement && editorWrapper) {
+                // If focus is outside the editor canvas (sidebar, portals, toolbar, etc.)
+                // we preserve the current block selection to prevent UI flickering/deselection.
+                if (!editorWrapper.contains(activeElement)) {
+                    const currentActiveId = activeBlockIdRef.current;
+                    if (currentActiveId && editor.getBlock(currentActiveId)) {
+                        return;
+                    }
                 }
             }
             const manualId = lastPointerBlockIdRef.current;

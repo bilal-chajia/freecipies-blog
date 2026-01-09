@@ -78,7 +78,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
 
     return (
         <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-4">
-            <TabsList className="h-9 p-1 bg-muted/50 rounded-lg">
+            <TabsList className="h-8 p-1 bg-muted/50 rounded-lg">
                 <TabsTrigger value="branding" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
                     <Image className="w-3.5 h-3.5 mr-1.5" />
                     Branding
@@ -110,7 +110,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                         <Button
                             ref={colorTriggerRef}
                             variant="outline"
-                            className="w-10 h-10 p-1 border border-border/60 rounded-md"
+                            className="w-10 h-10 p-1"
                             onClick={() => setShowColorPicker(!showColorPicker)}
                         >
                             <div

@@ -42,7 +42,7 @@ const FeaturedSection = ({ formData, handleNestedInputChange }) => {
                         value={formData.featuredPosts.displayType}
                         onValueChange={(value) => handleNestedInputChange('featuredPosts', 'displayType', value)}
                     >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger className="h-8">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -69,7 +69,7 @@ const FeaturedSection = ({ formData, handleNestedInputChange }) => {
                         value={formData.featuredPosts.sortBy}
                         onValueChange={(value) => handleNestedInputChange('featuredPosts', 'sortBy', value)}
                     >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger className="h-8">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

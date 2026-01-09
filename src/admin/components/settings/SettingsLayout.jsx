@@ -22,6 +22,7 @@ import {
     ShieldCheck,
     Image,
     Menu,
+    Sparkles,
 } from 'lucide-react';
 
 // Gutenberg design tokens are loaded globally via BlockEditor
@@ -38,6 +39,7 @@ const settingsTabs = [
     { id: 'appearance', label: 'Appearance', icon: Laptop },
     { id: 'advanced', label: 'Advanced', icon: ShieldCheck },
     { id: 'media', label: 'Media & Uploads', icon: Image },
+    { id: 'ai', label: 'AI Settings', icon: Sparkles },
 ];
 
 // Fixed header height to ensure alignment
@@ -71,11 +73,12 @@ export default function SettingsLayout({
         <div className="wp-gutenberg-layout flex h-full w-full overflow-hidden relative">
             {/* Left Panel: Navigation */}
             <motion.div
-                initial={{ x: -280, opacity: 0 }}
+                initial={{ x: -200, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -280, opacity: 0 }}
+                exit={{ x: -200, opacity: 0 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="wp-block-inserter w-[280px] h-full min-h-0 overflow-hidden bg-[var(--wp-inserter-bg)] border-r border-[var(--wp-inserter-border)] flex flex-col flex-shrink-0"
+                style={{ width: '200px' }}
+                className="wp-block-inserter h-full min-h-0 overflow-hidden bg-[var(--wp-inserter-bg)] border-r border-[var(--wp-inserter-border)] flex flex-col flex-shrink-0"
             >
                 {/* Left Panel Header - FIXED HEIGHT */}
                 <div className={cn(HEADER_HEIGHT, 'flex items-center px-[10px] border-b border-[#e5e7eb] flex-shrink-0')}>
