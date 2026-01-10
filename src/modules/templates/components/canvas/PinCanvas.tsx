@@ -31,6 +31,7 @@ const PinCanvas = ({
     allowImageDrag = false,
     onImageOffsetChange = null,
     fitToCanvas = false,
+    previewMode = false,
 }) => {
     const stageRef = useRef(null);
     const transformerRef = useRef(null);
@@ -1147,17 +1148,18 @@ const PinCanvas = ({
 
     // Stage must be large enough to show transformer handles outside canvas
     // Minimum: canvas + 200px padding on all sides, or container size (whichever is larger)
-    const handlePadding = fitToCanvas ? 0 : 100; // 100px on each side for handles
-    const stageWidth = fitToCanvas
+    const shouldFitCanvas = fitToCanvas || previewMode;
+    const handlePadding = shouldFitCanvas ? 0 : 100; // 100px on each side for handles
+    const stageWidth = shouldFitCanvas
         ? canvasWidth * actualScale
         : Math.max(containerSize.width, (canvasWidth + handlePadding * 2) * actualScale);
-    const stageHeight = fitToCanvas
+    const stageHeight = shouldFitCanvas
         ? canvasHeight * actualScale
         : Math.max(containerSize.height, (canvasHeight + handlePadding * 2) * actualScale);
 
     // Center the canvas within the Stage
-    const canvasOffsetX = fitToCanvas ? 0 : (stageWidth / actualScale - canvasWidth) / 2;
-    const canvasOffsetY = fitToCanvas ? 0 : (stageHeight / actualScale - canvasHeight) / 2;
+    const canvasOffsetX = shouldFitCanvas ? 0 : (stageWidth / actualScale - canvasWidth) / 2;
+    const canvasOffsetY = shouldFitCanvas ? 0 : (stageHeight / actualScale - canvasHeight) / 2;
 
     // Render the canvas
     return (
@@ -1167,11 +1169,11 @@ const PinCanvas = ({
             style={{
                 width: '100%',
                 height: '100%',
-                overflow: 'auto',
+                overflow: previewMode ? 'hidden' : 'auto',
                 position: 'relative',
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
-                backgroundColor: isDark ? '#1a1a2e' : '#edeff2', // Dynamic theme background
+                backgroundColor: previewMode ? 'transparent' : (isDark ? '#1a1a2e' : '#edeff2'),
                 transition: 'background-color 0.3s ease'
             }}
         >
@@ -1209,9 +1211,9 @@ const PinCanvas = ({
                             width={canvasWidth}
                             height={canvasHeight}
                             fill={template?.background_color || (isDark ? '#1a1a2e' : '#ffffff')}
-                            shadowColor="rgba(0,0,0,0.15)"
-                            shadowBlur={20}
-                            shadowOffset={{ x: 0, y: 4 }}
+                            shadowColor={previewMode ? 'transparent' : 'rgba(0,0,0,0.15)'}
+                            shadowBlur={previewMode ? 0 : 20}
+                            shadowOffset={previewMode ? { x: 0, y: 0 } : { x: 0, y: 4 }}
                         />
 
                         {/* Render all elements (clipped to canvas) */}

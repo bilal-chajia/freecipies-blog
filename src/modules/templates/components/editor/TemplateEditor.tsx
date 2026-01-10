@@ -149,16 +149,19 @@ const TemplateEditor = () => {
         if (!container) return;
 
         const updateScale = () => {
-            const width = template?.width || template?.canvas_width || CANVAS_WIDTH;
-            const height = template?.height || template?.canvas_height || CANVAS_HEIGHT;
-            if (!width || !height) return;
+            const baseWidth = template?.canvas_width || template?.width || CANVAS_WIDTH;
+            const baseHeight = template?.canvas_height || template?.height || CANVAS_HEIGHT;
+            const actualWidth = template?.width || baseWidth;
+            const actualHeight = template?.height || baseHeight;
+            if (!baseWidth || !baseHeight) return;
 
             const availableWidth = container.clientWidth;
             const availableHeight = container.clientHeight;
             if (!availableWidth || !availableHeight) return;
 
-            const scale = Math.min(availableWidth / width, availableHeight / height) * 0.95;
-            setPreviewScale(scale);
+            const fitScale = Math.min(availableWidth / baseWidth, availableHeight / baseHeight) * 0.95;
+            const inverseScale = Math.min(baseWidth / actualWidth, baseHeight / actualHeight);
+            setPreviewScale(fitScale * inverseScale);
         };
 
         updateScale();
@@ -522,6 +525,7 @@ const TemplateEditor = () => {
                                         zoom={100}
                                         showGrid={false}
                                         fitToCanvas={true}
+                                        previewMode={true}
                                         onExport={(fn) => { previewExportRef.current = fn; }}
                                     />
                                 </div>

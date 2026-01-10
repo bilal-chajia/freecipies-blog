@@ -61,7 +61,11 @@ const useEditorStore = create((set, get) => ({
 
     initTemplate: (template, elements) => {
         set({
-            template: { ...template },
+            template: {
+                ...template,
+                canvas_width: template?.canvas_width ?? template?.width ?? CANVAS_WIDTH,
+                canvas_height: template?.canvas_height ?? template?.height ?? CANVAS_HEIGHT,
+            },
             elements: elements || [],
             selectedIds: new Set(),
             hasUnsavedChanges: false,
@@ -84,7 +88,11 @@ const useEditorStore = create((set, get) => ({
         }
 
         set({
-            template: { ...templateData },
+            template: {
+                ...templateData,
+                canvas_width: templateData?.canvas_width ?? templateData?.width ?? CANVAS_WIDTH,
+                canvas_height: templateData?.canvas_height ?? templateData?.height ?? CANVAS_HEIGHT,
+            },
             elements: parsedElements,
             selectedIds: new Set(),
             hasUnsavedChanges: false,
@@ -102,6 +110,8 @@ const useEditorStore = create((set, get) => ({
                 background_color: '#ffffff',
                 width: 1000,
                 height: 1500,
+                canvas_width: 1000,
+                canvas_height: 1500,
             },
             elements: [],
             selectedIds: new Set(),

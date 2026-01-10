@@ -42,6 +42,22 @@ const TABS = [
     { id: 'settings', icon: Settings, label: 'Settings' },
 ];
 
+const CUSTOM_PRESET_KEY = 'custom';
+
+const CANVAS_PRESETS = [
+    { key: 'pinterest-pin', name: 'Pinterest Pin', width: 1000, height: 1500 },
+    { key: 'pinterest-square', name: 'Pinterest Square', width: 1000, height: 1000 },
+    { key: 'instagram-story', name: 'Instagram Story', width: 1080, height: 1920 },
+    { key: 'instagram-post', name: 'Instagram Post', width: 1080, height: 1080 },
+    { key: 'facebook-post', name: 'Facebook Post', width: 1200, height: 630 },
+    { key: 'twitter-post', name: 'Twitter Post', width: 1200, height: 675 },
+];
+
+const getPresetKeyBySize = (width, height) => {
+    const match = CANVAS_PRESETS.find(p => p.width === width && p.height === height);
+    return match?.key || null;
+};
+
 const SidePanel = () => {
     const navigate = useNavigate();
     // Store
@@ -73,6 +89,15 @@ const SidePanel = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [showBgColorPicker, setShowBgColorPicker] = useState(false);
     const bgColorTriggerRef = useRef(null);
+    const [selectedPresetKey, setSelectedPresetKey] = useState(() => {
+        const width = template.width || 1000;
+        const height = template.height || 1500;
+        return getPresetKeyBySize(width, height) || CUSTOM_PRESET_KEY;
+    });
+    const scaleBaseRef = useRef({
+        width: template.width || 1000,
+        height: template.height || 1500,
+    });
 
     // Derived selected element for layers
     const selectedElement = elements.find(el => selectedIds.has(el.id));
@@ -83,6 +108,20 @@ const SidePanel = () => {
             loadTemplates();
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        const width = template.width || 1000;
+        const height = template.height || 1500;
+        const presetKey = getPresetKeyBySize(width, height);
+        if (presetKey) {
+            const preset = CANVAS_PRESETS.find(p => p.key === presetKey);
+            setSelectedPresetKey(presetKey);
+            scaleBaseRef.current = { width: preset.width, height: preset.height };
+        } else {
+            setSelectedPresetKey(CUSTOM_PRESET_KEY);
+            scaleBaseRef.current = { width, height };
+        }
+    }, [template.id, template.slug]);
 
     // Listen for template save events to update the list
     useEffect(() => {
@@ -506,17 +545,14 @@ const SidePanel = () => {
                     </div>
                 );
             case 'settings':
-                const CANVAS_PRESETS = [
-                    { name: 'Pinterest Pin', width: 1000, height: 1500 },
-                    { name: 'Pinterest Square', width: 1000, height: 1000 },
-                    { name: 'Instagram Story', width: 1080, height: 1920 },
-                    { name: 'Instagram Post', width: 1080, height: 1080 },
-                    { name: 'Facebook Post', width: 1200, height: 630 },
-                    { name: 'Twitter Post', width: 1200, height: 675 },
-                ];
-                const currentPreset = CANVAS_PRESETS.find(p =>
-                    p.width === (template.width || 1000) && p.height === (template.height || 1500)
-                );
+                const selectedPreset = CANVAS_PRESETS.find(p => p.key === selectedPresetKey) || null;
+                const baseWidth = scaleBaseRef.current.width || selectedPreset?.width || template.width || 1000;
+                const baseHeight = scaleBaseRef.current.height || selectedPreset?.height || template.height || 1500;
+                const currentWidth = template.width || 1000;
+                const currentHeight = template.height || 1500;
+                const scaleValue = Math.round((currentWidth / baseWidth) * 10);
+                const clampedScaleValue = Math.min(30, Math.max(10, scaleValue));
+                const scalePercent = ((clampedScaleValue - 10) / 20) * 100;
                 return (
                     <div className="p-4 space-y-4">
                         <div className="space-y-2">
@@ -564,9 +600,17 @@ const SidePanel = () => {
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground">Canvas Size</label>
                             <select
-                                value={`${template.width || 1000}x${template.height || 1500}`}
+                                value={selectedPresetKey}
                                 onChange={(e) => {
-                                    const preset = CANVAS_PRESETS.find(p => `${p.width}x${p.height}` === e.target.value);
+                                    const presetKey = e.target.value;
+                                    setSelectedPresetKey(presetKey);
+
+                                    if (presetKey === CUSTOM_PRESET_KEY) {
+                                        scaleBaseRef.current = { width: currentWidth, height: currentHeight };
+                                        return;
+                                    }
+
+                                    const preset = CANVAS_PRESETS.find(p => p.key === presetKey);
                                     if (preset) {
                                         // Calculate scale ratio
                                         const oldW = template.width || 1000;
@@ -585,6 +629,8 @@ const SidePanel = () => {
                                         }));
                                         setElements(newElements);
 
+                                        scaleBaseRef.current = { width: preset.width, height: preset.height };
+
                                         setTemplate({
                                             width: preset.width,
                                             height: preset.height,
@@ -596,17 +642,20 @@ const SidePanel = () => {
                                 className={`w-full h-10 px-3 rounded-md border text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`}
                             >
                                 {CANVAS_PRESETS.map((preset) => (
-                                    <option key={`${preset.width}x${preset.height}`} value={`${preset.width}x${preset.height}`}>
-                                        {preset.name} ({preset.width}×{preset.height})
+                                    <option key={preset.key} value={preset.key}>
+                                        {preset.name} ({preset.width}x{preset.height})
                                     </option>
                                 ))}
+                                <option value={CUSTOM_PRESET_KEY}>
+                                    Custom ({currentWidth}x{currentHeight})
+                                </option>
                             </select>
                         </div>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-medium text-muted-foreground">Scale</label>
                                 <span className="text-xs text-zinc-400 font-mono">
-                                    {template.width || 1000}×{template.height || 1500}
+                                    {currentWidth}x{currentHeight}
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">
@@ -615,12 +664,9 @@ const SidePanel = () => {
                                     min="10"
                                     max="30"
                                     step="1"
-                                    value={Math.round(((template.width || 1000) / (currentPreset?.width || 1000)) * 10)}
+                                    value={clampedScaleValue}
                                     onChange={(e) => {
                                         const scale = parseInt(e.target.value, 10) / 10;
-                                        const baseWidth = currentPreset?.width || 1000;
-                                        const baseHeight = currentPreset?.height || 1500;
-
                                         const newWidth = Math.round(baseWidth * scale);
                                         const newHeight = Math.round(baseHeight * scale);
 
@@ -647,17 +693,15 @@ const SidePanel = () => {
                                         setTemplate({
                                             width: newWidth,
                                             height: newHeight,
-                                            canvas_width: newWidth,
-                                            canvas_height: newHeight
                                         });
                                     }}
                                     className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-primary"
                                     style={{
-                                        background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, ${isDark ? '#3f3f46' : '#e4e4e7'} ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, ${isDark ? '#3f3f46' : '#e4e4e7'} 100%)`
+                                        background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${scalePercent}%, ${isDark ? '#3f3f46' : '#e4e4e7'} ${scalePercent}%, ${isDark ? '#3f3f46' : '#e4e4e7'} 100%)`
                                     }}
                                 />
                                 <span className={`w-12 text-center text-xs font-mono px-2 py-1 rounded ${isDark ? 'text-white bg-zinc-800' : 'text-zinc-900 bg-zinc-100'}`}>
-                                    ×{(((template.width || 1000) / (currentPreset?.width || 1000))).toFixed(1)}
+                                    x{(currentWidth / baseWidth).toFixed(1)}
                                 </span>
                             </div>
                         </div>
