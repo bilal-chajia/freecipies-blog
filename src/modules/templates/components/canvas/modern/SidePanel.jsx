@@ -548,7 +548,7 @@ const SidePanel = () => {
                 const baseHeight = canvasBaseHeight || selectedPreset?.height || template.height || 1500;
                 const currentWidth = template.width || 1000;
                 const currentHeight = template.height || 1500;
-                const scaleValue = Math.round((currentWidth / baseWidth) * 10);
+                const scaleValue = Math.round((zoom / 100) * 10);
                 const clampedScaleValue = Math.min(30, Math.max(10, scaleValue));
                 const scalePercent = ((clampedScaleValue - 10) / 20) * 100;
                 return (
@@ -650,7 +650,6 @@ const SidePanel = () => {
                             </select>
                         </div>
                         <div className="space-y-2">
-                        <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-medium text-muted-foreground">Scale</label>
                                 <span className="text-xs text-zinc-400 font-mono">
@@ -678,6 +677,7 @@ const SidePanel = () => {
                                 </span>
                             </div>
                         </div>
+                    </div>
                 );
             case 'layers':
                 return (

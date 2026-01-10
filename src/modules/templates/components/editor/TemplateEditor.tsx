@@ -518,7 +518,14 @@ const TemplateEditor = () => {
                                 <p className="text-sm text-muted-foreground">Preview with sample data</p>
                             </div>
                             <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-zinc-900/50">
-                                <div ref={previewContainerRef} className="w-full h-full flex items-center justify-center">
+                                <div
+                                    ref={previewContainerRef}
+                                    className="flex items-center justify-center"
+                                    style={{
+                                        width: `${canvasBaseWidth * previewScale}px`,
+                                        height: `${canvasBaseHeight * previewScale}px`,
+                                    }}
+                                >
                                     <PinCanvas
                                         template={template}
                                         articleData={MOCK_ARTICLE_DATA}
@@ -528,6 +535,8 @@ const TemplateEditor = () => {
                                         showGrid={false}
                                         fitToCanvas={true}
                                         previewMode={true}
+                                        canvasWidthOverride={canvasBaseWidth}
+                                        canvasHeightOverride={canvasBaseHeight}
                                         onExport={(fn) => { previewExportRef.current = fn; }}
                                     />
                                 </div>
