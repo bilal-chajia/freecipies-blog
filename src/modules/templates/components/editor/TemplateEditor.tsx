@@ -1,4 +1,5 @@
 // @ts-nocheck
+// NOTE: Types available - @ts-nocheck can be removed when all errors resolved
 import React, { useEffect, useMemo, useRef } from 'react';
 import api from '@admin/services/api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,9 +26,10 @@ import EditorLayout from '../canvas/modern/EditorLayout';
 import { templatesAPI, mediaAPI } from '@admin/services/api';
 import { useFontLoader } from '../../utils/fontLoader';
 import { useEditorStore, CANVAS_WIDTH, CANVAS_HEIGHT } from '../../store';
+import type { TemplateElement } from '../../types';
 
 // Helper to resize images for thumbnails
-const resizeImage = (blob, maxWidth) => {
+const resizeImage = (blob: Blob, maxWidth: number): Promise<Blob | null> => {
     return new Promise((resolve) => {
         const img = new Image();
         const objectUrl = URL.createObjectURL(blob);
@@ -542,19 +544,19 @@ const TemplateEditor = () => {
                                             height: `${canvasBaseHeight * previewScale}px`,
                                         }}
                                     >
-                                    <PinCanvas
-                                        template={template}
-                                        articleData={MOCK_ARTICLE_DATA}
-                                        editable={false}
-                                        scale={previewScale}
-                                        zoom={100}
-                                        showGrid={false}
-                                        fitToCanvas={true}
-                                        previewMode={true}
-                                        canvasWidthOverride={canvasBaseWidth}
-                                        canvasHeightOverride={canvasBaseHeight}
-                                        onExport={(fn) => { previewExportRef.current = fn; }}
-                                    />
+                                        <PinCanvas
+                                            template={template}
+                                            articleData={MOCK_ARTICLE_DATA}
+                                            editable={false}
+                                            scale={previewScale}
+                                            zoom={100}
+                                            showGrid={false}
+                                            fitToCanvas={true}
+                                            previewMode={true}
+                                            canvasWidthOverride={canvasBaseWidth}
+                                            canvasHeightOverride={canvasBaseHeight}
+                                            onExport={(fn) => { previewExportRef.current = fn; }}
+                                        />
                                     </div>
                                 </div>
                             </div>

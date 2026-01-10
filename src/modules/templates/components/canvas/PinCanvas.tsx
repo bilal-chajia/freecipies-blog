@@ -1,9 +1,11 @@
 // @ts-nocheck
+// NOTE: Types available - @ts-nocheck can be removed when all errors resolved
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Transformer, Line, Circle, Path } from 'react-konva';
 import { AnimatePresence } from 'motion/react';
 import { useEditorStore } from '../../store';
 import { useUIStore } from '../../store/useUIStore';
+import type { TemplateElement } from '../../types';
 import { GRID_SIZE, SNAP_THRESHOLD } from './utils/canvasConstants';
 import { useKeyboardShortcuts, useSmartGuides, useImageLoader, getProxiedUrl } from './hooks';
 import useCustomFontLoader from './hooks/useCustomFontLoader';
