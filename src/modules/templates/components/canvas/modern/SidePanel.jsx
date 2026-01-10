@@ -24,6 +24,7 @@ import { Separator } from '@/ui/separator';
 import { toast } from 'sonner';
 
 import useEditorStore from '../../../store/useEditorStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../../store/useUIStore';
 import DraggableLayersList from '../DraggableLayersList';
 import { mediaAPI, templatesAPI } from '@admin/services/api';
@@ -61,31 +62,58 @@ const getPresetKeyBySize = (width, height) => {
 const SidePanel = () => {
     const navigate = useNavigate();
     // Store
-    const activeTab = useEditorStore(state => state.activeTab);
-    const setActiveTab = useEditorStore(state => state.setActiveTab);
-    const activePanel = useEditorStore(state => state.activePanel);
-    const setActivePanel = useEditorStore(state => state.setActivePanel);
-    const updateElement = useEditorStore(state => state.updateElement);
-    const addElement = useEditorStore(state => state.addElement);
-    const template = useEditorStore(state => state.template);
-    const setTemplate = useEditorStore(state => state.setTemplate);
-    const canvasBaseWidth = useEditorStore(state => state.canvasBaseWidth);
-    const canvasBaseHeight = useEditorStore(state => state.canvasBaseHeight);
-    const setCanvasBase = useEditorStore(state => state.setCanvasBase);
-    const elements = useEditorStore(state => state.elements);
-    const setElements = useEditorStore(state => state.setElements);
-    const selectedIds = useEditorStore(state => state.selectedIds);
-    const selectElement = useEditorStore(state => state.selectElement);
-    const reorderElements = useEditorStore(state => state.reorderElements);
-    const hasUnsavedChanges = useEditorStore(state => state.hasUnsavedChanges);
-    const loadTemplateToStore = useEditorStore(state => state.loadTemplateToStore);
-    const zoom = useEditorStore(state => state.zoom);
-    const setZoom = useEditorStore(state => state.setZoom);
+    // Store - Optimized with useShallow
+    const {
+        activeTab,
+        setActiveTab,
+        activePanel,
+        setActivePanel,
+        updateElement,
+        addElement,
+        template,
+        setTemplate,
+        canvasBaseWidth,
+        canvasBaseHeight,
+        setCanvasBase,
+        elements,
+        setElements,
+        selectedIds,
+        selectElement,
+        reorderElements,
+        hasUnsavedChanges,
+        loadTemplateToStore,
+        zoom,
+        setZoom,
+        toggleLock
+    } = useEditorStore(
+        useShallow(state => ({
+            activeTab: state.activeTab,
+            setActiveTab: state.setActiveTab,
+            activePanel: state.activePanel,
+            setActivePanel: state.setActivePanel,
+            updateElement: state.updateElement,
+            addElement: state.addElement,
+            template: state.template,
+            setTemplate: state.setTemplate,
+            canvasBaseWidth: state.canvasBaseWidth,
+            canvasBaseHeight: state.canvasBaseHeight,
+            setCanvasBase: state.setCanvasBase,
+            elements: state.elements,
+            setElements: state.setElements,
+            selectedIds: state.selectedIds,
+            selectElement: state.selectElement,
+            reorderElements: state.reorderElements,
+            hasUnsavedChanges: state.hasUnsavedChanges,
+            loadTemplateToStore: state.loadTemplateToStore,
+            zoom: state.zoom,
+            setZoom: state.setZoom,
+            toggleLock: state.toggleLock
+        }))
+    );
 
     // Theme
     const { theme } = useUIStore();
     const isDark = theme === 'dark';
-    const toggleLock = useEditorStore(state => state.toggleLock);
 
     // Local state for contents
     const [templates, setTemplates] = useState([]);

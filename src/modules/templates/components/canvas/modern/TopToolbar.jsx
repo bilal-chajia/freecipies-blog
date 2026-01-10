@@ -49,6 +49,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
 import { Slider } from '@/ui/slider';
 import { Label } from '@/ui/label';
 import useEditorStore from '../../../store/useEditorStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../../store/useUIStore';
 import ColorPicker from '@admin/components/ColorPicker';
 import { mediaAPI } from '@admin/services/api';
@@ -79,28 +80,55 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
     const navigate = useNavigate();
 
     // Store selectors
-    const template = useEditorStore(state => state.template);
-    const setTemplate = useEditorStore(state => state.setTemplate);
-    const zoom = useEditorStore(state => state.zoom);
-    const setZoom = useEditorStore(state => state.setZoom);
-    const undo = useEditorStore(state => state.undo);
-    const redo = useEditorStore(state => state.redo);
-    const history = useEditorStore(state => state.history);
+    // Store selectors - Optimized with useShallow
+    const {
+        template,
+        setTemplate,
+        zoom,
+        setZoom,
+        undo,
+        redo,
+        history,
+        hasUnsavedChanges,
+        isSaving,
+        showGrid,
+        toggleGrid,
+        getFirstSelectedElement,
+        updateElement,
+        deleteSelected,
+        duplicateSelected,
+        moveElementUp,
+        moveElementDown,
+        setActivePanel,
+        activePanel,
+        customFonts
+    } = useEditorStore(
+        useShallow(state => ({
+            template: state.template,
+            setTemplate: state.setTemplate,
+            zoom: state.zoom,
+            setZoom: state.setZoom,
+            undo: state.undo,
+            redo: state.redo,
+            history: state.history,
+            hasUnsavedChanges: state.hasUnsavedChanges,
+            isSaving: state.isSaving,
+            showGrid: state.showGrid,
+            toggleGrid: state.toggleGrid,
+            getFirstSelectedElement: state.getFirstSelectedElement,
+            updateElement: state.updateElement,
+            deleteSelected: state.deleteSelected,
+            duplicateSelected: state.duplicateSelected,
+            moveElementUp: state.moveElementUp,
+            moveElementDown: state.moveElementDown,
+            setActivePanel: state.setActivePanel,
+            activePanel: state.activePanel,
+            customFonts: state.customFonts
+        }))
+    );
+
     const canUndo = history.past.length > 0;
     const canRedo = history.future.length > 0;
-    const hasUnsavedChanges = useEditorStore(state => state.hasUnsavedChanges);
-    const isSaving = useEditorStore(state => state.isSaving);
-    const showGrid = useEditorStore(state => state.showGrid);
-    const toggleGrid = useEditorStore(state => state.toggleGrid);
-    const getFirstSelectedElement = useEditorStore(state => state.getFirstSelectedElement);
-    const updateElement = useEditorStore(state => state.updateElement);
-    const deleteSelected = useEditorStore(state => state.deleteSelected);
-    const duplicateSelected = useEditorStore(state => state.duplicateSelected);
-    const moveElementUp = useEditorStore(state => state.moveElementUp);
-    const moveElementDown = useEditorStore(state => state.moveElementDown);
-    const setActivePanel = useEditorStore(state => state.setActivePanel);
-    const activePanel = useEditorStore(state => state.activePanel);
-    const customFonts = useEditorStore(state => state.customFonts);
 
     const selectedElement = getFirstSelectedElement();
 

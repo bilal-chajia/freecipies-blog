@@ -353,7 +353,7 @@ const useEditorStore = create((set, get) => ({
         const { elements, history } = get();
         set({
             history: {
-                past: [...history.past, elements].slice(-50), // Keep last 50
+                past: [...history.past, elements].slice(-20), // Keep last 20
                 future: [],
             },
         });
