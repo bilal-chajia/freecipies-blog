@@ -27,38 +27,10 @@ import { templatesAPI, mediaAPI } from '@admin/services/api';
 import { useFontLoader } from '../../utils/fontLoader';
 import { useEditorStore, CANVAS_WIDTH, CANVAS_HEIGHT } from '../../store';
 import type { TemplateElement } from '../../types';
+import { nanoid } from 'nanoid';
+import ThumbnailWorker from '../../workers/thumbnail.worker.js?worker';
 
-// Helper to resize images for thumbnails
-const resizeImage = (blob: Blob, maxWidth: number): Promise<Blob | null> => {
-    return new Promise((resolve) => {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(blob);
-        img.onload = () => {
-            // Calculate new dimensions maintaining aspect ratio
-            const ratio = Math.min(maxWidth / img.width, 1);
-            const width = Math.round(img.width * ratio);
-            const height = Math.round(img.height * ratio);
 
-            // Draw to canvas at new size
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            // Convert to blob with compression (WebP for best size)
-            canvas.toBlob((resized) => {
-                URL.revokeObjectURL(objectUrl);
-                resolve(resized);
-            }, 'image/webp', 0.7);
-        };
-        img.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            resolve(null);
-        };
-        img.src = objectUrl;
-    });
-};
 
 
 const MOCK_ARTICLE_DATA = {
@@ -121,7 +93,34 @@ const TemplateEditor = () => {
     // Preview state (local, not in store as it's modal-only)
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
     const [previewScale, setPreviewScale] = React.useState(0.35);
+    const [previewImage, setPreviewImage] = React.useState<string | null>(null);
     const previewContainerRef = useRef(null);
+
+    // Worker for thumbnail generation
+    const workerRef = useRef<Worker>();
+
+    useEffect(() => {
+        workerRef.current = new ThumbnailWorker();
+        return () => workerRef.current?.terminate();
+    }, []);
+
+    const resizeImage = (blob: Blob, maxWidth: number): Promise<Blob | null> => {
+        return new Promise((resolve) => {
+            if (!workerRef.current) return resolve(null);
+
+            const id = nanoid();
+            const handler = (e: MessageEvent) => {
+                if (e.data.id === id) {
+                    workerRef.current?.removeEventListener('message', handler);
+                    if (e.data.success) resolve(e.data.blob);
+                    else resolve(null); // Fail gracefully
+                }
+            };
+
+            workerRef.current.addEventListener('message', handler);
+            workerRef.current.postMessage({ id, file: blob, maxWidth, type: 'resize' });
+        });
+    };
 
     // Dynamic padding for preview panel so grey area scales with canvas size
     const previewPadding = useMemo(() => {
@@ -465,8 +464,27 @@ const TemplateEditor = () => {
     };
 
     // Handle preview toggle
-    const handlePreview = () => {
-        setIsPreviewOpen(!isPreviewOpen);
+    const handlePreview = async () => {
+        if (!isPreviewOpen) {
+            if (exportFnRef.current) {
+                try {
+                    const blob = await exportFnRef.current('png', 1);
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        setPreviewImage(url);
+                    }
+                } catch (e) {
+                    console.error("Preview generation failed", e);
+                }
+            }
+            setIsPreviewOpen(true);
+        } else {
+            setIsPreviewOpen(false);
+            if (previewImage) {
+                URL.revokeObjectURL(previewImage);
+                setPreviewImage(null);
+            }
+        }
     };
 
     // Clean up preview URL when dialog closes (not used anymore but kept for state)
@@ -516,7 +534,7 @@ const TemplateEditor = () => {
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
                             className="fixed inset-0 bg-black/30 z-[60]"
-                            onClick={() => setIsPreviewOpen(false)}
+                            onClick={handlePreview}
                         />
                         <motion.div
                             initial={{ x: '100%', opacity: 0 }}
@@ -544,19 +562,18 @@ const TemplateEditor = () => {
                                             height: `${canvasBaseHeight * previewScale}px`,
                                         }}
                                     >
-                                        <PinCanvas
-                                            template={template}
-                                            articleData={MOCK_ARTICLE_DATA}
-                                            editable={false}
-                                            scale={previewScale}
-                                            zoom={100}
-                                            showGrid={false}
-                                            fitToCanvas={true}
-                                            previewMode={true}
-                                            canvasWidthOverride={canvasBaseWidth}
-                                            canvasHeightOverride={canvasBaseHeight}
-                                            onExport={(fn) => { previewExportRef.current = fn; }}
-                                        />
+                                        {previewImage ? (
+                                            <img
+                                                src={previewImage}
+                                                alt="Template Preview"
+                                                className="w-full h-full object-contain shadow-lg"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center w-full h-full text-muted-foreground">
+                                                <Loader2 className="w-8 h-8 animate-spin mr-2" />
+                                                Generating preview...
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

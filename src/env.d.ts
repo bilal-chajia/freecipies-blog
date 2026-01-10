@@ -6,3 +6,10 @@ declare namespace App {
   interface Locals extends Runtime {
   }
 }
+
+declare module '*?worker' {
+  const workerConstructor: {
+    new(): Worker;
+  };
+  export default workerConstructor;
+}
