@@ -116,16 +116,8 @@ const TemplateEditor = () => {
 
     // Preview state (local, not in store as it's modal-only)
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
-    const previewScale = useMemo(() => {
-        const baseWidth = CANVAS_WIDTH;
-        const baseHeight = CANVAS_HEIGHT;
-        const width = template?.width || template?.canvas_width || baseWidth;
-        const height = template?.height || template?.canvas_height || baseHeight;
-        if (!width || !height) return 0.35;
-        const scaleX = baseWidth / width;
-        const scaleY = baseHeight / height;
-        return 0.35 * Math.min(scaleX, scaleY);
-    }, [template?.width, template?.height, template?.canvas_width, template?.canvas_height]);
+    const [previewScale, setPreviewScale] = React.useState(0.35);
+    const previewContainerRef = useRef(null);
 
     // Export function ref
     const exportFnRef = useRef(null);
@@ -151,6 +143,30 @@ const TemplateEditor = () => {
             loadTemplate();
         }
     }, [slug]);
+
+    useEffect(() => {
+        const container = previewContainerRef.current;
+        if (!container) return;
+
+        const updateScale = () => {
+            const width = template?.width || template?.canvas_width || CANVAS_WIDTH;
+            const height = template?.height || template?.canvas_height || CANVAS_HEIGHT;
+            if (!width || !height) return;
+
+            const availableWidth = container.clientWidth;
+            const availableHeight = container.clientHeight;
+            if (!availableWidth || !availableHeight) return;
+
+            const scale = Math.min(availableWidth / width, availableHeight / height) * 0.95;
+            setPreviewScale(scale);
+        };
+
+        updateScale();
+        const resizeObserver = new ResizeObserver(updateScale);
+        resizeObserver.observe(container);
+
+        return () => resizeObserver.disconnect();
+    }, [template?.width, template?.height, template?.canvas_width, template?.canvas_height]);
 
     const loadTemplate = async () => {
         // Skip if template is already loaded in store (e.g., loaded via SidePanel)
@@ -497,15 +513,18 @@ const TemplateEditor = () => {
                                 <p className="text-sm text-muted-foreground">Preview with sample data</p>
                             </div>
                             <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-zinc-900/50">
-                                <PinCanvas
-                                    template={template}
-                                    articleData={MOCK_ARTICLE_DATA}
-                                    editable={false}
-                                    scale={previewScale}
-                                    zoom={100}
-                                    showGrid={false}
-                                    onExport={(fn) => { previewExportRef.current = fn; }}
-                                />
+                                <div ref={previewContainerRef} className="w-full h-full flex items-center justify-center">
+                                    <PinCanvas
+                                        template={template}
+                                        articleData={MOCK_ARTICLE_DATA}
+                                        editable={false}
+                                        scale={previewScale}
+                                        zoom={100}
+                                        showGrid={false}
+                                        fitToCanvas={true}
+                                        onExport={(fn) => { previewExportRef.current = fn; }}
+                                    />
+                                </div>
                             </div>
                         </motion.div>
                     </>

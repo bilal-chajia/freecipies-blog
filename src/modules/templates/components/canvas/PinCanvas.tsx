@@ -30,6 +30,7 @@ const PinCanvas = ({
     zoom = 100,
     allowImageDrag = false,
     onImageOffsetChange = null,
+    fitToCanvas = false,
 }) => {
     const stageRef = useRef(null);
     const transformerRef = useRef(null);
@@ -1146,13 +1147,17 @@ const PinCanvas = ({
 
     // Stage must be large enough to show transformer handles outside canvas
     // Minimum: canvas + 200px padding on all sides, or container size (whichever is larger)
-    const handlePadding = 100; // 100px on each side for handles
-    const stageWidth = Math.max(containerSize.width, (canvasWidth + handlePadding * 2) * actualScale);
-    const stageHeight = Math.max(containerSize.height, (canvasHeight + handlePadding * 2) * actualScale);
+    const handlePadding = fitToCanvas ? 0 : 100; // 100px on each side for handles
+    const stageWidth = fitToCanvas
+        ? canvasWidth * actualScale
+        : Math.max(containerSize.width, (canvasWidth + handlePadding * 2) * actualScale);
+    const stageHeight = fitToCanvas
+        ? canvasHeight * actualScale
+        : Math.max(containerSize.height, (canvasHeight + handlePadding * 2) * actualScale);
 
     // Center the canvas within the Stage
-    const canvasOffsetX = (stageWidth / actualScale - canvasWidth) / 2;
-    const canvasOffsetY = (stageHeight / actualScale - canvasHeight) / 2;
+    const canvasOffsetX = fitToCanvas ? 0 : (stageWidth / actualScale - canvasWidth) / 2;
+    const canvasOffsetY = fitToCanvas ? 0 : (stageHeight / actualScale - canvasHeight) / 2;
 
     // Render the canvas
     return (
