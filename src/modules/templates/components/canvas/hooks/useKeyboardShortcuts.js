@@ -18,6 +18,7 @@ import { useEffect, useCallback, useState } from 'react';
  * @param {Function} options.setElements - Set elements in state
  * @param {Function} options.updateElement - Update single element properties
  * @param {Function} options.onTemplateChange - Callback when template changes
+ * @param {Function} options.saveHistory - Save current elements to history stack
  */
 const useKeyboardShortcuts = ({
     editable = true,
@@ -32,6 +33,7 @@ const useKeyboardShortcuts = ({
     setElements,
     updateElement,
     onTemplateChange,
+    saveHistory,
 }) => {
     // Internal clipboard state
     const [clipboard, setClipboard] = useState([]);
@@ -81,6 +83,7 @@ const useKeyboardShortcuts = ({
             // Ctrl+V - Paste
             if (ctrlOrCmd && e.key === 'v' && clipboard.length > 0) {
                 e.preventDefault();
+                saveHistory?.();
                 const pastedElements = clipboard.map(el => ({
                     ...el,
                     id: generateId(),
@@ -153,7 +156,8 @@ const useKeyboardShortcuts = ({
         setElements,
         onTemplateChange,
         generateId,
-        handleNudge
+        handleNudge,
+        saveHistory
     ]);
 
     return {

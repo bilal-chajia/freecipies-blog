@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * Get proxied URL for CORS-safe image loading
@@ -36,6 +36,8 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
     const [loadedImages, setLoadedImages] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const loadedUrlsRef = useRef(new Map());
+    const isMountedRef = useRef(true);
 
     /**
      * Load a single image with error handling
@@ -46,7 +48,10 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
             img.crossOrigin = 'anonymous';
 
             img.onload = () => {
-                setLoadedImages(prev => ({ ...prev, [id]: img }));
+                loadedUrlsRef.current.set(id, url);
+                if (isMountedRef.current) {
+                    setLoadedImages(prev => ({ ...prev, [id]: img }));
+                }
                 resolve(img);
             };
 
@@ -55,7 +60,9 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
                 if (url.includes('/api/proxy-image') && rawUrl) {
                     img.src = rawUrl;
                 } else {
-                    setError(`Failed to load image: ${id}`);
+                    if (isMountedRef.current) {
+                        setError(`Failed to load image: ${id}`);
+                    }
                     resolve(null);
                 }
             };
@@ -64,15 +71,40 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
         });
     }, []);
 
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
     // Preload images for image slot elements
     useEffect(() => {
-        if (!elements || elements.length === 0) return;
+        const imageElements = elements.filter(el => el.type === 'imageSlot');
+        const elementIds = new Set(imageElements.map(el => el.id));
+        const keepIds = new Set(elementIds);
+        if (articleData?.image) keepIds.add('article_main');
+
+        loadedUrlsRef.current.forEach((_, id) => {
+            if (!keepIds.has(id)) {
+                loadedUrlsRef.current.delete(id);
+            }
+        });
+
+        setLoadedImages(prev => {
+            const next = {};
+            Object.entries(prev).forEach(([id, img]) => {
+                if (id === 'article_main') {
+                    if (articleData?.image) next[id] = img;
+                    return;
+                }
+                if (elementIds.has(id)) next[id] = img;
+            });
+            return next;
+        });
 
         const loadElementImages = async () => {
-            setIsLoading(true);
+            const targets = [];
             setError(null);
-
-            const imageElements = elements.filter(el => el.type === 'imageSlot');
 
             for (const el of imageElements) {
                 // Check for custom image from articleData first
@@ -81,33 +113,40 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
                 const imageUrl = getProxiedUrl(rawUrl);
 
                 if (imageUrl) {
-                    const currentImg = loadedImages[el.id];
-
-                    // Load if not present or if custom URL changed
-                    if (!currentImg) {
-                        await loadImage(el.id, imageUrl, rawUrl);
-                    } else if (customUrl) {
-                        // Check if we already loaded this specific custom URL
-                        if (!currentImg.src.includes(encodeURIComponent(customUrl)) &&
-                            currentImg.src !== customUrl) {
-                            await loadImage(el.id, imageUrl, rawUrl);
-                        }
+                    const currentUrl = loadedUrlsRef.current.get(el.id);
+                    if (currentUrl !== imageUrl) {
+                        targets.push({ id: el.id, url: imageUrl, rawUrl });
                     }
                 }
             }
 
             // Load article main image
-            if (articleData?.image && !loadedImages['article_main']) {
+            if (articleData?.image) {
                 const rawUrl = articleData.image;
                 const imageUrl = getProxiedUrl(rawUrl);
-                await loadImage('article_main', imageUrl, rawUrl);
+                const currentUrl = loadedUrlsRef.current.get('article_main');
+                if (currentUrl !== imageUrl) {
+                    targets.push({ id: 'article_main', url: imageUrl, rawUrl });
+                }
             }
 
-            setIsLoading(false);
+            if (targets.length === 0) {
+                if (isMountedRef.current) {
+                    setIsLoading(false);
+                }
+                return;
+            }
+
+            setIsLoading(true);
+            await Promise.all(targets.map(target => loadImage(target.id, target.url, target.rawUrl)));
+
+            if (isMountedRef.current) {
+                setIsLoading(false);
+            }
         };
 
         loadElementImages();
-    }, [elements, articleData, loadImage, loadedImages]);
+    }, [elements, articleData, loadImage]);
 
     /**
      * Manually set a loaded image (for external sources)

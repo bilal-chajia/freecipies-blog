@@ -118,6 +118,7 @@ const ElementPanel = ({
     onMoveDown,
 }) => {
     const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
+    const customFonts = useEditorStore(state => state.customFonts);
 
     if (!element) {
         return (
@@ -235,7 +236,7 @@ const ElementPanel = ({
                         )}
                         {element.rotation !== undefined && (
                             <div className="col-span-2">
-                                <Label className="text-xs">Rotation: {Math.round(element.rotation || 0)}°</Label>
+                            <Label className="text-xs">Rotation: {Math.round(element.rotation || 0)} deg</Label>
                                 <Slider
                                     value={[element.rotation || 0]}
                                     min={-180}
@@ -339,28 +340,21 @@ const ElementPanel = ({
                                                 </div>
 
                                                 {/* Custom Fonts Section */}
-                                                {(() => {
-                                                    // Access custom fonts from store state directly
-                                                    const customFonts = useEditorStore.getState().customFonts || [];
-                                                    if (customFonts.length > 0) {
-                                                        return (
-                                                            <>
-                                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">Custom Fonts</div>
-                                                                {customFonts.map((font) => (
-                                                                    <SelectItem
-                                                                        key={font.name}
-                                                                        value={font.name}
-                                                                        style={{ fontFamily: font.name }}
-                                                                    >
-                                                                        {font.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 mt-1">Standard Fonts</div>
-                                                            </>
-                                                        );
-                                                    }
-                                                    return null;
-                                                })()}
+                                                {customFonts.length > 0 && (
+                                                    <>
+                                                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">Custom Fonts</div>
+                                                        {customFonts.map((font) => (
+                                                            <SelectItem
+                                                                key={font.name}
+                                                                value={font.name}
+                                                                style={{ fontFamily: font.name }}
+                                                            >
+                                                                {font.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 mt-1">Standard Fonts</div>
+                                                    </>
+                                                )}
 
                                                 {FONTS.map((font) => (
                                                     <SelectItem

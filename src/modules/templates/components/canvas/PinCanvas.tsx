@@ -62,6 +62,7 @@ const PinCanvas = ({
     const toggleSelection = useEditorStore(state => state.toggleSelection);
     const addToSelection = useEditorStore(state => state.addToSelection);
     const updateElement = useEditorStore(state => state.updateElement);
+    const saveHistory = useEditorStore(state => state.saveHistory);
     const deleteSelected = useEditorStore(state => state.deleteSelected);
     const duplicateSelected = useEditorStore(state => state.duplicateSelected);
     const undo = useEditorStore(state => state.undo);
@@ -84,6 +85,8 @@ const PinCanvas = ({
     // Dragging/Transforming state - to hide floating toolbar
     const [isDragging, setIsDragging] = useState(false);
     const [isTransforming, setIsTransforming] = useState(false);
+    const dragHistorySavedRef = useRef(false);
+    const transformHistorySavedRef = useRef(false);
 
 
     // Note: clipboard state is now managed by useKeyboardShortcuts hook
@@ -236,9 +239,7 @@ const PinCanvas = ({
     // Save text edit and exit edit mode
     const handleTextEditSave = () => {
         if (editingTextId && editingTextValue !== null) {
-            // Update via store
-            updateElement(editingTextId, { content: editingTextValue });
-            // Also update local state for immediate feedback
+            saveHistory();
             handleElementChange(editingTextId, { content: editingTextValue });
         }
         setEditingTextId(null);
@@ -288,18 +289,24 @@ const PinCanvas = ({
         setElements,
         updateElement: handleElementChange,
         onTemplateChange,
+        saveHistory,
     });
 
 
 
     // Handle transform start
     const handleTransformStart = () => {
+        if (!transformHistorySavedRef.current) {
+            saveHistory();
+            transformHistorySavedRef.current = true;
+        }
         setIsTransforming(true);
     };
 
     // Handle transform end (resize/rotate)
     const handleTransformEnd = (id, e) => {
         setIsTransforming(false);
+        transformHistorySavedRef.current = false;
         const node = e.target;
         const scaleX = node.scaleX();
         const scaleY = node.scaleY();
@@ -329,6 +336,14 @@ const PinCanvas = ({
                 rotation: node.rotation(),
             });
         }
+    };
+
+    const handleDragStart = () => {
+        if (!dragHistorySavedRef.current) {
+            saveHistory();
+            dragHistorySavedRef.current = true;
+        }
+        setIsDragging(true);
     };
 
     // Handle TEXT transform start - store original fontSize for proportional scaling
@@ -387,6 +402,7 @@ const PinCanvas = ({
     // Wrapper for handleDragEnd to match expected signature and clear dragging state
     const handleDragEnd = (id, e) => {
         setIsDragging(false);
+        dragHistorySavedRef.current = false;
         smartGuideDragEnd(id, e);
     };
 
@@ -467,8 +483,7 @@ const PinCanvas = ({
         }
     }, [exportToImage, onExport]);
 
-    // Render grid lines
-    const renderGrid = () => {
+    const gridLines = useMemo(() => {
         if (!showGrid) return null;
 
         // Dynamic grid size: divide canvas into 20 columns
@@ -503,10 +518,9 @@ const PinCanvas = ({
             );
         }
         return lines;
-    };
+    }, [showGrid, canvasWidth, canvasHeight, isDark]);
 
-    // Render Smart Guides - Modern Canva Pro style
-    const renderSmartGuides = () => {
+    const smartGuideLines = useMemo(() => {
         // Vibrant magenta/pink for guides (distinct from cyan selection)
         const guideColor = '#5900ffff';
         const glowColor = '#5900ffff';
@@ -532,29 +546,28 @@ const PinCanvas = ({
                         listening={false}
                     />,
                 ];
-            } else {
-                return [
-                    // Glow layer
-                    <Line
-                        key={`guide-h-glow-${i}`}
-                        points={[0, guide.lineGuide, canvasWidth, guide.lineGuide]}
-                        stroke={glowColor}
-                        strokeWidth={4}
-                        opacity={0.3}
-                        listening={false}
-                    />,
-                    // Main line
-                    <Line
-                        key={`guide-h-${i}`}
-                        points={[0, guide.lineGuide, canvasWidth, guide.lineGuide]}
-                        stroke={guideColor}
-                        strokeWidth={1}
-                        listening={false}
-                    />,
-                ];
             }
+            return [
+                // Glow layer
+                <Line
+                    key={`guide-h-glow-${i}`}
+                    points={[0, guide.lineGuide, canvasWidth, guide.lineGuide]}
+                    stroke={glowColor}
+                    strokeWidth={4}
+                    opacity={0.3}
+                    listening={false}
+                />,
+                // Main line
+                <Line
+                    key={`guide-h-${i}`}
+                    points={[0, guide.lineGuide, canvasWidth, guide.lineGuide]}
+                    stroke={guideColor}
+                    strokeWidth={1}
+                    listening={false}
+                />,
+            ];
         });
-    };
+    }, [guides, canvasWidth, canvasHeight]);
 
     // Render element based on type
     const renderElement = (element) => {
@@ -564,6 +577,7 @@ const PinCanvas = ({
             draggable: editable && !isLocked,
             onClick: isLocked ? undefined : (e) => handleSelect(element.id, e),
             onTap: isLocked ? undefined : (e) => handleSelect(element.id, e),
+            onDragStart: isLocked ? undefined : handleDragStart,
             onDragMove: isLocked ? undefined : wrappedHandleDragMove,
             onDragEnd: isLocked ? undefined : (e) => handleDragEnd(element.id, e),
             onTransformStart: isLocked ? undefined : handleTransformStart,
@@ -1199,7 +1213,7 @@ const PinCanvas = ({
                         {elements.map(renderElement)}
 
                         {/* Grid overlay - rendered ON TOP of elements */}
-                        {renderGrid()}
+                        {gridLines}
                     </Group>
                 </Layer>
 
@@ -1212,6 +1226,7 @@ const PinCanvas = ({
                             onTransform={handleTransformMove}
                             onTransformEnd={() => {
                                 setIsTransforming(false);
+                                transformHistorySavedRef.current = false;
                                 clearGuides();
                             }}
                             boundBoxFunc={(oldBox, newBox) => {
@@ -1244,7 +1259,7 @@ const PinCanvas = ({
 
                 {/* Smart Guides Layer - ABOVE Transformer for visibility */}
                 <Layer x={canvasOffsetX} y={canvasOffsetY}>
-                    {renderSmartGuides()}
+                    {smartGuideLines}
                 </Layer>
 
                 {/* Custom Rotation Handle Layer - same coordinate system as Transformer */}
@@ -1423,8 +1438,8 @@ const PinCanvas = ({
                         }}
                         style={{
                             position: 'absolute',
-                            left: editingElement.x * actualScale,
-                            top: editingElement.y * actualScale,
+                            left: (editingElement.x + canvasOffsetX) * actualScale,
+                            top: (editingElement.y + canvasOffsetY) * actualScale,
                             width: (editingElement.width || 300) * actualScale,
                             minHeight: 40,
                             maxHeight: 'none',

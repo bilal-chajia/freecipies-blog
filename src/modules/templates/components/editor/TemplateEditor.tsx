@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import api from '@admin/services/api';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -30,6 +30,7 @@ import { useEditorStore, CANVAS_WIDTH, CANVAS_HEIGHT } from '../../store';
 const resizeImage = (blob, maxWidth) => {
     return new Promise((resolve) => {
         const img = new Image();
+        const objectUrl = URL.createObjectURL(blob);
         img.onload = () => {
             // Calculate new dimensions maintaining aspect ratio
             const ratio = Math.min(maxWidth / img.width, 1);
@@ -44,9 +45,16 @@ const resizeImage = (blob, maxWidth) => {
             ctx.drawImage(img, 0, 0, width, height);
 
             // Convert to blob with compression (WebP for best size)
-            canvas.toBlob(resolve, 'image/webp', 0.7);
+            canvas.toBlob((resized) => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(resized);
+            }, 'image/webp', 0.7);
         };
-        img.src = URL.createObjectURL(blob);
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(null);
+        };
+        img.src = objectUrl;
     });
 };
 
@@ -70,7 +78,7 @@ const TemplateEditor = () => {
 
     // Load fonts used in editor
     // Extract unique font families from elements + default fonts
-    const defaultFonts = FONTS.map(f => f.name);
+    const defaultFonts = useMemo(() => FONTS.map(f => f.name), []);
     useFontLoader(defaultFonts);
 
     // === ZUSTAND STORE HOOKS ===
@@ -85,7 +93,6 @@ const TemplateEditor = () => {
 
     // Store actions
     const setTemplate = useEditorStore(state => state.setTemplate);
-    const updateTemplate = setTemplate; // Alias for backward compatibility
     const loadTemplateToStore = useEditorStore(state => state.loadTemplateToStore);
     const setElements = useEditorStore(state => state.setElements);
     const addElement = useEditorStore(state => state.addElement);
@@ -97,10 +104,6 @@ const TemplateEditor = () => {
     const moveElementUp = useEditorStore(state => state.moveElementUp);
     const moveElementDown = useEditorStore(state => state.moveElementDown);
     const reorderElements = useEditorStore(state => state.reorderElements);
-    const undo = useEditorStore(state => state.undo);
-    const redo = useEditorStore(state => state.redo);
-    const canUndo = useEditorStore(state => state.canUndo);
-    const canRedo = useEditorStore(state => state.canRedo);
     const setZoom = useEditorStore(state => state.setZoom);
     const toggleGrid = useEditorStore(state => state.toggleGrid);
     const setLoading = useEditorStore(state => state.setLoading);
@@ -138,30 +141,6 @@ const TemplateEditor = () => {
             loadTemplate();
         }
     }, [slug]);
-
-    // Keyboard shortcuts
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                e.preventDefault();
-                if (e.shiftKey) {
-                    redo();
-                } else {
-                    undo();
-                }
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-                e.preventDefault();
-                redo();
-            }
-            if (e.key === 'Delete' && selectedIds.size > 0) {
-                deleteSelected();
-                toast.success('Element deleted');
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedIds, undo, redo, deleteSelected]);
 
     const loadTemplate = async () => {
         // Skip if template is already loaded in store (e.g., loaded via SidePanel)
