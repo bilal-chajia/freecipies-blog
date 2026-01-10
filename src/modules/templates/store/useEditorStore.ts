@@ -20,6 +20,8 @@ const useEditorStore = create((set, get) => ({
         height: CANVAS_HEIGHT,
     },
     elements: [],
+    canvasBaseWidth: CANVAS_WIDTH,
+    canvasBaseHeight: CANVAS_HEIGHT,
 
     // === SELECTION STATE ===
     selectedIds: new Set(),
@@ -67,6 +69,8 @@ const useEditorStore = create((set, get) => ({
                 canvas_height: template?.canvas_height ?? template?.height ?? CANVAS_HEIGHT,
             },
             elements: elements || [],
+            canvasBaseWidth: template?.canvas_width ?? template?.width ?? CANVAS_WIDTH,
+            canvasBaseHeight: template?.canvas_height ?? template?.height ?? CANVAS_HEIGHT,
             selectedIds: new Set(),
             hasUnsavedChanges: false,
             history: { past: [], future: [] },
@@ -94,6 +98,8 @@ const useEditorStore = create((set, get) => ({
                 canvas_height: templateData?.canvas_height ?? templateData?.height ?? CANVAS_HEIGHT,
             },
             elements: parsedElements,
+            canvasBaseWidth: templateData?.canvas_width ?? templateData?.width ?? CANVAS_WIDTH,
+            canvasBaseHeight: templateData?.canvas_height ?? templateData?.height ?? CANVAS_HEIGHT,
             selectedIds: new Set(),
             hasUnsavedChanges: false,
             isLoading: false,
@@ -114,11 +120,17 @@ const useEditorStore = create((set, get) => ({
                 canvas_height: 1500,
             },
             elements: [],
+            canvasBaseWidth: 1000,
+            canvasBaseHeight: 1500,
             selectedIds: new Set(),
             hasUnsavedChanges: false,
             history: { past: [], future: [] },
         });
     },
+    setCanvasBase: (width, height) => set({
+        canvasBaseWidth: width,
+        canvasBaseHeight: height,
+    }),
 
     // === ELEMENT ACTIONS ===
     setElements: (elements) => {

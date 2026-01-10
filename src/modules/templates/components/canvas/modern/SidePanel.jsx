@@ -69,6 +69,9 @@ const SidePanel = () => {
     const addElement = useEditorStore(state => state.addElement);
     const template = useEditorStore(state => state.template);
     const setTemplate = useEditorStore(state => state.setTemplate);
+    const canvasBaseWidth = useEditorStore(state => state.canvasBaseWidth);
+    const canvasBaseHeight = useEditorStore(state => state.canvasBaseHeight);
+    const setCanvasBase = useEditorStore(state => state.setCanvasBase);
     const elements = useEditorStore(state => state.elements);
     const setElements = useEditorStore(state => state.setElements);
     const selectedIds = useEditorStore(state => state.selectedIds);
@@ -90,13 +93,9 @@ const SidePanel = () => {
     const [showBgColorPicker, setShowBgColorPicker] = useState(false);
     const bgColorTriggerRef = useRef(null);
     const [selectedPresetKey, setSelectedPresetKey] = useState(() => {
-        const width = template.width || 1000;
-        const height = template.height || 1500;
+        const width = canvasBaseWidth || template.width || 1000;
+        const height = canvasBaseHeight || template.height || 1500;
         return getPresetKeyBySize(width, height) || CUSTOM_PRESET_KEY;
-    });
-    const scaleBaseRef = useRef({
-        width: template.width || 1000,
-        height: template.height || 1500,
     });
 
     // Derived selected element for layers
@@ -110,18 +109,15 @@ const SidePanel = () => {
     }, [activeTab]);
 
     useEffect(() => {
-        const width = template.width || 1000;
-        const height = template.height || 1500;
+        const width = canvasBaseWidth || template.width || 1000;
+        const height = canvasBaseHeight || template.height || 1500;
         const presetKey = getPresetKeyBySize(width, height);
         if (presetKey) {
-            const preset = CANVAS_PRESETS.find(p => p.key === presetKey);
             setSelectedPresetKey(presetKey);
-            scaleBaseRef.current = { width: preset.width, height: preset.height };
         } else {
             setSelectedPresetKey(CUSTOM_PRESET_KEY);
-            scaleBaseRef.current = { width, height };
         }
-    }, [template.id, template.slug]);
+    }, [template.id, template.slug, canvasBaseWidth, canvasBaseHeight]);
 
     // Listen for template save events to update the list
     useEffect(() => {
@@ -546,8 +542,8 @@ const SidePanel = () => {
                 );
             case 'settings':
                 const selectedPreset = CANVAS_PRESETS.find(p => p.key === selectedPresetKey) || null;
-                const baseWidth = scaleBaseRef.current.width || selectedPreset?.width || template.width || 1000;
-                const baseHeight = scaleBaseRef.current.height || selectedPreset?.height || template.height || 1500;
+                const baseWidth = canvasBaseWidth || selectedPreset?.width || template.width || 1000;
+                const baseHeight = canvasBaseHeight || selectedPreset?.height || template.height || 1500;
                 const currentWidth = template.width || 1000;
                 const currentHeight = template.height || 1500;
                 const scaleValue = Math.round((currentWidth / baseWidth) * 10);
@@ -606,7 +602,7 @@ const SidePanel = () => {
                                     setSelectedPresetKey(presetKey);
 
                                     if (presetKey === CUSTOM_PRESET_KEY) {
-                                        scaleBaseRef.current = { width: currentWidth, height: currentHeight };
+                                        setCanvasBase(currentWidth, currentHeight);
                                         return;
                                     }
 
@@ -629,7 +625,7 @@ const SidePanel = () => {
                                         }));
                                         setElements(newElements);
 
-                                        scaleBaseRef.current = { width: preset.width, height: preset.height };
+                                        setCanvasBase(preset.width, preset.height);
 
                                         setTemplate({
                                             width: preset.width,

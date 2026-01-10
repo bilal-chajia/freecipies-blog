@@ -90,6 +90,8 @@ const TemplateEditor = () => {
     const hasUnsavedChanges = useEditorStore(state => state.hasUnsavedChanges);
     const isLoading = useEditorStore(state => state.isLoading);
     const isSaving = useEditorStore(state => state.isSaving);
+    const canvasBaseWidth = useEditorStore(state => state.canvasBaseWidth);
+    const canvasBaseHeight = useEditorStore(state => state.canvasBaseHeight);
 
     // Store actions
     const setTemplate = useEditorStore(state => state.setTemplate);
@@ -149,8 +151,8 @@ const TemplateEditor = () => {
         if (!container) return;
 
         const updateScale = () => {
-            const baseWidth = template?.canvas_width || template?.width || CANVAS_WIDTH;
-            const baseHeight = template?.canvas_height || template?.height || CANVAS_HEIGHT;
+            const baseWidth = canvasBaseWidth || template?.canvas_width || template?.width || CANVAS_WIDTH;
+            const baseHeight = canvasBaseHeight || template?.canvas_height || template?.height || CANVAS_HEIGHT;
             const actualWidth = template?.width || baseWidth;
             const actualHeight = template?.height || baseHeight;
             if (!baseWidth || !baseHeight) return;
@@ -169,7 +171,7 @@ const TemplateEditor = () => {
         resizeObserver.observe(container);
 
         return () => resizeObserver.disconnect();
-    }, [template?.width, template?.height, template?.canvas_width, template?.canvas_height]);
+    }, [template?.width, template?.height, template?.canvas_width, template?.canvas_height, canvasBaseWidth, canvasBaseHeight]);
 
     const loadTemplate = async () => {
         // Skip if template is already loaded in store (e.g., loaded via SidePanel)
