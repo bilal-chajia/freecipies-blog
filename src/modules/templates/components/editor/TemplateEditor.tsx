@@ -121,6 +121,14 @@ const TemplateEditor = () => {
     const [previewScale, setPreviewScale] = React.useState(0.35);
     const previewContainerRef = useRef(null);
 
+    // Dynamic padding for preview panel so grey area scales with canvas size
+    const previewPadding = useMemo(() => {
+        const baseW = canvasBaseWidth || CANVAS_WIDTH;
+        const baseH = canvasBaseHeight || CANVAS_HEIGHT;
+        const shortestSide = Math.min(baseW, baseH);
+        return Math.max(12, Math.min(64, Math.round(shortestSide * 0.02)));
+    }, [canvasBaseWidth, canvasBaseHeight]);
+
     // Export function ref
     const exportFnRef = useRef(null);
     const previewExportRef = useRef(null);
@@ -147,31 +155,33 @@ const TemplateEditor = () => {
     }, [slug]);
 
     useEffect(() => {
+        if (!isPreviewOpen) return;
         const container = previewContainerRef.current;
         if (!container) return;
 
         const updateScale = () => {
             const baseWidth = canvasBaseWidth || template?.canvas_width || template?.width || CANVAS_WIDTH;
             const baseHeight = canvasBaseHeight || template?.canvas_height || template?.height || CANVAS_HEIGHT;
-            const actualWidth = template?.width || baseWidth;
-            const actualHeight = template?.height || baseHeight;
             if (!baseWidth || !baseHeight) return;
 
-            const availableWidth = container.clientWidth;
-            const availableHeight = container.clientHeight;
+            const availableWidth = Math.max(0, container.clientWidth - previewPadding * 2);
+            const availableHeight = Math.max(0, container.clientHeight - previewPadding * 2);
             if (!availableWidth || !availableHeight) return;
 
             const fitScale = Math.min(availableWidth / baseWidth, availableHeight / baseHeight) * 0.95;
-            const inverseScale = Math.min(baseWidth / actualWidth, baseHeight / actualHeight);
-            setPreviewScale(fitScale * inverseScale);
+            setPreviewScale(fitScale);
         };
 
         updateScale();
+        const raf = requestAnimationFrame(updateScale);
         const resizeObserver = new ResizeObserver(updateScale);
         resizeObserver.observe(container);
 
-        return () => resizeObserver.disconnect();
-    }, [template?.width, template?.height, template?.canvas_width, template?.canvas_height, canvasBaseWidth, canvasBaseHeight]);
+        return () => {
+            cancelAnimationFrame(raf);
+            resizeObserver.disconnect();
+        };
+    }, [isPreviewOpen, template?.canvas_width, template?.canvas_height, canvasBaseWidth, canvasBaseHeight, previewPadding]);
 
     const loadTemplate = async () => {
         // Skip if template is already loaded in store (e.g., loaded via SidePanel)
@@ -511,21 +521,27 @@ const TemplateEditor = () => {
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed right-0 top-14 bottom-0 w-[500px] bg-background/95 backdrop-blur-lg border-l border-border shadow-2xl z-[70] flex flex-col"
+                            className="fixed right-0 top-14 bottom-0 w-[640px] bg-background/95 backdrop-blur-lg border-l border-border shadow-2xl z-[70] flex flex-col"
                         >
                             <div className="p-4 border-b">
                                 <h2 className="font-semibold">Preview Template</h2>
                                 <p className="text-sm text-muted-foreground">Preview with sample data</p>
                             </div>
-                            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-zinc-900/50">
+                            <div
+                                ref={previewContainerRef}
+                                className="flex-1 overflow-auto flex items-start justify-center"
+                            >
                                 <div
-                                    ref={previewContainerRef}
-                                    className="flex items-center justify-center"
-                                    style={{
-                                        width: `${canvasBaseWidth * previewScale}px`,
-                                        height: `${canvasBaseHeight * previewScale}px`,
-                                    }}
+                                    className="flex items-start justify-center bg-zinc-900/50 rounded-md shadow-inner"
+                                    style={{ padding: `${previewPadding}px` }}
                                 >
+                                    <div
+                                        className="flex items-start justify-center"
+                                        style={{
+                                            width: `${canvasBaseWidth * previewScale}px`,
+                                            height: `${canvasBaseHeight * previewScale}px`,
+                                        }}
+                                    >
                                     <PinCanvas
                                         template={template}
                                         articleData={MOCK_ARTICLE_DATA}
@@ -539,6 +555,7 @@ const TemplateEditor = () => {
                                         canvasHeightOverride={canvasBaseHeight}
                                         onExport={(fn) => { previewExportRef.current = fn; }}
                                     />
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>

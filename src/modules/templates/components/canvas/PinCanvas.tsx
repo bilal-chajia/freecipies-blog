@@ -32,6 +32,8 @@ const PinCanvas = ({
     onImageOffsetChange = null,
     fitToCanvas = false,
     previewMode = false,
+    canvasWidthOverride = null,
+    canvasHeightOverride = null,
 }) => {
     const stageRef = useRef(null);
     const transformerRef = useRef(null);
@@ -39,8 +41,8 @@ const PinCanvas = ({
 
     // === DYNAMIC CANVAS DIMENSIONS ===
     // Derive canvas size from template (supports custom sizes)
-    const canvasWidth = template?.width || template?.canvas_width || DEFAULT_CANVAS_WIDTH;
-    const canvasHeight = template?.height || template?.canvas_height || DEFAULT_CANVAS_HEIGHT;
+    const canvasWidth = canvasWidthOverride || template?.width || template?.canvas_width || DEFAULT_CANVAS_WIDTH;
+    const canvasHeight = canvasHeightOverride || template?.height || template?.canvas_height || DEFAULT_CANVAS_HEIGHT;
 
     // Use store for elements (not local state)
     const elements = useEditorStore(state => state.elements);
