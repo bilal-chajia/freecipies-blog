@@ -33,6 +33,7 @@ const CategoriesList = () => {
     categoryToDelete: null
   });
 
+
   const isLoadingRef = useRef(false);
 
   useEffect(() => {
@@ -141,6 +142,7 @@ const CategoriesList = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+
           <Link to="/categories/new">
             <Button className="h-11 px-6 gap-2 shadow-sm rounded-xl">
               <Plus className="h-4 w-4" />

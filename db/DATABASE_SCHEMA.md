@@ -1,6 +1,6 @@
 # Database Schema Reference
 
-> **Last Updated:** 2025-12-19  
+> **Last Updated:** 2026-01-10  
 > **Database:** Cloudflare D1 (SQLite)  
 > **ORM:** Drizzle ORM
 
@@ -438,6 +438,8 @@ contact_info    → Contact details
 | `created_at`        | DATETIME | ❌        | CURRENT_TIMESTAMP | Creation timestamp                      |
 | `updated_at`        | DATETIME | ❌        | CURRENT_TIMESTAMP | Last update (auto-triggered)            |
 | `deleted_at`        | DATETIME | ❌        | NULL              | Soft delete marker                      |
+
+**Cached post count:** `categories.cached_post_count` is maintained automatically by SQL triggers on the `articles` table (insert/update/delete) and counts only rows where `is_online = 1` AND `deleted_at IS NULL`.
 
 ---
 

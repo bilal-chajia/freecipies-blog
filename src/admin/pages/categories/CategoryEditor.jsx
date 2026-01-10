@@ -1224,15 +1224,15 @@ const CategoryEditor = () => {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Parent Category</Label>
                     <Select
-                      value={formData.parentId === null ? '' : String(formData.parentId)}
-                      onValueChange={(value) => handleChange('parentId', value === '' ? null : parseInt(value))}
+                      value={formData.parentId === null ? '__none__' : String(formData.parentId)}
+                      onValueChange={(value) => handleChange('parentId', value === '__none__' ? null : parseInt(value))}
                       disabled={parentLoading}
                     >
                       <SelectTrigger className="h-8">
                         <SelectValue placeholder="None" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="__none__">None</SelectItem>
                         {parentOptions
                           .filter((cat) => !isEditMode || cat.slug !== slug)
                           .map((cat) => (

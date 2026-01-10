@@ -157,6 +157,10 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
+        // Get article to find its category before deletion
+        // const article = await getArticleById(env.DB, id);
+        // const categoryId = (article as any)?.categoryId;
+
         const success = await deleteArticleById(env.DB, id);
 
         if (!success) {

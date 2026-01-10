@@ -2323,3 +2323,62 @@ BEGIN
     UPDATE redirects SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
+
+-- ==================================================================================
+-- CATEGORY POST COUNT TRIGGERS
+-- ==================================================================================
+-- Purpose: Automatically maintain cached_post_count in categories table.
+-- conditions: is_online = 1 AND deleted_at IS NULL
+
+-- Trigger: Update category post count after INSERT
+CREATE TRIGGER IF NOT EXISTS update_category_count_on_insert
+AFTER INSERT ON articles
+BEGIN
+  UPDATE categories 
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles 
+    WHERE category_id = NEW.category_id 
+    AND is_online = 1 
+    AND deleted_at IS NULL
+  )
+  WHERE id = NEW.category_id;
+END;
+
+-- Trigger: Update category post count after UPDATE
+CREATE TRIGGER IF NOT EXISTS update_category_count_on_update
+AFTER UPDATE OF category_id, is_online, deleted_at ON articles
+BEGIN
+  -- Update old category
+  UPDATE categories 
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles 
+    WHERE category_id = OLD.category_id 
+    AND is_online = 1 
+    AND deleted_at IS NULL
+  )
+  WHERE id = OLD.category_id;
+  
+  -- Update new category (if changed)
+  UPDATE categories 
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles 
+    WHERE category_id = NEW.category_id 
+    AND is_online = 1 
+    AND deleted_at IS NULL
+  )
+  WHERE id = NEW.category_id;
+END;
+
+-- Trigger: Update category post count after DELETE
+CREATE TRIGGER IF NOT EXISTS update_category_count_on_delete
+AFTER DELETE ON articles
+BEGIN
+  UPDATE categories 
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles 
+    WHERE category_id = OLD.category_id 
+    AND is_online = 1 
+    AND deleted_at IS NULL
+  )
+  WHERE id = OLD.category_id;
+END;

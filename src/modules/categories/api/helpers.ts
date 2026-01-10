@@ -357,7 +357,9 @@ export function transformCategoryRequestBody(body: any): any {
     transformed.configJson = parseConfigJson({ ...baseConfig, ...configOverrides });
   }
 
-  // Basic required field validation (let callers throw user-friendly errors)
+  // Basic required field validation REMOVED to allow partial updates (PATCH)
+  // The database schema or specialized Creation validation should handle requirements.
+  /*
   const missing: string[] = [];
   if (!transformed.slug) missing.push('slug');
   if (!transformed.label) missing.push('label');
@@ -367,6 +369,7 @@ export function transformCategoryRequestBody(body: any): any {
     (error as any).code = 'VALIDATION_ERROR';
     throw error;
   }
+  */
 
   return transformed;
 }

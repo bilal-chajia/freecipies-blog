@@ -168,3 +168,5 @@ export async function deleteCategoryById(db: D1Database, id: number): Promise<bo
     .where(eq(categories.id, id));
   return (result.rowsAffected ?? 0) > 0;
 }
+
+
