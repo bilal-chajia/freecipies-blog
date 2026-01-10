@@ -403,13 +403,13 @@ const SidePanel = () => {
                                 </div>
                             ) : (
                                 templates.map((t, index) => (
-                                    <motion.button
+                                    <motion.div
                                         key={t.id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.05, duration: 0.3 }}
                                         whileHover={{ scale: 1.05, zIndex: 10 }}
-                                        className={`group relative aspect-[2/3] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all border ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-zinc-200'}`}
+                                        className={`group relative aspect-[2/3] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all border cursor-pointer ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-zinc-200'}`}
                                         onClick={() => handleTemplateClick(t)}
                                     >
                                         {/* Thumbnail */}
@@ -450,7 +450,7 @@ const SidePanel = () => {
                                             <p className="text-xs font-semibold text-white truncate text-left">{t.name}</p>
                                             {t.category && <p className="text-[10px] text-zinc-300 truncate text-left">{t.category}</p>}
                                         </div>
-                                    </motion.button>
+                                    </motion.div>
                                 ))
                             )}
                         </div>

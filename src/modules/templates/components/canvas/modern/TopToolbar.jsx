@@ -85,8 +85,9 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
     const setZoom = useEditorStore(state => state.setZoom);
     const undo = useEditorStore(state => state.undo);
     const redo = useEditorStore(state => state.redo);
-    const canUndo = useEditorStore(state => state.canUndo);
-    const canRedo = useEditorStore(state => state.canRedo);
+    const history = useEditorStore(state => state.history);
+    const canUndo = history.past.length > 0;
+    const canRedo = history.future.length > 0;
     const hasUnsavedChanges = useEditorStore(state => state.hasUnsavedChanges);
     const isSaving = useEditorStore(state => state.isSaving);
     const showGrid = useEditorStore(state => state.showGrid);
@@ -237,7 +238,7 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
                     <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" onChange={handleFontUpload} />
 
                     {/* Font Select */}
-                    <Select value={selectedElement.fontFamily} onValueChange={(val) => updateProp('fontFamily', val)}>
+                    <Select value={selectedElement.fontFamily || ''} onValueChange={(val) => updateProp('fontFamily', val)}>
                         <SelectTrigger className={`w-36 h-8 text-xs ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`} aria-label="Select font">
                             <SelectValue placeholder="Font">
                                 <span style={{ fontFamily: selectedElement.fontFamily }}>{selectedElement.fontFamily || 'Font'}</span>
@@ -621,6 +622,8 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
                         if (hasUnsavedChanges) {
                             if (!window.confirm('You have unsaved changes. Discard and create new template?')) return;
                         }
+                        // Clear last edited slug to prevent reload of old template
+                        localStorage.removeItem('last_edited_template_slug');
                         const { resetTemplate } = useEditorStore.getState();
                         resetTemplate();
                         navigate('/templates/new');
@@ -663,7 +666,7 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
                         variant="ghost"
                         size="icon"
                         onClick={undo}
-                        disabled={!canUndo()}
+                        disabled={!canUndo}
                         className={`h-8 w-8 rounded-full border disabled:opacity-30 ${isDark ? 'border-zinc-700 text-primary hover:text-white' : 'border-zinc-300 text-primary hover:text-primary/80'}`}
                         title="Undo (Ctrl+Z)"
                         aria-label="Undo"
@@ -674,7 +677,7 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
                         variant="ghost"
                         size="icon"
                         onClick={redo}
-                        disabled={!canRedo()}
+                        disabled={!canRedo}
                         className={`h-8 w-8 rounded-full border disabled:opacity-30 ${isDark ? 'border-zinc-700 text-primary hover:text-white' : 'border-zinc-300 text-primary hover:text-primary/80'}`}
                         title="Redo (Ctrl+Y)"
                         aria-label="Redo"
