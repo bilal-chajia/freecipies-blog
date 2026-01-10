@@ -1,5 +1,14 @@
 // @ts-nocheck
+// NOTE: Types are ready in ./store.types.ts - @ts-nocheck can be removed when all components are typed
 import { create } from 'zustand';
+import type { TemplateElement } from '../types';
+import type {
+    EditorStore,
+    TemplateState,
+    HistoryState,
+    CustomFont,
+    ActivePanel
+} from './store.types';
 
 // Canvas constants
 export const CANVAS_WIDTH = 1000;
@@ -7,51 +16,63 @@ export const CANVAS_HEIGHT = 1500;
 export const GRID_SIZE = 20;
 export const SNAP_THRESHOLD = 8;
 
+// Default values
+const defaultTemplate: TemplateState = {
+    id: null,
+    slug: null,
+    name: '',
+    background_color: '#ffffff',
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+    canvas_width: CANVAS_WIDTH,
+    canvas_height: CANVAS_HEIGHT,
+};
+
+const defaultHistory: HistoryState = {
+    past: [],
+    future: [],
+};
+
+const loadCustomFonts = (): CustomFont[] => {
+    if (typeof localStorage !== 'undefined') {
+        try {
+            return JSON.parse(localStorage.getItem('admin_custom_fonts') || '[]');
+        } catch (e) {
+            return [];
+        }
+    }
+    return [];
+};
+
 /**
  * useEditorStore - Zustand store for template editor state
  * Manages: template, elements, selection, history (undo/redo), custom fonts, UI state
  */
 const useEditorStore = create((set, get) => ({
     // === TEMPLATE STATE ===
-    template: {
-        name: '',
-        background_color: '#ffffff',
-        width: CANVAS_WIDTH,
-        height: CANVAS_HEIGHT,
-    },
-    elements: [],
+    template: { ...defaultTemplate },
+    elements: [] as TemplateElement[],
     canvasBaseWidth: CANVAS_WIDTH,
     canvasBaseHeight: CANVAS_HEIGHT,
 
     // === SELECTION STATE ===
-    selectedIds: new Set(),
+    selectedIds: new Set<string>(),
 
     // === HISTORY STATE (Undo/Redo) ===
-    history: {
-        past: [],
-        future: [],
-    },
+    history: { ...defaultHistory },
 
     // === UI STATE ===
     zoom: 100,
     showGrid: false,
-    activeTab: null,
-    activePanel: 'default', // 'default' | 'effects'
+    activeTab: null as string | null,
+    activePanel: 'default' as ActivePanel,
     isLoading: false,
     isSaving: false,
     hasUnsavedChanges: false,
 
     // === CUSTOM FONTS STATE ===
-    customFonts: (() => {
-        if (typeof localStorage !== 'undefined') {
-            try {
-                return JSON.parse(localStorage.getItem('admin_custom_fonts') || '[]');
-            } catch (e) {
-                return [];
-            }
-        }
-        return [];
-    })(),
+    customFonts: loadCustomFonts(),
+
 
     // === TEMPLATE ACTIONS ===
     setTemplate: (updates) => {
