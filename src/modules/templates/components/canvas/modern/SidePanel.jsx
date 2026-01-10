@@ -79,6 +79,8 @@ const SidePanel = () => {
     const reorderElements = useEditorStore(state => state.reorderElements);
     const hasUnsavedChanges = useEditorStore(state => state.hasUnsavedChanges);
     const loadTemplateToStore = useEditorStore(state => state.loadTemplateToStore);
+    const zoom = useEditorStore(state => state.zoom);
+    const setZoom = useEditorStore(state => state.setZoom);
 
     // Theme
     const { theme } = useUIStore();
@@ -648,6 +650,7 @@ const SidePanel = () => {
                             </select>
                         </div>
                         <div className="space-y-2">
+                        <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-medium text-muted-foreground">Scale</label>
                                 <span className="text-xs text-zinc-400 font-mono">
@@ -663,33 +666,7 @@ const SidePanel = () => {
                                     value={clampedScaleValue}
                                     onChange={(e) => {
                                         const scale = parseInt(e.target.value, 10) / 10;
-                                        const newWidth = Math.round(baseWidth * scale);
-                                        const newHeight = Math.round(baseHeight * scale);
-
-                                        // Calculate scale relative to CURRENT size (not base)
-                                        const currentW = template.width || 1000;
-                                        const currentH = template.height || 1500;
-                                        // Avoid division by zero
-                                        if (currentW === 0 || currentH === 0) return;
-
-                                        const sX = newWidth / currentW;
-                                        const sY = newHeight / currentH;
-
-                                        // Resize elements
-                                        const newElements = elements.map(el => ({
-                                            ...el,
-                                            x: el.x * sX,
-                                            y: el.y * sY,
-                                            width: el.width * sX,
-                                            height: el.height * sY,
-                                            fontSize: el.fontSize ? el.fontSize * Math.min(sX, sY) : el.fontSize
-                                        }));
-                                        setElements(newElements);
-
-                                        setTemplate({
-                                            width: newWidth,
-                                            height: newHeight,
-                                        });
+                                        setZoom(scale * 100);
                                     }}
                                     className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-primary"
                                     style={{
@@ -697,11 +674,10 @@ const SidePanel = () => {
                                     }}
                                 />
                                 <span className={`w-12 text-center text-xs font-mono px-2 py-1 rounded ${isDark ? 'text-white bg-zinc-800' : 'text-zinc-900 bg-zinc-100'}`}>
-                                    x{(currentWidth / baseWidth).toFixed(1)}
+                                    x{(zoom / 100).toFixed(1)}
                                 </span>
                             </div>
                         </div>
-                    </div>
                 );
             case 'layers':
                 return (
