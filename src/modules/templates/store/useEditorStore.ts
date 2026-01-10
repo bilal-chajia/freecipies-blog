@@ -1,6 +1,7 @@
 // @ts-nocheck
 // NOTE: Types are ready in ./store.types.ts - @ts-nocheck can be removed when all components are typed
 import { create } from 'zustand';
+import { nanoid } from 'nanoid';
 import type { TemplateElement } from '../types';
 import type {
     EditorStore,
@@ -161,7 +162,7 @@ const useEditorStore = create((set, get) => ({
     addElement: (type, defaults = {}) => {
         const { elements } = get();
         const newElement = {
-            id: `${type}-${Date.now()}`,
+            id: `${type}-${nanoid(10)}`,
             type,
             x: 100,
             y: 100,
@@ -227,7 +228,7 @@ const useEditorStore = create((set, get) => ({
 
         elements.forEach(el => {
             if (selectedIds.has(el.id)) {
-                const newId = `${el.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                const newId = `${el.type}-${nanoid(10)}`;
                 newElements.push({
                     ...el,
                     id: newId,

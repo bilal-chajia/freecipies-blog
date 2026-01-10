@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState } from 'react';
+import { nanoid } from 'nanoid';
 
 /**
  * useKeyboardShortcuts - Custom hook for canvas keyboard shortcuts
@@ -39,9 +40,7 @@ const useKeyboardShortcuts = ({
     const [clipboard, setClipboard] = useState([]);
 
     // Generate unique ID for pasted elements
-    const generateId = useCallback(() =>
-        `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, []
-    );
+    const generateId = useCallback(() => `el_${nanoid(10)}`, []);
 
     // Handle element position change (for nudge)
     const handleNudge = useCallback((id, dx, dy) => {
