@@ -116,6 +116,16 @@ const TemplateEditor = () => {
 
     // Preview state (local, not in store as it's modal-only)
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
+    const previewScale = useMemo(() => {
+        const baseWidth = CANVAS_WIDTH;
+        const baseHeight = CANVAS_HEIGHT;
+        const width = template?.width || template?.canvas_width || baseWidth;
+        const height = template?.height || template?.canvas_height || baseHeight;
+        if (!width || !height) return 0.35;
+        const scaleX = baseWidth / width;
+        const scaleY = baseHeight / height;
+        return 0.35 * Math.min(scaleX, scaleY);
+    }, [template?.width, template?.height, template?.canvas_width, template?.canvas_height]);
 
     // Export function ref
     const exportFnRef = useRef(null);
@@ -491,7 +501,7 @@ const TemplateEditor = () => {
                                     template={template}
                                     articleData={MOCK_ARTICLE_DATA}
                                     editable={false}
-                                    scale={0.35}
+                                    scale={previewScale}
                                     zoom={100}
                                     showGrid={false}
                                     onExport={(fn) => { previewExportRef.current = fn; }}
