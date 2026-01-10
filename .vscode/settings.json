@@ -4,6 +4,6 @@
     "Codegeex.CompletionDelay": 2,
     "css.lint.unknownAtRules": "ignore",
     "Codegeex.GenerationPreference": "block",
-    "Codegeex.CommitMessageStyle": "ConventionalCommits",
+    "Codegeex.CommitMessageStyle": "Default",
     "Codegeex.Chat.fontSize": 13
 }

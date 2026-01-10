@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useRef } from 'react';
+import api from '@admin/services/api';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/ui/button';
@@ -119,17 +120,21 @@ const TemplateEditor = () => {
 
     // Load existing template or reset for new
     useEffect(() => {
-        if (isNewTemplate) {
-            // Checks for last edited template in localStorage
+        if (slug === 'new') {
+            // User explicitly wants a new blank template
+            resetTemplate();
+        } else if (!slug) {
+            // No slug provided - try to load last edited template
             const lastSlug = localStorage.getItem('last_edited_template_slug');
             if (lastSlug && lastSlug !== 'new') {
-                // Redirect to last template if it exists
+                // Redirect to last template
                 navigate(`/templates/${lastSlug}`, { replace: true });
-                return;
+            } else {
+                // No last template, reset to blank
+                resetTemplate();
             }
-            // Reset to blank template for new designs
-            resetTemplate();
         } else {
+            // Specific slug provided - load that template
             loadTemplate();
         }
     }, [slug]);
@@ -159,6 +164,13 @@ const TemplateEditor = () => {
     }, [selectedIds, undo, redo, deleteSelected]);
 
     const loadTemplate = async () => {
+        // Skip if template is already loaded in store (e.g., loaded via SidePanel)
+        if (template.slug === slug && template.id) {
+            // Just update localStorage for "last edited"
+            localStorage.setItem('last_edited_template_slug', slug);
+            return;
+        }
+
         try {
             setLoading(true);
             const response = await templatesAPI.getBySlug(slug);
@@ -171,8 +183,8 @@ const TemplateEditor = () => {
         } catch (error) {
             console.error('Failed to load template:', error);
             toast.error('Failed to load template');
-            // Check if 404/not found, maybe clear last_slug?
-            // But let's verify error type first.
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -219,15 +231,26 @@ const TemplateEditor = () => {
 
     // Generate and upload thumbnail
     const uploadThumbnail = async (slugName, oldThumbnailUrl = null) => {
-        if (!exportFnRef.current) return null;
+        console.log('[Thumbnail] Starting upload for:', slugName);
+
+        if (!exportFnRef.current) {
+            console.warn('[Thumbnail] exportFnRef.current is null');
+            return null;
+        }
 
         try {
             // Export canvas as WebP for best compression
+            console.log('[Thumbnail] Exporting canvas...');
             const blob = await exportFnRef.current('webp', 0.7);
-            if (!blob) return null;
+            console.log('[Thumbnail] Blob:', blob);
+            if (!blob) {
+                console.warn('[Thumbnail] Blob is null');
+                return null;
+            }
 
             // Resize thumbnail for smaller file size (max 400px width)
             const resizedBlob = await resizeImage(blob, 400);
+            console.log('[Thumbnail] Resized blob size:', resizedBlob?.size);
 
             const filename = `template-thumb-${slugName}-${Date.now()}.webp`;
             const file = new File([resizedBlob], filename, { type: 'image/webp' });
@@ -241,29 +264,28 @@ const TemplateEditor = () => {
             }
 
             // Upload via dedicated thumbnail API (doesn't save to media table)
-            const response = await fetch('/api/upload-thumbnail', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
-                body: formData
+            console.log('[Thumbnail] Uploading to API...');
+            const response = await api.post('/upload-thumbnail', formData, {
+                headers: { 'Content-Type': undefined }
             });
 
-            const result = await response.json();
+            console.log('[Thumbnail] API response:', response);
+            const result = response.data;
 
-            if (!response.ok || !result.success) {
-                console.warn('Thumbnail upload failed:', result);
+            if (!result.success) {
+                console.warn('[Thumbnail] Upload failed:', result);
                 return null;
             }
 
             const thumbnailUrl = result.data?.url;
+            console.log('[Thumbnail] Success! URL:', thumbnailUrl);
             if (thumbnailUrl) {
                 return thumbnailUrl;
             }
-            console.warn('Thumbnail upload response missing URL:', result);
+            console.warn('[Thumbnail] Response missing URL:', result);
             return null;
         } catch (error) {
-            console.warn('Failed to generate/upload thumbnail:', error);
+            console.error('[Thumbnail] Error:', error);
             return null;
         }
     };

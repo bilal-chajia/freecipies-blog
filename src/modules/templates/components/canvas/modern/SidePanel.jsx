@@ -222,14 +222,31 @@ const SidePanel = () => {
         toast.success('Template loaded');
     };
 
+    const handleApiError = (error, defaultMessage) => {
+        console.error(defaultMessage, error);
+        if (error.response) {
+            if (error.response.status === 401) {
+                toast.error('Session expired. Please log in again.');
+            } else if (error.response.status === 403) {
+                toast.error('Permission denied. You do not have rights to perform this action.');
+            } else {
+                toast.error(`${defaultMessage}: ${error.response.data?.message || error.message}`);
+            }
+        } else {
+            toast.error(`${defaultMessage}: ${error.message}`);
+        }
+    };
+
     const executeDeleteTemplate = async (templateSlug) => {
+        if (!templateSlug) return;
         try {
             await templatesAPI.delete(templateSlug);
             setTemplates(prev => prev.filter(t => t.slug !== templateSlug));
             toast.success('Template deleted');
         } catch (error) {
-            console.error('Delete failed:', error);
-            toast.error('Failed to delete template');
+            handleApiError(error, 'Failed to delete template');
+        } finally {
+            setConfirmState({ isOpen: false, type: null, data: null });
         }
     };
 
@@ -290,34 +307,41 @@ const SidePanel = () => {
             e.stopPropagation();
             try {
                 // Create unique slug
-                const baseSlug = templateToCopy.slug.replace(/-copy-\d+$/, '');
+                const baseSlug = (templateToCopy.slug || 'template').replace(/-copy-\d+$/, '');
                 const newSlug = `${baseSlug}-copy-${Date.now()}`;
 
+                // Ensure we have properly formatted elements_json
+                let elementsJson = templateToCopy.elements_json;
+                // If elements_json is missing or valid json that is an empty array, but we have elements object in memory
+                if ((!elementsJson || elementsJson === '[]') && templateToCopy.elements && templateToCopy.elements.length > 0) {
+                    elementsJson = JSON.stringify(templateToCopy.elements);
+                } else if (!elementsJson) {
+                    elementsJson = '[]';
+                }
+
                 const newTemplateData = {
-                    ...templateToCopy,
-                    name: `${templateToCopy.name} (Copy)`,
                     slug: newSlug,
-                    id: undefined // Let DB assign new ID
+                    name: `${templateToCopy.name} (Copy)`,
+                    description: templateToCopy.description,
+                    category: templateToCopy.category,
+                    width: templateToCopy.width,
+                    height: templateToCopy.height,
+                    background_color: templateToCopy.background_color,
+                    thumbnail_url: templateToCopy.thumbnail_url,
+                    elements_json: elementsJson,
+                    is_active: true
                 };
 
-                // Remove ID and timestamps from payload if API doesn't handle them
-                delete newTemplateData.id;
-                delete newTemplateData.created_at;
-                delete newTemplateData.updated_at;
-
                 const response = await templatesAPI.create(newTemplateData);
-                const success = response.data?.success !== false;
 
-                if (success) {
+                if (response.data && response.data.success !== false) {
                     toast.success('Template duplicated');
-                    // Add to list immediately or reload
                     loadTemplates();
                 } else {
-                    throw new Error('Duplicate failed');
+                    throw new Error(response.data?.message || 'Duplicate failed');
                 }
             } catch (error) {
-                console.error('Duplicate failed:', error);
-                toast.error('Failed to duplicate template');
+                handleApiError(error, 'Failed to duplicate template');
             }
         };
 
