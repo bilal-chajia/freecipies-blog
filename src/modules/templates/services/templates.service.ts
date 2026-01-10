@@ -5,19 +5,20 @@
  */
 
 import { eq } from 'drizzle-orm';
-import type { DrizzleD1Database } from 'drizzle-orm/d1';
+import type { DrizzleDb } from '@shared/database/drizzle';
 import { pinTemplates, type PinTemplate, type NewPinTemplate } from '../schema/templates.schema';
 import type { TemplateElement, UpdateTemplateInput } from '../types';
+
 
 /**
  * Get all templates
  */
 export async function getTemplates(
-  db: DrizzleD1Database,
+  db: DrizzleDb,
   options: { activeOnly?: boolean } = {}
 ): Promise<PinTemplate[]> {
   const { activeOnly = true } = options;
-  
+
   if (activeOnly) {
     return db.select().from(pinTemplates).where(eq(pinTemplates.isActive, true)).all();
   }
@@ -28,7 +29,7 @@ export async function getTemplates(
  * Get template by slug
  */
 export async function getTemplateBySlug(
-  db: DrizzleD1Database,
+  db: DrizzleDb,
   slug: string
 ): Promise<PinTemplate | undefined> {
   return db.select().from(pinTemplates).where(eq(pinTemplates.slug, slug)).get();
@@ -38,7 +39,7 @@ export async function getTemplateBySlug(
  * Get template by ID
  */
 export async function getTemplateById(
-  db: DrizzleD1Database,
+  db: DrizzleDb,
   id: number
 ): Promise<PinTemplate | undefined> {
   return db.select().from(pinTemplates).where(eq(pinTemplates.id, id)).get();
@@ -48,7 +49,7 @@ export async function getTemplateById(
  * Create new template
  */
 export async function createTemplate(
-  db: DrizzleD1Database,
+  db: DrizzleDb,
   data: {
     slug: string;
     name: string;
@@ -84,7 +85,7 @@ export async function createTemplate(
  * Update template by slug
  */
 export async function updateTemplate(
-  db: DrizzleD1Database,
+  db: DrizzleDb,
   slug: string,
   data: UpdateTemplateInput
 ): Promise<PinTemplate | undefined> {
@@ -98,7 +99,7 @@ export async function updateTemplate(
   if (data.thumbnail_url !== undefined) updates.thumbnailUrl = data.thumbnail_url;
   if (data.is_active !== undefined) updates.isActive = data.is_active;
   if (data.slug !== undefined) updates.slug = data.slug;
-  
+
   if (data.elements_json !== undefined) {
     updates.elementsJson = typeof data.elements_json === 'string'
       ? data.elements_json
@@ -120,14 +121,14 @@ export async function updateTemplate(
  * Delete template by slug
  */
 export async function deleteTemplate(
-  db: DrizzleD1Database,
+  db: DrizzleDb,
   slug: string
 ): Promise<boolean> {
   const result = await db.delete(pinTemplates)
     .where(eq(pinTemplates.slug, slug))
     .returning()
     .get();
-  
+
   return result !== undefined;
 }
 
@@ -135,7 +136,7 @@ export async function deleteTemplate(
  * Check if slug exists
  */
 export async function slugExists(
-  db: DrizzleD1Database,
+  db: DrizzleDb,
   slug: string
 ): Promise<boolean> {
   const template = await db.select({ id: pinTemplates.id })

@@ -2,17 +2,19 @@
  * Template Module - API Handlers
  * ==============================
  * Reusable request handlers for template CRUD operations.
- * Works with raw D1 database for compatibility with existing API routes.
+ * Delegates to TemplateService for database operations using Drizzle ORM.
  */
 
 import type { D1Database } from '@cloudflare/workers-types';
+import { createDb } from '@shared/database/drizzle';
 import type { CreateTemplateInput, UpdateTemplateInput } from '../types';
+import * as TemplateService from '../services/templates.service';
 
 // Response helpers
 export function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify({ success: true, data }), {
     status,
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
     },
@@ -27,35 +29,40 @@ export function errorResponse(message: string, status = 400) {
 }
 
 /**
+ * Transform service result to API response format
+ * Includes both elements_json (raw string for frontend) and elements (parsed array)
+ */
+function transformTemplate(template: any) {
+  if (!template) return null;
+  return {
+    id: template.id,
+    slug: template.slug,
+    name: template.name,
+    description: template.description,
+    thumbnail_url: template.thumbnailUrl,
+    width: template.width,
+    height: template.height,
+    category: template.category,
+    elements_json: template.elementsJson,
+    elements: template.elementsJson ? JSON.parse(template.elementsJson) : [],
+    is_active: template.isActive,
+    created_at: template.createdAt,
+    updated_at: template.updatedAt,
+  };
+}
+
+/**
  * Handle GET /api/templates
  */
-export async function handleListTemplates(db: D1Database, activeOnly = true) {
+export async function handleListTemplates(d1: D1Database, activeOnly = true) {
   try {
-    let query = `
-      SELECT 
-        id, slug, name, description, thumbnail_url,
-        width, height, category,
-        elements_json, is_active,
-        created_at, updated_at
-      FROM pin_templates
-      WHERE 1=1
-    `;
+    const db = createDb(d1);
+    const templates = await TemplateService.getTemplates(db, { activeOnly });
 
-    if (activeOnly) {
-      query += ' AND is_active = 1';
-    }
+    // Transform to API response format
+    const response = templates.map(transformTemplate);
 
-    query += ' ORDER BY created_at DESC';
-
-    const result = await db.prepare(query).all();
-
-    // Parse elements_json for each template
-    const templates = (result.results || []).map((t: any) => ({
-      ...t,
-      elements: t.elements_json ? JSON.parse(t.elements_json) : [],
-    }));
-
-    return jsonResponse(templates);
+    return jsonResponse(response);
   } catch (error) {
     console.error('Error fetching templates:', error);
     return errorResponse('Failed to fetch templates', 500);
@@ -65,33 +72,20 @@ export async function handleListTemplates(db: D1Database, activeOnly = true) {
 /**
  * Handle GET /api/templates/:slug
  */
-export async function handleGetTemplate(db: D1Database, slug: string) {
+export async function handleGetTemplate(d1: D1Database, slug: string) {
   try {
     if (!slug) {
       return errorResponse('Slug is required', 400);
     }
 
-    const result = await db.prepare(`
-      SELECT 
-        id, slug, name, description, thumbnail_url,
-        width, height, category,
-        elements_json, is_active,
-        created_at, updated_at
-      FROM pin_templates
-      WHERE slug = ?1
-    `).bind(slug).first();
+    const db = createDb(d1);
+    const template = await TemplateService.getTemplateBySlug(db, slug);
 
-    if (!result) {
+    if (!template) {
       return errorResponse('Template not found', 404);
     }
 
-    // Parse elements_json
-    const template = {
-      ...result,
-      elements: result.elements_json ? JSON.parse(result.elements_json as string) : [],
-    };
-
-    return jsonResponse(template);
+    return jsonResponse(transformTemplate(template));
   } catch (error) {
     console.error('Error fetching template:', error);
     return errorResponse('Failed to fetch template', 500);
@@ -102,65 +96,48 @@ export async function handleGetTemplate(db: D1Database, slug: string) {
  * Handle POST /api/templates
  */
 export async function handleCreateTemplate(
-  db: D1Database, 
+  d1: D1Database,
   body: CreateTemplateInput
 ) {
   try {
-    const {
-      slug,
-      name,
-      description = '',
-      thumbnail_url = null,
-      width = 1000,
-      height = 1500,
-      category = 'general',
-      elements_json = '[]',
-      is_active = true,
-    } = body;
+    const { slug, name } = body;
 
     if (!slug || !name) {
       return errorResponse('Slug and name are required', 400);
     }
 
-    // Ensure elements_json is a string
-    const elementsStr = typeof elements_json === 'string'
-      ? elements_json
-      : JSON.stringify(elements_json);
+    const db = createDb(d1);
 
-    const result = await db.prepare(`
-      INSERT INTO pin_templates (
-        slug, name, description, thumbnail_url,
-        width, height, category,
-        elements_json, is_active
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
-    `).bind(
-      slug,
-      name,
-      description,
-      thumbnail_url,
-      width,
-      height,
-      category,
-      elementsStr,
-      is_active ? 1 : 0
-    ).run();
-
-    if (!result.success) {
-      return errorResponse('Failed to create template', 500);
+    // Check if slug already exists
+    const exists = await TemplateService.slugExists(db, slug);
+    if (exists) {
+      return errorResponse('Template with this slug already exists', 409);
     }
 
-    return jsonResponse({ 
-      id: result.meta?.last_row_id,
+    const template = await TemplateService.createTemplate(db, {
       slug,
-      message: 'Template created successfully' 
+      name,
+      description: body.description,
+      category: body.category,
+      width: body.width,
+      height: body.height,
+      elementsJson: body.elements_json,
+      thumbnailUrl: body.thumbnail_url ?? undefined,
+      isActive: body.is_active,
+    });
+
+    return jsonResponse({
+      id: template.id,
+      slug: template.slug,
+      message: 'Template created successfully'
     }, 201);
   } catch (error: any) {
     console.error('Error creating template:', error);
-    
+
     if (error.message?.includes('UNIQUE constraint')) {
       return errorResponse('Template with this slug already exists', 409);
     }
-    
+
     return errorResponse('Failed to create template', 500);
   }
 }
@@ -169,7 +146,7 @@ export async function handleCreateTemplate(
  * Handle PUT /api/templates/:slug
  */
 export async function handleUpdateTemplate(
-  db: D1Database,
+  d1: D1Database,
   slug: string,
   body: UpdateTemplateInput
 ) {
@@ -178,95 +155,35 @@ export async function handleUpdateTemplate(
       return errorResponse('Slug is required', 400);
     }
 
-    const {
-      name,
-      description,
-      thumbnail_url,
-      width,
-      height,
-      category,
-      elements_json,
-      is_active,
-      slug: newSlug,
-    } = body;
+    const db = createDb(d1);
 
-    // Ensure elements_json is a string if provided
-    const elementsStr = elements_json !== undefined
-      ? (typeof elements_json === 'string' ? elements_json : JSON.stringify(elements_json))
-      : undefined;
-
-    // Build dynamic update
-    const updates: string[] = [];
-    const updateParams: any[] = [];
-    let paramIndex = 1;
-
-    if (name !== undefined) {
-      updates.push(`name = ?${paramIndex++}`);
-      updateParams.push(name);
-    }
-    if (description !== undefined) {
-      updates.push(`description = ?${paramIndex++}`);
-      updateParams.push(description);
-    }
-    if (thumbnail_url !== undefined) {
-      updates.push(`thumbnail_url = ?${paramIndex++}`);
-      updateParams.push(thumbnail_url);
-    }
-    if (width !== undefined) {
-      updates.push(`width = ?${paramIndex++}`);
-      updateParams.push(width);
-    }
-    if (height !== undefined) {
-      updates.push(`height = ?${paramIndex++}`);
-      updateParams.push(height);
-    }
-    if (category !== undefined) {
-      updates.push(`category = ?${paramIndex++}`);
-      updateParams.push(category);
-    }
-    if (elementsStr !== undefined) {
-      updates.push(`elements_json = ?${paramIndex++}`);
-      updateParams.push(elementsStr);
-    }
-    if (is_active !== undefined) {
-      updates.push(`is_active = ?${paramIndex++}`);
-      updateParams.push(is_active ? 1 : 0);
-    }
-    if (newSlug !== undefined && newSlug !== slug) {
-      updates.push(`slug = ?${paramIndex++}`);
-      updateParams.push(newSlug);
-    }
-
-    if (updates.length === 0) {
-      return errorResponse('No updates provided', 400);
-    }
-
-    // Add slug for WHERE clause
-    updateParams.push(slug);
-
-    const query = `
-      UPDATE pin_templates 
-      SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
-      WHERE slug = ?${paramIndex}
-    `;
-
-    const result = await db.prepare(query).bind(...updateParams).run();
-
-    if (result.meta?.changes === 0) {
+    // Check if template exists
+    const existing = await TemplateService.getTemplateBySlug(db, slug);
+    if (!existing) {
       return errorResponse('Template not found', 404);
     }
 
-    return jsonResponse({ 
-      slug: newSlug || slug,
-      message: 'Template updated successfully' 
+    // If changing slug, check new slug doesn't exist
+    if (body.slug && body.slug !== slug) {
+      const exists = await TemplateService.slugExists(db, body.slug);
+      if (exists) {
+        return errorResponse('Template with this slug already exists', 409);
+      }
+    }
+
+    const updated = await TemplateService.updateTemplate(db, slug, body);
+
+    return jsonResponse({
+      slug: updated?.slug || slug,
+      message: 'Template updated successfully'
     });
   } catch (error: any) {
     console.error('Error updating template:', error);
-    
+
     if (error.message?.includes('UNIQUE constraint')) {
       return errorResponse('Template with this slug already exists', 409);
     }
-    
+
     return errorResponse('Failed to update template', 500);
   }
 }
@@ -274,17 +191,16 @@ export async function handleUpdateTemplate(
 /**
  * Handle DELETE /api/templates/:slug
  */
-export async function handleDeleteTemplate(db: D1Database, slug: string) {
+export async function handleDeleteTemplate(d1: D1Database, slug: string) {
   try {
     if (!slug) {
       return errorResponse('Slug is required', 400);
     }
 
-    const result = await db.prepare(`
-      DELETE FROM pin_templates WHERE slug = ?1
-    `).bind(slug).run();
+    const db = createDb(d1);
+    const deleted = await TemplateService.deleteTemplate(db, slug);
 
-    if (result.meta?.changes === 0) {
+    if (!deleted) {
       return errorResponse('Template not found', 404);
     }
 
