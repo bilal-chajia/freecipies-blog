@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { memo } from 'react';
-import { Group, Rect, Image as KonvaImage } from 'react-konva';
+import { Group, Rect, Image as KonvaImage, Text } from 'react-konva';
 import TextElement from './TextElement';
 
 const ElementRenderer = memo(({
@@ -26,11 +26,10 @@ const ElementRenderer = memo(({
     onTextDoubleClick,
     // Config
     allowImageDrag = false,
-    selectedId, // For specialized highlights
+    selectedId,
     canvasWidth,
     canvasHeight
 }) => {
-
     const commonProps = {
         id: element.id,
         draggable: editable && !isLocked,
@@ -43,12 +42,9 @@ const ElementRenderer = memo(({
         onTransformEnd: isLocked ? undefined : (e) => onTransformEnd(element.id, e),
     };
 
-    // Render image slot
     const renderImageSlot = () => {
-        // Use specific image or fallback
         const image = loadedImage;
 
-        // Calculate cover scaling (object-fit: cover)
         let imageScale = 1;
         let baseOffsetX = 0;
         let baseOffsetY = 0;
@@ -62,13 +58,11 @@ const ElementRenderer = memo(({
             const imgRatio = imgWidth / imgHeight;
 
             if (imgRatio > slotRatio) {
-                // Image is wider
                 imageScale = element.height / imgHeight;
                 scaledWidth = imgWidth * imageScale;
                 scaledHeight = element.height;
                 baseOffsetX = (element.width - scaledWidth) / 2;
             } else {
-                // Image is taller
                 imageScale = element.width / imgWidth;
                 scaledWidth = element.width;
                 scaledHeight = imgHeight * imageScale;
@@ -76,7 +70,6 @@ const ElementRenderer = memo(({
             }
         }
 
-        // Apply Zoom scaling
         const zoomScale = articleData?.imageScales?.[element.id] || 1;
         const finalWidth = scaledWidth * zoomScale;
         const finalHeight = scaledHeight * zoomScale;
@@ -85,24 +78,23 @@ const ElementRenderer = memo(({
         const adjustedBaseOffsetX = baseOffsetX - zoomOffsetX;
         const adjustedBaseOffsetY = baseOffsetY - zoomOffsetY;
 
-        // Apply custom offset
         const customOffset = articleData?.imageOffsets?.[element.id] || { x: 0, y: 0 };
         const imageOffsetX = adjustedBaseOffsetX + customOffset.x;
         const imageOffsetY = adjustedBaseOffsetY + customOffset.y;
 
-        // Unified render path
         const groupDraggable = allowImageDrag ? false : commonProps.draggable;
 
-        // Handlers override for Group if allowing image drag
-        const groupHandlers = allowImageDrag ? {} : {
-            onDragStart: commonProps.onDragStart,
-            onDragMove: commonProps.onDragMove,
-            onDragEnd: commonProps.onDragEnd,
-            onTransformStart: commonProps.onTransformStart,
-            onTransformEnd: commonProps.onTransformEnd,
-            onClick: commonProps.onClick,
-            onTap: commonProps.onTap,
-        };
+        const groupHandlers = allowImageDrag
+            ? { onClick: commonProps.onClick, onTap: commonProps.onTap }
+            : {
+                onDragStart: commonProps.onDragStart,
+                onDragMove: commonProps.onDragMove,
+                onDragEnd: commonProps.onDragEnd,
+                onTransformStart: commonProps.onTransformStart,
+                onTransformEnd: commonProps.onTransformEnd,
+                onClick: commonProps.onClick,
+                onTap: commonProps.onTap,
+            };
 
         return (
             <Group
@@ -117,20 +109,27 @@ const ElementRenderer = memo(({
                 {...groupHandlers}
                 clipFunc={(ctx) => {
                     const radius = element.borderRadius || 0;
+                    const w = element.width;
+                    const h = element.height;
+
                     if (radius > 0) {
                         ctx.beginPath();
-                        ctx.moveTo(radius, 0);
-                        ctx.lineTo(element.width - radius, 0);
-                        ctx.quadraticCurveTo(element.width, 0, element.width, radius);
-                        ctx.lineTo(element.width, element.height - radius);
-                        ctx.quadraticCurveTo(element.width, element.height, element.width - radius, element.height);
-                        ctx.lineTo(radius, element.height);
-                        ctx.quadraticCurveTo(0, element.height, 0, element.height - radius);
-                        ctx.lineTo(0, radius);
-                        ctx.quadraticCurveTo(0, 0, radius, 0);
+                        if (typeof ctx.roundRect === 'function') {
+                            ctx.roundRect(0, 0, w, h, radius);
+                        } else {
+                            ctx.moveTo(radius, 0);
+                            ctx.lineTo(w - radius, 0);
+                            ctx.quadraticCurveTo(w, 0, w, radius);
+                            ctx.lineTo(w, h - radius);
+                            ctx.quadraticCurveTo(w, h, w - radius, h);
+                            ctx.lineTo(radius, h);
+                            ctx.quadraticCurveTo(0, h, 0, h - radius);
+                            ctx.lineTo(0, radius);
+                            ctx.quadraticCurveTo(0, 0, radius, 0);
+                        }
                         ctx.closePath();
                     } else {
-                        ctx.rect(0, 0, element.width, element.height);
+                        ctx.rect(0, 0, w, h);
                     }
                 }}
             >
@@ -165,14 +164,13 @@ const ElementRenderer = memo(({
                             if (allowImageDrag) e.cancelBubble = true;
                         }}
                         onDragEnd={(e) => {
-                            if (allowImageDrag) {
-                                e.cancelBubble = true;
-                                if (onImageOffsetChange) {
-                                    const newX = e.target.x() - adjustedBaseOffsetX;
-                                    const newY = e.target.y() - adjustedBaseOffsetY;
-                                    onImageOffsetChange(element.id, { x: newX, y: newY });
-                                }
-                            }
+                            if (!allowImageDrag) return;
+                            e.cancelBubble = true;
+                            if (!onImageOffsetChange) return;
+
+                            const newX = e.target.x() - adjustedBaseOffsetX;
+                            const newY = e.target.y() - adjustedBaseOffsetY;
+                            onImageOffsetChange(element.id, { x: newX, y: newY });
                         }}
                     />
                 ) : (
@@ -186,10 +184,11 @@ const ElementRenderer = memo(({
                             strokeWidth={1}
                         />
                         <Text
-                            text="📷"
+                            text="IMG"
                             width={element.width}
                             height={element.height}
                             fontSize={48}
+                            fill="#8b8ba7"
                             align="center"
                             verticalAlign="middle"
                         />
@@ -207,7 +206,6 @@ const ElementRenderer = memo(({
         );
     };
 
-    // Render Text
     const renderText = () => (
         <TextElement
             element={element}
@@ -275,14 +273,21 @@ const ElementRenderer = memo(({
     );
 
     switch (element.type) {
-        case 'imageSlot': return renderImageSlot();
-        case 'text': return renderText();
-        case 'shape': return renderShape();
-        case 'logo': return renderLogo();
-        case 'overlay': return renderOverlay();
-        default: return null;
+        case 'imageSlot':
+            return renderImageSlot();
+        case 'text':
+            return renderText();
+        case 'shape':
+            return renderShape();
+        case 'logo':
+            return renderLogo();
+        case 'overlay':
+            return renderOverlay();
+        default:
+            return null;
     }
 });
 
 ElementRenderer.displayName = 'ElementRenderer';
 export default ElementRenderer;
+

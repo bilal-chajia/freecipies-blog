@@ -470,6 +470,28 @@ const ElementPanel = ({
                                     />
                                 </div>
 
+                                {/* Auto-Fit */}
+                                <div>
+                                    <Label className="text-xs">Auto-Fit</Label>
+                                    <Select
+                                        value={element.autoFit === true ? 'always' : (element.autoFit === false ? 'off' : 'variables')}
+                                        onValueChange={(v) => {
+                                            if (v === 'always') handleChange('autoFit', true);
+                                            else if (v === 'off') handleChange('autoFit', false);
+                                            else handleChange('autoFit', undefined);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="variables">Only when using variables</SelectItem>
+                                            <SelectItem value="always">Always</SelectItem>
+                                            <SelectItem value="off">Off</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 {/* Text Transform */}
                                 <div>
                                     <Label className="text-xs">Text Transform</Label>
@@ -487,6 +509,66 @@ const ElementPanel = ({
                                             <SelectItem value="capitalize">Capitalize</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+
+                                {/* Vertical Align */}
+                                <div>
+                                    <Label className="text-xs">Vertical Align</Label>
+                                    <Select
+                                        value={element.verticalAlign || 'middle'}
+                                        onValueChange={(v) => handleChange('verticalAlign', v)}
+                                    >
+                                        <SelectTrigger className="h-8">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="top">Top</SelectItem>
+                                            <SelectItem value="middle">Middle</SelectItem>
+                                            <SelectItem value="bottom">Bottom</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Wrap / Ellipsis */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <Label className="text-xs">Wrap</Label>
+                                        <Select
+                                            value={element.wrap || 'word'}
+                                            onValueChange={(v) => handleChange('wrap', v)}
+                                        >
+                                            <SelectTrigger className="h-8">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="word">Word</SelectItem>
+                                                <SelectItem value="char">Character</SelectItem>
+                                                <SelectItem value="none">None</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex items-end gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="ellipsis"
+                                            checked={!!element.ellipsis}
+                                            onChange={(e) => handleChange('ellipsis', e.target.checked)}
+                                            className="rounded"
+                                        />
+                                        <Label htmlFor="ellipsis" className="text-xs cursor-pointer">Ellipsis</Label>
+                                    </div>
+                                </div>
+
+                                {/* Opacity */}
+                                <div>
+                                    <Label className="text-xs">Opacity: {Math.round(((element.opacity ?? 1) as number) * 100)}%</Label>
+                                    <Slider
+                                        value={[((element.opacity ?? 1) as number) * 100]}
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        onValueChange={([v]) => handleChange('opacity', v / 100)}
+                                    />
                                 </div>
 
                                 <ColorInput

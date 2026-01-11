@@ -1,6 +1,6 @@
 // @ts-nocheck
-import React, { useMemo } from 'react';
-import { Text } from 'react-konva';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Group, Rect, Text } from 'react-konva';
 
 const TextElement = ({
     element,
@@ -23,6 +23,15 @@ const TextElement = ({
     const height = element.height || 100;
     const baseFontSize = element.fontSize || 32;
     const lineHeight = element.lineHeight || 1.2;
+    const verticalAlign = element.verticalAlign || 'middle';
+    const wrap = element.wrap || 'word';
+    const ellipsis = element.ellipsis || false;
+
+    const background = element.background || null;
+    const backgroundPadding = background?.padding ?? 0;
+    const backgroundOpacity = background?.opacity ?? 1;
+    const backgroundColor = background?.color || 'rgba(0,0,0,0.5)';
+    const backgroundRadius = background?.borderRadius ?? 0;
     // Handle font weight/style string construction
     const fontStyle = useMemo(() => {
         const italic = element.fontStyle === 'italic' ? 'italic' : '';
@@ -31,6 +40,17 @@ const TextElement = ({
         return [italic, weightStr].filter(Boolean).join(' ') || 'normal';
     }, [element.fontStyle, element.fontWeight]);
 
+    const measureNodeRef = useRef(null);
+    useEffect(() => {
+        return () => {
+            try {
+                measureNodeRef.current?.destroy?.();
+            } catch {
+                // ignore
+            }
+            measureNodeRef.current = null;
+        };
+    }, []);
 
     // 2. Auto-Fit Logic (Memoized to prevent expensive recalculation on every render)
     const fontSize = useMemo(() => {
@@ -41,28 +61,33 @@ const TextElement = ({
             return baseFontSize;
         }
 
+        if (typeof window === 'undefined' || !window.Konva) {
+            return baseFontSize;
+        }
+
         // Binary search for optimal font size
         let minSize = 10;
         let maxSize = baseFontSize;
 
-        // We need a temporary Konva node to measure. 
-        // Note: Creating nodes is strictly synchronous and can be expensive.
-        // Doing this inside useMemo ensures it only runs when content/dimensions change.
+        if (!measureNodeRef.current) {
+            measureNodeRef.current = new window.Konva.Text();
+        }
+        const measureNode = measureNodeRef.current;
+        measureNode.setAttrs({
+            width,
+            fontFamily: element.fontFamily || 'Inter, sans-serif',
+            fontStyle,
+            lineHeight,
+            wrap,
+            text: displayText,
+        });
 
         while (maxSize - minSize > 1) {
             const testSize = Math.floor((minSize + maxSize) / 2);
-            const testText = new window.Konva.Text({
-                text: displayText,
-                width: width,
-                fontSize: testSize,
-                fontFamily: element.fontFamily || 'Inter, sans-serif',
-                fontStyle: fontStyle,
-                lineHeight: lineHeight,
-                wrap: 'word',
-            });
+            measureNode.fontSize(testSize);
 
-            const textHeight = testText.height();
-            testText.destroy(); // Important cleanup
+            // force update of metrics
+            const textHeight = measureNode.height();
 
             if (textHeight <= height) {
                 minSize = testSize;
@@ -70,6 +95,7 @@ const TextElement = ({
                 maxSize = testSize;
             }
         }
+
         return minSize;
     }, [
         displayText,
@@ -80,7 +106,8 @@ const TextElement = ({
         element.autoFit,
         element.fontFamily,
         fontStyle,
-        lineHeight
+        lineHeight,
+        wrap,
     ]);
 
 
@@ -112,7 +139,7 @@ const TextElement = ({
             case 'hollow':
                 props.stroke = element.color || '#000000';
                 props.strokeWidth = (effect.thickness || 50) / 25;
-                props.fillEnabled = false;
+                props.fill = 'transparent'; // Use transparent fill instead of fillEnabled: false for hit detection
                 break;
             case 'outline':
                 props.stroke = effect.color || '#000000';
@@ -147,7 +174,7 @@ const TextElement = ({
                 const offsetVal = (effect.offset || 50) / 10;
                 props.stroke = element.color || '#000000';
                 props.strokeWidth = (effect.thickness || 50) / 25;
-                props.fillEnabled = false;
+                props.fill = 'transparent'; // Use transparent fill for hit detection
                 props.shadowColor = effect.color || '#cccccc';
                 props.shadowBlur = 0;
                 props.shadowOffsetX = offsetVal;
@@ -159,7 +186,9 @@ const TextElement = ({
         return props;
     }, [element.effect, element.color]);
 
-    // 4. Transform Handler
+    // 4. Transform Handler (Canva-like)
+    // - Side resize: reflow (width) without changing font size
+    // - Corner resize: scale font size (using scaleY) + resize box
     const handleTransformEnd = (e) => {
         if (isLocked) return;
 
@@ -171,48 +200,83 @@ const TextElement = ({
         node.scaleX(1);
         node.scaleY(1);
 
-        const currentFS = element.fontSize || 32;
-        const scale = Math.max(scaleX, scaleY);
-        const newFontSize = Math.round(currentFS * scale);
-        const newWidth = Math.round(node.width() * scaleX);
+        // Check if Auto-Fit should solve this
+        // If Auto-Fit is enabled, we ONLY update dimensions (W/H), and let the useMemo resolve fontSize.
+        // If Auto-Fit is disabled, we manually update fontSize based on vertical scale pattern.
+
+        const hasVariables = element.content?.includes('{{');
+        const shouldAutoFit = element.autoFit !== false && (hasVariables || element.autoFit === true);
+
+        const newWidth = Math.max(50, Math.round(width * scaleX));
+        const newHeight = Math.max(20, Math.round(height * scaleY));
+
+        const updates = {
+            x: node.x(),
+            y: node.y(),
+            width: newWidth,
+            height: newHeight, // Important to save height for auto-fit constraints
+            rotation: node.rotation()
+        };
+
+        if (!shouldAutoFit) {
+            // Manual scaling behavior:
+            // - Corner resize (Scale X & Y): Update Font Size
+            // - Side resize (Scale X only): Update Width only (Reflow)
+            // Use scaleY as the driver for font size change
+            const currentFS = element.fontSize || 32;
+            const newFontSize = Math.round(currentFS * scaleY);
+            updates.fontSize = newFontSize;
+        }
 
         if (onElementChange) {
-            onElementChange(element.id, {
-                x: node.x(),
-                y: node.y(),
-                width: newWidth,
-                fontSize: newFontSize,
-                rotation: node.rotation()
-            });
+            onElementChange(element.id, updates);
         }
     };
 
     return (
-        <Text
+        <Group
             key={element.id}
             {...commonProps}
             x={element.x}
             y={element.y}
-            text={displayText}
-            width={width}
-            height={height}
-            fontSize={fontSize}
-            fontFamily={element.fontFamily || 'Inter, sans-serif'}
-            fontStyle={fontStyle}
-            fill={effectProps.fillEnabled === false ? 'transparent' : (element.color || '#ffffff')}
-            align={element.textAlign || 'center'}
-            verticalAlign="middle"
-            letterSpacing={element.letterSpacing || 0}
-            lineHeight={lineHeight}
-            textDecoration={element.textDecoration || ''}
-            {...effectProps}
-            wrap="word"
-            ellipsis={false}
             rotation={element.rotation || 0}
-            onDblClick={isLocked ? undefined : (e) => onTextDoubleClick?.(element, e)}
-            onDblTap={isLocked ? undefined : (e) => onTextDoubleClick?.(element, e)}
+            opacity={element.opacity ?? 1}
             onTransformEnd={handleTransformEnd}
-        />
+        >
+            {background && (
+                <Rect
+                    x={-backgroundPadding}
+                    y={-backgroundPadding}
+                    width={width + backgroundPadding * 2}
+                    height={height + backgroundPadding * 2}
+                    fill={backgroundColor}
+                    opacity={backgroundOpacity}
+                    cornerRadius={backgroundRadius}
+                    listening={false}
+                />
+            )}
+            <Text
+                x={0}
+                y={0}
+                text={displayText}
+                width={width}
+                height={height}
+                fontSize={fontSize}
+                fontFamily={element.fontFamily || 'Inter, sans-serif'}
+                fontStyle={fontStyle}
+                fill={element.color || '#ffffff'} // Default fill, overridden by effectProps if transparent
+                align={element.textAlign || 'center'}
+                verticalAlign={verticalAlign}
+                letterSpacing={element.letterSpacing || 0}
+                lineHeight={lineHeight}
+                textDecoration={element.textDecoration || ''}
+                {...effectProps}
+                wrap={wrap}
+                ellipsis={ellipsis}
+                onDblClick={isLocked ? undefined : (e) => onTextDoubleClick?.(element, e)}
+                onDblTap={isLocked ? undefined : (e) => onTextDoubleClick?.(element, e)}
+            />
+        </Group>
     );
 };
 

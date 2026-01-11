@@ -23,6 +23,11 @@ const DEFAULT_CANVAS_HEIGHT = 1500;
  * Features: Transformer controls, zoom, grid, smart guides, premium UI
  * Supports custom canvas dimensions via template.width/height
  */
+/**
+ * PinCanvas Component
+ * A canvas component for creating and editing pin-style graphics with various elements.
+ * Features include element manipulation, text editing, image handling, and export functionality.
+ */
 const PinCanvas = ({
     template = null,
     articleData = null,
@@ -40,6 +45,7 @@ const PinCanvas = ({
     canvasWidthOverride = null,
     canvasHeightOverride = null,
 }) => {
+    // Stage and transformer references for Konva.js canvas manipulation
     const stageRef = useRef(null);
     const transformerRef = useRef(null);
     const containerRef = useRef(null);
@@ -49,7 +55,7 @@ const PinCanvas = ({
     const canvasWidth = canvasWidthOverride || template?.width || template?.canvas_width || DEFAULT_CANVAS_WIDTH;
     const canvasHeight = canvasHeightOverride || template?.height || template?.canvas_height || DEFAULT_CANVAS_HEIGHT;
 
-    // Use store for elements (not local state)
+    // Use store for elements (not local state) - enables better state management
     const elements = useEditorStore(state => state.elements);
     const setElements = useEditorStore(state => state.setElements);
 
@@ -58,6 +64,7 @@ const PinCanvas = ({
     const { loadedImages, setImage: setLoadedImage } = useImageLoader({ elements, articleData });
 
     // === CUSTOM FONT LOADER ===
+    // Handles custom font loading for text elements
     useCustomFontLoader();
 
     // Container dimensions for responsive Stage
@@ -104,7 +111,7 @@ const PinCanvas = ({
     // Calculate actual scale based on zoom
     const actualScale = scale * (zoom / 100);
 
-    // Track container size with ResizeObserver
+    // Track container size with ResizeObserver for responsive design
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -422,7 +429,7 @@ const PinCanvas = ({
     };
 
     // Replace variable placeholders with article data
-    const replaceVariables = (text) => {
+    const replaceVariables = useCallback((text) => {
         if (!text || !articleData) return text;
         return text
             .replace(/\{\{title\}\}/g, articleData.label || articleData.title || '')
@@ -430,7 +437,7 @@ const PinCanvas = ({
             .replace(/\{\{author\}\}/g, articleData.authorName || '')
             .replace(/\{\{prepTime\}\}/g, articleData.prepTime || '')
             .replace(/\{\{cookTime\}\}/g, articleData.cookTime || '');
-    };
+    }, [articleData]);
 
     // Export canvas to image blob
     const exportToImage = useCallback(async (format = 'png', quality = 1) => {
@@ -684,17 +691,32 @@ const PinCanvas = ({
 
                 {/* Separate unclipped layer for Transformer - visible outside canvas */}
                 <Layer x={canvasOffsetX} y={canvasOffsetY}>
-                    <TransformerLayer
-                        transformerRef={transformerRef}
-                        onTransformStart={handleTransformStart}
-                        onTransform={handleTransformMove}
-                        onTransformEnd={() => {
-                            setIsTransforming(false);
-                            transformHistorySavedRef.current = false;
-                            clearGuides();
-                        }}
-                        enabled={editable}
-                    />
+                    {(() => {
+                        // Determine keepRatio based on selection
+                        let keepRatio = false;
+                        if (selectedIds.size === 1) {
+                            const id = [...selectedIds][0];
+                            const el = elements.find(e => e.id === id);
+                            if (el && (el.type === 'imageSlot' || el.type === 'logo')) {
+                                keepRatio = true;
+                            }
+                        }
+
+                        return (
+                            <TransformerLayer
+                                transformerRef={transformerRef}
+                                onTransformStart={handleTransformStart}
+                                onTransform={handleTransformMove}
+                                onTransformEnd={() => {
+                                    setIsTransforming(false);
+                                    transformHistorySavedRef.current = false;
+                                    clearGuides();
+                                }}
+                                enabled={editable}
+                                keepRatio={keepRatio}
+                            />
+                        );
+                    })()}
                 </Layer>
 
                 {/* Smart Guides Layer - ABOVE Transformer for visibility */}
@@ -764,9 +786,10 @@ const PinCanvas = ({
                         }}
                         style={{
                             position: 'absolute',
-                            left: (editingElement.x + canvasOffsetX) * actualScale,
-                            top: (editingElement.y + canvasOffsetY) * actualScale,
-                            width: (editingElement.width || 300) * actualScale,
+                            // Adjust for padding (8px) to align text visually with canvas
+                            left: ((editingElement.x + canvasOffsetX) * actualScale) - 8,
+                            top: ((editingElement.y + canvasOffsetY) * actualScale) - 8,
+                            width: ((editingElement.width || 300) * actualScale) + 16,
                             minHeight: 40,
                             maxHeight: 'none',
                             height: 'auto',
@@ -783,8 +806,8 @@ const PinCanvas = ({
                             outline: 'none',
                             resize: 'vertical', // Allow vertical resize
                             zIndex: 1000,
-                            lineHeight: editingElement.lineHeight || 1.4,
-                            letterSpacing: editingElement.letterSpacing || 0,
+                            lineHeight: editingElement.lineHeight || 1.2,
+                            letterSpacing: (editingElement.letterSpacing || 0) + 'px',
                             overflow: 'visible',
                             boxSizing: 'border-box',
                         }}
