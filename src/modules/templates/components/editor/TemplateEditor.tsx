@@ -1,7 +1,5 @@
 // @ts-nocheck
-// NOTE: Types available - @ts-nocheck can be removed when all errors resolved
-import React, { useEffect, useMemo, useRef } from 'react';
-import api from '@admin/services/api';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/ui/button';
@@ -26,11 +24,30 @@ import EditorLayout from '../canvas/modern/EditorLayout';
 import { templatesAPI, mediaAPI } from '@admin/services/api';
 import { useFontLoader } from '../../utils/fontLoader';
 import { useEditorStore, CANVAS_WIDTH, CANVAS_HEIGHT } from '../../store';
-import type { TemplateElement } from '../../types';
-import { nanoid } from 'nanoid';
-import ThumbnailWorker from '../../workers/thumbnail.worker.js?worker';
 
+// Helper to resize images for thumbnails
+const resizeImage = (blob, maxWidth) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            // Calculate new dimensions maintaining aspect ratio
+            const ratio = Math.min(maxWidth / img.width, 1);
+            const width = Math.round(img.width * ratio);
+            const height = Math.round(img.height * ratio);
 
+            // Draw to canvas at new size
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert to blob with compression (WebP for best size)
+            canvas.toBlob(resolve, 'image/webp', 0.7);
+        };
+        img.src = URL.createObjectURL(blob);
+    });
+};
 
 
 const MOCK_ARTICLE_DATA = {
@@ -52,7 +69,7 @@ const TemplateEditor = () => {
 
     // Load fonts used in editor
     // Extract unique font families from elements + default fonts
-    const defaultFonts = useMemo(() => FONTS.map(f => f.name), []);
+    const defaultFonts = FONTS.map(f => f.name);
     useFontLoader(defaultFonts);
 
     // === ZUSTAND STORE HOOKS ===
@@ -64,11 +81,10 @@ const TemplateEditor = () => {
     const hasUnsavedChanges = useEditorStore(state => state.hasUnsavedChanges);
     const isLoading = useEditorStore(state => state.isLoading);
     const isSaving = useEditorStore(state => state.isSaving);
-    const canvasBaseWidth = useEditorStore(state => state.canvasBaseWidth);
-    const canvasBaseHeight = useEditorStore(state => state.canvasBaseHeight);
 
     // Store actions
     const setTemplate = useEditorStore(state => state.setTemplate);
+    const updateTemplate = setTemplate; // Alias for backward compatibility
     const loadTemplateToStore = useEditorStore(state => state.loadTemplateToStore);
     const setElements = useEditorStore(state => state.setElements);
     const addElement = useEditorStore(state => state.addElement);
@@ -80,6 +96,10 @@ const TemplateEditor = () => {
     const moveElementUp = useEditorStore(state => state.moveElementUp);
     const moveElementDown = useEditorStore(state => state.moveElementDown);
     const reorderElements = useEditorStore(state => state.reorderElements);
+    const undo = useEditorStore(state => state.undo);
+    const redo = useEditorStore(state => state.redo);
+    const canUndo = useEditorStore(state => state.canUndo);
+    const canRedo = useEditorStore(state => state.canRedo);
     const setZoom = useEditorStore(state => state.setZoom);
     const toggleGrid = useEditorStore(state => state.toggleGrid);
     const setLoading = useEditorStore(state => state.setLoading);
@@ -92,43 +112,6 @@ const TemplateEditor = () => {
 
     // Preview state (local, not in store as it's modal-only)
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
-    const [previewScale, setPreviewScale] = React.useState(0.35);
-    const [previewImage, setPreviewImage] = React.useState<string | null>(null);
-    const previewContainerRef = useRef(null);
-
-    // Worker for thumbnail generation
-    const workerRef = useRef<Worker>();
-
-    useEffect(() => {
-        workerRef.current = new ThumbnailWorker();
-        return () => workerRef.current?.terminate();
-    }, []);
-
-    const resizeImage = (blob: Blob, maxWidth: number): Promise<Blob | null> => {
-        return new Promise((resolve) => {
-            if (!workerRef.current) return resolve(null);
-
-            const id = nanoid();
-            const handler = (e: MessageEvent) => {
-                if (e.data.id === id) {
-                    workerRef.current?.removeEventListener('message', handler);
-                    if (e.data.success) resolve(e.data.blob);
-                    else resolve(null); // Fail gracefully
-                }
-            };
-
-            workerRef.current.addEventListener('message', handler);
-            workerRef.current.postMessage({ id, file: blob, maxWidth, type: 'resize' });
-        });
-    };
-
-    // Dynamic padding for preview panel so grey area scales with canvas size
-    const previewPadding = useMemo(() => {
-        const baseW = canvasBaseWidth || CANVAS_WIDTH;
-        const baseH = canvasBaseHeight || CANVAS_HEIGHT;
-        const shortestSide = Math.min(baseW, baseH);
-        return Math.max(12, Math.min(64, Math.round(shortestSide * 0.02)));
-    }, [canvasBaseWidth, canvasBaseHeight]);
 
     // Export function ref
     const exportFnRef = useRef(null);
@@ -136,62 +119,46 @@ const TemplateEditor = () => {
 
     // Load existing template or reset for new
     useEffect(() => {
-        if (slug === 'new') {
-            // User explicitly wants a new blank template
-            resetTemplate();
-        } else if (!slug) {
-            // No slug provided - try to load last edited template
+        if (isNewTemplate) {
+            // Checks for last edited template in localStorage
             const lastSlug = localStorage.getItem('last_edited_template_slug');
             if (lastSlug && lastSlug !== 'new') {
-                // Redirect to last template
+                // Redirect to last template if it exists
                 navigate(`/templates/${lastSlug}`, { replace: true });
-            } else {
-                // No last template, reset to blank
-                resetTemplate();
+                return;
             }
+            // Reset to blank template for new designs
+            resetTemplate();
         } else {
-            // Specific slug provided - load that template
             loadTemplate();
         }
     }, [slug]);
 
+    // Keyboard shortcuts
     useEffect(() => {
-        if (!isPreviewOpen) return;
-        const container = previewContainerRef.current;
-        if (!container) return;
-
-        const updateScale = () => {
-            const baseWidth = canvasBaseWidth || template?.canvas_width || template?.width || CANVAS_WIDTH;
-            const baseHeight = canvasBaseHeight || template?.canvas_height || template?.height || CANVAS_HEIGHT;
-            if (!baseWidth || !baseHeight) return;
-
-            const availableWidth = Math.max(0, container.clientWidth - previewPadding * 2);
-            const availableHeight = Math.max(0, container.clientHeight - previewPadding * 2);
-            if (!availableWidth || !availableHeight) return;
-
-            const fitScale = Math.min(availableWidth / baseWidth, availableHeight / baseHeight) * 0.95;
-            setPreviewScale(fitScale);
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    redo();
+                } else {
+                    undo();
+                }
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+            if (e.key === 'Delete' && selectedIds.size > 0) {
+                deleteSelected();
+                toast.success('Element deleted');
+            }
         };
-
-        updateScale();
-        const raf = requestAnimationFrame(updateScale);
-        const resizeObserver = new ResizeObserver(updateScale);
-        resizeObserver.observe(container);
-
-        return () => {
-            cancelAnimationFrame(raf);
-            resizeObserver.disconnect();
-        };
-    }, [isPreviewOpen, template?.canvas_width, template?.canvas_height, canvasBaseWidth, canvasBaseHeight, previewPadding]);
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedIds, undo, redo, deleteSelected]);
 
     const loadTemplate = async () => {
-        // Skip if template is already loaded in store (e.g., loaded via SidePanel)
-        if (template.slug === slug && template.id) {
-            // Just update localStorage for "last edited"
-            localStorage.setItem('last_edited_template_slug', slug);
-            return;
-        }
-
         try {
             setLoading(true);
             const response = await templatesAPI.getBySlug(slug);
@@ -204,8 +171,8 @@ const TemplateEditor = () => {
         } catch (error) {
             console.error('Failed to load template:', error);
             toast.error('Failed to load template');
-        } finally {
-            setLoading(false);
+            // Check if 404/not found, maybe clear last_slug?
+            // But let's verify error type first.
         }
     };
 
@@ -252,26 +219,15 @@ const TemplateEditor = () => {
 
     // Generate and upload thumbnail
     const uploadThumbnail = async (slugName, oldThumbnailUrl = null) => {
-        console.log('[Thumbnail] Starting upload for:', slugName);
-
-        if (!exportFnRef.current) {
-            console.warn('[Thumbnail] exportFnRef.current is null');
-            return null;
-        }
+        if (!exportFnRef.current) return null;
 
         try {
             // Export canvas as WebP for best compression
-            console.log('[Thumbnail] Exporting canvas...');
             const blob = await exportFnRef.current('webp', 0.7);
-            console.log('[Thumbnail] Blob:', blob);
-            if (!blob) {
-                console.warn('[Thumbnail] Blob is null');
-                return null;
-            }
+            if (!blob) return null;
 
             // Resize thumbnail for smaller file size (max 400px width)
             const resizedBlob = await resizeImage(blob, 400);
-            console.log('[Thumbnail] Resized blob size:', resizedBlob?.size);
 
             const filename = `template-thumb-${slugName}-${Date.now()}.webp`;
             const file = new File([resizedBlob], filename, { type: 'image/webp' });
@@ -285,28 +241,29 @@ const TemplateEditor = () => {
             }
 
             // Upload via dedicated thumbnail API (doesn't save to media table)
-            console.log('[Thumbnail] Uploading to API...');
-            const response = await api.post('/upload-thumbnail', formData, {
-                headers: { 'Content-Type': undefined }
+            const response = await fetch('/api/upload-thumbnail', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                },
+                body: formData
             });
 
-            console.log('[Thumbnail] API response:', response);
-            const result = response.data;
+            const result = await response.json();
 
-            if (!result.success) {
-                console.warn('[Thumbnail] Upload failed:', result);
+            if (!response.ok || !result.success) {
+                console.warn('Thumbnail upload failed:', result);
                 return null;
             }
 
             const thumbnailUrl = result.data?.url;
-            console.log('[Thumbnail] Success! URL:', thumbnailUrl);
             if (thumbnailUrl) {
                 return thumbnailUrl;
             }
-            console.warn('[Thumbnail] Response missing URL:', result);
+            console.warn('Thumbnail upload response missing URL:', result);
             return null;
         } catch (error) {
-            console.error('[Thumbnail] Error:', error);
+            console.warn('Failed to generate/upload thumbnail:', error);
             return null;
         }
     };
@@ -464,27 +421,8 @@ const TemplateEditor = () => {
     };
 
     // Handle preview toggle
-    const handlePreview = async () => {
-        if (!isPreviewOpen) {
-            if (exportFnRef.current) {
-                try {
-                    const blob = await exportFnRef.current('png', 1);
-                    if (blob) {
-                        const url = URL.createObjectURL(blob);
-                        setPreviewImage(url);
-                    }
-                } catch (e) {
-                    console.error("Preview generation failed", e);
-                }
-            }
-            setIsPreviewOpen(true);
-        } else {
-            setIsPreviewOpen(false);
-            if (previewImage) {
-                URL.revokeObjectURL(previewImage);
-                setPreviewImage(null);
-            }
-        }
+    const handlePreview = () => {
+        setIsPreviewOpen(!isPreviewOpen);
     };
 
     // Clean up preview URL when dialog closes (not used anymore but kept for state)
@@ -534,48 +472,29 @@ const TemplateEditor = () => {
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
                             className="fixed inset-0 bg-black/30 z-[60]"
-                            onClick={handlePreview}
+                            onClick={() => setIsPreviewOpen(false)}
                         />
                         <motion.div
                             initial={{ x: '100%', opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed right-0 top-14 bottom-0 w-[640px] bg-background/95 backdrop-blur-lg border-l border-border shadow-2xl z-[70] flex flex-col"
+                            className="fixed right-0 top-14 bottom-0 w-[500px] bg-background/95 backdrop-blur-lg border-l border-border shadow-2xl z-[70] flex flex-col"
                         >
                             <div className="p-4 border-b">
                                 <h2 className="font-semibold">Preview Template</h2>
                                 <p className="text-sm text-muted-foreground">Preview with sample data</p>
                             </div>
-                            <div
-                                ref={previewContainerRef}
-                                className="flex-1 overflow-auto flex items-start justify-center"
-                            >
-                                <div
-                                    className="flex items-start justify-center bg-zinc-900/50 rounded-md shadow-inner"
-                                    style={{ padding: `${previewPadding}px` }}
-                                >
-                                    <div
-                                        className="flex items-start justify-center"
-                                        style={{
-                                            width: `${canvasBaseWidth * previewScale}px`,
-                                            height: `${canvasBaseHeight * previewScale}px`,
-                                        }}
-                                    >
-                                        {previewImage ? (
-                                            <img
-                                                src={previewImage}
-                                                alt="Template Preview"
-                                                className="w-full h-full object-contain shadow-lg"
-                                            />
-                                        ) : (
-                                            <div className="flex items-center justify-center w-full h-full text-muted-foreground">
-                                                <Loader2 className="w-8 h-8 animate-spin mr-2" />
-                                                Generating preview...
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-zinc-900/50">
+                                <PinCanvas
+                                    template={template}
+                                    articleData={MOCK_ARTICLE_DATA}
+                                    editable={false}
+                                    scale={0.35}
+                                    zoom={100}
+                                    showGrid={false}
+                                    onExport={(fn) => { previewExportRef.current = fn; }}
+                                />
                             </div>
                         </motion.div>
                     </>

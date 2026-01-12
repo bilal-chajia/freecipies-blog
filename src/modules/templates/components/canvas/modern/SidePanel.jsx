@@ -24,7 +24,6 @@ import { Separator } from '@/ui/separator';
 import { toast } from 'sonner';
 
 import useEditorStore from '../../../store/useEditorStore';
-import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../../store/useUIStore';
 import DraggableLayersList from '../DraggableLayersList';
 import { mediaAPI, templatesAPI } from '@admin/services/api';
@@ -43,77 +42,29 @@ const TABS = [
     { id: 'settings', icon: Settings, label: 'Settings' },
 ];
 
-const CUSTOM_PRESET_KEY = 'custom';
-
-const CANVAS_PRESETS = [
-    { key: 'pinterest-pin', name: 'Pinterest Pin', width: 1000, height: 1500 },
-    { key: 'pinterest-square', name: 'Pinterest Square', width: 1000, height: 1000 },
-    { key: 'instagram-story', name: 'Instagram Story', width: 1080, height: 1920 },
-    { key: 'instagram-post', name: 'Instagram Post', width: 1080, height: 1080 },
-    { key: 'facebook-post', name: 'Facebook Post', width: 1200, height: 630 },
-    { key: 'twitter-post', name: 'Twitter Post', width: 1200, height: 675 },
-];
-
-const getPresetKeyBySize = (width, height) => {
-    const match = CANVAS_PRESETS.find(p => p.width === width && p.height === height);
-    return match?.key || null;
-};
-
 const SidePanel = () => {
     const navigate = useNavigate();
     // Store
-    // Store - Optimized with useShallow
-    const {
-        activeTab,
-        setActiveTab,
-        activePanel,
-        setActivePanel,
-        updateElement,
-        addElement,
-        template,
-        setTemplate,
-        canvasBaseWidth,
-        canvasBaseHeight,
-        setCanvasBase,
-        elements,
-        setElements,
-        selectedIds,
-        selectElement,
-        reorderElements,
-        hasUnsavedChanges,
-        loadTemplateToStore,
-        zoom,
-        setZoom,
-        toggleLock
-    } = useEditorStore(
-        useShallow(state => ({
-            activeTab: state.activeTab,
-            setActiveTab: state.setActiveTab,
-            activePanel: state.activePanel,
-            setActivePanel: state.setActivePanel,
-            updateElement: state.updateElement,
-            addElement: state.addElement,
-            template: state.template,
-            setTemplate: state.setTemplate,
-            canvasBaseWidth: state.canvasBaseWidth,
-            canvasBaseHeight: state.canvasBaseHeight,
-            setCanvasBase: state.setCanvasBase,
-            elements: state.elements,
-            setElements: state.setElements,
-            selectedIds: state.selectedIds,
-            selectElement: state.selectElement,
-            reorderElements: state.reorderElements,
-            hasUnsavedChanges: state.hasUnsavedChanges,
-            loadTemplateToStore: state.loadTemplateToStore,
-            zoom: state.zoom,
-            setZoom: state.setZoom,
-            toggleLock: state.toggleLock
-        }))
-    );
+    const activeTab = useEditorStore(state => state.activeTab);
+    const setActiveTab = useEditorStore(state => state.setActiveTab);
+    const activePanel = useEditorStore(state => state.activePanel);
+    const setActivePanel = useEditorStore(state => state.setActivePanel);
+    const updateElement = useEditorStore(state => state.updateElement);
+    const addElement = useEditorStore(state => state.addElement);
+    const template = useEditorStore(state => state.template);
+    const setTemplate = useEditorStore(state => state.setTemplate);
+    const elements = useEditorStore(state => state.elements);
+    const setElements = useEditorStore(state => state.setElements);
+    const selectedIds = useEditorStore(state => state.selectedIds);
+    const selectElement = useEditorStore(state => state.selectElement);
+    const reorderElements = useEditorStore(state => state.reorderElements);
+    const hasUnsavedChanges = useEditorStore(state => state.hasUnsavedChanges);
+    const loadTemplateToStore = useEditorStore(state => state.loadTemplateToStore);
 
     // Theme
     const { theme } = useUIStore();
     const isDark = theme === 'dark';
+    const toggleLock = useEditorStore(state => state.toggleLock);
 
     // Local state for contents
     const [templates, setTemplates] = useState([]);
@@ -122,11 +73,6 @@ const SidePanel = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [showBgColorPicker, setShowBgColorPicker] = useState(false);
     const bgColorTriggerRef = useRef(null);
-    const [selectedPresetKey, setSelectedPresetKey] = useState(() => {
-        const width = canvasBaseWidth || template.width || 1000;
-        const height = canvasBaseHeight || template.height || 1500;
-        return getPresetKeyBySize(width, height) || CUSTOM_PRESET_KEY;
-    });
 
     // Derived selected element for layers
     const selectedElement = elements.find(el => selectedIds.has(el.id));
@@ -137,17 +83,6 @@ const SidePanel = () => {
             loadTemplates();
         }
     }, [activeTab]);
-
-    useEffect(() => {
-        const width = canvasBaseWidth || template.width || 1000;
-        const height = canvasBaseHeight || template.height || 1500;
-        const presetKey = getPresetKeyBySize(width, height);
-        if (presetKey) {
-            setSelectedPresetKey(presetKey);
-        } else {
-            setSelectedPresetKey(CUSTOM_PRESET_KEY);
-        }
-    }, [template.id, template.slug, canvasBaseWidth, canvasBaseHeight]);
 
     // Listen for template save events to update the list
     useEffect(() => {
@@ -287,31 +222,14 @@ const SidePanel = () => {
         toast.success('Template loaded');
     };
 
-    const handleApiError = (error, defaultMessage) => {
-        console.error(defaultMessage, error);
-        if (error.response) {
-            if (error.response.status === 401) {
-                toast.error('Session expired. Please log in again.');
-            } else if (error.response.status === 403) {
-                toast.error('Permission denied. You do not have rights to perform this action.');
-            } else {
-                toast.error(`${defaultMessage}: ${error.response.data?.message || error.message}`);
-            }
-        } else {
-            toast.error(`${defaultMessage}: ${error.message}`);
-        }
-    };
-
     const executeDeleteTemplate = async (templateSlug) => {
-        if (!templateSlug) return;
         try {
             await templatesAPI.delete(templateSlug);
             setTemplates(prev => prev.filter(t => t.slug !== templateSlug));
             toast.success('Template deleted');
         } catch (error) {
-            handleApiError(error, 'Failed to delete template');
-        } finally {
-            setConfirmState({ isOpen: false, type: null, data: null });
+            console.error('Delete failed:', error);
+            toast.error('Failed to delete template');
         }
     };
 
@@ -372,41 +290,34 @@ const SidePanel = () => {
             e.stopPropagation();
             try {
                 // Create unique slug
-                const baseSlug = (templateToCopy.slug || 'template').replace(/-copy-\d+$/, '');
+                const baseSlug = templateToCopy.slug.replace(/-copy-\d+$/, '');
                 const newSlug = `${baseSlug}-copy-${Date.now()}`;
 
-                // Ensure we have properly formatted elements_json
-                let elementsJson = templateToCopy.elements_json;
-                // If elements_json is missing or valid json that is an empty array, but we have elements object in memory
-                if ((!elementsJson || elementsJson === '[]') && templateToCopy.elements && templateToCopy.elements.length > 0) {
-                    elementsJson = JSON.stringify(templateToCopy.elements);
-                } else if (!elementsJson) {
-                    elementsJson = '[]';
-                }
-
                 const newTemplateData = {
-                    slug: newSlug,
+                    ...templateToCopy,
                     name: `${templateToCopy.name} (Copy)`,
-                    description: templateToCopy.description,
-                    category: templateToCopy.category,
-                    width: templateToCopy.width,
-                    height: templateToCopy.height,
-                    background_color: templateToCopy.background_color,
-                    thumbnail_url: templateToCopy.thumbnail_url,
-                    elements_json: elementsJson,
-                    is_active: true
+                    slug: newSlug,
+                    id: undefined // Let DB assign new ID
                 };
 
-                const response = await templatesAPI.create(newTemplateData);
+                // Remove ID and timestamps from payload if API doesn't handle them
+                delete newTemplateData.id;
+                delete newTemplateData.created_at;
+                delete newTemplateData.updated_at;
 
-                if (response.data && response.data.success !== false) {
+                const response = await templatesAPI.create(newTemplateData);
+                const success = response.data?.success !== false;
+
+                if (success) {
                     toast.success('Template duplicated');
+                    // Add to list immediately or reload
                     loadTemplates();
                 } else {
-                    throw new Error(response.data?.message || 'Duplicate failed');
+                    throw new Error('Duplicate failed');
                 }
             } catch (error) {
-                handleApiError(error, 'Failed to duplicate template');
+                console.error('Duplicate failed:', error);
+                toast.error('Failed to duplicate template');
             }
         };
 
@@ -431,13 +342,13 @@ const SidePanel = () => {
                                 </div>
                             ) : (
                                 templates.map((t, index) => (
-                                    <motion.div
+                                    <motion.button
                                         key={t.id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.05, duration: 0.3 }}
                                         whileHover={{ scale: 1.05, zIndex: 10 }}
-                                        className={`group relative aspect-[2/3] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all border cursor-pointer ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-zinc-200'}`}
+                                        className={`group relative aspect-[2/3] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all border ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-zinc-200'}`}
                                         onClick={() => handleTemplateClick(t)}
                                     >
                                         {/* Thumbnail */}
@@ -478,7 +389,7 @@ const SidePanel = () => {
                                             <p className="text-xs font-semibold text-white truncate text-left">{t.name}</p>
                                             {t.category && <p className="text-[10px] text-zinc-300 truncate text-left">{t.category}</p>}
                                         </div>
-                                    </motion.div>
+                                    </motion.button>
                                 ))
                             )}
                         </div>
@@ -571,14 +482,17 @@ const SidePanel = () => {
                     </div>
                 );
             case 'settings':
-                const selectedPreset = CANVAS_PRESETS.find(p => p.key === selectedPresetKey) || null;
-                const baseWidth = canvasBaseWidth || selectedPreset?.width || template.width || 1000;
-                const baseHeight = canvasBaseHeight || selectedPreset?.height || template.height || 1500;
-                const currentWidth = template.width || 1000;
-                const currentHeight = template.height || 1500;
-                const scaleValue = Math.round((zoom / 100) * 10);
-                const clampedScaleValue = Math.min(30, Math.max(10, scaleValue));
-                const scalePercent = ((clampedScaleValue - 10) / 20) * 100;
+                const CANVAS_PRESETS = [
+                    { name: 'Pinterest Pin', width: 1000, height: 1500 },
+                    { name: 'Pinterest Square', width: 1000, height: 1000 },
+                    { name: 'Instagram Story', width: 1080, height: 1920 },
+                    { name: 'Instagram Post', width: 1080, height: 1080 },
+                    { name: 'Facebook Post', width: 1200, height: 630 },
+                    { name: 'Twitter Post', width: 1200, height: 675 },
+                ];
+                const currentPreset = CANVAS_PRESETS.find(p =>
+                    p.width === (template.width || 1000) && p.height === (template.height || 1500)
+                );
                 return (
                     <div className="p-4 space-y-4">
                         <div className="space-y-2">
@@ -626,17 +540,9 @@ const SidePanel = () => {
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground">Canvas Size</label>
                             <select
-                                value={selectedPresetKey}
+                                value={`${template.width || 1000}x${template.height || 1500}`}
                                 onChange={(e) => {
-                                    const presetKey = e.target.value;
-                                    setSelectedPresetKey(presetKey);
-
-                                    if (presetKey === CUSTOM_PRESET_KEY) {
-                                        setCanvasBase(currentWidth, currentHeight);
-                                        return;
-                                    }
-
-                                    const preset = CANVAS_PRESETS.find(p => p.key === presetKey);
+                                    const preset = CANVAS_PRESETS.find(p => `${p.width}x${p.height}` === e.target.value);
                                     if (preset) {
                                         // Calculate scale ratio
                                         const oldW = template.width || 1000;
@@ -655,8 +561,6 @@ const SidePanel = () => {
                                         }));
                                         setElements(newElements);
 
-                                        setCanvasBase(preset.width, preset.height);
-
                                         setTemplate({
                                             width: preset.width,
                                             height: preset.height,
@@ -668,20 +572,17 @@ const SidePanel = () => {
                                 className={`w-full h-10 px-3 rounded-md border text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`}
                             >
                                 {CANVAS_PRESETS.map((preset) => (
-                                    <option key={preset.key} value={preset.key}>
-                                        {preset.name} ({preset.width}x{preset.height})
+                                    <option key={`${preset.width}x${preset.height}`} value={`${preset.width}x${preset.height}`}>
+                                        {preset.name} ({preset.width}×{preset.height})
                                     </option>
                                 ))}
-                                <option value={CUSTOM_PRESET_KEY}>
-                                    Custom ({currentWidth}x{currentHeight})
-                                </option>
                             </select>
                         </div>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-medium text-muted-foreground">Scale</label>
                                 <span className="text-xs text-zinc-400 font-mono">
-                                    {currentWidth}x{currentHeight}
+                                    {template.width || 1000}×{template.height || 1500}
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">
@@ -690,18 +591,49 @@ const SidePanel = () => {
                                     min="10"
                                     max="30"
                                     step="1"
-                                    value={clampedScaleValue}
+                                    value={Math.round(((template.width || 1000) / (currentPreset?.width || 1000)) * 10)}
                                     onChange={(e) => {
                                         const scale = parseInt(e.target.value, 10) / 10;
-                                        setZoom(scale * 100);
+                                        const baseWidth = currentPreset?.width || 1000;
+                                        const baseHeight = currentPreset?.height || 1500;
+
+                                        const newWidth = Math.round(baseWidth * scale);
+                                        const newHeight = Math.round(baseHeight * scale);
+
+                                        // Calculate scale relative to CURRENT size (not base)
+                                        const currentW = template.width || 1000;
+                                        const currentH = template.height || 1500;
+                                        // Avoid division by zero
+                                        if (currentW === 0 || currentH === 0) return;
+
+                                        const sX = newWidth / currentW;
+                                        const sY = newHeight / currentH;
+
+                                        // Resize elements
+                                        const newElements = elements.map(el => ({
+                                            ...el,
+                                            x: el.x * sX,
+                                            y: el.y * sY,
+                                            width: el.width * sX,
+                                            height: el.height * sY,
+                                            fontSize: el.fontSize ? el.fontSize * Math.min(sX, sY) : el.fontSize
+                                        }));
+                                        setElements(newElements);
+
+                                        setTemplate({
+                                            width: newWidth,
+                                            height: newHeight,
+                                            canvas_width: newWidth,
+                                            canvas_height: newHeight
+                                        });
                                     }}
                                     className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-primary"
                                     style={{
-                                        background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${scalePercent}%, ${isDark ? '#3f3f46' : '#e4e4e7'} ${scalePercent}%, ${isDark ? '#3f3f46' : '#e4e4e7'} 100%)`
+                                        background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, ${isDark ? '#3f3f46' : '#e4e4e7'} ${(((template.width || 1000) / (currentPreset?.width || 1000)) * 10 - 10) / 0.2}%, ${isDark ? '#3f3f46' : '#e4e4e7'} 100%)`
                                     }}
                                 />
                                 <span className={`w-12 text-center text-xs font-mono px-2 py-1 rounded ${isDark ? 'text-white bg-zinc-800' : 'text-zinc-900 bg-zinc-100'}`}>
-                                    x{(zoom / 100).toFixed(1)}
+                                    ×{(((template.width || 1000) / (currentPreset?.width || 1000))).toFixed(1)}
                                 </span>
                             </div>
                         </div>

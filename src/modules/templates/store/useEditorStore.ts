@@ -1,15 +1,5 @@
 // @ts-nocheck
-// NOTE: Types are ready in ./store.types.ts - @ts-nocheck can be removed when all components are typed
 import { create } from 'zustand';
-import { nanoid } from 'nanoid';
-import type { TemplateElement } from '../types';
-import type {
-    EditorStore,
-    TemplateState,
-    HistoryState,
-    CustomFont,
-    ActivePanel
-} from './store.types';
 
 // Canvas constants
 export const CANVAS_WIDTH = 1000;
@@ -17,63 +7,49 @@ export const CANVAS_HEIGHT = 1500;
 export const GRID_SIZE = 20;
 export const SNAP_THRESHOLD = 8;
 
-// Default values
-const defaultTemplate: TemplateState = {
-    id: null,
-    slug: null,
-    name: '',
-    background_color: '#ffffff',
-    width: CANVAS_WIDTH,
-    height: CANVAS_HEIGHT,
-    canvas_width: CANVAS_WIDTH,
-    canvas_height: CANVAS_HEIGHT,
-};
-
-const defaultHistory: HistoryState = {
-    past: [],
-    future: [],
-};
-
-const loadCustomFonts = (): CustomFont[] => {
-    if (typeof localStorage !== 'undefined') {
-        try {
-            return JSON.parse(localStorage.getItem('admin_custom_fonts') || '[]');
-        } catch (e) {
-            return [];
-        }
-    }
-    return [];
-};
-
 /**
  * useEditorStore - Zustand store for template editor state
  * Manages: template, elements, selection, history (undo/redo), custom fonts, UI state
  */
 const useEditorStore = create((set, get) => ({
     // === TEMPLATE STATE ===
-    template: { ...defaultTemplate },
-    elements: [] as TemplateElement[],
-    canvasBaseWidth: CANVAS_WIDTH,
-    canvasBaseHeight: CANVAS_HEIGHT,
+    template: {
+        name: '',
+        background_color: '#ffffff',
+        width: CANVAS_WIDTH,
+        height: CANVAS_HEIGHT,
+    },
+    elements: [],
 
     // === SELECTION STATE ===
-    selectedIds: new Set<string>(),
+    selectedIds: new Set(),
 
     // === HISTORY STATE (Undo/Redo) ===
-    history: { ...defaultHistory },
+    history: {
+        past: [],
+        future: [],
+    },
 
     // === UI STATE ===
     zoom: 100,
     showGrid: false,
-    activeTab: null as string | null,
-    activePanel: 'default' as ActivePanel,
+    activeTab: null,
+    activePanel: 'default', // 'default' | 'effects'
     isLoading: false,
     isSaving: false,
     hasUnsavedChanges: false,
 
     // === CUSTOM FONTS STATE ===
-    customFonts: loadCustomFonts(),
-
+    customFonts: (() => {
+        if (typeof localStorage !== 'undefined') {
+            try {
+                return JSON.parse(localStorage.getItem('admin_custom_fonts') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    })(),
 
     // === TEMPLATE ACTIONS ===
     setTemplate: (updates) => {
@@ -85,14 +61,8 @@ const useEditorStore = create((set, get) => ({
 
     initTemplate: (template, elements) => {
         set({
-            template: {
-                ...template,
-                canvas_width: template?.canvas_width ?? template?.width ?? CANVAS_WIDTH,
-                canvas_height: template?.canvas_height ?? template?.height ?? CANVAS_HEIGHT,
-            },
+            template: { ...template },
             elements: elements || [],
-            canvasBaseWidth: template?.canvas_width ?? template?.width ?? CANVAS_WIDTH,
-            canvasBaseHeight: template?.canvas_height ?? template?.height ?? CANVAS_HEIGHT,
             selectedIds: new Set(),
             hasUnsavedChanges: false,
             history: { past: [], future: [] },
@@ -114,14 +84,8 @@ const useEditorStore = create((set, get) => ({
         }
 
         set({
-            template: {
-                ...templateData,
-                canvas_width: templateData?.canvas_width ?? templateData?.width ?? CANVAS_WIDTH,
-                canvas_height: templateData?.canvas_height ?? templateData?.height ?? CANVAS_HEIGHT,
-            },
+            template: { ...templateData },
             elements: parsedElements,
-            canvasBaseWidth: templateData?.canvas_width ?? templateData?.width ?? CANVAS_WIDTH,
-            canvasBaseHeight: templateData?.canvas_height ?? templateData?.height ?? CANVAS_HEIGHT,
             selectedIds: new Set(),
             hasUnsavedChanges: false,
             isLoading: false,
@@ -138,21 +102,13 @@ const useEditorStore = create((set, get) => ({
                 background_color: '#ffffff',
                 width: 1000,
                 height: 1500,
-                canvas_width: 1000,
-                canvas_height: 1500,
             },
             elements: [],
-            canvasBaseWidth: 1000,
-            canvasBaseHeight: 1500,
             selectedIds: new Set(),
             hasUnsavedChanges: false,
             history: { past: [], future: [] },
         });
     },
-    setCanvasBase: (width, height) => set({
-        canvasBaseWidth: width,
-        canvasBaseHeight: height,
-    }),
 
     // === ELEMENT ACTIONS ===
     setElements: (elements) => {
@@ -162,7 +118,7 @@ const useEditorStore = create((set, get) => ({
     addElement: (type, defaults = {}) => {
         const { elements } = get();
         const newElement = {
-            id: `${type}-${nanoid(10)}`,
+            id: `${type}-${Date.now()}`,
             type,
             x: 100,
             y: 100,
@@ -228,7 +184,7 @@ const useEditorStore = create((set, get) => ({
 
         elements.forEach(el => {
             if (selectedIds.has(el.id)) {
-                const newId = `${el.type}-${nanoid(10)}`;
+                const newId = `${el.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                 newElements.push({
                     ...el,
                     id: newId,
@@ -353,7 +309,7 @@ const useEditorStore = create((set, get) => ({
         const { elements, history } = get();
         set({
             history: {
-                past: [...history.past, elements].slice(-20), // Keep last 20
+                past: [...history.past, elements].slice(-50), // Keep last 50
                 future: [],
             },
         });

@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useState } from 'react';
-import { nanoid } from 'nanoid';
 
 /**
  * useKeyboardShortcuts - Custom hook for canvas keyboard shortcuts
@@ -19,7 +18,6 @@ import { nanoid } from 'nanoid';
  * @param {Function} options.setElements - Set elements in state
  * @param {Function} options.updateElement - Update single element properties
  * @param {Function} options.onTemplateChange - Callback when template changes
- * @param {Function} options.saveHistory - Save current elements to history stack
  */
 const useKeyboardShortcuts = ({
     editable = true,
@@ -34,13 +32,14 @@ const useKeyboardShortcuts = ({
     setElements,
     updateElement,
     onTemplateChange,
-    saveHistory,
 }) => {
     // Internal clipboard state
     const [clipboard, setClipboard] = useState([]);
 
     // Generate unique ID for pasted elements
-    const generateId = useCallback(() => `el_${nanoid(10)}`, []);
+    const generateId = useCallback(() =>
+        `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, []
+    );
 
     // Handle element position change (for nudge)
     const handleNudge = useCallback((id, dx, dy) => {
@@ -82,7 +81,6 @@ const useKeyboardShortcuts = ({
             // Ctrl+V - Paste
             if (ctrlOrCmd && e.key === 'v' && clipboard.length > 0) {
                 e.preventDefault();
-                saveHistory?.();
                 const pastedElements = clipboard.map(el => ({
                     ...el,
                     id: generateId(),
@@ -155,8 +153,7 @@ const useKeyboardShortcuts = ({
         setElements,
         onTemplateChange,
         generateId,
-        handleNudge,
-        saveHistory
+        handleNudge
     ]);
 
     return {
