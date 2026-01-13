@@ -34,6 +34,7 @@ export interface TemplateRow {
   name: string;
   description: string | null;
   category: string | null;
+  background_color: string | null;
   width: number;
   height: number;
   thumbnail_url: string | null;
@@ -69,6 +70,7 @@ export interface CreateTemplateInput {
   name: string;
   description?: string;
   category?: string;
+  background_color?: string;
   width?: number;
   height?: number;
   elements_json?: string | TemplateElement[];
@@ -81,6 +83,7 @@ export interface UpdateTemplateInput {
   name?: string;
   description?: string;
   category?: string;
+  background_color?: string;
   width?: number;
   height?: number;
   elements_json?: string | TemplateElement[];
@@ -107,9 +110,10 @@ export function hydrateTemplate(row: TemplateRow): TemplateWithElements {
     slug: row.slug,
     name: row.name,
     description: row.description ?? undefined,
-    category: row.category ?? undefined,
-    width: row.width,
-    height: row.height,
+  category: row.category ?? undefined,
+  background_color: row.background_color ?? '#ffffff',
+  width: row.width,
+  height: row.height,
     background_color: '#ffffff',  // Default, may need to extract from elements
     thumbnail_url: row.thumbnail_url,
     is_active: row.is_active === 1,

@@ -34,7 +34,7 @@ export async function handleListTemplates(db: D1Database, activeOnly = true) {
     let query = `
       SELECT 
         id, slug, name, description, thumbnail_url,
-        width, height, category,
+        width, height, category, background_color,
         elements_json, is_active,
         created_at, updated_at
       FROM pin_templates
@@ -74,7 +74,7 @@ export async function handleGetTemplate(db: D1Database, slug: string) {
     const result = await db.prepare(`
       SELECT 
         id, slug, name, description, thumbnail_url,
-        width, height, category,
+        width, height, category, background_color,
         elements_json, is_active,
         created_at, updated_at
       FROM pin_templates
@@ -114,6 +114,7 @@ export async function handleCreateTemplate(
       width = 1000,
       height = 1500,
       category = 'general',
+      background_color = '#ffffff',
       elements_json = '[]',
       is_active = true,
     } = body;
@@ -130,9 +131,9 @@ export async function handleCreateTemplate(
     const result = await db.prepare(`
       INSERT INTO pin_templates (
         slug, name, description, thumbnail_url,
-        width, height, category,
+        width, height, category, background_color,
         elements_json, is_active
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
     `).bind(
       slug,
       name,
@@ -141,6 +142,7 @@ export async function handleCreateTemplate(
       width,
       height,
       category,
+      background_color,
       elementsStr,
       is_active ? 1 : 0
     ).run();
@@ -185,6 +187,7 @@ export async function handleUpdateTemplate(
       width,
       height,
       category,
+      background_color,
       elements_json,
       is_active,
       slug: newSlug,
@@ -227,6 +230,10 @@ export async function handleUpdateTemplate(
     if (elementsStr !== undefined) {
       updates.push(`elements_json = ?${paramIndex++}`);
       updateParams.push(elementsStr);
+    }
+    if (background_color !== undefined) {
+      updates.push(`background_color = ?${paramIndex++}`);
+      updateParams.push(background_color);
     }
     if (is_active !== undefined) {
       updates.push(`is_active = ?${paramIndex++}`);

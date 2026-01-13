@@ -674,8 +674,24 @@ contact_info    → Contact details
 
 **Purpose:** Reusable canvas templates for Pinterest pin generation.
 
-| Column          | Type     | Required  | Default           | Description                              |
-| --------------- | -------- | --------- | ----------------- | ---------------------------------------- |
+| Column             | Type     | Required  | Default           | Description                              |
+| ------------------ | -------- | --------- | ----------------- | ---------------------------------------- |
+| id               | INTEGER  | ƒo. PK     | AUTO              | Auto-increment ID                        |
+| slug             | TEXT     | ƒo. UNIQUE | -                 | URL routing identifier                   |
+| 
+ame             | TEXT     | ƒo.        | -                 | Display name                             |
+| description      | TEXT     | ƒ?O        | NULL              | Template description                     |
+| category         | TEXT     | ƒ?O        | 'general'       | 
+ecipe, listicle, quote, general |
+| ackground_color | TEXT     | ƒ?O        | '#ffffff'       | Canvas background color                  |
+| 	humbnail_url    | TEXT     | ƒ?O        | NULL              | Preview image URL                        |
+| width            | INTEGER  | ƒ?O        | 1000            | Pin width in pixels                      |
+| height           | INTEGER  | ƒ?O        | 1500            | Pin height in pixels                     |
+| elements_json    | TEXT     | ƒo.        | -                 | Canvas design configuration              |
+| is_active        | BOOLEAN  | ƒ?O        | 1               | Available in picker                      |
+
+---
+------------ | -------- | --------- | ----------------- | ---------------------------------------- |
 | `id`            | INTEGER  | ✅ PK     | AUTO              | Auto-increment ID                        |
 | `slug`          | TEXT     | ✅ UNIQUE | -                 | URL routing identifier                   |
 | `name`          | TEXT     | ✅        | -                 | Display name                             |

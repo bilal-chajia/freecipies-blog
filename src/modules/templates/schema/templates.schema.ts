@@ -13,6 +13,7 @@ export const pinTemplates = sqliteTable('pin_templates', {
   name: text('name').notNull(),
   description: text('description'),
   category: text('category').default('general'),
+  backgroundColor: text('background_color').default('#ffffff'),
   thumbnailUrl: text('thumbnail_url'),
   width: integer('width').default(1000),
   height: integer('height').default(1500),

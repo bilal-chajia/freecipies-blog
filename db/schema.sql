@@ -2237,6 +2237,10 @@ CREATE TABLE IF NOT EXISTS pin_templates (
     -- Template category for filtering:
     --   'recipe', 'listicle', 'quote', 'before_after', 'general'
 
+    background_color TEXT DEFAULT '#ffffff',
+    -- Canvas background color (stored separately for quick access).
+    -- Frontend uses this to render placeholders and initial canvas fill.
+
     thumbnail_url TEXT,
     -- Preview/thumbnail image URL for template picker in admin.
     -- Auto-generated when template is saved (WebP, ~400px wide).
