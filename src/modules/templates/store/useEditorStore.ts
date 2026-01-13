@@ -112,6 +112,8 @@ const useEditorStore = create((set, get) => ({
 
     // === ELEMENT ACTIONS ===
     setElements: (elements) => {
+        // User-driven bulk replace (e.g., resize canvas) should be undoable
+        get().saveHistory();
         set({ elements, hasUnsavedChanges: true });
     },
 
@@ -143,6 +145,7 @@ const useEditorStore = create((set, get) => ({
 
     updateElement: (id, updates) => {
         const { elements } = get();
+        get().saveHistory();
         set({
             elements: elements.map(el =>
                 el.id === id ? { ...el, ...updates } : el
@@ -307,9 +310,11 @@ const useEditorStore = create((set, get) => ({
     // === HISTORY ACTIONS ===
     saveHistory: () => {
         const { elements, history } = get();
+        // Clone elements to avoid mutation of history entries
+        const snapshot = elements.map(el => ({ ...el }));
         set({
             history: {
-                past: [...history.past, elements].slice(-50), // Keep last 50
+                past: [...history.past, snapshot].slice(-50), // Keep last 50
                 future: [],
             },
         });
@@ -320,11 +325,13 @@ const useEditorStore = create((set, get) => ({
         if (history.past.length === 0) return;
 
         const previous = history.past[history.past.length - 1];
+        const currentSnapshot = elements.map(el => ({ ...el }));
+
         set({
-            elements: previous,
+            elements: previous.map(el => ({ ...el })), // clone to avoid shared refs
             history: {
                 past: history.past.slice(0, -1),
-                future: [elements, ...history.future],
+                future: [currentSnapshot, ...history.future],
             },
             hasUnsavedChanges: true,
         });
@@ -335,10 +342,12 @@ const useEditorStore = create((set, get) => ({
         if (history.future.length === 0) return;
 
         const next = history.future[0];
+        const currentSnapshot = elements.map(el => ({ ...el }));
+
         set({
-            elements: next,
+            elements: next.map(el => ({ ...el })), // clone to avoid shared refs
             history: {
-                past: [...history.past, elements],
+                past: [...history.past, currentSnapshot],
                 future: history.future.slice(1),
             },
             hasUnsavedChanges: true,
