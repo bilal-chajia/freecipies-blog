@@ -31,7 +31,7 @@ import ColorPicker from '@admin/components/ColorPicker';
 import FontsPanel from './FontsPanel';
 import TextEffectsPanel from './TextEffectsPanel';
 import ConfirmationModal from '@/ui/confirmation-modal';
-import { cleanDuplicateSlug } from '../../utils/slugUtils';
+import { cleanDuplicateSlug } from '../../../utils/slugUtils';
 
 const TABS = [
     { id: 'templates', icon: LayoutTemplate, label: 'Templates' },
