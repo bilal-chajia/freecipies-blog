@@ -24,6 +24,7 @@ import EditorLayout from '../canvas/modern/EditorLayout';
 import { templatesAPI, mediaAPI } from '@admin/services/api';
 import { useFontLoader } from '../../utils/fontLoader';
 import { useEditorStore, CANVAS_WIDTH, CANVAS_HEIGHT } from '../../store';
+import { generateSlug } from '../../utils/slugUtils';
 
 // Helper to resize images for thumbnails
 const resizeImage = (blob, maxWidth) => {
@@ -287,14 +288,8 @@ const TemplateEditor = () => {
             // Generate slug if empty (for new templates)
             let templateSlug = template.slug;
             if (!templateSlug) {
-                // Generate from name with timestamp to ensure uniqueness
-                const baseSlug = template.name
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/^-|-$/g, '') || 'untitled';
-
-                // Always add timestamp for new templates to prevent slug conflicts
-                templateSlug = `${baseSlug}-${Date.now()}`;
+                // Generate from name using centralized utility
+                templateSlug = generateSlug(template.name);
             }
 
             // Attempt to generate thumbnail (pass old URL to delete it)

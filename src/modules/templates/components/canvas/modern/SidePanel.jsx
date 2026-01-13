@@ -31,6 +31,7 @@ import ColorPicker from '@admin/components/ColorPicker';
 import FontsPanel from './FontsPanel';
 import TextEffectsPanel from './TextEffectsPanel';
 import ConfirmationModal from '@/ui/confirmation-modal';
+import { cleanDuplicateSlug } from '../../utils/slugUtils';
 
 const TABS = [
     { id: 'templates', icon: LayoutTemplate, label: 'Templates' },
@@ -289,9 +290,8 @@ const SidePanel = () => {
         const handleDuplicateTemplate = async (e, templateToCopy) => {
             e.stopPropagation();
             try {
-                // Create unique slug
-                const baseSlug = templateToCopy.slug.replace(/-copy-\d+$/, '');
-                const newSlug = `${baseSlug}-copy-${Date.now()}`;
+                // Create unique slug using centralized utility
+                const newSlug = cleanDuplicateSlug(templateToCopy.slug);
 
                 const newTemplateData = {
                     ...templateToCopy,
