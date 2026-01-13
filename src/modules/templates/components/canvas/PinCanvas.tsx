@@ -447,9 +447,16 @@ const PinCanvas = ({
             }
         }
 
-        // Convert to blob
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
+        // Convert data URL to blob (CSP-safe, without fetch)
+        const base64Data = dataUrl.split(',')[1];
+        const mimeType = dataUrl.split(':')[1].split(';')[0];
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: mimeType });
         return blob;
     }, [actualScale, selectedId, clearGuides]);
 

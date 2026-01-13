@@ -30,7 +30,12 @@ import { generateSlug } from '../../utils/slugUtils';
 const resizeImage = (blob, maxWidth) => {
     return new Promise((resolve) => {
         const img = new Image();
+        const objectUrl = URL.createObjectURL(blob);
+
         img.onload = () => {
+            // Clean up object URL to prevent memory leak
+            URL.revokeObjectURL(objectUrl);
+
             // Calculate new dimensions maintaining aspect ratio
             const ratio = Math.min(maxWidth / img.width, 1);
             const width = Math.round(img.width * ratio);
@@ -46,8 +51,16 @@ const resizeImage = (blob, maxWidth) => {
             // Convert to blob with compression (WebP for best size)
             canvas.toBlob(resolve, 'image/webp', 0.7);
         };
-        img.src = URL.createObjectURL(blob);
+
+        img.src = objectUrl;
     });
+};
+
+// Force browsers/CDN to fetch the fresh thumbnail (stable key is reused)
+const addCacheBust = (url) => {
+    if (!url) return url;
+    const stamp = `v=${Date.now()}`;
+    return url.includes('?') ? `${url}&${stamp}` : `${url}?${stamp}`;
 };
 
 
@@ -118,22 +131,26 @@ const TemplateEditor = () => {
     const exportFnRef = useRef(null);
     const previewExportRef = useRef(null);
 
+    // Reset export refs when template changes (route slug OR in-app template switch)
+    useEffect(() => {
+        exportFnRef.current = null;
+        previewExportRef.current = null;
+    }, [slug, template?.slug, template?.id]);
+
     // Load existing template or reset for new
     useEffect(() => {
         if (isNewTemplate) {
-            // Checks for last edited template in localStorage
-            const lastSlug = localStorage.getItem('last_edited_template_slug');
-            if (lastSlug && lastSlug !== 'new') {
-                // Redirect to last template if it exists
-                navigate(`/templates/${lastSlug}`, { replace: true });
-                return;
-            }
-            // Reset to blank template for new designs
             resetTemplate();
-        } else {
-            loadTemplate();
+            return;
         }
-    }, [slug]);
+
+        // If a template switch already populated the store, avoid reloading
+        if (template?.slug === slug) {
+            return;
+        }
+
+        loadTemplate();
+    }, [slug, template?.slug]);
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -169,11 +186,21 @@ const TemplateEditor = () => {
                 // Save last accessed slug
                 localStorage.setItem('last_edited_template_slug', slug);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load template:', error);
-            toast.error('Failed to load template');
-            // Check if 404/not found, maybe clear last_slug?
-            // But let's verify error type first.
+
+            // If template not found (deleted), clear localStorage and redirect to new
+            const is404 = error?.response?.status === 404 ||
+                error?.status === 404 ||
+                error?.message?.includes('not found');
+
+            if (is404) {
+                localStorage.removeItem('last_edited_template_slug');
+                toast.error('Template not found - it may have been deleted');
+                navigate('/templates/new', { replace: true });
+            } else {
+                toast.error('Failed to load template');
+            }
         }
     };
 
@@ -218,30 +245,39 @@ const TemplateEditor = () => {
         moveElementDown(selectedElement.id);
     };
 
-    // Generate and upload thumbnail
-    const uploadThumbnail = async (slugName, oldThumbnailUrl = null) => {
-        if (!exportFnRef.current) return null;
+    // Generate and upload thumbnail with stable URL (overwrites existing)
+    const uploadThumbnail = async (slugName: string) => {
+        console.log('[Thumbnail] Starting upload for:', slugName);
+        console.log('[Thumbnail] exportFnRef.current:', exportFnRef.current);
+
+        if (!exportFnRef.current) {
+            console.warn('[Thumbnail] FAILED: exportFnRef.current is NULL');
+            return null;
+        }
 
         try {
+            console.log('[Thumbnail] Exporting canvas as WebP...');
             // Export canvas as WebP for best compression
             const blob = await exportFnRef.current('webp', 0.7);
-            if (!blob) return null;
+            console.log('[Thumbnail] Export result:', blob);
+            if (!blob) {
+                console.warn('[Thumbnail] FAILED: blob is null');
+                return null;
+            }
 
             // Resize thumbnail for smaller file size (max 400px width)
             const resizedBlob = await resizeImage(blob, 400);
 
-            const filename = `template-thumb-${slugName}-${Date.now()}.webp`;
+            // Use stable filename - same URL will be overwritten on each save
+            const filename = `thumb-${slugName}.webp`;
             const file = new File([resizedBlob], filename, { type: 'image/webp' });
 
             // Build form data
             const formData = new FormData();
             formData.append('file', file);
             formData.append('templateSlug', slugName);
-            if (oldThumbnailUrl) {
-                formData.append('oldThumbnailUrl', oldThumbnailUrl);
-            }
 
-            // Upload via dedicated thumbnail API (doesn't save to media table)
+            // Upload via dedicated thumbnail API (overwrites existing file)
             const response = await fetch('/api/upload-thumbnail', {
                 method: 'POST',
                 headers: {
@@ -257,12 +293,7 @@ const TemplateEditor = () => {
                 return null;
             }
 
-            const thumbnailUrl = result.data?.url;
-            if (thumbnailUrl) {
-                return thumbnailUrl;
-            }
-            console.warn('Thumbnail upload response missing URL:', result);
-            return null;
+            return result.data?.url || null;
         } catch (error) {
             console.warn('Failed to generate/upload thumbnail:', error);
             return null;
@@ -282,49 +313,79 @@ const TemplateEditor = () => {
             }
 
             // Determine if this is a new template based on store data, not URL
-            // A template is "new" if it doesn't have an ID (never saved to DB)
             const isCreating = !template.id;
 
             // Generate slug if empty (for new templates)
             let templateSlug = template.slug;
             if (!templateSlug) {
-                // Generate from name using centralized utility
                 templateSlug = generateSlug(template.name);
             }
 
-            // Attempt to generate thumbnail (pass old URL to delete it)
-            const oldThumbnailUrl = template.thumbnail_url || null;
-            const thumbnailUrl = await uploadThumbnail(templateSlug, oldThumbnailUrl);
-
+            // Step 1: Save template WITHOUT changing thumbnail_url yet
+            // Keep existing URL (or null for new templates)
             const templateData = {
                 ...template,
                 slug: templateSlug,
                 elements_json: JSON.stringify(elements),
-                // Update thumbnail only if generated, otherwise keep existing
-                thumbnail_url: thumbnailUrl || template.thumbnail_url
+                // Keep existing thumbnail URL for now
+                thumbnail_url: template.thumbnail_url || null
             };
 
             let response;
+            let saveSuccess = false;
+
             if (isCreating) {
                 response = await templatesAPI.create(templateData);
-                const success = response.data?.success !== false;
-                if (success) {
+                saveSuccess = response.data?.success !== false;
+                if (saveSuccess) {
                     toast.success('Template created!');
+                    const createdSlug = response.data?.slug || templateSlug;
+                    const createdId = response.data?.id ?? null;
+
+                    // Upload thumbnail BEFORE navigation (exportFnRef will be null after navigate)
+                    const uploadedUrl = await uploadThumbnail(createdSlug);
+                    const finalThumbnailUrl = addCacheBust(uploadedUrl || template.thumbnail_url || null);
+                    if (finalThumbnailUrl) {
+                        await templatesAPI.update(createdSlug, { thumbnail_url: finalThumbnailUrl });
+                    }
+
+                    // Refresh store with saved data so subsequent saves go through update path
+                    loadTemplateToStore(
+                        {
+                            ...templateData,
+                            id: createdId,
+                            slug: createdSlug,
+                            thumbnail_url: finalThumbnailUrl
+                        },
+                        elements
+                    );
                     markSaved();
-                    // Notify sidebar to add the new template
-                    window.dispatchEvent(new CustomEvent('template:saved', { detail: { template: templateData, isNew: true } }));
-                    navigate(`/templates/${templateSlug}`);
+
+                    window.dispatchEvent(new CustomEvent('template:saved', {
+                        detail: {
+                            template: { ...templateData, id: createdId, slug: createdSlug, thumbnail_url: finalThumbnailUrl },
+                            isNew: true
+                        }
+                    }));
+                    navigate(`/templates/${createdSlug}`);
                 }
             } else {
-                // Use template.slug for update (the existing slug in the DB)
                 response = await templatesAPI.update(template.slug, templateData);
-                const success = response.data?.success !== false;
-                if (success) {
+                saveSuccess = response.data?.success !== false;
+                if (saveSuccess) {
                     toast.success('Template saved!');
-                    // Update thumbnail first, then mark as saved (order matters!)
-                    setTemplate({ thumbnail_url: templateData.thumbnail_url });
+
+                    // Upload thumbnail for existing templates
+                    const uploadedUrl = await uploadThumbnail(templateSlug);
+                    if (uploadedUrl) {
+                        const cacheBustedUrl = addCacheBust(uploadedUrl);
+                        await templatesAPI.update(templateSlug, { thumbnail_url: cacheBustedUrl });
+                        setTemplate({ thumbnail_url: cacheBustedUrl });
+                        templateData.thumbnail_url = cacheBustedUrl;
+                    }
+
                     markSaved();
-                    // Notify sidebar to update this template in the list
+
                     window.dispatchEvent(new CustomEvent('template:saved', { detail: { template: templateData, isNew: false } }));
                 }
             }
@@ -445,6 +506,7 @@ const TemplateEditor = () => {
             >
                 <EditorLayout onExport={handleSave} onPreview={handlePreview} onExportImage={handleExportImage} isPreviewOpen={isPreviewOpen}>
                     <PinCanvas
+                        key={template?.slug || template?.id || 'new'}
                         template={template}
                         editable={true}
                         scale={0.5}
@@ -482,6 +544,7 @@ const TemplateEditor = () => {
                             </div>
                             <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-zinc-900/50">
                                 <PinCanvas
+                                    key={`preview-${template?.slug || template?.id || 'new'}`}
                                     template={template}
                                     articleData={MOCK_ARTICLE_DATA}
                                     editable={false}

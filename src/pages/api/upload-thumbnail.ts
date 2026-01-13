@@ -1,5 +1,4 @@
 import type { APIRoute } from 'astro';
-import { uploadImage, deleteImage } from '@modules/media';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
@@ -9,11 +8,11 @@ export const prerender = false;
 /**
  * POST /api/upload-thumbnail
  * Upload a template thumbnail to R2 (does NOT save to media table)
+ * Uses stable filename based on slug - overwrites existing thumbnail automatically
  * 
  * Form Data:
  * - file: The thumbnail image file
  * - templateSlug: The template slug (used for naming)
- * - oldThumbnailUrl: (optional) URL of old thumbnail to delete
  */
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
@@ -37,7 +36,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const formData = await request.formData();
         const file = formData.get('file') as File;
         const templateSlug = formData.get('templateSlug') as string || 'untitled';
-        const oldThumbnailUrl = formData.get('oldThumbnailUrl') as string || '';
 
         if (!file) {
             const { body, status, headers } = formatErrorResponse(
@@ -55,44 +53,36 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return new Response(body, { status, headers });
         }
 
-        // Delete old thumbnail if provided
-        if (oldThumbnailUrl && oldThumbnailUrl.includes('/thumbnails/')) {
-            try {
-                // Extract key from URL: /images/thumbnails/... -> thumbnails/...
-                const urlParts = oldThumbnailUrl.split('/images/');
-                if (urlParts.length > 1) {
-                    const oldKey = urlParts[1];
-                    await deleteImage(bucket, oldKey);
-                    console.log(`Deleted old thumbnail: ${oldKey}`);
-                }
-            } catch (deleteError) {
-                // Log but don't fail - old file might not exist
-                console.warn('Failed to delete old thumbnail:', deleteError);
-            }
-        }
+        // With stable filenames, uploading to the same key overwrites automatically
+        // No need to explicitly delete old thumbnails
 
-        // Upload new thumbnail to R2 (in thumbnails folder)
-        const result = await uploadImage(
-            bucket,
-            {
-                file,
-                filename: file.name,
-                contentType: file.type,
-                metadata: {
-                    type: 'template-thumbnail',
-                    templateSlug,
-                },
-                folder: 'thumbnails',
-                contextSlug: templateSlug
+        // Use STABLE key: thumbnails/thumb-{slug}.webp (no timestamp!)
+        // This allows overwriting on each save
+        const stableKey = `thumbnails/thumb-${templateSlug}.webp`;
+
+        // Convert file to ArrayBuffer
+        const arrayBuffer = await file.arrayBuffer();
+
+        // Upload directly to R2 with stable key (bypasses uploadImage timestamp logic)
+        await bucket.put(stableKey, arrayBuffer, {
+            httpMetadata: {
+                contentType: file.type || 'image/webp',
             },
-            publicUrl
-        );
+            customMetadata: {
+                type: 'template-thumbnail',
+                templateSlug,
+                uploadedAt: new Date().toISOString(),
+            },
+        });
+
+        // Build the public URL
+        const thumbnailUrl = `${publicUrl}/${stableKey}`;
 
         // Return success - DO NOT save to media table
         const { body, status, headers } = formatSuccessResponse({
-            url: result.url,
-            key: result.key,
-            size: result.size,
+            url: thumbnailUrl,
+            key: stableKey,
+            size: arrayBuffer.byteLength,
         });
         return new Response(body, { status, headers });
 

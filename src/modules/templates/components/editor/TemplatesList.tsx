@@ -85,8 +85,8 @@ const TemplatesList = () => {
         // Size filter
         if (sizeFilter === 'all') return matchesSearch;
 
-        const width = t.canvas_width || 1000;
-        const height = t.canvas_height || 1500;
+        const width = t.width || t.canvas_width || 1000;
+        const height = t.height || t.canvas_height || 1500;
         const sizeKey = `${width}x${height}`;
 
         return matchesSearch && sizeKey === sizeFilter;
@@ -350,7 +350,7 @@ const TemplatesList = () => {
                                                 </h3>
                                                 {/* Canvas Size - below title */}
                                                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                                                    {template.canvas_width || 1000}×{template.canvas_height || 1500}
+                                                    {(template.width || template.canvas_width || 1000)}×{(template.height || template.canvas_height || 1500)}
                                                 </p>
                                             </div>
                                             {/* Date */}
