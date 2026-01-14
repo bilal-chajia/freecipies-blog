@@ -20,8 +20,8 @@ import { RadioGroup, RadioGroupItem } from '@/ui/radio-group';
 import { Slider } from '@/ui/slider';
 import { Badge } from '@/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
-import { 
-  X, ArrowLeft, Upload, ZoomIn, 
+import {
+  X, ArrowLeft, Upload, ZoomIn,
   RotateCw, Focus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -40,14 +40,14 @@ export default function ImageUploader({
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  
+
   // Crop state
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [aspect, setAspect] = useState('free');
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  
+
   // Focal Point state
   const [focalPoint, setFocalPoint] = useState({ x: 50, y: 50 });
   const [showFocalPoint, setShowFocalPoint] = useState(false);
@@ -62,7 +62,7 @@ export default function ImageUploader({
     caption: '',
     credit: '',
   });
-  
+
   const { settings } = useImageUploadSettings();
 
   const { uploadWithVariants, progress, error, abortUpload } = useImageUpload({
@@ -87,11 +87,11 @@ export default function ImageUploader({
       setFocalPoint({ x: 50, y: 50 });
       setShowFocalPoint(false);
       setFormat(settings?.defaultFormat || defaultFormat);
-      setMetadata({ 
-        filename: '', 
-        altText: '', 
-        caption: '', 
-        credit: settings?.defaultCredit || '' 
+      setMetadata({
+        filename: '',
+        altText: '',
+        caption: '',
+        credit: settings?.defaultCredit || ''
       });
     }
   }, [open, defaultFormat, settings]);
@@ -144,7 +144,7 @@ export default function ImageUploader({
     setSelectedFile(file);
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
-    
+
     // Auto-fill filename without extension
     const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
     setMetadata(prev => ({ ...prev, filename: nameWithoutExt }));
@@ -187,7 +187,7 @@ export default function ImageUploader({
       if (cropEl) {
         const containerRect = container.getBoundingClientRect();
         const cropRect = cropEl.getBoundingClientRect();
-        
+
         const newVisuals = {
           left: cropRect.left - containerRect.left,
           top: cropRect.top - containerRect.top,
@@ -195,12 +195,12 @@ export default function ImageUploader({
           height: cropRect.height,
         };
 
-        setCropVisuals(prev => 
-          prev.left === newVisuals.left && 
-          prev.top === newVisuals.top && 
-          prev.width === newVisuals.width && 
-          prev.height === newVisuals.height 
-            ? prev 
+        setCropVisuals(prev =>
+          prev.left === newVisuals.left &&
+            prev.top === newVisuals.top &&
+            prev.width === newVisuals.width &&
+            prev.height === newVisuals.height
+            ? prev
             : newVisuals
         );
       }
@@ -223,17 +223,17 @@ export default function ImageUploader({
 
   const handleFocalPointClick = useCallback((e) => {
     if (!showFocalPoint || !containerRef.current) return;
-    
+
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
-    
+
     if (cropVisuals.width > 0) {
       const clickX = e.clientX - rect.left - cropVisuals.left;
       const clickY = e.clientY - rect.top - cropVisuals.top;
-      
+
       const focalX = Math.max(0, Math.min(100, Math.round((clickX / cropVisuals.width) * 100)));
       const focalY = Math.max(0, Math.min(100, Math.round((clickY / cropVisuals.height) * 100)));
-      
+
       setFocalPoint({ x: focalX, y: focalY });
     }
   }, [showFocalPoint, cropVisuals]);
@@ -241,9 +241,9 @@ export default function ImageUploader({
   // Handle upload
   const handleUpload = useCallback(async () => {
     if (!selectedFile) return;
-    
+
     setIsUploading(true);
-    
+
     try {
       const result = await uploadWithVariants({
         file: selectedFile,
@@ -311,7 +311,7 @@ export default function ImageUploader({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
-      <DialogContent 
+      <DialogContent
         className="!max-w-6xl w-full max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl"
         showCloseButton={false}
       >
@@ -328,15 +328,15 @@ export default function ImageUploader({
                 {isUploading ? 'Uploading...' : selectedFile ? 'Edit & Upload' : 'Upload Image'}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                {isUploading 
-                  ? 'Processing...' 
-                  : selectedFile 
-                    ? 'Crop, set focal point, and add details' 
+                {isUploading
+                  ? 'Processing...'
+                  : selectedFile
+                    ? 'Crop, set focal point, and add details'
                     : 'Select or drop an image file'}
               </DialogDescription>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Upload Button in Header */}
             {selectedFile && !isUploading && (
@@ -387,7 +387,7 @@ export default function ImageUploader({
                 className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden"
               >
                 {/* Left: Image Preview Area (60%) */}
-                <div 
+                <div
                   ref={containerRef}
                   className="h-[300px] lg:h-auto lg:flex-1 bg-black relative overflow-hidden"
                 >
@@ -426,7 +426,7 @@ export default function ImageUploader({
                         </div>
                       </motion.div>
                     )}
-                    
+
                     {/* Focal Point Hint */}
                     {showFocalPoint && (
                       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1.5 rounded-full text-xs pointer-events-none backdrop-blur-sm z-30">
@@ -436,7 +436,7 @@ export default function ImageUploader({
 
                     {/* Click Capture Layer for Focal Point - on top of Cropper */}
                     {showFocalPoint && (
-                      <div 
+                      <div
                         className="absolute inset-0 z-10 cursor-crosshair"
                         onClick={handleFocalPointClick}
                         style={{ backgroundColor: 'transparent' }}
@@ -492,8 +492,8 @@ export default function ImageUploader({
                     {/* Credit (Author) */}
                     <div className="space-y-1">
                       <Label htmlFor="credit" className="text-xs font-medium">Credit</Label>
-                      <Select 
-                        value={metadata.credit || 'none'} 
+                      <Select
+                        value={metadata.credit || 'none'}
                         onValueChange={(value) => setMetadata(prev => ({ ...prev, credit: value === 'none' ? '' : value }))}
                       >
                         <SelectTrigger className="h-8 text-sm">

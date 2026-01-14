@@ -45,9 +45,9 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
       color: colors[i % colors.length],
       size: 4 + Math.random() * 4,
     }));
-    
+
     setParticles(prev => [...prev, ...newParticles]);
-    
+
     // Clean up particles after animation
     setTimeout(() => {
       setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
@@ -82,6 +82,10 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
     setIsDragging(false);
     setDragCounter(0);
 
+    console.log('[DropZone] handleDrop called');
+    console.log('[DropZone] dataTransfer.files:', e.dataTransfer.files);
+    console.log('[DropZone] dataTransfer.types:', e.dataTransfer.types);
+
     // Create particles at drop location
     if (dropZoneRef.current) {
       const rect = dropZoneRef.current.getBoundingClientRect();
@@ -90,8 +94,10 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
 
     // Check for dropped URL
     const droppedUrl = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+    console.log('[DropZone] droppedUrl:', droppedUrl);
     if (droppedUrl && (droppedUrl.startsWith('http://') || droppedUrl.startsWith('https://'))) {
       if (/\.(jpg|jpeg|png|gif|webp|avif)(\?|$)/i.test(droppedUrl)) {
+        console.log('[DropZone] Calling onUrlImport with URL');
         onUrlImport(droppedUrl);
         return;
       }
@@ -99,10 +105,15 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
 
     // Check for dropped files
     const files = e.dataTransfer.files;
+    console.log('[DropZone] files.length:', files?.length);
     if (files && files.length > 0) {
       const file = files[0];
+      console.log('[DropZone] file:', file.name, file.type, file.size);
       if (file.type.startsWith('image/')) {
+        console.log('[DropZone] Calling onFileSelect with file');
         onFileSelect(file);
+      } else {
+        console.log('[DropZone] File rejected - not an image type');
       }
     }
   }, [onFileSelect, onUrlImport, createParticles]);
@@ -159,17 +170,17 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
                 width: particle.size,
                 height: particle.size,
               }}
-              initial={{ 
-                x: particle.x, 
+              initial={{
+                x: particle.x,
                 y: particle.y,
                 scale: 1,
-                opacity: 1 
+                opacity: 1
               }}
-              animate={{ 
+              animate={{
                 x: particle.x + Math.cos(particle.angle) * 80,
                 y: particle.y + Math.sin(particle.angle) * 80,
                 scale: 0,
-                opacity: 0 
+                opacity: 0
               }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
@@ -219,11 +230,11 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
             <motion.div
               className={cn(
                 'p-5 rounded-2xl transition-all duration-300',
-                isDragging 
-                  ? 'bg-primary/10 ring-4 ring-primary/20' 
+                isDragging
+                  ? 'bg-primary/10 ring-4 ring-primary/20'
                   : 'bg-muted/50'
               )}
-              animate={isDragging ? { 
+              animate={isDragging ? {
                 scale: [1, 1.1, 1],
                 rotate: [0, 5, -5, 0],
               } : {}}
@@ -244,10 +255,10 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
 
             {/* Text Content */}
             <div className="space-y-2">
-              <motion.p 
+              <motion.p
                 className="text-xl font-semibold"
-                animate={{ 
-                  color: isDragging ? 'hsl(var(--primary))' : 'currentColor' 
+                animate={{
+                  color: isDragging ? 'hsl(var(--primary))' : 'currentColor'
                 }}
               >
                 {isDragging ? 'Release to upload' : 'Drop your image here'}
@@ -258,7 +269,7 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
             </div>
 
             {/* File Type Badges */}
-            <motion.div 
+            <motion.div
               className="flex flex-wrap justify-center gap-2"
               animate={{ y: isDragging ? -5 : 0 }}
             >
@@ -269,8 +280,8 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={cn(
                       'text-xs font-medium transition-all',
                       format.color,
@@ -359,7 +370,7 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
                     )}
                   />
                 </div>
-                <Button 
+                <Button
                   onClick={handleUrlSubmit}
                   disabled={!urlValue.trim()}
                   className="gap-2"
@@ -368,10 +379,10 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
                   Import
                 </Button>
               </div>
-              
+
               <AnimatePresence>
                 {urlError && (
-                  <motion.p 
+                  <motion.p
                     className="text-sm text-destructive"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}

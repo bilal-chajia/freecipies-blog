@@ -7,6 +7,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { GRID_SIZE, SNAP_THRESHOLD } from './utils/canvasConstants';
 import { useKeyboardShortcuts, useSmartGuides, useImageLoader, getProxiedUrl } from './hooks';
 import useCustomFontLoader from './hooks/useCustomFontLoader';
+import { resolveBinding } from '../../utils/dataBinding';
 import FloatingToolbar from './FloatingToolbar';
 
 // Default canvas dimensions (Pinterest 2:3 ratio)
@@ -396,7 +397,7 @@ const PinCanvas = ({
         handleDragMove(e);
     };
 
-    // Replace variable placeholders with article data
+    // Replace variable placeholders with article data (legacy support for {{...}} syntax)
     const replaceVariables = (text) => {
         if (!text || !articleData) return text;
         return text
@@ -405,6 +406,16 @@ const PinCanvas = ({
             .replace(/\{\{author\}\}/g, articleData.authorName || '')
             .replace(/\{\{prepTime\}\}/g, articleData.prepTime || '')
             .replace(/\{\{cookTime\}\}/g, articleData.cookTime || '');
+    };
+
+    // Get text content using binding (new system) or replaceVariables (legacy)
+    const getTextContent = (element) => {
+        // If element has binding, use new dot notation system
+        if (element.binding && articleData) {
+            return resolveBinding(element.binding, articleData, element.content || '');
+        }
+        // Fallback to legacy {{...}} replacement
+        return replaceVariables(element.content);
     };
 
     // Export canvas to image blob
@@ -832,7 +843,7 @@ const PinCanvas = ({
 
     // Render text element
     const renderText = (element, commonProps) => {
-        let displayText = replaceVariables(element.content);
+        let displayText = getTextContent(element);
 
         // Apply text transform
         if (element.textTransform === 'uppercase') {
@@ -1176,6 +1187,21 @@ const PinCanvas = ({
                 }}
             >
 
+                {/* Layer 1: STATIC BACKGROUND - listening={false} prevents re-renders */}
+                <Layer x={canvasOffsetX} y={canvasOffsetY} listening={false}>
+                    <Rect
+                        x={0}
+                        y={0}
+                        width={canvasWidth}
+                        height={canvasHeight}
+                        fill={template?.background_color || (isDark ? '#1a1a2e' : '#ffffff')}
+                        shadowColor="rgba(0,0,0,0.15)"
+                        shadowBlur={20}
+                        shadowOffset={{ x: 0, y: 4 }}
+                    />
+                </Layer>
+
+                {/* Layer 2: CONTENT - Interactive elements + grid */}
                 <Layer x={canvasOffsetX} y={canvasOffsetY}>
                     {/* Clipped Group - elements stay within canvas bounds */}
                     <Group
@@ -1183,18 +1209,6 @@ const PinCanvas = ({
                             ctx.rect(0, 0, canvasWidth, canvasHeight);
                         }}
                     >
-                        {/* Background */}
-                        <Rect
-                            x={0}
-                            y={0}
-                            width={canvasWidth}
-                            height={canvasHeight}
-                            fill={template?.background_color || (isDark ? '#1a1a2e' : '#ffffff')}
-                            shadowColor="rgba(0,0,0,0.15)"
-                            shadowBlur={20}
-                            shadowOffset={{ x: 0, y: 4 }}
-                        />
-
                         {/* Render all elements (clipped to canvas) */}
                         {elements.map(renderElement)}
 

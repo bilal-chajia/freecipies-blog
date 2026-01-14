@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { getValue } from '../../../utils/dataBinding';
 
 /**
  * Get proxied URL for CORS-safe image loading
@@ -14,6 +15,10 @@ export const getProxiedUrl = (url) => {
         if (urlObj.hostname === window.location.hostname || urlObj.hostname === 'localhost') return url;
         return `/api/proxy-image?url=${encodeURIComponent(url)}`;
     } catch {
+        // URL is relative or invalid - proxy it if it looks like a full URL path
+        if (url.includes('://') || url.startsWith('//')) {
+            return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+        }
         return url;
     }
 };
@@ -37,27 +42,39 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Track which images are currently loading or have been attempted
+    const loadingRef = useRef(new Set());
+    const failedRef = useRef(new Set());
+    const loadedRef = useRef(new Set()); // Track successfully loaded
+
     /**
-     * Load a single image with error handling
+     * Load a single image with error handling (no retry on failure)
      */
-    const loadImage = useCallback((id, url, rawUrl) => {
+    const loadImage = useCallback((id, url) => {
+        // Skip if already loading, loaded, or failed
+        if (loadingRef.current.has(id) || failedRef.current.has(id)) {
+            return Promise.resolve(null);
+        }
+
+        loadingRef.current.add(id);
+
         return new Promise((resolve) => {
             const img = new window.Image();
             img.crossOrigin = 'anonymous';
 
             img.onload = () => {
+                loadingRef.current.delete(id);
+                loadedRef.current.add(id);
                 setLoadedImages(prev => ({ ...prev, [id]: img }));
                 resolve(img);
             };
 
             img.onerror = () => {
-                // If proxy fails, try direct (fallback, though unlikely to work for CORS)
-                if (url.includes('/api/proxy-image') && rawUrl) {
-                    img.src = rawUrl;
-                } else {
-                    setError(`Failed to load image: ${id}`);
-                    resolve(null);
-                }
+                loadingRef.current.delete(id);
+                failedRef.current.add(id);
+                console.warn(`[ImageLoader] Failed to load image: ${id} - ${url}`);
+                setError(`Failed to load image: ${id}`);
+                resolve(null);
             };
 
             img.src = url;
@@ -65,9 +82,15 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
     }, []);
 
     // Preload images for image slot elements
-    // NOTE: loadedImages is NOT in deps to avoid infinite loop (effect updates loadedImages via setLoadedImages)
+    // Using a ref to track initialization to prevent multiple runs
+    const hasInitializedRef = useRef(false);
+
     useEffect(() => {
+        // Only run once per component lifecycle
+        if (hasInitializedRef.current) return;
         if (!elements || elements.length === 0) return;
+
+        hasInitializedRef.current = true;
 
         const loadElementImages = async () => {
             setIsLoading(true);
@@ -76,54 +99,46 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
             const imageElements = elements.filter(el => el.type === 'imageSlot');
 
             for (const el of imageElements) {
-                // Check for custom image from articleData first
+                // Skip if already loading, loaded, or failed
+                if (loadedRef.current.has(el.id) || loadingRef.current.has(el.id) || failedRef.current.has(el.id)) {
+                    continue;
+                }
+
+                // Priority: 1) Custom image from articleData, 2) Binding from element, 3) Static imageUrl
                 const customUrl = articleData?.customImages?.[el.id];
-                const rawUrl = customUrl || el.imageUrl;
-                const imageUrl = getProxiedUrl(rawUrl);
 
-                if (imageUrl) {
-                    // Use functional update to check current state without deps
-                    setLoadedImages(prev => {
-                        const currentImg = prev[el.id];
+                // If element has binding, try to resolve it from articleData
+                let boundUrl = null;
+                if (el.binding && articleData) {
+                    boundUrl = getValue(articleData, el.binding);
+                }
 
-                        // Load if not present
-                        if (!currentImg) {
-                            // Trigger load outside of setState
-                            loadImage(el.id, imageUrl, rawUrl);
-                        } else if (customUrl &&
-                            !currentImg.src.includes(encodeURIComponent(customUrl)) &&
-                            currentImg.src !== customUrl) {
-                            // Custom URL changed - reload
-                            loadImage(el.id, imageUrl, rawUrl);
-                        }
+                const rawUrl = customUrl || boundUrl || el.imageUrl;
 
-                        return prev; // Don't modify state here
-                    });
+                if (rawUrl) {
+                    const imageUrl = getProxiedUrl(rawUrl);
+                    loadImage(el.id, imageUrl);
                 }
             }
 
             // Load article main image
-            if (articleData?.image) {
-                setLoadedImages(prev => {
-                    if (!prev['article_main']) {
-                        const rawUrl = articleData.image;
-                        const imageUrl = getProxiedUrl(rawUrl);
-                        loadImage('article_main', imageUrl, rawUrl);
-                    }
-                    return prev;
-                });
+            if (articleData?.image && !loadedRef.current.has('article_main') && !loadingRef.current.has('article_main') && !failedRef.current.has('article_main')) {
+                const rawUrl = articleData.image;
+                const imageUrl = getProxiedUrl(rawUrl);
+                loadImage('article_main', imageUrl);
             }
 
             setIsLoading(false);
         };
 
         loadElementImages();
-    }, [elements, articleData, loadImage]); // Removed loadedImages from deps!
+    }, [elements, articleData, loadImage]); // IMPORTANT: No loadedImages here!
 
     /**
      * Manually set a loaded image (for external sources)
      */
     const setImage = useCallback((id, image) => {
+        failedRef.current.delete(id); // Clear failed state if manually setting
         setLoadedImages(prev => ({ ...prev, [id]: image }));
     }, []);
 
@@ -131,6 +146,8 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
      * Clear a loaded image
      */
     const clearImage = useCallback((id) => {
+        failedRef.current.delete(id);
+        loadingRef.current.delete(id);
         setLoadedImages(prev => {
             const next = { ...prev };
             delete next[id];
@@ -142,8 +159,19 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
      * Clear all loaded images
      */
     const clearAll = useCallback(() => {
+        failedRef.current.clear();
+        loadingRef.current.clear();
         setLoadedImages({});
     }, []);
+
+    /**
+     * Retry loading a failed image
+     */
+    const retryImage = useCallback((id, url) => {
+        failedRef.current.delete(id);
+        loadingRef.current.delete(id);
+        return loadImage(id, getProxiedUrl(url));
+    }, [loadImage]);
 
     return {
         loadedImages,
@@ -152,6 +180,7 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
         setImage,
         clearImage,
         clearAll,
+        retryImage,
         getProxiedUrl,
     };
 };

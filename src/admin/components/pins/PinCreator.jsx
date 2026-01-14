@@ -171,14 +171,26 @@ const PinCreator = ({
     };
 
     // Build article data for canvas with custom images
+    // Include all fields for data binding (dot notation)
     const articleData = article ? {
-        title: pinData.title || article.label || '',
+        // Basic article fields
+        title: pinData.title || article.label || article.title || '',
         label: pinData.title || article.label || '',
         categoryLabel: article.category_label || article.categoryLabel || '',
         authorName: article.author_name || article.authorName || '',
-        prepTime: article.prep_time || '',
-        cookTime: article.cook_time || '',
-        image: article.image_url || article.cover_url || '',
+        prepTime: article.prep_time || article.prepTime || '',
+        cookTime: article.cook_time || article.cookTime || '',
+        image: article.image_url || article.cover_url || article.image || '',
+        thumbnail: article.thumbnail_url || article.thumbnail || '',
+        featuredImage: article.featured_image || article.image_url || '',
+
+        // Recipe JSON for nested binding (recipeJson.prep, recipeJson.servings, etc.)
+        recipeJson: article.recipe_json || article.recipeJson || article.recipe || null,
+
+        // Short text
+        shortDescription: article.short_description || article.meta_description || '',
+        metaDescription: article.meta_description || '',
+
         // Map custom image URLs to slot IDs
         customImages: imageUrls.reduce((acc, item) => {
             if (item.url) {
@@ -186,9 +198,13 @@ const PinCreator = ({
             }
             return acc;
         }, {}),
+
         // Custom image offsets for repositioning
         imageOffsets: imageOffsets,
         imageScales: imageScales,
+
+        // Pass through the entire article for any other bindings
+        ...article,
     } : null;
 
     // Handle image offset change when user drags image within slot
@@ -237,18 +253,20 @@ const PinCreator = ({
 
             let imageUrl = '';
             try {
+                // TODO: Replace with dedicated /api/pins/upload-image endpoint
+                // Pins don't need variants - single image stored in pinterest_pins.image_url
                 const uploadResponse = await fetch('/api/upload-image', {
                     method: 'POST',
                     body: formData,
                 });
                 const uploadData = await uploadResponse.json();
-                
+
                 // Handle new schema with variantsJson
                 if (uploadData.success) {
                     if (uploadData.data?.variantsJson) {
                         try {
-                            const variants = typeof uploadData.data.variantsJson === 'string' 
-                                ? JSON.parse(uploadData.data.variantsJson) 
+                            const variants = typeof uploadData.data.variantsJson === 'string'
+                                ? JSON.parse(uploadData.data.variantsJson)
                                 : uploadData.data.variantsJson;
                             imageUrl = variants.original?.url || variants.lg?.url || '';
                         } catch (e) {

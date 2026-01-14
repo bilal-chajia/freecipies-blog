@@ -253,13 +253,36 @@ const ElementPanel = ({
                     <>
                         <CollapsibleSection title="Text Content" icon={Type}>
                             <div className="space-y-3">
-                                <Input
-                                    value={element.content || ''}
-                                    onChange={(e) => handleChange('content', e.target.value)}
-                                    placeholder="Enter text or {{title}}"
-                                />
-                                <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                                    Variables: <code className="text-primary">{'{{title}}'}</code> <code className="text-primary">{'{{category}}'}</code> <code className="text-primary">{'{{author}}'}</code>
+                                <div>
+                                    <Label className="text-xs">Static Text</Label>
+                                    <Input
+                                        value={element.content || ''}
+                                        onChange={(e) => handleChange('content', e.target.value)}
+                                        placeholder="Enter text..."
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Data Binding (dot notation)</Label>
+                                    <Input
+                                        value={element.binding || ''}
+                                        onChange={(e) => handleChange('binding', e.target.value)}
+                                        placeholder="e.g. title, recipeJson.prep"
+                                    />
+                                    <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded mt-1">
+                                        <p className="mb-1">Common bindings:</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {['title', 'categoryLabel', 'recipeJson.prep', 'recipeJson.servings', 'recipeJson.difficulty'].map(b => (
+                                                <button
+                                                    key={b}
+                                                    type="button"
+                                                    className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded hover:bg-primary/20"
+                                                    onClick={() => handleChange('binding', b)}
+                                                >
+                                                    {b}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </CollapsibleSection>

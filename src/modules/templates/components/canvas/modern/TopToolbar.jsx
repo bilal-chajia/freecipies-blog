@@ -39,7 +39,8 @@ import {
     AlignLeft,
     AlignCenter,
     AlignRight,
-    AlignJustify
+    AlignJustify,
+    Link
 } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
@@ -545,6 +546,58 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
                             +
                         </Button>
                     </div>
+
+                    {/* Bind Data Popover */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={selectedElement.binding ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className={`h-8 text-xs gap-1 ${isDark ? 'text-zinc-300' : 'text-zinc-600'} ${selectedElement.binding ? (isDark ? 'bg-primary/20' : 'bg-primary/10') : ''}`}
+                            >
+                                <Link className="w-3.5 h-3.5" />
+                                {selectedElement.binding || 'Bind'}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="start" className={`w-64 p-3 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200'}`}>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className={`text-xs font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>Data Binding</label>
+                                    <Input
+                                        value={selectedElement.binding || ''}
+                                        onChange={(e) => updateProp('binding', e.target.value)}
+                                        placeholder="e.g. title, recipeJson.prep"
+                                        className={`h-8 text-xs mt-1 ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : ''}`}
+                                    />
+                                </div>
+                                <div>
+                                    <p className={`text-xs mb-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Quick bindings:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {['title', 'categoryLabel', 'recipeJson.prep', 'recipeJson.servings', 'recipeJson.difficulty'].map(b => (
+                                            <button
+                                                key={b}
+                                                type="button"
+                                                className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded hover:bg-primary/20"
+                                                onClick={() => updateProp('binding', b)}
+                                            >
+                                                {b}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                {selectedElement.binding && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
+                                        onClick={() => updateProp('binding', '')}
+                                    >
+                                        Clear Binding
+                                    </Button>
+                                )}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                 </div>
             );
         }
@@ -562,6 +615,59 @@ const TopToolbar = ({ onExport, onPreview, onExportImage, isPreviewOpen }) => {
                         <ImageIcon className="w-4 h-4 mr-2" />
                         Replace Image
                     </Button>
+
+                    {/* Bind Data Popover for Images */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={selectedElement.binding ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className={`h-8 text-xs gap-1 ${isDark ? 'text-zinc-300' : 'text-zinc-600'} ${selectedElement.binding ? (isDark ? 'bg-primary/20' : 'bg-primary/10') : ''}`}
+                            >
+                                <Link className="w-3.5 h-3.5" />
+                                {selectedElement.binding || 'Bind'}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="start" className={`w-64 p-3 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200'}`}>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className={`text-xs font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>Image Binding</label>
+                                    <Input
+                                        value={selectedElement.binding || ''}
+                                        onChange={(e) => updateProp('binding', e.target.value)}
+                                        placeholder="e.g. image, recipeJson.images[0]"
+                                        className={`h-8 text-xs mt-1 ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : ''}`}
+                                    />
+                                </div>
+                                <div>
+                                    <p className={`text-xs mb-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Quick bindings:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {['image', 'thumbnail', 'featuredImage'].map(b => (
+                                            <button
+                                                key={b}
+                                                type="button"
+                                                className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded hover:bg-primary/20"
+                                                onClick={() => updateProp('binding', b)}
+                                            >
+                                                {b}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                {selectedElement.binding && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
+                                        onClick={() => updateProp('binding', '')}
+                                    >
+                                        Clear Binding
+                                    </Button>
+                                )}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
                     {renderCommonActions()}
                 </div>
             );

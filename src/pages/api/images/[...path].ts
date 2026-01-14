@@ -25,10 +25,17 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
   }
 
   const ifNoneMatch = request.headers.get('If-None-Match');
-  const object = await env.IMAGES.get(key);
+  let object = await env.IMAGES.get(key);
+
+  // Flashback: Try without 'media/' prefix if not found
+  if (!object && key.startsWith('media/')) {
+    const rootKey = key.replace('media/', '');
+    object = await env.IMAGES.get(rootKey);
+  }
+
   if (!object) {
     const { body, status, headers } = formatErrorResponse(
-      new AppError(ErrorCodes.NOT_FOUND, 'Image not found', 404)
+      new AppError(ErrorCodes.NOT_FOUND, `Image not found: ${key}`, 404)
     );
     return new Response(body, { status, headers });
   }

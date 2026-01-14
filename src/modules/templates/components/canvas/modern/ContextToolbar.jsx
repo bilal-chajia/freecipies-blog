@@ -329,6 +329,56 @@ const ContextToolbar = () => {
                     </Button>
                 </div>
 
+                {/* Data Binding Popover */}
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant={selectedElement.binding ? 'secondary' : 'outline'}
+                            size="sm"
+                            className="h-8 text-xs gap-1"
+                        >
+                            <Type className="w-3 h-3" />
+                            {selectedElement.binding || 'Bind Data'}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium">Data Binding (dot notation)</label>
+                            <Input
+                                value={selectedElement.binding || ''}
+                                onChange={(e) => updateProp('binding', e.target.value)}
+                                placeholder="e.g. title, recipeJson.prep"
+                                className="h-8 text-xs"
+                            />
+                            <div className="text-xs text-muted-foreground">
+                                <p className="mb-1">Quick bindings:</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {['title', 'categoryLabel', 'recipeJson.prep', 'recipeJson.servings', 'recipeJson.difficulty'].map(b => (
+                                        <button
+                                            key={b}
+                                            type="button"
+                                            className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded hover:bg-primary/20"
+                                            onClick={() => updateProp('binding', b)}
+                                        >
+                                            {b}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            {selectedElement.binding && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full text-xs text-red-500"
+                                    onClick={() => updateProp('binding', '')}
+                                >
+                                    Clear Binding
+                                </Button>
+                            )}
+                        </div>
+                    </PopoverContent>
+                </Popover>
+
                 <CommonActions />
             </div>
         );
