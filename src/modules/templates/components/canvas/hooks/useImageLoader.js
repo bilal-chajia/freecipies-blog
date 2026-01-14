@@ -65,6 +65,7 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
     }, []);
 
     // Preload images for image slot elements
+    // NOTE: loadedImages is NOT in deps to avoid infinite loop (effect updates loadedImages via setLoadedImages)
     useEffect(() => {
         if (!elements || elements.length === 0) return;
 
@@ -81,33 +82,43 @@ const useImageLoader = ({ elements = [], articleData = null }) => {
                 const imageUrl = getProxiedUrl(rawUrl);
 
                 if (imageUrl) {
-                    const currentImg = loadedImages[el.id];
+                    // Use functional update to check current state without deps
+                    setLoadedImages(prev => {
+                        const currentImg = prev[el.id];
 
-                    // Load if not present or if custom URL changed
-                    if (!currentImg) {
-                        await loadImage(el.id, imageUrl, rawUrl);
-                    } else if (customUrl) {
-                        // Check if we already loaded this specific custom URL
-                        if (!currentImg.src.includes(encodeURIComponent(customUrl)) &&
+                        // Load if not present
+                        if (!currentImg) {
+                            // Trigger load outside of setState
+                            loadImage(el.id, imageUrl, rawUrl);
+                        } else if (customUrl &&
+                            !currentImg.src.includes(encodeURIComponent(customUrl)) &&
                             currentImg.src !== customUrl) {
-                            await loadImage(el.id, imageUrl, rawUrl);
+                            // Custom URL changed - reload
+                            loadImage(el.id, imageUrl, rawUrl);
                         }
-                    }
+
+                        return prev; // Don't modify state here
+                    });
                 }
             }
 
             // Load article main image
-            if (articleData?.image && !loadedImages['article_main']) {
-                const rawUrl = articleData.image;
-                const imageUrl = getProxiedUrl(rawUrl);
-                await loadImage('article_main', imageUrl, rawUrl);
+            if (articleData?.image) {
+                setLoadedImages(prev => {
+                    if (!prev['article_main']) {
+                        const rawUrl = articleData.image;
+                        const imageUrl = getProxiedUrl(rawUrl);
+                        loadImage('article_main', imageUrl, rawUrl);
+                    }
+                    return prev;
+                });
             }
 
             setIsLoading(false);
         };
 
         loadElementImages();
-    }, [elements, articleData, loadImage, loadedImages]);
+    }, [elements, articleData, loadImage]); // Removed loadedImages from deps!
 
     /**
      * Manually set a loaded image (for external sources)
