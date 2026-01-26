@@ -150,15 +150,34 @@ export default function ImageUploader({
     setMetadata(prev => ({ ...prev, filename: nameWithoutExt }));
   }, [previewUrl]);
 
-  // Handle URL import
+  // Handle URL import - fetch via proxy to avoid CORS, then load into cropper
   const handleUrlImport = useCallback(async (url) => {
     try {
-      const response = await fetch(url);
+      const token = localStorage.getItem('admin_token');
+      // Fetch image through our proxy endpoint (bypasses CORS)
+      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to fetch image: ${response.status}`);
+      }
+
       const blob = await response.blob();
-      const file = new File([blob], 'imported-image.jpg', { type: blob.type });
+
+      // Extract filename from URL
+      const urlPath = new URL(url).pathname;
+      const filename = urlPath.split('/').pop() || `imported-${Date.now()}.jpg`;
+
+      // Create File object and load into cropper
+      const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
       handleFileSelect(file);
+
     } catch (err) {
       console.error('URL import failed:', err);
+      toast.error(`Import failed: ${err.message}`);
     }
   }, [handleFileSelect]);
 

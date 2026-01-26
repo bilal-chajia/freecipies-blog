@@ -146,6 +146,11 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
   }, [urlValue, onUrlImport]);
 
   const handlePaste = useCallback((e) => {
+    // Don't intercept paste when focused on input/textarea (let user type URL normally)
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return;
+    }
+
     const pastedText = e.clipboardData.getData('text');
     if (pastedText && (pastedText.startsWith('http://') || pastedText.startsWith('https://'))) {
       if (/\.(jpg|jpeg|png|gif|webp|avif)(\?|$)/i.test(pastedText)) {
@@ -360,6 +365,7 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
                     placeholder="https://example.com/image.jpg"
                     value={urlValue}
                     onChange={(e) => {
+                      console.log('[URL Input] onChange:', e.target.value);
                       setUrlValue(e.target.value);
                       setUrlError('');
                     }}
