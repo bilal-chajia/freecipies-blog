@@ -297,7 +297,7 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
             {/* Size Limit */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Sparkles className="h-3 w-3" />
-              <span>Max 50MB • Auto-optimized for web</span>
+              <span>Max 50MB - Auto-optimized for web</span>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: manual
 ---
 
 1. Always read CLAUDE.md before making any code changes

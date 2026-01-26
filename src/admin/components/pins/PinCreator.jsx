@@ -253,31 +253,14 @@ const PinCreator = ({
 
             let imageUrl = '';
             try {
-                // TODO: Replace with dedicated /api/pins/upload-image endpoint
-                // Pins don't need variants - single image stored in pinterest_pins.image_url
-                const uploadResponse = await fetch('/api/upload-image', {
+                const uploadResponse = await fetch('/api/pins/upload-image', {
                     method: 'POST',
                     body: formData,
                 });
                 const uploadData = await uploadResponse.json();
 
-                // Handle new schema with variantsJson
                 if (uploadData.success) {
-                    if (uploadData.data?.variantsJson) {
-                        try {
-                            const variants = typeof uploadData.data.variantsJson === 'string'
-                                ? JSON.parse(uploadData.data.variantsJson)
-                                : uploadData.data.variantsJson;
-                            imageUrl = variants.original?.url || variants.lg?.url || '';
-                        } catch (e) {
-                            console.warn('Failed to parse variantsJson', e);
-                            // Fallback to direct url if available
-                            imageUrl = uploadData.data?.url || uploadData.url || '';
-                        }
-                    } else {
-                        // Old schema or direct url
-                        imageUrl = uploadData.data?.url || uploadData.url || '';
-                    }
+                    imageUrl = uploadData.data?.url || uploadData.url || '';
                 }
             } catch (uploadError) {
                 console.warn('R2 upload failed, falling back to download:', uploadError);

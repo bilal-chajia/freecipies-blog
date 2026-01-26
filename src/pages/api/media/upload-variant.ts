@@ -19,6 +19,8 @@ import { uploadImage } from '@modules/media';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { getImageUploadSettings } from '@modules/settings';
+import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
@@ -37,6 +39,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
 
+    // Load upload settings
+    const settings = await getImageUploadSettings(env.DB);
+    const MAX_SIZE_BYTES = settings.maxFileSizeMB * 1024 * 1024;
+    const allowedTypes = IMAGE_SUPPORTED_TYPES;
+
     // Parse form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -50,6 +57,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Missing required fields: file, variantName, baseName', 400);
     }
 
+    if (file.size > MAX_SIZE_BYTES) {
+      throw new AppError(
+        ErrorCodes.VALIDATION_ERROR,
+        `File too large. Max ${MAX_SIZE_BYTES / 1024 / 1024}MB`,
+        400
+      );
+    }
+    if (!allowedTypes.includes(file.type)) {
+      throw new AppError(ErrorCodes.VALIDATION_ERROR, `Invalid file type: ${file.type}`, 400);
+    }
+
     // Build key path
     const suffix = variantName === 'original' ? '' : `-${variantName}`;
     const ext = file.name.split('.').pop() || 'webp';
@@ -57,20 +75,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const r2Key = `${folder}/${baseName}${suffix}-${uploadId || Date.now()}.${ext}`;
 
     // Upload to R2
+    const arrayBuffer = await file.arrayBuffer();
+
     const result = await uploadImage(
       env.IMAGES,
       {
         file,
         filename: `${baseName}${suffix}.${ext}`,
-        contentType: file.type,
+        contentType: file.type || 'image/webp',
         folder,
+        key: r2Key,
+        arrayBuffer,
       },
       publicUrl
     );
 
     const { body, status, headers } = formatSuccessResponse({
-      r2Key: result.key,
-      url: result.url,
+      r2Key: r2Key,
+      url: `${publicUrl}/${r2Key}`,
       width,
       height,
     });

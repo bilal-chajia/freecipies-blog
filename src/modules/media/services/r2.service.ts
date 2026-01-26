@@ -9,6 +9,14 @@ import type { R2Bucket, R2ObjectBody, R2Object, R2HTTPMetadata } from '@cloudfla
 export interface ImageUploadOptions {
   file: File | Blob;
   filename: string;
+  /**
+   * Optional precomputed ArrayBuffer to avoid double-reading large files.
+   */
+  arrayBuffer?: ArrayBuffer;
+  /**
+   * Optional explicit key. If provided, the key generation logic is skipped.
+   */
+  key?: string;
   contentType?: string;
   metadata?: Record<string, string>;
   folder?: string;      // e.g., 'categories', 'authors', 'articles'
@@ -32,14 +40,16 @@ export async function uploadImage(
   options: ImageUploadOptions,
   publicUrl: string
 ): Promise<ImageUploadResult> {
-  const { file, filename, contentType, metadata, folder, contextSlug } = options;
+  const { file, filename, contentType, metadata, folder, contextSlug, key: explicitKey } = options;
 
-  // Generate unique key with timestamp and optional folder/slug
+  // Generate unique key with timestamp and optional folder/slug (unless explicit key provided)
   const timestamp = Date.now();
 
   // Build the key path (without 'images/' prefix - publicUrl handles that)
   let key: string;
-  if (folder && contextSlug) {
+  if (explicitKey) {
+    key = explicitKey;
+  } else if (folder && contextSlug) {
     // Organized naming: categories/healthy-recipes-1733468682123.webp
     const cleanSlug = contextSlug.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
     const ext = filename.split('.').pop() || 'webp';
@@ -53,7 +63,7 @@ export async function uploadImage(
   }
 
   // Convert File/Blob to ArrayBuffer
-  const arrayBuffer = await file.arrayBuffer();
+  const arrayBuffer = options.arrayBuffer || await file.arrayBuffer();
 
   // Upload to R2
   await bucket.put(key, arrayBuffer, {
@@ -195,6 +205,7 @@ export function validateImage(
     'image/png',
     'image/webp',
     'image/gif',
+    'image/avif',
   ];
 
   if (file.size > maxSize) {
