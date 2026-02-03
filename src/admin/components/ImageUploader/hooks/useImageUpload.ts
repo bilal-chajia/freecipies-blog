@@ -32,8 +32,16 @@ import {
   validateFile 
 } from '../errors';
 import { useImageUploadSettings } from '@admin/hooks/useImageUploadSettings';
+import type { 
+  UploadProgress, 
+  UploadResult, 
+  UploadResultData,
+  CroppedArea, 
+  ImageFormat,
+  VariantSizeConfig 
+} from '../types';
 
-const createAbortError = () => {
+const createAbortError = (): Error => {
   try {
     return new DOMException('Aborted', 'AbortError');
   } catch {
@@ -43,15 +51,16 @@ const createAbortError = () => {
   }
 };
 
-const isAbortError = (error) => {
+const isAbortError = (error: unknown): boolean => {
+  const err = error as Error & { code?: string };
   return (
-    error?.name === 'AbortError' ||
-    error?.code === 'ERR_CANCELED' ||
-    /aborted|canceled|cancelled/i.test(error?.message || '')
+    err?.name === 'AbortError' ||
+    err?.code === 'ERR_CANCELED' ||
+    /aborted|canceled|cancelled/i.test(err?.message || '')
   );
 };
 
-const yieldToMain = () => new Promise((resolve) => {
+const yieldToMain = (): Promise<void> => new Promise((resolve) => {
   if (typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(() => resolve());
   } else {
@@ -59,26 +68,83 @@ const yieldToMain = () => new Promise((resolve) => {
   }
 });
 
-export function useImageUpload(options = {}) {
+// Configuration types
+interface Config {
+  variantSizes: VariantSizeConfig | Partial<VariantSizeConfig>;
+  encodingQuality: {
+    webp: number;
+    avif: number;
+    original: number;
+    placeholder: number;
+  };
+  maxSizeBytes: number;
+}
+
+// Worker request types
+interface WorkerRequest {
+  resolve: (value: { blob: Blob; outputFormat: ImageFormat }) => void;
+  reject: (reason: Error) => void;
+  signal: AbortSignal | null;
+  onAbort: (() => void) | null;
+  aborted: boolean;
+}
+
+// Hook types
+interface UseImageUploadOptions {
+  variantSizes?: Partial<VariantSizeConfig>;
+}
+
+interface UploadVariantResult {
+  name: string;
+  result: {
+    r2Key: string;
+    width: number;
+    height: number;
+    sizeBytes: number;
+  };
+}
+
+interface UseImageUploadReturn {
+  uploadWithVariants: (params: {
+    file: File;
+    cropArea: CroppedArea | null;
+    format: ImageFormat;
+    metadata: {
+      name: string;
+      altText: string;
+      caption: string;
+      credit: string;
+      focalPoint: { x: number; y: number };
+      aspectRatio: string;
+    };
+  }) => Promise<UploadResult>;
+  progress: UploadProgress;
+  isUploading: boolean;
+  error: string | null;
+  cleanupResources: () => void;
+  abortUpload: () => void;
+}
+
+export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUploadReturn {
   const { variantSizes } = options;
-  const [progress, setProgress] = useState({
+  const [progress, setProgress] = useState<UploadProgress>({
     overall: 0,
     generating: 0,
     uploading: 0,
     finalizing: 0,
   });
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState(null);
-  const abortRef = useRef(null);
-  const workerRef = useRef(null);
-  const workerRequestsRef = useRef(new Map());
-  const workerIdRef = useRef(0);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const workerRequestsRef = useRef<Map<number, WorkerRequest>>(new Map());
+  const workerIdRef = useRef<number>(0);
   
   // Use dynamic settings
   const { settings, isLoading: isSettingsLoading } = useImageUploadSettings();
   
   // Helper to get config (defaulting to static config if settings not yet loaded)
-  const getConfig = useCallback(() => {
+  const getConfig = useCallback((): Config => {
     const baseConfig = isSettingsLoading || !settings
       ? {
           variantSizes: VARIANT_SIZES,
@@ -110,7 +176,7 @@ export function useImageUpload(options = {}) {
     };
   }, [settings, isSettingsLoading, variantSizes]);
 
-  const getEncoderWorker = useCallback(() => {
+  const getEncoderWorker = useCallback((): Worker | null => {
     if (typeof Worker === 'undefined') {
       return null;
     }
@@ -166,13 +232,13 @@ export function useImageUpload(options = {}) {
 
 
   // Track resources for cleanup
-  const objectUrlsRef = useRef([]);
-  const canvasesRef = useRef([]);
+  const objectUrlsRef = useRef<string[]>([]);
+  const canvasesRef = useRef<HTMLCanvasElement[]>([]);
 
   /**
    * Cleanup tracked resources (memory management)
    */
-  const cleanupResources = useCallback(() => {
+  const cleanupResources = useCallback((): void => {
     // Revoke object URLs
     objectUrlsRef.current.forEach(url => {
       try {
@@ -199,7 +265,7 @@ export function useImageUpload(options = {}) {
     canvasesRef.current = [];
   }, []);
 
-  const abortUpload = useCallback(() => {
+  const abortUpload = useCallback((): void => {
     if (abortRef.current) {
       abortRef.current.abort();
       abortRef.current = null;
@@ -233,7 +299,7 @@ export function useImageUpload(options = {}) {
   /**
    * Track an object URL for cleanup
    */
-  const trackObjectUrl = useCallback((url) => {
+  const trackObjectUrl = useCallback((url: string): string => {
     objectUrlsRef.current.push(url);
     return url;
   }, []);
@@ -241,7 +307,7 @@ export function useImageUpload(options = {}) {
   /**
    * Create optimized canvas with hardware acceleration hints
    */
-  const createOptimizedCanvas = useCallback((width, height) => {
+  const createOptimizedCanvas = useCallback((width: number, height: number): HTMLCanvasElement => {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -252,7 +318,7 @@ export function useImageUpload(options = {}) {
   /**
    * Get optimized 2D context
    */
-  const getOptimizedContext = useCallback((canvas) => {
+  const getOptimizedContext = useCallback((canvas: HTMLCanvasElement): CanvasRenderingContext2D | null => {
     return canvas.getContext('2d', {
       alpha: CANVAS_CONFIG.alpha,
       desynchronized: CANVAS_CONFIG.desynchronized,
@@ -262,7 +328,11 @@ export function useImageUpload(options = {}) {
   /**
    * Apply crop to an image and return the cropped canvas
    */
-  const applyCrop = useCallback(async (file, cropArea, signal) => {
+  const applyCrop = useCallback(async (
+    file: File, 
+    cropArea: CroppedArea | null, 
+    signal: AbortSignal | null | undefined
+  ): Promise<{ canvas: HTMLCanvasElement; width: number; height: number }> => {
     if (signal?.aborted) {
       throw createAbortError();
     }
@@ -390,7 +460,10 @@ export function useImageUpload(options = {}) {
   /**
    * Resize canvas to target width (maintains aspect ratio)
    */
-  const resizeCanvas = useCallback((sourceCanvas, targetWidth) => {
+  const resizeCanvas = useCallback((
+    sourceCanvas: HTMLCanvasElement, 
+    targetWidth: number
+  ): { canvas: HTMLCanvasElement; width: number; height: number } => {
     const ratio = sourceCanvas.width / sourceCanvas.height;
     const width = Math.min(targetWidth, sourceCanvas.width);
     const height = Math.round(width / ratio);
@@ -407,7 +480,12 @@ export function useImageUpload(options = {}) {
     return { canvas, width, height };
   }, [createOptimizedCanvas, getOptimizedContext]);
 
-  const encodeImageDataWithWorker = useCallback(async (imageData, format, quality, signal) => {
+  const encodeImageDataWithWorker = useCallback(async (
+    imageData: ImageData, 
+    format: ImageFormat, 
+    quality: number, 
+    signal: AbortSignal | null | undefined
+  ): Promise<{ blob: Blob; outputFormat: ImageFormat }> => {
     const worker = getEncoderWorker();
     if (!worker) {
       throw new Error('Worker not available');
@@ -462,7 +540,12 @@ export function useImageUpload(options = {}) {
   /**
    * Encode canvas to WebP/AVIF using jSquash or Canvas fallback
    */
-  const encodeCanvas = useCallback(async (canvas, format, quality, signal) => {
+  const encodeCanvas = useCallback(async (
+    canvas: HTMLCanvasElement, 
+    format: ImageFormat, 
+    quality: number | undefined, 
+    signal: AbortSignal | null | undefined
+  ): Promise<{ blob: Blob; outputFormat: ImageFormat }> => {
     if (signal?.aborted) {
       throw createAbortError();
     }
@@ -527,7 +610,7 @@ export function useImageUpload(options = {}) {
   /**
    * Generate placeholder LQIP (20px wide base64)
    */
-  const generatePlaceholder = useCallback(async (canvas) => {
+  const generatePlaceholder = useCallback(async (canvas: HTMLCanvasElement): Promise<string> => {
     const ratio = canvas.width / canvas.height;
     const placeholderHeight = Math.round(PLACEHOLDER_CONFIG.width / ratio);
 
@@ -544,16 +627,20 @@ export function useImageUpload(options = {}) {
   /**
    * Get original file extension
    */
-  const getFileExtension = useCallback((file) => {
+  const getFileExtension = useCallback((file: File): string => {
     const name = file.name || 'image.jpg';
     const parts = name.split('.');
-    return parts.length > 1 ? parts.pop().toLowerCase() : 'jpg';
+    return parts.length > 1 ? (parts.pop() || '').toLowerCase() : 'jpg';
   }, []);
 
   /**
    * Upload a single variant with retry
    */
-  const uploadVariantWithRetry = useCallback(async (blob, options, signal) => {
+  const uploadVariantWithRetry = useCallback(async (
+    blob: Blob, 
+    options: Record<string, unknown>, 
+    signal: AbortSignal | null | undefined
+  ) => {
     return withRetry(
       () => mediaAPI.uploadVariant(blob, options, { signal }),
       {
@@ -568,17 +655,17 @@ export function useImageUpload(options = {}) {
    * Upload variants in parallel with concurrency limit
    */
   const uploadVariantsInParallel = useCallback(async (
-    variantNames,
-    variantBlobs,
-    variants,
-    cleanBaseName,
-    uploadId,
-    format,
-    originalExt,
-    fileType,
-    signal
-  ) => {
-    const uploadedVariants = {};
+    variantNames: string[],
+    variantBlobs: Record<string, Blob>,
+    variants: Record<string, { width: number; height: number }>,
+    cleanBaseName: string,
+    uploadId: string,
+    format: ImageFormat,
+    originalExt: string,
+    fileType: string,
+    signal: AbortSignal | null | undefined
+  ): Promise<Record<string, { r2Key: string; width: number; height: number; sizeBytes: number }>> => {
+    const uploadedVariants: Record<string, { r2Key: string; width: number; height: number; sizeBytes: number }> = {};
     const totalVariants = variantNames.length;
     const maxConcurrent = UPLOAD_CONFIG.maxConcurrentUploads;
 
@@ -650,7 +737,24 @@ export function useImageUpload(options = {}) {
   /**
    * Main upload function
    */
-  const uploadWithVariants = useCallback(async ({ file, cropArea, format, metadata }) => {
+  const uploadWithVariants = useCallback(async ({ 
+    file, 
+    cropArea, 
+    format, 
+    metadata 
+  }: {
+    file: File;
+    cropArea: CroppedArea | null;
+    format: ImageFormat;
+    metadata: {
+      name: string;
+      altText: string;
+      caption: string;
+      credit: string;
+      focalPoint: { x: number; y: number };
+      aspectRatio: string;
+    };
+  }): Promise<UploadResult> => {
     abortUpload();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -682,9 +786,9 @@ export function useImageUpload(options = {}) {
       assertNotAborted();
 
       // === Step 2: Generate all variants ===
-      const variants = {};
-      const variantBlobs = {};
-      const variantNames = [];
+      const variants: Record<string, { width: number; height: number }> = {};
+      const variantBlobs: Record<string, Blob> = {};
+      const variantNames: string[] = [];
       const originalExt = getFileExtension(file);
 
       // Always generate 'original' variant (cropped, native format)

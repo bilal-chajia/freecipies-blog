@@ -13,6 +13,7 @@ import {
   IMAGE_ASPECT_RATIO_LABELS,
   IMAGE_UPLOAD_BEHAVIOR,
   IMAGE_CANVAS_CONFIG,
+  type ImageUploadSettings,
 } from '../../../shared/constants/image-upload';
 
 export const VARIANT_SIZES = IMAGE_VARIANT_SIZES;
@@ -23,3 +24,5 @@ export const ASPECT_RATIOS = IMAGE_ASPECT_RATIOS;
 export const ASPECT_RATIO_LABELS = IMAGE_ASPECT_RATIO_LABELS;
 export const UPLOAD_CONFIG = IMAGE_UPLOAD_BEHAVIOR;
 export const CANVAS_CONFIG = IMAGE_CANVAS_CONFIG;
+
+export type { ImageUploadSettings };

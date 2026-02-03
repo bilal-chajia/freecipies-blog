@@ -9,6 +9,7 @@ export const ERROR_TYPES = {
     UPLOAD_FAILED: 'UPLOAD_FAILED',
     NETWORK_ERROR: 'NETWORK_ERROR',
     ENCODING_FAILED: 'ENCODING_FAILED',
+    CONFIRM_FAILED: 'CONFIRM_FAILED',
     ABORTED: 'ABORTED',
 } as const;
 
@@ -30,6 +31,14 @@ export class UploadError extends Error {
         this.type = type;
         this.userMessage = options.userMessage || message;
         this.details = options.details;
+    }
+
+    toUserError(): { type: ErrorType; message: string; details?: Record<string, unknown> } {
+        return {
+            type: this.type,
+            message: this.userMessage,
+            details: this.details,
+        };
     }
 }
 
