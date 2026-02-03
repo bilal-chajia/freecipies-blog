@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Upload, Link, Image as ImageIcon, FileImage, Sparkles, X } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
+import { Textarea } from '@/ui/textarea';
 import { Badge } from '@/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -153,20 +154,44 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
   const handleUrlSubmit = useCallback(() => {
     if (!urlValue.trim()) return;
 
-    try {
-      new URL(urlValue);
-      if (!/\.(jpg|jpeg|png|gif|webp|avif)(\?|$)/i.test(urlValue)) {
-        setUrlError('URL must point to an image file');
-        return;
+    // Parse multiple URLs (one per line)
+    const lines = urlValue.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+    const validUrls = [];
+    const invalidLines = [];
+
+    for (const line of lines) {
+      try {
+        const url = new URL(line);
+        // Accept any http/https URL - the proxy will handle the actual image fetch
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+          validUrls.push(line);
+        } else {
+          invalidLines.push(line);
+        }
+      } catch {
+        invalidLines.push(line);
       }
-      setUrlError('');
-      onUrlImport(urlValue);
-      setUrlValue('');
-      setShowUrlInput(false);
-    } catch {
-      setUrlError('Please enter a valid URL');
     }
-  }, [urlValue, onUrlImport]);
+
+    if (validUrls.length === 0) {
+      setUrlError('No valid URLs found. Please enter valid HTTP/HTTPS URLs.');
+      return;
+    }
+
+    setUrlError('');
+
+    if (allowMultiple && onUrlsImport && validUrls.length > 0) {
+      // Add all URLs to queue
+      console.log('[DropZone] Importing', validUrls.length, 'URLs to queue');
+      onUrlsImport(validUrls);
+    } else {
+      // Single URL mode
+      onUrlImport(validUrls[0]);
+    }
+
+    setUrlValue('');
+    setShowUrlInput(false);
+  }, [urlValue, onUrlImport, onUrlsImport, allowMultiple]);
 
   const handlePaste = useCallback((e) => {
     // Don't intercept paste when focused on input/textarea (let user type URL normally)
@@ -396,33 +421,43 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
             className="overflow-hidden"
           >
             <div className="p-4 rounded-xl bg-muted/30 border border-border/30 space-y-3">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="url"
-                    placeholder="https://example.com/image.jpg"
+              <div className="space-y-2">
+                <div className="relative">
+                  <Link className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Textarea
+                    placeholder="Paste one or more image URLs (one per line)&#10;https://example.com/image1.jpg&#10;https://example.com/image2.png"
                     value={urlValue}
                     onChange={(e) => {
-                      console.log('[URL Input] onChange:', e.target.value);
                       setUrlValue(e.target.value);
                       setUrlError('');
                     }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        handleUrlSubmit();
+                      }
+                    }}
+                    rows={3}
                     className={cn(
-                      'pl-9',
+                      'pl-9 resize-none',
                       urlError && 'border-destructive focus-visible:ring-destructive'
                     )}
                   />
                 </div>
-                <Button
-                  onClick={handleUrlSubmit}
-                  disabled={!urlValue.trim()}
-                  className="gap-2"
-                >
-                  <Upload className="h-4 w-4" />
-                  Import
-                </Button>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Paste multiple URLs, one per line. Press Ctrl+Enter to import.
+                  </p>
+                  <Button
+                    onClick={handleUrlSubmit}
+                    disabled={!urlValue.trim()}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Import
+                  </Button>
+                </div>
               </div>
 
               <AnimatePresence>

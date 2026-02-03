@@ -23,7 +23,7 @@ import { Progress } from '@/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import {
   X, ArrowLeft, Upload, ZoomIn,
-  RotateCw, Focus, RefreshCw
+  RotateCw, Focus, RefreshCw, Link
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authorsAPI } from '@admin/services/api';
@@ -247,17 +247,41 @@ export default function ImageUploader({
     setQueue(prev => [...prev, ...newItems]);
   }, []);
 
-  // Handle multiple URLs pasted - add to queue
-  const handleUrlsImport = useCallback((urls) => {
+  // Handle multiple URLs pasted - add to queue with preview fetching
+  const handleUrlsImport = useCallback(async (urls) => {
     const newItems = urls.map(url => ({
       id: crypto.randomUUID(),
       type: 'url',
       source: url,
       name: url.split('/').pop()?.split('?')[0] || 'imported',
       status: 'pending',
-      previewUrl: null, // Will be fetched when editing
+      previewUrl: null, // Will be fetched below
     }));
+
+    // Add items immediately (with loading state)
     setQueue(prev => [...prev, ...newItems]);
+
+    // Get auth token for proxy requests
+    const token = localStorage.getItem('admin_token');
+
+    // Fetch preview images in background
+    for (const item of newItems) {
+      try {
+        const response = await fetch(`/api/proxy-image?url=${encodeURIComponent(item.source)}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          const previewUrl = URL.createObjectURL(blob);
+          // Update the queue item with the preview
+          setQueue(q => q.map(i =>
+            i.id === item.id ? { ...i, previewUrl } : i
+          ));
+        }
+      } catch (error) {
+        console.error('[handleUrlsImport] Failed to fetch preview for:', item.source, error);
+      }
+    }
   }, []);
 
   // Start editing the first item in queue
