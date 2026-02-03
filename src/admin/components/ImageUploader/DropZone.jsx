@@ -23,7 +23,7 @@ const SUPPORTED_FORMATS = [
   { ext: 'GIF', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
 ];
 
-export default function DropZone({ onFileSelect, onUrlImport }) {
+export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onUrlsImport, allowMultiple = false }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -92,40 +92,63 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
       createParticles(e.clientX - rect.left, e.clientY - rect.top);
     }
 
-    // Check for dropped URL
+    // 1. Check for dropped files FIRST (Priority)
+    const files = e.dataTransfer.files;
+    console.log('[DropZone] files.length:', files?.length);
+
+    if (files && files.length > 0) {
+      // Filter only image files
+      const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+      console.log('[DropZone] imageFiles:', imageFiles.length);
+      console.log('[DropZone] allowMultiple:', allowMultiple);
+
+      if (imageFiles.length > 0) {
+        if (allowMultiple && onFilesSelect) {
+          // Bulk mode - ALL images go to queue
+          onFilesSelect(imageFiles);
+        } else {
+          // Single file mode - direct to editor
+          onFileSelect(imageFiles[0]);
+        }
+        return; // Stop here if files found
+      }
+    }
+
+    // 2. If no files, check for dropped URL
     const droppedUrl = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
     console.log('[DropZone] droppedUrl:', droppedUrl);
+
     if (droppedUrl && (droppedUrl.startsWith('http://') || droppedUrl.startsWith('https://'))) {
       if (/\.(jpg|jpeg|png|gif|webp|avif)(\?|$)/i.test(droppedUrl)) {
         console.log('[DropZone] Calling onUrlImport with URL');
-        onUrlImport(droppedUrl);
+        if (allowMultiple && onUrlsImport) {
+          onUrlsImport([droppedUrl]);
+        } else {
+          onUrlImport(droppedUrl);
+        }
         return;
       }
     }
-
-    // Check for dropped files
-    const files = e.dataTransfer.files;
-    console.log('[DropZone] files.length:', files?.length);
-    if (files && files.length > 0) {
-      const file = files[0];
-      console.log('[DropZone] file:', file.name, file.type, file.size);
-      if (file.type.startsWith('image/')) {
-        console.log('[DropZone] Calling onFileSelect with file');
-        onFileSelect(file);
-      } else {
-        console.log('[DropZone] File rejected - not an image type');
-      }
-    }
-  }, [onFileSelect, onUrlImport, createParticles]);
+  }, [onFileSelect, onFilesSelect, onUrlImport, createParticles, allowMultiple]);
 
   const handleFileInputChange = useCallback((e) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      onFileSelect(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+
+    if (imageFiles.length > 0) {
+      if (allowMultiple && onFilesSelect) {
+        // Bulk mode - ALL images go to queue (even single)
+        onFilesSelect(imageFiles);
+      } else {
+        // Single file mode - direct to editor
+        onFileSelect(imageFiles[0]);
+      }
     }
     // Reset input so same file can be selected again
     e.target.value = '';
-  }, [onFileSelect]);
+  }, [onFileSelect, onFilesSelect, allowMultiple]);
 
   const handleUrlSubmit = useCallback(() => {
     if (!urlValue.trim()) return;
@@ -152,13 +175,28 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
     }
 
     const pastedText = e.clipboardData.getData('text');
-    if (pastedText && (pastedText.startsWith('http://') || pastedText.startsWith('https://'))) {
-      if (/\.(jpg|jpeg|png|gif|webp|avif)(\?|$)/i.test(pastedText)) {
-        e.preventDefault();
-        onUrlImport(pastedText);
+    if (!pastedText) return;
+
+    // Check for multiple URLs (one per line)
+    const lines = pastedText.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+    const imageUrls = lines.filter(line =>
+      (line.startsWith('http://') || line.startsWith('https://')) &&
+      /\.(jpg|jpeg|png|gif|webp|avif)(\?|$)/i.test(line)
+    );
+
+    if (imageUrls.length > 0) {
+      e.preventDefault();
+      if (allowMultiple && onUrlsImport && imageUrls.length > 1) {
+        // Multiple URLs - send all to queue
+        console.log('[DropZone] Calling onUrlsImport with', imageUrls.length, 'URLs');
+        onUrlsImport(imageUrls);
+      } else {
+        // Single URL
+        console.log('[DropZone] Calling onUrlImport with single URL');
+        onUrlImport(imageUrls[0]);
       }
     }
-  }, [onUrlImport]);
+  }, [onUrlImport, onUrlsImport, allowMultiple]);
 
   return (
     <div className="space-y-4" onPaste={handlePaste}>
@@ -226,6 +264,7 @@ export default function DropZone({ onFileSelect, onUrlImport }) {
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            multiple={allowMultiple}
             className="hidden"
             onChange={handleFileInputChange}
           />

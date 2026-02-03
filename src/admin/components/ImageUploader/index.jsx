@@ -19,10 +19,11 @@ import { Label } from '@/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/ui/radio-group';
 import { Slider } from '@/ui/slider';
 import { Badge } from '@/ui/badge';
+import { Progress } from '@/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import {
   X, ArrowLeft, Upload, ZoomIn,
-  RotateCw, Focus
+  RotateCw, Focus, RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authorsAPI } from '@admin/services/api';
@@ -35,11 +36,22 @@ export default function ImageUploader({
   onUploadComplete,
   defaultFormat = 'webp',
   variantSizes,
+  allowMultiple = false,
 }) {
   // State
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
+  // Queue state for bulk upload
+  const [queue, setQueue] = useState([]);
+  // -1 = queue view, 0+ = editing item at index
+  const [currentQueueIndex, setCurrentQueueIndex] = useState(-1);
+  // Alt text from first image to auto-fill subsequent images
+  const [sharedAltText, setSharedAltText] = useState('');
+  // Progress bar visibility with delayed hide
+  const [showProgressBar, setShowProgressBar] = useState(false);
+  const progressBarTimeoutRef = useRef(null);
 
   // Crop state
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -93,6 +105,9 @@ export default function ImageUploader({
         caption: '',
         credit: settings?.defaultCredit || ''
       });
+      // Reset queue state
+      setQueue([]);
+      setCurrentQueueIndex(-1);
     }
   }, [open, defaultFormat, settings]);
 
@@ -129,6 +144,33 @@ export default function ImageUploader({
     };
   }, [abortUpload, previewUrl]);
 
+  // Progress bar visibility - stays visible while uploading, disappears when all done
+  useEffect(() => {
+    const hasUploading = allowMultiple && queue.some(q => q.status === 'uploading');
+    const hasPending = allowMultiple && queue.some(q => q.status === 'pending');
+
+    if (hasUploading) {
+      // Clear any pending hide timeout
+      if (progressBarTimeoutRef.current) {
+        clearTimeout(progressBarTimeoutRef.current);
+        progressBarTimeoutRef.current = null;
+      }
+      // Show immediately
+      setShowProgressBar(true);
+    } else if (showProgressBar && !hasPending) {
+      // Only hide when no more pending AND no more uploading (delay 4s)
+      progressBarTimeoutRef.current = setTimeout(() => {
+        setShowProgressBar(false);
+      }, 4000);
+    }
+
+    return () => {
+      if (progressBarTimeoutRef.current) {
+        clearTimeout(progressBarTimeoutRef.current);
+      }
+    };
+  }, [allowMultiple, queue, showProgressBar]);
+
   // Reset crop position when aspect ratio changes
   useEffect(() => {
     if (selectedFile && aspect !== 'free') {
@@ -145,10 +187,21 @@ export default function ImageUploader({
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
 
-    // Auto-fill filename without extension
+    // Reset ALL metadata for new image (clear previous values)
     const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-    setMetadata(prev => ({ ...prev, filename: nameWithoutExt }));
-  }, [previewUrl]);
+    setMetadata({
+      filename: nameWithoutExt,
+      altText: '',
+      caption: '',
+      credit: settings?.defaultCredit || '',
+    });
+
+    // Reset crop/zoom/rotation for new image
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setRotation(0);
+    setFocalPoint({ x: 50, y: 50 });
+  }, [previewUrl, settings]);
 
   // Handle URL import - fetch via proxy to avoid CORS, then load into cropper
   const handleUrlImport = useCallback(async (url) => {
@@ -180,6 +233,138 @@ export default function ImageUploader({
       toast.error(`Import failed: ${err.message}`);
     }
   }, [handleFileSelect]);
+
+  // Handle multiple files dropped/selected - add to queue
+  const handleFilesSelect = useCallback((files) => {
+    const newItems = files.map(file => ({
+      id: crypto.randomUUID(),
+      type: 'file',
+      source: file,
+      name: file.name,
+      status: 'pending',
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setQueue(prev => [...prev, ...newItems]);
+  }, []);
+
+  // Handle multiple URLs pasted - add to queue
+  const handleUrlsImport = useCallback((urls) => {
+    const newItems = urls.map(url => ({
+      id: crypto.randomUUID(),
+      type: 'url',
+      source: url,
+      name: url.split('/').pop()?.split('?')[0] || 'imported',
+      status: 'pending',
+      previewUrl: null, // Will be fetched when editing
+    }));
+    setQueue(prev => [...prev, ...newItems]);
+  }, []);
+
+  // Start editing the first item in queue
+  const startEditingQueue = useCallback(async () => {
+    if (queue.length === 0) return;
+
+    const firstItem = queue[0];
+    setCurrentQueueIndex(0);
+
+    if (firstItem.type === 'file') {
+      handleFileSelect(firstItem.source);
+    } else {
+      // URL - fetch via proxy
+      await handleUrlImport(firstItem.source);
+    }
+  }, [queue, handleFileSelect, handleUrlImport]);
+
+  // Move to next item in queue (current one will upload in background)
+  const handleNextInQueue = useCallback(async () => {
+    // Store finalName in queue item before upload
+    setQueue(q => q.map((item, i) =>
+      i === currentQueueIndex ? { ...item, status: 'uploading', finalName: metadata.filename } : item
+    ));
+
+    // Find next pending item
+    const nextIndex = queue.findIndex((item, i) =>
+      i > currentQueueIndex && item.status === 'pending'
+    );
+
+    if (nextIndex >= 0) {
+      setCurrentQueueIndex(nextIndex);
+      const nextItem = queue[nextIndex];
+
+      if (nextItem.type === 'file') {
+        handleFileSelect(nextItem.source);
+      } else {
+        await handleUrlImport(nextItem.source);
+      }
+      // Alt text will be empty for subsequent images (user requested)
+    } else {
+      // No more items - back to queue view
+      setCurrentQueueIndex(-1);
+      setSelectedFile(null);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+    }
+  }, [queue, currentQueueIndex, handleFileSelect, handleUrlImport, previewUrl]);
+
+  // Skip current item without uploading
+  const handleSkipInQueue = useCallback(async () => {
+    setQueue(q => q.map((item, i) =>
+      i === currentQueueIndex ? { ...item, status: 'skipped' } : item
+    ));
+
+    // Find next pending item
+    const nextIndex = queue.findIndex((item, i) =>
+      i > currentQueueIndex && item.status === 'pending'
+    );
+
+    if (nextIndex >= 0) {
+      setCurrentQueueIndex(nextIndex);
+      const nextItem = queue[nextIndex];
+
+      if (nextItem.type === 'file') {
+        handleFileSelect(nextItem.source);
+      } else {
+        await handleUrlImport(nextItem.source);
+      }
+    } else {
+      // No more items
+      setCurrentQueueIndex(-1);
+      setSelectedFile(null);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+    }
+  }, [queue, currentQueueIndex, handleFileSelect, handleUrlImport, previewUrl]);
+
+  // Remove item from queue
+  const removeFromQueue = useCallback((id) => {
+    setQueue(prev => {
+      const item = prev.find(i => i.id === id);
+      if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter(i => i.id !== id);
+    });
+  }, []);
+
+  // Retry a failed upload - reset to pending and start editing
+  const retryQueueItem = useCallback(async (id) => {
+    const itemIndex = queue.findIndex(i => i.id === id);
+    if (itemIndex < 0) return;
+
+    const item = queue[itemIndex];
+
+    // Reset to pending status
+    setQueue(q => q.map((i, idx) =>
+      idx === itemIndex ? { ...i, status: 'pending', error: undefined } : i
+    ));
+
+    // Start editing this item
+    setCurrentQueueIndex(itemIndex);
+
+    if (item.type === 'file') {
+      handleFileSelect(item.source);
+    } else {
+      await handleUrlImport(item.source);
+    }
+  }, [queue, handleFileSelect, handleUrlImport]);
 
   // Handle crop complete
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
@@ -293,6 +478,65 @@ export default function ImageUploader({
     }
   }, [selectedFile, croppedAreaPixels, metadata, format, aspect, focalPoint, uploadWithVariants, onUploadComplete, onOpenChange]);
 
+  // Handle upload in background (for queue mode)
+  // Data is passed as params to avoid stale state when navigating to next item
+  const handleUploadInBackground = useCallback(async (queueIndex, uploadData) => {
+    const { file, cropArea, outputFormat, meta, focal, aspectRatio, itemName } = uploadData;
+
+    if (!file) return;
+
+    // Mark as uploading
+    setQueue(q => q.map((item, i) =>
+      i === queueIndex ? { ...item, status: 'uploading' } : item
+    ));
+
+    try {
+      const result = await uploadWithVariants({
+        file,
+        cropArea,
+        format: outputFormat,
+        metadata: {
+          name: meta.filename,
+          altText: meta.altText,
+          caption: meta.caption,
+          credit: meta.credit,
+          focalPoint: focal,
+          aspectRatio,
+        },
+      });
+
+      if (result?.aborted) {
+        // Mark as error in queue
+        setQueue(q => q.map((item, i) =>
+          i === queueIndex ? { ...item, status: 'error', error: 'Upload cancelled' } : item
+        ));
+        toast.error(`${itemName} - Upload cancelled`);
+        return;
+      }
+
+      if (result.success) {
+        // Mark as done in queue - preserve finalName from captured data
+        setQueue(q => q.map((item, i) =>
+          i === queueIndex ? { ...item, status: 'done', result: result.data, finalName: itemName } : item
+        ));
+        toast.success(`${itemName} uploaded ✅`);
+        onUploadComplete?.(result.data);
+      } else {
+        // Mark as error
+        setQueue(q => q.map((item, i) =>
+          i === queueIndex ? { ...item, status: 'error', error: 'Upload failed' } : item
+        ));
+        toast.error(`${itemName} failed ❌`);
+      }
+    } catch (err) {
+      console.error('Background upload failed:', err);
+      setQueue(q => q.map((item, i) =>
+        i === queueIndex ? { ...item, status: 'error', error: err.message } : item
+      ));
+      toast.error(`${itemName} - ${err.message}`);
+    }
+  }, [uploadWithVariants, onUploadComplete]);
+
   // Handle cancel/back
   const handleBack = useCallback(() => {
     abortUpload();
@@ -302,6 +546,8 @@ export default function ImageUploader({
     setSelectedFile(null);
     setPreviewUrl('');
     setFocalPoint({ x: 50, y: 50 });
+    // Reset to queue view so user can add more images
+    setCurrentQueueIndex(-1);
   }, [abortUpload, previewUrl]);
 
   // Handle close
@@ -331,7 +577,7 @@ export default function ImageUploader({
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent
-        className="!max-w-6xl w-full max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl"
+        className="!max-w-6xl w-full max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl !top-[5vh] !translate-y-0"
         showCloseButton={false}
       >
         {/* Header */}
@@ -357,8 +603,48 @@ export default function ImageUploader({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Upload Button in Header */}
-            {selectedFile && !isUploading && (
+            {/* Queue Navigation Buttons */}
+            {allowMultiple && currentQueueIndex >= 0 && selectedFile && !isUploading && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSkipInQueue}
+                  className="h-8 px-3"
+                >
+                  Skip
+                </Button>
+                <Button
+                  onClick={async () => {
+                    // Capture current state BEFORE navigation changes it
+                    const capturedData = {
+                      file: selectedFile,
+                      cropArea: croppedAreaPixels,
+                      outputFormat: format,
+                      meta: { ...metadata },
+                      focal: { ...focalPoint },
+                      aspectRatio: aspect,
+                      itemName: metadata.filename || queue[currentQueueIndex]?.name,
+                    };
+                    const capturedIndex = currentQueueIndex;
+
+                    // Move to next item FIRST (changes state)
+                    await handleNextInQueue();
+
+                    // Then start background upload with captured data (non-blocking)
+                    handleUploadInBackground(capturedIndex, capturedData);
+                  }}
+                  disabled={!canUpload}
+                  size="sm"
+                  className="h-8 px-4 gap-1.5"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Upload & Next
+                </Button>
+              </>
+            )}
+            {/* Standard Upload Button (non-queue mode) */}
+            {(!allowMultiple || currentQueueIndex < 0) && selectedFile && !isUploading && (
               <Button
                 onClick={handleUpload}
                 disabled={!canUpload}
@@ -380,7 +666,7 @@ export default function ImageUploader({
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <AnimatePresence mode="wait">
-            {/* Step 1: File Selection */}
+            {/* Step 1: File Selection or Queue View */}
             {!selectedFile && !isUploading && (
               <motion.div
                 key="select"
@@ -389,10 +675,144 @@ export default function ImageUploader({
                 exit={{ opacity: 0, y: -10 }}
                 className="p-6 overflow-y-auto"
               >
-                <DropZone
-                  onFileSelect={handleFileSelect}
-                  onUrlImport={handleUrlImport}
-                />
+                {/* Show Queue if we have items and not editing */}
+                {allowMultiple && queue.length > 0 && currentQueueIndex === -1 ? (
+                  <div className="space-y-4">
+                    {/* DropZone FIRST - Add More Images */}
+                    <DropZone
+                      onFileSelect={handleFileSelect}
+                      onFilesSelect={handleFilesSelect}
+                      onUrlImport={handleUrlImport}
+                      onUrlsImport={handleUrlsImport}
+                      allowMultiple={allowMultiple}
+                    />
+
+                    {/* Queue Header and List SECOND */}
+                    <div className="pt-4 border-t space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-medium">
+                          Queue ({queue.length} images)
+                        </h3>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setQueue([])}
+                          >
+                            Clear All
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={startEditingQueue}
+                            disabled={queue.filter(q => q.status === 'pending').length === 0}
+                          >
+                            Start Editing →
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Queue List */}
+                      <div className="grid gap-2 max-h-[300px] overflow-y-auto">
+                        <AnimatePresence initial={false}>
+                          {queue.map((item, index) => (
+                            <motion.div
+                              key={item.id}
+                              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, x: -20, scale: 0.95 }}
+                              transition={{
+                                duration: 0.2,
+                                delay: index * 0.03,
+                                ease: 'easeOut'
+                              }}
+                              layout
+                              className={cn(
+                                "flex items-center gap-3 p-3 rounded-lg border",
+                                item.status === 'done' && "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800",
+                                item.status === 'uploading' && "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800",
+                                item.status === 'error' && "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800",
+                                item.status === 'skipped' && "bg-gray-50 border-gray-200 opacity-50 dark:bg-gray-900/30",
+                                item.status === 'pending' && "bg-background border-border"
+                              )}
+                            >
+                              {/* Thumbnail */}
+                              <div className="w-12 h-12 rounded overflow-hidden bg-muted flex-shrink-0">
+                                {item.previewUrl ? (
+                                  <img
+                                    src={item.previewUrl}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Link className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Name & Status */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{item.finalName || item.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {item.type === 'url' ? 'URL Import' : 'File'}
+                                </p>
+                              </div>
+
+                              {/* Status Badge */}
+                              <Badge
+                                variant={
+                                  item.status === 'done' ? 'default' :
+                                    item.status === 'uploading' ? 'secondary' :
+                                      item.status === 'error' ? 'destructive' :
+                                        item.status === 'skipped' ? 'outline' : 'outline'
+                                }
+                              >
+                                {item.status === 'pending' && '⏳ Pending'}
+                                {item.status === 'uploading' && '🔄 Uploading'}
+                                {item.status === 'done' && '✅ Done'}
+                                {item.status === 'error' && '❌ Error'}
+                                {item.status === 'skipped' && '⏭️ Skipped'}
+                              </Badge>
+
+                              {/* Retry Button (for error items) */}
+                              {item.status === 'error' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 gap-1 text-xs"
+                                  onClick={() => retryQueueItem(item.id)}
+                                >
+                                  <RefreshCw className="h-3 w-3" />
+                                  Retry
+                                </Button>
+                              )}
+
+                              {/* Remove Button (for pending and error items) */}
+                              {(item.status === 'pending' || item.status === 'error') && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => removeFromQueue(item.id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <DropZone
+                    onFileSelect={handleFileSelect}
+                    onFilesSelect={handleFilesSelect}
+                    onUrlImport={handleUrlImport}
+                    onUrlsImport={handleUrlsImport}
+                    allowMultiple={allowMultiple}
+                  />
+                )}
               </motion.div>
             )}
 
@@ -644,6 +1064,37 @@ export default function ImageUploader({
             )}
           </AnimatePresence>
         </div>
+
+        {/* Background Upload Progress - Fixed Footer Position */}
+        <AnimatePresence>
+          {showProgressBar && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{
+                duration: 0.3,
+                ease: 'easeInOut'
+              }}
+              className="shrink-0 border-t bg-muted/30"
+            >
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">
+                    {queue.some(q => q.status === 'uploading')
+                      ? `Uploading: ${queue.find(q => q.status === 'uploading')?.finalName || queue.find(q => q.status === 'uploading')?.name}`
+                      : '✅ Upload complete!'
+                    }
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {queue.some(q => q.status === 'uploading') ? `${progress?.overall || 0}%` : '100%'}
+                  </span>
+                </div>
+                <VariantProgress progress={queue.some(q => q.status === 'uploading') ? progress : { overall: 100, generating: 100, uploading: 100, finalizing: 100 }} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );

@@ -682,7 +682,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
         />
       )}
 
-      {/* New ImageUploader Component (replaces old Dialog) */}
+      {/* New ImageUploader Component with Bulk Upload Support */}
       <ImageUploader
         open={showUploadDialog}
         onOpenChange={setShowUploadDialog}
@@ -691,6 +691,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
           toast.success('Image uploaded successfully!');
         }}
         variantSizes={variantSizes}
+        allowMultiple={true}
       />
     </div>
   );
