@@ -255,14 +255,21 @@ export default function ImageUploader({
   const handleNextInQueue = useCallback(async () => {
     // Store finalName in queue item before upload
     setItemFinalName(currentQueueIndex, metadata.filename);
+    
+    // Find next pending item BEFORE calling nextInQueue (to know what to load)
+    const nextIndex = queue.findIndex((item, i) =>
+      i > currentQueueIndex && item.status === 'pending'
+    );
+    
     nextInQueue();
 
     // Load next item if available
-    if (currentItem) {
-      if (currentItem.type === 'file') {
-        handleFileSelect(currentItem.source);
+    if (nextIndex >= 0) {
+      const nextItem = queue[nextIndex];
+      if (nextItem.type === 'file') {
+        handleFileSelect(nextItem.source);
       } else {
-        await handleUrlImport(currentItem.source);
+        await handleUrlImport(nextItem.source);
       }
     } else {
       // No more items - back to queue view
@@ -270,18 +277,24 @@ export default function ImageUploader({
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl('');
     }
-  }, [currentQueueIndex, currentItem, metadata.filename, nextInQueue, handleFileSelect, handleUrlImport, previewUrl]);
+  }, [currentQueueIndex, queue, metadata.filename, setItemFinalName, nextInQueue, handleFileSelect, handleUrlImport, previewUrl]);
 
   // Skip current item without uploading
   const handleSkipInQueue = useCallback(async () => {
+    // Find next pending item BEFORE calling skipInQueue
+    const nextIndex = queue.findIndex((item, i) =>
+      i > currentQueueIndex && item.status === 'pending'
+    );
+    
     skipInQueue();
 
     // Load next item if available
-    if (currentItem) {
-      if (currentItem.type === 'file') {
-        handleFileSelect(currentItem.source);
+    if (nextIndex >= 0) {
+      const nextItem = queue[nextIndex];
+      if (nextItem.type === 'file') {
+        handleFileSelect(nextItem.source);
       } else {
-        await handleUrlImport(currentItem.source);
+        await handleUrlImport(nextItem.source);
       }
     } else {
       // No more items
@@ -289,7 +302,7 @@ export default function ImageUploader({
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl('');
     }
-  }, [skipInQueue, currentItem, handleFileSelect, handleUrlImport, previewUrl]);
+  }, [currentQueueIndex, queue, skipInQueue, handleFileSelect, handleUrlImport, previewUrl]);
 
   // Handle crop complete
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
