@@ -24,7 +24,7 @@ const SUPPORTED_FORMATS = [
   { ext: 'GIF', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
 ];
 
-export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onUrlsImport, allowMultiple = false }) {
+export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onUrlsImport, allowMultiple = false, maxFileSizeMB = 50 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -366,7 +366,7 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
             {/* Size Limit */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Sparkles className="h-3 w-3" />
-              <span>Max 50MB - Auto-optimized for web</span>
+              <span>Max {maxFileSizeMB}MB - Auto-optimized for web</span>
             </div>
           </div>
 

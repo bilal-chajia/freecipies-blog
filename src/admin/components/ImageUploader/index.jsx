@@ -835,6 +835,7 @@ export default function ImageUploader({
                     onUrlImport={handleUrlImport}
                     onUrlsImport={handleUrlsImport}
                     allowMultiple={allowMultiple}
+                    maxFileSizeMB={settings?.maxFileSizeMB}
                   />
                 )}
               </motion.div>
