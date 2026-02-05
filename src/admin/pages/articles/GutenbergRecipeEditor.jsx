@@ -68,6 +68,8 @@ export default function GutenbergRecipeEditor() {
         setContentJson,
         recipeJson,
         setRecipeJson,
+        faqsJson,
+        setFaqsJson,
         jsonErrors,
         validateJSON,
         mediaDialogOpen,
@@ -456,6 +458,11 @@ export default function GutenbergRecipeEditor() {
                                         const nextValue = newValue ?? '';
                                         setRecipeJson(nextValue);
                                         validateJSON('recipe', nextValue);
+                                    }}
+                                    faqs={faqsJson}
+                                    onFaqsChange={(newValue) => {
+                                        const nextValue = newValue ?? '[]';
+                                        setFaqsJson(typeof nextValue === 'string' ? nextValue : JSON.stringify(nextValue));
                                     }}
                                     placeholder="Add additional content..."
                                     context={relatedContext}

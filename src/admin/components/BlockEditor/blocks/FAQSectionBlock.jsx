@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { useRef, useState } from 'react';
+import { useRef, useState, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
@@ -32,6 +32,19 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
+
+/**
+ * Context to share FAQ data between the BlockEditor and FAQSectionBlock
+ * This mirrors the RecipeDataContext pattern for consistent architecture.
+ */
+export const FAQDataContext = createContext({
+    faqs: [],
+    setFaqs: () => { },
+    faqTitle: 'Frequently Asked Questions',
+    setFaqTitle: () => { },
+});
+
+export const useFAQData = () => useContext(FAQDataContext);
 
 // HTML escape for safe rendering
 const escapeHtml = (value) => (
@@ -90,21 +103,23 @@ export const FAQSectionBlock = createReactBlockSpec(
     {
         type: 'faqSection',
         propSchema: {
+            // Title kept in props for backward compatibility during migration
+            // After migration, title will also move to context
             title: { default: 'Frequently Asked Questions' },
-            items: { default: '[]' },
+            // items removed - now stored in faqs_json via FAQDataContext
         },
         content: 'none',
     },
     {
         render: (props) => {
             const { block, editor } = props;
-            const items = (() => {
-                try {
-                    return JSON.parse(block.props.items || '[]');
-                } catch {
-                    return [];
-                }
-            })();
+
+            // Use context for FAQ data (mirrors RecipeDataContext pattern)
+            const { faqs, setFaqs, faqTitle, setFaqTitle } = useFAQData();
+
+            // The context provides the data - use it directly
+            const items = faqs || [];
+            const title = faqTitle || 'Frequently Asked Questions';
 
             const { isSelected, selectBlock } = useBlockSelection(block.id);
             const [expanded, setExpanded] = useState({});
@@ -112,10 +127,17 @@ export const FAQSectionBlock = createReactBlockSpec(
             const answerRefs = useRef({});
 
             const updateItems = (newItems) => {
-                editor.updateBlock(block, {
-                    type: 'faqSection',
-                    props: { ...block.props, items: JSON.stringify(newItems) },
-                });
+                // Update context (primary data source)
+                if (setFaqs) {
+                    setFaqs(newItems);
+                }
+            };
+
+            const updateTitle = (newTitle) => {
+                // Update context (primary data source)
+                if (setFaqTitle) {
+                    setFaqTitle(newTitle);
+                }
             };
 
             const moveBlockUp = () => {
@@ -224,11 +246,8 @@ export const FAQSectionBlock = createReactBlockSpec(
                         <div className="bg-muted/50 p-4 border-b">
                             <input
                                 type="text"
-                                value={block.props.title}
-                                onChange={(e) => editor.updateBlock(block, {
-                                    type: 'faqSection',
-                                    props: { ...block.props, title: e.target.value }
-                                })}
+                                value={title}
+                                onChange={(e) => updateTitle(e.target.value)}
                                 className={cn(
                                     'text-lg font-semibold w-full',
                                     'bg-transparent border-none p-0',
@@ -393,7 +412,7 @@ export const FAQSectionBlock = createReactBlockSpec(
                             </button>
                         )}
                     </div>
-                </BlockWrapper>
+                </BlockWrapper >
             );
         },
     }

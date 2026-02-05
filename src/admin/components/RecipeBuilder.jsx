@@ -3,7 +3,7 @@ import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 import { Textarea } from "@/ui/textarea";
-import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye, Sparkles, Loader2 } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -16,6 +16,14 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/ui/collapsible";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/ui/dialog";
+import { articlesAPI } from '@/services/api';
 
 // Default recipe matching schema.sql structure
 const defaultRecipe = {
@@ -64,6 +72,56 @@ export default function RecipeBuilder({ value, onChange }) {
     const [jsonError, setJsonError] = useState('');
     const [jsonMode, setJsonMode] = useState(false);
     const [jsonEditValue, setJsonEditValue] = useState('');
+
+    // AI Generation state
+    const [aiDialogOpen, setAiDialogOpen] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState('');
+
+    // AI Generate Handler
+    const handleAIGenerate = async () => {
+        if (!aiPrompt.trim()) {
+            setAiError('Please enter a recipe description');
+            return;
+        }
+        setAiLoading(true);
+        setAiError('');
+        try {
+            const response = await fetch('/api/admin/ai/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...articlesAPI.getAuthHeaders?.() || {}
+                },
+                body: JSON.stringify({
+                    prompt: `Generate a complete recipe for: ${aiPrompt}. Include ingredients with amounts and units, step-by-step instructions, prep time, cook time, servings, difficulty, and nutrition facts.`,
+                    contentType: 'recipe',
+                }),
+            });
+            const result = await response.json();
+            if (result.success && result.data?.content) {
+                const generated = result.data.content;
+                // Merge AI-generated content with existing structure
+                const newData = {
+                    ...defaultRecipe,
+                    ...generated,
+                    ingredients: generated.ingredients || defaultRecipe.ingredients,
+                    instructions: generated.instructions || defaultRecipe.instructions,
+                };
+                setData(newData);
+                onChange(JSON.stringify(newData, null, 2));
+                setAiDialogOpen(false);
+                setAiPrompt('');
+            } else {
+                setAiError(result.error || 'Failed to generate recipe');
+            }
+        } catch (err) {
+            setAiError('Network error: ' + err.message);
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
     useEffect(() => {
         try {
@@ -274,29 +332,83 @@ export default function RecipeBuilder({ value, onChange }) {
             {/* Header with Mode Toggle */}
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Recipe Details</h3>
-                {/* Mode Toggle */}
-                <div className="flex p-1 bg-muted rounded-lg">
+                <div className="flex items-center gap-2">
+                    {/* AI Generate Button */}
                     <Button
-                        variant={!jsonMode ? "default" : "ghost"}
+                        variant="outline"
                         size="sm"
-                        className="gap-1.5 h-7"
-                        onClick={() => setJsonMode(false)}
+                        className="gap-1.5 h-7 text-violet-600 border-violet-200 hover:bg-violet-50"
+                        onClick={() => setAiDialogOpen(true)}
                     >
-                        <Eye className="w-3.5 h-3.5" /> Visual
+                        <Sparkles className="w-3.5 h-3.5" /> Generate with AI
                     </Button>
-                    <Button
-                        variant={jsonMode ? "default" : "ghost"}
-                        size="sm"
-                        className="gap-1.5 h-7"
-                        onClick={() => {
-                            setJsonEditValue(JSON.stringify(data, null, 2));
-                            setJsonMode(true);
-                        }}
-                    >
-                        <Code className="w-3.5 h-3.5" /> JSON
-                    </Button>
+                    {/* Mode Toggle */}
+                    <div className="flex p-1 bg-muted rounded-lg">
+                        <Button
+                            variant={!jsonMode ? "default" : "ghost"}
+                            size="sm"
+                            className="gap-1.5 h-7"
+                            onClick={() => setJsonMode(false)}
+                        >
+                            <Eye className="w-3.5 h-3.5" /> Visual
+                        </Button>
+                        <Button
+                            variant={jsonMode ? "default" : "ghost"}
+                            size="sm"
+                            className="gap-1.5 h-7"
+                            onClick={() => {
+                                setJsonEditValue(JSON.stringify(data, null, 2));
+                                setJsonMode(true);
+                            }}
+                        >
+                            <Code className="w-3.5 h-3.5" /> JSON
+                        </Button>
+                    </div>
                 </div>
             </div>
+
+            {/* AI Generation Dialog */}
+            <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-violet-500" />
+                            Generate Recipe with AI
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="ai-prompt">Describe your recipe</Label>
+                            <Textarea
+                                id="ai-prompt"
+                                placeholder="e.g., A healthy vegetarian pasta with spinach and sun-dried tomatoes, ready in 30 minutes"
+                                value={aiPrompt}
+                                onChange={(e) => setAiPrompt(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                        {aiError && (
+                            <p className="text-sm text-red-500">{aiError}</p>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setAiDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleAIGenerate}
+                            disabled={aiLoading}
+                            className="gap-2"
+                        >
+                            {aiLoading ? (
+                                <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                            ) : (
+                                <><Sparkles className="w-4 h-4" /> Generate</>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* JSON Mode Editor */}
             {jsonMode ? (

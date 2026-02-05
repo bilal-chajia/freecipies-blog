@@ -71,6 +71,7 @@ import {
 
 import { RecipeDataContext } from './blocks/MainRecipeBlock';
 import { RoundupDataContext } from './blocks/RoundupListBlock';
+import { FAQDataContext } from './blocks/FAQSectionBlock';
 
 // Create custom schema with our blocks
 const schema = BlockNoteSchema.create({
@@ -942,6 +943,7 @@ function contentJsonToBlocks(contentJson) {
                     };
 
                 case 'faq_section':
+                    // Read title and items from content_json into props
                     return {
                         id,
                         type: 'faqSection',
@@ -956,6 +958,14 @@ function contentJsonToBlocks(contentJson) {
                         id,
                         type: 'divider',
                         props: { style: block.style || 'solid' }
+                    };
+
+                case 'main_recipe':
+                    // Convert content_json marker back to BlockNote block
+                    return {
+                        id,
+                        type: 'mainRecipe',
+                        props: {}
                     };
 
                 case 'recipe_card': {
@@ -1125,16 +1135,19 @@ function blocksToContentJson(blocks) {
                 break;
 
             case 'faqSection':
-                try {
-                    const items = JSON.parse(block.props.items || '[]');
-                    if (items.length > 0) {
-                        result.push({ type: 'faq_section', title: block.props.title, items: items });
-                    }
-                } catch { }
+                // Serialize faqSection as a marker in content_json
+                // The actual FAQ data is stored in faqs_json via FAQDataContext
+                result.push({ type: 'faq_section' });
                 break;
 
             case 'divider':
                 result.push({ type: 'divider' });
+                break;
+
+            case 'mainRecipe':
+                // Serialize mainRecipe as a marker in content_json
+                // The actual recipe data is stored in recipe_json separately
+                result.push({ type: 'main_recipe' });
                 break;
 
             case 'recipeEmbed':
@@ -1289,6 +1302,10 @@ export default function BlockEditor({
     onRecipeChange,
     roundup,
     onRoundupChange,
+    faqs,
+    onFaqsChange,
+    faqTitle,
+    onFaqTitleChange,
     onEditorReady,
     placeholder = 'Start writing your article...',
     className = '',
@@ -1998,103 +2015,140 @@ export default function BlockEditor({
             <BlockSelectionProvider activeBlockId={activeBlockId} setActiveBlockId={setActiveBlockId}>
                 <RecipeDataContext.Provider value={{ recipe, setRecipe: onRecipeChange }}>
                     <RoundupDataContext.Provider value={{ roundup, setRoundup: onRoundupChange }}>
-                        <div
-                            ref={wrapperRef}
-                            className={cn(
-                                "block-editor-wrapper relative",
-                                isSidebarOpen && "sidebar-open",
-                                className
-                            )}
-                        >
-                            <div className="block-editor-main flex min-h-0">
-                                <div ref={canvasRef} className="block-editor-canvas flex-1 min-h-0 relative">
-                                    <DndContext
-                                        sensors={canvasSensors}
-                                        onDragStart={handleCanvasDragStart}
-                                        onDragEnd={handleCanvasDragEnd}
-                                        onDragCancel={handleCanvasDragCancel}
-                                    >
-                                        <BlockNoteViewWithPortal
-                                            editor={editor}
-                                            theme="light"
-                                            slashMenu={false}
-                                            formattingToolbar={false}
-                                            linkToolbar={false}
+                        <FAQDataContext.Provider value={{
+                            faqs: (() => {
+                                if (!faqs) return [];
+                                if (Array.isArray(faqs)) return faqs;
+                                try { return JSON.parse(faqs) || []; } catch { return []; }
+                            })(),
+                            setFaqs: (newFaqs) => {
+                                if (onFaqsChange) {
+                                    onFaqsChange(Array.isArray(newFaqs) ? newFaqs : []);
+                                }
+                            },
+                            faqTitle: faqTitle || 'Frequently Asked Questions',
+                            setFaqTitle: onFaqTitleChange || (() => { }),
+                        }}>
+                            <div
+                                ref={wrapperRef}
+                                className={cn(
+                                    "block-editor-wrapper relative",
+                                    isSidebarOpen && "sidebar-open",
+                                    className
+                                )}
+                            >
+                                <div className="block-editor-main flex min-h-0">
+                                    <div ref={canvasRef} className="block-editor-canvas flex-1 min-h-0 relative">
+                                        <DndContext
+                                            sensors={canvasSensors}
+                                            onDragStart={handleCanvasDragStart}
+                                            onDragEnd={handleCanvasDragEnd}
+                                            onDragCancel={handleCanvasDragCancel}
                                         >
-                                            <SuggestionMenuController
-                                                triggerCharacter="/"
-                                                getItems={async (query) => getCustomSlashMenuItems(editor, {
-                                                    contentType,
-                                                    hasRecipeContext: typeof onRecipeChange === 'function',
-                                                    hasRoundupContext: typeof onRoundupChange === 'function',
-                                                }).filter(item => item.title.toLowerCase().includes(query.toLowerCase()))}
-                                            />
-                                        </BlockNoteViewWithPortal>
-                                    </DndContext>
-                                    {linkToolbar.open && (
-                                        <div
-                                            className="inline-link-toolbar"
-                                            style={{
-                                                top: `${linkToolbar.top}px`,
-                                                left: `${linkToolbar.left}px`,
-                                            }}
-                                            onMouseDown={(event) => {
-                                                if (!(event.target instanceof HTMLInputElement)) {
-                                                    event.preventDefault();
-                                                }
-                                            }}
-                                        >
-                                            <div className="inline-link-toolbar-inner">
-                                                <button
-                                                    type="button"
-                                                    className={cn('inline-link-button', activeStyles?.bold && 'is-active')}
-                                                    onClick={() => {
-                                                        editor.toggleStyles({ bold: true });
-                                                        editor.focus();
-                                                        setActiveStyles(editor.getActiveStyles() || {});
-                                                    }}
-                                                    title="Bold"
-                                                >
-                                                    <Bold className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={cn('inline-link-button', activeStyles?.italic && 'is-active')}
-                                                    onClick={() => {
-                                                        editor.toggleStyles({ italic: true });
-                                                        editor.focus();
-                                                        setActiveStyles(editor.getActiveStyles() || {});
-                                                    }}
-                                                    title="Italic"
-                                                >
-                                                    <Italic className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={cn('inline-link-button', linkToolbar.mode === 'link' && 'is-active')}
-                                                    onClick={() => {
-                                                        setLinkToolbar((prev) => ({
-                                                            ...prev,
-                                                            mode: 'link',
-                                                            url: prev.url || 'https://',
-                                                        }));
-                                                    }}
-                                                    title="Insert link"
-                                                >
-                                                    <LinkIcon className="w-4 h-4" />
-                                                </button>
-                                                {linkToolbar.mode === 'link' && (
-                                                    <div className="inline-link-input">
-                                                        <input
-                                                            type="url"
-                                                            value={linkToolbar.url}
-                                                            onChange={(event) => {
-                                                                const value = event.target.value;
-                                                                setLinkToolbar((prev) => ({ ...prev, url: value }));
-                                                            }}
-                                                            onKeyDown={(event) => {
-                                                                if (event.key === 'Enter') {
-                                                                    event.preventDefault();
+                                            <BlockNoteViewWithPortal
+                                                editor={editor}
+                                                theme="light"
+                                                slashMenu={false}
+                                                formattingToolbar={false}
+                                                linkToolbar={false}
+                                            >
+                                                <SuggestionMenuController
+                                                    triggerCharacter="/"
+                                                    getItems={async (query) => getCustomSlashMenuItems(editor, {
+                                                        contentType,
+                                                        hasRecipeContext: typeof onRecipeChange === 'function',
+                                                        hasRoundupContext: typeof onRoundupChange === 'function',
+                                                    }).filter(item => item.title.toLowerCase().includes(query.toLowerCase()))}
+                                                />
+                                            </BlockNoteViewWithPortal>
+                                        </DndContext>
+                                        {linkToolbar.open && (
+                                            <div
+                                                className="inline-link-toolbar"
+                                                style={{
+                                                    top: `${linkToolbar.top}px`,
+                                                    left: `${linkToolbar.left}px`,
+                                                }}
+                                                onMouseDown={(event) => {
+                                                    if (!(event.target instanceof HTMLInputElement)) {
+                                                        event.preventDefault();
+                                                    }
+                                                }}
+                                            >
+                                                <div className="inline-link-toolbar-inner">
+                                                    <button
+                                                        type="button"
+                                                        className={cn('inline-link-button', activeStyles?.bold && 'is-active')}
+                                                        onClick={() => {
+                                                            editor.toggleStyles({ bold: true });
+                                                            editor.focus();
+                                                            setActiveStyles(editor.getActiveStyles() || {});
+                                                        }}
+                                                        title="Bold"
+                                                    >
+                                                        <Bold className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className={cn('inline-link-button', activeStyles?.italic && 'is-active')}
+                                                        onClick={() => {
+                                                            editor.toggleStyles({ italic: true });
+                                                            editor.focus();
+                                                            setActiveStyles(editor.getActiveStyles() || {});
+                                                        }}
+                                                        title="Italic"
+                                                    >
+                                                        <Italic className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className={cn('inline-link-button', linkToolbar.mode === 'link' && 'is-active')}
+                                                        onClick={() => {
+                                                            setLinkToolbar((prev) => ({
+                                                                ...prev,
+                                                                mode: 'link',
+                                                                url: prev.url || 'https://',
+                                                            }));
+                                                        }}
+                                                        title="Insert link"
+                                                    >
+                                                        <LinkIcon className="w-4 h-4" />
+                                                    </button>
+                                                    {linkToolbar.mode === 'link' && (
+                                                        <div className="inline-link-input">
+                                                            <input
+                                                                type="url"
+                                                                value={linkToolbar.url}
+                                                                onChange={(event) => {
+                                                                    const value = event.target.value;
+                                                                    setLinkToolbar((prev) => ({ ...prev, url: value }));
+                                                                }}
+                                                                onKeyDown={(event) => {
+                                                                    if (event.key === 'Enter') {
+                                                                        event.preventDefault();
+                                                                        const selectedText = linkToolbar.text || editor.getSelectedText();
+                                                                        if (!selectedText || !linkToolbar.url) return;
+                                                                        const selectionRange = linkToolbar.selection;
+                                                                        if (selectionRange && editor._tiptapEditor?.commands?.setTextSelection) {
+                                                                            editor._tiptapEditor.commands.setTextSelection(selectionRange);
+                                                                        }
+                                                                        editor.createLink(linkToolbar.url, selectedText);
+                                                                        editor.focus();
+                                                                        setLinkToolbar((prev) => ({ ...prev, open: false, mode: 'buttons' }));
+                                                                    }
+                                                                    if (event.key === 'Escape') {
+                                                                        event.preventDefault();
+                                                                        setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }));
+                                                                    }
+                                                                }}
+                                                                className="inline-link-input-field"
+                                                                placeholder="https://"
+                                                                autoFocus
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className="inline-link-action"
+                                                                onClick={() => {
                                                                     const selectedText = linkToolbar.text || editor.getSelectedText();
                                                                     if (!selectedText || !linkToolbar.url) return;
                                                                     const selectionRange = linkToolbar.selection;
@@ -2104,178 +2158,155 @@ export default function BlockEditor({
                                                                     editor.createLink(linkToolbar.url, selectedText);
                                                                     editor.focus();
                                                                     setLinkToolbar((prev) => ({ ...prev, open: false, mode: 'buttons' }));
-                                                                }
-                                                                if (event.key === 'Escape') {
-                                                                    event.preventDefault();
-                                                                    setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }));
-                                                                }
-                                                            }}
-                                                            className="inline-link-input-field"
-                                                            placeholder="https://"
-                                                            autoFocus
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            className="inline-link-action"
-                                                            onClick={() => {
-                                                                const selectedText = linkToolbar.text || editor.getSelectedText();
-                                                                if (!selectedText || !linkToolbar.url) return;
-                                                                const selectionRange = linkToolbar.selection;
-                                                                if (selectionRange && editor._tiptapEditor?.commands?.setTextSelection) {
-                                                                    editor._tiptapEditor.commands.setTextSelection(selectionRange);
-                                                                }
-                                                                editor.createLink(linkToolbar.url, selectedText);
-                                                                editor.focus();
-                                                                setLinkToolbar((prev) => ({ ...prev, open: false, mode: 'buttons' }));
-                                                            }}
-                                                            title="Apply link"
-                                                        >
-                                                            <Check className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="inline-link-action"
-                                                            onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }))}
-                                                            title="Cancel"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                                }}
+                                                                title="Apply link"
+                                                            >
+                                                                <Check className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                className="inline-link-action"
+                                                                onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }))}
+                                                                title="Cancel"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                    {insertHandle && (
-                                        <div
-                                            className="block-insert-handle"
-                                            style={{
-                                                top: `${insertHandle.top}px`,
-                                                left: `${insertHandle.left}px`,
-                                                width: `${insertHandle.width}px`,
-                                            }}
-                                        >
-                                            <div className="block-insert-line" />
-                                            <DropdownMenu
-                                                open={insertMenuOpen}
-                                                onOpenChange={(open) => {
-                                                    insertMenuOpenRef.current = open;
-                                                    setInsertMenuOpen(open);
-                                                    if (!open) {
-                                                        setInsertHandle(null);
-                                                    }
+                                        )}
+                                        {insertHandle && (
+                                            <div
+                                                className="block-insert-handle"
+                                                style={{
+                                                    top: `${insertHandle.top}px`,
+                                                    left: `${insertHandle.left}px`,
+                                                    width: `${insertHandle.width}px`,
                                                 }}
                                             >
-                                                <DropdownMenuTrigger asChild>
-                                                    <button
-                                                        type="button"
-                                                        className="block-insert-button"
-                                                        onMouseDown={(event) => {
-                                                            event.preventDefault();
-                                                            event.stopPropagation();
-                                                            insertMenuOpenRef.current = true;
-                                                            setInsertMenuOpen(true);
-                                                        }}
-                                                        title="Insert block"
-                                                    >
-                                                        <Plus className="w-4 h-4" />
-                                                    </button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="center" className="w-56">
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('paragraph')}>
-                                                        <FileText className="w-4 h-4 mr-2" />
-                                                        Paragraph
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 2 })}>
-                                                        <Heading2 className="w-4 h-4 mr-2" />
-                                                        Heading 2
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 3 })}>
-                                                        <Heading3 className="w-4 h-4 mr-2" />
-                                                        Heading 3
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 4 })}>
-                                                        <Heading3 className="w-4 h-4 mr-2" />
-                                                        Heading 4
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 5 })}>
-                                                        <Heading3 className="w-4 h-4 mr-2" />
-                                                        Heading 5
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 6 })}>
-                                                        <Heading3 className="w-4 h-4 mr-2" />
-                                                        Heading 6
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('bulletListItem')}>
-                                                        <List className="w-4 h-4 mr-2" />
-                                                        Bulleted list
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('numberedListItem')}>
-                                                        <ListOrdered className="w-4 h-4 mr-2" />
-                                                        Numbered list
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('blockquote')}>
-                                                        <Quote className="w-4 h-4 mr-2" />
-                                                        Quote
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('customImage')}>
-                                                        <ImageIcon className="w-4 h-4 mr-2" />
-                                                        Image
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('video')}>
-                                                        <Video className="w-4 h-4 mr-2" />
-                                                        Video
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('beforeAfter')}>
-                                                        <SplitSquareVertical className="w-4 h-4 mr-2" />
-                                                        Before / After
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('alert', { type: 'tip' })}>
-                                                        <AlertTriangle className="w-4 h-4 mr-2" />
-                                                        Tip box
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('faqSection')}>
-                                                        <HelpCircle className="w-4 h-4 mr-2" />
-                                                        FAQ
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('simpleTable')}>
-                                                        <Table className="w-4 h-4 mr-2" />
-                                                        Table
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('divider')}>
-                                                        <Minus className="w-4 h-4 mr-2" />
-                                                        Divider
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    {contentType === 'recipe' && typeof onRecipeChange === 'function' && (
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('mainRecipe')}>
+                                                <div className="block-insert-line" />
+                                                <DropdownMenu
+                                                    open={insertMenuOpen}
+                                                    onOpenChange={(open) => {
+                                                        insertMenuOpenRef.current = open;
+                                                        setInsertMenuOpen(open);
+                                                        if (!open) {
+                                                            setInsertHandle(null);
+                                                        }
+                                                    }}
+                                                >
+                                                    <DropdownMenuTrigger asChild>
+                                                        <button
+                                                            type="button"
+                                                            className="block-insert-button"
+                                                            onMouseDown={(event) => {
+                                                                event.preventDefault();
+                                                                event.stopPropagation();
+                                                                insertMenuOpenRef.current = true;
+                                                                setInsertMenuOpen(true);
+                                                            }}
+                                                            title="Insert block"
+                                                        >
+                                                            <Plus className="w-4 h-4" />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="center" className="w-56">
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('paragraph')}>
+                                                            <FileText className="w-4 h-4 mr-2" />
+                                                            Paragraph
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 2 })}>
+                                                            <Heading2 className="w-4 h-4 mr-2" />
+                                                            Heading 2
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 3 })}>
+                                                            <Heading3 className="w-4 h-4 mr-2" />
+                                                            Heading 3
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 4 })}>
+                                                            <Heading3 className="w-4 h-4 mr-2" />
+                                                            Heading 4
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 5 })}>
+                                                            <Heading3 className="w-4 h-4 mr-2" />
+                                                            Heading 5
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 6 })}>
+                                                            <Heading3 className="w-4 h-4 mr-2" />
+                                                            Heading 6
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('bulletListItem')}>
+                                                            <List className="w-4 h-4 mr-2" />
+                                                            Bulleted list
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('numberedListItem')}>
+                                                            <ListOrdered className="w-4 h-4 mr-2" />
+                                                            Numbered list
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('blockquote')}>
+                                                            <Quote className="w-4 h-4 mr-2" />
+                                                            Quote
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('customImage')}>
+                                                            <ImageIcon className="w-4 h-4 mr-2" />
+                                                            Image
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('video')}>
+                                                            <Video className="w-4 h-4 mr-2" />
+                                                            Video
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('beforeAfter')}>
+                                                            <SplitSquareVertical className="w-4 h-4 mr-2" />
+                                                            Before / After
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('alert', { type: 'tip' })}>
+                                                            <AlertTriangle className="w-4 h-4 mr-2" />
+                                                            Tip box
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('faqSection')}>
+                                                            <HelpCircle className="w-4 h-4 mr-2" />
+                                                            FAQ
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('simpleTable')}>
+                                                            <Table className="w-4 h-4 mr-2" />
+                                                            Table
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('divider')}>
+                                                            <Minus className="w-4 h-4 mr-2" />
+                                                            Divider
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        {contentType === 'recipe' && typeof onRecipeChange === 'function' && (
+                                                            <DropdownMenuItem onClick={() => insertBlockAtHandle('mainRecipe')}>
+                                                                <Utensils className="w-4 h-4 mr-2" />
+                                                                Recipe details
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        {contentType === 'roundup' && typeof onRoundupChange === 'function' && (
+                                                            <DropdownMenuItem onClick={() => insertBlockAtHandle('roundupList')}>
+                                                                <LayoutGrid className="w-4 h-4 mr-2" />
+                                                                Roundup list
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('recipeEmbed')}>
                                                             <Utensils className="w-4 h-4 mr-2" />
-                                                            Recipe details
+                                                            Embed recipe
                                                         </DropdownMenuItem>
-                                                    )}
-                                                    {contentType === 'roundup' && typeof onRoundupChange === 'function' && (
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('roundupList')}>
+                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('relatedContent')}>
                                                             <LayoutGrid className="w-4 h-4 mr-2" />
-                                                            Roundup list
+                                                            Related content
                                                         </DropdownMenuItem>
-                                                    )}
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('recipeEmbed')}>
-                                                        <Utensils className="w-4 h-4 mr-2" />
-                                                        Embed recipe
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => insertBlockAtHandle('relatedContent')}>
-                                                        <LayoutGrid className="w-4 h-4 mr-2" />
-                                                        Related content
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <style>{`
+                                <style>{`
         .block-editor-wrapper {
           border: none;
           border-radius: 0;
@@ -2612,7 +2643,8 @@ export default function BlockEditor({
           width: 12px;
         }
       `}</style>
-                        </div>
+                            </div>
+                        </FAQDataContext.Provider>
                     </RoundupDataContext.Provider>
                 </RecipeDataContext.Provider>
             </BlockSelectionProvider>

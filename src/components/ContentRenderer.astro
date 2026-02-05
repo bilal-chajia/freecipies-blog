@@ -3,7 +3,10 @@ import RelatedContent from "./RelatedContent.astro";
 import TableBlock from "./TableBlock.astro";
 import BeforeAfter from "./BeforeAfter.astro";
 
-const { content } = Astro.props as { content?: unknown };
+const { content, faqsJson } = Astro.props as {
+  content?: unknown;
+  faqsJson?: unknown;
+};
 
 const sanitizeHref = (href: string) => {
   if (!href) return "";
@@ -52,6 +55,38 @@ const parsed = (() => {
   }
   return [];
 })();
+
+// Parse FAQ data from faqsJson prop (stored separately from content_json)
+const parsedFaqs: Array<{ q?: string; a?: string; title?: string }> = (() => {
+  if (!faqsJson) return [];
+  if (Array.isArray(faqsJson)) return faqsJson;
+  if (typeof faqsJson === "string") {
+    try {
+      const json = JSON.parse(faqsJson);
+      return Array.isArray(json) ? json : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+})();
+
+// Generate FAQPage JSON-LD if there are FAQ items
+const faqJsonLd =
+  parsedFaqs.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: parsedFaqs.map((faq: { q?: string; a?: string }) => ({
+          "@type": "Question",
+          name: faq.q || "",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a || "",
+          },
+        })),
+      }
+    : null;
 ---
 
 {
@@ -90,21 +125,9 @@ const parsed = (() => {
       );
     }
     if (block.type === "faq_section") {
-      return (
-        <div class="space-y-4">
-          <h3 class="text-lg font-semibold">{block.title || "FAQs"}</h3>
-          {Array.isArray(block.items) &&
-            block.items.map((faq: { q?: string; a?: string }, idx: number) => (
-              <div class="border-b pb-3">
-                <p class="font-medium" set:html={renderInlineMarkdown(faq.q)} />
-                <p
-                  class="text-gray-600"
-                  set:html={renderInlineMarkdown(faq.a)}
-                />
-              </div>
-            ))}
-        </div>
-      );
+      // FAQ is rendered by RecipeLayout's dedicated section from faqsJson
+      // This marker exists only to indicate position - skip rendering here
+      return null;
     }
     if (block.type === "related_content")
       return <RelatedContent block={block} />;
@@ -120,7 +143,7 @@ const parsed = (() => {
             style={{
               borderTopWidth: style === "double" ? "4px" : "2px",
               borderTopStyle: style,
-              borderTopColor: "#9ca3af"
+              borderTopColor: "#9ca3af",
             }}
           />
         </div>
@@ -128,4 +151,11 @@ const parsed = (() => {
     }
     return null;
   })
+}
+
+{/* FAQ JSON-LD for SEO */}
+{
+  faqJsonLd && (
+    <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+  )
 }

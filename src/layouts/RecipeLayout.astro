@@ -59,7 +59,9 @@ const authorImage = authorAvatar.imageUrl || author?.imageUrl;
 const authorImageWidth = authorAvatar.imageWidth || 48;
 const authorImageHeight = authorAvatar.imageHeight || 48;
 const authorImageStyle = authorAvatar.imageStyle;
-const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [];
+const contentBlocks = Array.isArray(recipe.contentJson)
+  ? recipe.contentJson
+  : [];
 ---
 
 <Layout
@@ -78,6 +80,88 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
         imagesrcset={heroSrcSet || undefined}
         imagesizes={heroSrcSet ? heroSizes : undefined}
         fetchpriority="high"
+      />
+    )
+  }
+  {
+    recipeJson && (
+      <script
+        slot="head"
+        type="application/ld+json"
+        set:html={JSON.stringify(
+          {
+            "@context": "https://schema.org/",
+            "@type": "Recipe",
+            name: recipe.headline || recipe.label,
+            description: recipe.shortDescription,
+            image: heroImage.imageUrl || recipe.imageUrl,
+            author: {
+              "@type": "Person",
+              name: author?.name || recipe.authorName || "Freecipies",
+            },
+            datePublished: recipe.publishedAt,
+            prepTime: recipeJson.prep
+              ? `PT${recipeJson.prep}M`
+              : recipeJson.prepTime,
+            cookTime: recipeJson.cook
+              ? `PT${recipeJson.cook}M`
+              : recipeJson.cookTime,
+            totalTime: recipeJson.total
+              ? `PT${recipeJson.total}M`
+              : recipeJson.totalTime,
+            recipeYield:
+              recipeJson.recipeYield ||
+              (recipeJson.servings
+                ? `${recipeJson.servings} servings`
+                : undefined),
+            recipeCategory: recipeJson.recipeCategory || category?.label,
+            recipeCuisine: recipeJson.recipeCuisine,
+            keywords: recipeJson.keywords?.join(", "),
+            recipeIngredient: recipeJson.ingredients?.flatMap((g: any) =>
+              (g.items || []).map((item: any) =>
+                typeof item === "string"
+                  ? item
+                  : [item.amount, item.unit, item.name]
+                      .filter(Boolean)
+                      .join(" "),
+              ),
+            ),
+            recipeInstructions: recipeJson.instructions?.flatMap(
+              (section: any) =>
+                (section.steps || []).map((step: any, idx: number) => ({
+                  "@type": "HowToStep",
+                  position: idx + 1,
+                  text: typeof step === "string" ? step : step.text,
+                })),
+            ),
+            nutrition: recipeJson.nutrition
+              ? {
+                  "@type": "NutritionInformation",
+                  calories: recipeJson.nutrition.calories
+                    ? `${recipeJson.nutrition.calories} calories`
+                    : undefined,
+                  fatContent: recipeJson.nutrition.fatContent
+                    ? `${recipeJson.nutrition.fatContent}g`
+                    : undefined,
+                  proteinContent: recipeJson.nutrition.proteinContent
+                    ? `${recipeJson.nutrition.proteinContent}g`
+                    : undefined,
+                  carbohydrateContent: recipeJson.nutrition.carbohydrateContent
+                    ? `${recipeJson.nutrition.carbohydrateContent}g`
+                    : undefined,
+                }
+              : undefined,
+            aggregateRating: recipeJson.aggregateRating?.ratingValue
+              ? {
+                  "@type": "AggregateRating",
+                  ratingValue: recipeJson.aggregateRating.ratingValue,
+                  ratingCount: recipeJson.aggregateRating.ratingCount || 1,
+                }
+              : undefined,
+          },
+          null,
+          0,
+        )}
       />
     )
   }
@@ -105,6 +189,39 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
         {
           recipe.shortDescription && (
             <p class="recipe-description">{recipe.shortDescription}</p>
+          )
+        }
+
+        <!-- Jump to Recipe Button -->
+        {
+          recipeJson && (
+            <div class="jump-to-recipe">
+              <a href="#recipe-card" class="jump-btn">
+                <svg
+                  class="icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M12 5v14M19 12l-7 7-7-7" />
+                </svg>
+                Jump to Recipe
+              </a>
+              <button type="button" class="print-btn" onclick="window.print()">
+                <svg
+                  class="icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+                  <rect x="6" y="14" width="12" height="8" />
+                </svg>
+                Print
+              </button>
+            </div>
           )
         }
 
@@ -160,7 +277,7 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
         {
           recipeJson && (
             <div class="recipe-meta-pills">
-              {recipeJson.prepTime && (
+              {(recipeJson.prep || recipeJson.prepTime) && (
                 <div class="meta-pill">
                   <svg
                     class="icon"
@@ -173,10 +290,14 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                   <span class="label">Prep</span>
-                  <span class="value">{recipeJson.prepTime}</span>
+                  <span class="value">
+                    {recipeJson.prep
+                      ? `${recipeJson.prep} min`
+                      : recipeJson.prepTime}
+                  </span>
                 </div>
               )}
-              {recipeJson.cookTime && (
+              {(recipeJson.cook || recipeJson.cookTime) && (
                 <div class="meta-pill">
                   <svg
                     class="icon"
@@ -188,7 +309,31 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
                   <span class="label">Cook</span>
-                  <span class="value">{recipeJson.cookTime}</span>
+                  <span class="value">
+                    {recipeJson.cook
+                      ? `${recipeJson.cook} min`
+                      : recipeJson.cookTime}
+                  </span>
+                </div>
+              )}
+              {(recipeJson.total || recipeJson.totalTime) && (
+                <div class="meta-pill">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                  </svg>
+                  <span class="label">Total</span>
+                  <span class="value">
+                    {recipeJson.total
+                      ? `${recipeJson.total} min`
+                      : recipeJson.totalTime}
+                  </span>
                 </div>
               )}
               {recipeJson.servings && (
@@ -241,7 +386,10 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
         {
           contentBlocks.length > 0 && (
             <section class="content-section content-json-section">
-              <ContentRenderer content={contentBlocks} />
+              <ContentRenderer
+                content={contentBlocks}
+                faqsJson={recipe.faqsJson}
+              />
             </section>
           )
         }
@@ -251,21 +399,39 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
           recipeJson?.ingredients &&
             Array.isArray(recipeJson.ingredients) &&
             recipeJson.ingredients.length > 0 && (
-              <section class="content-section ingredients-section">
+              <section
+                id="recipe-card"
+                class="content-section ingredients-section"
+              >
                 <h2>Ingredients</h2>
                 {recipeJson.ingredients.map(
-                  (group: { group: string; items: string[] }) => (
+                  (group: {
+                    group?: string;
+                    group_title?: string;
+                    items?: any[];
+                  }) => (
                     <div class="ingredient-group">
-                      {group.group && <h3>{group.group}</h3>}
+                      {(group.group_title || group.group) && (
+                        <h3>{group.group_title || group.group}</h3>
+                      )}
                       <ul class="ingredient-list">
                         {group.items &&
                           Array.isArray(group.items) &&
-                          group.items.map((item: string) => (
-                            <li>
-                              <span class="checkbox" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
+                          group.items.map((item: any) => {
+                            // Handle both legacy string format and new object format
+                            const displayText =
+                              typeof item === "string"
+                                ? item
+                                : [item.amount, item.unit, item.name]
+                                    .filter(Boolean)
+                                    .join(" ");
+                            return (
+                              <li>
+                                <span class="checkbox" />
+                                <span>{displayText}</span>
+                              </li>
+                            );
+                          })}
                       </ul>
                     </div>
                   ),
@@ -282,18 +448,29 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
               <section class="content-section instructions-section">
                 <h2>Instructions</h2>
                 {recipeJson.instructions.map(
-                  (group: { group: string; steps: string[] }) => (
+                  (group: {
+                    group?: string;
+                    section_title?: string;
+                    steps?: any[];
+                  }) => (
                     <div class="instruction-group">
-                      {group.group && <h3>{group.group}</h3>}
+                      {(group.section_title || group.group) && (
+                        <h3>{group.section_title || group.group}</h3>
+                      )}
                       <ol class="instruction-list">
                         {group.steps &&
                           Array.isArray(group.steps) &&
-                          group.steps.map((step: string, index: number) => (
-                            <li>
-                              <span class="step-number">{index + 1}</span>
-                              <p>{step}</p>
-                            </li>
-                          ))}
+                          group.steps.map((step: any, index: number) => {
+                            // Handle both legacy string format and new object format
+                            const stepText =
+                              typeof step === "string" ? step : step.text;
+                            return (
+                              <li>
+                                <span class="step-number">{index + 1}</span>
+                                <p>{stepText}</p>
+                              </li>
+                            );
+                          })}
                       </ol>
                     </div>
                   ),
@@ -320,23 +497,55 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
             )
         }
 
-        <!-- FAQs -->
+        <!-- FAQs - Modern Accordion -->
         {
-          recipe.faqsJson &&
-            Array.isArray(recipe.faqsJson) &&
-            recipe.faqsJson.length > 0 && (
-              <section class="content-section faqs-section">
-                <h2>Frequently Asked Questions</h2>
-                <div class="faq-list">
-                  {recipe.faqsJson.map((faq: FaqItem) => (
-                    <details class="faq-item">
-                      <summary>{faq.question}</summary>
-                      <div class="faq-answer" set:html={faq.answer} />
+          (() => {
+            // Parse faqsJson if it's a string
+            const faqs = typeof recipe.faqsJson === 'string' 
+              ? (() => { try { return JSON.parse(recipe.faqsJson); } catch { return []; } })()
+              : recipe.faqsJson;
+            
+            if (!Array.isArray(faqs) || faqs.length === 0) return null;
+            
+            return (
+              <section class="content-section faqs-section my-12">
+                <style>{`
+                  .faq-accordion { --faq-accent: #f97316; --faq-bg: #fefefe; --faq-hover: #fff7ed; }
+                  .faq-accordion .faq-item { background: var(--faq-bg); border: 1px solid rgba(0,0,0,0.06); overflow: hidden; }
+                  .faq-accordion .faq-item:hover { background: var(--faq-hover); border-color: rgba(249,115,22,0.15); }
+                  .faq-accordion .faq-item[open] { background: linear-gradient(135deg,#fff7ed 0%,#fff 100%); border-color: rgba(249,115,22,0.2); }
+                  .faq-accordion .faq-item summary { transition: all 0.3s cubic-bezier(0.4,0,0.2,1); }
+                  .faq-accordion .faq-item[open] summary { border-bottom: 1px solid rgba(249,115,22,0.1); }
+                  .faq-accordion .faq-number { background: linear-gradient(135deg,var(--faq-accent) 0%,#ea580c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 600; }
+                  .faq-accordion .faq-item[open] .faq-chevron { transform: rotate(180deg); color: var(--faq-accent); }
+                  .faq-accordion .faq-answer { animation: faqFadeIn 0.3s ease-out; }
+                  @keyframes faqFadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+                `}</style>
+                
+                <h2 class="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
+                  <span class="text-2xl">❓</span>
+                  Frequently Asked Questions
+                </h2>
+                
+                <div class="faq-accordion space-y-3">
+                  {faqs.map((faq: { q?: string; a?: string; question?: string; answer?: string }, idx: number) => (
+                    <details class="faq-item group rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 ease-out">
+                      <summary class="flex items-center gap-4 cursor-pointer p-5 select-none list-none [&::-webkit-details-marker]:hidden">
+                        <span class="faq-number text-base min-w-[32px]">{String(idx + 1).padStart(2, "0")}</span>
+                        <span class="flex-1 font-medium text-gray-700 group-hover:text-gray-900 transition-colors">{faq.q || faq.question || ''}</span>
+                        <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                          <svg class="faq-chevron w-4 h-4 text-orange-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </summary>
+                      <div class="faq-answer px-5 pb-5 pl-[68px] text-gray-600 leading-relaxed">{faq.a || faq.answer || ''}</div>
                     </details>
                   ))}
                 </div>
               </section>
-            )
+            );
+          })()
         }
       </div>
 
@@ -440,6 +649,63 @@ const contentBlocks = Array.isArray(recipe.contentJson) ? recipe.contentJson : [
 
   .category-badge:hover {
     filter: brightness(0.9);
+  }
+
+  /* Jump to Recipe & Print Buttons */
+  .jump-to-recipe {
+    display: flex;
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+
+  .jump-btn,
+  .print-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .jump-btn {
+    background: #10b981;
+    color: #fff;
+    border: none;
+  }
+
+  .jump-btn:hover {
+    background: #059669;
+  }
+
+  .print-btn {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+  }
+
+  .print-btn:hover {
+    background: #e5e5e5;
+  }
+
+  .jump-btn .icon,
+  .print-btn .icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  @media print {
+    .jump-to-recipe,
+    .sidebar,
+    .disclosure-notice,
+    .social-share-bar,
+    .newsletter-widget {
+      display: none !important;
+    }
   }
 
   /* Title */
