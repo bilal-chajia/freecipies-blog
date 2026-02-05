@@ -6,7 +6,19 @@ import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
 import PopularRecipes from "../components/PopularRecipes.astro";
 import NewsletterWidget from "../components/NewsletterWidget.astro";
 import ContentRenderer from "../components/ContentRenderer.astro";
+import HeroImage from "../components/content/HeroImage.astro";
+import RecipeMetaPills from "../components/content/RecipeMetaPills.astro";
+import IngredientsSection from "../components/content/IngredientsSection.astro";
+import InstructionsSection from "../components/content/InstructionsSection.astro";
+import NutritionFacts from "../components/content/NutritionFacts.astro";
+import FAQSection from "../components/content/FAQSection.astro";
+import TableOfContents from "../components/content/TableOfContents.astro";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import {
+  getTocSettings,
+  TOC_DEFAULTS,
+  type TocSettings,
+} from "@modules/settings/services/settings.service";
 
 interface Props {
   recipe: Article;
@@ -16,6 +28,17 @@ interface Props {
 
 const { recipe, author, category } = Astro.props;
 const categoryColor = category?.color || "#ff6600";
+
+// Load TOC settings from database
+let tocSettings: TocSettings = TOC_DEFAULTS;
+try {
+  const db = Astro.locals.runtime?.env?.DB;
+  if (db) {
+    tocSettings = await getTocSettings(db);
+  }
+} catch (error) {
+  console.error("Failed to load TOC settings:", error);
+}
 
 // Parse recipeJson if it's a string
 const recipeJson = recipe.recipeJson
@@ -165,7 +188,10 @@ const contentBlocks = Array.isArray(recipe.contentJson)
       />
     )
   }
-  <article class="recipe-page">
+  <article
+    class="recipe-page"
+    style={`--toc-accent: ${tocSettings.accentColor};`}
+  >
     <div class="recipe-container">
       <!-- Main Content Column -->
       <div class="main-content">
@@ -254,124 +280,21 @@ const contentBlocks = Array.isArray(recipe.contentJson)
         </div>
 
         <!-- Hero Image -->
-        {
-          (heroImage.imageUrl || recipe.imageUrl) && (
-            <div class="hero-image">
-              <img
-                src={heroImage.imageUrl || recipe.imageUrl}
-                alt={heroImage.imageAlt || recipe.imageAlt || recipe.label}
-                width={heroImage.imageWidth || recipe.imageWidth}
-                height={heroImage.imageHeight || recipe.imageHeight}
-                srcset={heroSrcSet || undefined}
-                sizes={heroSrcSet ? heroSizes : undefined}
-                loading="eager"
-                fetchpriority="high"
-                decoding="async"
-                style={heroImage.imageStyle || undefined}
-              />
-            </div>
-          )
-        }
+        <HeroImage
+          src={heroImage.imageUrl || recipe.imageUrl}
+          alt={heroImage.imageAlt || recipe.imageAlt || recipe.label}
+          width={heroImage.imageWidth || recipe.imageWidth}
+          height={heroImage.imageHeight || recipe.imageHeight}
+          srcset={heroSrcSet}
+          sizes={heroSizes}
+          style={heroImage.imageStyle}
+        />
 
         <!-- Recipe Meta Info Pills -->
-        {
-          recipeJson && (
-            <div class="recipe-meta-pills">
-              {(recipeJson.prep || recipeJson.prepTime) && (
-                <div class="meta-pill">
-                  <svg
-                    class="icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  <span class="label">Prep</span>
-                  <span class="value">
-                    {recipeJson.prep
-                      ? `${recipeJson.prep} min`
-                      : recipeJson.prepTime}
-                  </span>
-                </div>
-              )}
-              {(recipeJson.cook || recipeJson.cookTime) && (
-                <div class="meta-pill">
-                  <svg
-                    class="icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                  </svg>
-                  <span class="label">Cook</span>
-                  <span class="value">
-                    {recipeJson.cook
-                      ? `${recipeJson.cook} min`
-                      : recipeJson.cookTime}
-                  </span>
-                </div>
-              )}
-              {(recipeJson.total || recipeJson.totalTime) && (
-                <div class="meta-pill">
-                  <svg
-                    class="icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 6v6l4 2" />
-                  </svg>
-                  <span class="label">Total</span>
-                  <span class="value">
-                    {recipeJson.total
-                      ? `${recipeJson.total} min`
-                      : recipeJson.totalTime}
-                  </span>
-                </div>
-              )}
-              {recipeJson.servings && (
-                <div class="meta-pill">
-                  <svg
-                    class="icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                  <span class="label">Servings</span>
-                  <span class="value">{recipeJson.servings}</span>
-                </div>
-              )}
-              {recipeJson.difficulty && (
-                <div class="meta-pill">
-                  <svg
-                    class="icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span class="label">Level</span>
-                  <span class="value">{recipeJson.difficulty}</span>
-                </div>
-              )}
-            </div>
-          )
-        }
+        <RecipeMetaPills recipe={recipeJson} />
+
+        <!-- Table of Contents -->
+        <TableOfContents toc={recipe.cachedTocJson} settings={tocSettings} />
 
         <!-- TLDR / Quick Overview -->
         {
@@ -389,188 +312,38 @@ const contentBlocks = Array.isArray(recipe.contentJson)
               <ContentRenderer
                 content={contentBlocks}
                 faqsJson={recipe.faqsJson}
+                settings={tocSettings}
               />
             </section>
           )
         }
 
         <!-- Ingredients -->
-        {
-          recipeJson?.ingredients &&
-            Array.isArray(recipeJson.ingredients) &&
-            recipeJson.ingredients.length > 0 && (
-              <section
-                id="recipe-card"
-                class="content-section ingredients-section"
-              >
-                <h2>Ingredients</h2>
-                {recipeJson.ingredients.map(
-                  (group: {
-                    group?: string;
-                    group_title?: string;
-                    items?: any[];
-                  }) => (
-                    <div class="ingredient-group">
-                      {(group.group_title || group.group) && (
-                        <h3>{group.group_title || group.group}</h3>
-                      )}
-                      <ul class="ingredient-list">
-                        {group.items &&
-                          Array.isArray(group.items) &&
-                          group.items.map((item: any) => {
-                            // Handle both legacy string format and new object format
-                            const displayText =
-                              typeof item === "string"
-                                ? item
-                                : [item.amount, item.unit, item.name]
-                                    .filter(Boolean)
-                                    .join(" ");
-                            return (
-                              <li>
-                                <span class="checkbox" />
-                                <span>{displayText}</span>
-                              </li>
-                            );
-                          })}
-                      </ul>
-                    </div>
-                  ),
-                )}
-              </section>
-            )
-        }
+        <IngredientsSection ingredients={recipeJson?.ingredients} />
 
         <!-- Instructions -->
-        {
-          recipeJson?.instructions &&
-            Array.isArray(recipeJson.instructions) &&
-            recipeJson.instructions.length > 0 && (
-              <section class="content-section instructions-section">
-                <h2>Instructions</h2>
-                {recipeJson.instructions.map(
-                  (group: {
-                    group?: string;
-                    section_title?: string;
-                    steps?: any[];
-                  }) => (
-                    <div class="instruction-group">
-                      {(group.section_title || group.group) && (
-                        <h3>{group.section_title || group.group}</h3>
-                      )}
-                      <ol class="instruction-list">
-                        {group.steps &&
-                          Array.isArray(group.steps) &&
-                          group.steps.map((step: any, index: number) => {
-                            // Handle both legacy string format and new object format
-                            const stepText =
-                              typeof step === "string" ? step : step.text;
-                            return (
-                              <li>
-                                <span class="step-number">{index + 1}</span>
-                                <p>{stepText}</p>
-                              </li>
-                            );
-                          })}
-                      </ol>
-                    </div>
-                  ),
-                )}
-              </section>
-            )
-        }
+        <InstructionsSection instructions={recipeJson?.instructions} />
 
         <!-- Nutrition Facts (inline for mobile) -->
-        {
-          recipeJson?.nutrition &&
-            Object.keys(recipeJson.nutrition).length > 0 && (
-              <section class="content-section nutrition-section mobile-only">
-                <h2>Nutrition Facts</h2>
-                <div class="nutrition-grid">
-                  {Object.entries(recipeJson.nutrition).map(([key, value]) => (
-                    <div class="nutrition-item">
-                      <span class="nutrition-value">{value}</span>
-                      <span class="nutrition-label">{key}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )
-        }
+        <NutritionFacts
+          nutrition={recipeJson?.nutrition}
+          variant="grid"
+          class="mobile-only"
+        />
 
         <!-- FAQs - Modern Accordion -->
-        {
-          (() => {
-            // Parse faqsJson if it's a string
-            const faqs = typeof recipe.faqsJson === 'string' 
-              ? (() => { try { return JSON.parse(recipe.faqsJson); } catch { return []; } })()
-              : recipe.faqsJson;
-            
-            if (!Array.isArray(faqs) || faqs.length === 0) return null;
-            
-            return (
-              <section class="content-section faqs-section my-12">
-                <style>{`
-                  .faq-accordion { --faq-accent: #f97316; --faq-bg: #fefefe; --faq-hover: #fff7ed; }
-                  .faq-accordion .faq-item { background: var(--faq-bg); border: 1px solid rgba(0,0,0,0.06); overflow: hidden; }
-                  .faq-accordion .faq-item:hover { background: var(--faq-hover); border-color: rgba(249,115,22,0.15); }
-                  .faq-accordion .faq-item[open] { background: linear-gradient(135deg,#fff7ed 0%,#fff 100%); border-color: rgba(249,115,22,0.2); }
-                  .faq-accordion .faq-item summary { transition: all 0.3s cubic-bezier(0.4,0,0.2,1); }
-                  .faq-accordion .faq-item[open] summary { border-bottom: 1px solid rgba(249,115,22,0.1); }
-                  .faq-accordion .faq-number { background: linear-gradient(135deg,var(--faq-accent) 0%,#ea580c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 600; }
-                  .faq-accordion .faq-item[open] .faq-chevron { transform: rotate(180deg); color: var(--faq-accent); }
-                  .faq-accordion .faq-answer { animation: faqFadeIn 0.3s ease-out; }
-                  @keyframes faqFadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-                `}</style>
-                
-                <h2 class="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
-                  <span class="text-2xl">❓</span>
-                  Frequently Asked Questions
-                </h2>
-                
-                <div class="faq-accordion space-y-3">
-                  {faqs.map((faq: { q?: string; a?: string; question?: string; answer?: string }, idx: number) => (
-                    <details class="faq-item group rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 ease-out">
-                      <summary class="flex items-center gap-4 cursor-pointer p-5 select-none list-none [&::-webkit-details-marker]:hidden">
-                        <span class="faq-number text-base min-w-[32px]">{String(idx + 1).padStart(2, "0")}</span>
-                        <span class="flex-1 font-medium text-gray-700 group-hover:text-gray-900 transition-colors">{faq.q || faq.question || ''}</span>
-                        <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center group-hover:bg-orange-100 transition-colors">
-                          <svg class="faq-chevron w-4 h-4 text-orange-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </summary>
-                      <div class="faq-answer px-5 pb-5 pl-[68px] text-gray-600 leading-relaxed">{faq.a || faq.answer || ''}</div>
-                    </details>
-                  ))}
-                </div>
-              </section>
-            );
-          })()
-        }
+        <FAQSection faqs={recipe.faqsJson} />
       </div>
 
       <!-- Sidebar -->
       <aside class="sidebar">
         <div class="sidebar-sticky">
           <!-- Nutrition Facts (desktop) -->
-          {
-            recipeJson?.nutrition &&
-              Object.keys(recipeJson.nutrition).length > 0 && (
-                <div class="sidebar-widget nutrition-widget desktop-only">
-                  <h3>Nutrition Facts</h3>
-                  <div class="nutrition-list">
-                    {Object.entries(recipeJson.nutrition).map(
-                      ([key, value]) => (
-                        <div class="nutrition-row">
-                          <span class="nutrition-key">{key}</span>
-                          <span class="nutrition-val">{value}</span>
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </div>
-              )
-          }
+          <NutritionFacts
+            nutrition={recipeJson?.nutrition}
+            variant="list"
+            class="desktop-only"
+          />
 
           <!-- Popular Recipes -->
           <PopularRecipes currentSlug={recipe.slug} limit={5} />
@@ -603,7 +376,7 @@ const contentBlocks = Array.isArray(recipe.contentJson)
 
 <style>
   .recipe-page {
-    background: #fafafa;
+    background: #fff;
     min-height: 100vh;
     padding-bottom: 4rem;
   }
@@ -626,9 +399,7 @@ const contentBlocks = Array.isArray(recipe.contentJson)
   /* Main Content */
   .main-content {
     background: #fff;
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    padding: 1rem 0;
   }
 
   /* Category Badge */
@@ -814,6 +585,34 @@ const contentBlocks = Array.isArray(recipe.contentJson)
     font-weight: 600;
     color: #333;
     margin: 1.5rem 0 0.75rem;
+  }
+
+  /* Numbered Headings - Size Hierarchy (global for child components) */
+  :global(.numbered-heading .heading-number) {
+    color: var(--toc-accent, #f97316);
+    font-weight: 700;
+    margin-right: 0.35rem;
+  }
+
+  :global(h2.numbered-heading) {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111;
+    margin: 2rem 0 1rem;
+  }
+
+  :global(h3.numbered-heading) {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  :global(h4.numbered-heading) {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #555;
+    margin: 1.25rem 0 0.5rem;
   }
 
   /* TLDR */
@@ -1009,9 +808,9 @@ const contentBlocks = Array.isArray(recipe.contentJson)
 
   .sidebar-widget {
     background: #fff;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f0f0f0;
   }
 
   .sidebar-widget h3 {

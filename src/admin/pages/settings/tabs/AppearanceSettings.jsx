@@ -1,15 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Label } from '@/ui/label.jsx';
 import { Button } from '@/ui/button.jsx';
+import { Switch } from '@/ui/switch.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
 import ColorPicker from '@/components/ColorPicker';
 import BrandingCards from '@/components/BrandingCards';
 import { brandingAPI } from '../../../services/api';
-import { Palette, Layout, Sparkles, Loader2, Info, Image } from 'lucide-react';
+import { Palette, Layout, Sparkles, Loader2, Info, Image, ListTree } from 'lucide-react';
 
 const AppearanceSettings = ({ formData, handleInputChange }) => {
     const [activeSection, setActiveSection] = useState('branding');
     const [showColorPicker, setShowColorPicker] = useState(false);
+    const [showTocColorPicker, setShowTocColorPicker] = useState(false);
     const [logos, setLogos] = useState({
         logoMain: null,
         logoDark: null,
@@ -19,6 +21,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
     const [faviconVariants, setFaviconVariants] = useState({});
     const [loading, setLoading] = useState(true);
     const colorTriggerRef = useRef(null);
+    const tocColorTriggerRef = useRef(null);
 
     useEffect(() => {
         const loadBranding = async () => {
@@ -47,6 +50,11 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
         setShowColorPicker(false);
     };
 
+    const handleTocColorChange = (color) => {
+        handleInputChange('tocAccentColor', color);
+        setShowTocColorPicker(false);
+    };
+
     const handleLogoChange = (type, url) => {
         const keyMap = { main: 'logoMain', dark: 'logoDark', mobile: 'logoMobile' };
         setLogos(prev => ({ ...prev, [keyMap[type]]: url }));
@@ -64,6 +72,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
     };
 
     const getTriggerRect = () => colorTriggerRef.current?.getBoundingClientRect() || null;
+    const getTocTriggerRect = () => tocColorTriggerRef.current?.getBoundingClientRect() || null;
 
     if (loading) {
         return (
@@ -86,6 +95,10 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                 <TabsTrigger value="colors" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
                     <Palette className="w-3.5 h-3.5 mr-1.5" />
                     Colors
+                </TabsTrigger>
+                <TabsTrigger value="toc" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <ListTree className="w-3.5 h-3.5 mr-1.5" />
+                    Table of Contents
                 </TabsTrigger>
             </TabsList>
 
@@ -154,6 +167,133 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                 <div className="flex items-start gap-2 p-2.5 bg-amber-500/10 rounded-md text-xs text-amber-700 dark:text-amber-400">
                     <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                     Ensure contrast for accessibility on both light and dark backgrounds.
+                </div>
+            </TabsContent>
+
+            {/* Table of Contents Settings */}
+            <TabsContent value="toc" className="mt-0 space-y-4">
+                <div className="space-y-4">
+                    {/* Enable TOC */}
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/40">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-medium">Show Table of Contents</Label>
+                            <p className="text-[11px] text-muted-foreground">
+                                Display TOC box on recipe pages
+                            </p>
+                        </div>
+                        <Switch
+                            checked={formData.tocEnabled ?? true}
+                            onCheckedChange={(checked) => handleInputChange('tocEnabled', checked)}
+                        />
+                    </div>
+
+                    {/* Numbering */}
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/40">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-medium">Numbered Sections</Label>
+                            <p className="text-[11px] text-muted-foreground">
+                                Show hierarchical numbers (1, 1.1, 1.2, 2, etc.)
+                            </p>
+                        </div>
+                        <Switch
+                            checked={formData.tocNumbering ?? true}
+                            onCheckedChange={(checked) => handleInputChange('tocNumbering', checked)}
+                        />
+                    </div>
+
+                    {/* Collapsible */}
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/40">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-medium">Collapsible TOC</Label>
+                            <p className="text-[11px] text-muted-foreground">
+                                Allow users to expand/collapse the TOC
+                            </p>
+                        </div>
+                        <Switch
+                            checked={formData.tocCollapsible ?? true}
+                            onCheckedChange={(checked) => handleInputChange('tocCollapsible', checked)}
+                        />
+                    </div>
+
+                    {/* Default Open */}
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/40">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-medium">Open by Default</Label>
+                            <p className="text-[11px] text-muted-foreground">
+                                TOC starts expanded when page loads
+                            </p>
+                        </div>
+                        <Switch
+                            checked={formData.tocDefaultOpen ?? true}
+                            onCheckedChange={(checked) => handleInputChange('tocDefaultOpen', checked)}
+                        />
+                    </div>
+
+                    {/* Jump to Recipe Button */}
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/40">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-medium">Jump to Recipe Button</Label>
+                            <p className="text-[11px] text-muted-foreground">
+                                Show the orange "Jump to Recipe" button
+                            </p>
+                        </div>
+                        <Switch
+                            checked={formData.tocShowJumpButton ?? true}
+                            onCheckedChange={(checked) => handleInputChange('tocShowJumpButton', checked)}
+                        />
+                    </div>
+
+                    {/* TOC Accent Color */}
+                    <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/40">
+                        <Label className="text-sm font-medium">TOC Accent Color</Label>
+                        <p className="text-[11px] text-muted-foreground">
+                            Color for numbers, borders, and buttons in the TOC
+                        </p>
+                        <div className="flex items-center gap-3 pt-1">
+                            <Button
+                                ref={tocColorTriggerRef}
+                                variant="outline"
+                                className="w-10 h-10 p-1"
+                                onClick={() => setShowTocColorPicker(!showTocColorPicker)}
+                            >
+                                <div
+                                    className="w-full h-full rounded"
+                                    style={{ backgroundColor: formData.tocAccentColor || '#f97316' }}
+                                />
+                            </Button>
+                            <div className="font-mono text-xs text-muted-foreground">
+                                {formData.tocAccentColor || '#f97316'}
+                            </div>
+
+                            {showTocColorPicker && (
+                                <ColorPicker
+                                    color={formData.tocAccentColor || '#f97316'}
+                                    onChange={handleTocColorChange}
+                                    onClose={() => setShowTocColorPicker(false)}
+                                    triggerRect={getTocTriggerRect()}
+                                />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Preview */}
+                    <div className="p-4 rounded-lg border-2" style={{ borderColor: '#fed7aa', background: 'linear-gradient(135deg, #fef9f3 0%, #fef3e8 100%)' }}>
+                        <span className="text-[10px] font-medium text-amber-800">TOC Preview</span>
+                        <div className="mt-2 space-y-1.5">
+                            <div className="flex items-center gap-2 text-sm" style={{ color: formData.tocAccentColor || '#f97316' }}>
+                                <span className="font-bold">1.</span>
+                                <span className="text-amber-900">Introduction</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm pl-4" style={{ color: formData.tocAccentColor || '#f97316' }}>
+                                <span className="font-bold">1.1.</span>
+                                <span className="text-amber-900">Background</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm" style={{ color: formData.tocAccentColor || '#f97316' }}>
+                                <span className="font-bold">2.</span>
+                                <span className="text-amber-900">Ingredients</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </TabsContent>
         </Tabs>

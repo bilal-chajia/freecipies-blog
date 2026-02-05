@@ -62,6 +62,14 @@ const Settings = () => {
     // Appearance Settings
     badgeColor: '#3b82f6',
 
+    // TOC Settings
+    tocEnabled: true,
+    tocNumbering: true,
+    tocCollapsible: true,
+    tocDefaultOpen: true,
+    tocShowJumpButton: true,
+    tocAccentColor: '#f97316',
+
     // SEO Settings
     defaultMetaTitle: 'Freecipies - Delicious Recipes & Cooking Tips',
     defaultMetaDescription: 'Discover amazing recipes, cooking techniques, and kitchen tips from professional chefs and home cooks.',
@@ -305,6 +313,24 @@ const Settings = () => {
         }
       })
       .catch(err => console.error('Failed to load menus:', err));
+
+    // Load appearance settings from API (TOC settings)
+    fetch('/api/settings/appearance')
+      .then(res => res.json())
+      .then(data => {
+        if (data.toc) {
+          setFormData(prev => ({
+            ...prev,
+            tocEnabled: data.toc.enabled ?? true,
+            tocNumbering: data.toc.numbering ?? true,
+            tocCollapsible: data.toc.collapsible ?? true,
+            tocDefaultOpen: data.toc.defaultOpen ?? true,
+            tocShowJumpButton: data.toc.showJumpButton ?? true,
+            tocAccentColor: data.toc.accentColor || '#f97316',
+          }));
+        }
+      })
+      .catch(err => console.error('Failed to load appearance settings:', err));
   }, [setSettings]);
 
 
@@ -331,6 +357,28 @@ const Settings = () => {
 
         if (!response.ok) {
           throw new Error('Failed to save menu settings');
+        }
+      }
+
+      // Save appearance settings to API if on appearance tab
+      if (tab === 'appearance') {
+        const response = await fetch('/api/settings/appearance', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toc: {
+              enabled: formData.tocEnabled,
+              numbering: formData.tocNumbering,
+              collapsible: formData.tocCollapsible,
+              defaultOpen: formData.tocDefaultOpen,
+              showJumpButton: formData.tocShowJumpButton,
+              accentColor: formData.tocAccentColor,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save appearance settings');
         }
       }
 

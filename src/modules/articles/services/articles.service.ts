@@ -403,8 +403,48 @@ export async function toggleFavoriteById(db: D1Database, id: number): Promise<{ 
 }
 
 /**
+ * Extract Table of Contents from contentJson
+ * Looks for heading blocks and generates TOC items
+ */
+function extractTocFromContent(contentJson: string | null): { id: string; text: string; level: number }[] {
+  if (!contentJson) return [];
+
+  try {
+    const blocks = JSON.parse(contentJson);
+    if (!Array.isArray(blocks)) return [];
+
+    const toc: { id: string; text: string; level: number }[] = [];
+
+    for (const block of blocks) {
+      // Handle heading blocks - only h2, h3, h4 (exclude h5, h6)
+      if (block.type === 'heading' && block.text) {
+        const level = block.level || 2;
+        if (level > 4) continue; // Skip h5 and h6
+        const text = String(block.text || '').trim();
+
+        if (text) {
+          // Generate slug ID from text (matching ContentRenderer logic)
+          const id = text
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .slice(0, 50);
+
+          toc.push({ id, text, level });
+        }
+      }
+    }
+
+    return toc;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Synchronize cached JSON fields for an article
- * Populates optimized fields like cachedAuthorJson and cachedCategoryJson
+ * Populates optimized fields like cachedAuthorJson, cachedCategoryJson, and cachedTocJson
  */
 export async function syncCachedFields(
   db: D1Database,
@@ -447,6 +487,12 @@ export async function syncCachedFields(
       slug: article.categorySlug,
       color: article.categoryColor,
     });
+  }
+
+  // Extract TOC from contentJson
+  const toc = extractTocFromContent(article.contentJson);
+  if (toc.length > 0) {
+    updateData.cachedTocJson = JSON.stringify(toc);
   }
 
   await drizzle.update(articles)

@@ -2,11 +2,15 @@
 import RelatedContent from "./RelatedContent.astro";
 import TableBlock from "./TableBlock.astro";
 import BeforeAfter from "./BeforeAfter.astro";
+import type { TocSettings } from "@modules/settings/services/settings.service";
 
-const { content, faqsJson } = Astro.props as {
+const { content, faqsJson, settings } = Astro.props as {
   content?: unknown;
   faqsJson?: unknown;
+  settings?: TocSettings;
 };
+
+const numberingEnabled = settings?.numbering ?? true;
 
 const sanitizeHref = (href: string) => {
   if (!href) return "";
@@ -87,16 +91,64 @@ const faqJsonLd =
         })),
       }
     : null;
+
+// Pre-process blocks to add hierarchical numbering to headings
+let h2Count = 0;
+let h3Count = 0;
+let h4Count = 0;
+
+const numberedBlocks = parsed.map((block) => {
+  if (block?.type === "heading") {
+    const level = block.level || 2;
+    let headingNumber = "";
+
+    if (numberingEnabled) {
+      if (level === 2) {
+        h2Count++;
+        h3Count = 0;
+        h4Count = 0;
+        headingNumber = `${h2Count}`;
+      } else if (level === 3) {
+        h3Count++;
+        h4Count = 0;
+        headingNumber = `${h2Count}.${h3Count}`;
+      } else if (level === 4) {
+        h4Count++;
+        headingNumber = `${h2Count}.${h3Count}.${h4Count}`;
+      }
+    }
+
+    return { ...block, headingNumber };
+  }
+  return block;
+});
 ---
 
 {
-  parsed.map((block) => {
+  numberedBlocks.map((block) => {
     if (!block?.type) return null;
     if (block.type === "paragraph")
       return <p set:html={renderInlineMarkdown(block.text)} />;
     if (block.type === "heading") {
       const HeadingTag = `h${block.level || 2}` as keyof HTMLElementTagNameMap;
-      return <HeadingTag set:html={renderInlineMarkdown(block.text)} />;
+      // Generate slug ID matching TOC extraction logic
+      const headingId = (block.text || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .slice(0, 50);
+      // Add number prefix if available
+      const headingContent = block.headingNumber
+        ? `<span class="heading-number">${block.headingNumber}.</span> ${block.text || ""}`
+        : block.text || "";
+      return (
+        <HeadingTag
+          id={headingId}
+          class="numbered-heading"
+          set:html={renderInlineMarkdown(headingContent)}
+        />
+      );
     }
     if (block.type === "list") {
       const ListTag = block.style === "ordered" ? "ol" : "ul";

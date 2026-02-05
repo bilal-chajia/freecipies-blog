@@ -1,0 +1,124 @@
+---
+/**
+ * NutritionFacts - Reusable Nutrition Information Component
+ *
+ * Displays nutrition facts in a grid (mobile) or list (desktop sidebar) format.
+ */
+
+interface Props {
+    nutrition: Record<string, string | number> | null | undefined;
+    variant?: "grid" | "list";
+    class?: string;
+}
+
+const { nutrition, variant = "grid", class: className = "" } = Astro.props;
+
+// Early return if no nutrition data
+if (!nutrition || Object.keys(nutrition).length === 0) {
+    return null;
+}
+
+const entries = Object.entries(nutrition);
+---
+
+{
+    variant === "grid" ? (
+        <section class:list={["content-section nutrition-section", className]}>
+            <h2>Nutrition Facts</h2>
+            <div class="nutrition-grid">
+                {entries.map(([key, value]) => (
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">{value}</span>
+                        <span class="nutrition-label">{key}</span>
+                    </div>
+                ))}
+            </div>
+        </section>
+    ) : (
+        <div class:list={["sidebar-widget nutrition-widget", className]}>
+            <h3>Nutrition Facts</h3>
+            <div class="nutrition-list">
+                {entries.map(([key, value]) => (
+                    <div class="nutrition-row">
+                        <span class="nutrition-key">{key}</span>
+                        <span class="nutrition-val">{value}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+<style>
+    /* Grid variant (mobile) */
+    .nutrition-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 1rem;
+    }
+
+    .nutrition-item {
+        text-align: center;
+        padding: 1rem;
+        background: transparent;
+        border: 1px solid #eee;
+        border-radius: 8px;
+    }
+
+    .nutrition-value {
+        display: block;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .nutrition-label {
+        display: block;
+        font-size: 0.75rem;
+        color: #666;
+        text-transform: capitalize;
+        margin-top: 0.25rem;
+    }
+
+    /* List variant (sidebar) */
+    .nutrition-widget {
+        background: #fff;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+    }
+
+    .nutrition-widget h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .nutrition-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .nutrition-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .nutrition-row:last-child {
+        border-bottom: none;
+    }
+
+    .nutrition-key {
+        color: #666;
+        text-transform: capitalize;
+    }
+
+    .nutrition-val {
+        font-weight: 500;
+        color: #333;
+    }
+</style>

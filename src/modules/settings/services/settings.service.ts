@@ -183,3 +183,54 @@ export async function resetImageUploadSettings(db: D1Database): Promise<ImageUpl
   });
   return IMAGE_UPLOAD_DEFAULTS;
 }
+
+// ============================================
+// TOC (TABLE OF CONTENTS) SETTINGS
+// ============================================
+
+export interface TocSettings {
+  enabled: boolean;
+  numbering: boolean;
+  collapsible: boolean;
+  defaultOpen: boolean;
+  showJumpButton: boolean;
+  accentColor: string;
+}
+
+export const TOC_DEFAULTS: TocSettings = {
+  enabled: true,
+  numbering: true,
+  collapsible: true,
+  defaultOpen: true,
+  showJumpButton: true,
+  accentColor: '#f97316',
+};
+
+const TOC_SETTINGS_KEY = 'toc_settings';
+
+/**
+ * Get TOC settings (merged with defaults)
+ */
+export async function getTocSettings(db: D1Database): Promise<TocSettings> {
+  const stored = await getSettingValue<Partial<TocSettings>>(db, TOC_SETTINGS_KEY);
+  return { ...TOC_DEFAULTS, ...stored };
+}
+
+/**
+ * Update TOC settings (partial update)
+ */
+export async function updateTocSettings(
+  db: D1Database,
+  updates: Partial<TocSettings>
+): Promise<TocSettings> {
+  const current = await getTocSettings(db);
+  const newSettings = { ...current, ...updates };
+
+  await upsertSetting(db, TOC_SETTINGS_KEY, newSettings, {
+    description: 'Table of Contents display settings',
+    category: 'appearance',
+    type: 'json',
+  });
+
+  return newSettings;
+}

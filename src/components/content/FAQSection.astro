@@ -1,0 +1,146 @@
+---
+/**
+ * FAQSection - Reusable FAQ Accordion Component
+ *
+ * A modern accordion FAQ section with smooth animations.
+ * Accepts FAQ data in either {q, a} or {question, answer} format.
+ */
+
+interface FaqItem {
+    q?: string;
+    a?: string;
+    question?: string;
+    answer?: string;
+}
+
+interface Props {
+    faqs: string | FaqItem[] | null | undefined;
+    title?: string;
+}
+
+const { faqs: faqsInput, title = "Frequently Asked Questions" } = Astro.props;
+
+// Parse faqsJson if it's a string
+const faqs: FaqItem[] = (() => {
+    if (!faqsInput) return [];
+    if (Array.isArray(faqsInput)) return faqsInput;
+    if (typeof faqsInput === "string") {
+        try {
+            const parsed = JSON.parse(faqsInput);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }
+    return [];
+})();
+
+// Early return if no FAQs
+if (faqs.length === 0) {
+    return null;
+}
+---
+
+<section class="content-section faqs-section my-12">
+    <h2
+        class="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3"
+    >
+        <span class="text-2xl">❓</span>
+        {title}
+    </h2>
+
+    <div class="faq-accordion space-y-3">
+        {
+            faqs.map((faq, idx) => (
+                <details class="faq-item group rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 ease-out">
+                    <summary class="flex items-center gap-4 cursor-pointer p-5 select-none list-none [&::-webkit-details-marker]:hidden">
+                        <span class="faq-number text-base min-w-[32px]">
+                            {String(idx + 1).padStart(2, "0")}
+                        </span>
+                        <span class="flex-1 font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                            {faq.q || faq.question || ""}
+                        </span>
+                        <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                            <svg
+                                class="faq-chevron w-4 h-4 text-orange-500 transition-transform duration-300"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2.5"
+                                    d="M19 9l-7 7-7-7"
+                                />
+                            </svg>
+                        </div>
+                    </summary>
+                    <div class="faq-answer px-5 pb-5 pl-[68px] text-gray-600 leading-relaxed">
+                        {faq.a || faq.answer || ""}
+                    </div>
+                </details>
+            ))
+        }
+    </div>
+</section>
+
+<style>
+    .faq-accordion {
+        --faq-accent: #f97316;
+        --faq-bg: #fefefe;
+        --faq-hover: #fff7ed;
+    }
+
+    .faq-accordion .faq-item {
+        background: var(--faq-bg);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+    }
+
+    .faq-accordion .faq-item:hover {
+        background: var(--faq-hover);
+        border-color: rgba(249, 115, 22, 0.15);
+    }
+
+    .faq-accordion .faq-item[open] {
+        background: linear-gradient(135deg, #fff7ed 0%, #fff 100%);
+        border-color: rgba(249, 115, 22, 0.2);
+    }
+
+    .faq-accordion .faq-item summary {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .faq-accordion .faq-item[open] summary {
+        border-bottom: 1px solid rgba(249, 115, 22, 0.1);
+    }
+
+    .faq-accordion .faq-number {
+        background: linear-gradient(135deg, var(--faq-accent) 0%, #ea580c 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600;
+    }
+
+    .faq-accordion .faq-item[open] .faq-chevron {
+        transform: rotate(180deg);
+        color: var(--faq-accent);
+    }
+
+    .faq-accordion .faq-answer {
+        animation: faqFadeIn 0.3s ease-out;
+    }
+
+    @keyframes faqFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
