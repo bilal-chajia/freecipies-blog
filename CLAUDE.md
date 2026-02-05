@@ -8,63 +8,71 @@
 
 ### Core Stack
 
-| Technology      | Version | Purpose        |
-| :-------------- | :------ | :------------- |
-| **Astro**       | 5.16.4  | SSR Framework  |
-| **React**       | 18.3.1  | Admin Panel UI |
-| **TailwindCSS** | 4.0.0   | Styling        |
-| **TypeScript**  | 5.7.3   | Type Safety    |
-| **Drizzle ORM** | 0.45.1  | Database ORM   |
+| Technology      | Version  | Purpose        |
+| :-------------- | :------- | :------------- |
+| **Astro**       | 5.16.6   | SSR Framework  |
+| **React**       | 19.2.3   | Admin Panel UI |
+| **TailwindCSS** | 4.1.18   | Styling        |
+| **TypeScript**  | 5.9.3    | Type Safety    |
+| **Drizzle ORM** | 0.45.1   | Database ORM   |
 
 ### Cloudflare Stack
 
-| Service     | Package                           | Purpose         |
-| :---------- | :-------------------------------- | :-------------- |
-| **D1**      | via `@astrojs/cloudflare` 12.6.12 | SQLite Database |
-| **R2**      | via Wrangler 4.43.0               | Object Storage  |
-| **Workers** | via Wrangler                      | Edge Runtime    |
+| Service     | Package                           | Purpose                  |
+| :---------- | :-------------------------------- | :----------------------- |
+| **D1**      | via `@astrojs/cloudflare` 12.6.12 | SQLite Database          |
+| **R2**      | via Wrangler 4.56.0               | Object Storage (Images)  |
+| **Workers** | via Wrangler                      | Edge Runtime             |
+| **KV**      | via Wrangler                      | Session Storage          |
 
 ### Key Dependencies
 
-| Package            | Version | Purpose             |
-| :----------------- | :------ | :------------------ |
-| `react-router-dom` | 6.27.0  | Admin SPA Routing   |
-| `zustand`          | 5.0.0   | State Management    |
-| `jose`             | 5.9.6   | JWT Auth            |
-| `react-hook-form`  | 7.53.0  | Form Management     |
-| `react-easy-crop`  | 5.5.6   | Image Cropping      |
-| `recharts`         | 2.13.0  | Analytics Charts    |
-| `@radix-ui/*`      | 1.x-2.x | UI Primitives       |
-| `lucide-react`     | 0.454.0 | Icons               |
-| `sonner`           | 1.5.0   | Toast Notifications |
+| Package            | Version | Purpose                      |
+| :----------------- | :------ | :--------------------------- |
+| `react-router-dom` | 7.11.0  | Admin SPA Routing            |
+| `zustand`          | 5.0.9   | State Management             |
+| `jose`             | 6.1.3   | JWT Auth                     |
+| `react-hook-form`  | 7.68.0  | Form Management              |
+| `react-easy-crop`  | 5.5.6   | Image Cropping               |
+| `recharts`         | 2.15.4  | Analytics Charts             |
+| `@radix-ui/*`      | 1.x-2.x | UI Primitives (shadcn)       |
+| `lucide-react`     | 0.562.0 | Icons                        |
+| `sonner`           | 2.0.7   | Toast Notifications          |
+| `@blocknote/*`     | 0.45.0  | Block Editor                 |
+| `konva`            | 10.0.12 | Canvas rendering (Templates) |
+| `react-konva`      | 19.2.1  | React Konva bindings         |
+| `@dnd-kit/*`       | 6.x-10.x| Drag & Drop                  |
+| `@jsquash/webp`    | 1.5.0   | WebP encoding (WASM)         |
+| `@jsquash/avif`    | 2.1.1   | AVIF encoding (WASM)         |
 
 ### Dev Dependencies
 
 | Package       | Version | Purpose        |
 | :------------ | :------ | :------------- |
 | `drizzle-kit` | 0.31.8  | DB Migrations  |
-| `wrangler`    | 4.43.0  | Cloudflare CLI |
+| `wrangler`    | 4.56.0  | Cloudflare CLI |
+| `shadcn`      | 3.6.2   | UI CLI         |
 
 - **Package Manager**: `pnpm` (NOT npm)
 - **Rendering**: SSR for public pages, CSR for Admin Panel
 
 ---
 
-## � Current Project State
+## 📊 Current Project State
 
-### Image Upload Module (Recently Refactored)
+### Image Upload Module
 
 **Location**: `src/admin/components/ImageUploader/`
 
 | File                      | Purpose                                               |
 | :------------------------ | :---------------------------------------------------- |
-| `index.jsx`               | Single-step upload dialog with crop + metadata        |
-| `config.js`               | Centralized constants (sizes, quality, aspect ratios) |
-| `errors.js`               | Custom error types with user-friendly messages        |
-| `DropZone.jsx`            | Drag & drop with particle effects                     |
-| `VariantProgress.jsx`     | Visual upload progress with variant cards             |
-| `CropEditor.jsx`          | Standalone crop editor (imports from config)          |
-| `hooks/useImageUpload.js` | Upload logic with retry and parallel uploads          |
+| `index.tsx`               | Single-step upload dialog with crop + metadata        |
+| `config.ts`               | Centralized constants (sizes, quality, aspect ratios) |
+| `errors.ts`               | Custom error types with user-friendly messages        |
+| `DropZone.tsx`            | Drag & drop with particle effects                     |
+| `VariantProgress.tsx`     | Visual upload progress with variant cards             |
+| `CropEditor.tsx`          | Standalone crop editor                                |
+| `hooks/useImageUpload.ts` | Upload logic with retry and parallel uploads          |
 
 **Key Features**:
 
@@ -74,6 +82,23 @@
 - Memory management for canvas/blob URLs
 - Focal point selection for responsive images
 
+### Template Editor (Pin Canvas)
+
+**Location**: `src/modules/templates/`
+
+- Canvas-based pin template editor using Konva
+- Draggable layers, text elements, image placeholders
+- Data binding for dynamic content
+- Font loading system with opentype.js
+
+### AI Integration
+
+**Location**: `src/modules/ai/`
+
+- Multi-provider AI support (OpenAI, Anthropic, Gemini, DeepSeek, etc.)
+- Prompt templates for content generation
+- Model management and migration tools
+
 ### Utility Files
 
 | File                                | Purpose                                |
@@ -82,15 +107,9 @@
 | `src/admin/utils/fileValidation.js` | File/URL validation utilities          |
 | `src/admin/utils/urlHelpers.js`     | Safe object URL management             |
 
-### Known Issues (Fixed)
-
-- ✅ Infinite loop in focal point measurement (throttled, dependencies fixed)
-- ✅ Duplicate upload dialogs (old inline dialog removed)
-- ✅ Duplicate ASPECT_RATIOS constants (consolidated in config.js)
-
 ---
 
-## �🚨 Critical Rules
+## ⚠️ Critical Rules
 
 ### Performance First
 
@@ -106,6 +125,8 @@
 2. **Flat schema** - `imageUrl`, `imageWidth`, `imageHeight` directly on records, NOT nested objects
 3. **Parse JSON fields** - `recipeJson` and `faqsJson` are stored as TEXT, parse with `safeParseJson()` in `src/shared/utils/hydration.ts`
 4. **Handle nulls** - Convert `null` to `undefined` with `|| undefined` for component props
+5. **Soft deletes** - Always filter `WHERE deleted_at IS NULL` unless explicitly requested
+6. **Timestamps are UTC** - Use `CURRENT_TIMESTAMP` or ISO-8601 strings
 
 ### TypeScript
 
@@ -134,42 +155,41 @@
 
 ```
 src/
-├── modules/           # Feature-based modules (NEW)
-│   ├── media/         # Media/Images module
+├── modules/           # Feature-based domain modules
+│   ├── articles/      # Articles, recipes, roundups
 │   │   ├── api/       # API route handlers
-│   │   ├── services/  # r2.service.ts, media.service.ts
+│   │   ├── services/  # Business logic (articles.service.ts)
 │   │   ├── schema/    # Drizzle schema
 │   │   └── types/     # TypeScript types
-│   ├── articles/      # Articles module
-│   ├── categories/    # Categories module
-│   ├── authors/       # Authors module
-│   ├── tags/          # Tags module
-│   ├── auth/          # Authentication module
+│   ├── categories/    # Category taxonomy
+│   ├── authors/       # Author profiles
+│   ├── tags/          # Tag system
+│   ├── equipment/     # Kitchen tools with affiliate links
+│   ├── media/         # Media library & R2 storage
+│   ├── auth/          # Authentication
+│   ├── settings/      # Site settings
+│   ├── menus/         # Navigation menus
 │   ├── pinterest/     # Pinterest integration
-│   ├── templates/     # Pin templates
-│   └── settings/      # Site settings
-├── shared/            # Shared utilities (NEW)
-│   ├── database/      # drizzle.ts, schema.ts
-│   ├── utils/         # error-handler.ts, logging.ts, cache.ts
-│   └── types/         # Env types
-├── admin/             # React Admin Panel (MOVED from components/admin)
+│   ├── templates/     # Pin templates (canvas editor)
+│   └── ai/            # AI providers integration
+├── shared/            # Shared utilities
+│   ├── database/      # drizzle.ts, schema.ts (aggregate)
+│   ├── types/         # Global types (images.ts, api.types.ts)
+│   └── utils/         # Shared utilities
+├── admin/             # React Admin Panel (SPA)
 │   ├── components/    # React components
-│   ├── pages/         # Admin pages
+│   ├── pages/         # Admin page components
 │   ├── services/      # API client (api.js)
 │   ├── store/         # Zustand stores
-│   └── ui/            # shadcn components
+│   ├── ui/            # shadcn/ui components
+│   └── hooks/         # Custom React hooks
 ├── components/        # Public site Astro components
-│   └── *.astro        # Header, Footer, Cards, etc.
-├── layouts/           # Page layouts (RecipeLayout, Layout)
-├── lib/               # Legacy utilities (being migrated to modules)
-│   ├── drizzle.ts     # Drizzle helpers (re-export)
-│   ├── api.ts         # API fetch helpers
-│   ├── auth.ts        # JWT authentication
-│   └── error-handler.ts # Standardized API responses
-├── pages/
-│   ├── api/           # API routes (delegates to modules)
+├── layouts/           # Astro layouts
+├── lib/               # Legacy utilities (being migrated)
+├── pages/             # Astro pages & API routes
+│   ├── api/           # API endpoints (delegates to modules)
 │   └── *.astro        # Public pages
-└── types/             # TypeScript type definitions
+└── styles/            # Global CSS
 ```
 
 ### Path Aliases (tsconfig.json)
@@ -196,7 +216,7 @@ import {
   formatErrorResponse,
   AppError,
   ErrorCodes,
-} from "../../lib/error-handler";
+} from "@lib/error-handler";
 
 export const GET: APIRoute = async ({ locals }) => {
   try {
@@ -222,6 +242,38 @@ const item = isNumeric
   : await getBySlug(db, slug);
 ```
 
+### Image System
+
+**Import ALL image types from `@shared/types/images` (single source of truth).**
+
+```typescript
+// Public Types (Consumer code, API responses)
+import type { 
+  ImageVariant,      // url, width, height, sizeBytes
+  ImageVariants,     // xs, sm, md, lg, original
+  ImageSlot,         // Full slot: media_id, alt, caption, variants, etc.
+  ArticleImagesJson, // { cover?, thumbnail?, pinterest?, contentImages? }
+  ContentImageBlock, // { type: 'image', media_id, alt, variants, ... }
+} from '@shared/types/images';
+
+// Utility Functions
+import { 
+  getBestVariantUrl,    // Get best available URL
+  getSrcSet,            // Generate srcset string
+  stripStorageKeys      // Remove r2_key for API responses
+} from '@shared/types/images';
+```
+
+**Image Breakpoints:**
+
+| Variant | Width | Use Case |
+| :------ | :---- | :------- |
+| `xs`    | 360px | Mobile thumbnails |
+| `sm`    | 720px | Mobile full-width |
+| `md`    | 1200px| Tablet / small desktop |
+| `lg`    | 2048px| Full desktop / retina |
+| `original`| >2048px| Optional, hero images only |
+
 ### Image Rendering
 
 ```astro
@@ -236,6 +288,28 @@ const item = isNumeric
 
 <!-- WRONG: Missing dimensions causes CLS -->
 <img src={recipe.imageUrl} alt="" />
+```
+
+### Content Blocks
+
+Articles use a block-based JSON structure. Valid block types:
+
+| Category | Types |
+| :------- | :---- |
+| **Text** | `paragraph`, `heading`, `blockquote`, `list` |
+| **Media** | `image`, `video` |
+| **Callouts** | `tip_box` |
+| **Embeds** | `embed`, `recipe_card`, `product_card` |
+| **Layout** | `divider`, `spacer`, `ad_slot`, `table` |
+| **Food Blog** | `before_after`, `ingredient_spotlight`, `faq_section`, `related_content` |
+
+```typescript
+// Import from @modules/articles/types
+import type { 
+  ContentBlock,    // Union type for all blocks
+  HeadingBlock,    // Specific block type
+  FAQSectionBlock,
+} from '@modules/articles/types';
 ```
 
 ### Null Handling
@@ -255,9 +329,10 @@ recipeDetails = recipe.recipeJson; // may be null
 
 1. **Don't use `client:load`** on heavy components - use `client:visible` or `client:idle`
 2. **Don't embed large data in HTML attributes** - use `<script>` with global objects
-3. **Don't create new utility files** without checking if one exists in `src/lib/`
+3. **Don't create new utility files** without checking if one exists in `src/lib/` or `@shared/utils/`
 4. **Don't use `localStorage`** for anything critical - Cloudflare edge has no access
 5. **Don't hardcode colors** - use CSS variables or Tailwind classes
+6. **Don't expose `r2_key`** to frontend code - use `stripStorageKeys()`
 
 ---
 
@@ -272,13 +347,16 @@ recipeDetails = recipe.recipeJson; // may be null
 
 ## 📚 Key Files to Reference
 
-| Purpose            | File                       |
-| :----------------- | :------------------------- |
-| Database functions | `src/shared/database/drizzle.ts`            |
+| Purpose            | File                              |
+| :----------------- | :-------------------------------- |
+| Database functions | `src/shared/database/drizzle.ts`  |
 | Type definitions   | `src/shared/types/index.ts`       |
-| Schema definitions | `src/shared/database/schema.ts`        |
-| Error handling     | `src/lib/error-handler.ts` |
-| Auth utilities     | `src/lib/auth.ts`          |
+| Schema definitions | `src/shared/database/schema.ts`   |
+| Error handling     | `src/lib/error-handler.ts`        |
+| Auth utilities     | `src/lib/auth.ts`                 |
+| Image types        | `src/shared/types/images.ts`      |
+| Content blocks     | `src/modules/articles/types/content-blocks.types.ts` |
+| Database schema    | `db/schema.sql`                   |
 
 ---
 
@@ -343,7 +421,8 @@ perf: optimize StoriesBar DOM size
 | :----------- | :------------------ | :----------------- |
 | `JWT_SECRET` | Auth token signing  | Cloudflare Secrets |
 | `DB`         | D1 Database binding | wrangler.toml      |
-| `R2_BUCKET`  | R2 Storage binding  | wrangler.toml      |
+| `IMAGES`     | R2 Storage binding  | wrangler.toml      |
+| `SESSION`    | KV namespace binding| wrangler.toml      |
 
 ### Secrets Access
 
@@ -388,24 +467,31 @@ const secret = "my-secret-key"; // NEVER DO THIS
 
 ### New Files Location
 
-| Type            | Location                        | Example                 |
-| :-------------- | :------------------------------ | :---------------------- |
-| Astro page      | `src/pages/`                    | `about.astro`           |
-| API route       | `src/modules/*/api/`            | `media/api/upload.ts`   |
-| Module service  | `src/modules/*/services/`       | `media/services/r2.ts`  |
-| Module schema   | `src/modules/*/schema/`         | `media/schema/media.ts` |
-| Astro component | `src/components/`               | `RecipeCard.astro`      |
-| Admin component | `src/admin/components/`         | `ImageEditor.jsx`       |
-| Admin page      | `src/admin/pages/`              | `Dashboard.jsx`         |
-| Shared utility  | `src/shared/utils/`             | `error-handler.ts`      |
-| Type            | `src/types/` or module `types/` | `index.ts`              |
+| Type            | Location                        | Example                    |
+| :-------------- | :------------------------------ | :------------------------- |
+| Astro page      | `src/pages/`                    | `about.astro`              |
+| API route       | `src/modules/*/api/`            | `media/api/upload.ts`      |
+| Module service  | `src/modules/*/services/`       | `media/services/r2.ts`     |
+| Module schema   | `src/modules/*/schema/`         | `media/schema/media.ts`    |
+| Module types    | `src/modules/*/types/`          | `articles/types/index.ts`  |
+| Astro component | `src/components/`               | `RecipeCard.astro`         |
+| Admin component | `src/admin/components/`         | `ImageEditor.tsx`          |
+| Admin page      | `src/admin/pages/`              | `Dashboard.tsx`            |
+| Shared utility  | `src/shared/utils/`             | `error-handler.ts`         |
+| Shared types    | `src/shared/types/`             | `images.ts`                |
 
 ### Naming Patterns
 
-- **Components**: PascalCase (`RecipeCard.astro`)
-- **Utilities**: camelCase (`drizzle.ts`, `errorHandler.ts`)
-- **API routes**: kebab-case for folders (`/api/pinterest-boards/`)
-- **CSS classes**: kebab-case via Tailwind
+| Type | Convention | Example |
+| :--- | :--------- | :------ |
+| Components | PascalCase | `RecipeCard.astro` |
+| Utilities | camelCase | `drizzle.ts`, `errorHandler.ts` |
+| API routes | kebab-case folders | `/api/pinterest-boards/` |
+| CSS classes | kebab-case | Tailwind classes |
+| Slugs | lowercase, kebab-case | `chocolate-chip-cookies` |
+| JSON keys | camelCase | `mediaId`, `focalPoint` |
+| SQL columns | snake_case | `created_at`, `is_online` |
+| Boolean columns | `is_` prefix | `is_online`, `is_featured` |
 
 ---
 
@@ -435,8 +521,12 @@ database_name = "recipes-saas-db"
 database_id = "..."
 
 [[r2_buckets]]
-binding = "R2_BUCKET"
+binding = "IMAGES"
 bucket_name = "recipes-saas-images"
+
+[[kv_namespaces]]
+binding = "SESSION"
+id = "..."
 ```
 
 ---
@@ -451,6 +541,4 @@ Before marking any task complete:
 - [ ] No `any` types unless documented reason
 - [ ] No hardcoded secrets or sensitive data
 - [ ] Commit message follows convention
-- [ ] Beads issue updated (`bd close <id>` if done)
-
-
+- [ ] Beads issue updated (`bd close <id>` if done).
