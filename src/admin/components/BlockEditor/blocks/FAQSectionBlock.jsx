@@ -117,9 +117,26 @@ export const FAQSectionBlock = createReactBlockSpec(
             // Use context for FAQ data (mirrors RecipeDataContext pattern)
             const { faqs, setFaqs, faqTitle, setFaqTitle } = useFAQData();
 
-            // The context provides the data - use it directly
-            const items = faqs || [];
-            const title = faqTitle || 'Frequently Asked Questions';
+            // Check if context is actually provided (setFaqs will be a real function, not the default no-op)
+            // If setFaqs is the default no-op, it won't have a name or will be anonymous
+            const hasRealContext = setFaqs && setFaqs.length !== undefined && setFaqs !== FAQDataContext._currentValue?.setFaqs;
+
+            // For now, always use local state until parent editors provide context
+            // This ensures backward compatibility
+            const [localItems, setLocalItems] = useState(() => {
+                try {
+                    return JSON.parse(block.props.items || '[]');
+                } catch {
+                    return [];
+                }
+            });
+            const [localTitle, setLocalTitle] = useState(
+                block.props.title || 'Frequently Asked Questions'
+            );
+
+            // Use context if provided by parent, otherwise use local state
+            const items = (faqs && faqs.length > 0) ? faqs : localItems;
+            const title = faqTitle || localTitle;
 
             const { isSelected, selectBlock } = useBlockSelection(block.id);
             const [expanded, setExpanded] = useState({});
@@ -127,15 +144,29 @@ export const FAQSectionBlock = createReactBlockSpec(
             const answerRefs = useRef({});
 
             const updateItems = (newItems) => {
-                // Update context (primary data source)
-                if (setFaqs) {
+                // Always update local state
+                setLocalItems(newItems);
+                // Also persist to block props for serialization
+                editor.updateBlock(block, {
+                    type: 'faqSection',
+                    props: { ...block.props, items: JSON.stringify(newItems) },
+                });
+                // If context is provided, also update context
+                if (setFaqs && typeof setFaqs === 'function') {
                     setFaqs(newItems);
                 }
             };
 
             const updateTitle = (newTitle) => {
-                // Update context (primary data source)
-                if (setFaqTitle) {
+                // Always update local state
+                setLocalTitle(newTitle);
+                // Also persist to block props
+                editor.updateBlock(block, {
+                    type: 'faqSection',
+                    props: { ...block.props, title: newTitle }
+                });
+                // If context is provided, also update context
+                if (setFaqTitle && typeof setFaqTitle === 'function') {
                     setFaqTitle(newTitle);
                 }
             };

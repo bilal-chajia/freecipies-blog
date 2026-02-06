@@ -15,7 +15,4 @@ export { RelatedContentBlock } from './RelatedContentBlock';
 export { TableBlock } from './TableBlock';
 export { BeforeAfterBlock } from './BeforeAfterBlock';
 
-// New meta blocks (WordPress-style)
-export { TitleBlock, TitleInput } from './TitleBlock';
-export { HeadlineBlock, HeadlineInput } from './HeadlineBlock';
-export { FeaturedImageBlock, FeaturedImage } from './FeaturedImageBlock';
+

@@ -13,14 +13,12 @@ import { lazy, Suspense, useEffect } from 'react';
 
 const Homepage = lazy(() => importWithRetry(() => import('./pages/homepage/Homepage')));
 const ArticlesList = lazy(() => importWithRetry(() => import('./pages/articles/ArticlesList')));
-const ArticleEditor = lazy(() => importWithRetry(() => import('./pages/articles/ArticleEditor')));
 const GutenbergArticleEditor = lazy(() => importWithRetry(() => import('./pages/articles/GutenbergArticleEditor')));
 const RecipesList = lazy(() => importWithRetry(() => import('./pages/recipes/RecipesList')));
-const RecipeEditor = lazy(() => importWithRetry(() => import('./pages/articles/RecipeEditor')));
 const GutenbergRecipeEditor = lazy(() => importWithRetry(() => import('./pages/articles/GutenbergRecipeEditor')));
 const RoundupsList = lazy(() => importWithRetry(() => import('./pages/roundups/RoundupsList')));
-const RoundupEditor = lazy(() => importWithRetry(() => import('./pages/articles/RoundupEditor')));
 const GutenbergRoundupEditor = lazy(() => importWithRetry(() => import('./pages/articles/GutenbergRoundupEditor')));
+
 const CategoriesList = lazy(() => importWithRetry(() => import('./pages/categories/CategoriesList')));
 const CategoryEditor = lazy(() => importWithRetry(() => import('./pages/categories/CategoryEditor')));
 const AuthorsList = lazy(() => importWithRetry(() => import('./pages/authors/AuthorsList')));
@@ -131,32 +129,22 @@ function AdminApp() {
               <Route path="homepage" element={<Navigate to="/homepage/hero" replace />} />
               <Route path="homepage/:section" element={<Homepage />} />
 
-              {/* Articles - Gutenberg Editor (default) */}
+              {/* Articles */}
               <Route path="articles" element={<ArticlesList />} />
               <Route path="articles/new" element={<GutenbergArticleEditor />} />
               <Route path="articles/:slug" element={<GutenbergArticleEditor />} />
 
-              {/* Articles Legacy - Old Editor */}
-              <Route path="articles-legacy/new" element={<ArticleEditor />} />
-              <Route path="articles-legacy/:slug" element={<ArticleEditor />} />
-
-              {/* Recipes - Gutenberg Editor (default) */}
+              {/* Recipes */}
               <Route path="recipes" element={<RecipesList />} />
               <Route path="recipes/new" element={<GutenbergRecipeEditor />} />
               <Route path="recipes/:slug" element={<GutenbergRecipeEditor />} />
 
-              {/* Recipes Legacy - Old Editor */}
-              <Route path="recipes-legacy/new" element={<RecipeEditor />} />
-              <Route path="recipes-legacy/:slug" element={<RecipeEditor />} />
-
-              {/* Roundups - Gutenberg Editor (default) */}
+              {/* Roundups */}
               <Route path="roundups" element={<RoundupsList />} />
               <Route path="roundups/new" element={<GutenbergRoundupEditor />} />
               <Route path="roundups/:slug" element={<GutenbergRoundupEditor />} />
 
-              {/* Roundups Legacy - Old Editor */}
-              <Route path="roundups-legacy/new" element={<RoundupEditor />} />
-              <Route path="roundups-legacy/:slug" element={<RoundupEditor />} />
+
 
               {/* Categories */}
               <Route path="categories" element={<CategoriesList />} />
