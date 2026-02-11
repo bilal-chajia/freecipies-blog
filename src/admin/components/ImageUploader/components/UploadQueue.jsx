@@ -65,10 +65,10 @@ export default function UploadQueue({
                 layout
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-lg border",
-                  item.status === 'done' && "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800",
-                  item.status === 'uploading' && "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800",
-                  item.status === 'error' && "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800",
-                  item.status === 'skipped' && "bg-gray-50 border-gray-200 opacity-50 dark:bg-gray-900/30",
+                  item.status === 'done' && "bg-success/10 border-success/30",
+                  item.status === 'uploading' && "bg-primary/10 border-primary/30",
+                  item.status === 'error' && "bg-destructive/10 border-destructive/30",
+                  item.status === 'skipped' && "bg-muted opacity-50",
                   item.status === 'pending' && "bg-background border-border"
                 )}
               >
@@ -82,7 +82,7 @@ export default function UploadQueue({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Link className="h-5 w-5 text-muted-foreground" />
+                      <Link className="size-5 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -119,7 +119,7 @@ export default function UploadQueue({
                     className="h-7 px-2 gap-1 text-xs"
                     onClick={() => onRetry(item.id)}
                   >
-                    <RefreshCw className="h-3 w-3" />
+                    <RefreshCw className="size-3" />
                     Retry
                   </Button>
                 )}
@@ -129,10 +129,10 @@ export default function UploadQueue({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="size-8"
                     onClick={() => onRemove(item.id)}
                   >
-                    <X className="h-4 w-4" />
+                    <X className="size-4" />
                   </Button>
                 )}
               </motion.div>

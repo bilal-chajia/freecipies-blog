@@ -21,7 +21,7 @@ export default function SocialLinksSection({ socialLinks, onSocialChange }) {
                 {links.map(({ id, label, icon: Icon, placeholder }) => (
                     <div key={id} className="space-y-1.5">
                         <Label htmlFor={id} className="text-sm font-medium flex items-center gap-1.5">
-                            <Icon className="w-3.5 h-3.5" />
+                            <Icon className="size-3.5" />
                             {label}
                         </Label>
                         <Input

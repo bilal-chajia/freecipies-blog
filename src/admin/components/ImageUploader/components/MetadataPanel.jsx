@@ -33,7 +33,7 @@ export default function MetadataPanel({
   const numericAspect = ASPECT_RATIOS[aspect];
 
   return (
-    <div className="w-full lg:w-[340px] lg:min-w-[320px] flex flex-col min-h-0 max-h-[50vh] lg:max-h-none border-t lg:border-t-0 lg:border-l bg-background">
+    <div className="w-full lg:w-80 lg:min-w-[18rem] flex flex-col min-h-0 max-h-[50vh] lg:max-h-none border-t lg:border-t-0 lg:border-l bg-background">
       {/* Scrollable Form Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {/* Filename */}
@@ -147,7 +147,7 @@ export default function MetadataPanel({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  <ZoomIn className="h-3.5 w-3.5" /> Zoom
+                  <ZoomIn className="size-3.5" /> Zoom
                 </label>
                 <span className="text-xs font-medium">{zoomPercent}%</span>
               </div>
@@ -163,7 +163,7 @@ export default function MetadataPanel({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  <RotateCw className="h-3.5 w-3.5" /> Rotate
+                  <RotateCw className="size-3.5" /> Rotate
                 </label>
                 <span className="text-xs font-medium">{rotation}°</span>
               </div>

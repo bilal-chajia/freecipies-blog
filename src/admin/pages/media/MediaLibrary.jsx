@@ -398,11 +398,11 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
   const getFileIcon = (filename) => {
     if (!filename) return <FileIcon className="w-8 h-8 opacity-40" />;
     const ext = filename.split('.').pop().toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return <ImageIcon className="w-8 h-8 text-blue-500" />;
-    if (['mp4', 'avi', 'mov', 'wmv'].includes(ext)) return <Video className="w-8 h-8 text-rose-500" />;
-    if (['mp3', 'wav', 'flac', 'aac'].includes(ext)) return <Music className="w-8 h-8 text-emerald-500" />;
-    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return <Archive className="w-8 h-8 text-amber-500" />;
-    return <FileIcon className="w-8 h-8 opacity-40" />;
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return <ImageIcon className="size-8 text-primary" />;
+    if (['mp4', 'avi', 'mov', 'wmv'].includes(ext)) return <Video className="size-8 text-destructive" />;
+    if (['mp3', 'wav', 'flac', 'aac'].includes(ext)) return <Music className="size-8 text-success" />;
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return <Archive className="size-8 text-secondary" />;
+    return <FileIcon className="size-8 opacity-40" />;
   };
 
   const filteredMedia = media.filter(item => {
@@ -445,29 +445,29 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="h-5 w-5 rounded-full bg-blue-500/80 backdrop-blur-md border-none text-white hover:bg-blue-600"
+                    className="size-5 rounded-full bg-primary/80 backdrop-blur-md border-none text-white hover:bg-primary"
                     onClick={(e) => { e.stopPropagation(); window.open(getFullUrl(item), '_blank'); }}
                     title="View Full"
                   >
-                    <Maximize2 className="h-2.5 w-2.5" />
+                    <Maximize2 className="size-2.5" />
                   </Button>
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="h-5 w-5 rounded-full bg-green-500/80 backdrop-blur-md border-none text-white hover:bg-green-600"
+                    className="size-5 rounded-full bg-success/80 backdrop-blur-md border-none text-white hover:bg-success"
                     onClick={(e) => { e.stopPropagation(); handleCopyUrl(getFullUrl(item)); }}
                     title="Copy URL"
                   >
-                    <Copy className="h-2.5 w-2.5" />
+                    <Copy className="size-2.5" />
                   </Button>
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="h-5 w-5 rounded-full bg-red-500/80 backdrop-blur-md border-none text-white hover:bg-red-600"
+                    className="size-5 rounded-full bg-destructive/80 backdrop-blur-md border-none text-white hover:bg-destructive"
                     onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item.id, isBulk: false }); }}
                     title="Delete"
                   >
-                    <Trash2 className="h-2.5 w-2.5" />
+                    <Trash2 className="size-2.5" />
                   </Button>
                 </div>
 
@@ -485,12 +485,12 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
               {!selectedMedia.includes(item.id) && (() => {
                 const type = (item.mimeType || item.mime_type || 'image/jpeg').split('/').pop();
                 const colorClass = {
-                  webp: 'bg-green-500/80',
-                  avif: 'bg-purple-500/80',
-                  jpeg: 'bg-blue-500/80',
-                  jpg: 'bg-blue-500/80',
-                  png: 'bg-orange-500/80',
-                }[type] || 'bg-black/50';
+                  webp: 'bg-success/80',
+                  avif: 'bg-secondary/80',
+                  jpeg: 'bg-primary/80',
+                  jpg: 'bg-primary/80',
+                  png: 'bg-warning/80',
+                }[type] || 'bg-muted/50';
                 return (
                   <div className="absolute top-2 left-2 pointer-events-none">
                     <Badge className={`h-5 px-1.5 text-[7px] ${colorClass} backdrop-blur-sm text-white border-none font-bold uppercase flex items-center`}>
@@ -503,7 +503,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
               {/* Selection Checkmark */}
               {selectedMedia.includes(item.id) && (
                 <div className="absolute top-2 left-2 h-5 w-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg border-2 border-background">
-                  <Check className="h-3 w-3 bold" />
+                  <Check className="size-3 bold" />
                 </div>
               )}
             </Card>
@@ -534,14 +534,14 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
               {selectedMedia.includes(item.id) && <Badge className="h-4 px-1 text-[8px] uppercase">Selected</Badge>}
             </div>
             <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium uppercase tracking-tight mt-1 opacity-60">
-              <span className="flex items-center gap-1"><RefreshCw className="h-2.5 w-2.5" /> {formatDate(item.created_at)}</span>
-              <span className="flex items-center gap-1"><Info className="h-2.5 w-2.5" /> {formatDisplayedSize(item)}</span>
+              <span className="flex items-center gap-1"><RefreshCw className="size-2.5" /> {formatDate(item.created_at)}</span>
+              <span className="flex items-center gap-1"><Info className="size-2.5" /> {formatDisplayedSize(item)}</span>
             </div>
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleCopyUrl(getFullUrl(item))}><Copy className="h-3.5 w-3.5" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => window.open(getFullUrl(item), '_blank')}><Eye className="h-3.5 w-3.5" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive" onClick={() => setDeleteModal({ isOpen: true, id: item.id, isBulk: false })}><Trash2 className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleCopyUrl(getFullUrl(item))}><Copy className="size-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => window.open(getFullUrl(item), '_blank')}><Eye className="size-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive" onClick={() => setDeleteModal({ isOpen: true, id: item.id, isBulk: false })}><Trash2 className="size-3.5" /></Button>
           </div>
         </Card>
       ))}
@@ -554,7 +554,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
-            <ImageIcon className="h-4 w-4" />
+            <ImageIcon className="size-4" />
             Assets & CDN
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Media Library</h1>
@@ -590,7 +590,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
             className="h-11 px-6 gap-2 shadow-sm rounded-xl"
             onClick={() => setShowUploadDialog(true)}
           >
-            <Upload className="h-4 w-4" />
+            <Upload className="size-4" />
             Upload Assets
           </Button>
         </div>
@@ -611,7 +611,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
         <div className="flex flex-wrap items-center gap-3">
           <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger className="w-[140px] h-12 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
-              <Filter className="h-3.5 w-3.5 mr-2 opacity-60" />
+              <Filter className="size-3.5 mr-2 opacity-60" />
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -636,10 +636,10 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
 
           <div className="flex p-1 bg-accent/50 rounded-2xl border border-border/30 h-12">
             <Button variant="ghost" onClick={() => setViewMode('grid')} className={`h-full w-10 p-0 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
-              <Grid className="h-4 w-4" />
+              <Grid className="size-4" />
             </Button>
             <Button variant="ghost" onClick={() => setViewMode('list')} className={`h-full w-10 p-0 rounded-xl transition-all ${viewMode === 'list' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
-              <List className="h-4 w-4" />
+              <List className="size-4" />
             </Button>
           </div>
         </div>
@@ -654,7 +654,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
 
         {filteredMedia.length === 0 && !loading && (
           <div className="flex flex-col items-center justify-center py-32 opacity-30">
-            <ImageIcon className="h-16 w-16 mb-4" />
+            <ImageIcon className="size-16 mb-4" />
             <h3 className="font-bold text-lg">No Assets Detected</h3>
             <p className="text-sm">Initiate an upload to populate your library.</p>
           </div>

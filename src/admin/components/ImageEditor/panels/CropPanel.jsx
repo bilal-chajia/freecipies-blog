@@ -40,10 +40,10 @@ const CropPanel = ({
                     value={aspect === null ? 'free' : String(aspect)}
                     onValueChange={(val) => onAspectChange(parseAspectValue(val))}
                 >
-                    <SelectTrigger className="w-full bg-zinc-800 border-zinc-700">
+                    <SelectTrigger className="w-full bg-muted border-border">
                         <SelectValue placeholder="Select aspect ratio" />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-800 border-zinc-700">
+                    <SelectContent className="bg-muted border-border">
                         {Object.entries(ASPECT_RATIO_GROUPS).map(([key, group]) => (
                             <SelectGroup key={key}>
                                 <SelectLabel className="text-muted-foreground">{group.label}</SelectLabel>
@@ -120,7 +120,7 @@ const CropPanel = ({
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">Apply</Label>
                 <Button
                     variant="outline"
-                    className="w-full border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300"
+                    className="w-full border-success/50 text-success hover:bg-success/10 hover:text-success/80"
                     onClick={onApplyCrop}
                     disabled={processing}
                 >

@@ -476,21 +476,21 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
     };
 
     return (
-        <div className="border-b bg-gray-50">
+        <div className="border-b bg-muted">
             <div className="flex items-center gap-1 p-2 flex-wrap">
                 <button
                     type="button"
                     onClick={onToggleStructurePanel}
-                    className={`p-1.5 hover:bg-gray-200 rounded ${structureOpen ? 'bg-gray-200 text-gray-900' : 'text-gray-700'}`}
+                    className={`p-1.5 hover:bg-muted/80 rounded-sm ${structureOpen ? 'bg-muted/80 text-foreground' : 'text-muted-foreground'}`}
                     title="List View / Outline"
                 >
-                    <ListTree className="w-4 h-4" />
+                    <ListTree className="size-4" />
                 </button>
-                <button onClick={() => insertBlock('heading', { level: 2 })} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Heading 2"><Heading2 className="w-4 h-4" /></button>
-                <button onClick={() => insertBlock('heading', { level: 3 })} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Heading 3"><Heading3 className="w-4 h-4" /></button>
-                <div className="w-px h-4 bg-gray-300 mx-1" />
-                <button onClick={() => insertBlock('bulletListItem')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Bullet List"><List className="w-4 h-4" /></button>
-                <button onClick={() => insertBlock('numberedListItem')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Numbered List"><ListOrdered className="w-4 h-4" /></button>
+                <button onClick={() => insertBlock('heading', { level: 2 })} className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground" title="Heading 2"><Heading2 className="size-4" /></button>
+                <button onClick={() => insertBlock('heading', { level: 3 })} className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground" title="Heading 3"><Heading3 className="size-4" /></button>
+                <div className="w-px h-4 bg-border mx-1" />
+                <button onClick={() => insertBlock('bulletListItem')} className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground" title="Bullet List"><List className="size-4" /></button>
+                <button onClick={() => insertBlock('numberedListItem')} className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground" title="Numbered List"><ListOrdered className="size-4" /></button>
                 <button
                     type="button"
                     onMouseDown={(event) => {
@@ -520,60 +520,60 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
                         editor.createLink(url, selectedText);
                         editor.focus();
                     }}
-                    className="p-1.5 hover:bg-gray-200 rounded text-gray-700"
+                    className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground"
                     title="Link"
                 >
-                    <LinkIcon className="w-4 h-4" />
+                    <LinkIcon className="size-4" />
                 </button>
-                <div className="w-px h-4 bg-gray-300 mx-1" />
+                <div className="w-px h-4 bg-border mx-1" />
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button
                             type="button"
-                            className="p-1.5 hover:bg-gray-200 rounded text-gray-700 inline-flex items-center gap-1"
+                            className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground inline-flex items-center gap-1"
                             title="Insert block"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="size-4" />
                             <span className="text-xs font-medium">Insert</span>
                         </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-52">
                         <DropdownMenuItem onClick={() => insertBlock('customImage')}>
-                            <ImageIcon className="w-4 h-4 mr-2" /> Image
+                            <ImageIcon className="size-4 mr-2" /> Image
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => insertBlock('video')}>
-                            <Video className="w-4 h-4 mr-2" /> Video
+                            <Video className="size-4 mr-2" /> Video
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => insertBlock('alert', { type: 'tip' })}>
-                            <AlertTriangle className="w-4 h-4 mr-2 text-amber-600" /> Alert / Tip
+                            <AlertTriangle className="size-4 mr-2 text-warning" /> Alert / Tip
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => insertBlock('faqSection')}>
-                            <HelpCircle className="w-4 h-4 mr-2 text-blue-600" /> FAQ Section
+                            <HelpCircle className="size-4 mr-2 text-primary" /> FAQ Section
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => insertBlock('recipeEmbed')}>
-                            <Utensils className="w-4 h-4 mr-2 text-green-600" /> Embed Recipe
+                            <Utensils className="size-4 mr-2 text-success" /> Embed Recipe
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => insertBlock('relatedContent')}>
-                            <LayoutGrid className="w-4 h-4 mr-2 text-purple-600" /> Related Content
+                            <LayoutGrid className="size-4 mr-2 text-accent" /> Related Content
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => insertBlock('beforeAfter')}>
-                            <SplitSquareVertical className="w-4 h-4 mr-2" /> Before / After
+                            <SplitSquareVertical className="size-4 mr-2" /> Before / After
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => insertBlock('simpleTable')}>
-                            <Table className="w-4 h-4 mr-2" /> Table
+                            <Table className="size-4 mr-2" /> Table
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => insertBlock('divider')}>
-                            <Minus className="w-4 h-4 mr-2" /> Divider
+                            <Minus className="size-4 mr-2" /> Divider
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
             {faqLinkOpen && (
                 <div className="px-2 pb-2">
-                    <div className="flex items-center gap-2 rounded-md border bg-white px-2 py-1 shadow-sm">
-                        <LinkIcon className="w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 shadow-sm">
+                        <LinkIcon className="size-4 text-muted-foreground/60" />
                         <input
                             type="url"
                             value={faqLinkUrl}
@@ -594,7 +594,7 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
                         />
                         <button
                             type="button"
-                            className="text-xs text-gray-500 hover:text-gray-700"
+                            className="text-xs text-muted-foreground hover:text-foreground"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => setFaqLinkOpen(false)}
                         >
@@ -603,7 +603,7 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
                         {faqLinkHasMatch && (
                             <button
                                 type="button"
-                                className="text-xs text-gray-500 hover:text-gray-700"
+                                className="text-xs text-muted-foreground hover:text-foreground"
                                 onMouseDown={(event) => event.preventDefault()}
                                 onClick={removeFaqLink}
                             >
@@ -612,7 +612,7 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
                         )}
                         <button
                             type="button"
-                            className="rounded px-2 py-1 text-xs font-semibold text-white bg-gray-900 hover:bg-gray-800"
+                            className="rounded-sm px-2 py-1 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={applyFaqLink}
                         >
@@ -1328,7 +1328,7 @@ export default function BlockEditor({
         initialContent,
         domAttributes: {
             editor: {
-                class: 'min-h-[500px] pb-[30vh]',
+                class: 'min-h-[32rem] pb-[30vh]',
             },
         },
         uploadFile: async (file) => {
@@ -2086,7 +2086,7 @@ export default function BlockEditor({
                                                         }}
                                                         title="Bold"
                                                     >
-                                                        <Bold className="w-4 h-4" />
+                                                        <Bold className="size-4" />
                                                     </button>
                                                     <button
                                                         type="button"
@@ -2098,7 +2098,7 @@ export default function BlockEditor({
                                                         }}
                                                         title="Italic"
                                                     >
-                                                        <Italic className="w-4 h-4" />
+                                                        <Italic className="size-4" />
                                                     </button>
                                                     <button
                                                         type="button"
@@ -2112,7 +2112,7 @@ export default function BlockEditor({
                                                         }}
                                                         title="Insert link"
                                                     >
-                                                        <LinkIcon className="w-4 h-4" />
+                                                        <LinkIcon className="size-4" />
                                                     </button>
                                                     {linkToolbar.mode === 'link' && (
                                                         <div className="inline-link-input">
@@ -2161,7 +2161,7 @@ export default function BlockEditor({
                                                                 }}
                                                                 title="Apply link"
                                                             >
-                                                                <Check className="w-4 h-4" />
+                                                                <Check className="size-4" />
                                                             </button>
                                                             <button
                                                                 type="button"
@@ -2169,7 +2169,7 @@ export default function BlockEditor({
                                                                 onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }))}
                                                                 title="Cancel"
                                                             >
-                                                                <X className="w-4 h-4" />
+                                                                <X className="size-4" />
                                                             </button>
                                                         </div>
                                                     )}
@@ -2208,86 +2208,86 @@ export default function BlockEditor({
                                                             }}
                                                             title="Insert block"
                                                         >
-                                                            <Plus className="w-4 h-4" />
+                                                            <Plus className="size-4" />
                                                         </button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="center" className="w-56">
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('paragraph')}>
-                                                            <FileText className="w-4 h-4 mr-2" />
+                                                            <FileText className="size-4 mr-2" />
                                                             Paragraph
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 2 })}>
-                                                            <Heading2 className="w-4 h-4 mr-2" />
+                                                            <Heading2 className="size-4 mr-2" />
                                                             Heading 2
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 3 })}>
-                                                            <Heading3 className="w-4 h-4 mr-2" />
+                                                            <Heading3 className="size-4 mr-2" />
                                                             Heading 3
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 4 })}>
-                                                            <Heading3 className="w-4 h-4 mr-2" />
+                                                            <Heading3 className="size-4 mr-2" />
                                                             Heading 4
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 5 })}>
-                                                            <Heading3 className="w-4 h-4 mr-2" />
+                                                            <Heading3 className="size-4 mr-2" />
                                                             Heading 5
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 6 })}>
-                                                            <Heading3 className="w-4 h-4 mr-2" />
+                                                            <Heading3 className="size-4 mr-2" />
                                                             Heading 6
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('bulletListItem')}>
-                                                            <List className="w-4 h-4 mr-2" />
+                                                            <List className="size-4 mr-2" />
                                                             Bulleted list
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('numberedListItem')}>
-                                                            <ListOrdered className="w-4 h-4 mr-2" />
+                                                            <ListOrdered className="size-4 mr-2" />
                                                             Numbered list
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('blockquote')}>
-                                                            <Quote className="w-4 h-4 mr-2" />
+                                                            <Quote className="size-4 mr-2" />
                                                             Quote
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('customImage')}>
-                                                            <ImageIcon className="w-4 h-4 mr-2" />
+                                                            <ImageIcon className="size-4 mr-2" />
                                                             Image
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('video')}>
-                                                            <Video className="w-4 h-4 mr-2" />
+                                                            <Video className="size-4 mr-2" />
                                                             Video
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('beforeAfter')}>
-                                                            <SplitSquareVertical className="w-4 h-4 mr-2" />
+                                                            <SplitSquareVertical className="size-4 mr-2" />
                                                             Before / After
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('alert', { type: 'tip' })}>
-                                                            <AlertTriangle className="w-4 h-4 mr-2" />
+                                                            <AlertTriangle className="size-4 mr-2" />
                                                             Tip box
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('faqSection')}>
-                                                            <HelpCircle className="w-4 h-4 mr-2" />
+                                                            <HelpCircle className="size-4 mr-2" />
                                                             FAQ
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('simpleTable')}>
-                                                            <Table className="w-4 h-4 mr-2" />
+                                                            <Table className="size-4 mr-2" />
                                                             Table
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => insertBlockAtHandle('divider')}>
-                                                            <Minus className="w-4 h-4 mr-2" />
+                                                            <Minus className="size-4 mr-2" />
                                                             Divider
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
                                                         {contentType === 'recipe' && typeof onRecipeChange === 'function' && (
                                                             <DropdownMenuItem onClick={() => insertBlockAtHandle('mainRecipe')}>
-                                                                <Utensils className="w-4 h-4 mr-2" />
+                                                                <Utensils className="size-4 mr-2" />
                                                                 Recipe details
                                                             </DropdownMenuItem>
                                                         )}
                                                         {contentType === 'roundup' && typeof onRoundupChange === 'function' && (
                                                             <DropdownMenuItem onClick={() => insertBlockAtHandle('roundupList')}>
-                                                                <LayoutGrid className="w-4 h-4 mr-2" />
+                                                                <LayoutGrid className="size-4 mr-2" />
                                                                 Roundup list
                                                             </DropdownMenuItem>
                                                         )}
@@ -2311,7 +2311,7 @@ export default function BlockEditor({
           border: none;
           border-radius: 0;
           overflow: visible;
-          min-height: 500px;
+          min-height: 32rem;
           background: transparent;
           position: relative;
           display: flex;
@@ -2353,7 +2353,7 @@ export default function BlockEditor({
         }
 
         .block-editor-wrapper .bn-editor a {
-          color: #2563eb;
+          color: hsl(var(--primary));
           text-decoration: underline;
           text-underline-offset: 2px;
         }
@@ -2371,8 +2371,8 @@ export default function BlockEditor({
           gap: 6px;
           padding: 6px;
           border-radius: 999px;
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
+          background: hsl(var(--background));
+          border: 1px solid hsl(var(--border));
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
         }
 
@@ -2381,7 +2381,7 @@ export default function BlockEditor({
           background: transparent;
           border: none;
           border-radius: 6px;
-          color: #4b5563;
+          color: hsl(var(--muted-foreground));
           display: inline-flex;
           height: 26px;
           justify-content: center;
@@ -2390,8 +2390,8 @@ export default function BlockEditor({
 
         .inline-link-button:hover,
         .inline-link-button.is-active {
-          background: #f3f4f6;
-          color: #111827;
+          background: hsl(var(--muted));
+          color: hsl(var(--foreground));
         }
 
         .inline-link-input {
@@ -2399,11 +2399,11 @@ export default function BlockEditor({
           align-items: center;
           gap: 6px;
           padding-left: 4px;
-          border-left: 1px solid #e5e7eb;
+          border-left: 1px solid hsl(var(--border));
         }
 
         .inline-link-input-field {
-          border: 1px solid #e5e7eb;
+          border: 1px solid hsl(var(--border));
           border-radius: 6px;
           height: 26px;
           padding: 0 8px;
@@ -2413,10 +2413,10 @@ export default function BlockEditor({
 
         .inline-link-action {
           align-items: center;
-          background: #f3f4f6;
-          border: 1px solid #e5e7eb;
+          background: hsl(var(--muted));
+          border: 1px solid hsl(var(--border));
           border-radius: 6px;
-          color: #374151;
+          color: hsl(var(--muted-foreground));
           display: inline-flex;
           height: 26px;
           justify-content: center;
@@ -2424,7 +2424,7 @@ export default function BlockEditor({
         }
 
         .inline-link-action:hover {
-          background: #e5e7eb;
+          background: hsl(var(--border));
         }
 
         .block-editor-canvas .bn-editor {
@@ -2467,21 +2467,21 @@ export default function BlockEditor({
           width: 26px;
           height: 26px;
           border-radius: 999px;
-          border: 1px solid #e5e7eb;
-          background: #ffffff;
+          border: 1px solid hsl(var(--border));
+          background: hsl(var(--background));
           display: inline-flex;
           align-items: center;
           justify-content: center;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-          color: #4b5563;
+          color: hsl(var(--muted-foreground));
           pointer-events: auto;
           animation: blockInsertPop 640ms cubic-bezier(0.2, 0, 0, 1);
           will-change: transform, opacity;
         }
 
         .block-insert-button:hover {
-          background: #f3f4f6;
-          color: #111827;
+          background: hsl(var(--muted));
+          color: hsl(var(--foreground));
         }
 
         @keyframes blockInsertPop {
@@ -2523,8 +2523,8 @@ export default function BlockEditor({
 
         .block-editor-wrapper .bn-side-menu .bn-button {
           align-items: center;
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
+          background: hsl(var(--background));
+          border: 1px solid hsl(var(--border));
           border-radius: 999px;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
           display: inline-flex;
@@ -2534,8 +2534,8 @@ export default function BlockEditor({
         }
 
         .block-editor-wrapper .bn-side-menu .bn-button:hover {
-          background: #f8fafc;
-          border-color: #d1d5db;
+          background: hsl(var(--muted));
+          border-color: hsl(var(--border));
         }
 
         .block-editor-wrapper .bn-side-menu [draggable="true"] {
@@ -2547,8 +2547,8 @@ export default function BlockEditor({
         }
 
         .block-editor-wrapper .bn-formatting-toolbar {
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
+          background: hsl(var(--background));
+          border: 1px solid hsl(var(--border));
           border-radius: 999px;
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
           padding: 4px 6px;
@@ -2561,12 +2561,12 @@ export default function BlockEditor({
 
         .block-editor-wrapper .bn-suggestion-menu,
         .block-editor-wrapper .bn-menu-dropdown {
-          border-radius: 12px;
+          border-radius: var(--radius);
           box-shadow: 0 16px 30px rgba(0, 0, 0, 0.12);
         }
 
         .block-editor-wrapper .bn-suggestion-menu-item {
-          border-radius: 8px;
+          border-radius: var(--radius);
         }
 
         .block-editor-wrapper .bn-suggestion-menu-label {
@@ -2576,11 +2576,11 @@ export default function BlockEditor({
         }
 
         .bn-form-popover {
-          background-color: var(--bn-colors-menu-background, #ffffff);
-          border: var(--bn-border, 1px solid #e5e7eb);
+          background-color: var(--bn-colors-menu-background, hsl(var(--background)));
+          border: var(--bn-border, 1px solid hsl(var(--border)));
           border-radius: var(--bn-border-radius-medium, 8px);
           box-shadow: var(--bn-shadow-medium, 0 10px 25px rgba(0, 0, 0, 0.12));
-          color: var(--bn-colors-menu-text, #111827);
+          color: var(--bn-colors-menu-text, hsl(var(--foreground)));
           display: flex;
           flex-direction: column;
           gap: 6px;
@@ -2590,11 +2590,11 @@ export default function BlockEditor({
 
         .bn-form-popover .bn-text-input {
           width: 300px;
-          max-width: min(320px, 75vw);
+          max-width: min(20rem, 75vw);
         }
 
         .bn-form-popover label {
-          color: var(--bn-colors-menu-text, #6b7280);
+          color: var(--bn-colors-menu-text, hsl(var(--muted-foreground)));
           font-size: 11px;
           margin-bottom: 2px;
         }
@@ -2602,10 +2602,10 @@ export default function BlockEditor({
         .bn-form-popover input,
         .bn-form-popover textarea,
         .bn-form-popover select {
-          background-color: var(--bn-colors-background, #ffffff);
-          border: 1px solid var(--bn-border-color, #e5e7eb);
+          background-color: var(--bn-colors-background, hsl(var(--background)));
+          border: 1px solid var(--bn-border-color, hsl(var(--border)));
           border-radius: 6px;
-          color: var(--bn-colors-menu-text, #111827);
+          color: var(--bn-colors-menu-text, hsl(var(--foreground)));
           font-size: 12px;
           padding: 6px 36px 6px 28px;
           width: 100%;
@@ -2613,19 +2613,19 @@ export default function BlockEditor({
 
         .bn-form-popover input::placeholder,
         .bn-form-popover textarea::placeholder {
-          color: var(--bn-colors-menu-text, #6b7280);
+          color: var(--bn-colors-menu-text, hsl(var(--muted-foreground)));
         }
 
         .bn-form-popover svg {
-          color: var(--bn-colors-menu-text, #6b7280);
+          color: var(--bn-colors-menu-text, hsl(var(--muted-foreground)));
         }
 
         .bn-link-submit {
           align-items: center;
-          background: #f8fafc;
-          border: 1px solid #e5e7eb;
+          background: hsl(var(--muted));
+          border: 1px solid hsl(var(--border));
           border-radius: 999px;
-          color: #111827;
+          color: hsl(var(--foreground));
           cursor: pointer;
           display: inline-flex;
           height: 20px;
@@ -2635,7 +2635,7 @@ export default function BlockEditor({
         }
 
         .bn-link-submit:hover {
-          background: #eef2f7;
+          background: hsl(var(--accent));
         }
 
         .bn-link-submit-icon {

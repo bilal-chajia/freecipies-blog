@@ -51,8 +51,8 @@ const SortableColumnCard = ({
             ref={setNodeRef}
             style={style}
             className={cn(
-                "p-3 rounded-[2px] border border-[#e0e0e0] bg-[#f8f9fa] space-y-2",
-                isDragging && "ring-1 ring-[#007cba] shadow-sm bg-white"
+                "p-3 rounded-sm border border-border bg-muted/50 space-y-2",
+                isDragging && "ring-1 ring-primary shadow-sm bg-background"
             )}
         >
             {/* Column Header */}
@@ -62,12 +62,12 @@ const SortableColumnCard = ({
                     {...listeners}
                     className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-muted touch-none"
                 >
-                    <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
+                    <GripVertical className="size-3.5 text-muted-foreground" />
                 </div>
                 <Input
                     value={column.title}
                     onChange={(e) => onUpdateColumn(colIndex, { title: e.target.value })}
-                    className="h-[30px] text-sm font-medium border-transparent hover:border-[#757575] focus:border-[#007cba] bg-transparent focus:bg-white rounded-[2px]"
+                    className="h-8 text-sm font-medium border-transparent hover:border-input focus:border-ring bg-transparent focus:bg-background rounded-sm"
                     placeholder="Column Title"
                 />
                 <Button
@@ -76,7 +76,7 @@ const SortableColumnCard = ({
                     className="h-7 w-7 text-destructive/80 hover:text-destructive"
                     onClick={() => onDeleteColumn(colIndex)}
                 >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="size-3.5" />
                 </Button>
             </div>
 
@@ -113,7 +113,7 @@ const SortableColumnCard = ({
                     className="h-6 text-[11px] px-2"
                     onClick={() => onAddLink(colIndex)}
                 >
-                    <Plus className="w-3 h-3 mr-1" />
+                    <Plus className="size-3 mr-1" />
                     Add Link
                 </Button>
             </div>

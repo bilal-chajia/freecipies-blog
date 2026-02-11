@@ -18,10 +18,10 @@ import { Badge } from '@/ui/badge';
 import { cn } from '@/lib/utils';
 
 const SUPPORTED_FORMATS = [
-  { ext: 'JPG', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-  { ext: 'PNG', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-  { ext: 'WebP', color: 'bg-green-500/10 text-green-600 border-green-500/20' },
-  { ext: 'GIF', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
+  { ext: 'JPG', color: 'bg-warning/10 text-warning border-warning/20' },
+  { ext: 'PNG', color: 'bg-primary/10 text-primary border-primary/20' },
+  { ext: 'WebP', color: 'bg-success/10 text-success border-success/20' },
+  { ext: 'GIF', color: 'bg-secondary/10 text-secondary border-secondary/20' },
 ];
 
 export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onUrlsImport, allowMultiple = false, maxFileSizeMB = 50 }) {
@@ -315,10 +315,10 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <FileImage className="h-12 w-12 text-primary" />
+                  <FileImage className="size-12 text-primary" />
                 </motion.div>
               ) : (
-                <Upload className="h-12 w-12 text-muted-foreground" />
+                <Upload className="size-12 text-muted-foreground" />
               )}
             </motion.div>
 
@@ -365,7 +365,7 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
 
             {/* Size Limit */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Sparkles className="h-3 w-3" />
+              <Sparkles className="size-3" />
               <span>Max {maxFileSizeMB}MB - Auto-optimized for web</span>
             </div>
           </div>
@@ -398,12 +398,12 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
         >
           {showUrlInput ? (
             <>
-              <X className="h-3 w-3" />
+              <X className="size-3" />
               Cancel
             </>
           ) : (
             <>
-              <Link className="h-3 w-3" />
+              <Link className="size-3" />
               Import from URL
             </>
           )}
@@ -423,7 +423,7 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
             <div className="p-4 rounded-xl bg-muted/30 border border-border/30 space-y-3">
               <div className="space-y-2">
                 <div className="relative">
-                  <Link className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Link className="absolute left-3 top-3 size-4 text-muted-foreground" />
                   <Textarea
                     placeholder="Paste one or more image URLs (one per line)&#10;https://example.com/image1.jpg&#10;https://example.com/image2.png"
                     value={urlValue}
@@ -454,7 +454,7 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
                     size="sm"
                     className="gap-2"
                   >
-                    <Upload className="h-4 w-4" />
+                    <Upload className="size-4" />
                     Import
                   </Button>
                 </div>

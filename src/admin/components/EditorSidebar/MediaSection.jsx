@@ -69,7 +69,7 @@ export default function MediaSection({
                         onClick={() => onMediaDialogOpen('image')}
                         className="w-full h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-accent hover:border-primary/20 transition-all"
                     >
-                        <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                        <ImageIcon className="size-8 text-muted-foreground" />
                         <span className="text-xs font-medium text-muted-foreground">Add Image</span>
                     </button>
                 )}
@@ -123,7 +123,7 @@ export default function MediaSection({
                         onClick={() => onMediaDialogOpen('cover')}
                         className="w-full h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-accent hover:border-primary/20 transition-all"
                     >
-                        <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                        <ImageIcon className="size-8 text-muted-foreground" />
                         <span className="text-xs font-medium text-muted-foreground">Add Cover</span>
                     </button>
                 )}

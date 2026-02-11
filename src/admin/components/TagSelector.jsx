@@ -82,10 +82,10 @@ export default function TagSelector({
                         {selectedTags.length > 0
                             ? `${selectedTags.length} tags selected`
                             : "Select tags..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className={cn("w-[400px] p-0", popoverClassName)} align="start">
+                <PopoverContent className={cn("w-full max-w-[400px] p-0", popoverClassName)} align="start">
                     {useChips ? (
                         <div className="p-2">
                             <Input
@@ -173,7 +173,7 @@ export default function TagSelector({
                                         handleSelect(tagId);
                                     }}
                                 >
-                                    <X className="w-3 h-3" />
+                                    <X className="size-3" />
                                 </button>
                             </Badge>
                         );

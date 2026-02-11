@@ -113,7 +113,7 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center gap-2">
-                <ImageIcon className="w-5 h-5" />
+                <ImageIcon className="size-5" />
                 <div>
                     <h3 className="text-lg font-semibold">Logo Management</h3>
                     <p className="text-sm text-muted-foreground">
@@ -140,7 +140,7 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
                         >
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <Icon className="w-4 h-4" />
+                                    <Icon className="size-4" />
                                     {logoType.label}
                                 </CardTitle>
                                 <CardDescription className="text-xs">
@@ -167,7 +167,7 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
                                                 onClick={() => fileInputRefs.current[logoType.id]?.click()}
                                                 disabled={isUploading}
                                             >
-                                                <Upload className="w-3 h-3 mr-1" />
+                                                <Upload className="size-3 mr-1" />
                                                 Replace
                                             </Button>
                                             <Button
@@ -175,7 +175,7 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
                                                 size="sm"
                                                 onClick={() => handleDelete(logoType.id)}
                                             >
-                                                <X className="w-3 h-3" />
+                                                <X className="size-3" />
                                             </Button>
                                         </div>
                                     </div>
@@ -193,7 +193,7 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
                                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
                                         ) : (
                                             <>
-                                                <Upload className="w-6 h-6 text-muted-foreground mb-2" />
+                                                <Upload className="size-6 text-muted-foreground mb-2" />
                                                 <p className="text-xs font-medium text-center">
                                                     Drop or click
                                                 </p>
@@ -228,7 +228,7 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
                         <div className="grid grid-cols-2 gap-4">
                             {/* Light mode preview */}
                             <div className="rounded-lg border bg-white p-4">
-                                <p className="text-xs text-gray-500 mb-2">Light Mode</p>
+                                <p className="text-xs text-muted-foreground mb-2">Light Mode</p>
                                 <div className="h-10 flex items-center">
                                     {logos.logoMain ? (
                                         <img
@@ -237,7 +237,7 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
                                             className="h-8 object-contain"
                                         />
                                     ) : (
-                                        <div className="h-8 w-20 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
+                                        <div className="h-8 w-20 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
                                             No logo
                                         </div>
                                     )}
@@ -246,7 +246,7 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
 
                             {/* Dark mode preview */}
                             <div className="rounded-lg border bg-zinc-900 p-4">
-                                <p className="text-xs text-zinc-400 mb-2">Dark Mode</p>
+                                <p className="text-xs text-muted-foreground mb-2">Dark Mode</p>
                                 <div className="h-10 flex items-center">
                                     {logos.logoDark || logos.logoMain ? (
                                         <img
@@ -255,7 +255,7 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
                                             className="h-8 object-contain"
                                         />
                                     ) : (
-                                        <div className="h-8 w-20 bg-zinc-700 rounded flex items-center justify-center text-xs text-zinc-500">
+                                        <div className="h-8 w-20 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
                                             No logo
                                         </div>
                                     )}

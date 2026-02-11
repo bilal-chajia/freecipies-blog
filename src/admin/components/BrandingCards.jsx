@@ -12,9 +12,9 @@ const BRANDING_ITEMS = [
         label: 'Main Logo',
         subtitle: 'Light mode header',
         icon: Sun,
-        previewBg: 'bg-gradient-to-br from-white to-gray-50',
-        iconColor: 'text-amber-500',
-        borderColor: 'hover:border-amber-200'
+        previewBg: 'bg-gradient-to-br from-background to-muted',
+        iconColor: 'text-secondary',
+        borderColor: 'hover:border-secondary/50'
     },
     {
         id: 'dark',
@@ -22,9 +22,9 @@ const BRANDING_ITEMS = [
         label: 'Dark Logo',
         subtitle: 'Dark mode header',
         icon: Moon,
-        previewBg: 'bg-gradient-to-br from-zinc-800 to-zinc-900',
-        iconColor: 'text-indigo-400',
-        borderColor: 'hover:border-indigo-200'
+        previewBg: 'bg-gradient-to-br from-muted to-muted/80',
+        iconColor: 'text-primary',
+        borderColor: 'hover:border-primary/50'
     },
     {
         id: 'mobile',
@@ -32,9 +32,9 @@ const BRANDING_ITEMS = [
         label: 'Mobile Logo',
         subtitle: 'Compact version',
         icon: Smartphone,
-        previewBg: 'bg-gradient-to-br from-gray-50 to-gray-100',
-        iconColor: 'text-emerald-500',
-        borderColor: 'hover:border-emerald-200'
+        previewBg: 'bg-gradient-to-br from-muted/50 to-muted',
+        iconColor: 'text-success',
+        borderColor: 'hover:border-success/50'
     },
     {
         id: 'favicon',
@@ -42,9 +42,9 @@ const BRANDING_ITEMS = [
         label: 'Favicon',
         subtitle: 'Browser tab icon',
         icon: Globe,
-        previewBg: 'bg-gradient-to-br from-blue-50 to-indigo-50',
-        iconColor: 'text-blue-500',
-        borderColor: 'hover:border-blue-200'
+        previewBg: 'bg-gradient-to-br from-info/10 to-primary/10',
+        iconColor: 'text-info',
+        borderColor: 'hover:border-info/50'
     },
 ];
 
@@ -186,7 +186,7 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30">
-                        <ImageIcon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                        <ImageIcon className="size-5 text-primary" />
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold">Brand Assets</h3>
@@ -263,7 +263,7 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                                                     }}
                                                     disabled={isUploading}
                                                 >
-                                                    <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                                                    <RefreshCw className="size-3.5 mr-1" />
                                                     Replace
                                                 </Button>
                                                 <Button
@@ -275,14 +275,14 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                                                         handleDelete(item);
                                                     }}
                                                 >
-                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    <Trash2 className="size-3.5" />
                                                 </Button>
                                             </div>
 
                                             {/* Status indicator */}
                                             <div className="absolute top-2 right-2">
-                                                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                                                    <Check className="w-3 h-3 text-white" />
+                                                <div className="size-5 rounded-full bg-success flex items-center justify-center">
+                                                    <Check className="size-3 text-white" />
                                                 </div>
                                             </div>
                                         </>
@@ -304,7 +304,7 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                                                         shadow-sm mb-2 transition-transform duration-200
                                                         group-hover:scale-110
                                                     `}>
-                                                        <Upload className="w-5 h-5 text-muted-foreground" />
+                                                        <Upload className="size-5 text-muted-foreground" />
                                                     </div>
                                                     <span className="text-xs font-medium text-muted-foreground">
                                                         {isDragOver ? 'Drop here!' : 'Click or drag'}
@@ -319,7 +319,7 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                                 <div className="px-3 py-2.5 bg-white dark:bg-zinc-900 border-t">
                                     <div className="flex items-center gap-2">
                                         <div className={`p-1 rounded ${item.iconColor} bg-opacity-10`}>
-                                            <Icon className={`w-3.5 h-3.5 ${item.iconColor}`} />
+                                            <Icon className={`size-3.5 ${item.iconColor}`} />
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-sm font-medium truncate">{item.label}</p>

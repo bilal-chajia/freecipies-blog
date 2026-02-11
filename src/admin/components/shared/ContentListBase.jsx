@@ -229,8 +229,8 @@ const ContentListBase = ({
                                 </div>
                             )}
                             {item.isFavorite && (
-                                <div className="absolute -top-1 -right-1 bg-yellow-400 text-white rounded-full p-0.5 shadow-sm">
-                                    <Star className="w-2.5 h-2.5 fill-current" />
+                                <div className="absolute -top-1 -right-1 bg-secondary text-secondary-foreground rounded-full p-0.5 shadow-sm">
+                                    <Star className="size-2.5 fill-current" />
                                 </div>
                             )}
                         </div>
@@ -247,7 +247,7 @@ const ContentListBase = ({
                                 <span className="truncate">{item.categoryLabel}</span>
                                 <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
                                 <span className="flex items-center gap-1">
-                                    <Eye className="h-3 w-3" />
+                                    <Eye className="size-3" />
                                     {formatNumber(item.viewCount || 0)}
                                 </span>
                             </div>
@@ -282,9 +282,9 @@ const ContentListBase = ({
                 return (
                     <Badge
                         variant={isOnline ? "success" : "secondary"}
-                        className={`gap-1 px-2.5 py-0.5 font-medium ${isOnline ? "bg-green-500/10 text-green-600 border-green-500/20" : ""}`}
+                        className={`gap-1 px-2.5 py-0.5 font-medium ${isOnline ? "bg-success/10 text-success border-success/20" : ""}`}
                     >
-                        {isOnline ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                        {isOnline ? <CheckCircle2 className="size-3" /> : <Clock className="size-3" />}
                         {isOnline ? 'Published' : 'Draft'}
                     </Badge>
                 );
@@ -318,34 +318,34 @@ const ContentListBase = ({
                             onClick={() => navigate(`${editPathPrefix}/${item[editIdField]}`)}
                             title="Edit"
                         >
-                            <Edit className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                            <Edit className="size-4 text-muted-foreground group-hover:text-primary" />
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent rounded-full">
-                                    <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                                    <MoreVertical className="size-4 text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => navigate(`${editPathPrefix}/${item[editIdField]}`)}>
-                                    <Edit className="w-4 h-4 mr-2" />
+                                    <Edit className="size-4 mr-2" />
                                     Edit Details
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => window.open(`${livePathPrefix}/${item.slug}`, '_blank')}>
-                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    <ExternalLink className="size-4 mr-2" />
                                     View Live Site
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleToggleOnline(item.id)}>
                                     {item.isOnline ? (
                                         <>
-                                            <EyeOff className="w-4 h-4 mr-2" />
+                                            <EyeOff className="size-4 mr-2" />
                                             Move to Drafts
                                         </>
                                     ) : (
                                         <>
-                                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                                            <CheckCircle2 className="size-4 mr-2" />
                                             Publish Now
                                         </>
                                     )}
@@ -354,7 +354,7 @@ const ContentListBase = ({
                                     setSelectedArticleForPin(item);
                                     setShowPinCreator(true);
                                 }}>
-                                    <ImagePlus className="w-4 h-4 mr-2" />
+                                    <ImagePlus className="size-4 mr-2" />
                                     Create Pinterest Pin
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -362,7 +362,7 @@ const ContentListBase = ({
                                     onClick={() => handleDelete(item.id)}
                                     className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                                 >
-                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    <Trash2 className="size-4 mr-2" />
                                     Delete Item
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -383,7 +383,7 @@ const ContentListBase = ({
                 </div>
                 <div className="flex items-center gap-2">
                     <Button className="h-10 px-6 gap-2 shadow-sm" onClick={() => navigate(newButtonPath)}>
-                        <Plus className="h-4 w-4" />
+                        <Plus className="size-4" />
                         {newButtonLabel}
                     </Button>
                 </div>
@@ -398,18 +398,18 @@ const ContentListBase = ({
                             <p className="text-2xl font-bold">{pagination.total}</p>
                         </div>
                         <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                            <TypeIcon className="h-5 w-5" />
+                            <TypeIcon className="size-5" />
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-green-500/5 border-none shadow-none ring-1 ring-green-500/20">
+                <Card className="bg-success/5 border-none shadow-none ring-1 ring-success/20">
                     <CardContent className="pt-4 flex items-center justify-between">
                         <div className="space-y-1">
-                            <p className="text-xs font-semibold text-green-600 uppercase tracking-wider">Published</p>
+                            <p className="text-xs font-semibold text-success uppercase tracking-wider">Published</p>
                             <p className="text-2xl font-bold">{articles.filter(a => a.isOnline).length}</p>
                         </div>
-                        <div className="p-2 bg-green-500/10 rounded-lg text-green-600">
-                            <CheckCircle2 className="h-5 w-5" />
+                        <div className="p-2 bg-success/10 rounded-lg text-success">
+                            <CheckCircle2 className="size-5" />
                         </div>
                     </CardContent>
                 </Card>

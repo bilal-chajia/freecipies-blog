@@ -36,7 +36,7 @@ const homepageSections = [
 ];
 
 // Fixed header height to ensure alignment
-const HEADER_HEIGHT = 'h-[41px]';
+const HEADER_HEIGHT = 'h-10';
 
 /**
  * HomepageLayout - 2-panel layout using Gutenberg design tokens
@@ -76,9 +76,9 @@ export default function HomepageLayout({
                 className="wp-block-inserter w-[280px] h-full min-h-0 overflow-hidden bg-[var(--wp-inserter-bg)] border-r border-[var(--wp-inserter-border)] flex flex-col flex-shrink-0"
             >
                 {/* Left Panel Header */}
-                <div className={cn(HEADER_HEIGHT, 'flex items-center justify-between px-[10px] border-b border-[#e5e7eb] flex-shrink-0')}>
+                <div className={cn(HEADER_HEIGHT, 'flex items-center justify-between px-2.5 border-b border-border flex-shrink-0')}>
                     <div className="flex items-center gap-2">
-                        <Home className="w-4 h-4 text-primary" />
+                        <Home className="size-4 text-primary" />
                         <span className="text-sm font-semibold">Homepage</span>
                     </div>
                     {totalSections > 0 && (
@@ -108,7 +108,7 @@ export default function HomepageLayout({
                                     {status && (
                                         <span className={cn(
                                             'ml-auto w-1.5 h-1.5 rounded-full',
-                                            status.enabled ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+                                            status.enabled ? 'bg-green-500' : 'bg-muted-foreground/30'
                                         )} />
                                     )}
                                 </button>
@@ -121,7 +121,7 @@ export default function HomepageLayout({
             {/* Right Panel: Content */}
             <div className="flex-1 min-w-0 flex flex-col overflow-hidden bg-[var(--wp-canvas-bg)]">
                 {/* Right Panel Header - tabs left, buttons right */}
-                <div className={cn(HEADER_HEIGHT, 'flex items-center justify-between px-[10px] border-b border-[#e5e7eb] flex-shrink-0')}>
+                <div className={cn(HEADER_HEIGHT, 'flex items-center justify-between px-2.5 border-b border-border flex-shrink-0')}>
                     {/* Tabs or sub-navigation on the left */}
                     <div className="flex-1">
                         {headerTabs}
@@ -136,7 +136,7 @@ export default function HomepageLayout({
                                 onClick={onPreview}
                                 className="h-7 px-3 gap-1.5 text-xs rounded-md"
                             >
-                                <Eye className="w-3 h-3" />
+                                <Eye className="size-3" />
                                 Preview
                             </Button>
                         )}
@@ -148,7 +148,7 @@ export default function HomepageLayout({
                                 disabled={saving}
                                 className="h-7 px-3 gap-1.5 text-xs rounded-md"
                             >
-                                <RefreshCw className="w-3 h-3" />
+                                <RefreshCw className="size-3" />
                                 Reset
                             </Button>
                         )}
@@ -159,9 +159,9 @@ export default function HomepageLayout({
                             className="h-7 px-3 gap-1.5 text-xs rounded-md"
                         >
                             {saving ? (
-                                <Zap className="w-3 h-3 animate-spin" />
+                                <Zap className="size-3 animate-spin" />
                             ) : (
-                                <Save className="w-3 h-3" />
+                                <Save className="size-3" />
                             )}
                             {saving ? 'Saving...' : saveLabel}
                         </Button>

@@ -438,7 +438,7 @@ export default function ImageUploader({
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent
-        className="!max-w-6xl w-full max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl !top-[5vh] !translate-y-0"
+        className="!max-w-6xl w-full max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-xl !top-[5vh] !translate-y-0"
         showCloseButton={false}
       >
         {/* Header */}
@@ -446,7 +446,7 @@ export default function ImageUploader({
           <div className="flex items-center gap-3">
             {selectedFile && !isUploading && (
               <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8 rounded-full">
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="size-4" />
               </Button>
             )}
             <div>
@@ -499,7 +499,7 @@ export default function ImageUploader({
                   size="sm"
                   className="h-8 px-4 gap-1.5"
                 >
-                  <Upload className="h-3.5 w-3.5" />
+                  <Upload className="size-3.5" />
                   Upload & Next
                 </Button>
               </>
@@ -512,13 +512,13 @@ export default function ImageUploader({
                 size="sm"
                 className="h-8 px-4 gap-1.5"
               >
-                <Upload className="h-3.5 w-3.5" />
+                <Upload className="size-3.5" />
                 Upload
               </Button>
             )}
             <DialogClose asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={handleClose}>
-                <X className="h-4 w-4" />
+                <X className="size-4" />
               </Button>
             </DialogClose>
           </div>

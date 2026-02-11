@@ -171,11 +171,11 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
         switch (status) {
             case 'generating':
             case 'uploading':
-                return <Loader2 className="w-3 h-3 animate-spin" />;
+                return <Loader2 className="size-3 animate-spin" />;
             case 'done':
-                return <Check className="w-3 h-3 text-green-500" />;
+                return <Check className="size-3 text-success" />;
             case 'error':
-                return <X className="w-3 h-3 text-red-500" />;
+                return <X className="size-3 text-destructive" />;
             default:
                 return null;
         }
@@ -185,7 +185,7 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <Globe className="w-5 h-5" />
+                    <Globe className="size-5" />
                     Favicon Management
                 </CardTitle>
                 <CardDescription>
@@ -232,7 +232,7 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
                                         onClick={() => fileInputRef.current?.click()}
                                         disabled={uploading || generating}
                                     >
-                                        <Upload className="w-4 h-4 mr-1" />
+                                        <Upload className="size-4 mr-1" />
                                         Replace
                                     </Button>
                                     <Button
@@ -241,7 +241,7 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
                                         onClick={handleDelete}
                                         disabled={uploading || generating}
                                     >
-                                        <X className="w-4 h-4" />
+                                        <X className="size-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -254,7 +254,7 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
                                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                                 ) : (
                                     <>
-                                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                                        <Upload className="size-8 text-muted-foreground mb-2" />
                                         <p className="text-sm font-medium">
                                             Drop file here or click to upload
                                         </p>
@@ -299,7 +299,7 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
                                                 </>
                                             ) : exists ? (
                                                 <Badge variant="secondary" className="text-xs">
-                                                    <Check className="w-3 h-3 mr-1" />
+                                                    <Check className="size-3 mr-1" />
                                                     Ready
                                                 </Badge>
                                             ) : (
@@ -322,12 +322,12 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
                                 <img
                                     src={favicon}
                                     alt="Favicon"
-                                    className="w-4 h-4 object-contain"
+                                    className="size-4 object-contain"
                                 />
                                 <span className="text-sm text-zinc-600 truncate">
                                     Freecipies - Delicious Recipes
                                 </span>
-                                <X className="w-3 h-3 text-zinc-400 ml-auto" />
+                                <X className="size-3 text-zinc-400 ml-auto" />
                             </div>
                         </div>
                     </div>

@@ -68,7 +68,7 @@ const TemplateSelector = ({ templates = [], selectedId, onSelect, isLoading = fa
                         {isSelected && (
                             <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                                 <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                                    <Check className="w-5 h-5 text-primary-foreground" />
+                                    <Check className="size-5 text-primary-foreground" />
                                 </div>
                             </div>
                         )}

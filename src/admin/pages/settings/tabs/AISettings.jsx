@@ -6,22 +6,22 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Sparkles, Key, Check, X, Loader2, AlertCircle, Eye, EyeOff, Thermometer, FileText, Plus } from 'lucide-react';
-import { Button } from '@/ui/button';
-import { Input } from '@/ui/input';
-import { Label } from '@/ui/label';
-import { Textarea } from '@/ui/textarea';
-import { Switch } from '@/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
-import { Slider } from '@/ui/slider';
-import { Badge } from '@/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
-import { Alert, AlertDescription } from '@/ui/alert';
+import { Button } from '@/ui/button.jsx';
+import { Input } from '@/ui/input.jsx';
+import { Label } from '@/ui/label.jsx';
+import { Textarea } from '@/ui/textarea.jsx';
+import { Switch } from '@/ui/switch.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select.jsx';
+import { Slider } from '@/ui/slider.jsx';
+import { Badge } from '@/ui/badge.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
+import { Alert, AlertDescription } from '@/ui/alert.jsx';
 import { cn } from '@/lib/utils';
 import api from '@/services/api';
-import { ProviderIcon } from '@/components/icons/ProviderIcons';
-import { ModelManager } from '@/components/ModelManager';
-import { MigrateModelsButton } from '@/components/MigrateModelsButton';
-import { BulkImportModels } from '@/components/BulkImportModels';
+import { ProviderIcon } from '@/components/icons/ProviderIcons.jsx';
+import { ModelManager } from '@/components/ModelManager.jsx';
+import { MigrateModelsButton } from '@/components/MigrateModelsButton.jsx';
+import { BulkImportModels } from '@/components/BulkImportModels.jsx';
 
 // Tabs configuration for this settings page
 export const aiSettingsTabs = [

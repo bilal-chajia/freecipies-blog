@@ -187,7 +187,7 @@ const TagsList = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
-            <Tag className="h-4 w-4" />
+            <Tag className="size-4" />
             Metatags & Logic
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Content Tags</h1>
@@ -197,7 +197,7 @@ const TagsList = () => {
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={() => setIsCreatingNew(true)} className="h-11 px-6 gap-2 shadow-sm rounded-xl" disabled={isCreatingNew}>
-            <Plus className="h-4 w-4" />
+            <Plus className="size-4" />
             New Label
           </Button>
         </div>
@@ -206,7 +206,7 @@ const TagsList = () => {
       {/* Modern Search Actions */}
       <div className="flex flex-col sm:flex-row gap-4 items-center">
         <div className="relative flex-1 w-full max-w-xl">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-60" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground opacity-60" />
           <Input
             placeholder="Search tags by label or slug..."
             value={searchTerm}
@@ -236,7 +236,7 @@ const TagsList = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">New Label</span>
                   <button onClick={handleCancelNew} className="text-muted-foreground hover:text-foreground transition-colors">
-                    <X className="h-4 w-4" />
+                    <X className="size-4" />
                   </button>
                 </div>
                 <Input
@@ -271,7 +271,7 @@ const TagsList = () => {
           {/* Tags List */}
           {filteredTags.length === 0 && !isCreatingNew ? (
             <div className="col-span-full py-20 flex flex-col items-center justify-center opacity-40">
-              <Hash className="h-10 w-10 mb-2" />
+              <Hash className="size-10 mb-2" />
               <p className="text-sm font-medium">No matching tags found</p>
             </div>
           ) : (
@@ -306,10 +306,10 @@ const TagsList = () => {
                         </div>
                         <div className="flex-1" />
                         <button onClick={handleCancelEdit} className="p-1.5 hover:bg-muted rounded-lg transition-colors">
-                          <X className="h-4 w-4" />
+                          <X className="size-4" />
                         </button>
                         <button onClick={handleSaveEdit} disabled={!editingName.trim() || saving} className="p-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors">
-                          <Check className="h-4 w-4" />
+                          <Check className="size-4" />
                         </button>
                       </div>
                     </div>
@@ -324,16 +324,16 @@ const TagsList = () => {
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => handleStartEdit(tag)} className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors">
-                            <Edit className="h-3.5 w-3.5" />
+                            <Edit className="size-3.5" />
                           </button>
                           <button onClick={() => setDeleteModal({ isOpen: true, tagToDelete: tag })} className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors">
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="size-3.5" />
                           </button>
                         </div>
                       </div>
                       <div className="mt-auto">
                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 font-mono transition-colors group-hover:text-primary/60">
-                          <Hash className="h-3 w-3" />
+                          <Hash className="size-3" />
                           {tag.slug}
                         </div>
                       </div>

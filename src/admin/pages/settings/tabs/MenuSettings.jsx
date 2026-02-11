@@ -19,14 +19,14 @@ import { Button } from '@/ui/button.jsx';
 import { ScrollArea } from '@/ui/scroll-area.jsx';
 
 // Layout components
-import GutenbergEditorLayout from '@/components/BlockEditor/components/GutenbergEditorLayout';
+import GutenbergEditorLayout from '@/components/BlockEditor/components/GutenbergEditorLayout.jsx';
 
 // Menu-specific components
 import {
     SortableMenuItemRow,
     MenuItemInspector,
     MegaMenuPreview,
-} from './components/menu';
+} from './components/menu/index.js';
 
 // Custom hook
 import { useMenuEditor } from './hooks/useMenuEditor';
@@ -103,8 +103,8 @@ export default function MenuSettings({ formData, handleInputChange, activeSectio
             <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-gray-100 px-6 py-3 -mx-6 -mt-6 mb-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff6b35] to-[#f7931e] flex items-center justify-center shadow-sm">
-                            <Menu className="w-4 h-4 text-white" />
+                        <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
+                            <Menu className="size-4 text-white" />
                         </div>
                         <div>
                             <h2 className="text-sm font-semibold text-gray-900">
@@ -118,9 +118,9 @@ export default function MenuSettings({ formData, handleInputChange, activeSectio
                     <Button
                         onClick={handleAddItem}
                         size="sm"
-                        className="gap-2 bg-[#2271b1] hover:bg-[#135e96] text-white"
+                        className="gap-2 bg-primary hover:bg-primary/90 text-white"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="size-4" />
                         Add Item
                     </Button>
                 </div>
@@ -131,11 +131,11 @@ export default function MenuSettings({ formData, handleInputChange, activeSectio
                 <div className="space-y-3 pb-8">
                     {items.length === 0 ? (
                         <div className="text-center py-16 px-4">
-                            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                                <Menu className="w-8 h-8 text-gray-400" />
+                            <div className="size-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+                                <Menu className="size-8 text-muted-foreground" />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No menu items yet</h3>
-                            <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+                            <h3 className="text-lg font-semibold text-foreground mb-2">No menu items yet</h3>
+                            <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
                                 Start building your {activeTab === 'header' ? 'header' : 'footer'} navigation by adding menu items
                             </p>
                             <Button onClick={handleAddItem} className="gap-2">

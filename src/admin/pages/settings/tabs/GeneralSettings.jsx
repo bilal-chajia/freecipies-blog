@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { FormField } from '@/components/settings';
+import { FormField } from '@/components/settings/index.js';
 import {
     GutenbergTabsList,
     GutenbergTabsTrigger
-} from '@/components/settings/GutenbergTabs';
+} from '@/components/settings/GutenbergTabs.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select.jsx';
 import { Label } from '@/ui/label.jsx';
 import { Globe, Mail, Link2, Clock, Languages, Info } from 'lucide-react';

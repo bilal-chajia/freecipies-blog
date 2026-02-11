@@ -2,12 +2,19 @@
 import RelatedContent from "./RelatedContent.astro";
 import TableBlock from "./TableBlock.astro";
 import BeforeAfter from "./BeforeAfter.astro";
+import RecipeCard from "./RecipeCard.astro";
 import type { TocSettings } from "@modules/settings/services/settings.service";
+import type { Article, Author, Category } from "@modules/articles";
+import type { RecipeJson } from "@modules/articles/types";
 
-const { content, faqsJson, settings } = Astro.props as {
+const { content, faqsJson, settings, article, recipeJson, author, category } = Astro.props as {
   content?: unknown;
   faqsJson?: unknown;
   settings?: TocSettings;
+  article?: Article;
+  recipeJson?: RecipeJson | null;
+  author?: Author | null;
+  category?: Category | null;
 };
 
 const numberingEnabled = settings?.numbering ?? true;
@@ -186,6 +193,17 @@ const numberedBlocks = parsed.map((block) => {
     if (block.type === "table")
       return <TableBlock headers={block.headers} rows={block.rows} />;
     if (block.type === "before_after") return <BeforeAfter block={block} />;
+    if (block.type === "recipe_card" || block.type === "main_recipe") {
+      if (!article || !recipeJson) return null;
+      return (
+        <RecipeCard
+          article={article}
+          recipeJson={recipeJson}
+          author={author}
+          category={category}
+        />
+      );
+    }
     if (block.type === "divider") {
       const style = block.style || "solid";
       return (

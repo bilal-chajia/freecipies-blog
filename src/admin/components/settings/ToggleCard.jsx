@@ -38,7 +38,7 @@ const ToggleCard = React.forwardRef(({
       <div className="space-y-0.5 pr-4 flex-1">
         <div className="flex items-center gap-1.5">
           {Icon && (
-            <Icon className={cn("w-3.5 h-3.5", iconColor)} aria-hidden="true" />
+            <Icon className={cn("size-3.5", iconColor)} aria-hidden="true" />
           )}
           <Label 
             id={`${fieldId}-label`}

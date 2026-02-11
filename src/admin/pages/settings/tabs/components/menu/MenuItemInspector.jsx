@@ -42,24 +42,24 @@ const MenuItemInspector = ({
             <SidebarSection title="General" defaultOpen={true}>
                 <div className="space-y-4">
                     <div className="space-y-1">
-                        <Label className="uppercase text-[11px] font-semibold text-[#757575] mb-1 block">Navigation Label</Label>
+                        <Label className="uppercase text-[11px] font-semibold text-muted-foreground mb-1 block">Navigation Label</Label>
                         <Input
                             value={item.label}
                             onChange={(e) => handleUpdate('label', e.target.value)}
-                            className="h-[30px] rounded-[2px] border-[#757575] focus:border-[#007cba] focus:ring-[#007cba]/20"
+                            className="h-8 rounded-sm border-input focus:border-ring focus:ring-ring/20"
                         />
                     </div>
 
                     <div className="space-y-1">
-                        <Label className="uppercase text-[11px] font-semibold text-[#757575] mb-1 block">Type</Label>
+                        <Label className="uppercase text-[11px] font-semibold text-muted-foreground mb-1 block">Type</Label>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => handleUpdate('type', 'link')}
                                 className={cn(
-                                    "flex-1 py-1 px-2 text-xs border rounded-[2px] transition-all",
+                                    "flex-1 py-1 px-2 text-xs border rounded-sm transition-all",
                                     item.type === 'link'
-                                        ? "bg-[#1e1e1e] text-white border-[#1e1e1e]"
-                                        : "bg-white text-[#757575] border-[#757575] hover:border-[#1e1e1e]"
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : "bg-background text-muted-foreground border-input hover:border-primary"
                                 )}
                             >
                                 Simple Link
@@ -67,10 +67,10 @@ const MenuItemInspector = ({
                             <button
                                 onClick={() => handleUpdate('type', 'mega')}
                                 className={cn(
-                                    "flex-1 py-1 px-2 text-xs border rounded-[2px] transition-all",
+                                    "flex-1 py-1 px-2 text-xs border rounded-sm transition-all",
                                     item.type === 'mega'
-                                        ? "bg-[#1e1e1e] text-white border-[#1e1e1e]"
-                                        : "bg-white text-[#757575] border-[#757575] hover:border-[#1e1e1e]"
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : "bg-background text-muted-foreground border-input hover:border-primary"
                                 )}
                             >
                                 Mega Menu
@@ -80,7 +80,7 @@ const MenuItemInspector = ({
 
                     {item.type === 'link' && (
                         <div className="space-y-1">
-                            <Label className="uppercase text-[11px] font-semibold text-[#757575] mb-1 block">Link</Label>
+                            <Label className="uppercase text-[11px] font-semibold text-muted-foreground mb-1 block">Link</Label>
                             <LinkSelector
                                 url={item.url}
                                 onUrlChange={(url) => handleUpdate('url', url)}
@@ -92,19 +92,17 @@ const MenuItemInspector = ({
 
                     <div className="pt-2 space-y-3">
                         <div className="flex items-center justify-between">
-                            <Label className="text-[13px] font-normal text-[#1e1e1e]">Open in new tab</Label>
+                            <Label className="text-sm font-normal text-foreground">Open in new tab</Label>
                             <Switch
                                 checked={item.openInNewTab}
                                 onCheckedChange={(checked) => handleUpdate('openInNewTab', checked)}
-                                className="data-[state=checked]:bg-[#007cba]"
                             />
                         </div>
                         <div className="flex items-center justify-between">
-                            <Label className="text-[13px] font-normal text-[#1e1e1e]">Highlight</Label>
+                            <Label className="text-sm font-normal text-foreground">Highlight</Label>
                             <Switch
                                 checked={item.highlight}
                                 onCheckedChange={(checked) => handleUpdate('highlight', checked)}
-                                className="data-[state=checked]:bg-[#007cba]"
                             />
                         </div>
                     </div>
@@ -122,7 +120,7 @@ const MenuItemInspector = ({
                                 onClick={handleAddColumn}
                                 className="h-7 text-xs gap-1.5"
                             >
-                                <Plus className="w-3 h-3" />
+                                <Plus className="size-3" />
                                 Add Column
                             </Button>
                         </div>
@@ -149,7 +147,7 @@ const MenuItemInspector = ({
                                         />
                                     ))}
                                     {(!item.columns || item.columns.length === 0) && (
-                                        <div className="text-center py-4 bg-[#f8f9fa] border border-dashed border-[#e0e0e0] rounded-[2px] text-[#757575] text-[13px]">
+                                        <div className="text-center py-4 bg-muted/30 border border-dashed border-border rounded-sm text-muted-foreground text-sm">
                                             No columns yet.
                                         </div>
                                     )}
@@ -165,18 +163,18 @@ const MenuItemInspector = ({
                 <SidebarSection title="Featured Content">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between mb-2">
-                            <Label className="text-[13px] font-medium">Enable Featured Slot</Label>
+                            <Label className="text-sm font-medium">Enable Featured Slot</Label>
                             <Switch
                                 checked={item.featured?.enabled || false}
                                 onCheckedChange={(checked) => handleUpdate('featured', { ...item.featured, enabled: checked })}
-                                className="scale-90 data-[state=checked]:bg-[#007cba]"
+                                className="scale-90"
                             />
                         </div>
 
                         {item.featured?.enabled && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                                 <div className="space-y-1">
-                                    <Label className="uppercase text-[11px] font-semibold text-[#757575] mb-1 block">Article</Label>
+                                    <Label className="uppercase text-[11px] font-semibold text-muted-foreground mb-1 block">Article</Label>
                                     <ArticlePicker
                                         value={item.featured}
                                         onChange={(article) => {
@@ -198,17 +196,17 @@ const MenuItemInspector = ({
                                 </div>
 
                                 <div className="space-y-1">
-                                    <Label className="uppercase text-[11px] font-semibold text-[#757575] mb-1 block">Custom Title</Label>
+                                    <Label className="uppercase text-[11px] font-semibold text-muted-foreground mb-1 block">Custom Title</Label>
                                     <Input
                                         value={item.featured.title || ''}
                                         onChange={(e) => handleUpdate('featured', { ...item.featured, title: e.target.value })}
                                         placeholder="Override default title"
-                                        className="h-[30px] rounded-[2px] border-[#757575] text-[13px]"
+                                        className="h-8 rounded-sm border-input text-sm"
                                     />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <Label className="uppercase text-[11px] font-semibold text-[#757575] mb-1 block">Custom Image</Label>
+                                    <Label className="uppercase text-[11px] font-semibold text-muted-foreground mb-1 block">Custom Image</Label>
                                     <ImagePickerField
                                         value={item.featured.image || ''}
                                         onChange={(url) => handleUpdate('featured', { ...item.featured, image: url })}
@@ -217,12 +215,12 @@ const MenuItemInspector = ({
                                 </div>
 
                                 <div className="space-y-1">
-                                    <Label className="uppercase text-[11px] font-semibold text-[#757575] mb-1 block">Description</Label>
+                                    <Label className="uppercase text-[11px] font-semibold text-muted-foreground mb-1 block">Description</Label>
                                     <Textarea
                                         value={item.featured.description || ''}
                                         onChange={(e) => handleUpdate('featured', { ...item.featured, description: e.target.value })}
                                         rows={3}
-                                        className="resize-none rounded-[2px] border-[#757575] text-[13px] min-h-[60px]"
+                                        className="resize-none rounded-sm border-input text-sm min-h-16"
                                     />
                                 </div>
                             </div>

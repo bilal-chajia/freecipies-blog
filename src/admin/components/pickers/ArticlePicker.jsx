@@ -86,25 +86,25 @@ const ArticlePicker = ({ value, onChange }) => {
         <div className="space-y-3">
             {/* Selected Article Preview */}
             {selectedArticle ? (
-                <div className="flex items-start gap-3 p-3 rounded-[2px] border border-[#e0e0e0] bg-[#f8f9fa]">
+                <div className="flex items-start gap-3 p-3 rounded-sm border border-border bg-muted/50">
                     {selectedArticle.featured_image && (
                         <img
                             src={selectedArticle.featured_image}
                             alt=""
-                            className="w-16 h-12 object-cover rounded-[2px]"
+                            className="w-16 h-12 object-cover rounded-sm"
                         />
                     )}
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate text-[#1e1e1e]">{selectedArticle.title}</p>
-                        <p className="text-xs text-[#757575] font-mono">/recipes/{selectedArticle.slug}</p>
+                        <p className="text-sm font-medium truncate text-foreground">{selectedArticle.title}</p>
+                        <p className="text-xs text-muted-foreground font-mono">/recipes/{selectedArticle.slug}</p>
                     </div>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 flex-shrink-0 text-[#757575] hover:text-red-600"
+                        className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive"
                         onClick={handleClear}
                     >
-                        <X className="w-4 h-4" />
+                        <X className="size-4" />
                     </Button>
                 </div>
             ) : (
@@ -118,7 +118,7 @@ const ArticlePicker = ({ value, onChange }) => {
                         }}
                         onFocus={() => setShowDropdown(true)}
                         placeholder="Search articles..."
-                        className="h-[30px] text-sm border-[#757575] rounded-[2px] focus:border-[#007cba]"
+                        className="h-8 text-sm border-input rounded-sm focus:border-ring"
                     />
 
                     {/* Search Results Dropdown */}
@@ -156,7 +156,7 @@ const ArticlePicker = ({ value, onChange }) => {
             )}
 
             {!selectedArticle && (
-                <p className="text-[11px] text-muted-foreground/70">
+                <p className="text-xs text-muted-foreground/70">
                     Start typing to search for articles
                 </p>
             )}

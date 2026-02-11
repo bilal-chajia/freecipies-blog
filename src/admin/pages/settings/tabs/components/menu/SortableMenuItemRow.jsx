@@ -41,38 +41,38 @@ function SortableMenuItemRow({ item, isSelected, onClick, onDelete }) {
             onClick={onClick}
             className={cn(
                 "group relative flex items-center gap-3 p-3 bg-white border rounded-lg shadow-sm transition-all cursor-pointer will-change-transform",
-                "hover:border-[#2271b1]/30 hover:shadow-md",
-                isSelected ? "border-[#2271b1] ring-1 ring-[#2271b1] shadow-md bg-blue-50/10" : "border-gray-200",
+                "hover:border-primary/30 hover:shadow-md",
+                isSelected ? "border-primary ring-1 ring-primary shadow-md bg-primary/5" : "border-border",
                 isDragging && "shadow-lg scale-[1.02]"
             )}
         >
             <div
                 {...attributes}
                 {...listeners}
-                className="cursor-grab active:cursor-grabbing p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 touch-none"
+                className="cursor-grab active:cursor-grabbing p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted touch-none"
             >
-                <GripVertical className="w-5 h-5" />
+                <GripVertical className="size-5" />
             </div>
 
             <div className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
-                item.type === 'mega' ? "bg-orange-100 text-[#ff6b35]" : "bg-blue-100 text-blue-600"
+                "size-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
+                item.type === 'mega' ? "bg-primary/10 text-primary" : "bg-secondary/30 text-secondary-foreground"
             )}>
-                {item.type === 'mega' ? <LayoutGrid className="w-5 h-5" /> : <Link2 className="w-5 h-5" />}
+                {item.type === 'mega' ? <LayoutGrid className="size-5" /> : <Link2 className="size-5" />}
             </div>
 
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                    <span className="font-semibold text-gray-900 truncate">{item.label}</span>
+                    <span className="font-semibold text-foreground truncate">{item.label}</span>
                     {item.featured?.enabled && (
                         <Badge variant="secondary" className="text-[10px] h-4 px-1">Featured</Badge>
                     )}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-500">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="truncate max-w-[200px]">{item.url || '#'}</span>
                     {item.type === 'mega' && (
                         <>
-                            <span className="w-1 h-1 rounded-full bg-gray-300" />
+                            <span className="size-1 rounded-full bg-muted-foreground/30" />
                             <span>{(item.columns?.length || 0)} cols</span>
                         </>
                     )}
@@ -81,9 +81,9 @@ function SortableMenuItemRow({ item, isSelected, onClick, onDelete }) {
 
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="size-4" />
                 </Button>
-                <ChevronRight className={cn("w-5 h-5 text-gray-300 transition-transform", isSelected && "text-[#2271b1] translate-x-1")} />
+                <ChevronRight className={cn("size-5 text-muted-foreground/30 transition-transform", isSelected && "text-primary translate-x-1")} />
             </div>
         </div>
     );

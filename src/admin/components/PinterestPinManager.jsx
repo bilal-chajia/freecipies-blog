@@ -242,41 +242,41 @@ const PinterestPinManager = ({ articleId }) => {
 
   if (!articleId) {
     return (
-      <div className="text-center py-12 px-8 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+      <div className="text-center py-12 px-8 bg-muted/50 rounded-lg text-muted-foreground border border-border">
         <p>Save the article first to manage Pinterest pins</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-8 p-6 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+    <div className="mt-8 p-6 bg-card rounded-lg border border-border">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Pinterest Pins</h3>
+        <h3 className="text-xl font-bold text-foreground">Pinterest Pins</h3>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#E60023] hover:bg-[#AD081B] text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
           disabled={loading}
         >
-          <Plus size={16} />
+          <Plus className="size-4" />
           Add Pin
         </button>
       </div>
 
       {showAddForm && (
-        <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 mb-8 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm animate-in fade-in slide-in-from-top-4 duration-200">
+        <div className="bg-muted/50 p-6 mb-8 rounded-lg border border-border shadow-sm animate-in fade-in slide-in-from-top-4 duration-200">
           <div className="flex justify-between items-center mb-6">
-            <h4 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            <h4 className="text-lg font-semibold text-foreground">
               {editingPin ? 'Edit Pin' : 'Add New Pin'}
             </h4>
-            <button onClick={cancelEdit} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-colors">
-              <X size={20} />
+            <button onClick={cancelEdit} className="p-1.5 rounded hover:bg-muted text-muted-foreground transition-colors">
+              <X className="size-5" />
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
-              <label className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">Pin Image *</label>
-              <div className="border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg overflow-hidden bg-white dark:bg-zinc-800 hover:border-[#E60023] dark:hover:border-[#E60023] transition-colors">
+              <label className="font-semibold text-sm text-foreground/80">Pin Image *</label>
+              <div className="border-2 border-dashed border-input rounded-lg overflow-hidden bg-card hover:border-primary transition-colors">
                 {formData.image_url ? (
                   <div className="relative max-w-xs mx-auto my-4 group">
                     <img src={formData.image_url} alt="Pin preview" className="w-full h-auto rounded-lg shadow-md" />
@@ -285,11 +285,11 @@ const PinterestPinManager = ({ articleId }) => {
                       onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
                       className="absolute top-2 right-2 bg-black/70 text-white p-1.5 rounded-full hover:bg-black/90 transition-colors"
                     >
-                      <X size={16} />
+                      <X className="size-4" />
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center py-12 cursor-pointer text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
+                  <label className="flex flex-col items-center justify-center py-12 cursor-pointer text-muted-foreground hover:bg-muted/50 transition-colors">
                     <input
                       type="file"
                       accept="image/*"
@@ -297,116 +297,116 @@ const PinterestPinManager = ({ articleId }) => {
                       disabled={loading}
                       className="hidden"
                     />
-                    <Upload size={32} className="mb-3" />
+                    <Upload className="size-8 mb-3" />
                     <span className="font-semibold">Upload Pin Image</span>
-                    <small className="mt-1 text-zinc-400">Recommended: 1000x1500px (vertical)</small>
+                    <small className="mt-1 text-muted-foreground/70">Recommended: 1000x1500px (vertical)</small>
                   </label>
                 )}
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">Pin Title *</label>
+              <label className="font-semibold text-sm text-foreground/80">Pin Title *</label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Eye-catching pin title"
-                className="px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:border-[#E60023] focus:ring-1 focus:ring-[#E60023] dark:text-white"
+                className="px-3 py-2.5 bg-card border border-input rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
                 required
               />
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">Pin Description *</label>
+              <label className="font-semibold text-sm text-foreground/80">Pin Description *</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Describe this pin for Pinterest users"
                 rows={4}
-                className="px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:border-[#E60023] focus:ring-1 focus:ring-[#E60023] dark:text-white resize-y"
+                className="px-3 py-2.5 bg-card border border-input rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground resize-y"
                 required
               />
-              <small className="text-zinc-500 dark:text-zinc-400 text-xs text-right">{formData.description.length} / 500 characters</small>
+              <small className="text-muted-foreground text-xs text-right">{formData.description.length} / 500 characters</small>
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">Pinterest Board</label>
+              <label className="font-semibold text-sm text-foreground/80">Pinterest Board</label>
               <select
                 value={formData.board_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, board_id: e.target.value }))}
-                className="px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:border-[#E60023] focus:ring-1 focus:ring-[#E60023] dark:text-white"
+                className="px-3 py-2.5 bg-card border border-input rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
               >
                 <option value="">No Board (Master Feed Only)</option>
                 {boards.filter(b => b.is_active).map(board => (
                   <option key={board.id} value={board.id}>{board.name}</option>
                 ))}
               </select>
-              <small className="text-zinc-500 dark:text-zinc-400 text-xs">Assign this pin to a specific Pinterest board for targeted RSS feeds</small>
+              <small className="text-muted-foreground text-xs">Assign this pin to a specific Pinterest board for targeted RSS feeds</small>
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">Alt Text</label>
+              <label className="font-semibold text-sm text-foreground/80">Alt Text</label>
               <input
                 type="text"
                 value={formData.image_alt}
                 onChange={(e) => setFormData(prev => ({ ...prev, image_alt: e.target.value }))}
                 placeholder="Accessibility description"
-                className="px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:border-[#E60023] focus:ring-1 focus:ring-[#E60023] dark:text-white"
+                className="px-3 py-2.5 bg-card border border-input rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex flex-col gap-2">
-                <label className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">Width (px)</label>
+                <label className="font-semibold text-sm text-foreground/80">Width (px)</label>
                 <input
                   type="number"
                   value={formData.image_width}
                   onChange={(e) => setFormData(prev => ({ ...prev, image_width: parseInt(e.target.value) }))}
                   min="100"
-                  className="px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:border-[#E60023] focus:ring-1 focus:ring-[#E60023] dark:text-white"
+                  className="px-3 py-2.5 bg-card border border-input rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">Height (px)</label>
+                <label className="font-semibold text-sm text-foreground/80">Height (px)</label>
                 <input
                   type="number"
                   value={formData.image_height}
                   onChange={(e) => setFormData(prev => ({ ...prev, image_height: parseInt(e.target.value) }))}
                   min="100"
-                  className="px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:border-[#E60023] focus:ring-1 focus:ring-[#E60023] dark:text-white"
+                  className="px-3 py-2.5 bg-card border border-input rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">Sort Order</label>
+                <label className="font-semibold text-sm text-foreground/80">Sort Order</label>
                 <input
                   type="number"
                   value={formData.sort_order}
                   onChange={(e) => setFormData(prev => ({ ...prev, sort_order: parseInt(e.target.value) }))}
                   min="0"
-                  className="px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:border-[#E60023] focus:ring-1 focus:ring-[#E60023] dark:text-white"
+                  className="px-3 py-2.5 bg-card border border-input rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-2 mt-2">
-              <label className="flex items-center gap-2 cursor-pointer text-zinc-700 dark:text-zinc-300">
+              <label className="flex items-center gap-2 cursor-pointer text-foreground/80">
                 <input
                   type="checkbox"
                   checked={formData.is_primary}
                   onChange={(e) => setFormData(prev => ({ ...prev, is_primary: e.target.checked }))}
-                  className="w-4 h-4 rounded border-zinc-300 text-[#E60023] focus:ring-[#E60023]"
+                  className="size-4 rounded border-input text-primary focus:ring-primary"
                 />
                 <span className="font-medium">Set as primary pin</span>
               </label>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-700 mt-2">
-              <button type="button" onClick={cancelEdit} className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-lg font-medium transition-colors">
+            <div className="flex justify-end gap-3 pt-4 border-t border-border mt-2">
+              <button type="button" onClick={cancelEdit} className="px-4 py-2 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg font-medium transition-colors">
                 Cancel
               </button>
-              <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-[#E60023] hover:bg-[#AD081B] text-white rounded-lg font-bold transition-all disabled:opacity-50" disabled={loading}>
-                <Check size={16} />
+              <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-bold transition-all disabled:opacity-50" disabled={loading}>
+                <Check className="size-4" />
                 {editingPin ? 'Update Pin' : 'Add Pin'}
               </button>
             </div>
@@ -416,9 +416,9 @@ const PinterestPinManager = ({ articleId }) => {
 
       <div className="mt-8">
         {loading && pins.length === 0 ? (
-          <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">Loading pins...</div>
+          <div className="text-center py-12 text-muted-foreground">Loading pins...</div>
         ) : pins.length === 0 ? (
-          <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+          <div className="text-center py-12 bg-muted/50 rounded-lg text-muted-foreground border border-border">
             <p>No pins yet. Add your first Pinterest pin!</p>
           </div>
         ) : (
@@ -426,58 +426,58 @@ const PinterestPinManager = ({ articleId }) => {
             {pins.map(pin => (
               <div
                 key={pin.id}
-                className={`group relative bg-white dark:bg-zinc-900 border rounded-lg overflow-hidden hover:shadow-lg transition-all dark:hover:shadow-zinc-900/50 ${pin.is_primary
-                    ? 'border-[#E60023] ring-1 ring-[#E60023]'
-                    : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                className={`group relative bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-all ${pin.is_primary
+                    ? 'border-primary ring-1 ring-primary'
+                    : 'border-border hover:border-primary/50'
                   }`}
               >
                 {pin.is_primary && (
-                  <div className="absolute top-3 left-3 bg-[#E60023] text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm z-10">
-                    <Star size={12} fill="currentColor" />
+                  <div className="absolute top-3 left-3 bg-primary text-primary-foreground px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm z-10">
+                    <Star className="size-3" fill="currentColor" />
                     Primary
                   </div>
                 )}
 
-                <div className="aspect-[2/3] w-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden relative">
+                <div className="aspect-[2/3] w-full bg-muted overflow-hidden relative">
                   <img src={pin.image_url} alt={pin.image_alt || pin.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                 </div>
 
                 <div className="p-4">
-                  <h4 className="font-bold text-zinc-900 dark:text-zinc-100 mb-2 line-clamp-1" title={pin.title}>{pin.title}</h4>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3 line-clamp-2 min-h-[2.5em]">{pin.description}</p>
-                  <div className="flex gap-3 text-xs text-zinc-400 dark:text-zinc-500 font-mono">
+                  <h4 className="font-bold text-foreground mb-2 line-clamp-1" title={pin.title}>{pin.title}</h4>
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-[2.5em]">{pin.description}</p>
+                  <div className="flex gap-3 text-xs text-muted-foreground font-mono">
                     <span>{pin.image_width}x{pin.image_height}</span>
                     <span>Order: {pin.sort_order}</span>
                   </div>
                 </div>
 
-                <div className="flex gap-2 p-3 bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="flex gap-2 p-3 bg-muted/50 border-t border-border">
                   {!pin.is_primary && (
                     <button
                       onClick={() => handleSetPrimary(pin.id)}
-                      className="flex-1 flex items-center justify-center p-2 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
+                      className="flex-1 flex items-center justify-center p-2 rounded-md border border-border text-muted-foreground hover:bg-card hover:text-primary transition-colors"
                       title="Set as primary"
                       disabled={loading}
                     >
-                      <Star size={16} />
+                      <Star className="size-4" />
                     </button>
                   )}
                   <button
                     onClick={() => handleEdit(pin)}
-                    className="flex-1 flex items-center justify-center p-2 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    className="flex-1 flex items-center justify-center p-2 rounded-md border border-border text-muted-foreground hover:bg-card hover:text-primary transition-colors"
                     title="Edit pin"
                     disabled={loading}
                   >
-                    <Edit2 size={16} />
+                    <Edit2 className="size-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(pin.id)}
-                    className="flex-1 flex items-center justify-center p-2 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                    className="flex-1 flex items-center justify-center p-2 rounded-md border border-border text-muted-foreground hover:bg-card hover:text-destructive transition-colors"
                     title="Delete pin"
                     disabled={loading}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 className="size-4" />
                   </button>
                 </div>
               </div>
@@ -490,4 +490,3 @@ const PinterestPinManager = ({ articleId }) => {
 };
 
 export default PinterestPinManager;
-

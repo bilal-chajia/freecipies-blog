@@ -261,8 +261,8 @@ const ColorPicker = ({
         <div
             ref={containerRef}
             className={cn(
-                "p-3 bg-popover border border-border rounded-xl shadow-xl",
-                "w-[220px] animate-in fade-in-0 zoom-in-95",
+                "p-3 bg-popover border border-border rounded-md shadow-xl",
+                "w-56 animate-in fade-in-0 zoom-in-95",
                 !triggerRect && "absolute z-50",
                 className
             )}
@@ -306,7 +306,7 @@ const ColorPicker = ({
                     <div
                         ref={saturationRef}
                         data-saturation
-                        className="relative w-full h-32 rounded-lg cursor-crosshair mb-3 overflow-hidden"
+                        className="relative w-full h-32 rounded-md cursor-crosshair mb-3 overflow-hidden"
                         style={{ backgroundColor: hueColor }}
                         onMouseDown={handleSaturationMouseDown}
                     >
@@ -322,7 +322,7 @@ const ColorPicker = ({
                         />
                         {/* Picker circle */}
                         <div
-                            className="absolute w-4 h-4 border-2 border-white rounded-full shadow-lg"
+                            className="absolute size-4 border-2 border-white rounded-full shadow-lg"
                             style={{
                                 left: `${hsv.s * 100}%`,
                                 top: `${(1 - hsv.v) * 100}%`,
@@ -343,7 +343,7 @@ const ColorPicker = ({
                         onMouseDown={handleHueMouseDown}
                     >
                         <div
-                            className="absolute w-3 h-3 border-2 border-white rounded-full shadow-lg"
+                            className="absolute size-3 border-2 border-white rounded-full shadow-lg"
                             style={{
                                 left: `${hsv.h * 100}%`,
                                 top: '50%',
@@ -378,7 +378,7 @@ const ColorPicker = ({
                         />
                         {/* Slider handle */}
                         <div
-                            className="absolute w-3 h-3 border-2 border-white rounded-full shadow-lg"
+                            className="absolute size-3 border-2 border-white rounded-full shadow-lg"
                             style={{
                                 left: `${opacity * 100}%`,
                                 top: '50%',
@@ -398,7 +398,7 @@ const ColorPicker = ({
                     {activeTab === 'Hex' && (
                         <div className="flex items-center gap-2">
                             <div
-                                className="w-8 h-8 rounded-md border flex-shrink-0"
+                                className="size-8 rounded-md border flex-shrink-0"
                                 style={{ backgroundColor: hexInput }}
                             />
                             <Input

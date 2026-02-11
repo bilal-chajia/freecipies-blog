@@ -51,7 +51,7 @@ const WatermarkOverlay = ({
                             className="font-bold"
                             style={{
                                 fontSize: `${watermarkScale * 200}px`,
-                                background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+                                background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%)',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                                 textShadow: '0 2px 4px rgba(0,0,0,0.3)'
@@ -107,7 +107,7 @@ const WatermarkOverlay = ({
                                             className="font-bold whitespace-nowrap"
                                             style={{
                                                 fontSize: `${watermarkScale * 100}px`,
-                                                background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+                                                background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%)',
                                                 WebkitBackgroundClip: 'text',
                                                 WebkitTextFillColor: 'transparent',
                                                 textShadow: '0 2px 4px rgba(0,0,0,0.3)'

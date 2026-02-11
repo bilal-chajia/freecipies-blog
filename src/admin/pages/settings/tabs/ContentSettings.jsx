@@ -10,11 +10,11 @@ const ContentSettings = ({ formData, handleInputChange }) => {
         <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-4">
             <TabsList className="h-8 p-1 bg-muted/50 rounded-lg">
                 <TabsTrigger value="display" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                    <LayoutGrid className="w-3.5 h-3.5 mr-1.5" />
+                    <LayoutGrid className="size-3.5 mr-1.5" />
                     Display
                 </TabsTrigger>
                 <TabsTrigger value="publishing" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                    <FileText className="w-3.5 h-3.5 mr-1.5" />
+                    <FileText className="size-3.5 mr-1.5" />
                     Publishing
                 </TabsTrigger>
             </TabsList>
@@ -42,7 +42,7 @@ const ContentSettings = ({ formData, handleInputChange }) => {
                         id="commentsEnabled"
                         label="Post Comments"
                         icon={MessageSquare}
-                        iconColor="text-blue-500"
+                        iconColor="text-primary"
                         description="Allow readers to leave feedback on articles."
                         checked={formData.commentsEnabled}
                         onCheckedChange={(checked) => handleInputChange('commentsEnabled', checked)}
@@ -51,7 +51,7 @@ const ContentSettings = ({ formData, handleInputChange }) => {
                         id="autoPublish"
                         label="Auto-Publish"
                         icon={Rocket}
-                        iconColor="text-emerald-500"
+                        iconColor="text-success"
                         description="Instantly publish drafts once saved."
                         checked={formData.autoPublish}
                         onCheckedChange={(checked) => handleInputChange('autoPublish', checked)}
@@ -60,7 +60,7 @@ const ContentSettings = ({ formData, handleInputChange }) => {
                         id="featuredImageRequired"
                         label="Media Check"
                         icon={Camera}
-                        iconColor="text-amber-500"
+                        iconColor="text-warning"
                         description="Require a featured image to publish."
                         checked={formData.featuredImageRequired}
                         onCheckedChange={(checked) => handleInputChange('featuredImageRequired', checked)}
@@ -68,7 +68,7 @@ const ContentSettings = ({ formData, handleInputChange }) => {
                 </div>
 
                 <div className="flex items-start gap-2 p-2.5 bg-muted/50 rounded-md text-xs text-muted-foreground">
-                    <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+                    <Info className="size-3.5 mt-0.5 shrink-0" aria-hidden="true" />
                     Changing pagination may affect SEO indexes.
                 </div>
             </TabsContent>

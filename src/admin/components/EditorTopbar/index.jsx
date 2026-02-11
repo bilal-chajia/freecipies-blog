@@ -58,7 +58,7 @@ export default function EditorTopbar({
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                            <FolderOpen className="size-3.5 text-muted-foreground" />
                             <Select
                                 value={formData.categoryId ? String(formData.categoryId) : undefined}
                                 onValueChange={(value) => onInputChange('categoryId', value)}
@@ -91,7 +91,7 @@ export default function EditorTopbar({
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                            <User className="size-3.5 text-muted-foreground" />
                             <Select
                                 value={formData.authorId ? String(formData.authorId) : undefined}
                                 onValueChange={(value) => onInputChange('authorId', value)}
@@ -129,7 +129,7 @@ export default function EditorTopbar({
                         >
                             <Badge
                                 variant={formData.isOnline ? "default" : "secondary"}
-                                className={`cursor-pointer transition-colors ${formData.isOnline ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                                className={`cursor-pointer transition-colors ${formData.isOnline ? 'bg-success hover:bg-success/90' : ''}`}
                                 onClick={() => onInputChange('isOnline', !formData.isOnline)}
                             >
                                 <AnimatePresence mode="wait">
@@ -141,7 +141,7 @@ export default function EditorTopbar({
                                         transition={{ duration: 0.15 }}
                                         className="flex items-center"
                                     >
-                                        <Globe className="h-3 w-3 mr-1" />
+                                        <Globe className="size-3 mr-1" />
                                         {formData.isOnline ? 'Online' : 'Draft'}
                                     </motion.span>
                                 </AnimatePresence>
@@ -162,7 +162,7 @@ export default function EditorTopbar({
                             type="button"
                             onClick={() => onInputChange('isFavorite', !formData.isFavorite)}
                             className={`p-1.5 rounded-md transition-colors ${formData.isFavorite
-                                ? 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100'
+                                ? 'text-secondary bg-secondary/10 hover:bg-secondary/20'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                                 }`}
                             whileHover={{ scale: 1.1 }}
@@ -174,7 +174,7 @@ export default function EditorTopbar({
                                 animate={formData.isFavorite ? { scale: [1, 1.2, 1] } : { scale: 1 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <Star className={`h-4 w-4 ${formData.isFavorite ? 'fill-current' : ''}`} />
+                                <Star className={`size-4 ${formData.isFavorite ? 'fill-current' : ''}`} />
                             </motion.div>
                         </motion.button>
                     </TooltipTrigger>
@@ -199,7 +199,7 @@ export default function EditorTopbar({
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">
-                                        <Calendar className="h-3.5 w-3.5" />
+                                        <Calendar className="size-3.5" />
                                         {formData.publishedAt
                                             ? new Date(formData.publishedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
                                             : 'Schedule'
@@ -246,7 +246,7 @@ export default function EditorTopbar({
                                     : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
-                                <LayoutTemplate className="h-3.5 w-3.5" />
+                                <LayoutTemplate className="size-3.5" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>Visual Editor</TooltipContent>
@@ -264,7 +264,7 @@ export default function EditorTopbar({
                                     : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
-                                <Code className="h-3.5 w-3.5" />
+                                <Code className="size-3.5" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>JSON Data</TooltipContent>

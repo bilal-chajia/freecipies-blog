@@ -313,23 +313,24 @@ const contentBlocks = Array.isArray(recipe.contentJson)
                 content={contentBlocks}
                 faqsJson={recipe.faqsJson}
                 settings={tocSettings}
+                article={recipe}
+                recipeJson={recipeJson}
+                author={author}
+                category={category}
               />
             </section>
           )
         }
 
-        <!-- Ingredients -->
-        <IngredientsSection ingredients={recipeJson?.ingredients} />
-
-        <!-- Instructions -->
-        <InstructionsSection instructions={recipeJson?.instructions} />
-
-        <!-- Nutrition Facts (inline for mobile) -->
-        <NutritionFacts
-          nutrition={recipeJson?.nutrition}
-          variant="grid"
-          class="mobile-only"
-        />
+        {/* Recipe card is now rendered via ContentRenderer when 'recipe_card' block is present */}
+        {/* Fallback: if no recipe_card block in content, show recipe sections after content */}
+        {!contentBlocks.some(b => b.type === 'recipe_card' || b.type === 'main_recipe') && recipeJson && (
+          <>
+            <IngredientsSection ingredients={recipeJson.ingredients} />
+            <InstructionsSection instructions={recipeJson.instructions} />
+            <NutritionFacts nutrition={recipeJson.nutrition} variant="grid" class="mobile-only" />
+          </>
+        )}
 
         <!-- FAQs - Modern Accordion -->
         <FAQSection faqs={recipe.faqsJson} />

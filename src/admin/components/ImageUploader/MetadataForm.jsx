@@ -141,9 +141,9 @@ export default function MetadataForm({
         className="w-full"
       >
         {generatingAI ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <Loader2 className="size-4 mr-2 animate-spin" />
         ) : (
-          <Sparkles className="h-4 w-4 mr-2" />
+          <Sparkles className="size-4 mr-2" />
         )}
         Generate Alt + Caption with AI
       </Button>
@@ -194,11 +194,11 @@ export default function MetadataForm({
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-border/40">
         <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="size-4 mr-2" />
           Back
         </Button>
         <Button onClick={onUpload} disabled={!isValid}>
-          <Upload className="h-4 w-4 mr-2" />
+          <Upload className="size-4 mr-2" />
           Upload
         </Button>
       </div>

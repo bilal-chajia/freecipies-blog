@@ -135,14 +135,14 @@ const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
         <div className="relative flex gap-1.5">
             {/* Type Selector */}
             <Select value={linkType} onValueChange={handleTypeChange}>
-                <SelectTrigger className="w-[100px] h-[30px] text-xs rounded-[2px] border-[#757575] focus:ring-0 focus:border-[#007cba]">
+                <SelectTrigger className="w-24 h-7 text-xs rounded-sm border-input focus:ring-0 focus:border-ring">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                     {LINK_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                             <div className="flex items-center gap-1.5">
-                                <type.icon className="w-3 h-3" />
+                                <type.icon className="size-3" />
                                 <span>{type.label}</span>
                             </div>
                         </SelectItem>
@@ -168,7 +168,7 @@ const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
                                 setShowDropdown(true);
                             }}
                             onFocus={() => setShowDropdown(true)}
-                            className="h-[30px] text-sm rounded-[2px] border-[#757575] focus:border-[#007cba]"
+                            className="h-7 text-sm rounded-sm border-input focus:border-ring"
                             placeholder={`Search ${linkType}...`}
                         />
 

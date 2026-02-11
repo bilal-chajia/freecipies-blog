@@ -185,6 +185,10 @@ export default function EditorMain({
                                 }}
                                 placeholder="Start writing your article content..."
                                 context={relatedContext}
+                                recipe={recipeJson}
+                                onRecipeChange={setRecipeJson}
+                                faqs={faqsJson}
+                                onFaqsChange={setFaqsJson}
                             />
                         </motion.div>
                     ) : (

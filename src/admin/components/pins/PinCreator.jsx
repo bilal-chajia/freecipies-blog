@@ -314,9 +314,9 @@ const PinCreator = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="!max-w-none w-[calc(100vw-120px)] h-[calc(100vh-40px)] p-0 gap-0 bg-zinc-950 border-zinc-800 flex overflow-hidden">
+            <DialogContent className="!max-w-none w-[calc(100vw-120px)] h-[calc(100vh-40px)] p-0 gap-0 bg-background border-border flex overflow-hidden">
                 {/* Left Toolbar */}
-                <div className="w-16 bg-zinc-900/50 border-r border-zinc-800 flex flex-col items-center py-4 gap-2">
+                <div className="w-16 bg-muted/50 border-r border-border flex flex-col items-center py-4 gap-2">
                     {TOOLS.map((tool) => (
                         <Button
                             key={tool.id}
@@ -326,7 +326,7 @@ const PinCreator = ({
                             onClick={() => setActiveTool(tool.id)}
                             title={tool.label}
                         >
-                            <tool.icon className="w-5 h-5" />
+                            <tool.icon className="size-5" />
                         </Button>
                     ))}
 
@@ -342,7 +342,7 @@ const PinCreator = ({
                             onClick={() => setStep(1)}
                             title="Back to Templates"
                         >
-                            <ChevronLeft className="w-5 h-5" />
+                            <ChevronLeft className="size-5" />
                         </Button>
                     )}
                 </div>
@@ -350,11 +350,11 @@ const PinCreator = ({
                 {/* Center Content */}
                 <div className="flex-1 flex flex-col">
                     {/* Header */}
-                    <div className="h-14 border-b border-zinc-800 flex items-center justify-between px-4">
+                    <div className="h-14 border-b border-border flex items-center justify-between px-4">
                         <div className="flex items-center gap-3">
-                            <ImagePlus className="w-5 h-5 text-primary" />
+                            <ImagePlus className="size-5 text-primary" />
                             <div>
-                                <h2 className="text-lg font-semibold text-white">
+                                <h2 className="text-lg font-semibold text-foreground">
                                     {step === 1 ? 'Select Template' : 'Create Pin'}
                                 </h2>
                                 <p className="text-xs text-muted-foreground">
@@ -368,9 +368,9 @@ const PinCreator = ({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => onOpenChange(false)}
-                                className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                                className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive-foreground"
                             >
-                                <X className="w-4 h-4 mr-2" /> Cancel
+                                <X className="size-4 mr-2" /> Cancel
                             </Button>
                             {step === 2 && (
                                 <Button
@@ -380,9 +380,9 @@ const PinCreator = ({
                                     className="bg-primary hover:bg-primary/90"
                                 >
                                     {isSaving ? (
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        <Loader2 className="size-4 mr-2 animate-spin" />
                                     ) : (
-                                        <Download className="w-4 h-4 mr-2" />
+                                        <Download className="size-4 mr-2" />
                                     )}
                                     {isSaving ? 'Exporting...' : 'Export Pin'}
                                 </Button>
@@ -391,12 +391,12 @@ const PinCreator = ({
                     </div>
 
                     {/* Main Canvas Area */}
-                    <div className="flex-1 bg-zinc-900 flex items-center justify-center overflow-auto p-8">
+                    <div className="flex-1 bg-muted flex items-center justify-center overflow-auto p-8">
                         {step === 1 ? (
                             // Template Selection Grid
                             <ScrollArea className="h-full w-full max-w-4xl">
                                 <div className="p-4">
-                                    <h3 className="text-white font-medium mb-4">Choose a Template</h3>
+                                    <h3 className="text-foreground font-medium mb-4">Choose a Template</h3>
                                     <TemplateSelector
                                         templates={templates}
                                         selectedId={selectedTemplate?.id}
@@ -421,7 +421,7 @@ const PinCreator = ({
                                 />
                             ) : (
                                 <div className="text-muted-foreground flex flex-col items-center gap-2">
-                                    <Loader2 className="w-8 h-8 animate-spin" />
+                                    <Loader2 className="size-8 animate-spin" />
                                     <p>Loading preview...</p>
                                 </div>
                             )
@@ -430,9 +430,9 @@ const PinCreator = ({
                 </div>
 
                 {/* Right Panel */}
-                <div className="w-80 bg-zinc-900/50 border-l border-zinc-800 flex flex-col">
+                <div className="w-80 bg-muted/50 border-l border-border flex flex-col">
                     <div className="h-14 border-b border-zinc-800 flex items-center px-4">
-                        <h3 className="text-sm font-medium text-white">
+                        <h3 className="text-sm font-medium text-foreground">
                             {activeTool === 'templates' ? 'Pin Details' : 'Settings'}
                         </h3>
                     </div>
@@ -441,7 +441,7 @@ const PinCreator = ({
                         <div className="p-4 space-y-6">
                             {/* Title */}
                             <div className="space-y-2">
-                                <Label className="text-white">Pin Title</Label>
+                                <Label>Pin Title</Label>
                                 <Input
                                     value={pinData.title}
                                     onChange={(e) => setPinData(prev => ({
@@ -449,13 +449,13 @@ const PinCreator = ({
                                         title: e.target.value
                                     }))}
                                     placeholder="Enter pin title..."
-                                    className="bg-zinc-800 border-zinc-700"
+                                    className="bg-muted border-border"
                                 />
                             </div>
 
                             {/* Description */}
                             <div className="space-y-2">
-                                <Label className="text-white">Description</Label>
+                                <Label>Description</Label>
                                 <Textarea
                                     value={pinData.description}
                                     onChange={(e) => setPinData(prev => ({
@@ -464,7 +464,7 @@ const PinCreator = ({
                                     }))}
                                     placeholder="Pinterest description for SEO..."
                                     rows={4}
-                                    className="bg-zinc-800 border-zinc-700 resize-none"
+                                    className="bg-muted border-border resize-none"
                                 />
                                 <p className="text-xs text-muted-foreground">
                                     {pinData.description.length}/500 characters
@@ -474,10 +474,10 @@ const PinCreator = ({
                             {/* Dynamic Image URLs based on template slots */}
                             {imageUrls.length > 0 && (
                                 <>
-                                    <Separator className="bg-zinc-800" />
+                                    <Separator />
                                     <div className="space-y-3">
-                                        <Label className="text-white flex items-center gap-2">
-                                            <Image className="w-4 h-4" />
+                                        <Label className="text-foreground flex items-center gap-2">
+                                            <Image className="size-4" />
                                             Image URLs ({imageUrls.length} slot{imageUrls.length > 1 ? 's' : ''})
                                         </Label>
                                         <p className="text-xs text-muted-foreground">
@@ -489,7 +489,7 @@ const PinCreator = ({
                                                     {item.name}
                                                 </Label>
                                                 <div className="relative">
-                                                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                                                     <Input
                                                         value={item.url}
                                                         onChange={(e) => {
@@ -498,7 +498,7 @@ const PinCreator = ({
                                                             setImageUrls(newUrls);
                                                         }}
                                                         placeholder="https://example.com/image.jpg"
-                                                        className="bg-zinc-800 border-zinc-700 pl-9"
+                                                        className="bg-muted border-border pl-9"
                                                     />
                                                 </div>
                                                 {item.url && (
@@ -510,7 +510,7 @@ const PinCreator = ({
                                                             onError={(e) => e.target.style.display = 'none'}
                                                         />
                                                         <div className="flex items-center gap-3 pt-1">
-                                                            <ZoomIn className="w-3 h-3 text-muted-foreground" />
+                                                            <ZoomIn className="size-3 text-muted-foreground" />
                                                             <Slider
                                                                 value={[imageScales[item.slotId] || 1]}
                                                                 min={1}
@@ -531,11 +531,11 @@ const PinCreator = ({
                                 </>
                             )}
 
-                            <Separator className="bg-zinc-800" />
+                            <Separator />
 
                             {/* Board Selection */}
                             <div className="space-y-2">
-                                <Label className="text-white">Pinterest Board</Label>
+                                <Label>Pinterest Board</Label>
                                 <Select
                                     value={pinData.boardId}
                                     onValueChange={(value) => setPinData(prev => ({
@@ -543,7 +543,7 @@ const PinCreator = ({
                                         boardId: value
                                     }))}
                                 >
-                                    <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                                    <SelectTrigger className="bg-muted border-border">
                                         <SelectValue placeholder="Select a board..." />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -559,19 +559,19 @@ const PinCreator = ({
                                 </Select>
                             </div>
 
-                            <Separator className="bg-zinc-800" />
+                            <Separator />
 
                             {/* Article Info */}
                             <div className="space-y-3">
-                                <Label className="text-white text-xs uppercase tracking-wide">Article Details</Label>
+                                <Label className="text-xs uppercase tracking-wide">Article Details</Label>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Category</span>
-                                        <span className="text-white">{articleData?.categoryLabel || 'N/A'}</span>
+                                        <span className="text-foreground">{articleData?.categoryLabel || 'N/A'}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Author</span>
-                                        <span className="text-white">{articleData?.authorName || 'N/A'}</span>
+                                        <span className="text-foreground">{articleData?.authorName || 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -579,11 +579,11 @@ const PinCreator = ({
                             {/* Selected Template Info */}
                             {selectedTemplate && (
                                 <>
-                                    <Separator className="bg-zinc-800" />
+                                    <Separator />
                                     <div className="space-y-3">
-                                        <Label className="text-white text-xs uppercase tracking-wide">Template</Label>
+                                        <Label className="text-xs uppercase tracking-wide">Template</Label>
                                         <div className="p-3 bg-zinc-800 rounded-lg">
-                                            <p className="text-white font-medium">{selectedTemplate.name}</p>
+                                            <p className="text-foreground font-medium">{selectedTemplate.name}</p>
                                             <p className="text-xs text-muted-foreground mt-1">
                                                 {selectedTemplate.description || 'No description'}
                                             </p>

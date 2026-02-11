@@ -337,10 +337,10 @@ export default function RecipeBuilder({ value, onChange }) {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1.5 h-7 text-violet-600 border-violet-200 hover:bg-violet-50"
+                        className="gap-1.5 h-7 text-primary border-primary/20 hover:bg-primary/10"
                         onClick={() => setAiDialogOpen(true)}
                     >
-                        <Sparkles className="w-3.5 h-3.5" /> Generate with AI
+                        <Sparkles className="size-3.5" /> Generate with AI
                     </Button>
                     {/* Mode Toggle */}
                     <div className="flex p-1 bg-muted rounded-lg">
@@ -350,7 +350,7 @@ export default function RecipeBuilder({ value, onChange }) {
                             className="gap-1.5 h-7"
                             onClick={() => setJsonMode(false)}
                         >
-                            <Eye className="w-3.5 h-3.5" /> Visual
+                            <Eye className="size-3.5" /> Visual
                         </Button>
                         <Button
                             variant={jsonMode ? "default" : "ghost"}
@@ -361,7 +361,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                 setJsonMode(true);
                             }}
                         >
-                            <Code className="w-3.5 h-3.5" /> JSON
+                            <Code className="size-3.5" /> JSON
                         </Button>
                     </div>
                 </div>
@@ -372,7 +372,7 @@ export default function RecipeBuilder({ value, onChange }) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-violet-500" />
+                            <Sparkles className="size-5 text-primary" />
                             Generate Recipe with AI
                         </DialogTitle>
                     </DialogHeader>
@@ -388,7 +388,7 @@ export default function RecipeBuilder({ value, onChange }) {
                             />
                         </div>
                         {aiError && (
-                            <p className="text-sm text-red-500">{aiError}</p>
+                            <p className="text-sm text-destructive">{aiError}</p>
                         )}
                     </div>
                     <DialogFooter>
@@ -401,9 +401,9 @@ export default function RecipeBuilder({ value, onChange }) {
                             className="gap-2"
                         >
                             {aiLoading ? (
-                                <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                                <><Loader2 className="size-4 animate-spin" /> Generating...</>
                             ) : (
-                                <><Sparkles className="w-4 h-4" /> Generate</>
+                                <><Sparkles className="size-4" /> Generate</>
                             )}
                         </Button>
                     </DialogFooter>
@@ -570,7 +570,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                 variant="outline"
                                 className="gap-2"
                             >
-                                <Plus className="w-4 h-4" /> Add Section
+                                <Plus className="size-4" /> Add Section
                             </Button>
                         </div>
 
@@ -588,7 +588,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                         className="font-semibold"
                                     />
                                     <Button onClick={() => addIngredient(groupIndex)} size="sm" variant="outline">
-                                        <Plus className="w-4 h-4" />
+                                        <Plus className="size-4" />
                                     </Button>
                                     {data.ingredients.length > 1 && (
                                         <Button
@@ -599,7 +599,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                             }}
                                             className="text-destructive"
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 className="size-4" />
                                         </Button>
                                     )}
                                 </div>
@@ -608,10 +608,10 @@ export default function RecipeBuilder({ value, onChange }) {
                                         <div key={index} className="flex gap-2 items-center">
                                             <div className="flex flex-col gap-1">
                                                 <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveIngredient(groupIndex, index, 'up')} disabled={index === 0}>
-                                                    <ArrowUp className="w-3 h-3" />
+                                                    <ArrowUp className="size-3" />
                                                 </Button>
                                                 <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveIngredient(groupIndex, index, 'down')} disabled={index === (group.items?.length || 1) - 1}>
-                                                    <ArrowDown className="w-3 h-3" />
+                                                    <ArrowDown className="size-3" />
                                                 </Button>
                                             </div>
                                             <Input
@@ -639,7 +639,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                                 onClick={() => removeIngredient(groupIndex, index)}
                                                 className="text-destructive hover:bg-destructive/10"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="size-4" />
                                             </Button>
                                         </div>
                                     ))}
@@ -664,7 +664,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                 variant="outline"
                                 className="gap-2"
                             >
-                                <Plus className="w-4 h-4" /> Add Section
+                                <Plus className="size-4" /> Add Section
                             </Button>
                         </div>
 
@@ -682,7 +682,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                         className="font-semibold"
                                     />
                                     <Button onClick={() => addInstruction(sectionIndex)} size="sm" variant="outline">
-                                        <Plus className="w-4 h-4" />
+                                        <Plus className="size-4" />
                                     </Button>
                                     {data.instructions.length > 1 && (
                                         <Button
@@ -693,7 +693,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                             }}
                                             className="text-destructive"
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 className="size-4" />
                                         </Button>
                                     )}
                                 </div>
@@ -702,13 +702,13 @@ export default function RecipeBuilder({ value, onChange }) {
                                         <div key={stepIndex} className="flex gap-2 items-center p-3 border rounded-md bg-accent/20">
                                             <div className="flex flex-col items-center gap-1">
                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveInstruction(sectionIndex, stepIndex, 'up')} disabled={stepIndex === 0}>
-                                                    <ArrowUp className="w-3 h-3" />
+                                                    <ArrowUp className="size-3" />
                                                 </Button>
                                                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
                                                     {stepIndex + 1}
                                                 </span>
                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveInstruction(sectionIndex, stepIndex, 'down')} disabled={stepIndex === (section.steps?.length || 1) - 1}>
-                                                    <ArrowDown className="w-3 h-3" />
+                                                    <ArrowDown className="size-3" />
                                                 </Button>
                                             </div>
                                             <div className="flex-1 space-y-2">
@@ -725,7 +725,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                                 onClick={() => removeInstruction(sectionIndex, stepIndex)}
                                                 className="text-destructive hover:bg-destructive/10 mt-1"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="size-4" />
                                             </Button>
                                         </div>
                                     ))}
@@ -742,13 +742,13 @@ export default function RecipeBuilder({ value, onChange }) {
                         <CollapsibleTrigger asChild>
                             <Button variant="ghost" className="w-full justify-between p-4 border rounded-lg">
                                 <span className="font-semibold">Chef's Tips ({data.tips?.length || 0})</span>
-                                {tipsOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                {tipsOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                             </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="space-y-4 pt-4">
                             <div className="flex justify-end">
                                 <Button onClick={addTip} size="sm" variant="outline" className="gap-2">
-                                    <Plus className="w-4 h-4" /> Add Tip
+                                    <Plus className="size-4" /> Add Tip
                                 </Button>
                             </div>
                             {(data.tips || []).map((tip, index) => (
@@ -765,7 +765,7 @@ export default function RecipeBuilder({ value, onChange }) {
                                         onClick={() => removeTip(index)}
                                         className="text-destructive hover:bg-destructive/10"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="size-4" />
                                     </Button>
                                 </div>
                             ))}
@@ -777,7 +777,7 @@ export default function RecipeBuilder({ value, onChange }) {
                         <CollapsibleTrigger asChild>
                             <Button variant="ghost" className="w-full justify-between p-4 border rounded-lg">
                                 <span className="font-semibold">Nutrition Information</span>
-                                {nutritionOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                {nutritionOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                             </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="p-4 border rounded-lg mt-2">

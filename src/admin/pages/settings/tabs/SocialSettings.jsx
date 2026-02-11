@@ -1,7 +1,12 @@
 import React from 'react';
 import { Label } from '@/ui/label.jsx';
 import { Input } from '@/ui/input.jsx';
-import { Facebook, Twitter, Instagram, Youtube, Hash, ExternalLink, Globe, Info } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Youtube, Hash, ExternalLink, Globe, Info, Share2 } from 'lucide-react';
+
+// Tabs configuration for this settings page
+export const socialSettingsTabs = [
+    { value: 'platforms', label: 'Social Platforms', icon: Share2 },
+];
 
 const SocialSettings = ({ formData, handleInputChange }) => {
     const socialPlatforms = [

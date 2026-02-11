@@ -78,7 +78,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
         return (
             <div className="flex items-center justify-center h-48">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="size-4 animate-spin" />
                     Loading assets...
                 </div>
             </div>
@@ -89,15 +89,15 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
         <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-4">
             <TabsList className="h-8 p-1 bg-muted/50 rounded-lg">
                 <TabsTrigger value="branding" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                    <Image className="w-3.5 h-3.5 mr-1.5" />
+                    <Image className="size-3.5 mr-1.5" />
                     Branding
                 </TabsTrigger>
                 <TabsTrigger value="colors" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                    <Palette className="w-3.5 h-3.5 mr-1.5" />
+                    <Palette className="size-3.5 mr-1.5" />
                     Colors
                 </TabsTrigger>
                 <TabsTrigger value="toc" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                    <ListTree className="w-3.5 h-3.5 mr-1.5" />
+                    <ListTree className="size-3.5 mr-1.5" />
                     Table of Contents
                 </TabsTrigger>
             </TabsList>
@@ -165,7 +165,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                 </div>
 
                 <div className="flex items-start gap-2 p-2.5 bg-amber-500/10 rounded-md text-xs text-amber-700 dark:text-amber-400">
-                    <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <Info className="size-3.5 mt-0.5 shrink-0" />
                     Ensure contrast for accessibility on both light and dark backgrounds.
                 </div>
             </TabsContent>
@@ -277,20 +277,20 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                     </div>
 
                     {/* Preview */}
-                    <div className="p-4 rounded-lg border-2" style={{ borderColor: '#fed7aa', background: 'linear-gradient(135deg, #fef9f3 0%, #fef3e8 100%)' }}>
-                        <span className="text-[10px] font-medium text-amber-800">TOC Preview</span>
+                    <div className="p-4 rounded-lg border-2 bg-secondary/10 border-secondary/20">
+                        <span className="text-[10px] font-medium text-secondary-foreground">TOC Preview</span>
                         <div className="mt-2 space-y-1.5">
                             <div className="flex items-center gap-2 text-sm" style={{ color: formData.tocAccentColor || '#f97316' }}>
                                 <span className="font-bold">1.</span>
-                                <span className="text-amber-900">Introduction</span>
+                                <span className="text-secondary-foreground">Introduction</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm pl-4" style={{ color: formData.tocAccentColor || '#f97316' }}>
                                 <span className="font-bold">1.1.</span>
-                                <span className="text-amber-900">Background</span>
+                                <span className="text-secondary-foreground">Background</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm" style={{ color: formData.tocAccentColor || '#f97316' }}>
                                 <span className="font-bold">2.</span>
-                                <span className="text-amber-900">Ingredients</span>
+                                <span className="text-secondary-foreground">Ingredients</span>
                             </div>
                         </div>
                     </div>

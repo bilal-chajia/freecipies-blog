@@ -18,7 +18,7 @@ const AdvancedSettings = ({ formData, handleInputChange, activeSection = 'securi
                             id="maintenanceMode"
                             label="Maintenance Mode"
                             icon={Lock}
-                            iconColor="text-amber-500"
+                            iconColor="text-warning"
                             description="Take the storefront offline for updates."
                             checked={formData.maintenanceMode}
                             onCheckedChange={(checked) => handleInputChange('maintenanceMode', checked)}
@@ -27,7 +27,7 @@ const AdvancedSettings = ({ formData, handleInputChange, activeSection = 'securi
                             id="registrationEnabled"
                             label="User Registration"
                             icon={Shield}
-                            iconColor="text-blue-500"
+                            iconColor="text-primary"
                             description="Toggle public account creation."
                             checked={formData.registrationEnabled}
                             onCheckedChange={(checked) => handleInputChange('registrationEnabled', checked)}
@@ -36,7 +36,7 @@ const AdvancedSettings = ({ formData, handleInputChange, activeSection = 'securi
                             id="twoFactorAuth"
                             label="Two-Factor (2FA)"
                             icon={ShieldCheck}
-                            iconColor="text-emerald-500"
+                            iconColor="text-success"
                             description="Mandate extra security for admin logins."
                             checked={formData.twoFactorAuth}
                             onCheckedChange={(checked) => handleInputChange('twoFactorAuth', checked)}
@@ -75,7 +75,7 @@ const AdvancedSettings = ({ formData, handleInputChange, activeSection = 'securi
                         id="imageOptimization"
                         label="Image Optimization"
                         icon={Cpu}
-                        iconColor="text-emerald-500"
+                        iconColor="text-success"
                         description="Auto-resize and compress media."
                         checked={formData.imageOptimization}
                         onCheckedChange={(checked) => handleInputChange('imageOptimization', checked)}
@@ -84,7 +84,7 @@ const AdvancedSettings = ({ formData, handleInputChange, activeSection = 'securi
                         id="cdnEnabled"
                         label="Edge CDN"
                         icon={Server}
-                        iconColor="text-blue-500"
+                        iconColor="text-primary"
                         description="Distribute content across global nodes."
                         checked={formData.cdnEnabled}
                         onCheckedChange={(checked) => handleInputChange('cdnEnabled', checked)}
@@ -93,7 +93,7 @@ const AdvancedSettings = ({ formData, handleInputChange, activeSection = 'securi
                         id="lazyLoading"
                         label="Lazy Loading"
                         icon={Sparkles}
-                        iconColor="text-purple-500"
+                        iconColor="text-secondary"
                         description="Defer offscreen asset loading."
                         checked={formData.lazyLoading}
                         onCheckedChange={(checked) => handleInputChange('lazyLoading', checked)}
@@ -101,8 +101,8 @@ const AdvancedSettings = ({ formData, handleInputChange, activeSection = 'securi
                 </div>
             )}
 
-            <div className="flex items-start gap-2 p-2.5 bg-amber-500/10 rounded-md text-xs text-amber-700 dark:text-amber-400" role="alert">
-                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+            <div className="flex items-start gap-2 p-2.5 bg-warning/10 rounded-md text-xs text-warning" role="alert">
+                <AlertTriangle className="size-3.5 mt-0.5 shrink-0" aria-hidden="true" />
                 Changing these settings may impact system stability.
             </div>
         </div>

@@ -126,23 +126,23 @@ export const RecipeEmbedBlock = createReactBlockSpec(
                             pointerEvents: isDragging ? 'none' : undefined,
                         }}
                     >
-                        <div className="border border-gray-200 rounded-lg p-4 my-2 bg-white shadow-sm">
-                            <h4 className="font-medium mb-2 text-sm text-gray-700">Embed Recipe Card</h4>
+                        <div className="border border-border rounded-lg p-4 my-2 bg-card shadow-sm">
+                            <h4 className="font-medium mb-2 text-sm text-foreground">Embed Recipe Card</h4>
                             <div className="relative">
-                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                                <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="Search for a recipe..."
-                                    className="w-full pl-9 pr-4 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                    className="w-full pl-9 pr-4 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                                     autoFocus
                                 />
                             </div>
 
                             {loading && (
                                 <div className="flex justify-center p-4">
-                                    <Loader2 className="animate-spin h-5 w-5 text-primary" />
+                                    <Loader2 className="animate-spin size-5 text-primary" />
                                 </div>
                             )}
 
@@ -152,9 +152,9 @@ export const RecipeEmbedBlock = createReactBlockSpec(
                                         <li
                                             key={recipe.id}
                                             onClick={() => selectRecipe(recipe)}
-                                            className="p-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2"
+                                            className="p-2 hover:bg-accent cursor-pointer flex items-center gap-2"
                                         >
-                                            <div className="w-8 h-8 bg-gray-200 rounded overflow-hidden">
+                                            <div className="size-8 bg-muted rounded overflow-hidden">
                                                 <img src={recipe.thumbnail} alt="" className="w-full h-full object-cover" />
                                             </div>
                                             <span>{recipe.headline}</span>
@@ -184,11 +184,11 @@ export const RecipeEmbedBlock = createReactBlockSpec(
                     }}
                 >
                     <div className="flex items-start gap-4 p-4 border rounded-lg bg-card text-card-foreground shadow-sm my-4 group relative">
-                        <div className="w-24 h-24 bg-muted rounded-md overflow-hidden flex-shrink-0">
+                        <div className="size-24 bg-muted rounded-md overflow-hidden flex-shrink-0">
                             {block.props.thumbnail ? (
                                 <img src={block.props.thumbnail} alt="" className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">No image</div>
+                                <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-xs">No image</div>
                             )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -202,7 +202,7 @@ export const RecipeEmbedBlock = createReactBlockSpec(
 
                         <button
                             onClick={() => setShowSearch(true)}
-                            className="absolute top-2 right-2 text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-2 right-2 text-xs bg-muted hover:bg-accent px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                             Change
                         </button>

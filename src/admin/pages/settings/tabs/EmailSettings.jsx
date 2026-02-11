@@ -3,6 +3,12 @@ import { FormField, ToggleCard } from '@/components/settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
 import { Mail, Server, Shield, Send, BellRing, Info } from 'lucide-react';
 
+// Tabs configuration for this settings page
+export const emailSettingsTabs = [
+    { value: 'smtp', label: 'SMTP Settings', icon: Server },
+    { value: 'notifications', label: 'Notifications', icon: BellRing },
+];
+
 const EmailSettings = ({ formData, handleInputChange }) => {
     const [activeSection, setActiveSection] = useState('smtp');
 

@@ -81,7 +81,7 @@ const TextPanel = ({
                             onChange={(e) => updateTextOverlay({ text: e.target.value })}
                             onBlur={saveToHistory}
                             placeholder="Enter your text..."
-                            className="bg-zinc-800 border-zinc-700"
+                            className="bg-muted border-border"
                         />
                     </div>
 
@@ -114,10 +114,10 @@ const TextPanel = ({
                     <div className="space-y-2">
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Font</Label>
                         <Select value={textOverlay.font} onValueChange={(v) => { updateTextOverlay({ font: v }); saveToHistory(); }}>
-                            <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                            <SelectTrigger className="bg-muted border-border">
                                 <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-zinc-800 border-zinc-700">
+                            <SelectContent className="bg-muted border-border">
                                 <SelectItem value="sans-serif">Sans Serif</SelectItem>
                                 <SelectItem value="serif">Serif</SelectItem>
                                 <SelectItem value="monospace">Monospace</SelectItem>

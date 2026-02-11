@@ -64,7 +64,7 @@ export default function VariantProgress({ progress, error }) {
               key={variant.key}
               className={cn(
                 "flex-1 h-7 rounded-md flex items-center justify-center gap-1 text-xs font-medium transition-colors",
-                status === 'done' && "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/30",
+                status === 'done' && "bg-success/10 text-success border border-success/30",
                 status === 'active' && "bg-primary/10 text-primary border border-primary/30",
                 status === 'pending' && "bg-muted text-muted-foreground border border-transparent"
               )}
@@ -72,7 +72,7 @@ export default function VariantProgress({ progress, error }) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.05 }}
             >
-              {status === 'done' && <Check className="h-3 w-3" />}
+              {status === 'done' && <Check className="size-3" />}
               {status === 'active' && <Loader2 className="h-3 w-3 animate-spin" />}
               <span className="truncate">{variant.label}</span>
             </motion.div>
@@ -100,7 +100,7 @@ export default function VariantProgress({ progress, error }) {
 
       {/* Speed indicator - smaller */}
       <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
-        <Zap className="h-2.5 w-2.5" />
+        <Zap className="size-2.5" />
         <span>Parallel upload • 3x faster</span>
       </div>
 
@@ -127,8 +127,8 @@ function StepIndicator({ label, status }) {
   return (
     <div className="flex items-center gap-1">
       {status === 'done' && (
-        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
-          <Check className="h-2.5 w-2.5 text-white" />
+        <div className="w-4 h-4 rounded-full bg-success flex items-center justify-center">
+          <Check className="h-2.5 w-2.5 text-success-foreground" />
         </div>
       )}
       {status === 'active' && (
@@ -141,7 +141,7 @@ function StepIndicator({ label, status }) {
       )}
       <span className={cn(
         "font-medium",
-        status === 'done' && "text-green-600 dark:text-green-400",
+        status === 'done' && "text-success",
         status === 'active' && "text-primary",
         status === 'pending' && "text-muted-foreground"
       )}>

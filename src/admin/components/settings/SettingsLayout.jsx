@@ -8,8 +8,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/ui/scroll-area';
-import { Button } from '@/ui/button';
+import { ScrollArea } from '@/ui/scroll-area.jsx';
+import { Button } from '@/ui/button.jsx';
 import { Save, RefreshCw, Zap } from 'lucide-react';
 import {
     Globe,
@@ -43,7 +43,7 @@ const settingsTabs = [
 ];
 
 // Fixed header height to ensure alignment
-const HEADER_HEIGHT = 'h-[41px]';
+const HEADER_HEIGHT = 'h-10';
 
 /**
  * SettingsLayout - 2-panel layout using Gutenberg design tokens
@@ -81,7 +81,7 @@ export default function SettingsLayout({
                 className="wp-block-inserter h-full min-h-0 overflow-hidden bg-[var(--wp-inserter-bg)] border-r border-[var(--wp-inserter-border)] flex flex-col flex-shrink-0"
             >
                 {/* Left Panel Header - FIXED HEIGHT */}
-                <div className={cn(HEADER_HEIGHT, 'flex items-center px-[10px] border-b border-[#e5e7eb] flex-shrink-0')}>
+                <div className={cn(HEADER_HEIGHT, 'flex items-center px-2.5 border-b border-border flex-shrink-0')}>
                     <span className="text-sm font-semibold">Settings</span>
                 </div>
 
@@ -110,7 +110,7 @@ export default function SettingsLayout({
             {/* Right Panel: Content */}
             <div className="flex-1 min-w-0 flex flex-col overflow-hidden bg-[var(--wp-canvas-bg)]">
                 {/* Right Panel Header - tabs left, buttons right */}
-                <div className={cn(HEADER_HEIGHT, 'flex items-center justify-between px-[10px] border-b border-[#e5e7eb] flex-shrink-0')}>
+                <div className={cn(HEADER_HEIGHT, 'flex items-center justify-between px-2.5 border-b border-border flex-shrink-0')}>
                     {/* Tabs on the left */}
                     <div className="flex-1">
                         {headerTabs}
@@ -129,7 +129,7 @@ export default function SettingsLayout({
                                 disabled={saving}
                                 className="h-7 px-3 gap-1.5 text-xs rounded-md"
                             >
-                                <RefreshCw className="w-3 h-3" />
+                                <RefreshCw className="size-3" />
                                 Reset
                             </Button>
                         )}
@@ -140,9 +140,9 @@ export default function SettingsLayout({
                             className="h-7 px-3 gap-1.5 text-xs rounded-md"
                         >
                             {saving ? (
-                                <Zap className="w-3 h-3 animate-spin" />
+                                <Zap className="size-3 animate-spin" />
                             ) : (
-                                <Save className="w-3 h-3" />
+                                <Save className="size-3" />
                             )}
                             {saving ? 'Saving...' : saveLabel}
                         </Button>

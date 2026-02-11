@@ -23,7 +23,7 @@ export default function PublishingSection({
                     disabled={saving}
                     className="w-full gap-2 h-10"
                 >
-                    <Save className="w-4 h-4" />
+                    <Save className="size-4" />
                     {saving ? 'Saving...' : (isEditMode ? 'Update' : 'Create Author')}
                 </Button>
 
@@ -31,7 +31,7 @@ export default function PublishingSection({
                     <div className="flex items-center justify-between">
                         <Label htmlFor="isOnline" className="text-sm font-medium">Visibility</Label>
                         <div className="flex items-center gap-2">
-                            <span className={`text-xs font-medium ${formData.isOnline ? 'text-emerald-600' : 'text-gray-500'}`}>
+                            <span className={`text-xs font-medium ${formData.isOnline ? 'text-success' : 'text-muted-foreground'}`}>
                                 {formData.isOnline ? 'Live' : 'Hidden'}
                             </span>
                             <Switch

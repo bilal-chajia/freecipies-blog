@@ -7,6 +7,11 @@ import { Textarea } from '@/ui/textarea.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select.jsx';
 import { Monitor, DollarSign, Cpu, Layout, Code2, ShieldCheck, Zap, Info, Settings2, BarChart3 } from 'lucide-react';
 
+// Tabs configuration for this settings page
+export const adsSettingsTabs = [
+    { value: 'network', label: 'Ad Network', icon: Monitor },
+];
+
 const AdsSettings = ({ formData, handleInputChange }) => {
     return (
         <div className="space-y-6">
@@ -15,7 +20,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-primary/10 rounded-xl">
-                                <Monitor className="w-5 h-5 text-primary" />
+                                <Monitor className="size-5 text-primary" />
                             </div>
                             <div>
                                 <CardTitle className="text-xl">Monetization Engine</CardTitle>
@@ -36,14 +41,14 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                 <CardContent className="p-8 space-y-8">
                     <div className="space-y-4">
                         <Label htmlFor="adNetwork" className="text-sm font-bold flex items-center gap-2">
-                            <Cpu className="w-3.5 h-3.5 opacity-60" />
+                            <Cpu className="size-3.5 opacity-60" />
                             Primary Ad Provider
                         </Label>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                             {[
                                 { id: 'none', label: 'Disabled', icon: ShieldCheck, color: 'text-muted-foreground' },
                                 { id: 'google-adsense', label: 'AdSense', icon: DollarSign, color: 'text-amber-500' },
-                                { id: 'ezoic', label: 'Ezoic', icon: Zap, color: 'text-blue-500' },
+                                { id: 'ezoic', label: 'Ezoic', icon: Zap, color: 'text-primary' },
                                 { id: 'hb-agency', label: 'HB Agency', icon: BarChart3, color: 'text-indigo-500' },
                                 { id: 'custom', label: 'Custom', icon: Code2, color: 'text-emerald-500' },
                             ].map((network) => (
@@ -52,8 +57,8 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                                     disabled={!formData.adsEnabled && network.id !== 'none'}
                                     onClick={() => handleInputChange('adNetwork', network.id)}
                                     className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-3 ${formData.adNetwork === network.id
-                                            ? 'border-primary bg-primary/5 shadow-sm'
-                                            : 'border-transparent bg-muted/20 hover:bg-muted/30'
+                                        ? 'border-primary bg-primary/5 shadow-sm'
+                                        : 'border-transparent bg-muted/20 hover:bg-muted/30'
                                         } ${(!formData.adsEnabled && network.id !== 'none') ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                                 >
                                     <network.icon className={`w-6 h-6 ${formData.adNetwork === network.id ? 'text-primary' : network.color}`} />
@@ -72,8 +77,8 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                 <Card className="border-none shadow-sm bg-card rounded-2xl overflow-hidden">
                     <CardHeader className="border-b border-border/50 bg-muted/20 pb-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-500/10 rounded-xl">
-                                <Zap className="w-5 h-5 text-blue-500" />
+                            <div className="p-2 bg-primary/10 rounded-xl">
+                                <Zap className="size-5 text-primary" />
                             </div>
                             <div>
                                 <CardTitle className="text-xl">Ezoic Integration</CardTitle>
@@ -113,7 +118,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
 
                         <div className="space-y-3">
                             <Label htmlFor="ezoicApiKey" className="text-sm font-bold flex items-center gap-2">
-                                <ShieldCheck className="w-3.5 h-3.5 opacity-60" />
+                                <ShieldCheck className="size-3.5 opacity-60" />
                                 API Key
                             </Label>
                             <Input
@@ -145,7 +150,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                                                         [position]: { ...config, enabled: checked }
                                                     }
                                                 })}
-                                                className="data-[state=checked]:bg-blue-500"
+                                                className="data-[state=checked]:bg-primary"
                                             />
                                         </div>
 
@@ -313,8 +318,8 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                 <Card className="border-none shadow-sm bg-card rounded-2xl overflow-hidden">
                     <CardHeader className="border-b border-border/50 bg-muted/20 pb-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-amber-500/10 rounded-xl">
-                                <DollarSign className="w-5 h-5 text-amber-500" />
+                            <div className="p-2 bg-secondary/10 rounded-xl">
+                                <DollarSign className="size-5 text-secondary" />
                             </div>
                             <div>
                                 <CardTitle className="text-xl">Google AdSense</CardTitle>
@@ -349,7 +354,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                                     ...formData.googleAdSense,
                                     autoAdsEnabled: checked
                                 })}
-                                className="data-[state=checked]:bg-amber-500"
+                                className="data-[state=checked]:bg-secondary"
                             />
                         </div>
 
@@ -370,7 +375,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                                                             [position]: { ...config, enabled: checked }
                                                         }
                                                     })}
-                                                    className="data-[state=checked]:bg-amber-500"
+                                                    className="data-[state=checked]:bg-secondary"
                                                 />
                                             </div>
 
@@ -452,7 +457,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <div className="space-y-3">
                                 <Label htmlFor="refreshInterval" className="text-sm font-bold flex items-center gap-2">
-                                    <Zap className="w-3.5 h-3.5 opacity-60" />
+                                    <Zap className="size-3.5 opacity-60" />
                                     Refresh Interval
                                 </Label>
                                 <div className="relative">
@@ -474,7 +479,7 @@ const AdsSettings = ({ formData, handleInputChange }) => {
 
                             <div className="space-y-3">
                                 <Label htmlFor="maxAdsPerPage" className="text-sm font-bold flex items-center gap-2">
-                                    <Layout className="w-3.5 h-3.5 opacity-60" />
+                                    <Layout className="size-3.5 opacity-60" />
                                     Max Ads Per Page
                                 </Label>
                                 <Input
@@ -540,9 +545,9 @@ const AdsSettings = ({ formData, handleInputChange }) => {
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-2 p-3 bg-blue-500/5 rounded-lg border border-blue-500/10">
-                            <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                            <p className="text-[11px] text-blue-700 leading-relaxed font-medium">High ad density may impact PageSpeed scores and user retention. Monitor core web vitals consistently.</p>
+                        <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg border border-primary/10">
+                            <Info className="size-4 text-primary mt-0.5 shrink-0" />
+                            <p className="text-[11px] text-primary/80 leading-relaxed font-medium">High ad density may impact PageSpeed scores and user retention. Monitor core web vitals consistently.</p>
                         </div>
                     </CardContent>
                 </Card>

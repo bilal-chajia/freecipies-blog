@@ -491,7 +491,7 @@ const CategoryEditor = () => {
         <div className="container flex h-16 items-center justify-between px-4 md:px-8 max-w-7xl mx-auto">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate('/categories')} className="rounded-full hover:bg-muted">
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="size-5" />
             </Button>
             <div>
               <h2 className="text-lg font-semibold tracking-tight">{isEditMode ? 'Edit Category' : 'New Category'}</h2>
@@ -500,7 +500,7 @@ const CategoryEditor = () => {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={openJsonDialog}>
-              <FileJson className="w-4 h-4 mr-2" />
+              <FileJson className="size-4 mr-2" />
               Import JSON
             </Button>
             <Button variant="outline" onClick={() => navigate('/categories')}>Cancel</Button>
@@ -512,7 +512,7 @@ const CategoryEditor = () => {
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="size-4 mr-2" />
                   Save Changes
                 </>
               )}
@@ -538,7 +538,7 @@ const CategoryEditor = () => {
               <CardHeader className="pb-3 border-b">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 bg-primary/10 rounded-md">
-                    <Layout className="w-4 h-4 text-primary" />
+                    <Layout className="size-4 text-primary" />
                   </div>
                   <CardTitle className="text-base">Basic Information</CardTitle>
                 </div>
@@ -606,8 +606,8 @@ const CategoryEditor = () => {
             <Card className="border-0 shadow-sm ring-1 ring-border/50">
               <CardHeader className="pb-3 border-b">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-blue-500/10 rounded-md">
-                    <Globe className="w-4 h-4 text-blue-500" />
+                  <div className="p-1.5 bg-primary/10 rounded-md">
+                    <Globe className="size-4 text-primary" />
                   </div>
                   <CardTitle className="text-base">SEO Settings</CardTitle>
                 </div>
@@ -720,8 +720,8 @@ const CategoryEditor = () => {
             <Card className="border-0 shadow-sm ring-1 ring-border/50">
               <CardHeader className="pb-3 border-b">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-green-500/10 rounded-md">
-                    <Layout className="w-4 h-4 text-green-500" />
+                  <div className="p-1.5 bg-success/10 rounded-md">
+                    <Layout className="size-4 text-success" />
                   </div>
                   <CardTitle className="text-base">Layout & Navigation</CardTitle>
                 </div>

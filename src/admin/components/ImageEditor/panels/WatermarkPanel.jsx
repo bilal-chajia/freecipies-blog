@@ -70,7 +70,7 @@ const WatermarkPanel = ({
                                 className="w-full"
                                 onClick={() => fileInputRef.current?.click()}
                             >
-                                <ImageIcon className="w-4 h-4 mr-2" />
+                                <ImageIcon className="size-4 mr-2" />
                                 Select Image
                             </Button>
                         </div>
@@ -139,14 +139,14 @@ const WatermarkPanel = ({
                                 onClick={() => { onWatermarkRepeatChange('single'); saveToHistory(); }}
                                 size="sm"
                             >
-                                <Square className="w-4 h-4 mr-2" /> Single
+                                <Square className="size-4 mr-2" /> Single
                             </Button>
                             <Button
                                 variant={watermarkRepeat === 'tiled' ? 'default' : 'outline'}
                                 onClick={() => { onWatermarkRepeatChange('tiled'); saveToHistory(); }}
                                 size="sm"
                             >
-                                <Grid3X3 className="w-4 h-4 mr-2" /> Tiled
+                                <Grid3X3 className="size-4 mr-2" /> Tiled
                             </Button>
                         </div>
                     </div>

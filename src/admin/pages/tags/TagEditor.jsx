@@ -20,7 +20,7 @@ const TagEditor = () => {
   const [formData, setFormData] = useState({
     slug: '',
     name: '',
-    color: '#ff6600',
+    color: 'hsl(var(--primary))',
   });
 
   // Load tag from API when editing
@@ -36,7 +36,7 @@ const TagEditor = () => {
           setFormData({
             slug: tag.slug || '',
             name: tag.label || tag.name || '',
-            color: tag.color || '#ff6600',
+            color: tag.color || 'hsl(var(--primary))',
           });
         } catch (err) {
           console.error('Failed to fetch tag:', err);

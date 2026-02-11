@@ -2,24 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { useSettingsStore } from '../../store/useStore';
-import { SettingsLayout } from '@/components/settings';
+import { SettingsLayout } from '@/components/settings/index.js';
 import {
   GutenbergTabsList,
   GutenbergTabsTrigger
-} from '@/components/settings/GutenbergTabs';
+} from '@/components/settings/GutenbergTabs.jsx';
 
 // Import Tab Components and their tab configs
-import GeneralSettings, { generalSettingsTabs } from './tabs/GeneralSettings';
-import SeoSettings, { seoSettingsTabs } from './tabs/SeoSettings';
-import EmailSettings from './tabs/EmailSettings';
-import SocialSettings from './tabs/SocialSettings';
-import ContentSettings from './tabs/ContentSettings';
-import MenuSettings, { menuSettingsTabs } from './tabs/MenuSettings';
-import AdsSettings from './tabs/AdsSettings';
-import AppearanceSettings from './tabs/AppearanceSettings';
-import AdvancedSettings, { advancedSettingsTabs } from './tabs/AdvancedSettings';
-import ImageUploadSettings from './tabs/ImageUploadSettings';
-import AISettings, { aiSettingsTabs } from './tabs/AISettings';
+import GeneralSettings, { generalSettingsTabs } from './tabs/GeneralSettings.jsx';
+import SeoSettings, { seoSettingsTabs } from './tabs/SeoSettings.jsx';
+import EmailSettings from './tabs/EmailSettings.jsx';
+import SocialSettings from './tabs/SocialSettings.jsx';
+import ContentSettings from './tabs/ContentSettings.jsx';
+import MenuSettings, { menuSettingsTabs } from './tabs/MenuSettings.jsx';
+import AdsSettings from './tabs/AdsSettings.jsx';
+import AppearanceSettings from './tabs/AppearanceSettings.jsx';
+import AdvancedSettings, { advancedSettingsTabs } from './tabs/AdvancedSettings.jsx';
+import ImageUploadSettings from './tabs/ImageUploadSettings.jsx';
+import AISettings, { aiSettingsTabs } from './tabs/AISettings.jsx';
 
 // Map main tabs to their sub-tabs config
 const subTabsConfig = {
@@ -60,7 +60,7 @@ const Settings = () => {
     language: 'en',
 
     // Appearance Settings
-    badgeColor: '#3b82f6',
+    badgeColor: 'hsl(var(--primary))',
 
     // TOC Settings
     tocEnabled: true,
@@ -68,7 +68,7 @@ const Settings = () => {
     tocCollapsible: true,
     tocDefaultOpen: true,
     tocShowJumpButton: true,
-    tocAccentColor: '#f97316',
+    tocAccentColor: 'hsl(var(--primary))',
 
     // SEO Settings
     defaultMetaTitle: 'Freecipies - Delicious Recipes & Cooking Tips',
@@ -294,7 +294,7 @@ const Settings = () => {
 
     const updatedMockSettings = {
       ...mockSettings,
-      badgeColor: '#3b82f6',
+      badgeColor: 'hsl(var(--primary))',
     };
 
     setSettings(updatedMockSettings);
@@ -326,7 +326,7 @@ const Settings = () => {
             tocCollapsible: data.toc.collapsible ?? true,
             tocDefaultOpen: data.toc.defaultOpen ?? true,
             tocShowJumpButton: data.toc.showJumpButton ?? true,
-            tocAccentColor: data.toc.accentColor || '#f97316',
+            tocAccentColor: data.toc.accentColor || 'hsl(var(--primary))',
           }));
         }
       })

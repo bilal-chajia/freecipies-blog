@@ -97,7 +97,7 @@ export default function CropPanel({
   return (
     <div
       ref={containerRef}
-      className="h-[300px] lg:h-auto lg:flex-1 bg-black relative overflow-hidden"
+      className="h-[300px] lg:h-auto lg:flex-1 bg-background relative overflow-hidden"
     >
       <div className="absolute inset-0">
         <Cropper
@@ -129,15 +129,15 @@ export default function CropPanel({
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
           >
-            <div className="w-6 h-6 bg-white/20 border-2 border-white rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] flex items-center justify-center">
-              <div className="w-1.5 h-1.5 bg-white rounded-full" />
+            <div className="size-6 bg-background/80 border-2 border-primary rounded-full shadow-lg flex items-center justify-center">
+              <div className="size-1.5 bg-primary rounded-full" />
             </div>
           </motion.div>
         )}
 
         {/* Focal Point Hint */}
         {showFocalPoint && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1.5 rounded-full text-xs pointer-events-none backdrop-blur-sm z-30">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-card/90 text-foreground px-3 py-1.5 rounded-full text-xs pointer-events-none backdrop-blur-sm z-30">
             Click on the image to set focal point
           </div>
         )}

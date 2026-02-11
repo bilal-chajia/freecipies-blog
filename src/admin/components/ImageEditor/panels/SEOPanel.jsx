@@ -114,10 +114,10 @@ const SEOPanel = ({
                     value={altText}
                     onChange={(e) => onAltTextChange(e.target.value)}
                     placeholder="Describe the image for SEO & accessibility"
-                    className="bg-zinc-800 border-zinc-700"
+                    className="bg-muted border-border"
                 />
                 {error ? (
-                    <p className="text-xs text-red-400">{error}</p>
+                    <p className="text-xs text-destructive">{error}</p>
                 ) : (
                     <p className="text-xs text-muted-foreground">
                         {puterLoaded ? 'Click AI Generate or type manually' : 'Loading AI...'}
@@ -129,7 +129,7 @@ const SEOPanel = ({
             <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Attribution (Author)</Label>
                 <Select value={selectedAuthor} onValueChange={onSelectedAuthorChange}>
-                    <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                    <SelectTrigger className="bg-muted border-border">
                         <SelectValue placeholder="Select author" />
                     </SelectTrigger>
                     <SelectContent>
@@ -150,7 +150,7 @@ const SEOPanel = ({
             <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Compression Quality</Label>
                 <Select value={compressionQuality} onValueChange={onCompressionQualityChange}>
-                    <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                    <SelectTrigger className="bg-muted border-border">
                         <SelectValue placeholder="Select quality" />
                     </SelectTrigger>
                     <SelectContent>

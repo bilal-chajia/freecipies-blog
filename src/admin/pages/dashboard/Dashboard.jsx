@@ -127,8 +127,6 @@ const Dashboard = () => {
       icon: FileText,
       trend: '+12%',
       trendUp: true,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
       link: '/articles',
     },
     {
@@ -137,8 +135,6 @@ const Dashboard = () => {
       icon: UtensilsCrossed,
       trend: '+5%',
       trendUp: true,
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
       link: '/articles?type=recipe',
     },
     {
@@ -147,8 +143,6 @@ const Dashboard = () => {
       icon: Eye,
       trend: '+24%',
       trendUp: true,
-      color: 'text-indigo-500',
-      bgColor: 'bg-indigo-500/10',
     },
     {
       title: 'Authors',
@@ -156,8 +150,6 @@ const Dashboard = () => {
       icon: Users,
       trend: 'Static',
       trendUp: null,
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-500/10',
       link: '/authors',
     },
   ];
@@ -189,7 +181,7 @@ const Dashboard = () => {
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <Calendar className="h-4 w-4" />
+              <Calendar className="size-4" />
               <span>{formatDate(new Date(), 'EEEE, MMMM do')}</span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight">
@@ -202,7 +194,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             <Link to="/articles/new">
               <Button size="lg" className="h-12 px-6 gap-2 shadow-lg hover:shadow-xl transition-all">
-                <Plus className="h-5 w-5" />
+                <Plus className="size-5" />
                 Create Content
               </Button>
             </Link>
@@ -216,15 +208,15 @@ const Dashboard = () => {
           <Card key={stat.title} className="relative overflow-hidden border-none shadow-md ring-1 ring-border/50">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <stat.icon className="size-4 text-primary" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                 {stat.trendUp !== null && (
-                  <span className={stat.trendUp ? "text-green-500 font-medium" : "text-red-500 font-medium"}>
+                  <span className={stat.trendUp ? "text-success font-medium" : "text-destructive font-medium"}>
                     {stat.trend}
                   </span>
                 )}
@@ -251,7 +243,7 @@ const Dashboard = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                  <TrendingUp className="size-3.5 text-primary" />
                   <span className="text-xs font-semibold text-primary">+24% Growth</span>
                 </div>
               </div>
@@ -311,7 +303,7 @@ const Dashboard = () => {
           </CardContent>
           <CardFooter className="flex-col items-start gap-2 text-sm border-t pt-4">
             <div className="flex gap-2 font-medium leading-none">
-              Content views increased by 15.2% this month <TrendingUp className="h-4 w-4" />
+              Content views increased by 15.2% this month <TrendingUp className="size-4" />
             </div>
             <div className="leading-none text-muted-foreground">
               Showing total views for the last 7 months
@@ -326,13 +318,13 @@ const Dashboard = () => {
               <CardTitle className="text-lg">Popular Content</CardTitle>
               <CardDescription>Highest performing articles</CardDescription>
             </div>
-            <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+            <UtensilsCrossed className="size-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               {popularArticles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 space-y-3 opacity-50">
-                  <FileText className="h-10 w-10 text-muted-foreground" />
+                  <FileText className="size-10 text-muted-foreground" />
                   <p className="text-sm">No performance data yet</p>
                 </div>
               ) : (
@@ -352,7 +344,7 @@ const Dashboard = () => {
                         </p>
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Eye className="h-3 w-3" />
+                            <Eye className="size-3" />
                             {formatNumber(article.viewCount)}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
@@ -361,7 +353,7 @@ const Dashboard = () => {
                           </span>
                         </div>
                       </div>
-                      <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                      <ArrowUpRight className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
                     </div>
                   </Link>
                 ))
@@ -423,7 +415,7 @@ const Dashboard = () => {
                         </td>
                         <td className="py-3 pr-4 hidden md:table-cell">
                            <div className="flex items-center gap-1.5">
-                             <div className={`h-1.5 w-1.5 rounded-full ${article.status === 'online' ? 'bg-green-500' : 'bg-orange-500'}`} />
+                             <div className={`size-1.5 rounded-full ${article.status === 'online' ? 'bg-success' : 'bg-warning'}`} />
                              <span className="capitalize text-xs">{article.status}</span>
                            </div>
                         </td>
@@ -444,4 +436,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

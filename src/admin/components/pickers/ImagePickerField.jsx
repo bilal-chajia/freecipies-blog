@@ -44,7 +44,7 @@ const ImagePickerField = ({ value, onChange, placeholder = 'Enter image URL' }) 
                             size="sm"
                             onClick={() => setIsMediaOpen(true)}
                         >
-                            <Image className="w-4 h-4 mr-1" />
+                            <Image className="size-4 mr-1" />
                             Change
                         </Button>
                         <Button
@@ -52,7 +52,7 @@ const ImagePickerField = ({ value, onChange, placeholder = 'Enter image URL' }) 
                             size="sm"
                             onClick={handleClear}
                         >
-                            <X className="w-4 h-4" />
+                            <X className="size-4" />
                         </Button>
                     </div>
                 </div>
@@ -64,7 +64,7 @@ const ImagePickerField = ({ value, onChange, placeholder = 'Enter image URL' }) 
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
-                    className="font-mono text-sm h-[30px] rounded-[2px] border-[#757575] focus:border-[#007cba]"
+                    className="font-mono text-sm h-8 rounded-sm border-input focus:border-ring"
                 />
                 <Button
                     type="button"
@@ -72,9 +72,9 @@ const ImagePickerField = ({ value, onChange, placeholder = 'Enter image URL' }) 
                     size="icon"
                     onClick={() => setIsMediaOpen(true)}
                     title="Select from Media Library"
-                    className="h-[30px] w-[30px] rounded-[2px] border-[#757575] text-[#757575] hover:text-[#1e1e1e] hover:border-[#1e1e1e]"
+                    className="h-8 w-8 rounded-sm border-input text-muted-foreground hover:text-foreground hover:border-input"
                 >
-                    <Image className="w-4 h-4" />
+                    <Image className="size-4" />
                 </Button>
             </div>
 

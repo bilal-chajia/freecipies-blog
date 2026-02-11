@@ -484,9 +484,9 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
-            <DialogContent className="!max-w-none w-[calc(100vw-120px)] h-[calc(100vh-40px)] p-0 gap-0 bg-zinc-950 border-zinc-800 flex overflow-hidden">
+            <DialogContent className="!max-w-none w-[calc(100vw-120px)] h-[calc(100vh-40px)] p-0 gap-0 bg-background border-border flex overflow-hidden">
                 {/* Left Toolbar */}
-                <div className="w-16 bg-zinc-900/50 border-r border-zinc-800 flex flex-col items-center py-4 gap-2">
+                <div className="w-16 bg-card/50 border-r border-border flex flex-col items-center py-4 gap-2">
                     {TOOLS.map((tool) => (
                         <Button
                             key={tool.id}
@@ -529,7 +529,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                 {/* Center Canvas */}
                 <div className="flex-1 flex flex-col">
                     {/* Header */}
-                    <div className="h-14 border-b border-zinc-800 flex items-center justify-between px-4">
+                    <div className="h-14 border-b border-border flex items-center justify-between px-4">
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-semibold text-white">Edit Image</h2>
 
@@ -568,7 +568,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={onCancel} className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                            <Button variant="outline" size="sm" onClick={onCancel} className="border-red-500/50 text-destructive hover:bg-red-500/10 hover:text-red-300">
                                 <X className="w-4 h-4 mr-2" /> Cancel
                             </Button>
                             <Button size="sm" onClick={handleSave} disabled={processing} className="bg-primary hover:bg-primary/90">
@@ -580,7 +580,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
 
                     {/* Image Info Bar */}
                     {showInfo && croppedAreaPixels && (
-                        <div className="h-8 bg-zinc-900/80 border-b border-zinc-800 flex items-center px-4 text-xs text-muted-foreground gap-4">
+                        <div className="h-8 bg-card/80 border-b border-border flex items-center px-4 text-xs text-muted-foreground gap-4">
                             <span>Output: {croppedAreaPixels.width} × {croppedAreaPixels.height}px</span>
                             <span>•</span>
                             <span>Zoom: {zoom.toFixed(1)}x</span>
@@ -592,7 +592,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                     )}
 
                     {/* Canvas Area */}
-                    <div className="flex-1 relative bg-zinc-900/30">
+                    <div className="flex-1 relative bg-card/30">
                         {!showOriginal ? (
                             <div className="absolute inset-0">
                                 <Cropper
@@ -666,8 +666,8 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
                 </div>
 
                 {/* Right Panel */}
-                <div className="w-72 bg-zinc-900/50 border-l border-zinc-800 flex flex-col">
-                    <div className="h-14 border-b border-zinc-800 flex items-center px-4">
+                <div className="w-72 bg-card/50 border-l border-border flex flex-col">
+                    <div className="h-14 border-b border-border flex items-center px-4">
                         <h3 className="font-medium text-white capitalize">{activeTool}</h3>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4">

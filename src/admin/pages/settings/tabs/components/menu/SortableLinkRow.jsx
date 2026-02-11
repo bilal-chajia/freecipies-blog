@@ -49,21 +49,21 @@ const SortableLinkRow = ({ link, colIndex, linkIndex, onUpdateLink, onDeleteLink
                     {...listeners}
                     className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-muted touch-none flex-shrink-0"
                 >
-                    <GripVertical className="w-3 h-3 text-muted-foreground" />
+                    <GripVertical className="size-3 text-muted-foreground" />
                 </div>
                 <Input
                     value={link.label}
                     onChange={(e) => onUpdateLink(colIndex, linkIndex, { label: e.target.value })}
-                    className="h-[28px] text-xs flex-1 border-transparent hover:border-[#757575] focus:border-[#007cba] bg-transparent focus:bg-white rounded-[2px] px-1"
+                    className="h-7 text-xs flex-1 border-transparent hover:border-input focus:border-ring bg-transparent focus:bg-background rounded-sm px-1"
                     placeholder="Link label"
                 />
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-[#757575] hover:text-red-600"
+                    className="h-6 w-6 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                     onClick={() => onDeleteLink(colIndex, linkIndex)}
                 >
-                    <X className="w-3 h-3" />
+                    <X className="size-3" />
                 </Button>
             </div>
             {/* Row 2: Link selector */}
