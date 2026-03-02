@@ -1048,16 +1048,49 @@ const navItems = [
   }
 
   /* Shared Badge Styles */
+  .metadata-pills {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: clamp(6px, 1.5cqi, 10px);
+    justify-content: flex-start; /* Default for small containers to ensure scroll start is correct */
+    overflow-x: auto;
+    padding: 4px 0;
+    margin-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    width: 100%;
+  }
+
+  /* Centering logic for wider cards */
+  @container recipe-card (min-width: 500px) {
+    .metadata-pills {
+      justify-content: center;
+      overflow-x: visible; /* No scroll needed for wide cards */
+    }
+  }
+
+  .metadata-pills::-webkit-scrollbar {
+    display: none;
+  }
+
   .meta-pill {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
+    gap: 4px;
+    padding: clamp(3px, 0.8cqi, 6px) clamp(8px, 1.5cqi, 14px);
     border-radius: 20px;
-    font-size: 13px;
+    font-size: clamp(11px, 1.2cqi, 13px);
     font-weight: 500;
     color: #374151;
-    background: #f3f4f6; /* Default gray for Course and Cuisine */
+    background: #f3f4f6;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .meta-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
   .diet-pill {
     display: none;
@@ -1277,26 +1310,33 @@ const navItems = [
   .diet-badges {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: clamp(6px, 1cqi, 10px);
     justify-content: center;
     margin-bottom: 16px;
+    width: 100%;
   }
 
   .diet-badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 10px;
+    padding: clamp(3px, 0.6cqi, 5px) clamp(8px, 1cqi, 12px);
     background: #ecfdf5;
     color: #059669;
     border-radius: 16px;
-    font-size: 12px;
+    font-size: clamp(10px, 1.1cqi, 12px);
     font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .diet-badge:hover {
+    background: #d1fae5;
+    transform: translateY(-1px);
   }
 
   .diet-badge svg {
-    width: 14px;
-    height: 14px;
+    width: clamp(12px, 1.2cqi, 14px);
+    height: clamp(12px, 1.2cqi, 14px);
   }
 
   /* Servings Preset Buttons */
