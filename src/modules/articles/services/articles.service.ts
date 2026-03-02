@@ -12,8 +12,9 @@ import { articlesToTags } from '../schema/articles-to-tags.schema';
 import { categories } from '../../categories/schema/categories.schema';
 import { authors } from '../../authors/schema/authors.schema';
 import { tags as tagsTable } from '../../tags/schema/tags.schema';
+import { equipment as equipmentTable } from '../../equipment/schema/equipment.schema';
 import { createDb } from '../../../shared/database/drizzle';
-import { hydrateArticle, hydrateArticles, hydrateTag, type HydratedArticle, type HydratedTag } from '../../../shared/utils/hydration';
+import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedArticle, type HydratedTag } from '../../../shared/utils/hydration';
 
 async function getTagsForArticleId(drizzle: any, articleId: number): Promise<HydratedTag[]> {
   const rows = await drizzle
@@ -403,10 +404,43 @@ export async function toggleFavoriteById(db: D1Database, id: number): Promise<{ 
 }
 
 /**
- * Extract Table of Contents from contentJson
- * Looks for heading blocks and generates TOC items
+ * Strip inline markdown formatting from text → plain text for TOC display.
+ * Handles: **bold**, *italic*, [links](url), `code`, ***bolditalic***
  */
-function extractTocFromContent(contentJson: string | null): { id: string; text: string; level: number }[] {
+function stripInlineMarkdown(text: string): string {
+  return text
+    // Links [label](url) → label
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Bold + italic ***text*** → text
+    .replace(/\*{3}(.+?)\*{3}/g, '$1')
+    // Bold **text** → text
+    .replace(/\*{2}(.+?)\*{2}/g, '$1')
+    // Italic *text* → text
+    .replace(/\*(.+?)\*/g, '$1')
+    // Inline code `text` → text
+    .replace(/`([^`]+)`/g, '$1')
+    .trim();
+}
+
+/**
+ * Generate a slug ID from text (must match ContentRenderer heading ID logic).
+ */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 50);
+}
+
+/**
+ * Extract Table of Contents from contentJson.
+ * - Strips markdown from heading text for clean display
+ * - Includes recipe_card / main_recipe blocks as "Recipe" entry
+ * - Includes faq_section blocks as "FAQ" entry
+ */
+function extractTocFromContent(contentJson: string | null, headline?: string): { id: string; text: string; level: number }[] {
   if (!contentJson) return [];
 
   try {
@@ -416,23 +450,29 @@ function extractTocFromContent(contentJson: string | null): { id: string; text: 
     const toc: { id: string; text: string; level: number }[] = [];
 
     for (const block of blocks) {
-      // Handle heading blocks - only h2, h3, h4 (exclude h5, h6)
+      // ── Heading blocks (h2, h3, h4) ─────────────────────
       if (block.type === 'heading' && block.text) {
         const level = block.level || 2;
-        if (level > 4) continue; // Skip h5 and h6
-        const text = String(block.text || '').trim();
+        if (level > 4) continue;
 
-        if (text) {
-          // Generate slug ID from text (matching ContentRenderer logic)
-          const id = text
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .slice(0, 50);
+        const rawText = String(block.text || '').trim();
+        if (!rawText) continue;
 
-          toc.push({ id, text, level });
-        }
+        const text = stripInlineMarkdown(rawText);
+        // ID uses the raw (pre-stripped) text to match ContentRenderer
+        const id = slugify(rawText);
+
+        toc.push({ id, text, level });
+      }
+
+      // ── Recipe block → "Recipe" TOC entry ───────────────
+      if (block.type === 'recipe_card' || block.type === 'main_recipe') {
+        toc.push({ id: 'recipe-card', text: headline || 'Recipe', level: 2 });
+      }
+
+      // ── FAQ block → "FAQ" TOC entry ─────────────────────
+      if (block.type === 'faq_section') {
+        toc.push({ id: 'faq-section', text: 'Frequently Asked Questions', level: 2 });
       }
     }
 
@@ -490,9 +530,98 @@ export async function syncCachedFields(
   }
 
   // Extract TOC from contentJson
-  const toc = extractTocFromContent(article.contentJson);
+  const toc = extractTocFromContent(article.contentJson, article.headline);
   if (toc.length > 0) {
     updateData.cachedTocJson = JSON.stringify(toc);
+  }
+
+  // ── Sync recipe scalar indexes & cached recipe summary ──
+  // These populate articles.totalTimeMinutes, articles.difficultyLabel,
+  // and articles.cachedRecipeJson for optimized SQL filtering/listing.
+  if (article.type === 'recipe' && article.recipeJson) {
+    const recipe = safeParseJson<any>(article.recipeJson);
+    if (recipe) {
+      // Derive total time: explicit total, or prep + cook
+      const totalTimeMinutes = recipe.total
+        ?? (((recipe.prep ?? 0) + (recipe.cook ?? 0)) || null);
+
+      // Scalar index columns for SQL WHERE/ORDER BY
+      (updateData as any).totalTimeMinutes = totalTimeMinutes;
+      (updateData as any).difficultyLabel = recipe.difficulty ?? null;
+
+      // Cached recipe summary for optimized listing API
+      (updateData as any).cachedRecipeJson = JSON.stringify({
+        isRecipe: true,
+        totalTimeMinutes,
+        difficulty: recipe.difficulty ?? null,
+        servings: recipe.servings ?? null,
+        caloriesPerServing: recipe.nutrition?.calories ?? null,
+        primaryDietLabels: (recipe.suitableForDiet ?? []).slice(0, 3),
+        mainIngredients: (recipe.ingredients ?? [])
+          .flatMap((g: any) => g.items ?? [])
+          .slice(0, 5)
+          .map((i: any) => i.name),
+        isQuick: (totalTimeMinutes ?? 999) <= 30,
+        isHealthy: (recipe.suitableForDiet?.length ?? 0) > 0,
+        isBudget: recipe.estimatedCost === 'Budget',
+      });
+
+      // ── Sync cachedEquipmentJson ──
+      // Look up equipment names from recipeJson in the equipment table
+      // to get rich data (brand, description, image, price, affiliate info)
+      const recipeEquipment: any[] = recipe.equipment ?? [];
+      if (recipeEquipment.length > 0) {
+        const equipNames = recipeEquipment.map((e: any) =>
+          (typeof e === 'string' ? e : e.name)?.toLowerCase().trim()
+        ).filter(Boolean);
+
+        // Fetch all active equipment in one query
+        const allEquip = await drizzle
+          .select()
+          .from(equipmentTable)
+          .where(eq(equipmentTable.isActive, true))
+          .all();
+
+        // Match by name (case-insensitive)
+        const matched = allEquip.filter((eq: any) =>
+          equipNames.includes(eq.name?.toLowerCase().trim())
+        );
+
+        // Build CachedEquipmentItem[] with all rich fields
+        const cachedEquip = matched.map((eq: any) => {
+          // Find the recipe equipment entry to get 'required' flag
+          const recipeEntry = recipeEquipment.find((re: any) =>
+            (typeof re === 'string' ? re : re.name)?.toLowerCase().trim() === eq.name?.toLowerCase().trim()
+          );
+          // Parse imageJson to extract image URL
+          let imageUrl: string | undefined;
+          try {
+            const imgData = typeof eq.imageJson === 'string' ? JSON.parse(eq.imageJson) : eq.imageJson;
+            imageUrl = imgData?.variants?.md?.url || imgData?.variants?.sm?.url || imgData?.url || undefined;
+          } catch { /* ignore */ }
+
+          return {
+            id: eq.id,
+            name: eq.name,
+            slug: eq.slug,
+            brand: eq.brand || undefined,
+            description: eq.description || undefined,
+            category: eq.category || undefined,
+            affiliate_url: eq.affiliateUrl || undefined,
+            affiliate_provider: eq.affiliateProvider || undefined,
+            affiliate_note: eq.affiliateNote || undefined,
+            price_display: eq.priceDisplay || undefined,
+            image_url: imageUrl,
+            required: typeof recipeEntry === 'object' ? (recipeEntry.required !== false) : true,
+          };
+        });
+
+        (updateData as any).cachedEquipmentJson = JSON.stringify(cachedEquip);
+      } else {
+        // No equipment in recipe — clear the cache
+        (updateData as any).cachedEquipmentJson = '[]';
+      }
+    }
   }
 
   await drizzle.update(articles)

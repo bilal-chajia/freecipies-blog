@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   Utensils,
   Layers,
+  Wrench,
 } from "lucide-react";
 
 import {
@@ -92,6 +93,7 @@ const navGroups = [
       { title: "Categories", url: "/categories", icon: FolderOpen },
       { title: "Authors", url: "/authors", icon: Users },
       { title: "Tags", url: "/tags", icon: Tags },
+      { title: "Equipment", url: "/equipment", icon: Wrench },
     ],
   },
   {

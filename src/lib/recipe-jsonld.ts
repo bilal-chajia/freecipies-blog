@@ -22,13 +22,15 @@
  * ```
  */
 
-import type { Article, Author, Category } from '@modules/articles';
+// Article type not imported — article param uses Record<string, any> to accept\n// both raw DB rows and hydrated articles with computed fields (label, authorName, etc.)
+import type { Author } from '@modules/authors/schema/authors.schema';
+import type { Category } from '@modules/categories/schema/categories.schema';
 import type { RecipeJson } from '@modules/articles/types';
 import { extractImage } from '@shared/utils';
-import { 
-    minutesToIsoDuration, 
+import {
+    minutesToIsoDuration,
     formatIngredient,
-    toSchemaOrgNutrition 
+    toSchemaOrgNutrition
 } from '@modules/articles/types/recipes.types';
 
 /**
@@ -61,6 +63,7 @@ export interface SchemaOrgRecipe {
         name?: string;
         position?: number;
         text?: string;
+        image?: string;
         itemListElement?: Array<{
             '@type': 'HowToStep';
             position: number;
@@ -95,7 +98,8 @@ export interface SchemaOrgRecipe {
 }
 
 interface GenerateOptions {
-    article: Article;
+    /** Accepts both raw Article and hydrated article (with label, authorName, etc.) */
+    article: Record<string, any>;
     recipeJson: RecipeJson | null;
     author?: Author | null;
     category?: Category | null;
@@ -122,26 +126,26 @@ interface GenerateOptions {
  */
 export function generateRecipeJsonLd(options: GenerateOptions): SchemaOrgRecipe | null {
     const { article, recipeJson, author, category, siteUrl, canonicalUrl } = options;
-    
+
     if (!recipeJson) return null;
 
     // Extract images
     const images: string[] = [];
     const cover = extractImage(article.imagesJson, 'cover', 1200);
     const thumbnail = extractImage(article.imagesJson, 'thumbnail', 800);
-    
+
     if (cover.imageUrl) images.push(new URL(cover.imageUrl, siteUrl).toString());
     if (thumbnail.imageUrl && thumbnail.imageUrl !== cover.imageUrl) {
         images.push(new URL(thumbnail.imageUrl, siteUrl).toString());
     }
-    
+
     // Fallback to default if no images
     if (images.length === 0) {
         images.push(`${siteUrl}/og-image.jpg`);
     }
 
     // Build recipeYield
-    const recipeYield = recipeJson.recipeYield || 
+    const recipeYield = recipeJson.recipeYield ||
         (recipeJson.servings ? `Serves ${recipeJson.servings}` : '1 serving');
 
     // Build JSON-LD
@@ -163,24 +167,16 @@ export function generateRecipeJsonLd(options: GenerateOptions): SchemaOrgRecipe 
         recipeInstructions: convertInstructions(recipeJson.instructions)
     };
 
-    // Add times (prefer numeric minutes, convert to ISO)
-    if (recipeJson.prep) {
-        jsonLd.prepTime = minutesToIsoDuration(recipeJson.prep);
-    } else if (recipeJson.prepTime) {
-        jsonLd.prepTime = recipeJson.prepTime;
-    }
-
-    if (recipeJson.cook) {
-        jsonLd.cookTime = minutesToIsoDuration(recipeJson.cook);
-    } else if (recipeJson.cookTime) {
-        jsonLd.cookTime = recipeJson.cookTime;
-    }
-
-    if (recipeJson.total) {
-        jsonLd.totalTime = minutesToIsoDuration(recipeJson.total);
-    } else if (recipeJson.totalTime) {
-        jsonLd.totalTime = recipeJson.totalTime;
-    }
+    // Convert numeric minutes → ISO-8601 for JSON-LD
+    // minutesToIsoDuration() is null-safe: returns null for null/0 input
+    const prepIso = minutesToIsoDuration(recipeJson.prep);
+    const cookIso = minutesToIsoDuration(recipeJson.cook);
+    const totalIso = minutesToIsoDuration(
+        recipeJson.total ?? (((recipeJson.prep ?? 0) + (recipeJson.cook ?? 0)) || null)
+    );
+    if (prepIso) jsonLd.prepTime = prepIso;
+    if (cookIso) jsonLd.cookTime = cookIso;
+    if (totalIso) jsonLd.totalTime = totalIso;
 
     // Add optional fields
     if (recipeJson.recipeCategory || category?.label) {
@@ -197,7 +193,7 @@ export function generateRecipeJsonLd(options: GenerateOptions): SchemaOrgRecipe 
 
     // Add nutrition (only if servingSize is available)
     if (recipeJson.nutrition?.servingSize) {
-        jsonLd.nutrition = toSchemaOrgNutrition(recipeJson.nutrition);
+        jsonLd.nutrition = toSchemaOrgNutrition(recipeJson.nutrition) as any;
     }
 
     // Add ratings
@@ -215,11 +211,10 @@ export function generateRecipeJsonLd(options: GenerateOptions): SchemaOrgRecipe 
             '@type': 'VideoObject',
             name: recipeJson.video.name,
             description: recipeJson.video.description || article.shortDescription || '',
-            thumbnailUrl: recipeJson.video.thumbnailUrl 
+            thumbnailUrl: recipeJson.video.thumbnailUrl
                 ? [recipeJson.video.thumbnailUrl]
                 : images.slice(0, 1),
-            contentUrl: recipeJson.video.contentUrl,
-            embedUrl: recipeJson.video.embedUrl,
+            contentUrl: recipeJson.video.url,
             uploadDate: recipeJson.video.uploadDate || article.publishedAt || new Date().toISOString(),
             duration: recipeJson.video.duration
         };
@@ -227,7 +222,7 @@ export function generateRecipeJsonLd(options: GenerateOptions): SchemaOrgRecipe 
 
     // Add dietary info
     if (recipeJson.suitableForDiet?.length) {
-        jsonLd.suitableForDiet = recipeJson.suitableForDiet.map(diet => 
+        jsonLd.suitableForDiet = recipeJson.suitableForDiet.map(diet =>
             `https://schema.org/${diet}`
         );
     }
@@ -240,7 +235,7 @@ export function generateRecipeJsonLd(options: GenerateOptions): SchemaOrgRecipe 
  */
 function flattenIngredients(ingredients: RecipeJson['ingredients']): string[] {
     if (!ingredients) return [];
-    
+
     const result: string[] = [];
     for (const group of ingredients) {
         for (const item of group.items) {
@@ -255,7 +250,7 @@ function flattenIngredients(ingredients: RecipeJson['ingredients']): string[] {
  */
 function convertInstructions(instructions: RecipeJson['instructions']): SchemaOrgRecipe['recipeInstructions'] {
     if (!instructions) return [];
-    
+
     const result: SchemaOrgRecipe['recipeInstructions'] = [];
     let globalStepNumber = 1;
 

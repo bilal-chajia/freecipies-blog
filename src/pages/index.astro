@@ -738,20 +738,8 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   /* === Foxiz-style Popular Recipes Cards === */
   .popular-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 25px;
-  }
-
-  @media (max-width: 1024px) {
-    .popular-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 600px) {
-    .popular-grid {
-      grid-template-columns: 1fr;
-    }
+    grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
+    gap: clamp(15px, 3vw, 25px);
   }
 
   .foxiz-card {
@@ -948,27 +936,8 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   .recipes-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 25px;
-  }
-
-  @media (max-width: 1024px) {
-    .recipes-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  @media (max-width: 768px) {
-    .recipes-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .recipes-grid {
-      grid-template-columns: 1fr;
-    }
+    grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+    gap: clamp(15px, 3vw, 25px);
   }
 
   .recipe-card-vertical {
@@ -1086,10 +1055,11 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .newsletter-form {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
   }
 
   .newsletter-form input {
-    flex: 1;
+    flex: 1 1 200px;
     padding: 14px 18px;
     border: none;
     border-radius: var(--radius);
@@ -1111,12 +1081,6 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   .newsletter-form button:hover {
     background: #992d22;
-  }
-
-  @media (max-width: 500px) {
-    .newsletter-form {
-      flex-direction: column;
-    }
   }
 </style>
 

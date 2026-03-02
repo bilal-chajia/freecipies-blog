@@ -1,32 +1,62 @@
 @import "tailwindcss";
 
-/* Variables CSS pour les points de rupture */
-:root {
-  --breakpoint-xs: 480px;
-  --breakpoint-sm: 640px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1280px;
-  --breakpoint-2xl: 1536px;
-}
+/* Modern fluid design — intrinsic CSS, minimal breakpoints */
 
-/* Styles de base pour la responsivité */
-html, body {
+/* Fluid base styles */
+html,
+body {
   overflow-x: hidden;
   max-width: 100vw;
   box-sizing: border-box;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  line-height: 1.5;
+  font-size: clamp(14px, 0.875rem + 0.2vw, 16px);
+  line-height: 1.6;
   -webkit-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
-*, *::before, *::after {
+html {
+  scroll-behavior: smooth;
+}
+
+*,
+*::before,
+*::after {
   box-sizing: inherit;
 }
 
-/* Amélioration de l'accessibilité sur mobile */
+/* Fluid typography — Playfair Display for headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+}
+
+h1 {
+  font-size: clamp(1.75rem, 1.5rem + 1.5vw, 2.75rem);
+  font-weight: 800;
+}
+
+h2 {
+  font-size: clamp(1.375rem, 1.15rem + 1.1vw, 2rem);
+  font-weight: 700;
+}
+
+h3 {
+  font-size: clamp(1.125rem, 1rem + 0.6vw, 1.5rem);
+  font-weight: 600;
+}
+
+h4 {
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.25rem);
+  font-weight: 600;
+}
+
+/* Responsive images & tables */
 img {
   max-width: 100%;
   height: auto;
@@ -39,28 +69,16 @@ table {
   display: block;
 }
 
+/* Fluid container padding */
+.container {
+  padding-left: clamp(1rem, 3vw, 2rem);
+  padding-right: clamp(1rem, 3vw, 2rem);
+}
+
 /* Skeleton shimmer animation */
 @keyframes shimmer {
-    100% {
-        transform: translateX(100%);
-    }
-}
-
-/* Media queries pour les ajustements globaux */
-@media (max-width: 640px) {
-  html {
-    font-size: 14px;
-  }
-  
-  h1 { font-size: 1.75rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.25rem; }
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+  100% {
+    transform: translateX(100%);
   }
 }
 

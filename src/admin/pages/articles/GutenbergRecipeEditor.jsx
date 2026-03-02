@@ -500,6 +500,12 @@ export default function GutenbergRecipeEditor() {
                                     editor={editorInstance}
                                     selectedBlock={selectedBlock}
                                     relatedContext={relatedContext}
+                                    recipeData={recipeJson}
+                                    onRecipeChange={(newValue) => {
+                                        const nextValue = newValue ?? '';
+                                        setRecipeJson(nextValue);
+                                        validateJSON('recipe', nextValue);
+                                    }}
                                 />
                             }
                             aiSettings={

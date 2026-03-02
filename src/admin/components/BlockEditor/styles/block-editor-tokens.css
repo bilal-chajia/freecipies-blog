@@ -72,7 +72,7 @@
     --wp-canvas-bg: #fff;
 
     /* Spacing between blocks */
-    --wp-block-spacing: 12px;
+    --wp-block-spacing: 1.25rem;
 
     /* ========================================
    * Settings Sidebar
@@ -252,10 +252,56 @@
     outline-color: var(--wp-block-border-selected);
 }
 
-/* Disable any default BlockNote/ProseMirror selection outlines */
+/* Disable any default BlockNote/ProseMirror selection outlines & overlays.
+   ProseMirror marks atom nodes (content:"none" blocks) as ProseMirror-selectednode
+   which triggers a native browser selection highlight making content invisible. */
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode {
     outline: none !important;
     box-shadow: none !important;
+    background: transparent !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+}
+
+/* Force form inputs inside selected blocks to remain visible.
+   The browser node-selection marks <input> values as "selected text",
+   causing them to disappear. Only inputs/textareas need color reset. */
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode input,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode textarea,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode select {
+    -webkit-text-fill-color: initial !important;
+    color: revert !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
+    caret-color: auto !important;
+}
+
+/* Other elements only need opacity/pointer-events fix, NOT color override.
+   Overriding color on buttons breaks styled components (e.g. dark bg + white text). */
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode button,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode label,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode span,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode div,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode p,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode h1,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode h2,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode h3 {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
+}
+
+/* Prevent browser ::selection highlight from hiding block content */
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode::selection,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode *::selection {
+    background: transparent !important;
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
 }
 
 .block-editor-wrapper .block-editor-block-list__block,

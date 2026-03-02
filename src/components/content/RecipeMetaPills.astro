@@ -1,7 +1,7 @@
 ---
 /**
  * RecipeMetaPills - Visual metadata badges for recipes
- * 
+ *
  * Features:
  * - Prep/Cook/Total time
  * - Servings
@@ -10,7 +10,10 @@
  * - Diet badges
  */
 
-import type { RecipeJson, DifficultyLevel } from '@modules/articles/types/recipes.types';
+import type {
+  RecipeJson,
+  DifficultyLevel,
+} from "@modules/articles/types/recipes.types";
 
 interface Props {
   recipe: RecipeJson | null | undefined;
@@ -22,7 +25,7 @@ if (!recipe) return null;
 
 const prep = recipe.prep || 0;
 const cook = recipe.cook || 0;
-const total = recipe.total || (prep + cook);
+const total = recipe.total || prep + cook;
 const servings = recipe.servings || 0;
 const difficulty = recipe.difficulty;
 const cuisine = recipe.recipeCuisine;
@@ -37,19 +40,27 @@ function formatTime(minutes: number): string {
 
 function getDifficultyColor(level: DifficultyLevel): string {
   switch (level) {
-    case 'Easy': return '#22c55e';
-    case 'Medium': return '#f59e0b';
-    case 'Hard': return '#ef4444';
-    default: return '#6b7280';
+    case "Easy":
+      return "#22c55e";
+    case "Medium":
+      return "#6B8F71";
+    case "Hard":
+      return "#ef4444";
+    default:
+      return "#6b7280";
   }
 }
 
 function getDifficultyBars(level: DifficultyLevel): number {
   switch (level) {
-    case 'Easy': return 1;
-    case 'Medium': return 2;
-    case 'Hard': return 3;
-    default: return 0;
+    case "Easy":
+      return 1;
+    case "Medium":
+      return 2;
+    case "Hard":
+      return 3;
+    default:
+      return 0;
   }
 }
 
@@ -59,92 +70,141 @@ const hasDifficulty = !!difficulty;
 const hasCuisine = !!cuisine;
 const hasDiets = diets.length > 0;
 
-if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets) return null;
+if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
+  return null;
 ---
 
 <div class="recipe-meta-pills">
   {/* Time Pills */}
-  {hasTime && (
-    <div class="pill-group time-group">
-      {prep > 0 && (
-        <div class="meta-pill time-pill">
-          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <span class="pill-label">Prep</span>
-          <span class="pill-value">{formatTime(prep)}</span>
-        </div>
-      )}
-      
-      {cook > 0 && (
-        <div class="meta-pill time-pill cook">
-          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
-            <path d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/>
-          </svg>
-          <span class="pill-label">Cook</span>
-          <span class="pill-value">{formatTime(cook)}</span>
-        </div>
-      )}
-      
-      {total > 0 && (
-        <div class="meta-pill time-pill total">
-          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <span class="pill-label">Total</span>
-          <span class="pill-value">{formatTime(total)}</span>
-        </div>
-      )}
-    </div>
-  )}
+  {
+    hasTime && (
+      <div class="pill-group time-group">
+        {prep > 0 && (
+          <div class="meta-pill time-pill">
+            <svg
+              class="pill-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span class="pill-label">Prep</span>
+            <span class="pill-value">{formatTime(prep)}</span>
+          </div>
+        )}
+
+        {cook > 0 && (
+          <div class="meta-pill time-pill cook">
+            <svg
+              class="pill-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+              <path d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+            </svg>
+            <span class="pill-label">Cook</span>
+            <span class="pill-value">{formatTime(cook)}</span>
+          </div>
+        )}
+
+        {total > 0 && (
+          <div class="meta-pill time-pill total">
+            <svg
+              class="pill-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span class="pill-label">Total</span>
+            <span class="pill-value">{formatTime(total)}</span>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   {/* Other Metadata */}
   <div class="pill-group meta-group">
-    {hasServings && (
-      <div class="meta-pill">
-        <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
-        </svg>
-        <span class="pill-value">{servings} servings</span>
-      </div>
-    )}
-    
-    {hasDifficulty && (
-      <div class="meta-pill difficulty-pill" title={`Difficulty: ${difficulty}`}>
-        <span class="pill-label">Difficulty</span>
-        <div class="difficulty-bars">
-          {[1, 2, 3].map((bar) => (
-            <span 
-              class={`diff-bar ${bar <= getDifficultyBars(difficulty!) ? 'active' : ''}`}
-              style={bar <= getDifficultyBars(difficulty!) ? `background-color: ${getDifficultyColor(difficulty!)}` : ''}
-            />
-          ))}
+    {
+      hasServings && (
+        <div class="meta-pill">
+          <svg
+            class="pill-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+          </svg>
+          <span class="pill-value">{servings} servings</span>
         </div>
-        <span class="difficulty-label">{difficulty}</span>
-      </div>
-    )}
+      )
+    }
 
-    {hasCuisine && (
-      <div class="meta-pill cuisine-pill">
-        <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M2 12h20"/>
-          <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
-        </svg>
-        <span class="pill-value">{cuisine}</span>
-      </div>
-    )}
+    {
+      hasDifficulty && (
+        <div
+          class="meta-pill difficulty-pill"
+          title={`Difficulty: ${difficulty}`}
+        >
+          <span class="pill-label">Difficulty</span>
+          <div class="difficulty-bars">
+            {[1, 2, 3].map((bar) => (
+              <span
+                class={`diff-bar ${bar <= getDifficultyBars(difficulty!) ? "active" : ""}`}
+                style={
+                  bar <= getDifficultyBars(difficulty!)
+                    ? `background-color: ${getDifficultyColor(difficulty!)}`
+                    : ""
+                }
+              />
+            ))}
+          </div>
+          <span class="difficulty-label">{difficulty}</span>
+        </div>
+      )
+    }
 
-    {hasDiets && diets.slice(0, 2).map((diet) => (
-      <div class="meta-pill diet-pill" data-diet={diet}>
-        <span class="pill-value">{diet.replace('Diet', '')}</span>
-      </div>
-    ))}
+    {
+      hasCuisine && (
+        <div class="meta-pill cuisine-pill">
+          <svg
+            class="pill-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M2 12h20" />
+            <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+          </svg>
+          <span class="pill-value">{cuisine}</span>
+        </div>
+      )
+    }
+
+    {
+      hasDiets &&
+        diets.slice(0, 2).map((diet) => (
+          <div class="meta-pill diet-pill" data-diet={diet}>
+            <span class="pill-value">{diet.replace("Diet", "")}</span>
+          </div>
+        ))
+    }
   </div>
 </div>
 
@@ -217,7 +277,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets) retu
   }
 
   .time-pill.cook .pill-icon {
-    color: #f97316;
+    color: #6b8f71;
   }
 
   .time-pill.total {

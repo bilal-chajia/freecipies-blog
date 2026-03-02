@@ -45,41 +45,45 @@ try {
           const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
           const sizes = "80px";
           return (
-          <a href={`/recipes/${recipe.slug}`} class="recipe-item">
-            <div class="recipe-content">
-              <h4 class="recipe-title">{recipe.label}</h4>
-              <div class="recipe-meta">
-                {recipe.categoryLabel && (
-                  <span
-                    class="category"
-                    style={`color: ${recipe.category?.color || "#666"}`}
-                  >
-                    {recipe.categoryLabel}
-                  </span>
-                )}
-                {recipe.recipeJson?.cookTime && (
-                  <>
-                    <span class="separator">•</span>
-                    <span class="cook-time">{recipe.recipeJson.cookTime}</span>
-                  </>
-                )}
+            <a href={`/recipes/${recipe.slug}`} class="recipe-item">
+              <div class="recipe-content">
+                <h4 class="recipe-title">{recipe.label}</h4>
+                <div class="recipe-meta">
+                  {recipe.categoryLabel && (
+                    <span
+                      class="category"
+                      style={`color: ${recipe.category?.color || "#666"}`}
+                    >
+                      {recipe.categoryLabel}
+                    </span>
+                  )}
+                  {recipe.recipeJson?.cookTime && (
+                    <>
+                      <span class="separator">•</span>
+                      <span class="cook-time">
+                        {recipe.recipeJson.cookTime}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-            {(selected.imageUrl || recipe.imageUrl) && (
-              <img
-                src={selected.imageUrl || recipe.imageUrl}
-                alt={selected.imageAlt || recipe.imageAlt || recipe.label}
-                width={selected.imageWidth || recipe.imageWidth || 80}
-                height={selected.imageHeight || recipe.imageHeight || 80}
-                srcset={srcSet || undefined}
-                sizes={srcSet ? sizes : undefined}
-                class="recipe-thumb"
-                loading="lazy"
-                style={selected.imageStyle || undefined}
-              />
-            )}
-          </a>
-        )})}
+              {(selected.imageUrl || recipe.imageUrl) && (
+                <img
+                  src={selected.imageUrl || recipe.imageUrl}
+                  alt={selected.imageAlt || recipe.imageAlt || recipe.label}
+                  width={selected.imageWidth || recipe.imageWidth || 80}
+                  height={selected.imageHeight || recipe.imageHeight || 80}
+                  srcset={srcSet || undefined}
+                  sizes={srcSet ? sizes : undefined}
+                  class="recipe-thumb"
+                  loading="lazy"
+                  decoding="async"
+                  style={selected.imageStyle || undefined}
+                />
+              )}
+            </a>
+          );
+        })}
       </div>
     ) : (
       <p class="no-recipes">More recipes coming soon!</p>

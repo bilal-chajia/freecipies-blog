@@ -338,6 +338,7 @@ export function hydrateArticle<T extends {
     ...seo,
     contentJson: safeParseJson(article.contentJson),
     recipeJson: safeParseJson(article.recipeJson),
+    recipe: safeParseJson(article.recipeJson), // Alias for RecipeContent.recipe
     roundupJson: safeParseJson(article.roundupJson),
     faqsJson: safeParseJson(article.faqsJson),
     label: article.headline, // Alias for UI consistency

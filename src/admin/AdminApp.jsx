@@ -24,6 +24,7 @@ const CategoryEditor = lazy(() => importWithRetry(() => import('./pages/categori
 const AuthorsList = lazy(() => importWithRetry(() => import('./pages/authors/AuthorsList')));
 const AuthorEditor = lazy(() => importWithRetry(() => import('./pages/authors/AuthorEditor')));
 const TagsList = lazy(() => importWithRetry(() => import('./pages/tags/TagsList')));
+const EquipmentList = lazy(() => importWithRetry(() => import('./pages/equipment/EquipmentList')));
 const MediaLibrary = lazy(() => importWithRetry(() => import('./pages/media/MediaLibrary')));
 const Settings = lazy(() => importWithRetry(() => import('./pages/settings/Settings')));
 const Login = lazy(() => importWithRetry(() => import('./pages/auth/Login')));
@@ -158,6 +159,9 @@ function AdminApp() {
 
               {/* Tags - inline editing in list */}
               <Route path="tags" element={<TagsList />} />
+
+              {/* Equipment */}
+              <Route path="equipment" element={<EquipmentList />} />
 
               {/* Media */}
               <Route path="media" element={<MediaLibrary />} />

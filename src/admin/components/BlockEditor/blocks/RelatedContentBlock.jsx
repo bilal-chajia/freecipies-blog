@@ -143,48 +143,44 @@ export const RelatedContentBlock = createReactBlockSpec(
             };
 
             const buildMeta = (item, itemType) => {
+                const parts = [];
                 if (itemType === 'recipe') {
-                    const meta = [];
-                    if (typeof item.total_time === 'number') meta.push(`${item.total_time} min`);
-                    if (item.difficulty) meta.push(String(item.difficulty));
-                    return meta.join(' | ');
+                    if (typeof item.total_time === 'number') parts.push(`${item.total_time} min`);
+                    if (item.difficulty) parts.push(String(item.difficulty));
                 }
                 if (itemType === 'article') {
-                    if (typeof item.reading_time === 'number') return `${item.reading_time} min read`;
+                    if (typeof item.reading_time === 'number') parts.push(`${item.reading_time} min read`);
                 }
                 if (itemType === 'roundup') {
-                    if (typeof item.item_count === 'number') return `${item.item_count} items`;
+                    if (typeof item.item_count === 'number') parts.push(`${item.item_count} items`);
                 }
-                return '';
+                return parts;
             };
 
             const getLayoutClasses = (layoutValue) => {
                 if (layoutValue === 'list') {
                     return {
-                        listClass: 'grid grid-cols-1 gap-3',
-                        cardClass: 'flex items-center gap-3',
-                        mediaClass: 'w-24 h-24 flex-shrink-0',
+                        listClass: 'flex flex-col',
+                        isList: true,
                         isCarousel: false,
                     };
                 }
                 if (layoutValue === 'carousel') {
                     return {
-                        listClass: 'grid grid-flow-col auto-cols-[minmax(220px,260px)] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory',
-                        cardClass: 'flex flex-col gap-3',
-                        mediaClass: 'w-full aspect-[4/3]',
+                        listClass: 'grid grid-flow-col auto-cols-[260px] gap-6 overflow-x-auto pb-2 snap-x snap-mandatory',
+                        isList: false,
                         isCarousel: true,
                     };
                 }
                 return {
-                    listClass: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4',
-                    cardClass: 'flex flex-col gap-3',
-                    mediaClass: 'w-full aspect-[4/3]',
+                    listClass: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6',
+                    isList: false,
                     isCarousel: false,
                 };
             };
 
             const renderPreviewCards = (groupsList, layoutValue) => {
-                const { listClass, cardClass, mediaClass, isCarousel } = getLayoutClasses(layoutValue);
+                const { listClass, isList, isCarousel } = getLayoutClasses(layoutValue);
                 return groupsList.map((group) => (
                     <div key={group.type} className="space-y-2">
                         {groupsList.length > 1 && (
@@ -195,39 +191,97 @@ export const RelatedContentBlock = createReactBlockSpec(
                         <div className={listClass}>
                             {group.items.map((item) => {
                                 const { url, srcSet, style } = resolveThumbnail(item.thumbnail);
-                                const meta = buildMeta(item, item.__type);
+                                const metaParts = buildMeta(item, item.__type);
+
+                                if (isList) {
+                                    // List layout — matching Stitch list design
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className="flex items-center gap-4 py-3 px-3 border-b border-border last:border-b-0 transition-colors hover:bg-accent/30"
+                                            style={{ borderRadius: '8px' }}
+                                        >
+                                            <div className="w-[90px] h-[90px] flex-shrink-0 rounded-lg overflow-hidden bg-muted">
+                                                {url ? (
+                                                    <img
+                                                        src={url}
+                                                        alt={item.headline || ''}
+                                                        srcSet={srcSet || undefined}
+                                                        sizes="90px"
+                                                        loading="lazy"
+                                                        className="w-full h-full object-cover"
+                                                        style={style}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0 space-y-1">
+                                                <div
+                                                    className="text-[11px] font-bold uppercase tracking-wider"
+                                                    style={{ color: normalizeCategoryColor(item.categoryColor) }}
+                                                >
+                                                    {item.categoryName || TYPE_LABEL_SINGULAR[item.__type] || group.label}
+                                                </div>
+                                                <div className="text-sm font-bold text-foreground line-clamp-2">
+                                                    {item.headline}
+                                                </div>
+                                                {metaParts.length > 0 && (
+                                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                        {metaParts.map((part, i) => (
+                                                            <span key={i} className="flex items-center gap-1.5">
+                                                                {i > 0 && <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />}
+                                                                {part}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                // Grid / Carousel card — matching Stitch design
                                 return (
                                     <div
                                         key={item.id}
-                                        className={`relative border border-border rounded-xl bg-card p-3 shadow-sm transition ${cardClass} ${isCarousel ? 'snap-start' : ''}`}
+                                        className={`flex flex-col h-full border border-border overflow-hidden bg-card shadow-sm transition hover:shadow-md ${isCarousel ? 'snap-start' : ''}`}
+                                        style={{ borderRadius: '12px' }}
                                     >
-                                        <div className={`${mediaClass} rounded-lg overflow-hidden bg-muted`}>
+                                        <div className="relative w-full overflow-hidden bg-muted" style={{ paddingTop: isCarousel ? '62.5%' : '100%' }}>
                                             {url ? (
                                                 <img
                                                     src={url}
                                                     alt={item.headline || ''}
                                                     srcSet={srcSet || undefined}
-                                                    sizes={layoutValue === 'list' ? '120px' : '(max-width: 768px) 100vw, 260px'}
+                                                    sizes={isCarousel ? '260px' : '(max-width: 768px) 50vw, 280px'}
                                                     loading="lazy"
-                                                    className="w-full h-full object-cover"
+                                                    className="absolute inset-0 w-full h-full object-cover"
                                                     style={style}
                                                 />
                                             ) : (
-                                                <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50" />
+                                                <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-muted to-muted/50" />
                                             )}
                                         </div>
-                                        <div className="flex-1 min-w-0 space-y-1">
+                                        <div className="flex flex-col flex-grow p-4">
                                             <div
-                                                className="text-[11px] font-bold uppercase tracking-wide text-white px-2 py-1 rounded w-fit"
-                                                style={{ backgroundColor: normalizeCategoryColor(item.categoryColor) }}
+                                                className="text-[11px] font-bold uppercase tracking-wider mb-1.5"
+                                                style={{ color: normalizeCategoryColor(item.categoryColor) }}
                                             >
                                                 {item.categoryName || TYPE_LABEL_SINGULAR[item.__type] || group.label}
                                             </div>
-                                            <div className="text-sm font-semibold text-foreground line-clamp-2">
+                                            <div className="text-sm font-bold text-foreground line-clamp-2 mb-2">
                                                 {item.headline}
                                             </div>
-                                            {meta && (
-                                                <div className="text-xs text-muted-foreground">{meta}</div>
+                                            {metaParts.length > 0 && (
+                                                <div className="mt-auto pt-2 border-t border-border flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                    {metaParts.map((part, i) => (
+                                                        <span key={i} className="flex items-center gap-1.5">
+                                                            {i > 0 && <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />}
+                                                            {part}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -265,9 +319,12 @@ export const RelatedContentBlock = createReactBlockSpec(
                                 No related content selected yet. Use the Block tab to configure.
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 {savedTitleValue && (
-                                    <div className="text-base font-semibold text-foreground">{savedTitleValue}</div>
+                                    <div>
+                                        <div className="text-base font-bold text-foreground">{savedTitleValue}</div>
+                                        <div className="mt-1.5 w-12 h-1 rounded-full" style={{ background: '#ff6600' }} />
+                                    </div>
                                 )}
                                 {renderPreviewCards(savedGroups, savedLayout)}
                             </div>

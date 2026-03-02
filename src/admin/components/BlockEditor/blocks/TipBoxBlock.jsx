@@ -36,26 +36,46 @@ const alertConfig = {
     tip: {
         icon: Lightbulb,
         label: 'Tip',
-        colors: 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-200',
-        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        bg: 'linear-gradient(180deg, #f2fcf5 0%, #ffffff 100%)',
+        borderColor: '#e5e7eb',
+        iconColor: '#10b981',
+        iconBg: 'rgba(16, 185, 129, 0.12)',
+        titleColor: '#111827',
+        subtitleColor: '#6b7280',
+        textColor: '#374151',
     },
     warning: {
         icon: AlertTriangle,
         label: 'Warning',
-        colors: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-200',
-        iconColor: 'text-amber-600 dark:text-amber-400',
+        bg: 'linear-gradient(180deg, #fffbeb 0%, #ffffff 100%)',
+        borderColor: '#e5e7eb',
+        iconColor: '#f59e0b',
+        iconBg: 'rgba(245, 158, 11, 0.12)',
+        titleColor: '#111827',
+        subtitleColor: '#6b7280',
+        textColor: '#374151',
     },
     info: {
         icon: Info,
         label: 'Info',
-        colors: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-200',
-        iconColor: 'text-blue-600 dark:text-blue-400',
+        bg: 'linear-gradient(180deg, #eff6ff 0%, #ffffff 100%)',
+        borderColor: '#e5e7eb',
+        iconColor: '#3b82f6',
+        iconBg: 'rgba(59, 130, 246, 0.12)',
+        titleColor: '#111827',
+        subtitleColor: '#6b7280',
+        textColor: '#374151',
     },
     note: {
         icon: AlertCircle,
         label: 'Note',
-        colors: 'bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-200',
-        iconColor: 'text-slate-600 dark:text-slate-400',
+        bg: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+        borderColor: '#e5e7eb',
+        iconColor: '#64748b',
+        iconBg: 'rgba(100, 116, 139, 0.12)',
+        titleColor: '#111827',
+        subtitleColor: '#6b7280',
+        textColor: '#374151',
     },
 };
 
@@ -128,6 +148,9 @@ export const Alert = createReactBlockSpec(
             type: {
                 default: 'warning',
                 values: alertTypes,
+            },
+            title: {
+                default: '',
             },
         },
         content: 'inline',
@@ -204,26 +227,127 @@ export const Alert = createReactBlockSpec(
                     }}
                 >
                     <div
-                        className={cn(
-                            'relative flex gap-3 p-4 rounded-lg border',
-                            config.colors
-                        )}
+                        style={{
+                            background: config.bg,
+                            border: `1px solid ${config.borderColor}`,
+                            borderRadius: '16px',
+                            boxShadow: '0 4px 20px -4px rgba(0,0,0,0.03)',
+                        }}
                         data-alert-type={alertType}
                     >
-                        {/* Icon */}
-                        <div className={cn('flex-shrink-0 mt-0.5', config.iconColor)}>
-                            <Icon className="w-5 h-5" />
+                        {/* Header Area */}
+                        <div style={{
+                            padding: '24px 24px 20px 24px',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '16px',
+                            borderBottom: '1px solid rgba(0,0,0,0.04)',
+                        }}>
+                            {/* Icon Badge */}
+                            <div
+                                style={{
+                                    width: 44,
+                                    height: 44,
+                                    minWidth: 44,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: config.iconColor,
+                                    borderRadius: '12px',
+                                    color: 'white',
+                                    boxShadow: `0 4px 12px ${config.iconColor}30`,
+                                }}
+                            >
+                                <Icon className="w-[20px] h-[20px]" />
+                            </div>
+
+                            {/* Editable Title/Subtitle Area */}
+                            <div className="flex-1 min-w-0 pt-[2px]">
+                                {/* Editable Title */}
+                                <input
+                                    type="text"
+                                    style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        fontSize: '18px',
+                                        fontWeight: 700,
+                                        marginBottom: '4px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        outline: 'none',
+                                        padding: 0,
+                                        color: config.titleColor,
+                                        letterSpacing: '-0.01em',
+                                        lineHeight: 1.2,
+                                    }}
+                                    placeholder="Title | Subtitle (optional)"
+                                    defaultValue={block.props.title || ''}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onPointerDownCapture={(e) => e.stopPropagation()}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onFocus={(e) => e.stopPropagation()}
+                                    onBlur={(e) => {
+                                        const newTitle = e.target.value.trim();
+                                        if (newTitle !== (block.props.title || '')) {
+                                            editor.updateBlock(block, {
+                                                type: 'alert',
+                                                props: { ...block.props, title: newTitle },
+                                            });
+                                        }
+                                    }}
+                                    onKeyDown={(e) => {
+                                        e.stopPropagation();
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            e.target.blur();
+                                        }
+                                    }}
+                                />
+                                <div style={{
+                                    fontSize: '14px',
+                                    color: config.subtitleColor,
+                                    fontWeight: 400,
+                                }}>
+                                    {block.props.title?.includes('|') ? block.props.title.split('|')[1].trim() : config.label}
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
+                        {/* Content Area */}
+                        <div style={{ padding: '24px' }}>
                             <div
-                                ref={contentRef}
+                                ref={(node) => {
+                                    // Attach BlockNote's contentRef
+                                    if (typeof contentRef === 'function') {
+                                        contentRef(node);
+                                    } else if (contentRef) {
+                                        contentRef.current = node;
+                                    }
+                                    // Attach paste interceptor
+                                    if (node && !node.__pasteHandlerAttached) {
+                                        node.__pasteHandlerAttached = true;
+                                        node.addEventListener('paste', (e) => {
+                                            const text = e.clipboardData?.getData('text/plain');
+                                            if (text && text.includes('\n')) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                // Insert as plain text via the editor's underlying ProseMirror view
+                                                const pmView = editor._tiptapEditor?.view;
+                                                if (pmView) {
+                                                    const { state, dispatch } = pmView;
+                                                    const tr = state.tr.insertText(text);
+                                                    dispatch(tr);
+                                                }
+                                            }
+                                        }, true);
+                                    }
+                                }}
                                 className="prose prose-sm max-w-none focus:outline-none"
+                                style={{ color: '#374151' }}
                             />
                         </div>
                     </div>
-                </BlockWrapper>
+                </BlockWrapper >
             );
         },
     }

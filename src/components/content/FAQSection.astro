@@ -1,9 +1,9 @@
 ---
 /**
- * FAQSection - Reusable FAQ Accordion Component
+ * FAQSection - Premium Recipe Blog FAQ Accordion
  *
  * A modern accordion FAQ section with smooth animations.
- * Accepts FAQ data in either {q, a} or {question, answer} format.
+ * Styled for recipe blogs: Playfair Display headings, Lora body text.
  */
 
 interface FaqItem {
@@ -20,7 +20,6 @@ interface Props {
 
 const { faqs: faqsInput, title = "Frequently Asked Questions" } = Astro.props;
 
-// Parse faqsJson if it's a string
 const faqs: FaqItem[] = (() => {
     if (!faqsInput) return [];
     if (Array.isArray(faqsInput)) return faqsInput;
@@ -35,112 +34,273 @@ const faqs: FaqItem[] = (() => {
     return [];
 })();
 
-// Early return if no FAQs
 if (faqs.length === 0) {
     return null;
 }
 ---
 
-<section class="content-section faqs-section my-12">
-    <h2
-        class="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3"
-    >
-        <span class="text-2xl">❓</span>
-        {title}
-    </h2>
+<section class="faq-section" id="faq-section">
+    <div class="faq-header">
+        <div class="faq-icon-badge">
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        </div>
+        <h2 class="faq-title">{title}</h2>
+    </div>
 
-    <div class="faq-accordion space-y-3">
+    <div class="faq-list" id="faq-accordion">
         {
             faqs.map((faq, idx) => (
-                <details class="faq-item group rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 ease-out">
-                    <summary class="flex items-center gap-4 cursor-pointer p-5 select-none list-none [&::-webkit-details-marker]:hidden">
-                        <span class="faq-number text-base min-w-[32px]">
-                            {String(idx + 1).padStart(2, "0")}
-                        </span>
-                        <span class="flex-1 font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                <div class="faq-item" data-faq-item>
+                    <button
+                        class="faq-question"
+                        type="button"
+                        aria-expanded="false"
+                    >
+                        <span class="faq-q-text">
                             {faq.q || faq.question || ""}
                         </span>
-                        <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                        <span class="faq-toggle">
                             <svg
-                                class="faq-chevron w-4 h-4 text-orange-500 transition-transform duration-300"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
-                                viewBox="0 0 24 24"
+                                stroke-width="2.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
                             >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2.5"
-                                    d="M19 9l-7 7-7-7"
-                                />
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
                             </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer-wrapper">
+                        <div class="faq-answer">
+                            <p>{faq.a || faq.answer || ""}</p>
                         </div>
-                    </summary>
-                    <div class="faq-answer px-5 pb-5 pl-[68px] text-gray-600 leading-relaxed">
-                        {faq.a || faq.answer || ""}
                     </div>
-                </details>
+                </div>
             ))
         }
     </div>
 </section>
 
 <style>
-    .faq-accordion {
-        --faq-accent: #f97316;
-        --faq-bg: #fefefe;
-        --faq-hover: #fff7ed;
+    .faq-section {
+        margin: 3rem 0;
     }
 
-    .faq-accordion .faq-item {
-        background: var(--faq-bg);
-        border: 1px solid rgba(0, 0, 0, 0.06);
-        overflow: hidden;
+    /* ── Header ── */
+    .faq-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 1.5rem;
     }
 
-    .faq-accordion .faq-item:hover {
-        background: var(--faq-hover);
-        border-color: rgba(249, 115, 22, 0.15);
+    .faq-icon-badge {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #2d6a4f;
+        border-radius: 50%;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(45, 106, 79, 0.25);
     }
 
-    .faq-accordion .faq-item[open] {
-        background: linear-gradient(135deg, #fff7ed 0%, #fff 100%);
-        border-color: rgba(249, 115, 22, 0.2);
+    .faq-title {
+        font-family: "Playfair Display", Georgia, serif;
+        font-size: clamp(1.4rem, 1.2rem + 0.8vw, 1.75rem);
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+        padding: 0;
+        border: none;
     }
 
-    .faq-accordion .faq-item summary {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* ── Accordion list ── */
+    .faq-list {
+        display: flex;
+        flex-direction: column;
     }
 
-    .faq-accordion .faq-item[open] summary {
-        border-bottom: 1px solid rgba(249, 115, 22, 0.1);
+    .faq-item {
+        border-bottom: 1px solid #e5e7eb;
     }
 
-    .faq-accordion .faq-number {
-        background: linear-gradient(135deg, var(--faq-accent) 0%, #ea580c 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .faq-item:first-child {
+        border-top: 1px solid #e5e7eb;
+    }
+
+    /* ── Question (Button) ── */
+    .faq-question {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        width: 100%;
+        cursor: pointer;
+        padding: 1.15rem 0;
+        background: none;
+        border: none;
+        text-align: left;
+        user-select: none;
+        transition: color 0.2s ease;
+    }
+
+    .faq-q-text {
+        font-family: "Lora", Georgia, serif;
+        font-size: clamp(0.975rem, 0.925rem + 0.2vw, 1.0625rem);
         font-weight: 600;
+        color: #1f2937;
+        line-height: 1.5;
+        flex: 1;
     }
 
-    .faq-accordion .faq-item[open] .faq-chevron {
-        transform: rotate(180deg);
-        color: var(--faq-accent);
+    .faq-item:hover .faq-q-text {
+        color: #2d6a4f;
     }
 
-    .faq-accordion .faq-answer {
-        animation: faqFadeIn 0.3s ease-out;
+    /* ── Toggle icon (plus → X via rotation) ── */
+    .faq-toggle {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #f3f4f6;
+        color: #6b7280;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    @keyframes faqFadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-8px);
+    .faq-item:hover .faq-toggle {
+        background: #ecfdf5;
+        color: #2d6a4f;
+    }
+
+    .faq-item.is-open .faq-toggle {
+        background: #2d6a4f;
+        color: #fff;
+        transform: rotate(45deg);
+    }
+
+    /* ── Answer wrapper (animated) ── */
+    .faq-answer-wrapper {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition:
+            max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.3s ease;
+    }
+
+    .faq-item.is-open .faq-answer-wrapper {
+        opacity: 1;
+    }
+
+    .faq-answer {
+        padding: 0 0 1.25rem 0;
+    }
+
+    .faq-answer p {
+        font-family: "Lora", Georgia, serif;
+        font-size: clamp(0.925rem, 0.875rem + 0.2vw, 1rem);
+        color: #4b5563;
+        line-height: 1.7;
+        margin: 0;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 640px) {
+        .faq-question {
+            padding: 1rem 0;
         }
-        to {
-            opacity: 1;
-            transform: translateY(0);
+        .faq-toggle {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
         }
     }
 </style>
+
+<script>
+    function initFaqAccordion() {
+        const items = document.querySelectorAll("[data-faq-item]");
+
+        items.forEach((item) => {
+            const btn = item.querySelector(".faq-question");
+            const wrapper = item.querySelector(".faq-answer-wrapper");
+            const inner = item.querySelector(".faq-answer");
+            if (!btn || !wrapper || !inner) return;
+
+            btn.addEventListener("click", () => {
+                const isOpen = item.classList.contains("is-open");
+
+                // Close all other items first
+                items.forEach((other) => {
+                    if (other !== item && other.classList.contains("is-open")) {
+                        closeItem(other);
+                    }
+                });
+
+                // Toggle current item
+                if (isOpen) {
+                    closeItem(item);
+                } else {
+                    openItem(item);
+                }
+            });
+        });
+
+        function openItem(item: Element) {
+            const wrapper = item.querySelector(
+                ".faq-answer-wrapper",
+            ) as HTMLElement;
+            const inner = item.querySelector(".faq-answer") as HTMLElement;
+            const btn = item.querySelector(".faq-question");
+            if (!wrapper || !inner) return;
+
+            item.classList.add("is-open");
+            btn?.setAttribute("aria-expanded", "true");
+
+            // Animate open
+            const height = inner.offsetHeight;
+            wrapper.style.maxHeight = height + "px";
+        }
+
+        function closeItem(item: Element) {
+            const wrapper = item.querySelector(
+                ".faq-answer-wrapper",
+            ) as HTMLElement;
+            const btn = item.querySelector(".faq-question");
+            if (!wrapper) return;
+
+            item.classList.remove("is-open");
+            btn?.setAttribute("aria-expanded", "false");
+            wrapper.style.maxHeight = "0px";
+        }
+    }
+
+    // Init on page load and Astro navigation
+    initFaqAccordion();
+    document.addEventListener("astro:after-swap", initFaqAccordion);
+</script>

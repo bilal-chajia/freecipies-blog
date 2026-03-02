@@ -195,6 +195,7 @@ export interface TocSettings {
   defaultOpen: boolean;
   showJumpButton: boolean;
   accentColor: string;
+  maxDepth: number;
 }
 
 export const TOC_DEFAULTS: TocSettings = {
@@ -204,6 +205,7 @@ export const TOC_DEFAULTS: TocSettings = {
   defaultOpen: true,
   showJumpButton: true,
   accentColor: '#f97316',
+  maxDepth: 4,
 };
 
 const TOC_SETTINGS_KEY = 'toc_settings';

@@ -1,6 +1,6 @@
 ---
-import type { ImageVariants } from '@shared/types/images';
-import { getBestVariantUrl, getSrcSet } from '@shared/types/images';
+import type { ImageVariants } from "@shared/types/images";
+import { getBestVariantUrl, getSrcSet } from "@shared/types/images";
 
 type BeforeAfterImage = {
   media_id: number;
@@ -11,22 +11,22 @@ type BeforeAfterImage = {
 
 const { block } = Astro.props as {
   block: {
-    type: 'before_after';
-    layout?: 'slider' | 'side_by_side';
+    type: "before_after";
+    layout?: "slider" | "side_by_side";
     before: BeforeAfterImage;
     after: BeforeAfterImage;
   };
 };
 
-const layout = block.layout || 'slider';
+const layout = block.layout || "slider";
 const before = block.before;
 const after = block.after;
 const beforeUrl = before?.variants ? getBestVariantUrl(before) : null;
 const afterUrl = after?.variants ? getBestVariantUrl(after) : null;
-const beforeSrcSet = before?.variants ? getSrcSet(before) : '';
-const afterSrcSet = after?.variants ? getSrcSet(after) : '';
-const beforeLabel = before?.label || 'Before';
-const afterLabel = after?.label || 'After';
+const beforeSrcSet = before?.variants ? getSrcSet(before) : "";
+const afterSrcSet = after?.variants ? getSrcSet(after) : "";
+const beforeLabel = before?.label || "Before";
+const afterLabel = after?.label || "After";
 const pickVariant = (image?: BeforeAfterImage) => {
   if (!image?.variants) return null;
   return (
@@ -39,67 +39,100 @@ const pickVariant = (image?: BeforeAfterImage) => {
   );
 };
 const baseVariant = pickVariant(after) || pickVariant(before);
-const aspectRatio = baseVariant?.width && baseVariant?.height
-  ? `${baseVariant.width} / ${baseVariant.height}`
-  : '16 / 9';
+const aspectRatio =
+  baseVariant?.width && baseVariant?.height
+    ? `${baseVariant.width} / ${baseVariant.height}`
+    : "16 / 9";
 ---
 
-{before && after && (
-  <section
-    class:list={["before-after", `layout-${layout}`]}
-    data-before-after
-    style={`--ba-aspect: ${aspectRatio};`}
-  >
-    {layout === 'side_by_side' ? (
-      <div class="ba-grid">
-        <figure>
-          {beforeUrl ? (
-            <img src={beforeUrl} alt={before.alt || ''} srcset={beforeSrcSet || undefined} sizes="(max-width: 768px) 100vw, 50vw" />
-          ) : (
-            <div class="ba-placeholder" />
-          )}
-          <figcaption>{beforeLabel}</figcaption>
-        </figure>
-        <figure>
-          {afterUrl ? (
-            <img src={afterUrl} alt={after.alt || ''} srcset={afterSrcSet || undefined} sizes="(max-width: 768px) 100vw, 50vw" />
-          ) : (
-            <div class="ba-placeholder" />
-          )}
-          <figcaption>{afterLabel}</figcaption>
-        </figure>
-      </div>
-    ) : (
-      <div class="ba-slider">
-        <div class="ba-images">
-          {afterUrl ? (
-            <img class="ba-image" src={afterUrl} alt={after.alt || ''} srcset={afterSrcSet || undefined} sizes="(max-width: 768px) 100vw, 720px" />
-          ) : (
-            <div class="ba-placeholder" />
-          )}
-          <div class="ba-before">
+{
+  before && after && (
+    <section
+      class:list={["before-after", `layout-${layout}`]}
+      data-before-after
+      style={`--ba-aspect: ${aspectRatio};`}
+    >
+      {layout === "side_by_side" ? (
+        <div class="ba-grid">
+          <figure>
             {beforeUrl ? (
-              <img class="ba-image" src={beforeUrl} alt={before.alt || ''} srcset={beforeSrcSet || undefined} sizes="(max-width: 768px) 100vw, 720px" />
+              <img
+                src={beforeUrl}
+                alt={before.alt || ""}
+                srcset={beforeSrcSet || undefined}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                loading="lazy"
+                decoding="async"
+              />
             ) : (
               <div class="ba-placeholder" />
             )}
+            <figcaption>{beforeLabel}</figcaption>
+          </figure>
+          <figure>
+            {afterUrl ? (
+              <img
+                src={afterUrl}
+                alt={after.alt || ""}
+                srcset={afterSrcSet || undefined}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <div class="ba-placeholder" />
+            )}
+            <figcaption>{afterLabel}</figcaption>
+          </figure>
+        </div>
+      ) : (
+        <div class="ba-slider">
+          <div class="ba-images">
+            {afterUrl ? (
+              <img
+                class="ba-image"
+                src={afterUrl}
+                alt={after.alt || ""}
+                srcset={afterSrcSet || undefined}
+                sizes="(max-width: 768px) 100vw, 720px"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <div class="ba-placeholder" />
+            )}
+            <div class="ba-before">
+              {beforeUrl ? (
+                <img
+                  class="ba-image"
+                  src={beforeUrl}
+                  alt={before.alt || ""}
+                  srcset={beforeSrcSet || undefined}
+                  sizes="(max-width: 768px) 100vw, 720px"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <div class="ba-placeholder" />
+              )}
+            </div>
+            <div class="ba-handle" aria-hidden="true">
+              <div class="ba-handle-knob" />
+            </div>
           </div>
-          <div class="ba-handle" aria-hidden="true">
-            <div class="ba-handle-knob"></div>
+          <div class="ba-labels">
+            <span>{beforeLabel}</span>
+            <span>{afterLabel}</span>
           </div>
         </div>
-        <div class="ba-labels">
-          <span>{beforeLabel}</span>
-          <span>{afterLabel}</span>
-        </div>
-      </div>
-    )}
-  </section>
-)}
+      )}
+    </section>
+  )
+}
 
 <script>
-  document.querySelectorAll('[data-before-after]').forEach((el) => {
-    const images = el.querySelector('.ba-images');
+  document.querySelectorAll("[data-before-after]").forEach((el) => {
+    const images = el.querySelector(".ba-images");
     if (!images) return;
     let isDragging = false;
 
@@ -107,29 +140,29 @@ const aspectRatio = baseVariant?.width && baseVariant?.height
       const rect = images.getBoundingClientRect();
       const raw = ((clientX - rect.left) / rect.width) * 100;
       const clamped = Math.min(100, Math.max(0, raw));
-      el.style.setProperty('--ba-position', `${clamped}%`);
+      el.style.setProperty("--ba-position", `${clamped}%`);
     };
 
     const onPointerMove = (event) => {
-      if (event.pointerType === 'mouse' || isDragging) {
+      if (event.pointerType === "mouse" || isDragging) {
         setPosition(event.clientX);
       }
     };
 
-    images.addEventListener('pointerdown', (event) => {
+    images.addEventListener("pointerdown", (event) => {
       isDragging = true;
       images.setPointerCapture?.(event.pointerId);
       setPosition(event.clientX);
     });
 
-    images.addEventListener('pointermove', onPointerMove);
+    images.addEventListener("pointermove", onPointerMove);
 
-    images.addEventListener('pointerleave', () => {
+    images.addEventListener("pointerleave", () => {
       if (!isDragging) return;
       isDragging = false;
     });
 
-    window.addEventListener('pointerup', () => {
+    window.addEventListener("pointerup", () => {
       isDragging = false;
     });
   });
@@ -222,7 +255,7 @@ const aspectRatio = baseVariant?.width && baseVariant?.height
 
   .ba-handle-knob::before,
   .ba-handle-knob::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 50%;
     width: 0;

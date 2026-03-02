@@ -3,6 +3,7 @@ import { Label } from '@/ui/label.jsx';
 import { Button } from '@/ui/button.jsx';
 import { Switch } from '@/ui/switch.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select.jsx';
 import ColorPicker from '@/components/ColorPicker';
 import BrandingCards from '@/components/BrandingCards';
 import { brandingAPI } from '../../../services/api';
@@ -227,6 +228,29 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                             checked={formData.tocDefaultOpen ?? true}
                             onCheckedChange={(checked) => handleInputChange('tocDefaultOpen', checked)}
                         />
+                    </div>
+
+                    {/* Heading Depth Selection */}
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/40">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-medium">Heading Depth</Label>
+                            <p className="text-[11px] text-muted-foreground">
+                                Limit which sub-headings appear in the TOC
+                            </p>
+                        </div>
+                        <Select
+                            value={String(formData.tocMaxDepth ?? 4)}
+                            onValueChange={(val) => handleInputChange('tocMaxDepth', parseInt(val))}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select depth" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="2">H2 Only (Top level)</SelectItem>
+                                <SelectItem value="3">Up to H3</SelectItem>
+                                <SelectItem value="4">Up to H4</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     {/* Jump to Recipe Button */}

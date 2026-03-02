@@ -1,0 +1,134 @@
+---
+// src/pages/api/preview/render.astro
+import RecipeLayout from "../../../layouts/RecipeLayout.astro";
+import { getAuthorById } from "@modules/authors/services/authors.service";
+import { getCategoryById } from "@modules/categories/services/categories.service";
+import { getArticleBySlug } from "@modules/articles/services/articles.service";
+
+if (Astro.request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+}
+
+let formData;
+try {
+    formData = await Astro.request.json();
+} catch (e) {
+    return new Response("Invalid JSON", { status: 400 });
+}
+
+const db = Astro.locals.runtime?.env?.DB;
+let author = null;
+let category = null;
+let savedArticle = null;
+
+if (db) {
+    // Fetch the saved article from DB to get server-side cached fields
+    // (cachedEquipmentJson, cachedTocJson, faqsJson, etc.)
+    if (formData.slug) {
+        savedArticle = await getArticleBySlug(db, formData.slug).catch(
+            () => null,
+        );
+    }
+
+    if (formData.authorId) {
+        author = await getAuthorById(db, formData.authorId).catch(() => null);
+    }
+    if (formData.categoryId) {
+        category = await getCategoryById(db, formData.categoryId).catch(
+            () => null,
+        );
+    }
+}
+
+// --- Parse recipeJson safely with defaults ---
+let parsedRecipe = {};
+try {
+    parsedRecipe =
+        typeof formData.recipeJson === "string"
+            ? JSON.parse(formData.recipeJson || "{}")
+            : formData.recipeJson || {};
+} catch (e) {
+    console.warn("[preview/render] Failed to parse recipeJson:", e);
+}
+
+const recipeJson = JSON.stringify({
+    ingredients: [],
+    instructions: [],
+    equipment: [],
+    ...parsedRecipe,
+});
+
+// --- Parse contentJson safely ---
+let contentJson = [];
+try {
+    contentJson =
+        typeof formData.contentJson === "string"
+            ? JSON.parse(formData.contentJson || "[]")
+            : formData.contentJson || [];
+} catch (e) {
+    console.warn("[preview/render] Failed to parse contentJson:", e);
+}
+
+// --- Parse imagesJson safely ---
+const imagesJson =
+    typeof formData.imagesData === "string"
+        ? formData.imagesData
+        : JSON.stringify({
+              cover: { url: formData.coverUrl },
+              ...formData.imagesData,
+          });
+
+// Use saved article's cached fields when available (these are built server-side on save)
+const cachedEquipmentJson = savedArticle?.cachedEquipmentJson ?? null;
+const cachedTocJson = savedArticle?.cachedTocJson ?? null;
+const faqsJson = savedArticle?.faqsJson ?? formData.faqsJson ?? null;
+
+// Format the data exactly as RecipeLayout.astro expects on the `recipe` object
+const recipe = {
+    // Core identifiers
+    id: savedArticle?.id || "preview",
+    slug: formData.slug || "preview",
+
+    // Title & text
+    headline: formData.label || "Preview Title",
+    label: formData.label || "Preview Title",
+    shortDescription: formData.summary || "Preview Description",
+    tldr: formData.tldr || null,
+
+    // Type
+    type: formData.type || "recipe",
+
+    // JSON data blobs  (form data overrides saved for editable fields)
+    recipeJson: recipeJson,
+    contentJson: contentJson,
+    imagesJson: imagesJson,
+
+    // Server-side cached fields  (always from saved article)
+    faqsJson: faqsJson,
+    cachedEquipmentJson: cachedEquipmentJson,
+    cachedTocJson: cachedTocJson,
+
+    // SEO
+    metaTitle: formData.metaTitle,
+    metaDescription: formData.metaDescription,
+
+    // Images
+    imageUrl: formData.coverUrl || undefined,
+    imageAlt: formData.label || "Preview Image",
+
+    // Category references (hydrated from DB or formData)
+    categoryLabel: category?.label || formData.categoryLabel || null,
+    categorySlug: category?.slug || formData.categorySlug || null,
+
+    // Author references
+    authorName: author?.name || formData.authorName || null,
+
+    // Dates
+    publishedAt: formData.publishedAt || savedArticle?.publishedAt || null,
+
+    // Stats
+    viewCount: savedArticle?.viewCount || 0,
+};
+---
+
+<RecipeLayout recipe={recipe} author={author} category={category} />

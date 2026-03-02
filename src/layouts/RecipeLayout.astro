@@ -1,6 +1,6 @@
 ---
 import Layout from "./Layout.astro";
-import type { Article, Author, FaqItem, Category } from "../types";
+import type { Category } from "@modules/categories/schema/categories.schema";
 import SocialShareBar from "../components/SocialShareBar.astro";
 import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
 import PopularRecipes from "../components/PopularRecipes.astro";
@@ -10,6 +10,7 @@ import HeroImage from "../components/content/HeroImage.astro";
 import RecipeMetaPills from "../components/content/RecipeMetaPills.astro";
 import IngredientsSection from "../components/content/IngredientsSection.astro";
 import InstructionsSection from "../components/content/InstructionsSection.astro";
+import EquipmentSection from "../components/content/EquipmentSection.astro";
 import NutritionFacts from "../components/content/NutritionFacts.astro";
 import FAQSection from "../components/content/FAQSection.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
@@ -20,9 +21,14 @@ import {
   type TocSettings,
 } from "@modules/settings/services/settings.service";
 
+/**
+ * Props use Record<string, any> because recipe & author arrive fully hydrated
+ * with computed fields (label, metaTitle, imageUrl, authorName, categoryLabel,
+ * job, etc.) that don't exist on the raw DB schema types.
+ */
 interface Props {
-  recipe: Article;
-  author?: Author | null;
+  recipe: Record<string, any>;
+  author?: Record<string, any> | null;
   category?: Category | null;
 }
 
@@ -123,15 +129,13 @@ const contentBlocks = Array.isArray(recipe.contentJson)
               name: author?.name || recipe.authorName || "Freecipies",
             },
             datePublished: recipe.publishedAt,
-            prepTime: recipeJson.prep
-              ? `PT${recipeJson.prep}M`
-              : recipeJson.prepTime,
-            cookTime: recipeJson.cook
-              ? `PT${recipeJson.cook}M`
-              : recipeJson.cookTime,
+            prepTime: recipeJson.prep ? `PT${recipeJson.prep}M` : undefined,
+            cookTime: recipeJson.cook ? `PT${recipeJson.cook}M` : undefined,
             totalTime: recipeJson.total
               ? `PT${recipeJson.total}M`
-              : recipeJson.totalTime,
+              : recipeJson.prep || recipeJson.cook
+                ? `PT${(recipeJson.prep || 0) + (recipeJson.cook || 0)}M`
+                : undefined,
             recipeYield:
               recipeJson.recipeYield ||
               (recipeJson.servings
@@ -218,39 +222,6 @@ const contentBlocks = Array.isArray(recipe.contentJson)
           )
         }
 
-        <!-- Jump to Recipe Button -->
-        {
-          recipeJson && (
-            <div class="jump-to-recipe">
-              <a href="#recipe-card" class="jump-btn">
-                <svg
-                  class="icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M12 5v14M19 12l-7 7-7-7" />
-                </svg>
-                Jump to Recipe
-              </a>
-              <button type="button" class="print-btn" onclick="window.print()">
-                <svg
-                  class="icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
-                  <rect x="6" y="14" width="12" height="8" />
-                </svg>
-                Print
-              </button>
-            </div>
-          )
-        }
-
         <!-- Social Share Bar -->
         <SocialShareBar
           title={recipe.label}
@@ -279,6 +250,9 @@ const contentBlocks = Array.isArray(recipe.contentJson)
           will add value to my readers. Your support is appreciated!
         </div>
 
+        <!-- Table of Contents -->
+        <TableOfContents toc={recipe.cachedTocJson} settings={tocSettings} />
+
         <!-- Hero Image -->
         <HeroImage
           src={heroImage.imageUrl || recipe.imageUrl}
@@ -289,12 +263,6 @@ const contentBlocks = Array.isArray(recipe.contentJson)
           sizes={heroSizes}
           style={heroImage.imageStyle}
         />
-
-        <!-- Recipe Meta Info Pills -->
-        <RecipeMetaPills recipe={recipeJson} />
-
-        <!-- Table of Contents -->
-        <TableOfContents toc={recipe.cachedTocJson} settings={tocSettings} />
 
         <!-- TLDR / Quick Overview -->
         {
@@ -322,15 +290,38 @@ const contentBlocks = Array.isArray(recipe.contentJson)
           )
         }
 
-        {/* Recipe card is now rendered via ContentRenderer when 'recipe_card' block is present */}
-        {/* Fallback: if no recipe_card block in content, show recipe sections after content */}
-        {!contentBlocks.some(b => b.type === 'recipe_card' || b.type === 'main_recipe') && recipeJson && (
-          <>
-            <IngredientsSection ingredients={recipeJson.ingredients} />
-            <InstructionsSection instructions={recipeJson.instructions} />
-            <NutritionFacts nutrition={recipeJson.nutrition} variant="grid" class="mobile-only" />
-          </>
-        )}
+        {
+          /* Recipe card is now rendered via ContentRenderer when 'recipe_card' block is present */
+        }
+        {
+          /* Fallback: if no recipe_card block in content, show recipe sections after content */
+        }
+        {
+          !contentBlocks.some(
+            (b: any) => b.type === "recipe_card" || b.type === "main_recipe",
+          ) &&
+            recipeJson && (
+              <>
+                <IngredientsSection ingredients={recipeJson.ingredients} />
+                <InstructionsSection instructions={recipeJson.instructions} />
+                <EquipmentSection
+                  equipment={
+                    (typeof recipe.cachedEquipmentJson === "string"
+                      ? JSON.parse(recipe.cachedEquipmentJson || "[]")
+                      : recipe.cachedEquipmentJson) ||
+                    recipeJson?.equipment ||
+                    []
+                  }
+                />
+                <div class="mobile-only">
+                  <NutritionFacts
+                    nutrition={recipeJson.nutrition}
+                    variant="label"
+                  />
+                </div>
+              </>
+            )
+        }
 
         <!-- FAQs - Modern Accordion -->
         <FAQSection faqs={recipe.faqsJson} />
@@ -340,11 +331,9 @@ const contentBlocks = Array.isArray(recipe.contentJson)
       <aside class="sidebar">
         <div class="sidebar-sticky">
           <!-- Nutrition Facts (desktop) -->
-          <NutritionFacts
-            nutrition={recipeJson?.nutrition}
-            variant="list"
-            class="desktop-only"
-          />
+          <div class="desktop-only">
+            <NutritionFacts nutrition={recipeJson?.nutrition} variant="grid" />
+          </div>
 
           <!-- Popular Recipes -->
           <PopularRecipes currentSlug={recipe.slug} limit={5} />
@@ -385,10 +374,10 @@ const contentBlocks = Array.isArray(recipe.contentJson)
   .recipe-container {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 2rem clamp(1rem, 3vw, 2rem);
+    padding: clamp(0px, 2vw, 2rem) clamp(1rem, 3vw, 2rem);
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: clamp(1.5rem, 3vw, 2rem);
   }
 
   @media (min-width: 1024px) {
@@ -400,7 +389,8 @@ const contentBlocks = Array.isArray(recipe.contentJson)
   /* Main Content */
   .main-content {
     background: #fff;
-    padding: 1rem 0;
+    padding: clamp(1rem, 2vw, 1rem) 0;
+    min-width: 0; /* prevent grid blowout */
   }
 
   /* Category Badge */
@@ -482,30 +472,31 @@ const contentBlocks = Array.isArray(recipe.contentJson)
 
   /* Title */
   .recipe-title {
-    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-size: clamp(1.375rem, 3vw + 0.5rem, 2.5rem);
     font-weight: 800;
     color: #111;
     line-height: 1.2;
-    margin: 0 0 1rem;
+    margin: 0 0 clamp(0.75rem, 2vw, 1rem);
   }
 
   /* Description */
   .recipe-description {
-    font-size: 1.125rem;
-    color: #555;
+    font-family: "Source Sans 3", "Segoe UI", Roboto, sans-serif;
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    color: #444;
     line-height: 1.6;
-    margin: 0 0 1.5rem;
+    margin: 0 0 clamp(1rem, 2vw, 1.5rem);
   }
 
   /* Disclosure Notice */
   .disclosure-notice {
     background: #f8f8f8;
     border-left: 3px solid #ddd;
-    padding: 1rem 1.25rem;
-    font-size: 0.8125rem;
+    padding: clamp(0.75rem, 2vw, 1rem) clamp(0.875rem, 2vw, 1.25rem);
+    font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.8125rem);
     color: #666;
     line-height: 1.6;
-    margin: 1.5rem 0;
+    margin: clamp(1rem, 2vw, 1.5rem) 0;
     border-radius: 0 8px 8px 0;
   }
 
@@ -592,35 +583,41 @@ const contentBlocks = Array.isArray(recipe.contentJson)
   :global(.numbered-heading .heading-number) {
     color: var(--toc-accent, #f97316);
     font-weight: 700;
-    margin-right: 0.35rem;
+    margin-right: 0.4rem;
   }
 
   :global(h2.numbered-heading) {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.6rem, 1.4rem + 1vw, 2rem);
+    font-weight: 800;
     color: #111;
-    margin: 2rem 0 1rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid #e5e7eb;
+    letter-spacing: -0.01em;
   }
 
   :global(h3.numbered-heading) {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #333;
-    margin: 1.5rem 0 0.75rem;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+    font-weight: 700;
+    color: #222;
+    margin: 2rem 0 0.75rem;
   }
 
   :global(h4.numbered-heading) {
-    font-size: 1.1rem;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
     font-weight: 600;
-    color: #555;
-    margin: 1.25rem 0 0.5rem;
+    color: #444;
+    margin: 1.5rem 0 0.5rem;
   }
 
   /* TLDR */
   .tldr-section {
     background: #fff8e6;
-    margin: 0 -2rem 2.5rem;
-    padding: 1.5rem 2rem;
+    margin: 0 calc(-1 * clamp(1rem, 3vw, 2rem)) clamp(1.5rem, 3vw, 2.5rem);
+    padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem);
     border-left: 4px solid #f59e0b;
   }
 
@@ -748,50 +745,6 @@ const contentBlocks = Array.isArray(recipe.contentJson)
     margin-top: 0.25rem;
   }
 
-  /* FAQs */
-  .faq-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .faq-item {
-    background: #f8f8f8;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .faq-item summary {
-    padding: 1rem 1.25rem;
-    font-weight: 600;
-    color: #222;
-    cursor: pointer;
-    list-style: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .faq-item summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .faq-item summary::after {
-    content: "+";
-    font-size: 1.25rem;
-    color: #999;
-  }
-
-  .faq-item[open] summary::after {
-    content: "−";
-  }
-
-  .faq-answer {
-    padding: 0 1.25rem 1rem;
-    color: #555;
-    line-height: 1.6;
-  }
-
   /* Sidebar */
   .sidebar {
     display: flex;
@@ -846,155 +799,32 @@ const contentBlocks = Array.isArray(recipe.contentJson)
     color: #666;
   }
 
-  /* Mobile Responsive Styles */
-  @media (max-width: 768px) {
-    .recipe-container {
-      padding: 0;
-    }
-
-    .main-content {
-      padding: 1rem;
-      border-radius: 0;
-    }
-
-    .recipe-title {
-      font-size: 1.5rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .recipe-description {
-      font-size: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .hero-image {
-      margin: 1rem 0;
-      border-radius: 0;
-    }
-
-    .hero-image img {
-      border-radius: 0;
-    }
-
-    .disclosure-notice {
-      padding: 0.875rem 1rem;
-      font-size: 0.75rem;
-      margin: 1rem 0;
-      border-radius: 0;
-    }
-
-    .recipe-meta-pills {
-      gap: 0.5rem;
-      padding: 1rem 0;
-    }
-
-    .meta-pill {
-      padding: 0.5rem 0.75rem;
-      min-width: auto;
-      flex: none;
-    }
-
-    .meta-pill .label {
-      display: none;
-    }
-
-    .meta-pill .icon {
-      width: 16px;
-      height: 16px;
-    }
-
-    .content-section h2 {
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .content-section h3 {
-      font-size: 1rem;
-    }
-
-    .tldr-section {
-      margin: 0 -1rem 2rem;
-      padding: 1rem;
-      border-radius: 0;
-    }
-
-    .ingredient-list li {
-      padding: 0.5rem 0;
-      font-size: 0.9375rem;
-    }
-
-    .checkbox {
-      width: 18px;
-      height: 18px;
-    }
-
-    .instruction-list li {
-      padding: 1rem 0;
-    }
-
-    .step-number {
-      width: 28px;
-      height: 28px;
-      font-size: 0.75rem;
-    }
-
-    .instruction-list p {
-      font-size: 0.9375rem;
-      line-height: 1.6;
-    }
-
-    .faq-item summary {
-      padding: 0.875rem 1rem;
-      font-size: 0.9375rem;
-    }
-
-    .faq-answer {
-      padding: 0 1rem 0.875rem;
-      font-size: 0.875rem;
-    }
-
-    .sidebar {
-      margin-top: 0;
-      gap: 0;
-    }
-
-    .sidebar-sticky {
-      position: static;
-      gap: 0;
-    }
-
-    .sidebar-widget {
-      border-radius: 0;
-    }
+  /* Fluid responsive — no max-width media queries needed */
+  .recipe-meta-pills {
+    gap: clamp(0.5rem, 1.5vw, 1rem);
+    padding: clamp(1rem, 2vw, 1.5rem) 0;
   }
 
-  @media (max-width: 480px) {
-    .main-content {
-      padding: 1rem;
-    }
-
-    .category-badge {
-      font-size: 0.6875rem;
-      padding: 0.3rem 0.625rem;
-    }
-
-    .recipe-title {
-      font-size: 1.375rem;
-    }
-
-    .recipe-meta-pills {
-      flex-wrap: wrap;
-    }
-
-    .meta-pill {
-      flex: 1 1 45%;
-    }
-
-    .tldr-section {
-      margin: 0 -1rem 1.5rem;
-      padding: 0.875rem 1rem;
-    }
+  .meta-pill {
+    padding: clamp(0.5rem, 1vw, 0.75rem) clamp(0.625rem, 1.5vw, 1rem);
+    min-width: auto;
+    flex: 1 1 auto;
   }
+
+  .content-section h2 {
+    font-size: clamp(1.25rem, 1rem + 0.6vw, 1.5rem);
+  }
+
+  .content-section h3 {
+    font-size: clamp(1rem, 0.9rem + 0.4vw, 1.125rem);
+  }
+
+  .ingredient-list li {
+    padding: clamp(0.5rem, 1vw, 0.625rem) 0;
+    font-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+  }
+
+  /* Sidebar becomes full-width below 1024px (handled by grid-template-columns: 1fr) */
 </style>
 
 <script>

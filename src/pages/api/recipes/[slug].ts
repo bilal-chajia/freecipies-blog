@@ -3,7 +3,12 @@ import { getArticleBySlug } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import type { RecipeJson } from '@modules/articles/types';
-import { toSchemaOrgNutrition, minutesToIsoDuration } from '@modules/articles/types/recipes.types';
+import {
+    toSchemaOrgNutrition,
+    minutesToIsoDuration,
+    flattenIngredients,
+    toSchemaOrgInstructions
+} from '@modules/articles/types/recipes.types';
 
 export const prerender = false;
 
@@ -28,47 +33,9 @@ function generateRecipeJsonLd(article: any, baseUrl: string): object {
         if (v.sm?.url) images.push(v.sm.url);
     }
 
-    // Build ingredients list for JSON-LD (flattened)
-    const recipeIngredient: string[] = [];
-    for (const group of recipeData.ingredients || []) {
-        for (const item of group.items || []) {
-            const parts = [];
-            if (item.amount) parts.push(item.amount.toString());
-            if (item.unit) parts.push(item.unit);
-            parts.push(item.name);
-            if (item.notes) parts.push(`(${item.notes})`);
-            recipeIngredient.push(parts.join(' '));
-        }
-    }
-
-    // Build instructions for JSON-LD
-    const recipeInstructions: object[] = [];
-    for (const section of recipeData.instructions || []) {
-        // Add section as HowToSection if title exists
-        if (section.section_title) {
-            recipeInstructions.push({
-                '@type': 'HowToSection',
-                name: section.section_title,
-                itemListElement: (section.steps || []).map((step, idx) => ({
-                    '@type': 'HowToStep',
-                    position: idx + 1,
-                    name: step.name || undefined,
-                    text: step.text,
-                    image: step.image || undefined,
-                })),
-            });
-        } else {
-            // Flat steps
-            for (const step of section.steps || []) {
-                recipeInstructions.push({
-                    '@type': 'HowToStep',
-                    name: step.name || undefined,
-                    text: step.text,
-                    image: step.image || undefined,
-                });
-            }
-        }
-    }
+    // Use shared utilities for consistent JSON-LD formatting
+    const recipeIngredient = flattenIngredients(recipeData.ingredients || []);
+    const recipeInstructions = toSchemaOrgInstructions(recipeData.instructions || []);
 
     // Build nutrition if present
     let nutrition: object | undefined;
@@ -111,9 +78,11 @@ function generateRecipeJsonLd(article: any, baseUrl: string): object {
         },
         datePublished: article.publishedAt,
         dateModified: article.updatedAt,
-        prepTime: recipeData.prepTime || (recipeData.prep ? minutesToIsoDuration(recipeData.prep) : undefined),
-        cookTime: recipeData.cookTime || (recipeData.cook ? minutesToIsoDuration(recipeData.cook) : undefined),
-        totalTime: recipeData.totalTime || (recipeData.total ? minutesToIsoDuration(recipeData.total) : undefined),
+        prepTime: minutesToIsoDuration(recipeData.prep) || undefined,
+        cookTime: minutesToIsoDuration(recipeData.cook) || undefined,
+        totalTime: minutesToIsoDuration(
+            recipeData.total ?? (((recipeData.prep ?? 0) + (recipeData.cook ?? 0)) || null)
+        ) || undefined,
         recipeYield: recipeData.recipeYield || (recipeData.servings ? `${recipeData.servings} servings` : undefined),
         recipeCategory: recipeData.recipeCategory,
         recipeCuisine: recipeData.recipeCuisine,

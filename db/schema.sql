@@ -914,9 +914,20 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- EXAMPLES: "Stand Mixer", "Sheet Pan", "Digital Thermometer"
     name TEXT NOT NULL,
 
+    -- Brand name for display and SEO.
+    -- EXAMPLES: "KitchenAid", "Cuisinart", "Le Creuset", "Lodge"
+    brand TEXT,
+
     -- Short description for tooltips and equipment pages.
     -- EXAMPLE: "Essential for whipping egg whites and kneading dough."
     description TEXT,
+
+    -- Synonyms/keywords for auto-detection in recipe instructions.
+    -- Used to match equipment when scanning instruction text.
+    -- FORMAT: JSON array of lowercase strings.
+    -- EXAMPLE: ["mixer", "batteur", "robot pâtissier", "kitchenaid"]
+    -- AGENT RULE: Always include the name itself (lowercase) in this array.
+    keywords TEXT DEFAULT '[]' CHECK (json_valid(keywords)),
 
     -- Equipment category for filtering in admin.
     -- OPTIONS: "appliances", "bakeware", "cookware", "utensils", "gadgets", "other"

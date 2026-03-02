@@ -938,7 +938,10 @@ function contentJsonToBlocks(contentJson) {
                     return {
                         id,
                         type: 'alert',
-                        props: { type: normalizeTipVariant(block.variant) },
+                        props: {
+                            type: normalizeTipVariant(block.variant),
+                            title: block.title || '',
+                        },
                         content: parseInlineMarkdown(block.text || ''),
                     };
 
@@ -1126,11 +1129,15 @@ function blocksToContentJson(blocks) {
             case 'alert':
                 const alertText = extractText(block.content);
                 if (alertText.trim()) {
-                    result.push({
+                    const alertObj = {
                         type: 'tip_box',
                         variant: normalizeTipVariant(block.props?.type),
                         text: alertText,
-                    });
+                    };
+                    if (block.props?.title) {
+                        alertObj.title = block.props.title;
+                    }
+                    result.push(alertObj);
                 }
                 break;
 
@@ -1413,6 +1420,10 @@ export default function BlockEditor({
     useEffect(() => {
         structureItemsRef.current = structureItems;
     }, [structureItems]);
+
+    useEffect(() => {
+        activeBlockIdRef.current = activeBlockId;
+    }, [activeBlockId]);
 
     useEffect(() => {
         if (!editor) return;
@@ -1825,12 +1836,35 @@ export default function BlockEditor({
                 return;
             }
             const containerRect = (canvas || wrapper).getBoundingClientRect();
-            const placement = distanceTop <= distanceBottom ? 'before' : 'after';
-            const top = (placement === 'before' ? rect.top : rect.bottom) - containerRect.top;
-            const left = rect.left - containerRect.left;
-            const width = rect.width;
+            let placement = distanceTop <= distanceBottom ? 'before' : 'after';
+            let handleBlockId = blockId;
+            let handleRect = rect;
+
+            // Normalize: always prefer 'after' on the previous sibling so that
+            // each inter-block gap only produces one insert handle.
+            if (placement === 'before') {
+                const allBlocks = editor.document;
+                const flatIds = allBlocks.map((b) => b.id);
+                const currentIndex = flatIds.indexOf(blockId);
+                if (currentIndex > 0) {
+                    const prevId = flatIds[currentIndex - 1];
+                    // Find the DOM element of the previous block for positioning
+                    const prevEl = root instanceof HTMLElement
+                        ? root.querySelector(`[data-id="${CSS.escape(prevId)}"]`)
+                        : null;
+                    if (prevEl instanceof HTMLElement) {
+                        handleBlockId = prevId;
+                        handleRect = prevEl.getBoundingClientRect();
+                        placement = 'after';
+                    }
+                }
+            }
+
+            const top = (placement === 'before' ? handleRect.top : handleRect.bottom) - containerRect.top;
+            const left = handleRect.left - containerRect.left;
+            const width = handleRect.width;
             setInsertHandle({
-                blockId,
+                blockId: handleBlockId,
                 placement,
                 top,
                 left,
@@ -2048,6 +2082,7 @@ export default function BlockEditor({
                                             <BlockNoteViewWithPortal
                                                 editor={editor}
                                                 theme="light"
+                                                sideMenu={false}
                                                 slashMenu={false}
                                                 formattingToolbar={false}
                                                 linkToolbar={false}

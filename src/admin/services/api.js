@@ -134,6 +134,19 @@ export const tagsAPI = {
 };
 
 // ============================================
+// EQUIPMENT API
+// ============================================
+
+export const equipmentAPI = {
+  getAll: (params = {}) => api.get('/equipment', { params }),
+  getBySlug: (slug) => api.get(`/equipment?slug=${slug}`),
+  create: (data) => api.post('/equipment', data),
+  update: (slug, data) => api.put(`/equipment?slug=${slug}`, data),
+  delete: (slug) => api.delete(`/equipment?slug=${slug}`),
+  match: (text) => api.get('/equipment', { params: { match: text } }),
+};
+
+// ============================================
 // MEDIA API
 // ============================================
 

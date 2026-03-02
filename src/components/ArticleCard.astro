@@ -60,6 +60,7 @@ const showBookmark = article.type === "recipe";
         srcset={srcSet || undefined}
         sizes={srcSet ? listSizes : undefined}
         loading={loading}
+        decoding="async"
         style={image.style || undefined}
         class="list-image-img"
       />
@@ -137,6 +138,7 @@ overflow-hidden">
         srcset={srcSet || undefined}
         sizes={srcSet ? sizes : undefined}
         loading={loading}
+        decoding="async"
         style={image.style || undefined}
         class="w-full h-full object-cover group-hover:scale-110
 transition-transform duration-500"
@@ -286,12 +288,23 @@ font-semibold uppercase tracking-wide"
 <style>
   .recipe-list-card {
     display: grid;
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 1fr;
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
     overflow: hidden;
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  @media (min-width: 768px) {
+    .recipe-list-card {
+      grid-template-columns: 260px 1fr;
+    }
+
+    .list-content {
+      border-left: 1px solid #e5e7eb;
+      border-top: 0;
+    }
   }
 
   .list-image {
@@ -341,7 +354,6 @@ font-semibold uppercase tracking-wide"
     flex-direction: column;
     gap: 0.75rem;
     padding: 1.25rem 1.5rem;
-    border-left: 1px solid #e5e7eb;
   }
 
   .list-title {
@@ -428,17 +440,6 @@ font-semibold uppercase tracking-wide"
 
   .rating-text {
     color: #4b5563;
-  }
-
-  @media (max-width: 768px) {
-    .recipe-list-card {
-      grid-template-columns: 1fr;
-    }
-
-    .list-content {
-      border-left: 0;
-      border-top: 1px solid #e5e7eb;
-    }
   }
 </style>
 

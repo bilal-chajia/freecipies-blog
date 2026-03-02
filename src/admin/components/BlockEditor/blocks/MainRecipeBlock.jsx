@@ -96,7 +96,7 @@ export const MainRecipeBlock = createReactBlockSpec(
                         pointerEvents: isDragging ? 'none' : undefined,
                     }}
                 >
-                    <div className="wp-main-recipe-block">
+                    <div className="wp-main-recipe-block border border-border rounded-lg p-4 bg-card shadow-sm">
                         <RecipeBuilder
                             value={recipe}
                             onChange={(newValue) => {

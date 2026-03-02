@@ -59,6 +59,11 @@ const BlockWrapper = forwardRef(({
     }, [isSelected, onClick]);
 
     const handleKeyDown = useCallback((e) => {
+        // Don't intercept keyboard events from form elements
+        const tag = e.target?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) {
+            return;
+        }
         // Select block on Enter or Space
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();

@@ -3,7 +3,9 @@ import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 import { Textarea } from "@/ui/textarea";
-import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye, Sparkles, Loader2, Timer, Wrench, Zap, X } from "lucide-react";
+import { equipmentAPI } from '@/services/api';
+import { Badge } from '@/ui/badge';
 import {
     Select,
     SelectContent,
@@ -25,31 +27,123 @@ import {
 } from "@/ui/dialog";
 import { articlesAPI } from '@/services/api';
 
-// Default recipe matching schema.sql structure
+/**
+ * Default recipe matching the unified RecipeJson schema.
+ * Imported from recipes.types.ts as the single source of truth.
+ * 
+ * Note: We can't import TS types in JSX, so we replicate the default here.
+ * If DEFAULT_RECIPE_JSON changes in recipes.types.ts, update this too.
+ * 
+ * @see recipes.types.ts DEFAULT_RECIPE_JSON
+ */
 const defaultRecipe = {
-    // Time (minutes)
+    // Time (minutes) — null = not set
     prep: null,
     cook: null,
     total: null,
-    // Servings
+    // Yield & Servings
     servings: null,
-    recipeYield: '',
-    // Metadata
-    recipeCategory: '',
-    recipeCuisine: '',
-    difficulty: 'Medium',
-    cookingMethod: '',
+    recipeYield: null,
+    // Classification
+    recipeCategory: null,
+    recipeCuisine: null,
+    difficulty: null,
+    cookingMethod: null,
+    estimatedCost: null,
     keywords: [],
     suitableForDiet: [],
-    // Structured data
-    ingredients: [{ group_title: 'Main Ingredients', items: [] }],
-    instructions: [{ section_title: 'Steps', steps: [] }],
+    // Structured content — user adds groups as needed
+    ingredients: [],
+    instructions: [],
     tips: [],
-    // Nutrition
-    nutrition: {},
-    // Rating
-    aggregateRating: { ratingValue: null, ratingCount: 0 },
+    // Nutrition — null = not yet provided
+    nutrition: null,
+    // Social proof — null = no ratings yet
+    aggregateRating: null,
+    // Equipment & Video
+    equipment: [],
+    video: null,
 };
+
+/**
+ * Migrate legacy recipe data to the current RecipeJson format.
+ * Mirrors migrateRecipeJson() from recipes.types.ts but for JS runtime.
+ * 
+ * Handles: flat string ingredients, old `group` key, ISO time strings,
+ * old field names (course→recipeCategory, cuisine→recipeCuisine).
+ */
+function migrateRecipeData(parsed) {
+    const result = { ...defaultRecipe, ...parsed };
+
+    // Migrate ISO time strings → numeric minutes
+    if (!result.prep && parsed.prepTime) {
+        result.prep = parseInt(parsed.prepTime) || null;
+    }
+    if (!result.cook && parsed.cookTime) {
+        result.cook = parseInt(parsed.cookTime) || null;
+    }
+    if (!result.total && parsed.totalTime) {
+        result.total = parseInt(parsed.totalTime) || null;
+    }
+
+    // Ensure servings is numeric
+    if (typeof result.servings === 'string') {
+        result.servings = parseInt(result.servings) || null;
+    }
+
+    // Migrate old field names
+    if (!result.recipeCategory && parsed.course) {
+        result.recipeCategory = parsed.course;
+    }
+    if (!result.recipeCuisine && parsed.cuisine) {
+        result.recipeCuisine = parsed.cuisine;
+    }
+
+    // Migrate ingredients
+    let ingredients = parsed.ingredients || [];
+    if (ingredients.length > 0 && typeof ingredients[0] === 'string') {
+        ingredients = [{ group_title: 'Ingredients', items: ingredients.map(text => ({ name: text, amount: 0, unit: '' })) }];
+    } else if (ingredients.length > 0 && ingredients[0].group !== undefined) {
+        ingredients = ingredients.map(g => ({
+            group_title: g.group || g.group_title || 'Ingredients',
+            items: (g.items || []).map(item => typeof item === 'string' ? { name: item, amount: 0, unit: '' } : item),
+        }));
+    }
+    result.ingredients = ingredients;
+
+    // Migrate instructions
+    let instructions = parsed.instructions || [];
+    if (instructions.length > 0 && instructions[0].text !== undefined && !instructions[0].steps) {
+        instructions = [{ section_title: 'Steps', steps: instructions.map(i => ({ text: typeof i === 'string' ? i : (i.text || '') })) }];
+    } else if (instructions.length > 0 && instructions[0].group !== undefined) {
+        instructions = instructions.map(g => ({
+            section_title: g.group || g.section_title || 'Steps',
+            steps: (g.steps || []).map(step => typeof step === 'string' ? { text: step } : step),
+        }));
+    }
+    result.instructions = instructions;
+
+    // Migrate old top-level calories
+    if (!result.nutrition && parsed.calories) {
+        result.nutrition = { calories: parseInt(parsed.calories) };
+    }
+
+    // Ensure arrays
+    result.keywords = result.keywords || [];
+    result.suitableForDiet = result.suitableForDiet || [];
+    result.tips = result.tips || [];
+    result.equipment = result.equipment || [];
+
+    // Clean up legacy keys
+    delete result.prepTime;
+    delete result.cookTime;
+    delete result.totalTime;
+    delete result.course;
+    delete result.cuisine;
+    delete result.calories;
+
+    return result;
+}
 
 // Diet options from Schema.org
 const dietOptions = [
@@ -69,6 +163,10 @@ export default function RecipeBuilder({ value, onChange }) {
     const [data, setData] = useState(defaultRecipe);
     const [nutritionOpen, setNutritionOpen] = useState(false);
     const [tipsOpen, setTipsOpen] = useState(false);
+    const [equipmentOpen, setEquipmentOpen] = useState(false);
+    const [equipmentCatalog, setEquipmentCatalog] = useState([]);
+    const [equipmentDetecting, setEquipmentDetecting] = useState(false);
+    const [detectedEquipment, setDetectedEquipment] = useState([]);
     const [jsonError, setJsonError] = useState('');
     const [jsonMode, setJsonMode] = useState(false);
     const [jsonEditValue, setJsonEditValue] = useState('');
@@ -127,61 +225,14 @@ export default function RecipeBuilder({ value, onChange }) {
         try {
             if (value && value !== '{}') {
                 const parsed = JSON.parse(value);
-                // Migrate old format
-                let ingredients = parsed.ingredients || [];
-                let instructions = parsed.instructions || [];
-
-                // Convert old flat format to grouped
-                if (ingredients.length > 0 && typeof ingredients[0] === 'string') {
-                    ingredients = [{ group_title: 'Main Ingredients', items: ingredients.map(text => ({ name: text, amount: 0, unit: '' })) }];
-                } else if (ingredients.length > 0 && ingredients[0].group) {
-                    // Old { group: '', items: [''] } format
-                    ingredients = ingredients.map(g => ({
-                        group_title: g.group || g.group_title || 'Ingredients',
-                        items: (g.items || []).map(item =>
-                            typeof item === 'string'
-                                ? { name: item, amount: 0, unit: '' }
-                                : item
-                        )
-                    }));
-                }
-
-                if (instructions.length > 0 && instructions[0].text !== undefined) {
-                    instructions = [{ section_title: 'Steps', steps: instructions.map(i => ({ text: i.text || i })) }];
-                } else if (instructions.length > 0 && instructions[0].group) {
-                    // Old { group: '', steps: [''] } format
-                    instructions = instructions.map(g => ({
-                        section_title: g.group || g.section_title || 'Steps',
-                        steps: (g.steps || []).map(step =>
-                            typeof step === 'string'
-                                ? { text: step }
-                                : step
-                        )
-                    }));
-                }
-
-                // Migrate old time fields
-                const migratedData = {
-                    ...defaultRecipe,
-                    ...parsed,
-                    prep: parsed.prep ?? (parsed.prepTime ? parseInt(parsed.prepTime) : null),
-                    cook: parsed.cook ?? (parsed.cookTime ? parseInt(parsed.cookTime) : null),
-                    total: parsed.total ?? (parsed.totalTime ? parseInt(parsed.totalTime) : null),
-                    servings: parsed.servings ? parseInt(parsed.servings) : null,
-                    recipeCategory: parsed.recipeCategory || parsed.course || '',
-                    recipeCuisine: parsed.recipeCuisine || parsed.cuisine || '',
-                    ingredients: ingredients.length > 0 ? ingredients : defaultRecipe.ingredients,
-                    instructions: instructions.length > 0 ? instructions : defaultRecipe.instructions,
-                    tips: parsed.tips || [],
-                    nutrition: parsed.nutrition || (parsed.calories ? { calories: parseInt(parsed.calories) } : {}),
-                };
-
+                // Use migration logic to normalize legacy data formats
+                const migratedData = migrateRecipeData(parsed);
                 setData(migratedData);
             }
         } catch (e) {
             console.error("RecipeBuilder: Invalid JSON", e);
         }
-    }, []);
+    }, [value]);
 
     const updateData = (updates) => {
         const newData = { ...data, ...updates };
@@ -270,11 +321,76 @@ export default function RecipeBuilder({ value, onChange }) {
         updateData({ instructions: newInstructions });
     };
 
+    // Parse timer (minutes) from instruction text — EN + FR, ranges, combined h+m, seconds
+    const parseTimerFromText = (text) => {
+        if (!text) return null;
+        const t = text.toLowerCase();
+
+        // 1. Combined hours + minutes: "1 hour 30 minutes", "1h30", "1 h 30 min", "1 heure 30 minutes"
+        const combined = t.match(/(\d+)\s*(?:hours?|hrs?|h|heures?)\s*(?:and\s*|et\s*)?(\d+)\s*(?:minutes?|mins?|m(?:in)?)?/i);
+        if (combined) return parseInt(combined[1]) * 60 + parseInt(combined[2]);
+
+        // 2. Range with unit: "10-15 minutes", "10 to 15 min", "10 à 15 minutes"
+        const range = t.match(/(\d+)\s*(?:-|to|à|a)\s*(\d+)\s*(minutes?|mins?|hours?|hrs?|heures?|seconds?|secs?|secondes?)/i);
+        if (range) {
+            const avg = Math.round((parseInt(range[1]) + parseInt(range[2])) / 2);
+            if (range[3].match(/hours?|hrs?|heures?/i)) return avg * 60;
+            if (range[3].match(/seconds?|secs?|secondes?/i)) return Math.max(1, Math.round(avg / 60));
+            return avg;
+        }
+
+        // 3. "for X unit" / "pendant X unit" / "during X unit" / "environ X unit"
+        const forPattern = t.match(/(?:for|pendant|during|environ|about|approximately|around)\s*(\d+)\s*(minutes?|mins?|hours?|hrs?|heures?|seconds?|secs?|secondes?)/i);
+        if (forPattern) {
+            let mins = parseInt(forPattern[1]);
+            if (forPattern[2].match(/hours?|hrs?|heures?/i)) return mins * 60;
+            if (forPattern[2].match(/seconds?|secs?|secondes?/i)) return Math.max(1, Math.round(mins / 60));
+            return mins;
+        }
+
+        // 4. Standalone "X hours" / "X heures"
+        const hours = t.match(/(\d+)\s*(?:hours?|hrs?|heures?)\b/i);
+        if (hours) return parseInt(hours[1]) * 60;
+
+        // 5. Standalone "X minutes" / "X mins"
+        const mins = t.match(/(\d+)\s*(?:minutes?|mins?)\b/i);
+        if (mins) return parseInt(mins[1]);
+
+        // 6. Standalone "X seconds" / "X secs"
+        const secs = t.match(/(\d+)\s*(?:seconds?|secs?|secondes?)\b/i);
+        if (secs) return Math.max(1, Math.round(parseInt(secs[1]) / 60));
+
+        // 7. Shorthand "30m", "1h", "90s"
+        const shorthand = t.match(/\b(\d+)\s*(h|m|s)\b/i);
+        if (shorthand) {
+            const v = parseInt(shorthand[1]);
+            if (shorthand[2] === 'h') return v * 60;
+            if (shorthand[2] === 's') return Math.max(1, Math.round(v / 60));
+            return v;
+        }
+
+        return null;
+    };
+
     const updateInstruction = (sectionIndex, stepIndex, field, val) => {
         const newInstructions = [...data.instructions];
         if (newInstructions[sectionIndex]) {
             const newSteps = [...(newInstructions[sectionIndex].steps || [])];
-            newSteps[stepIndex] = { ...newSteps[stepIndex], [field]: val };
+            const step = { ...newSteps[stepIndex], [field]: val };
+
+            // Auto-extract timer when text changes (unless user manually set timer)
+            if (field === 'text') {
+                const extracted = parseTimerFromText(val);
+                if (extracted) step.timer = extracted;
+                else if (!step._timerManual) step.timer = null;
+            }
+
+            // Mark manual timer edits
+            if (field === 'timer') {
+                step._timerManual = val != null && val !== '';
+            }
+
+            newSteps[stepIndex] = step;
             newInstructions[sectionIndex] = { ...newInstructions[sectionIndex], steps: newSteps };
         }
         updateData({ instructions: newInstructions });
@@ -448,114 +564,20 @@ export default function RecipeBuilder({ value, onChange }) {
             ) : (
                 <>
 
-                    {/* Time & Servings */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-card">
-                        <div className="space-y-2">
-                            <Label>Prep (mins)</Label>
-                            <Input
-                                type="number"
-                                value={data.prep ?? ''}
-                                onChange={(e) => handleNumberChange('prep', e.target.value)}
-                                placeholder="15"
-                            />
+                    {/* Compact metadata summary */}
+                    {!jsonMode && (
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                            {data.prep != null && <span>⏱️ Prep: {data.prep}m</span>}
+                            {data.cook != null && <span>🍳 Cook: {data.cook}m</span>}
+                            {data.total != null && <span>⏰ Total: {data.total}m</span>}
+                            {data.servings != null && <span>🍽️ {data.servings} servings</span>}
+                            {data.difficulty && <span>📊 {data.difficulty}</span>}
+                            {data.recipeCuisine && <span>🌍 {data.recipeCuisine}</span>}
+                            {(!data.prep && !data.cook && !data.servings && !data.difficulty) && (
+                                <span className="italic">Select this block to configure recipe details in the sidebar →</span>
+                            )}
                         </div>
-                        <div className="space-y-2">
-                            <Label>Cook (mins)</Label>
-                            <Input
-                                type="number"
-                                value={data.cook ?? ''}
-                                onChange={(e) => handleNumberChange('cook', e.target.value)}
-                                placeholder="30"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Total (mins)</Label>
-                            <Input
-                                type="number"
-                                value={data.total ?? ''}
-                                onChange={(e) => handleNumberChange('total', e.target.value)}
-                                placeholder="45"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Servings</Label>
-                            <Input
-                                type="number"
-                                value={data.servings ?? ''}
-                                onChange={(e) => handleNumberChange('servings', e.target.value)}
-                                placeholder="4"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Yield</Label>
-                            <Input
-                                value={data.recipeYield || ''}
-                                onChange={(e) => handleInputChange('recipeYield', e.target.value)}
-                                placeholder="12 cookies"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Metadata */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-lg bg-card">
-                        <div className="space-y-2">
-                            <Label>Category</Label>
-                            <Input
-                                value={data.recipeCategory || ''}
-                                onChange={(e) => handleInputChange('recipeCategory', e.target.value)}
-                                placeholder="Dessert"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Cuisine</Label>
-                            <Input
-                                value={data.recipeCuisine || ''}
-                                onChange={(e) => handleInputChange('recipeCuisine', e.target.value)}
-                                placeholder="Italian"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Method</Label>
-                            <Input
-                                value={data.cookingMethod || ''}
-                                onChange={(e) => handleInputChange('cookingMethod', e.target.value)}
-                                placeholder="baking"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Difficulty</Label>
-                            <Select
-                                value={data.difficulty || 'Medium'}
-                                onValueChange={(value) => handleInputChange('difficulty', value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Easy">Easy</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="Hard">Hard</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Diet Labels */}
-                    <div className="p-4 border rounded-lg bg-card">
-                        <Label className="mb-2 block">Suitable For Diet</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {dietOptions.map(diet => (
-                                <Button
-                                    key={diet.value}
-                                    variant={data.suitableForDiet?.includes(diet.value) ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => toggleDiet(diet.value)}
-                                >
-                                    {diet.label}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
+                    )}
 
                     {/* Ingredients - Multi-Section */}
                     <div className="space-y-4">
@@ -718,6 +740,18 @@ export default function RecipeBuilder({ value, onChange }) {
                                                     placeholder={`Step ${stepIndex + 1} description...`}
                                                     rows={2}
                                                 />
+                                                <div className="flex items-center gap-2">
+                                                    <Timer className="size-4 text-muted-foreground" />
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        value={step.timer ?? ''}
+                                                        onChange={(e) => updateInstruction(sectionIndex, stepIndex, 'timer', e.target.value ? parseInt(e.target.value) : null)}
+                                                        placeholder="Timer (min)"
+                                                        className="w-32 h-8 text-sm"
+                                                    />
+                                                    <span className="text-xs text-muted-foreground">min</span>
+                                                </div>
                                             </div>
                                             <Button
                                                 variant="ghost"
@@ -772,108 +806,9 @@ export default function RecipeBuilder({ value, onChange }) {
                         </CollapsibleContent>
                     </Collapsible>
 
-                    {/* Nutrition (Collapsible) */}
-                    <Collapsible open={nutritionOpen} onOpenChange={setNutritionOpen}>
-                        <CollapsibleTrigger asChild>
-                            <Button variant="ghost" className="w-full justify-between p-4 border rounded-lg">
-                                <span className="font-semibold">Nutrition Information</span>
-                                {nutritionOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                            </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="p-4 border rounded-lg mt-2">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Calories (kcal)</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.nutrition?.calories ?? ''}
-                                        onChange={(e) => updateNutrition('calories', e.target.value)}
-                                        placeholder="320"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Fat (g)</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.nutrition?.fatContent ?? ''}
-                                        onChange={(e) => updateNutrition('fatContent', e.target.value)}
-                                        placeholder="15"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Saturated Fat (g)</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.nutrition?.saturatedFatContent ?? ''}
-                                        onChange={(e) => updateNutrition('saturatedFatContent', e.target.value)}
-                                        placeholder="3"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Carbs (g)</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.nutrition?.carbohydrateContent ?? ''}
-                                        onChange={(e) => updateNutrition('carbohydrateContent', e.target.value)}
-                                        placeholder="40"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Sugar (g)</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.nutrition?.sugarContent ?? ''}
-                                        onChange={(e) => updateNutrition('sugarContent', e.target.value)}
-                                        placeholder="12"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Fiber (g)</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.nutrition?.fiberContent ?? ''}
-                                        onChange={(e) => updateNutrition('fiberContent', e.target.value)}
-                                        placeholder="2"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Protein (g)</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.nutrition?.proteinContent ?? ''}
-                                        onChange={(e) => updateNutrition('proteinContent', e.target.value)}
-                                        placeholder="4"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Sodium (mg)</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.nutrition?.sodiumContent ?? ''}
-                                        onChange={(e) => updateNutrition('sodiumContent', e.target.value)}
-                                        placeholder="220"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Cholesterol (mg)</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.nutrition?.cholesterolContent ?? ''}
-                                        onChange={(e) => updateNutrition('cholesterolContent', e.target.value)}
-                                        placeholder="25"
-                                    />
-                                </div>
-                                <div className="space-y-2 col-span-2 md:col-span-3">
-                                    <Label>Serving Size</Label>
-                                    <Input
-                                        value={data.nutrition?.servingSize ?? ''}
-                                        onChange={(e) => updateData({ nutrition: { ...data.nutrition, servingSize: e.target.value } })}
-                                        placeholder="1 serving (150g)"
-                                    />
-                                </div>
-                            </div>
-                        </CollapsibleContent>
-                    </Collapsible>
+
+
+
                 </>
             )}
         </div>

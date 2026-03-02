@@ -19,13 +19,16 @@ const layoutClass =
 ---
 
 <div class:list={[layoutClass, `card-style-${cardStyle}`]}>
-  {articles.map((article) => (
-    <ArticleCard
-      article={article}
-      cardStyle={cardStyle}
-      layoutMode={layoutMode}
-    />
-  ))}
+  {
+    articles.map((article, index) => (
+      <ArticleCard
+        article={article}
+        cardStyle={cardStyle}
+        layoutMode={layoutMode}
+        loading={index === 0 ? "eager" : "lazy"}
+      />
+    ))
+  }
 </div>
 
 <style>

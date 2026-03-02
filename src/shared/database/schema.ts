@@ -10,6 +10,7 @@ export * from '@modules/articles/schema/articles-to-tags.schema';
 export * from '@modules/categories/schema/categories.schema';
 export * from '@modules/authors/schema/authors.schema';
 export * from '@modules/tags/schema/tags.schema';
+export * from '@modules/equipment/schema/equipment.schema';
 export * from '@modules/media/schema/media.schema';
 export * from '@modules/settings/schema/settings.schema';
 // Note: menus module uses site_settings table, no separate schema needed

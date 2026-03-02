@@ -69,6 +69,7 @@ const Settings = () => {
     tocDefaultOpen: true,
     tocShowJumpButton: true,
     tocAccentColor: 'hsl(var(--primary))',
+    tocMaxDepth: 4,
 
     // SEO Settings
     defaultMetaTitle: 'Freecipies - Delicious Recipes & Cooking Tips',
@@ -327,6 +328,7 @@ const Settings = () => {
             tocDefaultOpen: data.toc.defaultOpen ?? true,
             tocShowJumpButton: data.toc.showJumpButton ?? true,
             tocAccentColor: data.toc.accentColor || 'hsl(var(--primary))',
+            tocMaxDepth: data.toc.maxDepth ?? 4,
           }));
         }
       })
@@ -373,6 +375,7 @@ const Settings = () => {
               defaultOpen: formData.tocDefaultOpen,
               showJumpButton: formData.tocShowJumpButton,
               accentColor: formData.tocAccentColor,
+              maxDepth: formData.tocMaxDepth,
             },
           }),
         });

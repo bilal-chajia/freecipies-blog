@@ -72,8 +72,26 @@ export interface CachedEquipmentItem {
     /** URL slug */
     slug: string;
 
+    /** Brand name */
+    brand?: string;
+
+    /** Short description */
+    description?: string;
+
+    /** Equipment category (cookware, appliances, tools, bakeware, etc.) */
+    category?: string;
+
     /** Affiliate link URL */
     affiliate_url?: string;
+
+    /** Affiliate provider name (e.g. Amazon, Williams Sonoma) */
+    affiliate_provider?: string;
+
+    /** Affiliate note (e.g. "As an Amazon Associate...") */
+    affiliate_note?: string;
+
+    /** Display price (e.g. "$299.99") */
+    price_display?: string;
 
     /** Product image URL */
     image_url?: string;

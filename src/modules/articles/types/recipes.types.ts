@@ -1,68 +1,108 @@
 /**
- * Recipe Types - Food Blog CMS Optimized
+ * Recipe Types — Unified Source of Truth
  * =======================================
- * Dual-purpose types for:
- * 1. Interactive recipe card UI (scaling, timers, checkboxes)
- * 2. Google Recipe rich snippet JSON-LD generation
  * 
- * Aligned with schema.sql recipe_json structure
- * @see db/schema.sql lines 1344-1488
+ * This file defines the complete RecipeJson format used across the SaaS:
+ * 
+ *   1. **RecipeBuilder** (admin) — editing UI for recipe structured data
+ *   2. **RecipeCard** (frontend) — rendering ingredients, instructions, nutrition, etc.
+ *   3. **JSON-LD** (SEO) — Schema.org Recipe rich snippets for Google
+ * 
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │  FIELD BOUNDARY — article vs recipeJson                     │
+ * │                                                             │
+ * │  Article-level (NOT in recipeJson):                         │
+ * │    headline, shortDescription, imagesJson,                  │
+ * │    authorId, categoryId, publishedAt, slug, tags            │
+ * │                                                             │
+ * │  RecipeJson (THIS file):                                    │
+ * │    time, servings, classification, ingredients,              │
+ * │    instructions, nutrition, equipment, video, tips, rating   │
+ * └─────────────────────────────────────────────────────────────┘
+ * 
+ * Stored as TEXT in `articles.recipe_json` column.
+ * Parsed to object by `hydrateArticle()` on read.
+ * Stringified by `updateArticleById()` on write.
+ * 
+ * @see articles.schema.ts — DB column definition
+ * @see hydration.ts — parsing on read
+ * @see articles.service.ts — serialization on write
  */
 
-// ============================================
-// Nutrition (Schema.org NutritionInformation)
-// ============================================
+
+// ═══════════════════════════════════════════════
+// §1. Nutrition (Schema.org NutritionInformation)
+// ═══════════════════════════════════════════════
 
 /**
- * Nutrition data stored as numbers for UI calculations
- * Formatted to strings with units for JSON-LD output
+ * Nutrition data per serving.
  * 
- * CRITICAL: servingSize is REQUIRED by Google if nutrition is provided
+ * Values are stored as **numbers** for UI calculations (scaling, comparison).
+ * Converted to strings with units when generating JSON-LD output via
+ * `toSchemaOrgNutrition()`.
+ * 
+ * **Google requirement:** If any nutrition field is provided, `servingSize` is
+ * REQUIRED for the rich snippet to be valid.
+ * 
  * @see https://developers.google.com/search/docs/appearance/structured-data/recipe
+ * @see NutritionFacts.astro — frontend rendering (supports both naming conventions)
  */
 export interface NutritionInfo {
-    /** 
-     * Serving size description - REQUIRED by Google if nutrition present
-     * @example "1 cookie (80g)", "1 cup", "Serves 4"
+    /**
+     * Serving size description — **REQUIRED by Google** if any nutrition is present.
+     * Used in NutritionFacts.astro header ("Per 1 cookie").
+     * @example "1 cookie (80g)"
+     * @example "1 cup"
+     * @example "1 serving (about 200g)"
      */
     servingSize?: string;
 
-    /** Calories per serving in kcal (e.g., 320) */
+    /**
+     * Number of servings per recipe — used in USDA-style nutrition label.
+     * Different from `RecipeJson.servings` which is for ingredient scaling.
+     * @example 12 (for a batch that makes 12 cookies)
+     */
+    servingsPerRecipe?: number;
+
+    /** Calories per serving in kcal */
     calories?: number;
 
-    /** Total fat in grams (e.g., 15) */
+    /** Total fat in grams — JSON-LD: `fatContent` */
     fatContent?: number;
 
-    /** Saturated fat in grams (e.g., 3) */
+    /** Saturated fat in grams — JSON-LD: `saturatedFatContent` */
     saturatedFatContent?: number;
 
-    /** Unsaturated fat in grams (e.g., 12) */
+    /** Unsaturated fat in grams — JSON-LD: `unsaturatedFatContent` */
     unsaturatedFatContent?: number;
 
-    /** Trans fat in grams (e.g., 0) */
+    /** Trans fat in grams — JSON-LD: `transFatContent` */
     transFatContent?: number;
 
-    /** Total carbohydrates in grams (e.g., 40) */
+    /** Total carbohydrates in grams — JSON-LD: `carbohydrateContent` */
     carbohydrateContent?: number;
 
-    /** Sugar in grams (e.g., 12) */
+    /** Sugar in grams — JSON-LD: `sugarContent` */
     sugarContent?: number;
 
-    /** Dietary fiber in grams (e.g., 2) */
+    /** Dietary fiber in grams — JSON-LD: `fiberContent` */
     fiberContent?: number;
 
-    /** Protein in grams (e.g., 4) */
+    /** Protein in grams — JSON-LD: `proteinContent` */
     proteinContent?: number;
 
-    /** Sodium in milligrams (e.g., 220) */
+    /** Sodium in milligrams — JSON-LD: `sodiumContent` */
     sodiumContent?: number;
 
-    /** Cholesterol in milligrams (e.g., 25) */
+    /** Cholesterol in milligrams — JSON-LD: `cholesterolContent` */
     cholesterolContent?: number;
 }
 
+
 /**
- * Schema.org NutritionInformation format for JSON-LD output
+ * Schema.org NutritionInformation format — output-only type for JSON-LD.
+ * All values are strings with units (e.g., "320 calories", "15g").
+ * Generated by `toSchemaOrgNutrition()`.
  */
 export interface SchemaOrgNutrition {
     '@type': 'NutritionInformation';
@@ -80,170 +120,281 @@ export interface SchemaOrgNutrition {
     cholesterolContent?: string;    // "25mg"
 }
 
-// ============================================
-// Ingredients
-// ============================================
 
-export interface IngredientSubstitute {
-    name: string;
-    ratio?: string;        // e.g., "1:1"
-    notes?: string;        // e.g., "denser result"
-}
+// ═══════════════════════════════════════════════
+// §2. Ingredients
+// ═══════════════════════════════════════════════
 
 /**
- * Individual ingredient item
- * Supports both UI display and JSON-LD formatting
+ * Possible substitute for an ingredient.
+ * Used for the substitutions feature in RecipeCard.
+ * @example { name: "coconut oil", ratio: "1:1", notes: "slightly different flavor" }
+ */
+export interface IngredientSubstitute {
+    /** Substitute ingredient name */
+    name: string;
+
+    /** Ratio relative to original @example "1:1" */
+    ratio?: string;
+
+    /** Additional notes @example "denser result" */
+    notes?: string;
+}
+
+
+/**
+ * Individual ingredient item within a group.
+ * 
+ * Supports both UI display (IngredientsSection.astro) and JSON-LD formatting.
+ * The `amount` field is numeric for ingredient scaling when the user changes
+ * the servings count in RecipeCard.
+ * 
+ * **Frontend rendering (IngredientsSection.astro) already supports:**
+ * `amount`, `unit`, `name`, `prep`, `notes`, `isOptional`
+ * 
+ * @see IngredientsSection.astro — renders all fields
+ * @see formatIngredient() — converts to string for JSON-LD
  */
 export interface IngredientItem {
-    /** Stable ID for UI/shopping lists */
+    /**
+     * Stable ID for shopping list persistence and UI keys.
+     * Auto-generated if not provided.
+     */
     id?: string;
 
-    /** 
-     * Amount as FLOAT for scaling calculations
-     * @example 315.0, 0.5, 2.5
+    /**
+     * Amount as FLOAT for scaling calculations.
+     * IngredientsSection.astro stores this in `data-original-amount` for scaling.
+     * @example 315, 0.5, 2.5
      */
     amount: number;
 
-    /** Unit of measurement */
-    unit: string;          // "grams", "cups", "tbsp"
+    /**
+     * Unit of measurement.
+     * IngredientsSection.astro handles pluralization automatically.
+     * @example "grams", "cups", "tbsp", "oz", "pieces"
+     */
+    unit: string;
 
-    /** Ingredient name */
-    name: string;          // "all-purpose flour"
+    /** Ingredient name @example "all-purpose flour", "unsalted butter" */
+    name: string;
 
-    /** 
-     * Preparation state for this ingredient
-     * Shown in recipe card ingredient list
-     * @example "diced", "minced", "room temperature", "sifted", "melted"
+    /**
+     * Preparation state — shown after the ingredient name in italic.
+     * @example "diced", "minced", "melted", "sifted", "at room temperature"
      */
     prep?: string;
 
-    /** Additional notes shown in UI */
-    notes?: string;        // "sifted", "room temperature"
+    /**
+     * Additional notes — rendered below the ingredient line in muted style.
+     * @example "or use almond flour for gluten-free", "preferably organic"
+     */
+    notes?: string;
 
-    /** Whether ingredient is optional */
+    /** Whether this ingredient is optional — shown as "(optional)" tag */
     isOptional?: boolean;
 
-    /** Alternative ingredients for substitutions feature */
+    /** Alternative ingredients for the substitutions feature */
     substitutes?: IngredientSubstitute[];
 }
 
+
 /**
- * Group of ingredients (e.g., "Dough", "Glaze", "Filling")
+ * Group of ingredients (e.g., "For the Dough", "For the Glaze").
+ * RecipeCard renders each group with its own heading.
+ * 
+ * JSON-LD flattens all groups into a single `recipeIngredient` array.
  */
 export interface IngredientGroup {
-    /** Group title for UI */
-    group_title: string;   // "Dough", "Glaze"
+    /**
+     * Group heading shown in the recipe card.
+     * @example "For the Dough", "Sauce", "Garnish"
+     */
+    group_title: string;
 
     /** Ingredients in this group */
     items: IngredientItem[];
 }
 
-// ============================================
-// Instructions
-// ============================================
+
+// ═══════════════════════════════════════════════
+// §3. Instructions
+// ═══════════════════════════════════════════════
 
 /**
- * Individual recipe step
- * Supports timers for UI and step linking for SEO
+ * Individual recipe step within a section.
+ * 
+ * **Frontend rendering (InstructionsSection.astro) already supports:**
+ * `name` (step title), `text` (body), `tip` (step-level note), `timer` (button)
+ * 
+ * @see InstructionsSection.astro — renders all fields
+ * @see toSchemaOrgInstructions() — converts to HowToStep for JSON-LD
  */
 export interface InstructionStep {
-    /** Optional step title */
-    name?: string;         // "Mix dry ingredients"
+    /**
+     * Optional step title — rendered as bold heading above the step text.
+     * Maps to HowToStep.name in JSON-LD.
+     * @example "Mix dry ingredients", "Prepare the filling"
+     */
+    name?: string;
 
-    /** Step description - supports markdown */
-    text: string;          // "Whisk flour and sugar together."
+    /**
+     * Step description — the main instruction content.
+     * Maps to HowToStep.text in JSON-LD.
+     */
+    text: string;
 
-    /** Step image URL for visual guidance */
+    /**
+     * Step photo URL — visual guidance for the step.
+     * Maps to HowToStep.image in JSON-LD.
+     */
     image?: string | null;
 
-    /** 
-     * Timer in SECONDS for UI timer feature
-     * @example 1200 = 20 minutes
+    /**
+     * Timer duration in **minutes** for the UI timer feature.
+     * InstructionsSection.astro renders a clickable timer button.
+     * @example 20 (=20 minutes)
      */
     timer?: number;
 
     /**
-     * Step-level tip/note
-     * Displayed below the instruction in recipe card (smaller, muted style)
-     * @example "Don't overmix or cookies will be tough"
-     * @example "If dough is sticky, chill 10 minutes"
-     * @example "Look for golden edges as done indicator"
+     * Step-level tip shown in a highlighted box below the step.
+     * Rendered with 💡 icon in InstructionsSection.astro.
+     * @example "Don't overmix or the cookies will be tough"
      */
     tip?: string;
 }
 
+
 /**
- * Section of instructions (e.g., "Make the dough", "Prepare the filling")
+ * Section of instructions (e.g., "Make the dough", "Prepare the filling").
+ * 
+ * Maps to HowToSection in JSON-LD when it has multiple steps.
+ * When it has a single step, the section is flattened to a single HowToStep.
  */
 export interface InstructionSection {
-    /** Section title */
-    section_title: string; // "Make the dough"
+    /**
+     * Section heading — rendered with a colored underline in InstructionsSection.astro.
+     * @example "Make the Dough", "Assembly", "Final Touches"
+     */
+    section_title: string;
 
-    /** Steps in this section */
+    /** Ordered steps in this section */
     steps: InstructionStep[];
 }
 
-// ============================================
-// Equipment & Video
-// ============================================
+
+// ═══════════════════════════════════════════════
+// §4. Equipment
+// ═══════════════════════════════════════════════
 
 /**
- * Equipment reference linking to equipment table
+ * Equipment item needed for the recipe.
+ * 
+ * Simplified model — uses a plain name instead of FK reference to an equipment
+ * table (no equipment module exists in the project).
+ * 
+ * RecipeCard.astro renders equipment as a checklist with optional/required tags.
+ * 
+ * @example { name: "Stand Mixer", required: true, notes: "or use hand mixer" }
+ * @example { name: "9x13 Baking Pan", required: true }
+ * @example { name: "Kitchen Torch", required: false, notes: "for brûlée topping" }
  */
-export interface EquipmentRef {
-    /** Reference to equipment table ID */
-    equipment_id: number;
+export interface EquipmentItem {
+    /** Equipment name @example "Stand Mixer", "Baking Sheet", "Parchment Paper" */
+    name: string;
 
-    /** Whether equipment is required */
-    required: boolean;
+    /**
+     * Whether this equipment is required (default: true).
+     * Optional equipment shown with "(optional)" tag in RecipeCard.
+     */
+    required?: boolean;
 
-    /** Notes about usage */
-    notes?: string;        // "or use hand mixer"
+    /** Usage notes or size info @example "9x13 inch", "or use hand mixer" */
+    notes?: string;
+
+    /** Optional affiliate/product link */
+    affiliateUrl?: string;
 }
 
 /**
- * Video content for recipe
- * Significantly enhances Google rich snippet visibility
+ * @deprecated Use `EquipmentItem` instead. This interface used `equipment_id`
+ * which references a non-existent equipment table.
+ */
+export interface EquipmentRef {
+    equipment_id: number;
+    required: boolean;
+    notes?: string;
+}
+
+
+// ═══════════════════════════════════════════════
+// §5. Video
+// ═══════════════════════════════════════════════
+
+/**
+ * Video content for the recipe.
+ * 
+ * Significantly enhances Google rich snippet visibility — recipes with video
+ * get a video thumbnail in search results.
+ * 
+ * RecipeCard.astro renders this as an embedded iframe in a "Video Tutorial" section.
  */
 export interface RecipeVideo {
-    /** Video URL (YouTube, Vimeo, or direct) */
+    /** Video URL (YouTube, Vimeo, or direct MP4) */
     url: string;
 
-    /** Video title */
+    /** Video title — used for iframe title attribute and JSON-LD */
     name: string;
 
-    /** Video description */
+    /** Video description for JSON-LD */
     description?: string;
 
-    /** Thumbnail image URL */
+    /** Thumbnail image URL — used in JSON-LD VideoObject */
     thumbnailUrl?: string;
 
-    /** 
-     * Duration in ISO-8601 format
-     * @example "PT2M30S" = 2 minutes 30 seconds
+    /**
+     * Duration in ISO-8601 format for JSON-LD.
+     * @example "PT2M30S" (2 minutes 30 seconds)
+     * @example "PT10M" (10 minutes)
      */
     duration: string;
 
-    /** Upload date in ISO-8601 format */
+    /** Upload date in ISO-8601 format @example "2024-01-15" */
     uploadDate?: string;
 }
 
-// ============================================
-// Aggregate Rating
-// ============================================
 
+// ═══════════════════════════════════════════════
+// §6. Aggregate Rating
+// ═══════════════════════════════════════════════
+
+/**
+ * Aggregate rating data for the recipe.
+ * 
+ * Rendered as star rating in RecipeCard.astro header.
+ * Maps to Schema.org AggregateRating in JSON-LD.
+ * 
+ * Only shown when `ratingValue > 0` and `ratingCount > 0`.
+ */
 export interface AggregateRating {
-    /** Average rating value (e.g., 4.8) */
+    /** Average rating value (1-5 scale) @example 4.8 */
     ratingValue: number | null;
 
-    /** Number of ratings (e.g., 55) */
+    /** Number of ratings/votes @example 55 */
     ratingCount: number;
 }
 
-// ============================================
-// Diet Types (Schema.org RestrictedDiet)
-// ============================================
 
+// ═══════════════════════════════════════════════
+// §7. Enums & Unions
+// ═══════════════════════════════════════════════
+
+/**
+ * Schema.org RestrictedDiet values.
+ * Used for diet badges in RecipeCard and RecipeMetaPills.
+ * @see https://schema.org/RestrictedDiet
+ */
 export type DietType =
     | 'VeganDiet'
     | 'VegetarianDiet'
@@ -257,119 +408,244 @@ export type DietType =
     | 'LowLactoseDiet'
     | 'LowSaltDiet';
 
+/**
+ * Recipe difficulty level.
+ * RecipeMetaPills.astro renders a visual bar indicator (1/2/3 bars).
+ * Stored in `articles.difficulty_label` for SQL-level filtering.
+ */
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 
-// ============================================
-// Complete Recipe JSON (matches schema.sql)
-// ============================================
+/**
+ * Estimated cost level for filtering and display.
+ * Stored in `cachedRecipeJson.isBudget` (derived from `estimatedCost === 'Budget'`).
+ */
+export type CostLevel = 'Budget' | 'Moderate' | 'Premium';
+
+
+// ═══════════════════════════════════════════════
+// §8. RecipeJson — Main Interface
+// ═══════════════════════════════════════════════
 
 /**
- * Recipe JSON Structure
+ * Complete recipe JSON structure.
  * 
- * This is the source of truth for recipe data stored in the database.
- * It serves dual purposes:
- * 1. Powers the interactive recipe card UI
- * 2. Generates Schema.org JSON-LD for Google rich snippets
+ * This is the **single source of truth** for all recipe-specific data.
+ * It is stored as a TEXT blob in `articles.recipe_json` and consumed by:
  * 
- * @see db/schema.sql lines 1344-1372 for database schema
+ * | Consumer              | File                        | What it reads                    |
+ * |-----------------------|-----------------------------|----------------------------------|
+ * | RecipeBuilder (admin) | RecipeBuilder.jsx            | All fields (edit UI)             |
+ * | RecipeCard (frontend) | RecipeCard.astro             | All fields (render)              |
+ * | RecipeMetaPills        | RecipeMetaPills.astro        | prep, cook, total, servings, difficulty, cuisine, diet |
+ * | IngredientsSection     | IngredientsSection.astro     | ingredients[]                    |
+ * | InstructionsSection    | InstructionsSection.astro    | instructions[]                   |
+ * | NutritionFacts         | NutritionFacts.astro         | nutrition                        |
+ * | JSON-LD endpoint       | recipes/[slug].ts            | All fields (Schema.org)          |
+ * | Recipe list API        | recipes/index.ts             | total, prep, cook, difficulty, servings, rating |
+ * | Cached fields sync     | articles.service.ts          | total, difficulty, nutrition, diet, ingredients |
+ * 
+ * **IMPORTANT — Fields that live at the Article level (NOT here):**
+ * `headline`, `shortDescription`, `imagesJson`, `authorId`, `categoryId`,
+ * `publishedAt`, `slug`, `tags` — these are on the `articles` table.
  */
 export interface RecipeJson {
-    // ==========================================
-    // TIME (numeric minutes for UI/filters)
-    // Converted to ISO-8601 for JSON-LD output
-    // ==========================================
-    prep?: number | null;          // Active prep time (minutes)
-    cook?: number | null;          // Active cook time (minutes)
-    total?: number | null;         // Total time (minutes)
+    // ── Time (numeric minutes) ────────────────────
+    // Used by RecipeCard stats grid, RecipeMetaPills, and cached scalar indexes.
+    // Converted to ISO-8601 (PT##M) for JSON-LD via minutesToIsoDuration().
 
-    // ==========================================
-    // TIME (ISO-8601 strings - legacy support)
-    // Modern code should use numeric fields above
-    // ==========================================
-    prepTime?: string | null;      // "PT15M"
-    cookTime?: string | null;      // "PT25M"
-    totalTime?: string | null;     // "PT40M"
+    /** Active preparation time in minutes @example 15 */
+    prep: number | null;
 
-    // ==========================================
-    // SERVINGS & YIELD
-    // ==========================================
-    /** 
-     * Numeric servings for UI scaling feature
-     * @example 4, 12
+    /** Active cooking time in minutes @example 25 */
+    cook: number | null;
+
+    /**
+     * Total time in minutes.
+     * If null, frontends auto-derive it as `prep + cook`.
+     * Synced to `articles.total_time_minutes` for SQL filtering.
+     * @example 40
      */
-    servings?: number | null;
+    total: number | null;
 
-    /** 
-     * Human-readable yield string for JSON-LD
-     * REQUIRED by Google if nutrition is provided
-     * @example "12 cookies", "Serves 4", "Makes 2 loaves"
+    // ── Yield & Servings ──────────────────────────
+
+    /**
+     * Numeric servings count — used for ingredient scaling in RecipeCard.
+     * The user can increase/decrease this and ingredients scale proportionally.
+     * @example 4
      */
-    recipeYield?: string | null;
+    servings: number | null;
 
-    // ==========================================
-    // METADATA (Schema.org)
-    // ==========================================
-    recipeCategory?: string | null;    // "Dessert", "Breakfast", "Main Course"
-    recipeCuisine?: string | null;     // "Italian", "Mexican", "American"
-    keywords?: string[];               // ["lemon", "blueberry", "quick"]
-    suitableForDiet?: DietType[];      // ["VeganDiet", "GlutenFreeDiet"]
+    /**
+     * Human-readable yield string for JSON-LD `recipeYield`.
+     * Different from `servings` — this is descriptive text.
+     * @example "12 cookies", "2 loaves", "Serves 4-6"
+     */
+    recipeYield: string | null;
 
-    // ==========================================
-    // RECIPE INFO
-    // ==========================================
-    difficulty?: DifficultyLevel | null;   // "Easy", "Medium", "Hard"
-    cookingMethod?: string | null;         // "baking", "grilling", "frying"
-    estimatedCost?: string | null;         // "Budget", "Moderate", "Premium"
+    // ── Classification ────────────────────────────
 
-    // ==========================================
-    // STRUCTURED DATA (Core Recipe Content)
-    // ==========================================
-    /** 
-     * Grouped ingredients for UI and JSON-LD
-     * @see IngredientGroup
+    /**
+     * Recipe course/category for JSON-LD `recipeCategory`.
+     * Shown as "Course: Dessert" pill in RecipeCard header.
+     * @example "Dessert", "Breakfast", "Main Course", "Appetizer"
+     */
+    recipeCategory: string | null;
+
+    /**
+     * Cuisine type for JSON-LD `recipeCuisine`.
+     * Shown as globe icon pill in RecipeMetaPills.
+     * @example "Italian", "Mexican", "French", "Japanese"
+     */
+    recipeCuisine: string | null;
+
+    /**
+     * SEO keywords for JSON-LD `keywords`.
+     * @example ["lemon", "blueberry", "quick", "summer"]
+     */
+    keywords: string[];
+
+    /**
+     * Schema.org diet restrictions.
+     * Rendered as colored badges in RecipeCard (VeganDiet → green, etc.)
+     * Limited to first 2 in RecipeMetaPills compact view.
+     */
+    suitableForDiet: DietType[];
+
+    /**
+     * Recipe difficulty level.
+     * Rendered as 1/2/3 bar indicator in RecipeMetaPills.
+     * Synced to `articles.difficulty_label` for SQL filtering.
+     */
+    difficulty: DifficultyLevel | null;
+
+    /**
+     * Cooking method for JSON-LD `cookingMethod`.
+     * @example "Baking", "Grilling", "Frying", "Slow cooking", "No-cook"
+     */
+    cookingMethod: string | null;
+
+    /**
+     * Estimated cost level for filtering.
+     * Synced to `cachedRecipeJson.isBudget` when value is "Budget".
+     */
+    estimatedCost: CostLevel | null;
+
+    // ── Structured Content (Core Recipe Data) ─────
+
+    /**
+     * Grouped ingredient lists.
+     * Each group has a title ("For the Dough") and array of items.
+     * Flattened for JSON-LD via `flattenIngredients()`.
      */
     ingredients: IngredientGroup[];
 
     /**
-     * Grouped instructions for UI and JSON-LD
-     * @see InstructionSection
+     * Grouped instruction steps.
+     * Each section has a title ("Assembly") and array of steps.
+     * Converted to HowToSection/HowToStep for JSON-LD via `toSchemaOrgInstructions()`.
      */
     instructions: InstructionSection[];
 
-    /** Chef's tips array for recipe card */
-    tips?: string[];
-
-    // ==========================================
-    // NUTRITION
-    // ==========================================
-    /** 
-     * Nutrition information per serving
-     * CRITICAL: servingSize is REQUIRED if nutrition is provided
+    /**
+     * Chef's tips — rendered in a "Recipe Notes" section with 💡 icons.
+     * Different from step-level tips (which are on InstructionStep.tip).
      */
-    nutrition?: NutritionInfo;
+    tips: string[];
 
-    // ==========================================
-    // RATINGS
-    // ==========================================
-    aggregateRating?: AggregateRating;
+    // ── Nutrition ─────────────────────────────────
 
-    // ==========================================
-    // EQUIPMENT
-    // ==========================================
-    equipment?: EquipmentRef[];
+    /**
+     * Nutrition information per serving.
+     * Rendered by NutritionFacts.astro in grid or USDA label format.
+     * Converted to SchemaOrgNutrition for JSON-LD.
+     * 
+     * **Google requirement:** `servingSize` MUST be set if any nutrition field is provided.
+     */
+    nutrition: NutritionInfo | null;
 
-    // ==========================================
-    // VIDEO
-    // ==========================================
-    video?: RecipeVideo | null;
+    // ── Social Proof ──────────────────────────────
+
+    /**
+     * Aggregate rating — rendered as star rating in RecipeCard.
+     * Maps to Schema.org AggregateRating in JSON-LD.
+     */
+    aggregateRating: AggregateRating | null;
+
+    // ── Equipment ─────────────────────────────────
+
+    /**
+     * Equipment needed — rendered as a checklist section in RecipeCard.
+     * Section is hidden if array is empty.
+     */
+    equipment: EquipmentItem[];
+
+    // ── Video ─────────────────────────────────────
+
+    /**
+     * Recipe video — rendered as embedded iframe in RecipeCard.
+     * Significantly boosts Google rich snippet visibility.
+     * Section is hidden if null.
+     */
+    video: RecipeVideo | null;
 }
 
-// ============================================
-// Conversion Utilities
-// ============================================
+
+// ═══════════════════════════════════════════════
+// §9. Default Values
+// ═══════════════════════════════════════════════
 
 /**
- * Convert internal NutritionInfo to Schema.org format
+ * Default empty recipe JSON — used to initialize new recipes.
+ * 
+ * **This is the single source of truth for default values.**
+ * RecipeBuilder.jsx MUST import and use this instead of its own `defaultRecipe`.
+ * 
+ * Design decisions:
+ * - All optional scalars default to `null` (not `''` or `undefined`)
+ * - All arrays default to `[]` (not `undefined`)
+ * - `nutrition` and `aggregateRating` default to `null` (absence = no data)
+ * - No pre-filled groups — user adds groups as needed
+ */
+export const DEFAULT_RECIPE_JSON: RecipeJson = {
+    prep: null,
+    cook: null,
+    total: null,
+    servings: null,
+    recipeYield: null,
+    recipeCategory: null,
+    recipeCuisine: null,
+    keywords: [],
+    suitableForDiet: [],
+    difficulty: null,
+    cookingMethod: null,
+    estimatedCost: null,
+    ingredients: [],
+    instructions: [],
+    tips: [],
+    nutrition: null,
+    aggregateRating: null,
+    equipment: [],
+    video: null,
+};
+
+
+// ═══════════════════════════════════════════════
+// §10. Conversion Utilities (JSON-LD Output)
+// ═══════════════════════════════════════════════
+
+/**
+ * Convert internal NutritionInfo to Schema.org NutritionInformation format.
+ * 
+ * Numeric values → strings with units (e.g., 15 → "15g", 320 → "320 calories").
+ * Sodium/cholesterol use "mg" instead of "g".
+ * 
+ * @param nutrition - Internal nutrition data with numeric values
+ * @returns Schema.org formatted nutrition object for JSON-LD
+ * 
+ * @example
+ * toSchemaOrgNutrition({ calories: 320, fatContent: 15, servingSize: "1 cookie" })
+ * // → { "@type": "NutritionInformation", calories: "320 calories", fatContent: "15g", servingSize: "1 cookie" }
  */
 export function toSchemaOrgNutrition(nutrition: NutritionInfo): SchemaOrgNutrition {
     return {
@@ -389,29 +665,44 @@ export function toSchemaOrgNutrition(nutrition: NutritionInfo): SchemaOrgNutriti
     };
 }
 
+
 /**
- * Convert minutes to ISO-8601 duration
- * @example 15 -> "PT15M"
- * @example 90 -> "PT1H30M"
+ * Convert minutes to ISO-8601 duration string for JSON-LD.
+ * Returns null for null/zero/negative input so undefined fields are omitted.
+ * 
+ * @param minutes - Duration in minutes (null-safe)
+ * @returns ISO-8601 duration string, or null if no valid duration
+ * 
+ * @example minutesToIsoDuration(15)  // → "PT15M"
+ * @example minutesToIsoDuration(90)  // → "PT1H30M"
+ * @example minutesToIsoDuration(60)  // → "PT1H"
+ * @example minutesToIsoDuration(null) // → null
  */
-export function minutesToIsoDuration(minutes: number): string {
-    if (minutes < 60) {
-        return `PT${minutes}M`;
-    }
+export function minutesToIsoDuration(minutes: number | null | undefined): string | null {
+    if (!minutes || minutes <= 0) return null;
+
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    if (mins === 0) {
-        return `PT${hours}H`;
-    }
+
+    if (hours === 0) return `PT${mins}M`;
+    if (mins === 0) return `PT${hours}H`;
     return `PT${hours}H${mins}M`;
 }
 
+
 /**
- * Parse ISO-8601 duration to minutes
- * @example "PT15M" -> 15
- * @example "PT1H30M" -> 90
+ * Parse ISO-8601 duration string back to minutes.
+ * Used for migrating legacy data that stored times as ISO strings.
+ * 
+ * @param duration - ISO-8601 duration string
+ * @returns Duration in minutes, or 0 if parsing fails
+ * 
+ * @example isoDurationToMinutes("PT15M")   // → 15
+ * @example isoDurationToMinutes("PT1H30M") // → 90
+ * @example isoDurationToMinutes("PT2H")    // → 120
  */
-export function isoDurationToMinutes(duration: string): number {
+export function isoDurationToMinutes(duration: string | null | undefined): number {
+    if (!duration) return 0;
     const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
     if (!match) return 0;
     const hours = parseInt(match[1] || '0', 10);
@@ -419,34 +710,59 @@ export function isoDurationToMinutes(duration: string): number {
     return hours * 60 + minutes;
 }
 
+
 /**
- * Format ingredient for display and JSON-LD
- * @example { amount: 2, unit: "cups", name: "flour", notes: "sifted" }
- *       -> "2 cups flour, sifted"
+ * Format a single ingredient item to a human-readable string.
+ * Used for JSON-LD `recipeIngredient` array and print view.
+ * 
+ * Includes amount, unit, name, prep state, notes, and optional tag.
+ * 
+ * @param item - Ingredient item to format
+ * @returns Formatted string
+ * 
+ * @example
+ * formatIngredient({ amount: 2, unit: "cups", name: "flour", prep: "sifted" })
+ * // → "2 cups flour, sifted"
+ * 
+ * @example
+ * formatIngredient({ amount: 0.5, unit: "tsp", name: "salt", isOptional: true })
+ * // → "0.5 tsp salt (optional)"
  */
 export function formatIngredient(item: IngredientItem): string {
     const parts: string[] = [];
-    
+
     if (item.amount) {
-        // Format number (remove trailing zeros)
         const amountStr = Number.isInteger(item.amount)
             ? item.amount.toString()
             : item.amount.toFixed(2).replace(/\.?0+$/, '');
         parts.push(amountStr);
     }
-    
+
     if (item.unit) parts.push(item.unit);
     parts.push(item.name);
-    if (item.notes) parts.push(`, ${item.notes}`);
-    
+    if (item.prep) parts.push(`, ${item.prep}`);
+    if (item.notes) parts.push(`(${item.notes})`);
+
     let result = parts.join(' ');
     if (item.isOptional) result += ' (optional)';
-    
+
     return result;
 }
 
+
 /**
- * Flatten ingredients for JSON-LD recipeIngredient field
+ * Flatten all ingredient groups into a single string array.
+ * Used for JSON-LD `recipeIngredient` field which requires a flat list.
+ * 
+ * @param ingredients - Grouped ingredients from RecipeJson
+ * @returns Flat array of formatted ingredient strings
+ * 
+ * @example
+ * flattenIngredients([
+ *   { group_title: "Dough", items: [{ amount: 2, unit: "cups", name: "flour" }] },
+ *   { group_title: "Glaze", items: [{ amount: 1, unit: "cup", name: "sugar" }] }
+ * ])
+ * // → ["2 cups flour", "1 cup sugar"]
  */
 export function flattenIngredients(ingredients: IngredientGroup[]): string[] {
     const result: string[] = [];
@@ -458,24 +774,31 @@ export function flattenIngredients(ingredients: IngredientGroup[]): string[] {
     return result;
 }
 
+
 /**
- * Convert instructions to Schema.org HowToStep/HowToSection format
+ * Convert instruction sections to Schema.org HowToStep/HowToSection format.
+ * 
+ * - Multi-step sections → `HowToSection` containing `HowToStep` items
+ * - Single-step sections → flattened to a single `HowToStep`
+ * - Step position is globally sequential (1, 2, 3...) across all sections
+ * 
+ * @param instructions - Grouped instructions from RecipeJson
+ * @returns Array of HowToSection/HowToStep objects for JSON-LD
  */
 export function toSchemaOrgInstructions(
     instructions: InstructionSection[],
-    baseUrl: string
-): Array<{ '@type': 'HowToSection' | 'HowToStep'; [key: string]: unknown }> {
-    const result: Array<{ '@type': 'HowToSection' | 'HowToStep'; [key: string]: unknown }> = [];
+): Array<{ '@type': 'HowToSection' | 'HowToStep';[key: string]: unknown }> {
+    const result: Array<{ '@type': 'HowToSection' | 'HowToStep';[key: string]: unknown }> = [];
     let globalStepNumber = 1;
 
     for (const section of instructions) {
         if (section.section_title && section.steps.length > 1) {
-            // Multi-step section → HowToSection
+            // Multi-step section → HowToSection wrapper
             result.push({
                 '@type': 'HowToSection',
                 name: section.section_title,
                 itemListElement: section.steps.map((step) => {
-                    const stepData: { '@type': 'HowToStep'; [key: string]: unknown } = {
+                    const stepData: { '@type': 'HowToStep';[key: string]: unknown } = {
                         '@type': 'HowToStep',
                         position: globalStepNumber++,
                         text: step.text,
@@ -486,9 +809,9 @@ export function toSchemaOrgInstructions(
                 })
             });
         } else {
-            // Single step or no section → flat HowToStep
+            // Single step or no title → flat HowToStep(s)
             for (const step of section.steps) {
-                const stepData: { '@type': 'HowToStep'; [key: string]: unknown } = {
+                const stepData: { '@type': 'HowToStep';[key: string]: unknown } = {
                     '@type': 'HowToStep',
                     position: globalStepNumber++,
                     text: step.text,
@@ -503,35 +826,122 @@ export function toSchemaOrgInstructions(
     return result;
 }
 
-// ============================================
-// Default Values
-// ============================================
+
+// ═══════════════════════════════════════════════
+// §11. Migration Utilities (Legacy Data Support)
+// ═══════════════════════════════════════════════
 
 /**
- * Default empty recipe JSON
- * Matches schema.sql DEFAULT value
+ * Migrate legacy recipe data to the current RecipeJson format.
+ * 
+ * Handles these legacy patterns found in existing data:
+ * 1. ISO-8601 time strings (`prepTime: "PT15M"`) → numeric minutes (`prep: 15`)
+ * 2. Flat string ingredients (`["2 cups flour"]`) → structured IngredientGroup
+ * 3. Old `group` key → `group_title` key
+ * 4. Old `course` / `cuisine` keys → `recipeCategory` / `recipeCuisine`
+ * 5. Old `calories` top-level field → `nutrition.calories`
+ * 
+ * Called by RecipeBuilder.jsx when loading existing data.
+ * 
+ * @param raw - Raw parsed JSON (may be in any legacy format)
+ * @returns Normalized RecipeJson object
  */
-export const DEFAULT_RECIPE_JSON: RecipeJson = {
-    prep: null,
-    cook: null,
-    total: null,
-    prepTime: null,
-    cookTime: null,
-    totalTime: null,
-    servings: null,
-    recipeYield: null,
-    recipeCategory: null,
-    recipeCuisine: null,
-    keywords: [],
-    suitableForDiet: [],
-    difficulty: null,
-    cookingMethod: null,
-    estimatedCost: null,
-    ingredients: [],
-    instructions: [],
-    tips: [],
-    nutrition: undefined,
-    aggregateRating: undefined,
-    equipment: [],
-    video: null,
-};
+export function migrateRecipeJson(raw: Record<string, any>): RecipeJson {
+    // Start with defaults, then overlay raw data
+    const result: RecipeJson = { ...DEFAULT_RECIPE_JSON, ...raw };
+
+    // ── Migrate ISO time strings to numeric minutes ──
+    if (!result.prep && raw.prepTime && typeof raw.prepTime === 'string') {
+        result.prep = isoDurationToMinutes(raw.prepTime);
+    }
+    if (!result.cook && raw.cookTime && typeof raw.cookTime === 'string') {
+        result.cook = isoDurationToMinutes(raw.cookTime);
+    }
+    if (!result.total && raw.totalTime && typeof raw.totalTime === 'string') {
+        result.total = isoDurationToMinutes(raw.totalTime);
+    }
+
+    // ── Ensure servings is numeric ──
+    if (typeof result.servings === 'string') {
+        result.servings = parseInt(result.servings as any) || null;
+    }
+
+    // ── Migrate old field names ──
+    if (!result.recipeCategory && raw.course) {
+        result.recipeCategory = raw.course;
+    }
+    if (!result.recipeCuisine && raw.cuisine) {
+        result.recipeCuisine = raw.cuisine;
+    }
+
+    // ── Migrate ingredients ──
+    let ingredients = raw.ingredients || [];
+
+    if (ingredients.length > 0 && typeof ingredients[0] === 'string') {
+        // Flat string array → structured group
+        ingredients = [{
+            group_title: 'Ingredients',
+            items: ingredients.map((text: string) => ({
+                name: text,
+                amount: 0,
+                unit: '',
+            })),
+        }];
+    } else if (ingredients.length > 0 && ingredients[0].group !== undefined) {
+        // Old `{ group, items }` format → `{ group_title, items }`
+        ingredients = ingredients.map((g: any) => ({
+            group_title: g.group || g.group_title || 'Ingredients',
+            items: (g.items || []).map((item: any) =>
+                typeof item === 'string'
+                    ? { name: item, amount: 0, unit: '' }
+                    : item
+            ),
+        }));
+    }
+    result.ingredients = ingredients;
+
+    // ── Migrate instructions ──
+    let instructions = raw.instructions || [];
+
+    if (instructions.length > 0 && instructions[0].text !== undefined && !instructions[0].steps) {
+        // Flat step array → single section
+        instructions = [{
+            section_title: 'Steps',
+            steps: instructions.map((i: any) => ({
+                text: typeof i === 'string' ? i : i.text || '',
+            })),
+        }];
+    } else if (instructions.length > 0 && instructions[0].group !== undefined) {
+        // Old `{ group, steps }` format → `{ section_title, steps }`
+        instructions = instructions.map((g: any) => ({
+            section_title: g.group || g.section_title || 'Steps',
+            steps: (g.steps || []).map((step: any) =>
+                typeof step === 'string'
+                    ? { text: step }
+                    : step
+            ),
+        }));
+    }
+    result.instructions = instructions;
+
+    // ── Migrate old top-level calories ──
+    if (!result.nutrition && raw.calories) {
+        result.nutrition = { calories: parseInt(raw.calories) };
+    }
+
+    // ── Ensure arrays are never undefined ──
+    result.keywords = result.keywords || [];
+    result.suitableForDiet = result.suitableForDiet || [];
+    result.tips = result.tips || [];
+    result.equipment = result.equipment || [];
+
+    // ── Clean up legacy keys from the spread ──
+    delete (result as any).prepTime;
+    delete (result as any).cookTime;
+    delete (result as any).totalTime;
+    delete (result as any).course;
+    delete (result as any).cuisine;
+    delete (result as any).calories;
+
+    return result;
+}
