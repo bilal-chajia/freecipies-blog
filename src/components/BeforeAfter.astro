@@ -1,12 +1,16 @@
 ---
-import type { ImageVariants } from "@shared/types/images";
+import type { ImageVariants, ImageSlot } from "@shared/types/images";
 import { getBestVariantUrl, getSrcSet } from "@shared/types/images";
 
 type BeforeAfterImage = {
-  media_id: number;
-  alt: string;
-  label?: string;
+  mediaId: number;
+  imageUrl?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageStyle?: string;
   variants?: ImageVariants;
+  label?: string;
 };
 
 const { block } = Astro.props as {
@@ -58,7 +62,7 @@ const aspectRatio =
             {beforeUrl ? (
               <img
                 src={beforeUrl}
-                alt={before.alt || ""}
+                alt={before.imageAlt || ""}
                 srcset={beforeSrcSet || undefined}
                 sizes="(max-width: 768px) 100vw, 50vw"
                 loading="lazy"
@@ -73,7 +77,7 @@ const aspectRatio =
             {afterUrl ? (
               <img
                 src={afterUrl}
-                alt={after.alt || ""}
+                alt={after.imageAlt || ""}
                 srcset={afterSrcSet || undefined}
                 sizes="(max-width: 768px) 100vw, 50vw"
                 loading="lazy"
@@ -92,7 +96,7 @@ const aspectRatio =
               <img
                 class="ba-image"
                 src={afterUrl}
-                alt={after.alt || ""}
+                alt={after.imageAlt || ""}
                 srcset={afterSrcSet || undefined}
                 sizes="(max-width: 768px) 100vw, 720px"
                 loading="lazy"
@@ -106,7 +110,7 @@ const aspectRatio =
                 <img
                   class="ba-image"
                   src={beforeUrl}
-                  alt={before.alt || ""}
+                  alt={before.imageAlt || ""}
                   srcset={beforeSrcSet || undefined}
                   sizes="(max-width: 768px) 100vw, 720px"
                   loading="lazy"
@@ -131,31 +135,32 @@ const aspectRatio =
 }
 
 <script>
-  document.querySelectorAll("[data-before-after]").forEach((el) => {
-    const images = el.querySelector(".ba-images");
+  document.querySelectorAll("[data-before-after]").forEach((elContainer) => {
+    const el = elContainer as HTMLElement;
+    const images = el.querySelector(".ba-images") as HTMLElement;
     if (!images) return;
     let isDragging = false;
 
-    const setPosition = (clientX) => {
+    const setPosition = (clientX: number) => {
       const rect = images.getBoundingClientRect();
       const raw = ((clientX - rect.left) / rect.width) * 100;
       const clamped = Math.min(100, Math.max(0, raw));
       el.style.setProperty("--ba-position", `${clamped}%`);
     };
 
-    const onPointerMove = (event) => {
+    const onPointerMove = (event: PointerEvent) => {
       if (event.pointerType === "mouse" || isDragging) {
         setPosition(event.clientX);
       }
     };
 
-    images.addEventListener("pointerdown", (event) => {
+    images.addEventListener("pointerdown", (event: PointerEvent) => {
       isDragging = true;
       images.setPointerCapture?.(event.pointerId);
       setPosition(event.clientX);
     });
 
-    images.addEventListener("pointermove", onPointerMove);
+    images.addEventListener("pointermove", onPointerMove as EventListener);
 
     images.addEventListener("pointerleave", () => {
       if (!isDragging) return;

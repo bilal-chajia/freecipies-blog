@@ -2423,7 +2423,7 @@ const navItems = [
     function updateClearBtnVisibility() {
       if (!clearBtn) return;
       const anyChecked = Array.from(
-        card.querySelectorAll("[data-ingredient-check]"),
+        card?.querySelectorAll("[data-ingredient-check]") || [],
       ).some((c) => (c as HTMLInputElement).checked);
       clearBtn.hidden = !anyChecked;
     }

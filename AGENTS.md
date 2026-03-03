@@ -375,6 +375,13 @@ When saving an article, rebuild these cached fields:
 2. **Import types** from `src/shared/types/index.ts`
 3. **Use existing patterns** - check `src/lib/` for utilities before creating new ones
 
+### CSS & Responsiveness Rules
+
+1. **Container Queries First** - Use `@container` (`container-type: inline-size`) for component internals so they adapt to their parent container's width, not just the viewport.
+2. **Intrinsic Web Design** - Favor fluid layouts using `clamp()`, `min()`, `max()`, and CSS Grid `minmax()`.
+3. **Logical Properties** - Use `margin-inline`, `padding-block`, etc., instead of physical properties.
+4. **Minimal Media Queries** - Only use `@media` for major structural changes that Container Queries cannot handle.
+
 ### Null Handling
 
 ```typescript

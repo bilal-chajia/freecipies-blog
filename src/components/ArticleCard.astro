@@ -34,7 +34,7 @@ const image = {
 };
 
 // Parse recipeJson if it's a string
-const recipe = article.recipeJson
+const recipe = 'recipeJson' in article && article.recipeJson
   ? typeof article.recipeJson === "string"
     ? JSON.parse(article.recipeJson)
     : article.recipeJson
@@ -99,7 +99,7 @@ const showBookmark = article.type === "recipe";
                 d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1zm12 8H5v8h14z"
               />
             </svg>
-            <FormattedDate date={article.publishedAt || article.createdAt} />
+            <FormattedDate date={article.publishedAt || article.createdAt || undefined} />
           </span>
         </div>
         {hasRating && (
@@ -286,6 +286,7 @@ font-semibold uppercase tracking-wide"
 )}
 
 <style>
+  /* Container Query Setup */
   .recipe-list-card {
     display: grid;
     grid-template-columns: 1fr;
@@ -294,9 +295,12 @@ font-semibold uppercase tracking-wide"
     border-radius: 6px;
     overflow: hidden;
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+    container-type: inline-size;
+    container-name: recipe-list-card;
   }
 
-  @media (min-width: 768px) {
+  /* Container query replacing media query */
+  @container recipe-list-card (min-width: 640px) {
     .recipe-list-card {
       grid-template-columns: 260px 1fr;
     }
@@ -305,6 +309,37 @@ font-semibold uppercase tracking-wide"
       border-left: 1px solid #e5e7eb;
       border-top: 0;
     }
+
+    /* :has() selector - adjust image height when card has rating */
+    .recipe-list-card:has(.list-rating) .list-image {
+      min-height: 240px;
+    }
+  }
+
+  @container recipe-list-card (min-width: 768px) {
+    .list-title {
+      font-size: 1.15rem;
+    }
+
+    .list-content {
+      padding: 1.5rem 2rem;
+    }
+  }
+
+  /* :has() selector - Card with bookmark styling */
+  .recipe-list-card:has(.bookmark-chip) .list-image {
+    /* Ensure bookmark doesn't overlap content */
+    --bookmark-offset: 3rem;
+  }
+
+  /* :has() selector - Card with rating gets accent border */
+  .recipe-list-card:has(.list-rating) {
+    border-left: 3px solid #6db24a;
+  }
+
+  /* :has() selector - Excerpt truncation based on content */
+  .list-content:has(.list-rating) .list-excerpt {
+    -webkit-line-clamp: 1;
   }
 
   .list-image {
@@ -314,11 +349,17 @@ font-semibold uppercase tracking-wide"
     min-height: 200px;
   }
 
+  /* :has() selector - Image hover effect only when card has link */
+  article:has(a):hover .list-image-img {
+    transform: scale(1.02);
+  }
+
   .list-image-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    transition: transform 0.3s ease;
   }
 
   .bookmark-chip {
@@ -337,6 +378,12 @@ font-semibold uppercase tracking-wide"
     pointer-events: auto;
     border: none;
     z-index: 2;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  /* :has() selector - Scale bookmark when card is hovered */
+  .recipe-list-card:hover:has(.bookmark-chip) .bookmark-chip {
+    transform: scale(1.1);
   }
 
   .bookmark-chip svg {
@@ -440,6 +487,30 @@ font-semibold uppercase tracking-wide"
 
   .rating-text {
     color: #4b5563;
+  }
+
+  /* Fallback for browsers without container query support */
+  @supports not (container-type: inline-size) {
+    @media (min-width: 640px) {
+      .recipe-list-card {
+        grid-template-columns: 260px 1fr;
+      }
+
+      .list-content {
+        border-left: 1px solid #e5e7eb;
+        border-top: 0;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .list-title {
+        font-size: 1.15rem;
+      }
+
+      .list-content {
+        padding: 1.5rem 2rem;
+      }
+    }
   }
 </style>
 

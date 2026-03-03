@@ -92,11 +92,14 @@ try {
 </div>
 
 <style>
+  /* Container Query Setup */
   .popular-recipes-widget {
     background: #fff;
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    container-type: inline-size;
+    container-name: popular-widget;
   }
 
   .widget-header {
@@ -126,6 +129,26 @@ try {
     gap: 1rem;
   }
 
+  /* Container query - horizontal layout on wider containers */
+  @container popular-widget (min-width: 400px) {
+    .recipe-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+
+    .recipe-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  @container popular-widget (min-width: 600px) {
+    .recipe-list {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
   .recipe-item {
     display: flex;
     align-items: center;
@@ -137,8 +160,30 @@ try {
     transition: background 0.2s ease;
   }
 
-  .recipe-item:hover {
+  /* :has() selector - Style items with images differently */
+  .recipe-item:has(.recipe-image) {
+    padding-left: 0;
+  }
+
+  /* :has() selector - Highlight item on hover when it has a title */
+  .recipe-item:hover:has(.recipe-title) {
     background: #f8f8f8;
+  }
+
+  /* :has() selector - Add visual indicator to items with meta info */
+  .recipe-item:has(.recipe-meta)::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6db24a;
+    margin-left: auto;
+  }
+
+  @container popular-widget (min-width: 400px) {
+    .recipe-item:has(.recipe-meta)::after {
+      display: none;
+    }
   }
 
   .recipe-content {
