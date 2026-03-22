@@ -12,7 +12,7 @@ import {
 import ImageEditor from '@/components/ImageEditor.jsx';
 import ImageUploader from '@/components/ImageUploader';
 import { Calendar } from '@/ui/calendar.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover.jsx';
+import { DateRangePicker } from '@/ui/date-range-picker.jsx';
 import {
   Upload,
   Search,
@@ -223,7 +223,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
   const [compressionStats, setCompressionStats] = useState(null);
   const [dateFrom, setDateFrom] = useState(undefined);
   const [dateTo, setDateTo] = useState(undefined);
-  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+  // Date Popover State (Removed since DateRangePicker manages its own)
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -249,13 +249,24 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
   const loadMedia = async () => {
     try {
       const params = {
-        type: filterType !== 'all' ? filterType : undefined,
+        type: filterType,
         search: searchQuery || undefined,
         sortBy,
         order: sortOrder,
-        dateFrom: dateFrom ? dateFrom.toISOString() : undefined,
-        dateTo: dateTo ? dateTo.toISOString() : undefined,
       };
+      const getUtcBoundary = (d, isEndOfDay) => {
+        if (!d) return undefined;
+        const date = new Date(d);
+        if (isEndOfDay) {
+            date.setHours(23, 59, 59, 999);
+        } else {
+            date.setHours(0, 0, 0, 0);
+        }
+        return date.toISOString();
+      };
+
+      if (dateFrom) params.dateFrom = getUtcBoundary(dateFrom, false);
+      if (dateTo) params.dateTo = getUtcBoundary(dateTo, true);
 
       const response = await mediaAPI.getAll(params);
       if (response.data.success) {
@@ -666,73 +677,16 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
             </SelectContent>
           </Select>
 
-          <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" className="h-9 px-3 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold gap-2 w-[170px] justify-start">
-                <CalendarDays className="h-3.5 w-3.5 opacity-60" />
-                {dateFrom || dateTo ? (
-                  <span className="truncate">
-                    {dateFrom ? dateFrom.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '...'}
-                    {' – '}
-                    {dateTo ? dateTo.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Now'}
-                  </span>
-                ) : (
-                  'All Time'
-                )}
-                {(dateFrom || dateTo) && (
-                  <span
-                    role="button"
-                    className="ml-auto p-0.5 rounded-full hover:bg-accent cursor-pointer"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDateFrom(undefined); setDateTo(undefined); }}
-                  >
-                    <X className="size-3 opacity-60 hover:opacity-100" />
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 rounded-2xl" align="start">
-              <div className="flex">
-                {/* Preset shortcuts */}
-                <div className="border-r border-border/40 p-3 flex flex-col gap-1 min-w-[130px]">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-2 mb-1">Quick Select</p>
-                  {[
-                    { label: 'Today', fn: () => { const d = new Date(); d.setHours(0,0,0,0); setDateFrom(d); setDateTo(new Date()); }},
-                    { label: 'Last 7 Days', fn: () => { const d = new Date(); d.setDate(d.getDate() - 7); setDateFrom(d); setDateTo(new Date()); }},
-                    { label: 'Last 30 Days', fn: () => { const d = new Date(); d.setDate(d.getDate() - 30); setDateFrom(d); setDateTo(new Date()); }},
-                    { label: 'This Year', fn: () => { setDateFrom(new Date(new Date().getFullYear(), 0, 1)); setDateTo(new Date()); }},
-                    { label: 'All Time', fn: () => { setDateFrom(undefined); setDateTo(undefined); }},
-                  ].map(({ label, fn }) => (
-                    <Button
-                      key={label}
-                      variant="ghost"
-                      size="sm"
-                      className="justify-start text-xs h-8 rounded-lg font-medium"
-                      onClick={() => { fn(); setDatePopoverOpen(false); }}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-                {/* Calendar */}
-                <div className="p-3">
-                  <Calendar
-                    mode="range"
-                    selected={dateFrom && dateTo ? { from: dateFrom, to: dateTo } : dateFrom ? { from: dateFrom } : undefined}
-                    onSelect={(range) => {
-                      setDateFrom(range?.from);
-                      setDateTo(range?.to);
-                      // Only close when a real range is selected (two different dates)
-                      if (range?.from && range?.to && range.from.getTime() !== range.to.getTime()) {
-                        setDatePopoverOpen(false);
-                      }
-                    }}
-                    numberOfMonths={1}
-                    disabled={{ after: new Date() }}
-                  />
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+          <DateRangePicker
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onApply={(range) => {
+              setDateFrom(range.dateFrom);
+              setDateTo(range.dateTo);
+            }}
+            placeholder="All Time"
+            className="w-[170px]"
+          />
 
           <div className="flex p-1 bg-accent/50 rounded-2xl border border-border/30 h-9">
             <Button variant="ghost" onClick={() => setViewMode('grid')} className={`h-full w-10 p-0 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>

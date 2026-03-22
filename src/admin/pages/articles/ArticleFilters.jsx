@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, Filter, X, Calendar, ChevronDown } from 'lucide-react';
+import { Search, Filter, X, ChevronDown } from 'lucide-react';
+import { DateRangePicker } from '@/ui/date-range-picker.jsx';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Badge } from '@/ui/badge.jsx';
@@ -38,6 +39,15 @@ const ArticleFilters = ({
         if (fixedType && key === 'type') return false;
         return value !== '' && value !== 'all' && (!Array.isArray(value) || value.length > 0);
     }).length;
+
+    const parseDateParam = (dateStr) => {
+        if (!dateStr) return undefined;
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? undefined : d;
+    };
+
+    const df = parseDateParam(localFilters.dateFrom);
+    const dt = parseDateParam(localFilters.dateTo);
 
     return (
         <div className="flex flex-col gap-4">
@@ -209,27 +219,27 @@ const ArticleFilters = ({
 
                     <div className="space-y-1.5 lg:col-span-2">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 ml-1">Published Within</label>
-                        <div className="flex items-center gap-2 h-8">
-                            <div className="relative flex-1">
-                                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                                <Input
-                                    type="date"
-                                    value={localFilters.dateFrom}
-                                    onChange={(e) => onFilterChange('dateFrom', e.target.value)}
-                                    className="h-8 pl-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg text-xs"
-                                />
-                            </div>
-                            <span className="text-muted-foreground/40 text-xs">to</span>
-                            <div className="relative flex-1">
-                                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                                <Input
-                                    type="date"
-                                    value={localFilters.dateTo}
-                                    onChange={(e) => onFilterChange('dateTo', e.target.value)}
-                                    className="h-10 pl-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg text-xs"
-                                />
-                            </div>
-                        </div>
+                        <DateRangePicker
+                            dateFrom={df}
+                            dateTo={dt}
+                            onApply={({ dateFrom, dateTo }) => {
+                                const getUtcBoundary = (d, isEndOfDay) => {
+                                    if (!d) return '';
+                                    const date = new Date(d);
+                                    if (isEndOfDay) {
+                                        date.setHours(23, 59, 59, 999);
+                                    } else {
+                                        date.setHours(0, 0, 0, 0);
+                                    }
+                                    return date.toISOString();
+                                };
+                                onFilterChange({
+                                    dateFrom: dateFrom ? getUtcBoundary(dateFrom, false) : '',
+                                    dateTo: dateTo ? getUtcBoundary(dateTo, true) : ''
+                                });
+                            }}
+                            className="w-full min-w-[280px]"
+                        />
                     </div>
                 </div>
             )}
