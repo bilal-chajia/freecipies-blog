@@ -371,6 +371,20 @@ export function transformCategoryRequestBody(body: any): any {
   }
   */
 
+  // Clean up any flat fields from admin form that are NOT
+  // actual DB columns — they would cause Drizzle to fail silently.
+  const dbColumns = new Set([
+    'slug', 'label', 'parentId', 'depth', 'headline', 'collectionTitle',
+    'shortDescription', 'imagesJson', 'color', 'iconSvg', 'isFeatured',
+    'seoJson', 'configJson', 'i18nJson', 'sortOrder', 'isOnline',
+    'cachedPostCount', 'createdAt', 'updatedAt', 'deletedAt',
+  ]);
+  for (const key of Object.keys(transformed)) {
+    if (!dbColumns.has(key)) {
+      delete transformed[key];
+    }
+  }
+
   return transformed;
 }
 
@@ -450,11 +464,14 @@ export function transformCategoryResponse(category: any): any {
       if (response.showPagination === undefined && typeof config.showPagination === 'boolean') {
         response.showPagination = config.showPagination;
       }
-      if (response.sortBy === undefined && typeof config.sortBy === 'string') {
+      // sortOrder from config (direction) must use a different check since
+      // the DB column 'sortOrder' (numeric display-order) is always present
+      // and would shadow the config direction string.
+      if (typeof config.sortBy === 'string') {
         response.sortBy = config.sortBy;
       }
-      if (response.sortOrder === undefined && typeof config.sortOrder === 'string') {
-        response.sortOrder = config.sortOrder;
+      if (typeof config.sortOrder === 'string') {
+        response.configSortOrder = config.sortOrder;
       }
       if (response.headerStyle === undefined && typeof config.headerStyle === 'string') {
         response.headerStyle = config.headerStyle;

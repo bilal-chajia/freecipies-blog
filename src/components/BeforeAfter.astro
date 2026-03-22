@@ -25,10 +25,12 @@ const { block } = Astro.props as {
 const layout = block.layout || "slider";
 const before = block.before;
 const after = block.after;
-const beforeUrl = before?.variants ? getBestVariantUrl(before) : null;
-const afterUrl = after?.variants ? getBestVariantUrl(after) : null;
-const beforeSrcSet = before?.variants ? getSrcSet(before) : "";
-const afterSrcSet = after?.variants ? getSrcSet(after) : "";
+const beforeUrl = before?.variants
+  ? getBestVariantUrl(before as ImageSlot)
+  : null;
+const afterUrl = after?.variants ? getBestVariantUrl(after as ImageSlot) : null;
+const beforeSrcSet = before?.variants ? getSrcSet(before as ImageSlot) : "";
+const afterSrcSet = after?.variants ? getSrcSet(after as ImageSlot) : "";
 const beforeLabel = before?.label || "Before";
 const afterLabel = after?.label || "After";
 const pickVariant = (image?: BeforeAfterImage) => {

@@ -22,7 +22,7 @@ export type HydratedCategory = Category & ExtractedImage & ExtractedSeo & {
   showBreadcrumb?: boolean;
   showPagination?: boolean;
   sortBy?: 'publishedAt' | 'title' | 'viewCount';
-  sortOrder?: 'asc' | 'desc';
+  articleSortOrder?: 'asc' | 'desc';
   headerStyle?: 'hero' | 'minimal' | 'none';
   featuredArticleId?: number;
   showFeaturedRecipe?: boolean;
@@ -42,7 +42,7 @@ export interface CategoryConfig {
   showBreadcrumb?: boolean;
   showPagination?: boolean;
   sortBy?: 'publishedAt' | 'title' | 'viewCount';
-  sortOrder?: 'asc' | 'desc';
+  articleSortOrder?: 'asc' | 'desc';
   headerStyle?: 'hero' | 'minimal' | 'none';
   tldr?: string;
   numEntriesPerPage?: number;

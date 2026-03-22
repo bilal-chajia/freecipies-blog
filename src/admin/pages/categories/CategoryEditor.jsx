@@ -273,7 +273,7 @@ const CategoryEditor = () => {
           showBreadcrumb: category.showBreadcrumb ?? true,
           showPagination: category.showPagination ?? true,
           sortBy: category.sortBy || 'publishedAt',
-          sortOrder: category.sortOrder || 'desc',
+          sortOrder: category.configSortOrder || category.sortOrder || 'desc',
           headerStyle: category.headerStyle || 'hero',
           featuredArticleId: category.featuredArticleId ?? null,
           showFeaturedRecipe: category.showFeaturedRecipe ?? true,
@@ -282,7 +282,7 @@ const CategoryEditor = () => {
           heroCtaLink: category.heroCtaLink || '',
           isOnline: category.isOnline || false,
           isFeatured: category.isFeatured || category.isFavorite || false,
-          displayOrder: typeof category.sortOrder === 'number' ? category.sortOrder : 0,
+          displayOrder: Number.isFinite(Number(category.sortOrder)) ? Number(category.sortOrder) : 0,
           color: category.color || '#ff6600ff',
           parentId: category.parentId ?? null,
           iconSvg: category.iconSvg || '',
@@ -364,7 +364,6 @@ const CategoryEditor = () => {
     setFormData(prev => ({ ...prev, featuredArticleId: null }));
     setFeaturedLookup({ loading: false, error: '', article: null });
     setFeaturedSlug('');
-    setFeaturedSearchQuery('');
     setFeaturedSearchResults([]);
   };
 
@@ -394,19 +393,37 @@ const CategoryEditor = () => {
         collectionTitle: formData.collectionTitle || formData.label,
       };
 
-      // DEBUG: Check if iconSvg is included
-      console.log('Category data being sent:', { iconSvg: categoryData.iconSvg?.substring(0, 50) || 'EMPTY' });
+      // DEBUG: Log payload before sending
+      console.log('[CategoryEditor] Save payload:', JSON.stringify({
+        layout: categoryData.layout,
+        layoutMode: categoryData.layoutMode,
+        cardStyle: categoryData.cardStyle,
+        showSidebar: categoryData.showSidebar,
+        headerStyle: categoryData.headerStyle,
+        showPagination: categoryData.showPagination,
+      }));
 
+      let response;
       if (isEditMode) {
-        await categoriesAPI.update(slug, categoryData);
+        response = await categoriesAPI.update(slug, categoryData);
       } else {
-        await categoriesAPI.create(categoryData);
+        response = await categoriesAPI.create(categoryData);
       }
+
+      // DEBUG: Log API response
+      console.log('[CategoryEditor] Save response:', response?.status, response?.data);
 
       navigate('/categories', { state: { refresh: Date.now() } });
     } catch (err) {
-      console.error('Save error:', err);
-      setError(err.response?.data?.error || 'Failed to save category');
+      console.error('[CategoryEditor] Save error:', err);
+      console.error('[CategoryEditor] Error response:', err.response?.status, err.response?.data);
+      const errorMsg = err.response?.data?.error?.message
+        || err.response?.data?.error
+        || err.message
+        || 'Failed to save category';
+      setError(errorMsg);
+      // Force-scroll to top so the error banner is visible
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSaving(false);
     }

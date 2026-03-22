@@ -38,40 +38,36 @@ const layoutClass =
 </div>
 
 <style>
-  /* Container Query Setup */
-  .article-grid-container {
-    container-type: inline-size;
-    container-name: article-grid;
-  }
-
   /* Grid Layout (default) */
   .recipe-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: clamp(1rem, 2vw, 2rem);
   }
 
-  /* Container query for grid - responsive based on container width */
-  @container article-grid (min-width: 640px) {
+  /* NOTE: We use @media (not @container) because .recipe-grid IS the
+     container element (.article-grid-container). CSS container queries
+     cannot style the container itself — only descendants. */
+  @media (min-width: 640px) {
     .recipe-grid {
       grid-template-columns: repeat(2, 1fr);
     }
   }
 
-  @container article-grid (min-width: 1024px) {
+  @media (min-width: 900px) {
     .recipe-grid {
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 
-  /* List Layout with container queries */
+  /* List Layout */
   .recipe-list {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
   }
 
-  @container article-grid (min-width: 768px) {
+  @media (min-width: 768px) {
     .recipe-list {
       gap: 2rem;
     }
@@ -79,19 +75,19 @@ const layoutClass =
 
   /* Masonry Layout */
   .recipe-masonry {
-    columns: 1 280px;
+    columns: 1;
     column-gap: 1.5rem;
   }
 
-  @container article-grid (min-width: 640px) {
+  @media (min-width: 640px) {
     .recipe-masonry {
-      columns: 2 280px;
+      columns: 2;
     }
   }
 
-  @container article-grid (min-width: 1024px) {
+  @media (min-width: 900px) {
     .recipe-masonry {
-      columns: 3 280px;
+      columns: 3;
     }
   }
 
@@ -100,12 +96,12 @@ const layoutClass =
     margin-bottom: 1.5rem;
   }
 
-  /* :has() selector - Grid with featured first item */
+  /* Grid with featured first item */
   .recipe-grid:has(> :first-child.is-featured) {
     grid-template-columns: 1fr;
   }
 
-  @container article-grid (min-width: 1024px) {
+  @media (min-width: 900px) {
     .recipe-grid:has(> :first-child.is-featured) {
       grid-template-columns: 2fr 1fr;
       grid-template-rows: repeat(2, 1fr);
@@ -113,27 +109,6 @@ const layoutClass =
 
     .recipe-grid:has(> :first-child.is-featured) > :first-child {
       grid-row: 1 / -1;
-    }
-  }
-
-  /* Fallback for browsers without container query support */
-  @supports not (container-type: inline-size) {
-    @media (min-width: 640px) {
-      .recipe-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .recipe-masonry {
-        columns: 2 280px;
-      }
-    }
-
-    @media (min-width: 1024px) {
-      .recipe-grid {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      }
-      .recipe-masonry {
-        columns: 3 280px;
-      }
     }
   }
 </style>

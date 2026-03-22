@@ -22,7 +22,7 @@ let categories: HydratedCategory[] = [];
 try {
   // Get all recipes for various sections
   const { items: recipes } = await getArticles(env.DB, { limit: 12 });
-  allRecipes = recipes.map(hydrateArticle);
+  allRecipes = recipes;
 
   // Get categories
   const rawCategories = await getCategories(env.DB, { isOnline: true });
@@ -44,8 +44,8 @@ const getRecipeUrl = (recipe: HydratedArticle) =>
   recipe.route || `/recipes/${recipe.slug}`;
 
 // Helper function for category color
-const getCategoryColor = (categorySlug: string) =>
-  categoryColorMap.get(categorySlug) || '#ff6600';
+const getCategoryColor = (categorySlug?: string) =>
+  categoryColorMap.get(categorySlug || '') || '#ff6600';
 
 const getRecipeImage = (recipe: HydratedArticle, targetWidth: number, prefer: 'cover' | 'thumbnail' = 'cover') => {
   const cover = extractImage(recipe.imagesJson, 'cover', targetWidth);
@@ -219,13 +219,13 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
                           {recipe.categoryLabel}
                         </a>
                       )}
-                      {recipe.recipeJson?.cookTime && (
+                      {(recipe as any).recipeJson?.cookTime && (
                         <span class="foxiz-tag">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
                             <path d="M12 6v6l4 2"/>
                           </svg>
-                          {recipe.recipeJson.cookTime}
+                          {(recipe as any).recipeJson.cookTime}
                         </span>
                       )}
                     </div>
@@ -281,7 +281,6 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
                     )}
                   </div>
                   <span class="chip-label">{category.label}</span>
-                  <span class="chip-type">Category</span>
                 </a>
                 );
               })}
@@ -334,7 +333,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
                   <div class="card-body">
                     <h3 class="card-title">{recipe.headline}</h3>
                     <div class="card-meta">
-                      {recipe.recipeJson?.prepTime && (
+                      {(recipe as any).recipeJson?.prepTime && (
                         <span class="meta-item">
                           <svg
                             viewBox="0 0 24 24"
@@ -345,7 +344,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
                             <circle cx="12" cy="12" r="10" />
                             <path d="M12 6v6l4 2" />
                           </svg>
-                          {recipe.recipeJson.prepTime}
+                          {(recipe as any).recipeJson.prepTime}
                         </span>
                       )}
                     </div>

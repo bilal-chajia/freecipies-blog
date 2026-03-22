@@ -373,7 +373,7 @@ export function hydrateCategory<T extends {
   const showBreadcrumb = config?.showBreadcrumb;
   const showPagination = config?.showPagination;
   const sortBy = config?.sortBy;
-  const sortOrder = config?.sortOrder;
+  const articleSortOrder = config?.sortOrder;
   const headerStyle = config?.headerStyle;
   const featuredArticleIdRaw = config?.featuredArticleId ?? config?.featured_article_id;
   const featuredArticleId = typeof featuredArticleIdRaw === 'number'
@@ -412,7 +412,7 @@ export function hydrateCategory<T extends {
     ...(typeof showBreadcrumb === 'boolean' ? { showBreadcrumb } : {}),
     ...(typeof showPagination === 'boolean' ? { showPagination } : {}),
     ...(sortBy ? { sortBy } : {}),
-    ...(sortOrder ? { sortOrder } : {}),
+    ...(articleSortOrder ? { articleSortOrder } : {}),
     ...(headerStyle ? { headerStyle } : {}),
     ...(Number.isFinite(featuredArticleId) ? { featuredArticleId: featuredArticleId as number } : {}),
     ...(typeof showFeaturedRecipe === 'boolean' ? { showFeaturedRecipe } : {}),
@@ -491,10 +491,8 @@ export function hydrateTags<T extends Parameters<typeof hydrateTag>[0]>(
 }
 
 // ============================================================================
-// Hydrated Types
+// Hydrated Types (Use with Caution - Prefer module-specific types)
 // ============================================================================
 
-export type HydratedArticle = ReturnType<typeof hydrateArticle>;
-export type HydratedCategory = ReturnType<typeof hydrateCategory>;
 export type HydratedAuthor = ReturnType<typeof hydrateAuthor>;
 export type HydratedTag = ReturnType<typeof hydrateTag>;

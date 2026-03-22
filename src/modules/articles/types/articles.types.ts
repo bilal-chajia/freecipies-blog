@@ -20,6 +20,8 @@ export type BaseContent = Omit<DbArticle, 'recipeJson' | 'roundupJson'> & Extrac
   categoryColor?: string;
   authorName?: string;
   authorSlug?: string;
+  authorImagesJson?: string | null;
+  authorAvatar?: string;
   category?: {
     color?: string;
     label?: string;

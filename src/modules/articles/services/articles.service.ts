@@ -14,7 +14,8 @@ import { authors } from '../../authors/schema/authors.schema';
 import { tags as tagsTable } from '../../tags/schema/tags.schema';
 import { equipment as equipmentTable } from '../../equipment/schema/equipment.schema';
 import { createDb } from '../../../shared/database/drizzle';
-import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedArticle, type HydratedTag } from '../../../shared/utils/hydration';
+import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedTag } from '../../../shared/utils/hydration';
+import type { HydratedArticle } from '../types/articles.types';
 
 async function getTagsForArticleId(drizzle: any, articleId: number): Promise<HydratedTag[]> {
   const rows = await drizzle

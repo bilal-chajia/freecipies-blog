@@ -1289,13 +1289,29 @@ const navItems = [
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s;
+    transition: all var(--transition-fast, 150ms) var(--ease-default, ease);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+
+  /* Enhanced focus-visible for keyboard navigation */
+  .servings-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color, #3b82f6);
+    outline-offset: 2px;
+    border-color: #6b8f71;
   }
 
   .servings-btn:hover {
     background: #f3f4f6;
     border-color: #6b8f71;
     color: #6b8f71;
+  }
+
+  /* :has() selector - Highlight control when value is not default */
+  .servings-control:has(.servings-value[data-changed="true"]) {
+    background: #fef3c7;
+    border-radius: 8px;
+    padding: 4px 8px;
   }
 
   .servings-value {
@@ -1623,10 +1639,31 @@ const navItems = [
     align-items: center;
     gap: 12px;
     cursor: pointer;
+    padding: 4px;
+    margin: -4px;
+    border-radius: 4px;
+    transition: background var(--transition-fast, 150ms)
+      var(--ease-default, ease);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+
+  /* Enhanced focus-visible for checkbox labels */
+  .checkbox-label:focus-within {
+    outline: 2px solid var(--focus-ring-color, #3b82f6);
+    outline-offset: 2px;
+    background: #f0fdf4;
+  }
+
+  .checkbox-label:hover {
+    background: #f9fafb;
   }
 
   .equipment-check {
-    display: none;
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
   }
 
   .checkmark {
@@ -1638,6 +1675,13 @@ const navItems = [
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all var(--transition-fast, 150ms) var(--ease-default, ease);
+  }
+
+  /* Focus indicator for checkbox */
+  .equipment-check:focus + .checkmark {
+    border-color: var(--focus-ring-color, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
   }
 
   .equipment-check:checked + .checkmark {
@@ -1654,6 +1698,21 @@ const navItems = [
   .equipment-check:checked ~ .item-text {
     text-decoration: line-through;
     color: #9ca3af;
+  }
+
+  /* :has() selector - Style parent when item is checked */
+  .equipment-item:has(.equipment-check:checked) {
+    background: #f0fdf4;
+    border-left: 3px solid #10b981;
+  }
+
+  /* :has() selector - Equipment list with all items checked */
+  .equipment-list:has(.equipment-item)
+    .equipment-item:has(.equipment-check:checked):nth-last-child(1):first-child,
+  .equipment-list:has(.equipment-item:has(.equipment-check:checked)):not(
+      :has(.equipment-item:not(:has(.equipment-check:checked)))
+    ) {
+    /* Visual indication when all items are checked - optional celebration effect */
   }
 
   .item-text {
@@ -2315,6 +2374,100 @@ const navItems = [
 
     .nav-label {
       font-size: 11px;
+    }
+  }
+
+  /* ========================================
+   * prefers-contrast: high Support
+   * ======================================== */
+  @media (prefers-contrast: high) {
+    .recipe-card {
+      border: 2px solid #000;
+      box-shadow: none !important;
+    }
+
+    .recipe-hero {
+      border-bottom: 2px solid #000;
+    }
+
+    .fab {
+      border: 2px solid currentColor;
+    }
+
+    .nav-item {
+      border: 2px solid currentColor;
+    }
+
+    .meta-pill {
+      border: 1px solid currentColor;
+    }
+
+    .stats-grid {
+      border: 2px solid #000;
+    }
+
+    .stat-card {
+      border-right: 1px solid #000;
+    }
+
+    .equipment-item {
+      border: 1px solid #000;
+    }
+
+    .equipment-check:focus + .checkmark {
+      outline: 3px solid #000;
+    }
+
+    .note-item {
+      border: 1px solid #000;
+      border-left-width: 4px;
+    }
+
+    .servings-btn {
+      border: 2px solid #000;
+    }
+
+    /* Enhance focus indicators */
+    .servings-btn:focus-visible,
+    .checkbox-label:focus-within,
+    .fab:focus-visible {
+      outline: 3px solid #000;
+      outline-offset: 3px;
+    }
+  }
+
+  /* ========================================
+   * @supports Fallback
+   * ======================================== */
+  @supports not (container-type: inline-size) {
+    /* Fallback media queries for browsers without container query support */
+    @media (min-width: 450px) {
+      .fab-label {
+        display: inline;
+      }
+    }
+
+    @media (min-width: 500px) {
+      .metadata-pills {
+        justify-content: center;
+        overflow-x: visible;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .stat-card {
+        border-bottom: none;
+      }
+
+      .stat-card:nth-child(2n) {
+        border-right: 1px solid #e5e7eb;
+      }
+
+      .stat-card:last-child {
+        border-right: none;
+      }
     }
   }
 </style>

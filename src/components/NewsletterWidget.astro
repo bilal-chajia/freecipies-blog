@@ -40,22 +40,52 @@ const {
 
 <style>
     .newsletter-widget {
-        background: #1a1a1a;
-        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+        background: #0f172a;
+        border-radius: 16px;
         padding: 2rem 1.5rem;
         text-align: center;
     }
 
+    /* Decorative glow blobs */
+    .newsletter-widget::before,
+    .newsletter-widget::after {
+        content: "";
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255, 107, 53, 0.15);
+        filter: blur(60px);
+        pointer-events: none;
+    }
+
+    .newsletter-widget::before {
+        top: -30px;
+        right: -20px;
+    }
+
+    .newsletter-widget::after {
+        bottom: -30px;
+        left: -20px;
+    }
+
     .widget-icon {
+        position: relative;
+        z-index: 1;
         margin-bottom: 1rem;
     }
 
     .widget-icon svg {
         width: 48px;
         height: 48px;
+        filter: drop-shadow(0 2px 8px rgba(255, 107, 53, 0.4));
     }
 
     .widget-title {
+        position: relative;
+        z-index: 1;
         font-size: 1.25rem;
         font-weight: 700;
         color: #fff;
@@ -64,13 +94,17 @@ const {
     }
 
     .widget-subtitle {
+        position: relative;
+        z-index: 1;
         font-size: 0.875rem;
-        color: #999;
+        color: #94a3b8;
         margin: 0 0 1.5rem;
         line-height: 1.5;
     }
 
     .subscribe-form {
+        position: relative;
+        z-index: 1;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
@@ -79,22 +113,22 @@ const {
     .email-input {
         width: 100%;
         padding: 0.875rem 1rem;
-        background: #2a2a2a;
-        border: 1px solid #3a3a3a;
-        border-radius: 8px;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
         color: #fff;
         font-size: 0.9375rem;
-        transition: all 0.2s ease;
+        transition: border-color 0.2s ease;
     }
 
     .email-input::placeholder {
-        color: #666;
+        color: #64748b;
     }
 
     .email-input:focus {
         outline: none;
-        border-color: #ff3366;
-        background: #333;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
     }
 
     .subscribe-btn {
@@ -102,17 +136,25 @@ const {
         padding: 0.875rem 1.5rem;
         background: linear-gradient(135deg, #ff3366 0%, #ff6b35 100%);
         border: none;
-        border-radius: 8px;
+        border-radius: 12px;
         color: #fff;
         font-size: 0.9375rem;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+        box-shadow: 0 2px 12px rgba(255, 51, 102, 0.25);
     }
 
     .subscribe-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(255, 51, 102, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 51, 102, 0.35);
+    }
+
+    .subscribe-btn:focus-visible {
+        outline: 2px solid white;
+        outline-offset: 3px;
     }
 
     .subscribe-btn:active {
@@ -164,4 +206,3 @@ const {
         });
     });
 </script>
-

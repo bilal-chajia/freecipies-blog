@@ -13,12 +13,13 @@ interface Props {
   title: string;
   description: string;
   image?: ImageMetadata | string;
+  noindex?: boolean;
 }
 
 const siteUrl = Astro.site?.toString() || Astro.url.origin;
 const canonicalURL = new URL(Astro.url.pathname, siteUrl);
 
-const { title, description, image } = Astro.props;
+const { title, description, image, noindex } = Astro.props;
 const imageSrc = image
   ? typeof image === "string"
     ? image
@@ -103,7 +104,7 @@ const hasRootFavicon = false; // We prefer logos/* structure
 <title>{title}</title>
 <meta name="title" content={title} />
 <meta name="description" content={description} />
-<meta name="robots" content="index, follow" />
+<meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website" />

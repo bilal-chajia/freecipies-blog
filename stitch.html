@@ -1,0 +1,114 @@
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#33e67a",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#112117",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>.glass-panel {
+    background: rgba(17, 33, 23, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(51, 230, 122, 0.1)
+    }
+.bg-hero-image {
+    background-image: linear-gradient(to bottom, rgba(17, 33, 23, 0.8), rgba(17, 33, 23, 0.95)), url(https://lh3.googleusercontent.com/aida-public/AB6AXuB2mgvFtSuQmtmlA_3ZUzpppsZJqKrjzh8AaWR_cPXAHkVAFopCuVTopnbPAsiPH1bnHCxhZ3zrmHRBjSDJzpAaog6O1xjF1fqgUt5PIpQADIvz9xPqlcRZjqeIVjDwn18lSyP9F1U2prKHezFGUO6dCzo3ithMXOl0cKY9cjgSi937f1HfERpt9DJKuCiqs8_oxt67MNPUFdqxIQNoBRf8MCAPX6zl-4J5zlH4grwOa-ymUUIfS7AtxCdu24UTY6YD0pDey1XDg_o);
+    background-size: cover;
+    background-position: center
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-screen w-full flex-col overflow-hidden bg-hero-image" data-alt="Close up of fresh avocado toast with seasonings">
+<!-- Progress Bar Area -->
+<div class="flex flex-col gap-2 p-6 pt-12">
+<div class="flex gap-6 justify-between items-center mb-1">
+<p class="text-primary text-xs font-bold uppercase tracking-widest">Progress</p>
+<p class="text-slate-400 text-xs font-medium">20% Completed</p>
+</div>
+<div class="rounded-full bg-slate-800/50 h-1.5 overflow-hidden">
+<div class="h-full rounded-full bg-primary" style="width: 20%;"></div>
+</div>
+</div>
+<!-- Top Navigation Bar -->
+<div class="flex items-center p-6 justify-between">
+<div class="flex flex-col">
+<h2 class="text-slate-100 text-xl font-bold leading-tight tracking-tight">The Best Avocado Toast</h2>
+<span class="text-primary text-sm font-medium">Cook Mode</span>
+</div>
+<button class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800/40 border border-slate-700/50 text-slate-100 hover:bg-slate-700/50 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Main Content (Step Details) -->
+<div class="flex-1 flex flex-col items-center justify-center px-8 text-center">
+<!-- Pagination Dots -->
+<div class="flex w-full flex-row items-center justify-center gap-2 mb-8">
+<div class="h-1.5 w-1.5 rounded-full bg-primary"></div>
+<div class="h-1.5 w-8 rounded-full bg-primary"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-slate-700"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-slate-700"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-slate-700"></div>
+</div>
+<span class="text-primary text-sm font-bold tracking-[0.2em] uppercase mb-4 opacity-80">Step 2 of 5</span>
+<h1 class="text-slate-100 text-3xl font-bold leading-tight mb-12 max-w-md">
+                Mash the avocados with lime juice, salt, and pepper until chunky.
+            </h1>
+<!-- Sophisticated Timer Component -->
+<div class="glass-panel p-8 rounded-3xl w-full max-w-xs flex flex-col items-center shadow-2xl">
+<span class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-2">Resting Timer</span>
+<div class="text-6xl font-light text-slate-100 mb-6 tracking-tighter">05:00</div>
+<div class="flex gap-4 w-full">
+<button class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-700 text-slate-300 font-semibold hover:bg-slate-800/50 transition-all">
+<span class="material-symbols-outlined text-lg">stop</span>
+                        Stop
+                    </button>
+<button class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-background-dark font-bold hover:shadow-[0_0_20px_rgba(51,230,122,0.4)] transition-all">
+<span class="material-symbols-outlined text-lg">play_arrow</span>
+                        Start
+                    </button>
+</div>
+</div>
+</div>
+<!-- Floating Bottom Navigation -->
+<div class="p-6 pb-10">
+<div class="glass-panel rounded-2xl p-3 flex items-center justify-between shadow-2xl border-white/5">
+<button class="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl text-slate-400 font-semibold hover:text-slate-200 transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+<span>Previous</span>
+</button>
+<div class="w-px h-8 bg-slate-700/50 mx-2"></div>
+<button class="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl text-slate-200 font-semibold hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-xl">menu_book</span>
+<span>Ingredients</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-primary text-background-dark font-bold shadow-lg shadow-primary/10">
+<span>Next Step</span>
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>
