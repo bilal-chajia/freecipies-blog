@@ -111,6 +111,8 @@ const ContentListBase = ({
             if (filters.author && filters.author !== 'all') params.author = filters.author;
             if (filters.status && filters.status !== 'all') params.status = filters.status;
             if (filters.search) params.search = filters.search;
+            if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+            if (filters.dateTo) params.dateTo = filters.dateTo;
 
             const response = await articlesAPI.getAll(params);
 
@@ -170,9 +172,16 @@ const ContentListBase = ({
         [setFilters, setPagination]
     );
 
-    const handleFilterChange = (key, value) => {
-        const newFilters = { ...localFilters, [key]: value };
-        setLocalFilters(newFilters);
+    const handleFilterChange = (keyOrObj, value) => {
+        if (typeof keyOrObj === 'object' && keyOrObj !== null) {
+            setLocalFilters(prev => ({ ...prev, ...keyOrObj }));
+            setFilters(keyOrObj);
+            setPagination({ page: 1 });
+            return;
+        }
+
+        const key = keyOrObj;
+        setLocalFilters(prev => ({ ...prev, [key]: value }));
 
         if (key === 'search') {
             debouncedSearch(value);

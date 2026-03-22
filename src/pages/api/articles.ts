@@ -16,6 +16,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const type = url.searchParams.get('type') as 'recipe' | 'article' | 'roundup' | null;
   const statusFilter = url.searchParams.get('status'); // 'online', 'offline', or 'all'
   const search = url.searchParams.get('search');
+  const dateFrom = url.searchParams.get('dateFrom');
+  const dateTo = url.searchParams.get('dateTo');
 
   // Validate pagination parameters
   const paginationValidation = validatePaginationParams(
@@ -69,6 +71,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
       tagSlug: tag || undefined,
       isOnline: isOnlineFilter,
       search: search || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
       limit,
       offset
     });

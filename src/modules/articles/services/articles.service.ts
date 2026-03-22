@@ -4,7 +4,7 @@
  * Database operations for articles.
  */
 
-import { eq, and, or, like, desc, asc, isNull, sql, inArray } from 'drizzle-orm';
+import { eq, and, or, like, desc, asc, isNull, sql, inArray, gte, lte } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { getTableColumns } from 'drizzle-orm';
 import { articles, type Article, type NewArticle } from '../schema/articles.schema';
@@ -70,6 +70,8 @@ export interface ArticleQueryOptions {
   limit?: number;
   offset?: number;
   type?: 'recipe' | 'article' | 'roundup';
+  dateFrom?: string;
+  dateTo?: string;
   publishedAfter?: Date;
   isOnline?: boolean;
   search?: string;
@@ -140,6 +142,19 @@ export async function getArticles(
         like(articles.shortDescription, searchPattern)
       )
     );
+  }
+
+  // Convert full JS ISO strings to SQLite format: "YYYY-MM-DD HH:MM:SS"
+  const formatSqliteDate = (isoString: string) => {
+    return isoString.replace('T', ' ').substring(0, 19);
+  };
+
+  if (options?.dateFrom) {
+    conditions.push(gte(articles.publishedAt, formatSqliteDate(options.dateFrom)));
+  }
+
+  if (options?.dateTo) {
+    conditions.push(lte(articles.publishedAt, formatSqliteDate(options.dateTo)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

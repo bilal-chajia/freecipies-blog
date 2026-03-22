@@ -47,14 +47,22 @@ export async function getMedia(
     );
   }
 
+  // Convert full JS ISO strings to SQLite format: "YYYY-MM-DD HH:MM:SS"
+  const formatSqliteDate = (isoString: string) => {
+    // If it's just a YYYY-MM-DD date or missing 'T', format it safely
+    if (!isoString.includes('T')) {
+      return isoString + ' 00:00:00';
+    }
+    return isoString.replace('T', ' ').substring(0, 19);
+  };
+
   // Date range filters
   if (options?.dateFrom) {
-    conditions.push(gte(media.createdAt, options.dateFrom));
+    conditions.push(gte(media.createdAt, formatSqliteDate(options.dateFrom)));
   }
   if (options?.dateTo) {
-    // Add end-of-day to include the full "to" date
-    const toDate = options.dateTo.includes('T') ? options.dateTo : `${options.dateTo}T23:59:59`;
-    conditions.push(lte(media.createdAt, toDate));
+    const toDateStr = options.dateTo.includes('T') ? options.dateTo : `${options.dateTo}T23:59:59.999Z`;
+    conditions.push(lte(media.createdAt, formatSqliteDate(toDateStr)));
   }
 
   // Sort logic
