@@ -114,49 +114,6 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
 
         const isNumeric = /^\d+$/.test(slug);
 
-        // Check if image is being changed or removed - delete old image if so
-        const existingCategory = isNumeric
-            ? await getCategoryById(env.DB, parseInt(slug, 10))
-            : await getCategoryBySlug(env.DB, slug);
-        const oldImageUrl = getThumbnailUrlFromImagesJson(existingCategory?.imagesJson);
-        const shouldCheckImage = transformedBody.imagesJson !== undefined;
-        const newImageUrl = shouldCheckImage
-            ? getThumbnailUrlFromImagesJson(transformedBody.imagesJson)
-            : null;
-
-        // Debug logging
-        console.log('Image update check:', {
-            oldImageUrl,
-            newImageUrl,
-            bodyImagesJsonProvided: shouldCheckImage,
-            shouldDelete: shouldCheckImage && oldImageUrl && newImageUrl !== oldImageUrl
-        });
-
-        // Delete old image if a new imagesJson was provided and URL changed or removed
-        if (shouldCheckImage && oldImageUrl && newImageUrl !== oldImageUrl) {
-            try {
-                // URL format: /images/{key} - key is everything after /images/
-                const keyMatch = oldImageUrl.match(/\/images\/(.+)$/);
-                if (keyMatch && env.IMAGES) {
-                    const oldKey = keyMatch[1];
-                    console.log(`Deleting old category image with key: ${oldKey}`);
-
-                    // Just delete - R2 delete() is idempotent, doesn't throw if key doesn't exist
-                    await env.IMAGES.delete(oldKey);
-
-                    // Delete from media table by r2_key OR by url (fallback)
-                    const deleteResult = await env.DB.prepare(
-                        'DELETE FROM media WHERE r2_key = ? OR url = ?'
-                    ).bind(oldKey, oldImageUrl).run();
-
-                    console.log(`Deleted category image. Key: ${oldKey}, Media rows affected: ${deleteResult.meta?.changes || 0}`);
-                }
-            } catch (deleteErr) {
-                console.warn('Failed to delete old category image:', deleteErr);
-                // Continue with update even if delete fails
-            }
-        }
-
         const category = isNumeric
             ? await updateCategoryById(env.DB, parseInt(slug, 10), transformedBody)
             : await updateCategory(env.DB, slug, transformedBody);

@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         400
       );
     }
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(file.type as any)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, `Invalid file type: ${file.type}`, 400);
     }
 

@@ -69,7 +69,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         // Write file
         const filePath = path.join(fontsDir, safeFilename);
-        const buffer = Buffer.from(await file.arrayBuffer());
+        const buffer = new Uint8Array(await file.arrayBuffer());
         await fs.writeFile(filePath, buffer);
 
         // Return the public URL

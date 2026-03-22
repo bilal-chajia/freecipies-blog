@@ -498,7 +498,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     const id = ++workerIdRef.current;
 
     return new Promise((resolve, reject) => {
-      const entry = {
+      const entry: WorkerRequest = {
         resolve,
         reject,
         signal: null,
@@ -577,7 +577,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
       }
     }
 
-    const encodeWebp = async () => {
+    const encodeWebp = async (): Promise<{ blob: Blob; outputFormat: ImageFormat }> => {
       try {
         const { encode } = await import('@jsquash/webp');
         const buffer = await encode(imageData, { quality: q });
@@ -599,7 +599,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         const buffer = await encode(imageData, { quality: q });
         return { blob: new Blob([buffer], { type: 'image/avif' }), outputFormat: 'avif' };
       } catch (err) {
-        console.warn('AVIF encoding failed, falling back to WebP:', err.message);
+        console.warn('AVIF encoding failed, falling back to WebP:', (err as Error).message);
         return encodeWebp();
       }
     }
@@ -646,7 +646,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
       {
         maxRetries: UPLOAD_CONFIG.retryAttempts,
         baseDelay: UPLOAD_CONFIG.retryBaseDelayMs,
-        shouldRetry: (err, attempt) => !isAbortError(err) && isRetryableError(err, attempt),
+        shouldRetry: (err, attempt) => !isAbortError(err) && isRetryableError(err),
       }
     );
   }, []);
@@ -794,7 +794,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
       // Always generate 'original' variant (cropped, native format)
       assertNotAborted();
       variantNames.push('original');
-      const originalBlob = await new Promise((resolve, reject) => {
+      const originalBlob = await new Promise<Blob>((resolve, reject) => {
         sourceCanvas.toBlob(
           (blob) => blob ? resolve(blob) : reject(new UploadError(
             ERROR_TYPES.ENCODING_FAILED,
@@ -823,9 +823,9 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         }
         testCtx.drawImage(sourceCanvas, 0, 0, 1, 1);
         const testResult = await encodeCanvas(testCanvas, outputFormat, targetQuality, signal);
-        if (testResult.outputFormat !== outputFormat) {
+        if ((testResult.outputFormat as string) !== (outputFormat as string)) {
           outputFormat = testResult.outputFormat;
-          targetQuality = outputFormat === 'avif' ? config.encodingQuality.avif : config.encodingQuality.webp;
+          targetQuality = (outputFormat as string) === 'avif' ? config.encodingQuality.avif : config.encodingQuality.webp;
         }
       }
 
@@ -890,7 +890,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         {
           maxRetries: UPLOAD_CONFIG.retryAttempts,
           baseDelay: UPLOAD_CONFIG.retryBaseDelayMs,
-          shouldRetry: (err, attempt) => !isAbortError(err) && isRetryableError(err, attempt),
+          shouldRetry: (err, attempt) => !isAbortError(err) && isRetryableError(err),
         }
       );
 

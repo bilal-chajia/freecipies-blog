@@ -631,3 +631,32 @@ export async function syncCachedFields(
 
   return true;
 }
+
+/**
+ * Get popular articles by view count (and recent fallback)
+ */
+export async function getPopularArticles(
+  db: D1Database,
+  limit: number = 10
+) {
+  const drizzle = createDb(db);
+  
+  const result = await drizzle
+    .select({
+      id: articles.id,
+      slug: articles.slug,
+      label: articles.headline,
+      type: articles.type,
+      imagesJson: articles.imagesJson,
+      viewCount: articles.viewCount,
+      categoryLabel: categories.label,
+      categorySlug: categories.slug
+    })
+    .from(articles)
+    .leftJoin(categories, eq(articles.categoryId, categories.id))
+    .where(eq(articles.isOnline, true))
+    .orderBy(desc(articles.viewCount), desc(articles.createdAt))
+    .limit(limit);
+
+  return result;
+}

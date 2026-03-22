@@ -5,125 +5,164 @@
  */
 
 import { eq } from 'drizzle-orm';
-import type { DrizzleD1Database } from 'drizzle-orm/d1';
+import type { D1Database } from '@cloudflare/workers-types';
+import { createDb } from '../../../shared/database/drizzle';
 import { pinTemplates, type PinTemplate, type NewPinTemplate } from '../schema/templates.schema';
 import type { TemplateElement, UpdateTemplateInput } from '../types';
+
+/**
+ * Helper to map Drizzle camelCase properties to snake_case 
+ * for frontend backward compatibility
+ */
+function mapToSnakeCase(t: PinTemplate | undefined): any {
+  if (!t) return t;
+  return {
+    ...t,
+    elements_json: t.elementsJson,
+    thumbnail_url: t.thumbnailUrl,
+    is_active: t.isActive,
+    background_color: t.backgroundColor,
+    created_at: t.createdAt,
+    updated_at: t.updatedAt,
+  };
+}
 
 /**
  * Get all templates
  */
 export async function getTemplates(
-  db: DrizzleD1Database,
+  db: D1Database,
   options: { activeOnly?: boolean } = {}
-): Promise<PinTemplate[]> {
+): Promise<any[]> {
+  const drizzle = createDb(db);
   const { activeOnly = true } = options;
   
+  let results;
   if (activeOnly) {
-    return db.select().from(pinTemplates).where(eq(pinTemplates.isActive, true)).all();
+    results = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.isActive, true)).all();
+  } else {
+    results = await drizzle.select().from(pinTemplates).all();
   }
-  return db.select().from(pinTemplates).all();
+  
+  return results.map(mapToSnakeCase);
 }
 
 /**
  * Get template by slug
  */
 export async function getTemplateBySlug(
-  db: DrizzleD1Database,
+  db: D1Database,
   slug: string
-): Promise<PinTemplate | undefined> {
-  return db.select().from(pinTemplates).where(eq(pinTemplates.slug, slug)).get();
+): Promise<any | undefined> {
+  const drizzle = createDb(db);
+  const result = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.slug, slug)).get();
+  return mapToSnakeCase(result);
 }
 
 /**
  * Get template by ID
  */
 export async function getTemplateById(
-  db: DrizzleD1Database,
+  db: D1Database,
   id: number
-): Promise<PinTemplate | undefined> {
-  return db.select().from(pinTemplates).where(eq(pinTemplates.id, id)).get();
+): Promise<any | undefined> {
+  const drizzle = createDb(db);
+  const result = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.id, id)).get();
+  return mapToSnakeCase(result);
 }
 
 /**
  * Create new template
  */
 export async function createTemplate(
-  db: DrizzleD1Database,
-  data: {
-    slug: string;
-    name: string;
-    description?: string;
-    category?: string;
-    width?: number;
-    height?: number;
-    elementsJson?: string | TemplateElement[];
-    thumbnailUrl?: string;
-    isActive?: boolean;
-  }
-): Promise<PinTemplate> {
-  const elementsStr = typeof data.elementsJson === 'string'
-    ? data.elementsJson
-    : JSON.stringify(data.elementsJson || []);
+  db: D1Database,
+  data: any
+): Promise<any> {
+  const drizzle = createDb(db);
+  
+  // Support both camelCase and snake_case inputs from frontend
+  const rawElements = data.elementsJson ?? data.elements_json;
+  const elementsStr = typeof rawElements === 'string'
+    ? rawElements
+    : JSON.stringify(rawElements || []);
 
-  const result = await db.insert(pinTemplates).values({
+  const result = await drizzle.insert(pinTemplates).values({
     slug: data.slug,
     name: data.name,
     description: data.description,
     category: data.category ?? 'general',
-    width: data.width ?? 1000,
-    height: data.height ?? 1500,
+    width: data.width || data.canvas_width || 1000,
+    height: data.height || data.canvas_height || 1500,
     elementsJson: elementsStr,
-    thumbnailUrl: data.thumbnailUrl,
-    isActive: data.isActive ?? true,
+    thumbnailUrl: data.thumbnailUrl ?? data.thumbnail_url ?? null,
+    backgroundColor: data.backgroundColor ?? data.background_color ?? '#ffffff',
+    isActive: data.isActive ?? data.is_active ?? true,
   }).returning().get();
 
-  return result;
+  return mapToSnakeCase(result);
 }
 
 /**
  * Update template by slug
  */
 export async function updateTemplate(
-  db: DrizzleD1Database,
+  db: D1Database,
   slug: string,
-  data: UpdateTemplateInput
-): Promise<PinTemplate | undefined> {
+  data: any
+): Promise<any | undefined> {
+  const drizzle = createDb(db);
   const updates: Partial<NewPinTemplate> = {};
 
   if (data.name !== undefined) updates.name = data.name;
   if (data.description !== undefined) updates.description = data.description;
   if (data.category !== undefined) updates.category = data.category;
-  if (data.width !== undefined) updates.width = data.width;
-  if (data.height !== undefined) updates.height = data.height;
-  if (data.thumbnail_url !== undefined) updates.thumbnailUrl = data.thumbnail_url;
-  if (data.is_active !== undefined) updates.isActive = data.is_active;
+  
+  const w = data.width ?? data.canvas_width;
+  if (w !== undefined) updates.width = w;
+  
+  const h = data.height ?? data.canvas_height;
+  if (h !== undefined) updates.height = h;
+  
+  const thumb = data.thumbnailUrl ?? data.thumbnail_url;
+  if (thumb !== undefined) updates.thumbnailUrl = thumb;
+  
+  const active = data.isActive ?? data.is_active;
+  if (active !== undefined) updates.isActive = active;
+  
+  const bg = data.backgroundColor ?? data.background_color;
+  if (bg !== undefined) updates.backgroundColor = bg;
+  
   if (data.slug !== undefined) updates.slug = data.slug;
   
-  if (data.elements_json !== undefined) {
-    updates.elementsJson = typeof data.elements_json === 'string'
-      ? data.elements_json
-      : JSON.stringify(data.elements_json);
+  const rootElements = data.elementsJson ?? data.elements_json;
+  if (rootElements !== undefined) {
+    updates.elementsJson = typeof rootElements === 'string'
+      ? rootElements
+      : JSON.stringify(rootElements);
   }
 
   if (Object.keys(updates).length === 0) {
     return getTemplateBySlug(db, slug);
   }
 
-  return db.update(pinTemplates)
+  const result = await drizzle.update(pinTemplates)
     .set(updates)
     .where(eq(pinTemplates.slug, slug))
     .returning()
     .get();
+    
+  return mapToSnakeCase(result);
 }
 
 /**
  * Delete template by slug
  */
 export async function deleteTemplate(
-  db: DrizzleD1Database,
+  db: D1Database,
   slug: string
 ): Promise<boolean> {
-  const result = await db.delete(pinTemplates)
+  const drizzle = createDb(db);
+  const result = await drizzle.delete(pinTemplates)
     .where(eq(pinTemplates.slug, slug))
     .returning()
     .get();
@@ -135,10 +174,11 @@ export async function deleteTemplate(
  * Check if slug exists
  */
 export async function slugExists(
-  db: DrizzleD1Database,
+  db: D1Database,
   slug: string
 ): Promise<boolean> {
-  const template = await db.select({ id: pinTemplates.id })
+  const drizzle = createDb(db);
+  const template = await drizzle.select({ id: pinTemplates.id })
     .from(pinTemplates)
     .where(eq(pinTemplates.slug, slug))
     .get();

@@ -30,8 +30,8 @@ const Settings = lazy(() => importWithRetry(() => import('./pages/settings/Setti
 const Login = lazy(() => importWithRetry(() => import('./pages/auth/Login')));
 const BoardsList = lazy(() => importWithRetry(() => import('./pages/pinterest/BoardsList')));
 const BoardEditor = lazy(() => importWithRetry(() => import('./pages/pinterest/BoardEditor')));
-const TemplatesList = lazy(() => importWithRetry(() => import('@modules/templates/components').then(m => ({ default: m.TemplatesList }))));
-const TemplateEditor = lazy(() => importWithRetry(() => import('@modules/templates/components').then(m => ({ default: m.TemplateEditor }))));
+const TemplatesList = lazy(() => importWithRetry(() => import('@modules/templates/components/editor/TemplatesList')));
+const TemplateEditor = lazy(() => importWithRetry(() => import('@modules/templates/components/editor/TemplateEditor')));
 
 // Loading component with skeleton
 const PageLoader = () => (

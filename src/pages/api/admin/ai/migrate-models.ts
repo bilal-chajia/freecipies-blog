@@ -46,25 +46,30 @@ export const POST: APIRoute = async ({ request, locals }) => {
             console.log(`📦 Migrating ${provider}...`);
             migrationLog.push(`Migrating ${provider}...`);
 
+            const providerKey = provider as keyof typeof currentSettings.providers;
             // Ensure provider exists in settings
-            if (!currentSettings.providers[provider]) {
-                currentSettings.providers[provider] = {
+            if (!currentSettings.providers[providerKey]) {
+                currentSettings.providers[providerKey] = {
                     enabled: false,
                     apiKey: ''
                 };
             }
 
             // Add availableModels array with metadata
-            currentSettings.providers[provider].availableModels = models.map((model, index) => ({
-                id: model.id,
-                name: model.name,
-                description: model.description || '',
-                contextWindow: model.contextWindow,
-                maxTokens: model.maxTokens,
-                enabled: true, // Enable all models by default
-                deprecated: model.description?.includes('DEPRECATED') || false,
-                order: index
-            }));
+            const p = currentSettings.providers[providerKey];
+            if (p) {
+                p.availableModels = models.map((model, index) => ({
+                    id: model.id,
+                    name: model.name,
+                    description: model.description || '',
+                    provider: provider as import('@modules/ai').AIProvider,
+                    contextWindow: model.contextWindow,
+                    maxTokens: model.maxTokens,
+                    enabled: true, // Enable all models by default
+                    deprecated: model.description?.includes('DEPRECATED') || false,
+                    order: index
+                }));
+            }
 
             const modelCount = models.length;
             totalModels += modelCount;

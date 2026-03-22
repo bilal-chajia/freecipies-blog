@@ -16,6 +16,38 @@ import {
 } from '../schema/pinterest.schema';
 import { createDb } from '../../../shared/database/drizzle';
 
+// Helpers mapping Drizzle to old snake_case format for the frontend
+function mapBoardToSnakeCase(board: PinterestBoard | null): any {
+  if (!board) return board;
+  return {
+    ...board,
+    board_url: board.boardUrl,
+    cover_image_url: board.coverImageUrl,
+    is_active: board.isActive,
+    created_at: board.createdAt,
+    updated_at: board.updatedAt,
+    deleted_at: board.deletedAt,
+  };
+}
+
+function mapPinToSnakeCase(pin: PinterestPin | null): any {
+  if (!pin) return pin;
+  return {
+    ...pin,
+    article_id: pin.articleId,
+    board_id: pin.boardId,
+    section_name: pin.sectionName,
+    image_url: pin.imageUrl,
+    destination_url: pin.destinationUrl,
+    tags_json: pin.tagsJson,
+    pinterest_pin_id: pin.pinterestPinId,
+    exported_at: pin.exportedAt,
+    export_batch_id: pin.exportBatchId,
+    created_at: pin.createdAt,
+    updated_at: pin.updatedAt,
+  };
+}
+
 // ============================================================================
 // BOARDS
 // ============================================================================
@@ -23,22 +55,30 @@ import { createDb } from '../../../shared/database/drizzle';
 /**
  * Get all Pinterest boards
  */
-export async function getPinterestBoards(db: D1Database): Promise<PinterestBoard[]> {
+export async function getPinterestBoards(db: D1Database): Promise<any[]> {
   const drizzle = createDb(db);
-  return await drizzle
+  const boards = await drizzle
     .select()
     .from(pinterestBoards)
     .where(isNull(pinterestBoards.deletedAt));
+  
+  return boards.map(mapBoardToSnakeCase);
 }
 
 /**
- * Get a board by ID
+ * Get a board by ID or slug
  */
-export async function getPinterestBoardById(db: D1Database, id: number): Promise<PinterestBoard | null> {
+export async function getPinterestBoard(db: D1Database, identifier: number | string): Promise<any | null> {
   const drizzle = createDb(db);
-  return await drizzle.query.pinterestBoards.findFirst({
-    where: and(eq(pinterestBoards.id, id), isNull(pinterestBoards.deletedAt)),
+  const condition = typeof identifier === 'string' 
+    ? eq(pinterestBoards.slug, identifier) 
+    : eq(pinterestBoards.id, identifier);
+  
+  const board = await drizzle.query.pinterestBoards.findFirst({
+    where: and(condition, isNull(pinterestBoards.deletedAt)),
   }) || null;
+  
+  return mapBoardToSnakeCase(board);
 }
 
 /**
@@ -46,11 +86,19 @@ export async function getPinterestBoardById(db: D1Database, id: number): Promise
  */
 export async function createPinterestBoard(
   db: D1Database,
-  board: NewPinterestBoard
-): Promise<PinterestBoard | null> {
+  data: any
+): Promise<any | null> {
   const drizzle = createDb(db);
-  const [inserted] = await drizzle.insert(pinterestBoards).values(board).returning();
-  return inserted || null;
+  const insertData = {
+    slug: data.slug,
+    name: data.name,
+    description: data.description,
+    boardUrl: data.boardUrl ?? data.board_url,
+    coverImageUrl: data.coverImageUrl ?? data.cover_image_url,
+    isActive: data.isActive ?? data.is_active,
+  };
+  const [inserted] = await drizzle.insert(pinterestBoards).values(insertData).returning();
+  return mapBoardToSnakeCase(inserted || null);
 }
 
 /**
@@ -59,11 +107,20 @@ export async function createPinterestBoard(
 export async function updatePinterestBoard(
   db: D1Database,
   id: number,
-  board: Partial<NewPinterestBoard>
+  data: any
 ): Promise<boolean> {
   const drizzle = createDb(db);
+  const updateData: Partial<NewPinterestBoard> = { updatedAt: new Date().toISOString() };
+  
+  if (data.slug !== undefined) updateData.slug = data.slug;
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.boardUrl !== undefined || data.board_url !== undefined) updateData.boardUrl = data.boardUrl ?? data.board_url;
+  if (data.coverImageUrl !== undefined || data.cover_image_url !== undefined) updateData.coverImageUrl = data.coverImageUrl ?? data.cover_image_url;
+  if (data.isActive !== undefined || data.is_active !== undefined) updateData.isActive = data.isActive ?? data.is_active;
+
   await drizzle.update(pinterestBoards)
-    .set({ ...board, updatedAt: new Date().toISOString() })
+    .set(updateData)
     .where(eq(pinterestBoards.id, id));
   return true;
 }
@@ -73,8 +130,9 @@ export async function updatePinterestBoard(
  */
 export async function deletePinterestBoard(db: D1Database, id: number): Promise<boolean> {
   const drizzle = createDb(db);
+  // Soft delete
   await drizzle.update(pinterestBoards)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deletedAt: new Date().toISOString(), isActive: false })
     .where(eq(pinterestBoards.id, id));
   return true;
 }
@@ -89,20 +147,14 @@ export async function deletePinterestBoard(db: D1Database, id: number): Promise<
 export async function getPinterestPins(
   db: D1Database,
   options?: { boardId?: number; articleId?: number; status?: string; limit?: number }
-): Promise<PinterestPin[]> {
+): Promise<any[]> {
   const drizzle = createDb(db);
 
   const conditions: any[] = [];
 
-  if (options?.boardId) {
-    conditions.push(eq(pinterestPins.boardId, options.boardId));
-  }
-  if (options?.articleId) {
-    conditions.push(eq(pinterestPins.articleId, options.articleId));
-  }
-  if (options?.status) {
-    conditions.push(eq(pinterestPins.status, options.status));
-  }
+  if (options?.boardId) conditions.push(eq(pinterestPins.boardId, options.boardId));
+  if (options?.articleId) conditions.push(eq(pinterestPins.articleId, options.articleId));
+  if (options?.status) conditions.push(eq(pinterestPins.status, options.status));
 
   const query = drizzle
     .select()
@@ -110,11 +162,25 @@ export async function getPinterestPins(
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(pinterestPins.createdAt));
 
+  let results;
   if (options?.limit) {
-    return await query.limit(options.limit);
+    results = await query.limit(options.limit);
+  } else {
+    results = await query;
   }
 
-  return await query;
+  return results.map(mapPinToSnakeCase);
+}
+
+/**
+ * Get a pin by ID
+ */
+export async function getPinterestPinById(db: D1Database, id: number): Promise<any | null> {
+  const drizzle = createDb(db);
+  const pin = await drizzle.query.pinterestPins.findFirst({
+    where: eq(pinterestPins.id, id),
+  }) || null;
+  return mapPinToSnakeCase(pin);
 }
 
 /**
@@ -122,11 +188,25 @@ export async function getPinterestPins(
  */
 export async function createPinterestPin(
   db: D1Database,
-  pin: NewPinterestPin
-): Promise<PinterestPin | null> {
+  data: any
+): Promise<any | null> {
   const drizzle = createDb(db);
-  const [inserted] = await drizzle.insert(pinterestPins).values(pin).returning();
-  return inserted || null;
+  const insertData = {
+    articleId: data.articleId ?? data.article_id,
+    boardId: data.boardId ?? data.board_id,
+    sectionName: data.sectionName ?? data.section_name,
+    imageUrl: data.imageUrl ?? data.image_url,
+    destinationUrl: data.destinationUrl ?? data.destination_url,
+    title: data.title,
+    description: data.description,
+    tagsJson: data.tagsJson ?? data.tags_json,
+    status: data.status,
+    pinterestPinId: data.pinterestPinId ?? data.pinterest_pin_id,
+    exportedAt: data.exportedAt ?? data.exported_at,
+    exportBatchId: data.exportBatchId ?? data.export_batch_id,
+  };
+  const [inserted] = await drizzle.insert(pinterestPins).values(insertData).returning();
+  return mapPinToSnakeCase(inserted || null);
 }
 
 /**
@@ -135,11 +215,26 @@ export async function createPinterestPin(
 export async function updatePinterestPin(
   db: D1Database,
   id: number,
-  pin: Partial<NewPinterestPin>
+  data: any
 ): Promise<boolean> {
   const drizzle = createDb(db);
+  const updateData: Partial<NewPinterestPin> = { updatedAt: new Date().toISOString() };
+  
+  if (data.articleId !== undefined || data.article_id !== undefined) updateData.articleId = data.articleId ?? data.article_id;
+  if (data.boardId !== undefined || data.board_id !== undefined) updateData.boardId = data.boardId ?? data.board_id;
+  if (data.sectionName !== undefined || data.section_name !== undefined) updateData.sectionName = data.sectionName ?? data.section_name;
+  if (data.imageUrl !== undefined || data.image_url !== undefined) updateData.imageUrl = data.imageUrl ?? data.image_url;
+  if (data.destinationUrl !== undefined || data.destination_url !== undefined) updateData.destinationUrl = data.destinationUrl ?? data.destination_url;
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.tagsJson !== undefined || data.tags_json !== undefined) updateData.tagsJson = data.tagsJson ?? data.tags_json;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.pinterestPinId !== undefined || data.pinterest_pin_id !== undefined) updateData.pinterestPinId = data.pinterestPinId ?? data.pinterest_pin_id;
+  if (data.exportedAt !== undefined || data.exported_at !== undefined) updateData.exportedAt = data.exportedAt ?? data.exported_at;
+  if (data.exportBatchId !== undefined || data.export_batch_id !== undefined) updateData.exportBatchId = data.exportBatchId ?? data.export_batch_id;
+
   await drizzle.update(pinterestPins)
-    .set({ ...pin, updatedAt: new Date().toISOString() })
+    .set(updateData)
     .where(eq(pinterestPins.id, id));
   return true;
 }

@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import type { Env } from '@shared/types';
-import { AppError, ErrorCodes, formatErrorResponse } from '@shared/utils';
+import { AppError, ErrorCodes, formatErrorResponse, formatSuccessResponse } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
-import { handleGetTemplate, handleUpdateTemplate, handleDeleteTemplate } from '@modules/templates';
+import { getTemplateBySlug, updateTemplate, deleteTemplate } from '@modules/templates';
 
 export const prerender = false;
 
@@ -15,7 +15,17 @@ export const GET: APIRoute = async ({ params, locals }) => {
         }
 
         const { slug } = params;
-        return handleGetTemplate(env.DB, slug || '');
+        const template = await getTemplateBySlug(env.DB, slug || '');
+        
+        if (!template) {
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Template not found', 404)
+            );
+            return new Response(body, { status, headers });
+        }
+        
+        const { body, status, headers } = formatSuccessResponse(template);
+        return new Response(body, { status, headers });
     } catch (error: any) {
         console.error('Error fetching template:', error);
         const { body, status, headers } = formatErrorResponse(
@@ -43,10 +53,28 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         }
 
         const { slug } = params;
-        const body = await request.json();
-        return handleUpdateTemplate(env.DB, slug || '', body);
+        const payload = await request.json();
+        const updated = await updateTemplate(env.DB, slug || '', payload);
+        
+        if (!updated) {
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Template not found', 404)
+            );
+            return new Response(body, { status, headers });
+        }
+        
+        const { body, status, headers } = formatSuccessResponse(updated);
+        return new Response(body, { status, headers });
     } catch (error: any) {
         console.error('Error updating template:', error);
+        
+        if (error.message?.includes('UNIQUE constraint')) {
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.VALIDATION_ERROR, 'Template with this slug already exists', 409)
+            );
+            return new Response(body, { status, headers });
+        }
+        
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error
@@ -72,7 +100,17 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
         }
 
         const { slug } = params;
-        return handleDeleteTemplate(env.DB, slug || '');
+        const deleted = await deleteTemplate(env.DB, slug || '');
+        
+        if (!deleted) {
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Template not found', 404)
+            );
+            return new Response(body, { status, headers });
+        }
+        
+        const { body, status, headers } = formatSuccessResponse({ message: 'Template deleted successfully' });
+        return new Response(body, { status, headers });
     } catch (error: any) {
         console.error('Error deleting template:', error);
         const { body, status, headers } = formatErrorResponse(

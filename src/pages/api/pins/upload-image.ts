@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (file.size > MAX_SIZE_BYTES) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, `File too large. Max ${MAX_SIZE_BYTES / 1024 / 1024}MB`, 400);
     }
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(file.type as any)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, `Invalid file type: ${file.type}`, 400);
     }
 

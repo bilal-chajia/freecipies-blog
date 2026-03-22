@@ -26,9 +26,6 @@ export * from './types';
 // Services
 export * from './services/templates.service';
 
-// API Handlers
-export * from './api';
-
 // Utils
 export * from './utils';
 
@@ -36,4 +33,3 @@ export * from './utils';
 // with react-router-dom. Import them directly:
 // - '@modules/templates/components'
 // - '@modules/templates/store'
-

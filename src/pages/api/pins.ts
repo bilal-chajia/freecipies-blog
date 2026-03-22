@@ -2,6 +2,12 @@ import type { APIRoute } from 'astro';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import type { Env } from '@shared/types';
+import { 
+  getPinterestPins, 
+  createPinterestPin, 
+  updatePinterestPin, 
+  deletePinterestPin 
+} from '@modules/pinterest';
 
 export const prerender = false;
 
@@ -22,13 +28,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
 
-    const { results } = await env.DB.prepare(`
-      SELECT * FROM pinterest_pins 
-      WHERE article_id = ? 
-      ORDER BY is_primary DESC, sort_order ASC
-    `).bind(articleId).all();
+    const pins = await getPinterestPins(env.DB, { articleId: parseInt(articleId, 10) });
 
-    const { body, status, headers } = formatSuccessResponse({ pins: results });
+    const { body, status, headers } = formatSuccessResponse({ pins });
     return new Response(body, { status, headers });
   } catch (error) {
     console.error('Error fetching pins:', error);
@@ -57,7 +59,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const body = await request.json();
-    const { article_id, board_id, title, description, image_url, image_alt, image_width, image_height, is_primary, sort_order } = body;
+    // Frontend still sends legacy fields like image_alt, image_width, is_primary, etc.
+    const { 
+      article_id, board_id, title, description, image_url, pin_url
+    } = body;
 
     if (!article_id || !title || !description || !image_url) {
       const { body: errBody, status, headers } = formatErrorResponse(
@@ -66,32 +71,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response(errBody, { status, headers });
     }
 
-    // If this is set as primary, unset other primary pins for this article
-    if (is_primary) {
-      await env.DB.prepare(`
-        UPDATE pinterest_pins SET is_primary = 0 WHERE article_id = ?
-      `).bind(article_id).run();
-    }
-
-    const result = await env.DB.prepare(`
-      INSERT INTO pinterest_pins 
-      (article_id, board_id, title, description, image_url, image_alt, image_width, image_height, is_primary, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      article_id,
-      board_id || null,
+    const inserted = await createPinterestPin(env.DB, {
+      articleId: article_id,
+      boardId: board_id || null,
       title,
       description,
-      image_url,
-      image_alt || '',
-      image_width || 1000,
-      image_height || 1500,
-      is_primary ? 1 : 0,
-      sort_order || 0
-    ).run();
+      imageUrl: image_url,
+      destinationUrl: pin_url || '',
+      status: 'draft',
+      tagsJson: '[]'
+    });
 
     const { body: respBody, status, headers } = formatSuccessResponse({
-      id: result.meta.last_row_id
+      id: inserted?.id
     });
     return new Response(respBody, { status: 201, headers });
   } catch (error) {
@@ -121,7 +113,9 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     }
 
     const body = await request.json();
-    const { id, board_id, title, description, image_url, image_alt, image_width, image_height, is_primary, sort_order, pin_url } = body;
+    const { 
+      id, board_id, title, description, image_url, pin_url 
+    } = body;
 
     if (!id) {
       const { body: errBody, status, headers } = formatErrorResponse(
@@ -130,41 +124,13 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       return new Response(errBody, { status, headers });
     }
 
-    // Get article_id for this pin
-    const pin = await env.DB.prepare(`SELECT article_id FROM pinterest_pins WHERE id = ?`).bind(id).first();
-
-    if (!pin) {
-      const { body: errBody, status, headers } = formatErrorResponse(
-        new AppError(ErrorCodes.NOT_FOUND, 'Pin not found', 404)
-      );
-      return new Response(errBody, { status, headers });
-    }
-
-    // If this is set as primary, unset other primary pins for this article
-    if (is_primary) {
-      await env.DB.prepare(`
-        UPDATE pinterest_pins SET is_primary = 0 WHERE article_id = ? AND id != ?
-      `).bind(pin.article_id, id).run();
-    }
-
-    await env.DB.prepare(`
-      UPDATE pinterest_pins 
-      SET board_id = ?, title = ?, description = ?, image_url = ?, image_alt = ?, 
-          image_width = ?, image_height = ?, is_primary = ?, sort_order = ?, pin_url = ?
-      WHERE id = ?
-    `).bind(
-      board_id || null,
+    await updatePinterestPin(env.DB, id, {
+      boardId: board_id || null,
       title,
       description,
-      image_url,
-      image_alt,
-      image_width,
-      image_height,
-      is_primary ? 1 : 0,
-      sort_order,
-      pin_url || null,
-      id
-    ).run();
+      imageUrl: image_url,
+      destinationUrl: pin_url || ''
+    });
 
     const { body: respBody, status, headers } = formatSuccessResponse({ updated: true });
     return new Response(respBody, { status, headers });
@@ -204,7 +170,7 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       return new Response(errBody, { status, headers });
     }
 
-    await env.DB.prepare(`DELETE FROM pinterest_pins WHERE id = ?`).bind(id).run();
+    await deletePinterestPin(env.DB, parseInt(id, 10));
 
     const { body, status, headers } = formatSuccessResponse({ deleted: true });
     return new Response(body, { status, headers });

@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import type { Env } from '@shared/types';
-import { AppError, ErrorCodes, formatErrorResponse } from '@shared/utils';
+import { AppError, ErrorCodes, formatErrorResponse, formatSuccessResponse } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
-import { handleListTemplates, handleCreateTemplate } from '@modules/templates';
+import { getTemplates, createTemplate } from '@modules/templates';
 
 export const prerender = false;
 
@@ -17,7 +17,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
         const url = new URL(request.url);
         const isActive = url.searchParams.get('is_active') !== 'false';
 
-        return handleListTemplates(env.DB, isActive);
+        const templates = await getTemplates(env.DB, { activeOnly: isActive });
+        
+        const { body, status, headers } = formatSuccessResponse(templates);
+        return new Response(body, { status, headers });
     } catch (error: any) {
         console.error('Error fetching templates:', error);
         const { body, status, headers } = formatErrorResponse(
@@ -44,10 +47,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const body = await request.json();
-        return handleCreateTemplate(env.DB, body);
+        const data = await request.json();
+        const result = await createTemplate(env.DB, data);
+        
+        const { body, status, headers } = formatSuccessResponse(result);
+        return new Response(body, { status: 201, headers });
     } catch (error: any) {
         console.error('Error creating template:', error);
+        
+        // Handle SQLite Unique constraint error on slug
+        if (error.message?.includes('UNIQUE constraint')) {
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.VALIDATION_ERROR, 'Template with this slug already exists', 409)
+            );
+            return new Response(body, { status, headers });
+        }
+        
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error

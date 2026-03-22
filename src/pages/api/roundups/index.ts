@@ -52,11 +52,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
         const items = result.items.map(article => {
             // Parse roundup JSON for item count
             let itemCount = 0;
-            if (article.roundupJson) {
+            if ((article as any).roundupJson) {
                 try {
-                    const roundupData = typeof article.roundupJson === 'string'
-                        ? JSON.parse(article.roundupJson)
-                        : article.roundupJson;
+                    const roundupData = typeof (article as any).roundupJson === 'string'
+                        ? JSON.parse((article as any).roundupJson)
+                        : (article as any).roundupJson;
                     itemCount = roundupData.items?.length || 0;
                 } catch {
                     itemCount = 0;

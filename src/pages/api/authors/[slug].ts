@@ -115,54 +115,10 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
         const isNumeric = /^\d+$/.test(slug);
         let author;
 
-        // Handle old image deletion if image is changing
-        let existingAuthor;
         if (isNumeric) {
-            const { getAuthorById, updateAuthorById } = await import('@modules/authors');
-            existingAuthor = await getAuthorById(env.DB, parseInt(slug));
-
-            // Delete old image if needed (check imagesJson)
-            const oldImageUrl = getAvatarUrlFromImagesJson(existingAuthor?.imagesJson);
-            const shouldCheckImage = transformedBody.imagesJson !== undefined;
-            const newImageUrl = shouldCheckImage
-                ? getAvatarUrlFromImagesJson(transformedBody.imagesJson)
-                : null;
-
-            if (shouldCheckImage && oldImageUrl && newImageUrl !== oldImageUrl && env.IMAGES) {
-                try {
-                    const keyMatch = oldImageUrl.match(/\/images\/(.+)$/);
-                    if (keyMatch) {
-                        const oldKey = keyMatch[1];
-                        await env.IMAGES.delete(oldKey);
-                        await env.DB.prepare('DELETE FROM media WHERE r2_key = ?').bind(oldKey).run();
-                    }
-                } catch (deleteErr) {
-                    console.warn('Failed to delete old author image:', deleteErr);
-                }
-            }
-
+            const { updateAuthorById } = await import('@modules/authors');
             author = await updateAuthorById(env.DB, parseInt(slug), transformedBody);
         } else {
-            existingAuthor = await getAuthorBySlug(env.DB, slug);
-            const oldImageUrl = getAvatarUrlFromImagesJson(existingAuthor?.imagesJson);
-            const shouldCheckImage = transformedBody.imagesJson !== undefined;
-            const newImageUrl = shouldCheckImage
-                ? getAvatarUrlFromImagesJson(transformedBody.imagesJson)
-                : null;
-
-            if (shouldCheckImage && oldImageUrl && newImageUrl !== oldImageUrl && env.IMAGES) {
-                try {
-                    const keyMatch = oldImageUrl.match(/\/images\/(.+)$/);
-                    if (keyMatch) {
-                        const oldKey = keyMatch[1];
-                        await env.IMAGES.delete(oldKey);
-                        await env.DB.prepare('DELETE FROM media WHERE r2_key = ?').bind(oldKey).run();
-                    }
-                } catch (deleteErr) {
-                    console.warn('Failed to delete old author image:', deleteErr);
-                }
-            }
-
             author = await updateAuthor(env.DB, slug, transformedBody);
         }
 

@@ -1,41 +1,10 @@
 import type { APIRoute } from 'astro';
-import { updateTag, deleteTag, transformTagRequestBody, transformTagResponse } from '@modules/tags';
+import { getTagBySlug, updateTag, deleteTag, transformTagRequestBody, transformTagResponse } from '@modules/tags';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 
 export const prerender = false;
-
-// We don't have getTagBySlug exported yet, but we can query it or add it.
-// For now let's assume we can just query it directly or add it to db.ts if needed.
-// Actually I didn't add getTagBySlug in db.ts, I should have.
-// But I can use a simple query here or update db.ts.
-// Let's update db.ts first? No, I can just query it here for now to save time, 
-// or better, I'll just implement it here using raw query if needed, but db.ts is better.
-// Wait, I did implement getTags which returns all tags.
-// I can just filter from there or add a specific function.
-// Let's add a helper here for now.
-
-const getTagBySlug = async (db: any, slug: string) => {
-    const { results } = await db.prepare('SELECT * FROM tags WHERE slug = ?').bind(slug).all();
-    if (results.length === 0) return null;
-    return {
-        id: results[0].id,
-        slug: results[0].slug,
-        label: results[0].label,
-        // ... map other fields if needed, but for now let's just return the raw object or map it properly
-        // actually I should use the mapper from db.ts but it's not exported.
-        // I'll just return the result and hope the frontend handles it or I'll duplicate the mapper logic slightly.
-        // The frontend expects specific fields.
-        // Let's just use the same structure as getTags.
-        ...results[0],
-        isOnline: Boolean(results[0].is_online),
-        isFavorite: Boolean(results[0].is_favorite),
-        createdAt: results[0].created_at,
-        updatedAt: results[0].updated_at,
-        route: `/tags/${results[0].slug}`
-    };
-};
 
 export const GET: APIRoute = async ({ request, params, locals }) => {
     const { slug } = params;

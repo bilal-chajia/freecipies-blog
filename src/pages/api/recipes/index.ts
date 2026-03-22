@@ -53,11 +53,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
         const items = result.items.map(article => {
             // Parse recipe JSON for card data
             let recipeData: any = {};
-            if (article.recipeJson) {
+            if ((article as any).recipeJson) {
                 try {
-                    recipeData = typeof article.recipeJson === 'string'
-                        ? JSON.parse(article.recipeJson)
-                        : article.recipeJson;
+                    recipeData = typeof (article as any).recipeJson === 'string'
+                        ? JSON.parse((article as any).recipeJson)
+                        : (article as any).recipeJson;
                 } catch {
                     recipeData = {};
                 }

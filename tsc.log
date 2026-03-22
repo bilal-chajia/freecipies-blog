@@ -1,0 +1,60 @@
+﻿db/migrate-ai-models.ts(8,20): error TS2307: Cannot find module '../src/lib/db' or its corresponding type declarations.
+db/migrate-ai-models.ts(73,32): error TS18046: 'config' is of type 'unknown'.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(515,9): error TS2322: Type 'AbortSignal' is not assignable to type 'null'.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(516,9): error TS2322: Type '() => void' is not assignable to type 'null'.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(521,42): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(type: "abort", listener: (this: AbortSignal, ev: Event) => any, options?: boolean | AddEventListenerOptions | undefined): void', gave the following error.
+    Argument of type 'null' is not assignable to parameter of type '(this: AbortSignal, ev: Event) => any'.
+  Overload 2 of 2, '(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions | undefined): void', gave the following error.
+    Argument of type 'null' is not assignable to parameter of type 'EventListenerOrEventListenerObject'.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(602,69): error TS18046: 'err' is of type 'unknown'.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(603,9): error TS2322: Type 'unknown' is not assignable to type '{ blob: Blob; outputFormat: ImageFormat; }'.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(607,5): error TS2322: Type 'unknown' is not assignable to type '{ blob: Blob; outputFormat: ImageFormat; }'.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(649,84): error TS2554: Expected 1 arguments, but got 2.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(809,7): error TS2322: Type 'unknown' is not assignable to type 'Blob'.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(828,27): error TS2367: This comparison appears to be unintentional because the types '"webp"' and '"avif"' have no overlap.
+src/admin/components/ImageUploader/hooks/useImageUpload.ts(893,86): error TS2554: Expected 1 arguments, but got 2.
+src/components/content/index.ts(8,39): error TS2307: Cannot find module './FAQSection.astro' or its corresponding type declarations.
+src/components/content/index.ts(9,43): error TS2307: Cannot find module './NutritionFacts.astro' or its corresponding type declarations.
+src/components/content/index.ts(10,44): error TS2307: Cannot find module './RecipeMetaPills.astro' or its corresponding type declarations.
+src/components/content/index.ts(11,47): error TS2307: Cannot find module './IngredientsSection.astro' or its corresponding type declarations.
+src/components/content/index.ts(12,48): error TS2307: Cannot find module './InstructionsSection.astro' or its corresponding type declarations.
+src/components/content/index.ts(13,38): error TS2307: Cannot find module './HeroImage.astro' or its corresponding type declarations.
+src/components/content/index.ts(14,44): error TS2307: Cannot find module './TableOfContents.astro' or its corresponding type declarations.
+src/modules/media/services/media.service.ts(27,30): error TS2339: Property 'folder' does not exist on type 'SQLiteTableWithColumns<{ name: "media"; schema: undefined; columns: { id: SQLiteColumn<{ name: "id"; tableName: "media"; dataType: "number"; columnType: "SQLiteInteger"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 10 more ...; deletedAt: S...'.
+src/modules/tags/services/tags.service.ts(24,29): error TS2339: Property 'isOnline' does not exist on type 'SQLiteTableWithColumns<{ name: "tags"; schema: undefined; columns: { id: SQLiteColumn<{ name: "id"; tableName: "tags"; dataType: "number"; columnType: "SQLiteInteger"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 8 more ...; deletedAt: SQLi...'.
+src/pages/api/admin/ai/migrate-models.ts(50,18): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Partial<Record<AIProvider, { apiKey: string; enabled: boolean; availableModels?: AIModel[] | undefined; }>>'.
+  No index signature with a parameter of type 'string' was found on type 'Partial<Record<AIProvider, { apiKey: string; enabled: boolean; availableModels?: AIModel[] | undefined; }>>'.
+src/pages/api/admin/ai/migrate-models.ts(51,17): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Partial<Record<AIProvider, { apiKey: string; enabled: boolean; availableModels?: AIModel[] | undefined; }>>'.
+  No index signature with a parameter of type 'string' was found on type 'Partial<Record<AIProvider, { apiKey: string; enabled: boolean; availableModels?: AIModel[] | undefined; }>>'.
+src/pages/api/admin/ai/migrate-models.ts(58,13): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Partial<Record<AIProvider, { apiKey: string; enabled: boolean; availableModels?: AIModel[] | undefined; }>>'.
+  No index signature with a parameter of type 'string' was found on type 'Partial<Record<AIProvider, { apiKey: string; enabled: boolean; availableModels?: AIModel[] | undefined; }>>'.
+src/pages/api/admin/ai/models/[provider]/[modelId].ts(193,9): error TS18048: 'providerConfig' is possibly 'undefined'.
+src/pages/api/admin/ai/models/[provider]/[modelId].ts(254,9): error TS18048: 'providerConfig' is possibly 'undefined'.
+src/pages/api/admin/ai/models/[provider]/[modelId].ts(319,9): error TS18048: 'providerConfig' is possibly 'undefined'.
+src/pages/api/categories.ts(63,53): error TS18046: 'error' is of type 'unknown'.
+src/pages/api/media/upload-urls.ts(106,11): error TS2353: Object literal may only specify known properties, and 'expiresIn' does not exist in type 'RequestInit & { aws?: { accessKeyId?: string | undefined; secretAccessKey?: string | undefined; sessionToken?: string | undefined; service?: string | undefined; region?: string | undefined; ... 5 more ...; singleEncode?: boolean | undefined; } | undefined; }'.
+src/pages/api/media/upload-variant.ts(67,32): error TS2345: Argument of type 'string' is not assignable to parameter of type '"image/jpeg" | "image/png" | "image/gif" | "image/webp" | "image/avif"'.
+src/pages/api/pins/upload-image.ts(46,32): error TS2345: Argument of type 'string' is not assignable to parameter of type '"image/jpeg" | "image/png" | "image/gif" | "image/webp" | "image/avif"'.
+src/pages/api/recipes/index.ts(56,25): error TS2339: Property 'recipeJson' does not exist on type 'AnyContent'.
+  Property 'recipeJson' does not exist on type 'ArticleContent'.
+src/pages/api/recipes/index.ts(58,49): error TS2339: Property 'recipeJson' does not exist on type 'AnyContent'.
+  Property 'recipeJson' does not exist on type 'ArticleContent'.
+src/pages/api/recipes/index.ts(59,46): error TS2339: Property 'recipeJson' does not exist on type 'AnyContent'.
+  Property 'recipeJson' does not exist on type 'ArticleContent'.
+src/pages/api/recipes/index.ts(60,35): error TS2339: Property 'recipeJson' does not exist on type 'AnyContent'.
+  Property 'recipeJson' does not exist on type 'ArticleContent'.
+src/pages/api/roundups/index.ts(55,25): error TS2339: Property 'roundupJson' does not exist on type 'AnyContent'.
+  Property 'roundupJson' does not exist on type 'ArticleContent'.
+src/pages/api/roundups/index.ts(57,56): error TS2339: Property 'roundupJson' does not exist on type 'AnyContent'.
+  Property 'roundupJson' does not exist on type 'ArticleContent'.
+src/pages/api/roundups/index.ts(58,46): error TS2339: Property 'roundupJson' does not exist on type 'AnyContent'.
+  Property 'roundupJson' does not exist on type 'ArticleContent'.
+src/pages/api/roundups/index.ts(59,35): error TS2339: Property 'roundupJson' does not exist on type 'AnyContent'.
+  Property 'roundupJson' does not exist on type 'ArticleContent'.
+src/pages/api/upload-font.ts(73,38): error TS2345: Argument of type 'Buffer<ArrayBufferLike>' is not assignable to parameter of type 'string | ArrayBufferView | Iterable<string | ArrayBufferView> | AsyncIterable<string | ArrayBufferView> | Stream'.
+  Type 'Buffer<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBufferLike> | DataView<ArrayBufferLike> | Iterable<string | ArrayBufferView> | AsyncIterable<...> | Stream'.
+    Type 'Buffer<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBufferLike>'.
+      The types returned by 'slice(...).entries()' are incompatible between these types.
+        Type 'IterableIterator<[number, number]>' is missing the following properties from type 'ArrayIterator<[number, number]>': map, filter, take, drop, and 9 more.
+src/pages/api/upload-image.ts(47,32): error TS2345: Argument of type 'string' is not assignable to parameter of type '"image/jpeg" | "image/png" | "image/gif" | "image/webp" | "image/avif"'.

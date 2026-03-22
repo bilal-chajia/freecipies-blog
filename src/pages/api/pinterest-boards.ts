@@ -2,6 +2,13 @@ import type { APIRoute } from 'astro';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import type { Env } from '@shared/types';
+import { 
+  getPinterestBoards, 
+  getPinterestBoard, 
+  createPinterestBoard, 
+  updatePinterestBoard, 
+  deletePinterestBoard 
+} from '@modules/pinterest';
 
 export const prerender = false;
 
@@ -17,9 +24,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     if (slug) {
       // Get single board
-      const board = await env.DB.prepare(`
-        SELECT * FROM pinterest_boards WHERE slug = ?
-      `).bind(slug).first();
+      const board = await getPinterestBoard(env.DB, slug);
 
       if (!board) {
         const { body, status, headers } = formatErrorResponse(
@@ -33,13 +38,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
 
     // Get all boards
-    const { results } = await env.DB.prepare(`
-      SELECT * FROM pinterest_boards 
-      WHERE is_active = 1 
-      ORDER BY name ASC
-    `).all();
+    const allBoards = await getPinterestBoards(env.DB);
+    const activeBoards = allBoards
+      .filter((b) => b.is_active)
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-    const { body, status, headers } = formatSuccessResponse({ boards: results });
+    const { body, status, headers } = formatSuccessResponse({ boards: activeBoards });
     return new Response(body, { status, headers });
   } catch (error) {
     console.error('Error fetching boards:', error);
@@ -77,13 +81,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response(errBody, { status, headers });
     }
 
-    const result = await env.DB.prepare(`
-      INSERT INTO pinterest_boards (slug, name, description, board_url)
-      VALUES (?, ?, ?, ?)
-    `).bind(slug, name, description || '', board_url || '').run();
+    const inserted = await createPinterestBoard(env.DB, {
+      slug, 
+      name, 
+      description: description || '', 
+      board_url: board_url || ''
+    });
 
     const { body: respBody, status, headers } = formatSuccessResponse({
-      id: result.meta.last_row_id
+      id: inserted?.id
     });
     return new Response(respBody, { status: 201, headers });
   } catch (error) {
@@ -122,11 +128,9 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       return new Response(errBody, { status, headers });
     }
 
-    await env.DB.prepare(`
-      UPDATE pinterest_boards 
-      SET slug = ?, name = ?, description = ?, board_url = ?, is_active = ?
-      WHERE id = ?
-    `).bind(slug, name, description, board_url, is_active ? 1 : 0, id).run();
+    await updatePinterestBoard(env.DB, id, {
+      slug, name, description, board_url, is_active
+    });
 
     const { body: respBody, status, headers } = formatSuccessResponse({ updated: true });
     return new Response(respBody, { status, headers });
@@ -166,7 +170,7 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       return new Response(errBody, { status, headers });
     }
 
-    await env.DB.prepare(`DELETE FROM pinterest_boards WHERE id = ?`).bind(id).run();
+    await deletePinterestBoard(env.DB, parseInt(id, 10));
 
     const { body, status, headers } = formatSuccessResponse({ deleted: true });
     return new Response(body, { status, headers });
