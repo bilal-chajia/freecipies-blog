@@ -11,6 +11,8 @@ import {
 } from '@shared/types/images';
 import ImageEditor from '@/components/ImageEditor.jsx';
 import ImageUploader from '@/components/ImageUploader';
+import { Calendar } from '@/ui/calendar.jsx';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover.jsx';
 import {
   Upload,
   Search,
@@ -33,6 +35,7 @@ import {
   ArrowUpRight,
   Info,
   Maximize2,
+  CalendarDays,
 } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
@@ -218,6 +221,9 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
   const [authors, setAuthors] = useState([]);
   const [compressionQuality, setCompressionQuality] = useState('high');
   const [compressionStats, setCompressionStats] = useState(null);
+  const [dateFrom, setDateFrom] = useState(undefined);
+  const [dateTo, setDateTo] = useState(undefined);
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -238,7 +244,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
 
   useEffect(() => {
     loadMedia();
-  }, [filterType, sortBy, sortOrder]);
+  }, [filterType, sortBy, sortOrder, dateFrom, dateTo]);
 
   const loadMedia = async () => {
     try {
@@ -247,6 +253,8 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
         search: searchQuery || undefined,
         sortBy,
         order: sortOrder,
+        dateFrom: dateFrom ? dateFrom.toISOString() : undefined,
+        dateTo: dateTo ? dateTo.toISOString() : undefined,
       };
 
       const response = await mediaAPI.getAll(params);
@@ -514,36 +522,59 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
   );
 
   const renderListView = () => (
-    <div className="space-y-3">
+    <div className="bg-card rounded-2xl overflow-hidden">
+      {/* Table Header */}
+      <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border/40 bg-accent/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+        <div className="w-10 shrink-0" />
+        <div className="flex-1 min-w-0">Name</div>
+        <div className="w-20 text-center hidden sm:block">Size</div>
+        <div className="w-32 text-center hidden md:block">Date</div>
+        <div className="w-24 shrink-0" />
+      </div>
+
+      {/* Table Rows */}
       {filteredMedia.map((item, index) => (
-        <Card
+        <div
           key={item.id}
-          className={`group flex items-center gap-4 p-3 border-border/50 bg-card hover:bg-accent/40 shadow-sm transition-all duration-300 rounded-2xl cursor-pointer ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}
+          className={`group flex items-center gap-4 px-4 py-2.5 cursor-pointer transition-all duration-300 ease-out hover:bg-accent/30 ${index < filteredMedia.length - 1 ? 'border-b border-border/30' : ''} ${selectedMedia.includes(item.id) ? 'bg-primary/5 translate-x-2' : ''}`}
           onClick={() => onSelect ? onSelect(item) : toggleMediaSelection(item.id)}
         >
-          <div className="w-14 h-14 rounded-xl overflow-hidden bg-accent/50 flex items-center justify-center shrink-0 border border-border/30">
+          {/* Thumbnail */}
+          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-accent/40 flex items-center justify-center shrink-0 border border-border/30">
             {isMediaItemImage(item) ? (
-              <OptimizedImage item={item} priority={index < 8} className="transition-transform group-hover:scale-110" />
+              <OptimizedImage item={item} priority={index < 8} className="transition-transform duration-500 group-hover:scale-105" />
             ) : (
-              getFileIcon(item.name)
+              <span className="scale-50">{getFileIcon(item.name)}</span>
+            )}
+            {selectedMedia.includes(item.id) && (
+              <div className="absolute inset-0 bg-primary/70 flex items-center justify-center">
+                <Check className="size-4 text-white" />
+              </div>
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-bold text-sm truncate">{item.name}</p>
-              {selectedMedia.includes(item.id) && <Badge className="h-4 px-1 text-[8px] uppercase">Selected</Badge>}
-            </div>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium uppercase tracking-tight mt-1 opacity-60">
-              <span className="flex items-center gap-1"><RefreshCw className="size-2.5" /> {formatDate(item.created_at)}</span>
-              <span className="flex items-center gap-1"><Info className="size-2.5" /> {formatDisplayedSize(item)}</span>
-            </div>
+
+          {/* Name */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleCopyUrl(getFullUrl(item))}><Copy className="size-3.5" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => window.open(getFullUrl(item), '_blank')}><Eye className="size-3.5" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive" onClick={() => setDeleteModal({ isOpen: true, id: item.id, isBulk: false })}><Trash2 className="size-3.5" /></Button>
+
+          {/* Size */}
+          <div className="w-20 text-center hidden sm:block">
+            <span className="text-xs text-muted-foreground font-medium">{formatDisplayedSize(item)}</span>
           </div>
-        </Card>
+
+          {/* Date */}
+          <div className="w-32 text-center hidden md:block">
+            <span className="text-xs text-muted-foreground font-medium">{formatDate(item.createdAt || item.created_at)}</span>
+          </div>
+
+          {/* Actions */}
+          <div className="w-24 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={(e) => { e.stopPropagation(); handleCopyUrl(getFullUrl(item)); }}><Copy className="size-3" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={(e) => { e.stopPropagation(); window.open(getFullUrl(item), '_blank'); }}><Eye className="size-3" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item.id, isBulk: false }); }}><Trash2 className="size-3" /></Button>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -564,28 +595,6 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Selection Actions - appear when items selected */}
-          <AnimatePresence>
-            {selectedMedia.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="flex items-center gap-2"
-              >
-                <span className="text-sm text-muted-foreground">
-                  {selectedMedia.length} selected
-                </span>
-                <Button variant="ghost" size="sm" onClick={clearSelection} className="h-8 px-3">
-                  Clear
-                </Button>
-                <Button onClick={handleBulkDelete} size="sm" variant="destructive" className="h-8 px-3 gap-1.5">
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           <Button
             className="h-11 px-6 gap-2 shadow-sm rounded-xl"
             onClick={() => setShowUploadDialog(true)}
@@ -596,6 +605,30 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
         </div>
       </div>
 
+      {/* Sticky Action Bar - visible when items are selected */}
+      <AnimatePresence>
+        {selectedMedia.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background/95 backdrop-blur-xl border border-border/60 shadow-2xl rounded-2xl px-5 py-3"
+          >
+            <span className="text-sm font-semibold text-muted-foreground tabular-nums">
+              {selectedMedia.length} selected
+            </span>
+            <div className="w-px h-5 bg-border/60" />
+            <Button variant="ghost" size="sm" onClick={clearSelection} className="h-9 px-4 rounded-xl">
+              <X className="size-3.5 mr-1.5" /> Clear
+            </Button>
+            <Button onClick={handleBulkDelete} size="sm" variant="destructive" className="h-9 px-4 gap-1.5 rounded-xl">
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Control Tools Bar */}
       <div className="flex flex-col xl:flex-row gap-4">
         <div className="relative flex-1 group">
@@ -604,13 +637,13 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
             placeholder="Search assets by name, tag, or metadata..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-12 pl-10 border-none bg-card shadow-sm ring-1 ring-border/50 rounded-2xl focus-visible:ring-primary/50 transition-all"
+            className="h-9 pl-10 border-none bg-card shadow-sm ring-1 ring-border/50 rounded-2xl focus-visible:ring-primary/50 transition-all text-xs"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-[140px] h-12 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
+            <SelectTrigger className="w-[140px] h-9 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
               <Filter className="size-3.5 mr-2 opacity-60" />
               <SelectValue placeholder="Type" />
             </SelectTrigger>
@@ -623,18 +656,85 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
           </Select>
 
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[150px] h-12 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
+            <SelectTrigger className="w-[150px] h-9 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
               <RefreshCw className="h-3.5 w-3.5 mr-2 opacity-60" />
               <SelectValue placeholder="Sorted By" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="created_at">Recent Activity</SelectItem>
               <SelectItem value="name">Alphanumeric</SelectItem>
-              <SelectItem value="size">Performance Size</SelectItem>
             </SelectContent>
           </Select>
 
-          <div className="flex p-1 bg-accent/50 rounded-2xl border border-border/30 h-12">
+          <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" className="h-9 px-3 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold gap-2 w-[170px] justify-start">
+                <CalendarDays className="h-3.5 w-3.5 opacity-60" />
+                {dateFrom || dateTo ? (
+                  <span className="truncate">
+                    {dateFrom ? dateFrom.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '...'}
+                    {' – '}
+                    {dateTo ? dateTo.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Now'}
+                  </span>
+                ) : (
+                  'All Time'
+                )}
+                {(dateFrom || dateTo) && (
+                  <span
+                    role="button"
+                    className="ml-auto p-0.5 rounded-full hover:bg-accent cursor-pointer"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDateFrom(undefined); setDateTo(undefined); }}
+                  >
+                    <X className="size-3 opacity-60 hover:opacity-100" />
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 rounded-2xl" align="start">
+              <div className="flex">
+                {/* Preset shortcuts */}
+                <div className="border-r border-border/40 p-3 flex flex-col gap-1 min-w-[130px]">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-2 mb-1">Quick Select</p>
+                  {[
+                    { label: 'Today', fn: () => { const d = new Date(); d.setHours(0,0,0,0); setDateFrom(d); setDateTo(new Date()); }},
+                    { label: 'Last 7 Days', fn: () => { const d = new Date(); d.setDate(d.getDate() - 7); setDateFrom(d); setDateTo(new Date()); }},
+                    { label: 'Last 30 Days', fn: () => { const d = new Date(); d.setDate(d.getDate() - 30); setDateFrom(d); setDateTo(new Date()); }},
+                    { label: 'This Year', fn: () => { setDateFrom(new Date(new Date().getFullYear(), 0, 1)); setDateTo(new Date()); }},
+                    { label: 'All Time', fn: () => { setDateFrom(undefined); setDateTo(undefined); }},
+                  ].map(({ label, fn }) => (
+                    <Button
+                      key={label}
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start text-xs h-8 rounded-lg font-medium"
+                      onClick={() => { fn(); setDatePopoverOpen(false); }}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+                {/* Calendar */}
+                <div className="p-3">
+                  <Calendar
+                    mode="range"
+                    selected={dateFrom && dateTo ? { from: dateFrom, to: dateTo } : dateFrom ? { from: dateFrom } : undefined}
+                    onSelect={(range) => {
+                      setDateFrom(range?.from);
+                      setDateTo(range?.to);
+                      // Only close when a real range is selected (two different dates)
+                      if (range?.from && range?.to && range.from.getTime() !== range.to.getTime()) {
+                        setDatePopoverOpen(false);
+                      }
+                    }}
+                    numberOfMonths={1}
+                    disabled={{ after: new Date() }}
+                  />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <div className="flex p-1 bg-accent/50 rounded-2xl border border-border/30 h-9">
             <Button variant="ghost" onClick={() => setViewMode('grid')} className={`h-full w-10 p-0 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
               <Grid className="size-4" />
             </Button>

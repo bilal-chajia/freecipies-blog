@@ -29,6 +29,8 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         const order = (url.searchParams.get('order') as 'asc' | 'desc') || 'desc';
         const limit = parseInt(url.searchParams.get('limit') || '100');
         const offset = parseInt(url.searchParams.get('offset') || '0');
+        const dateFrom = url.searchParams.get('dateFrom') || undefined;
+        const dateTo = url.searchParams.get('dateTo') || undefined;
 
 
         const mediaFiles = await getMedia(env.DB, {
@@ -37,7 +39,9 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
             sortBy,
             order,
             limit,
-            offset
+            offset,
+            dateFrom,
+            dateTo
         });
 
         // Transform media files to include 'url' property for frontend compatibility

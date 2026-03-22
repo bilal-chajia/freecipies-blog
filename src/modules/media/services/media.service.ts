@@ -4,7 +4,7 @@
  * Database operations for the media table.
  */
 
-import { eq, and, or, like, desc, asc, isNull } from 'drizzle-orm';
+import { eq, and, or, like, desc, asc, isNull, gte, lte } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { media, type Media, type NewMedia } from '../schema/media.schema';
 import type { MediaQueryOptions, MediaRecord } from '../types/media.types';
@@ -23,10 +23,20 @@ export async function getMedia(
 
   const conditions = [isNull(media.deletedAt)];
 
-  if (options?.folder) {
-    conditions.push(eq(media.folder, options.folder));
+  // Type filter (image, video, document)
+  if (options?.type) {
+    const mimePatterns: Record<string, string> = {
+      image: 'image/%',
+      video: 'video/%',
+      document: 'application/%',
+    };
+    const pattern = mimePatterns[options.type];
+    if (pattern) {
+      conditions.push(like(media.mimeType, pattern));
+    }
   }
 
+  // Search filter
   if (options?.search) {
     const searchPattern = `%${options.search}%`;
     conditions.push(
@@ -37,13 +47,25 @@ export async function getMedia(
     );
   }
 
+  // Date range filters
+  if (options?.dateFrom) {
+    conditions.push(gte(media.createdAt, options.dateFrom));
+  }
+  if (options?.dateTo) {
+    // Add end-of-day to include the full "to" date
+    const toDate = options.dateTo.includes('T') ? options.dateTo : `${options.dateTo}T23:59:59`;
+    conditions.push(lte(media.createdAt, toDate));
+  }
+
+  // Sort logic
+  const sortColumn = options?.sortBy === 'name' ? media.name : media.createdAt;
+  const orderFn = options?.order === 'asc' ? asc : desc;
+
   const query = drizzle
     .select()
     .from(media)
     .where(and(...conditions))
-    .orderBy(
-      options?.order === 'asc' ? asc(media.createdAt) : desc(media.createdAt)
-    );
+    .orderBy(orderFn(sortColumn));
 
   if (options?.limit) {
     if (options?.offset) {

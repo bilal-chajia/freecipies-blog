@@ -39,13 +39,14 @@ export interface MediaUploadResult {
 }
 
 export interface MediaQueryOptions {
-  folder?: string;
   search?: string;
   sortBy?: string;
   order?: 'asc' | 'desc';
   limit?: number;
   offset?: number;
   type?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface MediaRecord {
