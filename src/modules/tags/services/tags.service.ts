@@ -14,15 +14,11 @@ import { createDb } from '../../../shared/database/drizzle';
  */
 export async function getTags(
   db: D1Database,
-  options?: { limit?: number; isOnline?: boolean }
+  options?: { limit?: number }
 ): Promise<Tag[]> {
   const drizzle = createDb(db);
 
   const conditions = [isNull(tags.deletedAt)];
-
-  if (options?.isOnline !== undefined) {
-    conditions.push(eq(tags.isOnline, options.isOnline));
-  }
 
   const query = drizzle
     .select()
