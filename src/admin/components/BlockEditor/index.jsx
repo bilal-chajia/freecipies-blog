@@ -11,8 +11,7 @@ import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
     useCreateBlockNote,
 } from '@blocknote/react';
-import { BlockNoteSchema, defaultBlockSpecs, getBlockInfo, getNearestBlockPos } from '@blocknote/core';
-import { SuggestionMenuController, getDefaultReactSlashMenuItems } from "@blocknote/react";
+import { schema } from './schema';
 import '@blocknote/mantine/style.css';
 import { cn } from '@/lib/utils';
 import {
@@ -82,42 +81,9 @@ import {
     blocksToContentJson
 } from './utils/conversion';
 
-// Custom blocks
-import {
-    Alert,
-    VideoBlock,
-    ImageBlock,
-    FAQSectionBlock,
-    DividerBlock,
-    RecipeEmbedBlock,
-    MainRecipeBlock,
-    RoundupListBlock,
-    RelatedContentBlock,
-    TableBlock,
-    BeforeAfterBlock
-} from './blocks';
-
 import { RecipeDataContext } from './blocks/MainRecipeBlock';
 import { RoundupDataContext } from './blocks/RoundupListBlock';
 import { FAQDataContext } from './blocks/FAQSectionBlock';
-
-// Create custom schema with our blocks
-const schema = BlockNoteSchema.create({
-    blockSpecs: {
-        ...defaultBlockSpecs,
-        alert: Alert(),
-        video: VideoBlock(),
-        customImage: ImageBlock(),
-        faqSection: FAQSectionBlock(),
-        divider: DividerBlock(),
-        recipeEmbed: RecipeEmbedBlock(),
-        mainRecipe: MainRecipeBlock(),
-        roundupList: RoundupListBlock(),
-        relatedContent: RelatedContentBlock(),
-        simpleTable: TableBlock(),
-        beforeAfter: BeforeAfterBlock(),
-    },
-});
 // Custom slash menu items
 const getCustomSlashMenuItems = (editor, options = {}) => {
     const {
