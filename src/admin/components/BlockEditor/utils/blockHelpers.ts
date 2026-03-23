@@ -109,7 +109,7 @@ export const resolveCoverUrl = (cover: string | ImageSlot | undefined): string =
 
 export const buildVideoUrl = (provider: string | undefined, videoId: string | undefined): string => {
     if (!provider || !videoId) return '';
-    if (provider === 'youtube') return `https://www.youtube.com/watch?v=${videoId}`;
-    if (provider === 'vimeo') return `https://vimeo.com/${videoId}`;
+    if (provider === 'youtube') return `https://www.youtube.com/embed/${videoId}`;
+    if (provider === 'vimeo') return `https://player.vimeo.com/video/${videoId}`;
     return '';
 };

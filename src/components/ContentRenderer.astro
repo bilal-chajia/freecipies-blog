@@ -156,7 +156,23 @@ const renderMarkdownText = (text?: string): string => {
     i++;
   }
 
-  return result.join("");
+return result.join("");
+};
+
+const getEmbedUrl = (url: string) => {
+  if (!url) return "";
+
+  // YouTube
+  const ytMatch = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+
+  return url;
 };
 
 const parsed = (() => {
@@ -356,7 +372,7 @@ const numberedBlocks = parsed.map((block) => {
         );
       }
       if (block.type === "video") {
-        const videoUrl = block.url || block.props?.url;
+        const videoUrl = getEmbedUrl(block.url || block.props?.url);
         if (!videoUrl) return null;
         return (
           <div
