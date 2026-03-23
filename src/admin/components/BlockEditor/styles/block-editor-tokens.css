@@ -612,7 +612,7 @@
     cursor: grabbing !important;
 }
 
-.structure-item-label {
+.structure-item-content .structure-item-label {
     flex: 1 1 0%;
     width: 0;
     min-width: 0;
@@ -620,6 +620,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     display: block;
+}
+
+.structure-item-label {
+    flex: 1;
+    min-width: 0;
 }
 
 .structure-item-label * {

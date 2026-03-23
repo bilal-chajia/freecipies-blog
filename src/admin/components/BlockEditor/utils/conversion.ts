@@ -294,11 +294,12 @@ export function blocksToContentJson(blocks: AnyBlock[]): ContentBlock[] {
                 break;
 
             case 'video':
-                if (props?.videoId) {
+                if (props?.videoId || props?.url) {
                     result.push({
                         type: 'video',
+                        url: props.url || '',
                         provider: props.provider as any,
-                        videoId: props.videoId,
+                        videoId: props.videoId || '',
                         aspectRatio: (props.aspectRatio || '16:9') as any,
                     } as any);
                 }

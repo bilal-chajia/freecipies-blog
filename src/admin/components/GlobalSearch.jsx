@@ -29,7 +29,12 @@ const GlobalSearch = ({ open, onOpenChange }) => {
   // Listen for Cmd+K / Ctrl+K
   useEffect(() => {
     const down = (e) => {
-      if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || e.key === '/') {
+      // Check if we should ignore the shortcut
+      const isInput = e.target.tagName === 'INPUT' || 
+                      e.target.tagName === 'TEXTAREA' || 
+                      e.target.isContentEditable;
+
+      if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !isInput)) {
         e.preventDefault();
         onOpenChange?.(true);
       }

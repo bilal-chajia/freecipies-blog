@@ -355,14 +355,16 @@ const numberedBlocks = parsed.map((block) => {
           </div>
         );
       }
-      if (block.type === "video" && block.url) {
+      if (block.type === "video") {
+        const videoUrl = block.url || block.props?.url;
+        if (!videoUrl) return null;
         return (
           <div
             class="video-embed"
-            style={`aspect-ratio: ${(block.aspectRatio || "16:9").replace(":", "/")};`}
+            style={`aspect-ratio: ${(block.aspectRatio || block.props?.aspectRatio || "16:9").replace(":", "/")};`}
           >
             <iframe
-              src={block.url}
+              src={videoUrl}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowfullscreen
               loading="lazy"
