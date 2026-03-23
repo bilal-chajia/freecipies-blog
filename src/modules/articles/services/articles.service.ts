@@ -227,6 +227,30 @@ export async function getArticleBySlug(
 }
 
 /**
+ * Helper to ensure JSON fields are stringified before database operations
+ */
+function prepareJsonFields(patch: Record<string, any>): Record<string, any> {
+  const processed = { ...patch };
+  const jsonFields = [
+    'imagesJson', 'contentJson', 'recipeJson', 'roundupJson',
+    'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
+    'cachedTagsJson', 'cachedCategoryJson',
+    'cachedAuthorJson', 'cachedEquipmentJson', 'cachedRatingJson',
+    'cachedTocJson', 'cachedRecipeJson', 'cachedCardJson'
+  ];
+
+  for (const field of jsonFields) {
+    if (field in processed && processed[field] !== undefined && processed[field] !== null) {
+      const value = processed[field];
+      if (typeof value === 'object') {
+        processed[field] = JSON.stringify(value);
+      }
+    }
+  }
+  return processed;
+}
+
+/**
  * Create a new article
  */
 export async function createArticle(
@@ -234,8 +258,9 @@ export async function createArticle(
   article: NewArticle
 ): Promise<Article | null> {
   const drizzle = createDb(db);
+  const processed = prepareJsonFields(article as any);
 
-  const [inserted] = await drizzle.insert(articles).values(article).returning();
+  const [inserted] = await drizzle.insert(articles).values(processed as any).returning();
   return inserted || null;
 }
 
@@ -249,8 +274,9 @@ export async function updateArticle(
 ): Promise<boolean> {
   const drizzle = createDb(db);
 
+  const processed = prepareJsonFields(article as any);
   const updateData = {
-    ...article,
+    ...processed,
     updatedAt: new Date().toISOString(),
   };
 
@@ -329,24 +355,7 @@ export async function updateArticleById(
 ): Promise<boolean> {
   const drizzle = createDb(db);
 
-  // Stringify JSON fields if they are objects
-  const processedPatch = { ...patch } as Record<string, unknown>;
-  const jsonFields = [
-    'imagesJson', 'contentJson', 'recipeJson', 'roundupJson',
-    'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
-    'cachedTagsJson', 'cachedCategoryJson',
-    'cachedAuthorJson', 'cachedEquipmentJson', 'cachedRatingJson',
-    'cachedTocJson', 'cachedRecipeJson', 'cachedCardJson'
-  ];
-
-  for (const field of jsonFields) {
-    if (field in processedPatch && processedPatch[field] !== undefined) {
-      const value = processedPatch[field];
-      if (typeof value === 'object' && value !== null) {
-        processedPatch[field] = JSON.stringify(value);
-      }
-    }
-  }
+  const processedPatch = prepareJsonFields(patch);
 
   const updateData = {
     ...processedPatch,

@@ -386,34 +386,17 @@ export const TableBlock = createReactBlockSpec(
                                 <thead>
                                     <tr>
                                         {safeHeaders.map((header, index) => (
-                                            <th key={`h-${index}`} className="table-col border border-border p-2 bg-muted/50">
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={header}
-                                                        onChange={(e) => {
-                                                            const next = [...safeHeaders];
-                                                            next[index] = e.target.value;
-                                                            updateHeaders(next);
-                                                        }}
-                                                        className={cn(
-                                                            'w-full px-2 py-1 text-xs font-medium',
-                                                            'bg-background border border-input rounded-md',
-                                                            'focus:outline-none focus:ring-2 focus:ring-ring'
-                                                        )}
-                                                    />
-                                                    {isSelected && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeColumn(index)}
-                                                            className="text-muted-foreground hover:text-destructive"
-                                                            title="Remove column"
-                                                        >
-                                                            <Trash2 className="w-3 h-3" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </th>
+                                            <TableHeaderCell
+                                                key={`h-${index}`}
+                                                initialValue={header}
+                                                onSave={(newValue) => {
+                                                    const next = [...safeHeaders];
+                                                    next[index] = newValue;
+                                                    updateHeaders(next);
+                                                }}
+                                                isSelected={isSelected}
+                                                onRemove={() => removeColumn(index)}
+                                            />
                                         ))}
                                         {isSelected && (
                                             <th className="table-action-col border border-border p-2 bg-muted/50 text-center text-xs text-muted-foreground">
@@ -426,22 +409,15 @@ export const TableBlock = createReactBlockSpec(
                                     {safeRows.map((row, rowIndex) => (
                                         <tr key={`r-${rowIndex}`}>
                                             {row.map((cell, cellIndex) => (
-                                                <td key={`c-${rowIndex}-${cellIndex}`} className="table-col border border-border p-2">
-                                                    <input
-                                                        type="text"
-                                                        value={cell || ''}
-                                                        onChange={(e) => {
-                                                            const nextRows = safeRows.map((r) => [...r]);
-                                                            nextRows[rowIndex][cellIndex] = e.target.value;
-                                                            updateRows(nextRows);
-                                                        }}
-                                                        className={cn(
-                                                            'w-full px-2 py-1 text-xs',
-                                                            'bg-background border border-input rounded-md',
-                                                            'focus:outline-none focus:ring-2 focus:ring-ring'
-                                                        )}
-                                                    />
-                                                </td>
+                                                <TableCell
+                                                    key={`c-${rowIndex}-${cellIndex}`}
+                                                    initialValue={cell || ''}
+                                                    onSave={(newValue) => {
+                                                        const nextRows = safeRows.map((r) => [...r]);
+                                                        nextRows[rowIndex][cellIndex] = newValue;
+                                                        updateRows(nextRows);
+                                                    }}
+                                                />
                                             ))}
                                             {isSelected && (
                                                 <td className="border border-border p-2 text-center">
@@ -476,6 +452,81 @@ export const TableBlock = createReactBlockSpec(
         },
     }
 );
+
+/**
+ * Helper component for editable table cells to prevent focus loss
+ */
+function TableCell({ initialValue, onSave }) {
+    const [value, setValue] = useState(initialValue);
+
+    // Keep state in sync if prop changes while not focused
+    useEffect(() => {
+        setValue(initialValue);
+    }, [initialValue]);
+
+    return (
+        <td className="table-col border border-border p-2">
+            <input
+                type="text"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onBlur={() => {
+                    if (value !== initialValue) {
+                        onSave(value);
+                    }
+                }}
+                className={cn(
+                    'w-full px-2 py-1 text-xs',
+                    'bg-background border border-input rounded-md',
+                    'focus:outline-none focus:ring-2 focus:ring-ring'
+                )}
+            />
+        </td>
+    );
+}
+
+/**
+ * Helper component for editable table headers
+ */
+function TableHeaderCell({ initialValue, onSave, isSelected, onRemove }) {
+    const [value, setValue] = useState(initialValue);
+
+    useEffect(() => {
+        setValue(initialValue);
+    }, [initialValue]);
+
+    return (
+        <th className="table-col border border-border p-2 bg-muted/50 text-left">
+            <div className="flex items-center gap-2">
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    onBlur={() => {
+                        if (value !== initialValue) {
+                            onSave(value);
+                        }
+                    }}
+                    className={cn(
+                        'w-full px-2 py-1 text-xs font-medium',
+                        'bg-background border border-input rounded-md',
+                        'focus:outline-none focus:ring-2 focus:ring-ring'
+                    )}
+                />
+                {isSelected && (
+                    <button
+                        type="button"
+                        onClick={onRemove}
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                        title="Remove column"
+                    >
+                        <Trash2 className="w-3 h-3" />
+                    </button>
+                )}
+            </div>
+        </th>
+    );
+}
 
 export default TableBlock;
 

@@ -117,6 +117,14 @@ export default function GutenbergRoundupEditor() {
         if (!blockId || !editorInstance) return;
         editorInstance.setTextCursorPosition(blockId, 'start');
         editorInstance.focus();
+
+        // Manual scroll for reliability
+        setTimeout(() => {
+            const el = document.querySelector(`[data-id="${blockId}"]`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 50);
     }, [editorInstance]);
 
     const handleReorderBlock = useCallback((draggedId, targetId, position) => {

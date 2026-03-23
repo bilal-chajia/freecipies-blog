@@ -106,21 +106,22 @@ function SortableStructureItem({
             }}
             onClick={() => onSelectBlock?.(item.id)}
         >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="structure-item-content flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                 <button
                     ref={setActivatorNodeRef}
                     type="button"
-                    className="text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground cursor-grab"
                     onClick={(event) => event.stopPropagation()}
                     title={isSortableEnabled ? 'Drag to reorder' : 'Reorder disabled'}
                     {...attributes}
                     {...listeners}
                 >
-                    <GripVertical className="w-3.5 h-3.5" />
+                    <GripVertical className="w-3.5 h-3.5 shrink-0 structure-item-grip" />
                 </button>
                 <Icon className="structure-item-icon" />
                 <span
                     className="structure-item-label"
+                    title={item.label ? item.label.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1') : ''}
                     dangerouslySetInnerHTML={{ __html: renderInlineLabel(item.label) }}
                 />
             </div>
@@ -356,7 +357,18 @@ export default function BlockInserter({
         [structureItems]
     );
 
-    const visibleStructureItems = panelTab === 'outline' ? outlineItems : structureItems;
+    const visibleStructureItems = useMemo(() => {
+        let items = panelTab === 'outline' ? outlineItems : structureItems;
+
+        // Filter out trailing empty paragraph if it exists (common system-added block)
+        if (panelTab === 'list' && items.length > 1) {
+            const last = items[items.length - 1];
+            if (last.type === 'paragraph' && (!last.label || last.label.trim() === '')) {
+                return items.slice(0, -1);
+            }
+        }
+        return items;
+    }, [panelTab, outlineItems, structureItems]);
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
     );
