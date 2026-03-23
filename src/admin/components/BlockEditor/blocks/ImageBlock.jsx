@@ -306,6 +306,7 @@ export const ImageBlock = createReactBlockSpec(
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
+                    onDelete={() => editor.removeBlocks([block])}
                     showMoreMenu={false}
                 >
                     <ToolbarButton

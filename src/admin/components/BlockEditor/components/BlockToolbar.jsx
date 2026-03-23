@@ -397,17 +397,29 @@ const BlockToolbar = forwardRef(({
                 </ToolbarGroup>
             )}
 
-            {/* Segment 4: More menu */}
-            {showMoreMenu && (
+            {/* Segment 4: More menu & Quick Actions */}
+            {(showMoreMenu || onDelete) && (
                 <>
                     {children && <ToolbarSeparator />}
-                    <BlockMoreMenu
-                        onDuplicate={onDuplicate}
-                        onDelete={onDelete}
-                        onCopy={onCopy}
-                    >
-                        {moreMenuContent}
-                    </BlockMoreMenu>
+                    <div className="flex items-center gap-0.5">
+                        {onDelete && (
+                            <ToolbarButton
+                                icon={Trash2}
+                                label="Delete block"
+                                onClick={onDelete}
+                                className="text-destructive hover:bg-destructive/10"
+                            />
+                        )}
+                        {showMoreMenu && (
+                            <BlockMoreMenu
+                                onDuplicate={onDuplicate}
+                                onDelete={onDelete}
+                                onCopy={onCopy}
+                            >
+                                {moreMenuContent}
+                            </BlockMoreMenu>
+                        )}
+                    </div>
                 </>
             )}
         </div>

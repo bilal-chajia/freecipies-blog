@@ -98,11 +98,34 @@ const getCustomSlashMenuItems = (editor, options = {}) => {
         hasRoundupContext = false,
     } = options;
 
+    const safeInsert = (type, props = {}) => {
+        const currentPos = editor.getTextCursorPosition();
+        if (!currentPos) return;
+
+        let targetId = currentPos.block.id;
+        let placement = 'after';
+
+        // Find root parent if nested, to ensure custom blocks are at root level
+        let current = currentPos.block;
+        while (current.parentId) {
+            const parent = editor.getBlock(current.parentId);
+            if (!parent) break;
+            current = parent;
+            targetId = current.id;
+        }
+
+        const inserted = editor.insertBlocks([{ type, props }], targetId, placement);
+        if (inserted?.[0]?.id) {
+            editor.setTextCursorPosition(inserted[0].id, 'start');
+        }
+        editor.focus();
+    };
+
     const items = [
         {
             title: 'Alert Box',
             onItemClick: () =>
-                editor.insertBlocks([{ type: 'alert', props: { type: 'warning' } }], editor.getTextCursorPosition().block, 'after'),
+                safeInsert('alert', { type: 'warning' }),
             aliases: ['alert', 'tip', 'warning'],
             group: 'Food Blog',
             subtext: 'Insert a tip/warning box',
@@ -110,7 +133,7 @@ const getCustomSlashMenuItems = (editor, options = {}) => {
         {
             title: 'Embed Recipe',
             onItemClick: () =>
-                editor.insertBlocks([{ type: 'recipeEmbed' }], editor.getTextCursorPosition().block, 'after'),
+                safeInsert('recipeEmbed'),
             aliases: ['recipe', 'embed', 'link'],
             group: 'Food Blog',
             subtext: 'Link to another recipe',
@@ -118,7 +141,7 @@ const getCustomSlashMenuItems = (editor, options = {}) => {
         {
             title: 'Related Content',
             onItemClick: () =>
-                editor.insertBlocks([{ type: 'relatedContent' }], editor.getTextCursorPosition().block, 'after'),
+                safeInsert('relatedContent'),
             aliases: ['related', 'recommend'],
             group: 'Food Blog',
             subtext: 'Curate related recipes or articles',
@@ -126,7 +149,7 @@ const getCustomSlashMenuItems = (editor, options = {}) => {
         {
             title: 'Before / After',
             onItemClick: () =>
-                editor.insertBlocks([{ type: 'beforeAfter' }], editor.getTextCursorPosition().block, 'after'),
+                safeInsert('beforeAfter'),
             aliases: ['before', 'after', 'compare'],
             group: 'Food Blog',
             subtext: 'Compare two images',
@@ -134,7 +157,7 @@ const getCustomSlashMenuItems = (editor, options = {}) => {
         {
             title: 'Table',
             onItemClick: () =>
-                editor.insertBlocks([{ type: 'simpleTable' }], editor.getTextCursorPosition().block, 'after'),
+                safeInsert('simpleTable'),
             aliases: ['table', 'grid', 'matrix'],
             group: 'Layout',
             subtext: 'Add a table',
@@ -142,7 +165,7 @@ const getCustomSlashMenuItems = (editor, options = {}) => {
         {
             title: 'Divider',
             onItemClick: () =>
-                editor.insertBlocks([{ type: 'divider' }], editor.getTextCursorPosition().block, 'after'),
+                safeInsert('divider'),
             aliases: ['divider', 'separator', 'line'],
             group: 'Layout',
             subtext: 'Add a horizontal divider',
@@ -153,7 +176,7 @@ const getCustomSlashMenuItems = (editor, options = {}) => {
         items.unshift({
             title: 'Recipe Details',
             onItemClick: () =>
-                editor.insertBlocks([{ type: 'mainRecipe' }], editor.getTextCursorPosition().block, 'after'),
+                safeInsert('mainRecipe'),
             aliases: ['recipe', 'main', 'details'],
             group: 'Food Blog',
             subtext: 'The main recipe editor for this post',
@@ -164,7 +187,7 @@ const getCustomSlashMenuItems = (editor, options = {}) => {
         items.unshift({
             title: 'Roundup List',
             onItemClick: () =>
-                editor.insertBlocks([{ type: 'roundupList' }], editor.getTextCursorPosition().block, 'after'),
+                safeInsert('roundupList'),
             aliases: ['roundup', 'list', 'curated'],
             group: 'Food Blog',
             subtext: 'Manage the curated items list for this roundup',
@@ -401,8 +424,24 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
     }, [editor]);
 
     const insertBlock = (type, props = {}) => {
-        const currentBlock = editor.getTextCursorPosition().block;
-        const inserted = editor.insertBlocks([{ type, props }], currentBlock, 'after');
+        const currentPos = editor.getTextCursorPosition();
+        if (!currentPos) return;
+
+        let targetId = currentPos.block.id;
+        let placement = 'after';
+
+        // Find root parent if nested, to ensure custom blocks are at root level
+        if (CUSTOM_BLOCK_TYPES.has(type)) {
+            let current = currentPos.block;
+            while (current.parentId) {
+                const parent = editor.getBlock(current.parentId);
+                if (!parent) break;
+                current = parent;
+                targetId = current.id;
+            }
+        }
+
+        const inserted = editor.insertBlocks([{ type, props }], targetId, placement);
         if (inserted?.[0]?.id) {
             editor.setTextCursorPosition(inserted[0].id, 'start');
         }
@@ -1768,31 +1807,52 @@ export default function BlockEditor({
         const wrapper = wrapperRef.current;
         const canvas = canvasRef.current;
 
+        let hideTimeout = null;
+
         const updateHandle = (event) => {
             if (insertMenuOpenRef.current) return;
             const target = event.target;
             if (!(target instanceof HTMLElement)) return;
+
+            // Keep the handle if we are hovering the button itself
+            const isOverButton = !!target.closest('.block-insert-button');
+
             if (
-                target.closest('.block-insert-button') ||
                 target.closest('.block-editor-structure-panel') ||
                 target.closest('.bn-side-menu') ||
                 target.closest('.bn-formatting-toolbar') ||
                 target.closest('.bn-form-popover')
             ) {
+                if (hideTimeout) clearTimeout(hideTimeout);
                 setInsertHandle(null);
                 return;
             }
 
             const isInsideEditor = (root instanceof HTMLElement && root.contains(target)) || wrapper.contains(target);
-            if (!isInsideEditor) {
-                setInsertHandle(null);
+            if (!isInsideEditor && !isOverButton) {
+                if (!hideTimeout) {
+                    hideTimeout = setTimeout(() => {
+                        setInsertHandle(null);
+                        hideTimeout = null;
+                    }, 400);
+                }
                 return;
             }
 
             const blockOuter = target.closest('[data-id]');
             let blockId = blockOuter?.getAttribute('data-id') || null;
+
+            // Hide the plus button if we are inside a list item
+            if (blockId) {
+                const block = editor.getBlock(blockId);
+                if (block && ['bulletListItem', 'numberedListItem', 'checkListItem'].includes(block.type)) {
+                    setInsertHandle(null);
+                    return;
+                }
+            }
+
             let rect = blockOuter instanceof HTMLElement ? blockOuter.getBoundingClientRect() : null;
-            const edgeThreshold = 10;
+            const edgeThreshold = 25; // Increased from 10 to make it easier to hit
 
             if (!blockId || !rect) {
                 const view = editor.prosemirrorView;
@@ -1801,18 +1861,43 @@ export default function BlockEditor({
                     top: event.clientY,
                 });
                 if (!coords) {
-                    setInsertHandle(null);
+                    if (!isOverButton && !hideTimeout) {
+                        hideTimeout = setTimeout(() => {
+                            setInsertHandle(null);
+                            hideTimeout = null;
+                        }, 400);
+                    }
                     return;
                 }
                 const nearest = getNearestBlockPos(view.state.doc, coords.pos);
                 if (!nearest) {
-                    setInsertHandle(null);
+                    if (!isOverButton && !hideTimeout) {
+                        hideTimeout = setTimeout(() => {
+                            setInsertHandle(null);
+                            hideTimeout = null;
+                        }, 400);
+                    }
                     return;
                 }
                 const info = getBlockInfo(nearest);
                 blockId = info?.bnBlock?.node?.attrs?.id || null;
+                
+                // Hide if this block is also a list item
+                if (blockId) {
+                    const block = editor.getBlock(blockId);
+                    if (block && ['bulletListItem', 'numberedListItem', 'checkListItem'].includes(block.type)) {
+                        setInsertHandle(null);
+                        return;
+                    }
+                }
+
                 if (!blockId) {
-                    setInsertHandle(null);
+                    if (!isOverButton && !hideTimeout) {
+                        hideTimeout = setTimeout(() => {
+                            setInsertHandle(null);
+                            hideTimeout = null;
+                        }, 400);
+                    }
                     return;
                 }
                 let dom = view.nodeDOM(info.bnBlock.beforePos + 1) || view.nodeDOM(info.bnBlock.beforePos);
@@ -1821,7 +1906,12 @@ export default function BlockEditor({
                     dom = domAtPos instanceof HTMLElement ? domAtPos.closest('.bn-block-content') : null;
                 }
                 if (!(dom instanceof HTMLElement)) {
-                    setInsertHandle(null);
+                    if (!isOverButton && !hideTimeout) {
+                        hideTimeout = setTimeout(() => {
+                            setInsertHandle(null);
+                            hideTimeout = null;
+                        }, 400);
+                    }
                     return;
                 }
                 rect = dom.getBoundingClientRect();
@@ -1831,10 +1921,25 @@ export default function BlockEditor({
             const distanceBottom = Math.abs(rect.bottom - event.clientY);
             const isNearEdge = distanceTop <= edgeThreshold || distanceBottom <= edgeThreshold;
 
-            if (!isNearEdge) {
-                setInsertHandle(null);
+            if (!isNearEdge && !isOverButton) {
+                if (!hideTimeout) {
+                    hideTimeout = setTimeout(() => {
+                        setInsertHandle(null);
+                        hideTimeout = null;
+                    }, 400);
+                }
                 return;
             }
+
+            // If we are here, we are either near an edge or over the button
+            if (hideTimeout) {
+                clearTimeout(hideTimeout);
+                hideTimeout = null;
+            }
+
+            // If over the button, we don't need to recalculate position, just keep the existing one
+            if (isOverButton) return;
+
             const containerRect = (canvas || wrapper).getBoundingClientRect();
             let placement = distanceTop <= distanceBottom ? 'before' : 'after';
             let handleBlockId = blockId;
@@ -1842,25 +1947,36 @@ export default function BlockEditor({
 
             // Normalize: always prefer 'after' on the previous sibling so that
             // each inter-block gap only produces one insert handle.
-            if (placement === 'before') {
-                const allBlocks = editor.document;
-                const flatIds = allBlocks.map((b) => b.id);
-                const currentIndex = flatIds.indexOf(blockId);
-                if (currentIndex > 0) {
-                    const prevId = flatIds[currentIndex - 1];
-                    // Find the DOM element of the previous block for positioning
-                    const prevEl = root instanceof HTMLElement
-                        ? root.querySelector(`[data-id="${CSS.escape(prevId)}"]`)
-                        : null;
-                    if (prevEl instanceof HTMLElement) {
-                        handleBlockId = prevId;
-                        handleRect = prevEl.getBoundingClientRect();
-                        placement = 'after';
-                    }
+            const allBlocks = editor.document;
+            const flatIds = allBlocks.map((b) => b.id);
+            const currentIndex = flatIds.indexOf(handleBlockId);
+
+            let topPosition = (placement === 'before' ? handleRect.top : handleRect.bottom);
+
+            // Try to center between this block and the next/previous one
+            if (placement === 'after' && currentIndex < flatIds.length - 1) {
+                const nextId = flatIds[currentIndex + 1];
+                const nextEl = root instanceof HTMLElement
+                    ? root.querySelector(`[data-id="${CSS.escape(nextId)}"]`)
+                    : null;
+                if (nextEl instanceof HTMLElement) {
+                    const nextRect = nextEl.getBoundingClientRect();
+                    // Center between current block bottom and next block top
+                    topPosition = (handleRect.bottom + nextRect.top) / 2;
+                }
+            } else if (placement === 'before' && currentIndex > 0) {
+                const prevId = flatIds[currentIndex - 1];
+                const prevEl = root instanceof HTMLElement
+                    ? root.querySelector(`[data-id="${CSS.escape(prevId)}"]`)
+                    : null;
+                if (prevEl instanceof HTMLElement) {
+                    const prevRect = prevEl.getBoundingClientRect();
+                    // Center between prev block bottom and current block top
+                    topPosition = (prevRect.bottom + handleRect.top) / 2;
                 }
             }
 
-            const top = (placement === 'before' ? handleRect.top : handleRect.bottom) - containerRect.top;
+            const top = topPosition - containerRect.top;
             const left = handleRect.left - containerRect.left;
             const width = handleRect.width;
             setInsertHandle({
@@ -1885,6 +2001,7 @@ export default function BlockEditor({
         wrapper.addEventListener('scroll', clearHandle);
 
         return () => {
+            if (hideTimeout) clearTimeout(hideTimeout);
             wrapper.removeEventListener('mousemove', updateHandle);
             wrapper.removeEventListener('pointermove', updateHandle);
             wrapper.removeEventListener('mouseleave', clearHandle);
@@ -1903,10 +2020,31 @@ export default function BlockEditor({
 
     const insertBlockAtHandle = (type, props = {}) => {
         if (!insertHandle) return;
+
+        let targetId = insertHandle.blockId;
+        let placement = insertHandle.placement;
+
+        // Find root parent if nested, for custom blocks only
+        if (CUSTOM_BLOCK_TYPES.has(type)) {
+            const block = editor.getBlock(targetId);
+            if (block && block.parentId) {
+                let current = block;
+                while (current.parentId) {
+                    const parent = editor.getBlock(current.parentId);
+                    if (!parent) break;
+                    current = parent;
+                    targetId = current.id;
+                }
+                // When we jump to the root after being nested, 
+                // we should always use 'after' to insert it after the whole nested structure.
+                placement = 'after';
+            }
+        }
+
         const inserted = editor.insertBlocks(
             [{ type, props }],
-            insertHandle.blockId,
-            insertHandle.placement,
+            targetId,
+            placement,
         );
         if (inserted?.[0]?.id) {
             editor.setTextCursorPosition(inserted[0].id, 'start');
@@ -2238,6 +2376,11 @@ export default function BlockEditor({
                                                             onMouseDown={(event) => {
                                                                 event.preventDefault();
                                                                 event.stopPropagation();
+                                                                // Blur the editor to hide the text caret/cursor
+                                                                const dom = editor?.prosemirrorView?.dom;
+                                                                if (dom instanceof HTMLElement) {
+                                                                    dom.blur();
+                                                                }
                                                                 insertMenuOpenRef.current = true;
                                                                 setInsertMenuOpen(true);
                                                             }}
@@ -2470,7 +2613,9 @@ export default function BlockEditor({
           position: absolute;
           height: 0;
           pointer-events: auto;
-          z-index: 20;
+          z-index: 25;
+          /* Hide any text cursor that might persist when insertion UI is active */
+          caret-color: transparent;
         }
 
         .block-insert-line {
@@ -2478,6 +2623,7 @@ export default function BlockEditor({
           left: 0;
           right: 0;
           height: 2px;
+          top: -1px;
           --block-insert-gap: 18px;
           background: linear-gradient(
             to right,
@@ -2492,6 +2638,8 @@ export default function BlockEditor({
           transform-origin: center;
           animation: blockInsertLine 640ms cubic-bezier(0.2, 0, 0, 1);
           will-change: transform, opacity;
+          /* Ensure line stays below button visually */
+          z-index: -1;
         }
 
         .block-insert-button {
@@ -2512,6 +2660,10 @@ export default function BlockEditor({
           pointer-events: auto;
           animation: blockInsertPop 640ms cubic-bezier(0.2, 0, 0, 1);
           will-change: transform, opacity;
+          /* Ensure button is above all other elements including cursors */
+          z-index: 26;
+          caret-color: transparent;
+          cursor: pointer !important;
         }
 
         .block-insert-button:hover {

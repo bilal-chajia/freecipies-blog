@@ -175,6 +175,7 @@
     padding-left: 0;
     padding-right: 0;
     overflow: visible;
+    cursor: default;
 }
 
 .wp-block--custom .wp-block__content {
@@ -294,6 +295,15 @@
     pointer-events: auto !important;
     user-select: auto !important;
     -webkit-user-select: auto !important;
+    /* Ensure default cursor unless explicitly overridden */
+    cursor: default;
+}
+
+/* Explicitly allow pointer cursor for buttons and interactive elements */
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode button,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode a,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode [role="button"] {
+    cursor: pointer !important;
 }
 
 /* Prevent browser ::selection highlight from hiding block content */

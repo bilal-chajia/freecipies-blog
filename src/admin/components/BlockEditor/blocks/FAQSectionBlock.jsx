@@ -241,6 +241,7 @@ export const FAQSectionBlock = createReactBlockSpec(
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
+                    onDelete={() => editor.removeBlocks([block])}
                     showMoreMenu={false}
                 >
                     <span className="px-2 text-xs text-muted-foreground">

@@ -200,6 +200,7 @@ export const Alert = createReactBlockSpec(
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
+                    onDelete={() => editor.removeBlocks([block])}
                     showMoreMenu={false}
                 >
                     <AlertTypeToolbar
