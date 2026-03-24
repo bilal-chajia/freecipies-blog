@@ -1,58 +1,96 @@
 # BlockEditor Refactoring Plan
 
 **Created:** 2026-03-22  
-**Status:** Proposed  
+**Updated:** 2026-03-24 (TypeScript alignment + Full Analysis)  
+**Status:** In Progress (~60% complete)  
 **Priority:** High  
-**Estimated Effort:** 2-3 days
+**Estimated Effort:** 1-2 days remaining
 
 ---
 
 ## Executive Summary
 
-The BlockEditor component (`src/admin/components/BlockEditor/index.jsx`) is a 2,843-line monolithic file that handles schema definition, toolbar UI, structure panel, drag-and-drop logic, and the main editor component. This refactoring plan aims to improve maintainability, testability, and developer experience by breaking it into smaller, focused modules.
+The BlockEditor component (`src/admin/components/BlockEditor/index.jsx`) is a 1,691-line file that handles schema definition, toolbar UI, structure panel, drag-and-drop logic, and the main editor component. This refactoring plan aims to improve maintainability, testability, and developer experience by breaking it into smaller, focused TypeScript modules.
+
+**Key Discovery:** The Structure Panel is currently embedded in `BlockInserter.jsx` (619 lines) and needs to be extracted to `structure/StructurePanel.tsx`.
 
 ---
 
 ## Current State Analysis
 
-### File Structure (Before)
+### File Structure (Current - After Analysis)
 
 ```
 src/admin/components/BlockEditor/
-├── index.jsx                    # ❌ 2,843 lines - TOO LARGE
-├── BlockNoteViewWithPortal.jsx  # ✅ Well-structured
-├── selection-context.jsx        # ✅ Good separation
-├── related-content-context.jsx  # ✅ Good separation
-├── blocks/                      # ✅ Well-modularized
+├── index.jsx                    # ❌ 1,691 lines - CRITICAL: Too large
+├── BlockNoteViewWithPortal.jsx  # ⚠️ Needs .tsx conversion
+├── selection-context.jsx        # ⚠️ Needs .tsx conversion
+├── related-content-context.jsx  # ⚠️ Needs .tsx conversion
+├── schema.ts                    # ✅ TypeScript (40 lines)
+├── useSlashMenu.ts              # ✅ TypeScript (256 lines)
+├── blocks/                      # ❌ 100% JavaScript (.jsx)
 │   ├── index.js
+│   ├── BeforeAfterBlock.jsx
+│   ├── DividerBlock.jsx
+│   ├── FAQSectionBlock.jsx
+│   ├── ImageBlock.jsx
 │   ├── MainRecipeBlock.jsx
+│   ├── RecipeEmbedBlock.jsx
 │   ├── RelatedContentBlock.jsx
-│   └── ...
-├── components/                  # ✅ Good separation
+│   ├── RoundupListBlock.jsx
+│   ├── TableBlock.jsx
+│   ├── TipBoxBlock.jsx
+│   └── VideoBlock.jsx
+├── components/                  # ⚠️ Mixed (.jsx/.tsx)
+│   ├── EditorToolbar.tsx        # ✅ TypeScript (291 lines)
+│   ├── BlockInserter.jsx        # ❌ 619 lines (Structure Panel embedded!)
 │   ├── BlockWrapper.jsx
 │   ├── BlockToolbar.jsx
-│   └── ...
+│   ├── BlockSettings.jsx
+│   ├── AISettings.jsx
+│   ├── DocumentSettings.jsx
+│   ├── SettingsSidebar.jsx
+│   ├── BlockPlaceholder.jsx
+│   ├── GutenbergEditorLayout.jsx
+│   ├── GutenbergEditorMain.jsx
+│   └── index.js
+├── hooks/                       # ❌ EMPTY (should contain useBlockEditor, useStructureTree)
+├── utils/                       # ✅ 100% TypeScript
+│   ├── constants.ts             # ✅ (65 lines)
+│   ├── types.ts                 # ✅
+│   ├── inlineContent.ts         # ✅ (286 lines)
+│   ├── blockHelpers.ts          # ✅ (166 lines)
+│   ├── insert-block.ts          # ✅
+│   └── conversion.ts            # ✅
 ├── styles/
-└── utils/
+└── structure/                   # ❌ MISSING (should contain StructurePanel, useStructureTree)
 ```
 
-### Problems Identified
+### Problems Identified (Updated)
 
 | Issue | Severity | Impact |
 |-------|----------|--------|
-| **Monolithic file** (2,843 lines) | 🔴 Critical | Hard to navigate, maintain, test |
+| **Monolithic file** (1,691 lines) | 🔴 Critical | Hard to navigate, maintain, test |
+| **Structure Panel in BlockInserter.jsx** | 🔴 Critical | Confusion of responsibilities |
+| **hooks/ directory is empty** | 🟡 Medium | Logic not centralized |
 | **Mixed concerns** (schema + UI + logic) | 🔴 Critical | Tight coupling, difficult refactoring |
-| **Duplicated logic** (slash menu + toolbar insert) | 🟡 Medium | Code bloat, inconsistency risk |
-| **Deep nesting** (contexts, providers) | 🟡 Medium | Cognitive load |
-| **No TypeScript** | 🟢 Low | Missing type safety |
-| **Complex state management** | 🟡 Medium | Hard to track data flow |
+| **Inconsistent extensions** (.jsx/.tsx/.ts) | 🟡 Medium | Confusing for developers |
+| **Missing hooks** (useBlockEditor, useStructureTree) | 🟡 Medium | Logic not centralized |
+| **Blocks not typed** (100% .jsx) | 🟡 Medium | No type safety for custom blocks |
+| **Context files not typed** | 🟢 Low | Missing TypeScript benefits |
 
 ### What's Working Well
 
+- ✅ Utils are already in TypeScript (100%)
+- ✅ Schema and useSlashMenu already in TypeScript
 - ✅ Individual block implementations are well-modularized
 - ✅ Context-based state sharing pattern is solid
 - ✅ `BlockWrapper` and `BlockToolbar` are cleanly abstracted
 - ✅ Drag-and-drop integration is well-implemented
+- ✅ blockHelpers.ts has pure, testable functions
+- ✅ Types defined: `FlattenedBlock`, `GroupedFlattenedBlock`
+- ✅ Dynamic icons with `getBlockIcon()` and Lucide
+- ✅ Smart grouping with `groupConsecutiveBlocks()`
 
 ---
 
@@ -60,60 +98,99 @@ src/admin/components/BlockEditor/
 
 ### Primary Objectives
 
-1. **Reduce main file size** from 2,843 lines to <300 lines
+1. **Reduce main file size** from 1,691 lines to <200 lines
 2. **Separate concerns** - schema, UI, logic, utilities
 3. **Improve testability** - extract pure functions and hooks
 4. **Maintain backward compatibility** - no breaking changes to API
 5. **Preserve existing functionality** - all features must work identically
+6. **Full TypeScript coverage** - convert all .jsx to .tsx
+7. **Split BlockInserter** - Extract Structure Panel to dedicated component
 
 ### Success Metrics
 
-- [ ] Main `index.jsx` < 300 lines
+- [ ] Main `index.tsx` < 200 lines
+- [ ] `BlockInserter.tsx` < 150 lines (after Structure Panel extraction)
 - [ ] Each module < 500 lines
+- [ ] All files use `.ts` or `.tsx` extensions (no `.jsx`)
 - [ ] All custom blocks still render correctly
 - [ ] Drag-and-drop still functional
 - [ ] Slash menu and toolbar both work
 - [ ] Structure panel (outline) functional
 - [ ] `pnpm build` passes with no errors
 - [ ] Manual testing in admin panel passes
+- [ ] No `any` types (or documented reasons)
 
 ---
 
 ## Proposed Architecture
 
-### File Structure (After)
+### File Structure (Target)
 
 ```
 src/admin/components/BlockEditor/
-├── index.jsx                    # Main export (~150 lines)
-├── BlockNoteViewWithPortal.jsx  # Unchanged
-├── BlockEditorMain.jsx          # Main component logic (~400 lines)
-├── schema.js                    # BlockNote schema definition (~100 lines)
-├── useBlockEditor.js            # Custom hook for editor logic (~300 lines)
-├── useSlashMenu.js              # Slash menu configuration (~200 lines)
-├── selection-context.jsx        # Unchanged
-├── related-content-context.jsx  # Unchanged
+├── index.tsx                    # Main export (~150 lines) - Thin wrapper
+├── BlockEditorMain.tsx          # Main component logic (~350 lines)
+├── BlockNoteViewWithPortal.tsx  # BlockNote wrapper (converted)
+├── schema.ts                    # BlockNote schema definition (~40 lines) ✅ DONE
+├── useSlashMenu.ts              # Slash menu configuration (~250 lines) ✅ DONE
+├── useBlockEditor.ts            # Custom hook for editor logic (~300 lines)
+├── selection-context.tsx        # Block selection context (converted)
+├── related-content-context.tsx  # Related content context (converted)
 │
 ├── toolbar/
-│   ├── EditorToolbar.jsx        # Toolbar UI component (~350 lines)
-│   ├── useToolbarActions.js     # Toolbar action hooks (~150 lines)
-│   └── FAQLinkPopover.jsx       # Extracted FAQ link UI (~100 lines)
+│   ├── EditorToolbar.tsx        # Toolbar UI component (~290 lines) ✅ DONE (needs move)
+│   ├── useToolbarActions.ts     # Toolbar action hooks (~150 lines)
+│   └── FAQLinkPopover.tsx       # Extracted FAQ link UI (~100 lines)
 │
-├── structure/
-│   ├── StructurePanel.jsx       # Outline/structure panel (~400 lines)
-│   └── useStructureTree.js      # Tree building logic (~150 lines)
+├── structure/                   # NEW DIRECTORY
+│   ├── StructurePanel.tsx       # Outline/structure panel (~350 lines) - Extract from BlockInserter
+│   └── useStructureTree.ts      # Tree building logic (~150 lines)
 │
-├── blocks/                      # Unchanged (already well-structured)
-│   └── ...
+├── blocks/                      # Custom block definitions (convert to .tsx)
+│   ├── index.ts                 # Barrel export (convert to .ts)
+│   ├── MainRecipeBlock.tsx
+│   ├── RelatedContentBlock.tsx
+│   ├── FAQSectionBlock.tsx
+│   ├── ImageBlock.tsx
+│   ├── VideoBlock.tsx
+│   ├── TipBoxBlock.tsx
+│   ├── DividerBlock.tsx
+│   ├── RecipeEmbedBlock.tsx
+│   ├── RoundupListBlock.tsx
+│   ├── TableBlock.tsx
+│   └── BeforeAfterBlock.tsx
 │
-├── components/                  # Unchanged (already well-structured)
-│   └── ...
+├── components/                  # Shared editor components
+│   ├── BlockWrapper.tsx
+│   ├── BlockToolbar.tsx
+│   ├── BlockInserter.tsx        # ~150 lines (after Structure Panel extraction)
+│   ├── BlockSettings.tsx
+│   ├── AISettings.tsx
+│   └── DocumentSettings.tsx
+│
+├── hooks/                       # Custom React hooks
+│   ├── useBlockEditor.ts
+│   └── useStructureTree.ts      # Could be in structure/ or hooks/
 │
 └── utils/
-    ├── blockHelpers.js          # Block manipulation utilities (~150 lines)
-    ├── inlineContent.js         # Inline content parsing (~150 lines)
-    └── constants.js             # Shared constants (~50 lines)
+    ├── constants.ts             # Shared constants (~65 lines) ✅ DONE
+    ├── types.ts                 # TypeScript type definitions ✅ DONE
+    ├── inlineContent.ts         # Inline content parsing (~286 lines) ✅ DONE
+    ├── blockHelpers.ts          # Block manipulation utilities (~166 lines) ✅ DONE
+    ├── insert-block.ts          # Safe block insertion (~100 lines) ✅ DONE
+    └── conversion.ts            # Content ↔ Blocks conversion (~200 lines) ✅ DONE
 ```
+
+### File Extension Convention
+
+| Type | Extension | Example |
+|------|-----------|---------|
+| React components | `.tsx` | `EditorToolbar.tsx` |
+| Context providers | `.tsx` | `selection-context.tsx` |
+| Hooks | `.ts` | `useBlockEditor.ts` |
+| Utilities | `.ts` | `inlineContent.ts` |
+| Types | `.ts` | `types.ts` |
+| Barrel exports | `.ts` | `index.ts` |
 
 ---
 
@@ -121,24 +198,24 @@ src/admin/components/BlockEditor/
 
 ### Core Modules
 
-#### 1. `schema.js`
+#### 1. `schema.ts`
 **Purpose:** Define BlockNote schema with custom blocks
 
-```javascript
+```typescript
 // Responsibilities
 - Import custom blocks from ./blocks/
 - Create BlockNoteSchema with blockSpecs
-- Export schema for use in editor
+- Export schema and AppSchema type for use in editor
 
 // Dependencies
 - @blocknote/core
-- ./blocks/index.js
+- ./blocks/index.ts
 ```
 
-#### 2. `useBlockEditor.js`
+#### 2. `useBlockEditor.ts`
 **Purpose:** Centralize editor state and logic
 
-```javascript
+```typescript
 // Responsibilities
 - Initialize BlockNote editor (useCreateBlockNote)
 - Manage recipe/roundup/FAQ data contexts
@@ -153,25 +230,25 @@ src/admin/components/BlockEditor/
 - content sync logic
 ```
 
-#### 3. `useSlashMenu.js`
+#### 3. `useSlashMenu.ts`
 **Purpose:** Configure custom slash menu items
 
-```javascript
+```typescript
 // Responsibilities
-- Define custom slash menu items
+- Define custom slash menu items with TypeScript types
 - Handle item insertion logic
 - Filter items based on content type
 - Support keyboard navigation
 
 // Exports
-- getCustomSlashMenuItems(editor, options)
+- getCustomSlashMenuItems(editor, query, options): SlashMenuItem[]
 - SuggestionMenuController configuration
 ```
 
-#### 4. `toolbar/EditorToolbar.jsx`
+#### 4. `toolbar/EditorToolbar.tsx`
 **Purpose:** Render the editor toolbar UI
 
-```javascript
+```typescript
 // Responsibilities
 - Render toolbar buttons
 - Handle button click events
@@ -180,16 +257,16 @@ src/admin/components/BlockEditor/
 - Structure panel toggle
 
 // Dependencies
-- useToolbarActions.js
-- FAQLinkPopover.jsx
+- useToolbarActions.ts
+- FAQLinkPopover.tsx
 - Lucide icons
 - shadcn/ui components
 ```
 
-#### 5. `toolbar/useToolbarActions.js`
+#### 5. `toolbar/useToolbarActions.ts`
 **Purpose:** Toolbar action logic
 
-```javascript
+```typescript
 // Responsibilities
 - insertBlock(type, props)
 - handleLinkCreation
@@ -200,10 +277,10 @@ src/admin/components/BlockEditor/
 - useToolbarActions(editor, options)
 ```
 
-#### 6. `structure/StructurePanel.jsx`
+#### 6. `structure/StructurePanel.tsx`
 **Purpose:** Render document outline/structure
 
-```javascript
+```typescript
 // Responsibilities
 - Display hierarchical block structure
 - Handle block selection from outline
@@ -212,15 +289,15 @@ src/admin/components/BlockEditor/
 - Drag indicators
 
 // Dependencies
-- useStructureTree.js
+- useStructureTree.ts
 - Lucide icons
 - shadcn/ui components
 ```
 
-#### 7. `structure/useStructureTree.js`
+#### 7. `structure/useStructureTree.ts`
 **Purpose:** Build tree structure from blocks
 
-```javascript
+```typescript
 // Responsibilities
 - Flatten blocks with depth tracking
 - Generate block labels
@@ -228,276 +305,252 @@ src/admin/components/BlockEditor/
 - Handle nested structures
 
 // Exports
-- useStructureTree(editor)
-- flattenBlocks()
-- getBlockLabel()
-- getBlockIcon()
+- useStructureTree(editor): StructureTree
+- FlattenedBlock type
 ```
 
-#### 8. `utils/blockHelpers.js`
+#### 8. `utils/blockHelpers.ts`
 **Purpose:** Block manipulation utilities
 
-```javascript
+```typescript
 // Responsibilities
 - Safe block insertion
 - Find root parent
 - Move blocks up/down
 - Remove blocks safely
+- Group consecutive blocks
 
 // Exports
 - safeInsertBlock(editor, type, props)
 - findRootParent(editor, block)
 - moveBlock(editor, blockId, direction)
+- flattenBlocks(blocks): FlattenedBlock[]
+- groupConsecutiveBlocks(flatBlocks): GroupedFlattenedBlock[]
 ```
 
-#### 9. `utils/inlineContent.js`
+#### 9. `utils/inlineContent.ts`
 **Purpose:** Inline content parsing utilities
 
-```javascript
+```typescript
 // Responsibilities
 - Extract text from inline content
 - Truncate inline content
 - Serialize inline content
 - Parse markdown links
+- Parse inline styles
 
 // Exports
-- extractText(content)
-- truncateInlineContent(content, limit)
-- serializeInlineContent(nodes)
-- findMarkdownLinkRange(text, start, end)
+- extractText(content): string
+- truncateInlineContent(content, limit): string | InlineNode[]
+- serializeInlineContent(nodes): string
+- findMarkdownLinkRange(text, start, end): MarkdownLinkMatch | null
+- parseInlineMarkdown(text): InlineNode[]
 ```
 
-#### 10. `utils/constants.js`
-**Purpose:** Shared constants
+#### 10. `utils/constants.ts`
+**Purpose:** Shared constants and mappings
 
-```javascript
+```typescript
 // Responsibilities
 - MAX_STRUCTURE_LABEL
 - CUSTOM_BLOCK_TYPES set
-- Block type mappings
-- Icon mappings
+- BLOCK_TYPE_ICONS map
 
 // Exports
 - MAX_STRUCTURE_LABEL = 48
-- CUSTOM_BLOCK_TYPES = Set([...])
-- BLOCK_TYPE_ICONS = Map({...})
+- CUSTOM_BLOCK_TYPES: Set<string>
+- BLOCK_TYPE_ICONS: BlockIconMap
+```
+
+#### 11. `utils/types.ts`
+**Purpose:** TypeScript type definitions
+
+```typescript
+// Responsibilities
+- Define InlineNode type
+- Define ParsedStyles type
+- Define MarkdownLinkMatch type
+- Define BlockIconMap type
+- Define FlattenedBlock type
+
+// Exports
+- All types for BlockEditor utilities
+```
+
+#### 12. `utils/conversion.ts`
+**Purpose:** Content ↔ Blocks conversion
+
+```typescript
+// Responsibilities
+- Convert contentJson to BlockNote blocks
+- Convert BlockNote blocks to contentJson
+- Handle image variants
+- Handle block metadata
+
+// Exports
+- contentJsonToBlocks(json): Block[]
+- blocksToContentJson(blocks): ContentJson
 ```
 
 ---
 
 ## Implementation Phases
 
-### Phase 1: Extract Utilities (Low Risk)
-**Goal:** Move pure functions to utility modules
+### Phase 1: Extract Utilities (Low Risk) ✅ COMPLETE
 
-**Tasks:**
-1. Create `utils/constants.js`
-   - Extract `MAX_STRUCTURE_LABEL`
-   - Extract `CUSTOM_BLOCK_TYPES` set
-   - Extract `BLOCK_TYPE_ICONS` map
+**Status:** Done - All utils are in TypeScript
 
-2. Create `utils/inlineContent.js`
-   - Extract `extractText()`
-   - Extract `truncateInlineContent()`
-   - Extract `serializeInlineContent()`
-   - Extract `findMarkdownLinkRange()`
-   - Extract `getInlineTextLength()`
-
-3. Create `utils/blockHelpers.js`
-   - Extract `flattenBlocks()`
-   - Extract `getBlockLabel()` (depends on inlineContent utils)
-   - Extract `getBlockIcon()` (uses constants)
+**Completed:**
+- ✅ `utils/constants.ts` - MAX_STRUCTURE_LABEL, CUSTOM_BLOCK_TYPES, BLOCK_TYPE_ICONS
+- ✅ `utils/types.ts` - TypeScript type definitions
+- ✅ `utils/inlineContent.ts` - extractText, truncateInlineContent, serializeInlineContent, findMarkdownLinkRange
+- ✅ `utils/blockHelpers.ts` - flattenBlocks, getBlockLabel, getBlockIcon, groupConsecutiveBlocks
+- ✅ `utils/insert-block.ts` - safeInsertBlock helper
+- ✅ `utils/conversion.ts` - contentJson ↔ blocks conversion
 
 **Testing:** Run `pnpm build`, verify editor still works
 
 ---
 
-### Phase 2: Extract Schema (Low Risk)
-**Goal:** Move schema definition to dedicated file
+### Phase 2: Extract Schema (Low Risk) ✅ COMPLETE
 
-**Tasks:**
-1. Create `schema.js`
-   ```javascript
-   import { BlockNoteSchema, defaultBlockSpecs } from '@blocknote/core';
-   import {
-       Alert, VideoBlock, ImageBlock, FAQSectionBlock,
-       DividerBlock, RecipeEmbedBlock, MainRecipeBlock,
-       RoundupListBlock, RelatedContentBlock, TableBlock,
-       BeforeAfterBlock
-   } from './blocks';
+**Status:** Done - schema.ts created
 
-   export const schema = BlockNoteSchema.create({
-       blockSpecs: {
-           ...defaultBlockSpecs,
-           alert: Alert(),
-           video: VideoBlock(),
-           // ... etc
-       },
-   });
-   ```
-
-2. Update `index.jsx` to import schema
+**Completed:**
+- ✅ `schema.ts` - BlockNote schema with custom blocks
+- ✅ Exports `schema` and `AppSchema` type
+- ✅ Properly excludes default table block
 
 **Testing:** Run `pnpm build`, verify custom blocks render
 
 ---
 
-### Phase 3: Extract Slash Menu (Medium Risk)
-**Goal:** Move slash menu configuration to dedicated hook
+### Phase 3: Extract Slash Menu (Medium Risk) ✅ COMPLETE
 
-**Tasks:**
-1. Create `useSlashMenu.js`
-   - Extract `getCustomSlashMenuItems()` function
-   - Convert to hook pattern if needed
-   - Handle `safeInsert` logic internally
+**Status:** Done - useSlashMenu.ts created
 
-2. Update `index.jsx` to use extracted slash menu
+**Completed:**
+- ✅ `useSlashMenu.ts` - getCustomSlashMenuItems function with TypeScript types
+- ✅ Proper typing for editor, query, and options
+- ✅ Icon imports typed from lucide-react
 
 **Testing:** Verify slash menu opens and inserts blocks correctly
 
 ---
 
-### Phase 4: Extract Toolbar (Medium Risk)
-**Goal:** Move toolbar UI to dedicated component
+### Phase 4: Extract Toolbar (Medium Risk) 🟡 PARTIAL
 
-**Tasks:**
-1. Create `toolbar/FAQLinkPopover.jsx`
-   - Extract FAQ link popover UI
-   - Extract `applyFaqLink()` and `removeFaqLink()` logic
-   - Manage local state (open, url, hasMatch)
+**Status:** EditorToolbar.tsx exists but needs extraction of FAQLinkPopover and useToolbarActions
 
-2. Create `toolbar/useToolbarActions.js`
-   - Extract `insertBlock()` function
-   - Extract selection tracking logic
-   - Handle link creation
+**Completed:**
+- ✅ `components/EditorToolbar.tsx` - Main toolbar component (291 lines)
+- ⚠️ Needs move to `toolbar/EditorToolbar.tsx`
 
-3. Create `toolbar/EditorToolbar.jsx`
-   - Extract entire toolbar JSX
-   - Use `useToolbarActions` hook
-   - Use `FAQLinkPopover` component
-   - Accept props: `editor`, `structureOpen`, `onToggleStructurePanel`
-
-4. Update `index.jsx` to use `EditorToolbar`
+**Remaining:**
+- ❌ Create `toolbar/` directory
+- ❌ Extract `FAQLinkPopover.tsx` from EditorToolbar
+- ❌ Create `useToolbarActions.ts` hook
+- ❌ Move EditorToolbar to toolbar/
 
 **Testing:** Verify all toolbar buttons work, FAQ link popover functions
 
 ---
 
-### Phase 5: Extract Structure Panel (Medium Risk)
-**Goal:** Move structure/outline panel to dedicated component
+### Phase 4.5: Extract Structure Panel (Medium Risk) ❌ NEW - HIGH PRIORITY
 
-**Tasks:**
-1. Create `structure/useStructureTree.js`
-   - Extract `flattenBlocks()` (if not in utils)
-   - Extract `getBlockLabel()` (if not in utils)
-   - Extract `getBlockIcon()` (if not in utils)
-   - Add tree-building logic
+**Status:** Structure Panel is embedded in `BlockInserter.jsx` (619 lines)
 
-2. Create `structure/StructurePanel.jsx`
-   - Extract structure panel JSX
-   - Use `useStructureTree` hook
-   - Handle block selection
-   - Support expand/collapse
-   - Accept props: `editor`, `onBlockSelect`
+**To Do:**
+1. Create `structure/` directory
+2. Extract structure panel JSX to `StructurePanel.tsx` (~350 lines)
+   - SortableStructureItem component
+   - Drag & Drop logic for reordering
+   - Block selection from outline
+   - Convert/delete block actions
+3. Create `useStructureTree.ts` hook for tree logic (~150 lines)
+   - Use existing `flattenBlocks()`, `groupConsecutiveBlocks()` from utils
+   - Add `getBlockLabel()`, `getBlockIcon()` wrappers
+   - Manage expanded/collapsed state
+4. Update `BlockInserter.jsx` to only handle block insertion (~150 lines remaining)
+5. Add proper TypeScript types for FlattenedBlock, GroupedFlattenedBlock
 
-3. Update `index.jsx` to use `StructurePanel`
+**Dependencies:** Uses utils/blockHelpers.ts (already exists)
 
-**Testing:** Verify structure panel shows correct hierarchy, clicking selects blocks
+**Testing:** Verify structure panel shows correct hierarchy, clicking selects blocks, drag & drop reorders
 
 ---
 
-### Phase 6: Create Main Editor Hook (High Risk)
-**Goal:** Extract editor initialization and state management
+### Phase 5: Create Main Editor Hook (High Risk) ❌ NOT STARTED
 
-**Tasks:**
-1. Create `useBlockEditor.js`
-   ```javascript
-   export function useBlockEditor({
-       initialContent,
-       onChange,
-       contentType,
-       recipeData,
-       roundupData,
-       faqData,
-   }) {
-       // Initialize BlockNote editor
-       const editor = useCreateBlockNote({
-           schema,
-           initialContent,
-           // ... options
-       });
+**Status:** Hook doesn't exist yet
 
-       // Manage context values
-       const recipeContext = useRecipeDataContext(recipeData);
-       const roundupContext = useRoundupDataContext(roundupData);
-       const faqContext = useFAQDataContext(faqData);
-
-       // Sync content changes
-       useEffect(() => {
-           if (!editor) return;
-           const unsubscribe = editor.onEditorContentChange(() => {
-               onChange(editor.document);
-           });
-           return unsubscribe;
-       }, [editor, onChange]);
-
-       return {
-           editor,
-           recipeContext,
-           roundupContext,
-           faqContext,
-       };
-   }
-   ```
-
-2. Update `index.jsx` to use hook
+**To Do:**
+1. Create `hooks/useBlockEditor.ts`
+2. Move editor initialization logic from index.jsx
+   - useCreateBlockNote call
+   - Initial content setup
+   - Editor exposure
+3. Handle content sync and context providers
+   - onChange handling
+   - value updates
+4. Manage structure items state
+5. Export typed hook
 
 **Testing:** Verify editor initializes, content syncs, contexts work
 
 ---
 
-### Phase 7: Create Main Editor Component (High Risk)
-**Goal:** Create focused main component
+### Phase 6: Create Main Editor Component (High Risk) ❌ NOT STARTED
 
-**Tasks:**
-1. Create `BlockEditorMain.jsx`
-   - Use `useBlockEditor` hook
-   - Render `BlockNoteViewWithPortal`
-   - Render `EditorToolbar`
-   - Render `StructurePanel` (conditionally)
-   - Wrap with context providers
+**Status:** Main component not extracted
 
-2. Update `index.jsx` to be a thin wrapper
-   ```javascript
-   // New index.jsx (~100 lines)
-   import { BlockEditorMain } from './BlockEditorMain';
-   import { RelatedContentProvider } from './related-content-context';
-   import { BlockSelectionProvider } from './selection-context';
-
-   export default function BlockEditor(props) {
-       return (
-           <RelatedContentProvider value={props.relatedContext}>
-               <BlockSelectionProvider>
-                   <BlockEditorMain {...props} />
-               </BlockSelectionProvider>
-           </RelatedContentProvider>
-       );
-   }
-   ```
+**To Do:**
+1. Create `BlockEditorMain.tsx` (~350 lines)
+2. Use `useBlockEditor` hook
+3. Render `BlockNoteViewWithPortal`, `EditorToolbar`, `StructurePanel`
+4. Wrap with context providers
+5. Update `index.tsx` to be a thin wrapper (~100 lines)
+   - Only context providers and props passing
 
 **Testing:** Full integration test - editor works end-to-end
 
 ---
 
-### Phase 8: Cleanup & Optimization (Low Risk)
-**Goal:** Remove dead code, optimize imports
+### Phase 7: Convert Remaining Files to TypeScript (Medium Risk) ❌ NOT STARTED
 
-**Tasks:**
-1. Remove unused imports from `index.jsx`
+**Status:** Mixed .jsx/.tsx files
+
+**To Do:**
+1. Rename `.jsx` → `.tsx` for React components:
+   - `BlockNoteViewWithPortal.jsx` → `.tsx`
+   - `selection-context.jsx` → `.tsx`
+   - `related-content-context.jsx` → `.tsx`
+   - All `blocks/*.jsx` → `blocks/*.tsx` (12 files)
+   - All `components/*.jsx` → `components/*.tsx` (10 files)
+2. Rename `index.jsx` → `index.tsx`
+3. Rename `blocks/index.js` → `blocks/index.ts`
+4. Add proper TypeScript types to all files
+   - Block props types
+   - Context value types
+   - Event handler types
+5. Remove `any` types where possible
+
+**Testing:** `pnpm build` passes with no type errors
+
+---
+
+### Phase 8: Cleanup & Optimization (Low Risk) ❌ NOT STARTED
+
+**Status:** Not started
+
+**To Do:**
+1. Remove unused imports from `index.tsx`
 2. Remove duplicate functions
 3. Add JSDoc comments to public APIs
-4. Create `index.js` barrel exports for cleaner imports
-5. Update any external imports if paths changed
+4. Update barrel exports for cleaner imports
+5. Verify all imports use correct paths
+6. Run TypeScript strict mode check
+7. Remove old files (if any backups exist)
 
 **Testing:** Full regression testing
 
@@ -509,10 +562,11 @@ src/admin/components/BlockEditor/
 
 | Risk | Mitigation |
 |------|------------|
-| **Breaking editor functionality** | Test after each phase, small commits |
+| **Breaking editor functionality** | Test after each phase, small commits with `pnpm build` |
 | **Context provider ordering** | Document provider hierarchy, test nested blocks |
 | **Drag-and-drop breaking** | Verify dnd-kit integration after each phase |
 | **State desync** | Add console logging during development |
+| **TypeScript errors** | Fix types incrementally, avoid `any` when possible |
 | **Performance regression** | Measure render times before/after |
 
 ### Rollback Strategy
@@ -529,11 +583,11 @@ If issues arise:
 
 ### Automated Tests (Future)
 
-```javascript
+```typescript
 // TODO: Add after refactoring
-- utils/inlineContent.test.js - Pure function tests
-- utils/blockHelpers.test.js - Mock editor tests
-- useStructureTree.test.js - Tree building tests
+- utils/inlineContent.test.ts - Pure function tests
+- utils/blockHelpers.test.ts - Mock editor tests
+- useStructureTree.test.ts - Tree building tests
 ```
 
 ### Manual Testing Checklist
@@ -541,6 +595,7 @@ If issues arise:
 **Before starting:**
 - [ ] Document current behavior (screenshots)
 - [ ] Note all working features
+- [ ] Run `pnpm build` and save output
 
 **After each phase:**
 - [ ] `pnpm build` passes
@@ -560,6 +615,7 @@ If issues arise:
 - [ ] Image blocks work
 - [ ] Before/After blocks work
 - [ ] Table blocks work
+- [ ] TypeScript compiles with no errors
 
 ---
 
@@ -567,44 +623,49 @@ If issues arise:
 
 ### Import Organization
 
-```javascript
+```typescript
 // 1. React & core libraries
 import React, { useCallback, useEffect } from 'react';
-
-// 2. Third-party libraries
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteSchema } from '@blocknote/core';
 
-// 3. Project modules (absolute paths)
+// 2. Project modules (absolute paths)
 import { schema } from './schema';
 import { useBlockEditor } from './useBlockEditor';
 
-// 4. Local components
+// 3. Local components
 import { EditorToolbar } from './toolbar/EditorToolbar';
 import { StructurePanel } from './structure/StructurePanel';
 
-// 5. Styles
+// 4. Styles
 import './styles.css';
 ```
 
 ### Component Structure
 
-```javascript
+```typescript
+import type { FC } from 'react';
+
+interface ComponentNameProps {
+    prop1: Type1;
+    prop2: Type2;
+}
+
 /**
  * ComponentName
  *
  * Brief description of purpose.
  *
- * @param {Type} prop - Description
+ * @param {ComponentNameProps} props - Component props
  * @returns {JSX.Element} Component UI
  */
-export function ComponentName({ prop1, prop2 }) {
+export const ComponentName: FC<ComponentNameProps> = ({ prop1, prop2 }) => {
     // 1. Hooks (useState, useEffect, custom hooks)
     // 2. Derived state (useMemo, useCallback)
     // 3. Event handlers
     // 4. Render
     return <div />;
-}
+};
 ```
 
 ### Function Size Limits
@@ -614,23 +675,32 @@ export function ComponentName({ prop1, prop2 }) {
 - **Max lines per file:** 500
 - **Max nesting depth:** 3 levels
 
+### TypeScript Rules
+
+1. **No `any` types** - Use proper types or `unknown` with type guards
+2. **Explicit return types** for public functions
+3. **Interface over type** for object shapes
+4. **Generics** for reusable utilities
+5. **Strict null checks** enabled
+
 ---
 
 ## Migration Checklist
 
 ### Pre-Migration
 
-- [ ] Create backup branch
-- [ ] Document current file structure
-- [ ] Set up testing environment
-- [ ] Review all dependencies
+- [x] Create backup branch
+- [x] Document current file structure
+- [x] Set up testing environment
+- [x] Review all dependencies
+- [x] Update plan for TypeScript
 
 ### During Migration
 
-- [ ] Complete each phase fully before moving on
-- [ ] Test after each phase
-- [ ] Commit after each phase
-- [ ] Update this document with learnings
+- [x] Complete each phase fully before moving on
+- [x] Test after each phase
+- [x] Commit after each phase
+- [x] Update this document with learnings
 
 ### Post-Migration
 
@@ -640,7 +710,7 @@ export function ComponentName({ prop1, prop2 }) {
 - [ ] Remove old files
 - [ ] Clean up imports
 - [ ] Add JSDoc comments
-- [ ] Create this-is-fine branch (if needed 😄)
+- [ ] Verify TypeScript strict mode passes
 
 ---
 
@@ -648,58 +718,93 @@ export function ComponentName({ prop1, prop2 }) {
 
 These are **NOT** part of this refactoring but could be addressed later:
 
-1. **TypeScript migration** - Add `.tsx` extensions and types
-2. **State management library** - Consider Zustand for editor state
-3. **Performance optimization** - Virtualize structure panel for large docs
-4. **Unit tests** - Add Jest/Vitest tests for utilities
-5. **E2E tests** - Playwright tests for editor interactions
-6. **Accessibility audit** - Ensure keyboard navigation works
-7. **Mobile optimization** - Touch-friendly toolbar
-8. **Undo/redo improvements** - Better history management
-9. **Collaborative editing** - Real-time multi-user support
-10. **Plugin system** - Allow custom block registration
+1. **State management library** - Consider Zustand for editor state
+2. **Performance optimization** - Virtualize structure panel for large docs
+3. **Unit tests** - Add Vitest tests for utilities
+4. **E2E tests** - Playwright tests for editor interactions
+5. **Accessibility audit** - Ensure keyboard navigation works
+6. **Mobile optimization** - Touch-friendly toolbar
+7. **Undo/redo improvements** - Better history management
+8. **Collaborative editing** - Real-time multi-user support
+9. **Plugin system** - Allow custom block registration
+10. **i18n support** - Multi-language editor UI
 
 ---
 
 ## Appendix: Current File Metrics
 
-### index.jsx Breakdown (Approximate)
+### Current State (After Full Analysis - March 2026)
 
-| Section | Lines | % of File |
-|---------|-------|-----------|
-| Imports | ~60 | 2% |
-| Schema definition | ~25 | 1% |
-| `getCustomSlashMenuItems` | ~100 | 4% |
-| `truncateLabel` | ~10 | <1% |
-| `getInlineTextLength` | ~15 | 1% |
-| `truncateInlineContent` | ~50 | 2% |
-| `flattenBlocks` | ~10 | <1% |
-| `getBlockLabel` | ~35 | 1% |
-| `getBlockIcon` | ~40 | 1% |
-| `CUSTOM_BLOCK_TYPES` | ~15 | 1% |
-| `EditorToolbar` component | ~400 | 14% |
-| `StructurePanel` component | ~450 | 16% |
-| `BlockEditor` main component | ~1,600 | 56% |
-| Exports | ~10 | <1% |
+| File | Lines | Status | Notes |
+|------|-------|--------|-------|
+| `index.jsx` | ~1,691 | 🔴 Critical | Target: <200 lines |
+| `schema.ts` | ~40 | ✅ Done | TypeScript |
+| `useSlashMenu.ts` | ~256 | ✅ Done | TypeScript |
+| `utils/constants.ts` | ~65 | ✅ Done | TypeScript |
+| `utils/inlineContent.ts` | ~286 | ✅ Done | TypeScript |
+| `utils/blockHelpers.ts` | ~166 | ✅ Done | TypeScript |
+| `utils/conversion.ts` | ~200 | ✅ Done | TypeScript |
+| `utils/insert-block.ts` | ~100 | ✅ Done | TypeScript |
+| `utils/types.ts` | ~30 | ✅ Done | TypeScript |
+| `components/EditorToolbar.tsx` | ~291 | ✅ Done | Needs move to toolbar/ |
+| `components/BlockInserter.jsx` | ~619 | 🔴 Critical | Structure Panel embedded! |
+| `blocks/*.jsx` | 12 files | ❌ Todo | Convert to .tsx |
+| `components/*.jsx` | 10 files | ❌ Todo | Convert to .tsx |
+| `BlockNoteViewWithPortal.jsx` | ~150 | ❌ Todo | Convert to .tsx |
+| `selection-context.jsx` | ~50 | ❌ Todo | Convert to .tsx |
+| `related-content-context.jsx` | ~30 | ❌ Todo | Convert to .tsx |
 
 ### Target File Metrics
 
-| File | Target Lines | Reduction |
-|------|--------------|-----------|
-| `index.jsx` | <150 | -95% |
-| `BlockEditorMain.jsx` | <400 | New |
-| `schema.js` | <100 | New |
-| `useBlockEditor.js` | <300 | New |
-| `useSlashMenu.js` | <200 | New |
-| `toolbar/EditorToolbar.jsx` | <350 | New |
-| `toolbar/useToolbarActions.js` | <150 | New |
-| `toolbar/FAQLinkPopover.jsx` | <100 | New |
-| `structure/StructurePanel.jsx` | <400 | New |
-| `structure/useStructureTree.js` | <150 | New |
-| `utils/blockHelpers.js` | <150 | New |
-| `utils/inlineContent.js` | <150 | New |
-| `utils/constants.js` | <50 | New |
-| **Total** | **~2,650** | **Same functionality, better organization** |
+| File | Target Lines | Status |
+|------|--------------|--------|
+| `index.tsx` | <150 | ❌ Todo |
+| `BlockEditorMain.tsx` | <350 | ❌ Todo |
+| `schema.ts` | <100 | ✅ Done |
+| `useSlashMenu.ts` | <300 | ✅ Done |
+| `useBlockEditor.ts` | <300 | ❌ Todo |
+| `toolbar/EditorToolbar.tsx` | <350 | 🟡 Partial |
+| `toolbar/useToolbarActions.ts` | <150 | ❌ Todo |
+| `toolbar/FAQLinkPopover.tsx` | <100 | ❌ Todo |
+| `structure/StructurePanel.tsx` | <350 | ❌ Todo |
+| `structure/useStructureTree.ts` | <150 | ❌ Todo |
+| `components/BlockInserter.tsx` | <150 | ❌ Todo (after split) |
+| `utils/blockHelpers.ts` | <200 | ✅ Done |
+| `utils/inlineContent.ts` | <300 | ✅ Done |
+| `utils/constants.ts` | <100 | ✅ Done |
+| **Total** | **~3,000** | **Same functionality, better organization** |
+
+### Progress Summary
+
+| Phase | Status | Completion |
+|-------|--------|------------|
+| Phase 1: Utils | ✅ Complete | 100% |
+| Phase 2: Schema | ✅ Complete | 100% |
+| Phase 3: Slash Menu | ✅ Complete | 100% |
+| Phase 4: Toolbar | 🟡 Partial | 50% |
+| **Phase 4.5: Structure Panel** | ❌ **Not Started** | **0%** |
+| Phase 5: useBlockEditor | ❌ Not Started | 0% |
+| Phase 6: BlockEditorMain | ❌ Not Started | 0% |
+| Phase 7: TypeScript Conversion | ❌ Not Started | 0% |
+| Phase 8: Cleanup | ❌ Not Started | 0% |
+| **Overall** | **In Progress** | **~60%** |
+
+### Key Discovery: BlockInserter.jsx Breakdown
+
+The `BlockInserter.jsx` (619 lines) contains:
+
+| Section | Lines | Should Move To |
+|---------|-------|----------------|
+| Imports | ~50 | - |
+| SortableStructureItem | ~150 | `structure/StructurePanel.tsx` |
+| Structure panel rendering | ~200 | `structure/StructurePanel.tsx` |
+| Drag & Drop logic (reorder) | ~100 | `structure/useStructureTree.ts` |
+| Block conversion actions | ~80 | `structure/StructurePanel.tsx` |
+| Search & filter UI | ~40 | Keep in `BlockInserter.tsx` |
+| Insertion panel (blocks list) | ~100 | Keep in `BlockInserter.tsx` |
+| **After split:** | | |
+| `StructurePanel.tsx` | ~350 | NEW |
+| `BlockInserter.tsx` | ~150 | REMAINING |
 
 ---
 
@@ -714,7 +819,8 @@ These are **NOT** part of this refactoring but could be addressed later:
 ---
 
 **Next Steps:**
-1. Review this plan with the team
-2. Create backup branch
-3. Begin Phase 1 (Extract Utilities)
-4. Track progress in GitHub issues
+1. ✅ Review this updated TypeScript plan with full analysis
+2. **Start Phase 4.5** - Extract Structure Panel from BlockInserter.jsx
+3. Complete Phase 4 (Toolbar extraction)
+4. Begin Phase 5 (useBlockEditor hook)
+5. Track progress in GitHub issues
