@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { useAuthStore } from './store/useStore';
 import AdminLayout from './components/AdminLayout';
 import ThemeProvider from './components/ThemeProvider';
-import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/dashboard/Dashboard';
 import './App.css';
 import './index.css'; // Import global styles including Tailwind
@@ -86,9 +85,7 @@ function AdminApp() {
               path="/templates"
               element={
                 <ProtectedRoute>
-                  <ErrorBoundary>
-                    <TemplateEditor />
-                  </ErrorBoundary>
+                  <TemplateEditor />
                 </ProtectedRoute>
               }
             />
@@ -96,9 +93,7 @@ function AdminApp() {
               path="/templates/new"
               element={
                 <ProtectedRoute>
-                  <ErrorBoundary>
-                    <TemplateEditor />
-                  </ErrorBoundary>
+                  <TemplateEditor />
                 </ProtectedRoute>
               }
             />
@@ -106,9 +101,7 @@ function AdminApp() {
               path="/templates/:slug"
               element={
                 <ProtectedRoute>
-                  <ErrorBoundary>
-                    <TemplateEditor />
-                  </ErrorBoundary>
+                  <TemplateEditor />
                 </ProtectedRoute>
               }
             />
@@ -118,9 +111,7 @@ function AdminApp() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <ErrorBoundary>
-                    <AdminLayout />
-                  </ErrorBoundary>
+                  <AdminLayout />
                 </ProtectedRoute>
               }
             >

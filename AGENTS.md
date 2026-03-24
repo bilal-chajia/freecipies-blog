@@ -401,7 +401,6 @@ recipeDetails = recipe.recipeJson; // may be null
 
 Before marking any task complete:
 
-- [ ] `pnpm build` passes with no errors
 - [ ] All images have `width` and `height` attributes
 - [ ] API responses use `formatSuccessResponse`/`formatErrorResponse`
 - [ ] No `any` types unless documented reason
