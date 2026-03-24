@@ -10,7 +10,7 @@ import {
     RoundupListBlock,
     RelatedContentBlock,
     TableBlock,
-    BeforeAfterBlock
+    BeforeAfterBlock,
 } from './blocks';
 
 /**
@@ -19,20 +19,23 @@ import {
  * Centralized schema with both default and custom blocks.
  */
 export const schema = BlockNoteSchema.create({
-    blockSpecs: {
-        ...defaultBlockSpecs,
-        alert: Alert(),
-        video: VideoBlock(),
-        customImage: ImageBlock(),
-        faqSection: FAQSectionBlock(),
-        divider: DividerBlock(),
-        recipeEmbed: RecipeEmbedBlock(),
-        mainRecipe: MainRecipeBlock(),
-        roundupList: RoundupListBlock(),
-        relatedContent: RelatedContentBlock(),
-        simpleTable: TableBlock(),
-        beforeAfter: BeforeAfterBlock(),
-    },
+    blockSpecs: (() => {
+        const { table, ...rest } = defaultBlockSpecs;
+        return {
+            ...rest,
+            alert: Alert(),
+            video: VideoBlock(),
+            customImage: ImageBlock(),
+            faqSection: FAQSectionBlock(),
+            divider: DividerBlock(),
+            recipeEmbed: RecipeEmbedBlock(),
+            mainRecipe: MainRecipeBlock(),
+            roundupList: RoundupListBlock(),
+            relatedContent: RelatedContentBlock(),
+            simpleTable: TableBlock(),
+            beforeAfter: BeforeAfterBlock(),
+        };
+    })(),
 });
 
 export type AppSchema = typeof schema;

@@ -190,13 +190,14 @@ export function contentJsonToBlocks(contentJson: string | any[] | { blocks: any[
                         },
                     };
                 }
-                case 'table': {
+                case 'table':
+                case 'simpleTable': {
                     return {
                         id,
                         type: 'simpleTable',
                         props: {
-                            headersJson: JSON.stringify(block.headers || []),
-                            rowsJson: JSON.stringify(block.rows || []),
+                            headersJson: JSON.stringify(block.headers || block.props?.headersJson || []),
+                            rowsJson: JSON.stringify(block.rows || block.props?.rowsJson || []),
                         }
                     };
                 }
@@ -207,10 +208,10 @@ export function contentJsonToBlocks(contentJson: string | any[] | { blocks: any[
         }).flat();
 
         const cleanBlocks = rawBlocks.filter(b => b && typeof b === 'object' && typeof (b as any).type === 'string');
-        return cleanBlocks.length > 0 ? cleanBlocks as AnyBlock[] : undefined;
+        return cleanBlocks.length > 0 ? cleanBlocks as AnyBlock[] : [{ id: 'init-0', type: 'paragraph', props: {}, content: [], children: [] }] as AnyBlock[];
     } catch (error) {
         console.error('Error converting contentJson to blocks:', error);
-        return undefined;
+        return [{ id: 'error-0', type: 'paragraph', props: {}, content: [], children: [] }] as AnyBlock[];
     }
 }
 

@@ -25,29 +25,79 @@ const blockTypeMap: Record<string, () => BlockSpec> = {
     recipeEmbed: () => ({ type: 'recipeEmbed' }),
 };
 
-export const insertBlockFromInserter = (
+/**
+ * Safe Block Insertion Utility
+ * 
+ * Ensures custom blocks are always inserted at the root level
+ * (not nested inside lists, quotes, etc.)
+ */
+export const safeInsertBlock = (
     editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema> | any, 
-    blockType: string
-): boolean => {
-    if (!editor || !blockType) return false;
-    const buildSpec = blockTypeMap[blockType];
-    const spec = buildSpec ? buildSpec() : { type: 'paragraph' };
-    const selection = (editor as any).getTextCursorPosition();
-    const current = selection?.block;
-    
-    try {
-        const inserted = (editor as any).insertBlocks([spec], current, 'after');
-        if (inserted?.[0]?.id) {
-            (editor as any).setTextCursorPosition(inserted[0].id, 'start');
-        }
-        (editor as any).focus();
-        return true;
-    } catch {
-        const inserted = (editor as any).insertBlocks([{ type: 'paragraph' }], current, 'after');
-        if (inserted?.[0]?.id) {
-            (editor as any).setTextCursorPosition(inserted[0].id, 'start');
-        }
-        (editor as any).focus();
-        return false;
+    type: string,
+    props: Record<string, any> = {}
+): void => {
+    if (!editor) return;
+
+    const currentPos = editor.getTextCursorPosition();
+    if (!currentPos) return;
+
+    let targetId = currentPos.block.id;
+    let placement = 'after' as const;
+
+    // Find root parent if nested, to ensure custom blocks are at root level
+    // This is a requirement for our food blog blocks
+    let current = currentPos.block;
+    while (current.parentId) {
+        const parent = editor.getBlock(current.parentId);
+        if (!parent) break;
+        current = parent;
+        targetId = current.id;
     }
+
+    // Use specific specs if available, otherwise just use type
+    const buildSpec = blockTypeMap[type];
+    const spec = buildSpec ? buildSpec() : { type, props };
+    
+    // Merge props if they were provided
+    if (Object.keys(props).length > 0) {
+        spec.props = { ...(spec.props || {}), ...props };
+    }
+
+    try {
+        // Detect if we should replace the current block
+        // Replaces if:
+        // 1. Block is truly empty
+        // 2. Block contains the slash trigger or search query
+        const isCurrentBlockEmpty = 
+            currentPos.block.type === 'paragraph' && 
+            (!currentPos.block.content || currentPos.block.content.length === 0);
+            
+        const isSlashTrigger = 
+            currentPos.block.type === 'paragraph' && 
+            currentPos.block.content?.some((c: any) => c.type === 'text' && c.text.includes('/'));
+
+        // If we are replacing, we use replaceBlocks, otherwise insert after
+        if ((isCurrentBlockEmpty || isSlashTrigger) && currentPos.block.id === targetId) {
+            editor.replaceBlocks([targetId], [spec]);
+        } else {
+            const inserted = editor.insertBlocks([spec], targetId, placement);
+            if (inserted?.[0]?.id) {
+                editor.setTextCursorPosition(inserted[0].id, 'start');
+            }
+        }
+    } catch (error) {
+        console.error(`Failed to insert block of type ${type}:`, error);
+        // Fallback to simple paragraph
+        editor.insertBlocks([{ type: 'paragraph' }], targetId, placement);
+    }
+    
+    editor.focus();
+};
+
+/**
+ * Legacy wrapper for backward compatibility if needed by old inserters
+ */
+export const insertBlockFromInserter = (editor: any, blockType: string): boolean => {
+    safeInsertBlock(editor, blockType);
+    return true;
 };

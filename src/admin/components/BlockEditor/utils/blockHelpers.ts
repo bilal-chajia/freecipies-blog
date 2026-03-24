@@ -30,7 +30,49 @@ export const flattenBlocks = (blocks: AnyBlock[], depth = 0, acc: FlattenedBlock
     return acc;
 };
 
-export const getBlockLabel = (block: AnyBlock): string => {
+export interface GroupedFlattenedBlock extends FlattenedBlock {
+    itemCount?: number;
+    isGroup?: boolean;
+}
+
+export const groupConsecutiveBlocks = (flatBlocks: FlattenedBlock[]): GroupedFlattenedBlock[] => {
+    const result: GroupedFlattenedBlock[] = [];
+    for (let i = 0; i < flatBlocks.length; i++) {
+        const current = flatBlocks[i];
+        const isList = ['bulletListItem', 'numberedListItem', 'checkListItem'].includes(current.block.type);
+
+        if (isList) {
+            const listType = current.block.type;
+            const depth = current.depth;
+            const parentId = current.parentId;
+
+            let count = 1;
+            let j = i + 1;
+            while (j < flatBlocks.length) {
+                const next = flatBlocks[j];
+                // Group if same type, same depth, and same parent
+                if (next.block.type === listType && next.depth === depth && next.parentId === parentId) {
+                    count++;
+                    j++;
+                } else {
+                    break;
+                }
+            }
+
+            result.push({
+                ...current,
+                itemCount: count,
+                isGroup: count > 1
+            });
+            i = j - 1;
+        } else {
+            result.push(current);
+        }
+    }
+    return result;
+};
+
+export const getBlockLabel = (block: AnyBlock, itemCount: number = 1): string => {
     const contentText = extractText(block.content as any);
     const type = block.type as any;
     switch (type) {
@@ -43,10 +85,18 @@ export const getBlockLabel = (block: AnyBlock): string => {
             if (!trimmed) return 'Paragraph';
             return `Paragraph (${trimmed})`;
         }
-        case 'bulletListItem':
-            return truncateLabel(contentText || 'Bullet item');
-        case 'numberedListItem':
-            return truncateLabel(contentText || 'Numbered item');
+        case 'bulletListItem': {
+            const label = itemCount > 1 ? `List (${itemCount} items)` : (truncateLabel(contentText) || 'Bullet item');
+            return label;
+        }
+        case 'numberedListItem': {
+            const label = itemCount > 1 ? `Numbered List (${itemCount} items)` : (truncateLabel(contentText) || 'Numbered item');
+            return label;
+        }
+        case 'checkListItem': {
+            const label = itemCount > 1 ? `Checklist (${itemCount} items)` : (truncateLabel(contentText) || 'Check item');
+            return label;
+        }
         case 'alert':
             return truncateLabel((block.props as any)?.type ? `Alert (${(block.props as any).type})` : 'Alert');
         case 'faqSection':

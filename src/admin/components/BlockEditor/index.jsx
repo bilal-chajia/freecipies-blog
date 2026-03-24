@@ -8,40 +8,44 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BlockNoteViewWithPortal } from './BlockNoteViewWithPortal';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import EditorToolbar from './components/EditorToolbar';
 import {
     useCreateBlockNote,
+    SuggestionMenuController,
+    SideMenuController,
+    SideMenu,
+    DragHandleButton,
+    DragHandleMenu
 } from '@blocknote/react';
+import { getBlockInfo, getNearestBlockPos } from '@blocknote/core';
 import { schema } from './schema';
+import { getCustomSlashMenuItems } from './useSlashMenu';
 import '@blocknote/mantine/style.css';
 import { cn } from '@/lib/utils';
 import {
     Plus,
-    Image as ImageIcon,
-    Video,
-    List,
-    ListOrdered,
-    Heading1,
-    Heading2,
-    Heading3,
-    Heading4,
-    Heading5,
-    Heading6,
-    Link as LinkIcon,
+    X,
     Bold,
     Italic,
-    Check,
-    X,
-    Pilcrow,
+    FileText,
+    Heading2,
+    Heading3,
+    List,
+    ListOrdered,
     Quote,
-    ListTree,
-    Minus,
+    Image as ImageIcon,
+    Video,
     AlertTriangle,
     HelpCircle,
     Utensils,
     LayoutGrid,
+    SplitSquareVertical,
     Table,
-    FileText,
-    SplitSquareVertical
+    Minus,
+    GripVertical,
+    Type,
+    Link as LinkIcon,
+    Check
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -69,6 +73,7 @@ import {
 } from './utils/inlineContent';
 import {
     flattenBlocks,
+    groupConsecutiveBlocks,
     getBlockLabel,
     getBlockIcon,
     normalizeTipVariant,
@@ -84,364 +89,100 @@ import {
 import { RecipeDataContext } from './blocks/MainRecipeBlock';
 import { RoundupDataContext } from './blocks/RoundupListBlock';
 import { FAQDataContext } from './blocks/FAQSectionBlock';
-// Custom slash menu items
-const getCustomSlashMenuItems = (editor, options = {}) => {
-    const {
-        contentType = 'article',
-        hasRecipeContext = false,
-        hasRoundupContext = false,
-    } = options;
-
-    const safeInsert = (type, props = {}) => {
-        const currentPos = editor.getTextCursorPosition();
-        if (!currentPos) return;
-
-        let targetId = currentPos.block.id;
-        let placement = 'after';
-
-        // Find root parent if nested, to ensure custom blocks are at root level
-        let current = currentPos.block;
-        while (current.parentId) {
-            const parent = editor.getBlock(current.parentId);
-            if (!parent) break;
-            current = parent;
-            targetId = current.id;
-        }
-
-        const inserted = editor.insertBlocks([{ type, props }], targetId, placement);
-        if (inserted?.[0]?.id) {
-            editor.setTextCursorPosition(inserted[0].id, 'start');
-        }
-        editor.focus();
-    };
-
-    const items = [
-        {
-            title: 'Alert Box',
-            onItemClick: () =>
-                safeInsert('alert', { type: 'warning' }),
-            aliases: ['alert', 'tip', 'warning'],
-            group: 'Food Blog',
-            subtext: 'Insert a tip/warning box',
-        },
-        {
-            title: 'Embed Recipe',
-            onItemClick: () =>
-                safeInsert('recipeEmbed'),
-            aliases: ['recipe', 'embed', 'link'],
-            group: 'Food Blog',
-            subtext: 'Link to another recipe',
-        },
-        {
-            title: 'Related Content',
-            onItemClick: () =>
-                safeInsert('relatedContent'),
-            aliases: ['related', 'recommend'],
-            group: 'Food Blog',
-            subtext: 'Curate related recipes or articles',
-        },
-        {
-            title: 'Before / After',
-            onItemClick: () =>
-                safeInsert('beforeAfter'),
-            aliases: ['before', 'after', 'compare'],
-            group: 'Food Blog',
-            subtext: 'Compare two images',
-        },
-        {
-            title: 'Table',
-            onItemClick: () =>
-                safeInsert('simpleTable'),
-            aliases: ['table', 'grid', 'matrix'],
-            group: 'Layout',
-            subtext: 'Add a table',
-        },
-        {
-            title: 'Divider',
-            onItemClick: () =>
-                safeInsert('divider'),
-            aliases: ['divider', 'separator', 'line'],
-            group: 'Layout',
-            subtext: 'Add a horizontal divider',
-        },
-    ];
-
-    if (contentType === 'recipe' && hasRecipeContext) {
-        items.unshift({
-            title: 'Recipe Details',
-            onItemClick: () =>
-                safeInsert('mainRecipe'),
-            aliases: ['recipe', 'main', 'details'],
-            group: 'Food Blog',
-            subtext: 'The main recipe editor for this post',
-        });
-    }
-
-    if (contentType === 'roundup' && hasRoundupContext) {
-        items.unshift({
-            title: 'Roundup List',
-            onItemClick: () =>
-                safeInsert('roundupList'),
-            aliases: ['roundup', 'list', 'curated'],
-            group: 'Food Blog',
-            subtext: 'Manage the curated items list for this roundup',
-        });
-    }
-
-    return [
-        ...getDefaultReactSlashMenuItems(editor).filter((item) => item.title !== 'Table'),
-        ...items,
-    ];
-};
-
-
+import React from 'react';
 
 /**
- * Editor Toolbar Component
+ * Custom Slash Menu Component
+ * Renders a premium, tailored menu for slash commands.
  */
-const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
-    if (!editor) return null;
-
-    const selectionRef = useRef({ text: '', url: '' });
-    const faqLinkTargetRef = useRef(null);
-    const faqSelectionRef = useRef({ start: 0, end: 0 });
-    const [faqLinkOpen, setFaqLinkOpen] = useState(false);
-    const [faqLinkUrl, setFaqLinkUrl] = useState('');
-    const [faqLinkHasMatch, setFaqLinkHasMatch] = useState(false);
-
-    useEffect(() => {
-        if (!editor) return undefined;
-        const updateSelection = () => {
-            selectionRef.current = {
-                text: editor.getSelectedText() || '',
-                url: editor.getSelectedLinkUrl() || '',
-            };
-        };
-        updateSelection();
-        const unsubscribe = editor.onSelectionChange(updateSelection);
-        return () => {
-            if (typeof unsubscribe === 'function') unsubscribe();
-        };
-    }, [editor]);
-
-    const insertBlock = (type, props = {}) => {
-        const currentPos = editor.getTextCursorPosition();
-        if (!currentPos) return;
-
-        let targetId = currentPos.block.id;
-        let placement = 'after';
-
-        // Find root parent if nested, to ensure custom blocks are at root level
-        if (CUSTOM_BLOCK_TYPES.has(type)) {
-            let current = currentPos.block;
-            while (current.parentId) {
-                const parent = editor.getBlock(current.parentId);
-                if (!parent) break;
-                current = parent;
-                targetId = current.id;
-            }
-        }
-
-        const inserted = editor.insertBlocks([{ type, props }], targetId, placement);
-        if (inserted?.[0]?.id) {
-            editor.setTextCursorPosition(inserted[0].id, 'start');
-        }
-        editor.focus();
-    };
-
-
-
-    const applyFaqLink = () => {
-        const textarea = faqLinkTargetRef.current;
-        if (!textarea) return;
-        const currentValue = textarea.value || '';
-        const { start, end } = faqSelectionRef.current;
-        const url = faqLinkUrl.trim();
-        if (!url) return;
-        const selectedText = currentValue.slice(start, end);
-        const linkText = selectedText || url;
-        const linkMarkdown = `[${linkText}](${url})`;
-        const nextValue =
-            currentValue.slice(0, start) +
-            linkMarkdown +
-            currentValue.slice(end);
-        textarea.value = nextValue;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        requestAnimationFrame(() => {
-            const caretPos = start + linkMarkdown.length;
-            textarea.focus();
-            textarea.setSelectionRange(caretPos, caretPos);
+const CustomSlashMenu = ({ items, selectedIndex, onItemClick, editor }) => {
+    // Group items by their group property
+    const groupedItems = React.useMemo(() => {
+        const groups = {};
+        items.forEach((item, index) => {
+            const groupName = item.group || 'General';
+            if (!groups[groupName]) groups[groupName] = [];
+            groups[groupName].push({ ...item, actualIndex: index });
         });
-        setFaqLinkOpen(false);
-    };
-
-    const removeFaqLink = () => {
-        const textarea = faqLinkTargetRef.current;
-        if (!textarea) return;
-        const currentValue = textarea.value || '';
-        const { start, end } = faqSelectionRef.current;
-        const match = findMarkdownLinkRange(currentValue, start, end);
-        if (!match) return;
-        const nextValue =
-            currentValue.slice(0, match.start) +
-            match.label +
-            currentValue.slice(match.end);
-        textarea.value = nextValue;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        requestAnimationFrame(() => {
-            const caretPos = match.start + match.label.length;
-            textarea.focus();
-            textarea.setSelectionRange(caretPos, caretPos);
-        });
-        setFaqLinkOpen(false);
-    };
+        return groups;
+    }, [items]);
 
     return (
-        <div className="border-b bg-muted">
-            <div className="flex items-center gap-1 p-2 flex-wrap">
-                <button
-                    type="button"
-                    onClick={onToggleStructurePanel}
-                    className={`p-1.5 hover:bg-muted/80 rounded-sm ${structureOpen ? 'bg-muted/80 text-foreground' : 'text-muted-foreground'}`}
-                    title="List View / Outline"
-                >
-                    <ListTree className="size-4" />
-                </button>
-                <button onClick={() => insertBlock('heading', { level: 2 })} className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground" title="Heading 2"><Heading2 className="size-4" /></button>
-                <button onClick={() => insertBlock('heading', { level: 3 })} className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground" title="Heading 3"><Heading3 className="size-4" /></button>
-                <div className="w-px h-4 bg-border mx-1" />
-                <button onClick={() => insertBlock('bulletListItem')} className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground" title="Bullet List"><List className="size-4" /></button>
-                <button onClick={() => insertBlock('numberedListItem')} className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground" title="Numbered List"><ListOrdered className="size-4" /></button>
-                <button
-                    type="button"
-                    onMouseDown={(event) => {
-                        event.preventDefault();
-                    }}
-                    onClick={() => {
-                        const activeElement = document.activeElement;
-                        if (activeElement instanceof HTMLTextAreaElement && activeElement.dataset.faqAnswer === 'true') {
-                            const currentValue = activeElement.value || '';
-                            const selectionStart = activeElement.selectionStart ?? currentValue.length;
-                            const selectionEnd = activeElement.selectionEnd ?? selectionStart;
-                            faqLinkTargetRef.current = activeElement;
-                            faqSelectionRef.current = { start: selectionStart, end: selectionEnd };
-                            setFaqLinkHasMatch(!!findMarkdownLinkRange(currentValue, selectionStart, selectionEnd));
-                            setFaqLinkUrl('https://');
-                            setFaqLinkOpen(true);
-                            return;
-                        }
-                        const selectedText = selectionRef.current.text || editor.getSelectedText();
-                        if (!selectedText) {
-                            window.alert('Select text before adding a link.');
-                            return;
-                        }
-                        const existingUrl = selectionRef.current.url || editor.getSelectedLinkUrl();
-                        const url = window.prompt('Enter URL', existingUrl || 'https://');
-                        if (!url) return;
-                        editor.createLink(url, selectedText);
-                        editor.focus();
-                    }}
-                    className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground"
-                    title="Link"
-                >
-                    <LinkIcon className="size-4" />
-                </button>
-                <div className="w-px h-4 bg-border mx-1" />
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <button
-                            type="button"
-                            className="p-1.5 hover:bg-muted/80 rounded-sm text-muted-foreground inline-flex items-center gap-1"
-                            title="Insert block"
-                        >
-                            <Plus className="size-4" />
-                            <span className="text-xs font-medium">Insert</span>
-                        </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-52">
-                        <DropdownMenuItem onClick={() => insertBlock('customImage')}>
-                            <ImageIcon className="size-4 mr-2" /> Image
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => insertBlock('video')}>
-                            <Video className="size-4 mr-2" /> Video
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => insertBlock('alert', { type: 'tip' })}>
-                            <AlertTriangle className="size-4 mr-2 text-warning" /> Alert / Tip
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => insertBlock('faqSection')}>
-                            <HelpCircle className="size-4 mr-2 text-primary" /> FAQ Section
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => insertBlock('recipeEmbed')}>
-                            <Utensils className="size-4 mr-2 text-success" /> Embed Recipe
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => insertBlock('relatedContent')}>
-                            <LayoutGrid className="size-4 mr-2 text-accent" /> Related Content
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => insertBlock('beforeAfter')}>
-                            <SplitSquareVertical className="size-4 mr-2" /> Before / After
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => insertBlock('simpleTable')}>
-                            <Table className="size-4 mr-2" /> Table
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => insertBlock('divider')}>
-                            <Minus className="size-4 mr-2" /> Divider
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+        <div className="z-[9999] min-w-[720px] overflow-hidden rounded-2xl border border-border/60 bg-white/80 backdrop-blur-xl p-0 shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-slate-50/50">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500/80">
+                    Insert a block
+                </span>
+                <span className="text-[10px] text-muted-foreground bg-white border border-border px-1.5 py-0.5 rounded shadow-sm">
+                    Esc to close
+                </span>
             </div>
-            {faqLinkOpen && (
-                <div className="px-2 pb-2">
-                    <div className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 shadow-sm">
-                        <LinkIcon className="size-4 text-muted-foreground/60" />
-                        <input
-                            type="url"
-                            value={faqLinkUrl}
-                            onChange={(event) => setFaqLinkUrl(event.target.value)}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                    event.preventDefault();
-                                    applyFaqLink();
-                                }
-                                if (event.key === 'Escape') {
-                                    event.preventDefault();
-                                    setFaqLinkOpen(false);
-                                }
-                            }}
-                            className="flex-1 text-sm outline-none"
-                            placeholder="https://"
-                            autoFocus
-                        />
-                        <button
-                            type="button"
-                            className="text-xs text-muted-foreground hover:text-foreground"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => setFaqLinkOpen(false)}
-                        >
-                            Cancel
-                        </button>
-                        {faqLinkHasMatch && (
-                            <button
-                                type="button"
-                                className="text-xs text-muted-foreground hover:text-foreground"
-                                onMouseDown={(event) => event.preventDefault()}
-                                onClick={removeFaqLink}
-                            >
-                                Remove
-                            </button>
-                        )}
-                        <button
-                            type="button"
-                            className="rounded-sm px-2 py-1 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={applyFaqLink}
-                        >
-                            Apply
-                        </button>
+            
+            <div className="max-h-[450px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300">
+                {items.length > 0 ? (
+                    <div className="p-2 space-y-4">
+                        {Object.entries(groupedItems).map(([group, groupItems]) => (
+                            <div key={group} className="space-y-1.5 px-1">
+                                <div className="px-2 pb-1 text-[10px] font-semibold text-slate-400/90 uppercase tracking-tighter">
+                                    {group}
+                                </div>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                    {groupItems.map((item) => {
+                                        const isSelected = item.actualIndex === selectedIndex;
+                                        return (
+                                            <button
+                                                key={item.title + item.actualIndex}
+                                                className={cn(
+                                                    "group flex items-start gap-3 w-full text-left p-2.5 rounded-xl transition-all duration-150 relative",
+                                                    isSelected 
+                                                        ? "bg-primary/5 shadow-[0_4px_12px_rgba(var(--primary-rgb),0.1)] ring-1 ring-primary/20" 
+                                                        : "hover:bg-slate-50 active:scale-[0.98]"
+                                                )}
+                                                onClick={() => onItemClick(item)}
+                                                onMouseEnter={() => {
+                                                    // Optional: notify parent of hover to sync selectedIndex
+                                                }}
+                                            >
+                                                <div className={cn(
+                                                    "flex-shrink-0 size-9 rounded-lg flex items-center justify-center transition-colors",
+                                                    isSelected ? "bg-primary text-white" : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                                                )}>
+                                                    {item.icon || <Type className="size-4" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0 pr-1">
+                                                    <div className={cn(
+                                                        "text-sm font-medium leading-none truncate mb-1",
+                                                        isSelected ? "text-primary" : "text-slate-700"
+                                                    )}>
+                                                        {item.title}
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-400 leading-tight line-clamp-1">
+                                                        {item.subtext || "Insert this block"}
+                                                    </div>
+                                                </div>
+                                                {isSelected && (
+                                                    <div className="absolute right-2 top-2">
+                                                        <div className="size-1.5 rounded-full bg-primary animate-pulse" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                </div>
-            )}
+                ) : (
+                    <div className="px-4 py-8 text-center">
+                        <div className="size-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-3">
+                            <X className="size-6 text-slate-300" />
+                        </div>
+                        <p className="text-sm font-medium text-slate-500 italic">
+                            No blocks found for "{editor._tiptapEditor?.state?.selection?.$from?.parent?.textContent?.split('/').pop() || ''}"
+                        </p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
@@ -451,6 +192,45 @@ const EditorToolbar = ({ editor, structureOpen, onToggleStructurePanel }) => {
 /**
  * BlockEditor Component
  */
+/**
+ * Custom Side Menu Component
+ * Allows opening the slash menu from the plus button
+ */
+const CustomSideMenu = (props) => {
+    const { editor, block } = props;
+    
+    return (
+        <SideMenu {...props} dragHandleMenu={DragHandleMenu}>
+            <div className="flex items-center -mr-2 bg-white/50 backdrop-blur-sm rounded-lg border border-border/40 shadow-sm p-0.5 animate-in fade-in slide-in-from-left-2">
+                <button
+                    type="button"
+                    className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-500 hover:text-primary"
+                    onClick={() => {
+                        // Position at start of block and open slash menu
+                        editor.setTextCursorPosition(block, "start");
+                        editor.focus();
+                        const sm = editor.getExtension("suggestionMenu");
+                        if (sm) {
+                            sm.openSuggestionMenu("/");
+                        }
+                    }}
+                    title="Add Block"
+                >
+                    <Plus className="size-4" />
+                </button>
+                <DragHandleButton {...props}>
+                    <div 
+                        className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-400 cursor-grab active:cursor-grabbing"
+                        title="Drag to move"
+                    >
+                        <GripVertical className="size-4" />
+                    </div>
+                </DragHandleButton>
+            </div>
+        </SideMenu>
+    );
+};
+
 export default function BlockEditor({
     value,
     onChange,
@@ -496,6 +276,11 @@ export default function BlockEditor({
             return URL.createObjectURL(file);
         },
     });
+
+    // Memoized Slash Menu component to pass editor prop
+    const SlashMenuComponent = useMemo(() => {
+        return (props) => <CustomSlashMenu {...props} editor={editor} />;
+    }, [editor]);
 
     // Expose editor instance
     useEffect(() => {
@@ -564,6 +349,7 @@ export default function BlockEditor({
         mode: 'buttons',
     });
     const linkToolbarRef = useRef(linkToolbar);
+    const [structureOpen, setStructureOpen] = useState(false);
     const [activeStyles, setActiveStyles] = useState({});
 
     useEffect(() => {
@@ -584,14 +370,15 @@ export default function BlockEditor({
         const handleChange = () => {
             const blocks = editor.document;
             const flatBlocks = flattenBlocks(blocks);
-            const nextItems = flatBlocks.map(({ block, depth, parentId }) => ({
-                id: block.id,
-                type: block.type,
-                depth,
-                parentId,
-                level: block.props?.level,
-                label: getBlockLabel(block),
-                icon: getBlockIcon(block),
+            const groupedBlocks = groupConsecutiveBlocks(flatBlocks);
+            const nextItems = groupedBlocks.map((item) => ({
+                id: item.block.id,
+                type: item.block.type,
+                depth: item.depth,
+                parentId: item.parentId,
+                level: item.block.props?.level,
+                label: getBlockLabel(item.block, item.itemCount),
+                icon: getBlockIcon(item.block),
             }));
             setStructureItems(nextItems);
             if (editor.domElement) {
@@ -1324,29 +1111,46 @@ export default function BlockEditor({
                                 )}
                             >
                                 <div className="block-editor-main flex min-h-0">
-                                    <div ref={canvasRef} className="block-editor-canvas flex-1 min-h-0 relative">
+                                    <div ref={canvasRef} className={cn(
+                                        "block-editor-canvas flex-1 min-h-0 relative",
+                                        structureOpen && "mr-[--sidebar]"
+                                    )}>
+                                        <EditorToolbar 
+                                            editor={editor} 
+                                            structureOpen={structureOpen}
+                                            onToggleStructurePanel={() => setStructureOpen(!structureOpen)}
+                                        />
                                         <DndContext
                                             sensors={canvasSensors}
                                             onDragStart={handleCanvasDragStart}
                                             onDragEnd={handleCanvasDragEnd}
                                             onDragCancel={handleCanvasDragCancel}
                                         >
-                                            <BlockNoteViewWithPortal
-                                                editor={editor}
-                                                theme="light"
-                                                sideMenu={false}
-                                                slashMenu={false}
-                                                formattingToolbar={false}
-                                                linkToolbar={false}
-                                            >
+                                                <BlockNoteViewWithPortal
+                                                    editor={editor}
+                                                    theme="light"
+                                                    sideMenu={false}
+                                                    slashMenu={false}
+                                                    formattingToolbar={false}
+                                                    linkToolbar={false}
+                                                    placeholder="Prepare a delicious recipe or type '/' for commands..."
+                                                >
                                                 <SuggestionMenuController
                                                     triggerCharacter="/"
-                                                    getItems={async (query) => getCustomSlashMenuItems(editor, {
-                                                        contentType,
-                                                        hasRecipeContext: typeof onRecipeChange === 'function',
-                                                        hasRoundupContext: typeof onRoundupChange === 'function',
-                                                    }).filter(item => item.title.toLowerCase().includes(query.toLowerCase()))}
+                                                    getItems={async (query) =>
+                                                        getCustomSlashMenuItems(
+                                                            editor,
+                                                            query,
+                                                            {
+                                                                contentType,
+                                                                hasRecipeContext: contentType === 'recipe',
+                                                                hasRoundupContext: contentType === 'roundup',
+                                                    }
+                                                        )
+                                                    }
+                                                    suggestionMenuComponent={SlashMenuComponent}
                                                 />
+                                                    <SideMenuController sideMenu={CustomSideMenu} />
                                             </BlockNoteViewWithPortal>
                                         </DndContext>
                                         {linkToolbar.open && (
@@ -1473,126 +1277,49 @@ export default function BlockEditor({
                                                 }}
                                             >
                                                 <div className="block-insert-line" />
-                                                <DropdownMenu
-                                                    open={insertMenuOpen}
-                                                    onOpenChange={(open) => {
-                                                        insertMenuOpenRef.current = open;
-                                                        setInsertMenuOpen(open);
-                                                        if (!open) {
-                                                            setInsertHandle(null);
+                                                <button
+                                                    type="button"
+                                                    className="block-insert-button"
+                                                    onClick={() => {
+                                                        // Insert a paragraph and open slash menu
+                                                        let targetId = insertHandle.blockId;
+                                                        let placement = insertHandle.placement;
+
+                                                        // Logic to handle nested blocks (insert after the root parent)
+                                                        const block = editor.getBlock(targetId);
+                                                        if (block && block.parentId) {
+                                                            let current = block;
+                                                            while (current.parentId) {
+                                                                const parent = editor.getBlock(current.parentId);
+                                                                if (!parent) break;
+                                                                current = parent;
+                                                                targetId = current.id;
+                                                            }
+                                                            placement = 'after';
                                                         }
+
+                                                        const inserted = editor.insertBlocks(
+                                                            [{ type: 'paragraph' }],
+                                                            targetId,
+                                                            placement
+                                                        );
+
+                                                        if (inserted?.[0]?.id) {
+                                                            editor.setTextCursorPosition(inserted[0].id, 'start');
+                                                            editor.focus();
+                                                            const sm = editor.getExtension("suggestionMenu");
+                                                            if (sm) {
+                                                                sm.openSuggestionMenu("/");
+                                                            }
+                                                        }
+
+                                                        setInsertHandle(null);
+                                                        setInsertMenuOpen(false);
                                                     }}
+                                                    title="Add Block"
                                                 >
-                                                    <DropdownMenuTrigger asChild>
-                                                        <button
-                                                            type="button"
-                                                            className="block-insert-button"
-                                                            onMouseDown={(event) => {
-                                                                event.preventDefault();
-                                                                event.stopPropagation();
-                                                                // Blur the editor to hide the text caret/cursor
-                                                                const dom = editor?.prosemirrorView?.dom;
-                                                                if (dom instanceof HTMLElement) {
-                                                                    dom.blur();
-                                                                }
-                                                                insertMenuOpenRef.current = true;
-                                                                setInsertMenuOpen(true);
-                                                            }}
-                                                            title="Insert block"
-                                                        >
-                                                            <Plus className="size-4" />
-                                                        </button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="center" className="w-56">
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('paragraph')}>
-                                                            <FileText className="size-4 mr-2" />
-                                                            Paragraph
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 2 })}>
-                                                            <Heading2 className="size-4 mr-2" />
-                                                            Heading 2
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 3 })}>
-                                                            <Heading3 className="size-4 mr-2" />
-                                                            Heading 3
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 4 })}>
-                                                            <Heading3 className="size-4 mr-2" />
-                                                            Heading 4
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 5 })}>
-                                                            <Heading3 className="size-4 mr-2" />
-                                                            Heading 5
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('heading', { level: 6 })}>
-                                                            <Heading3 className="size-4 mr-2" />
-                                                            Heading 6
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('bulletListItem')}>
-                                                            <List className="size-4 mr-2" />
-                                                            Bulleted list
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('numberedListItem')}>
-                                                            <ListOrdered className="size-4 mr-2" />
-                                                            Numbered list
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('blockquote')}>
-                                                            <Quote className="size-4 mr-2" />
-                                                            Quote
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('customImage')}>
-                                                            <ImageIcon className="size-4 mr-2" />
-                                                            Image
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('video')}>
-                                                            <Video className="size-4 mr-2" />
-                                                            Video
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('beforeAfter')}>
-                                                            <SplitSquareVertical className="size-4 mr-2" />
-                                                            Before / After
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('alert', { type: 'tip' })}>
-                                                            <AlertTriangle className="size-4 mr-2" />
-                                                            Tip box
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('faqSection')}>
-                                                            <HelpCircle className="size-4 mr-2" />
-                                                            FAQ
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('simpleTable')}>
-                                                            <Table className="size-4 mr-2" />
-                                                            Table
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('divider')}>
-                                                            <Minus className="size-4 mr-2" />
-                                                            Divider
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        {contentType === 'recipe' && typeof onRecipeChange === 'function' && (
-                                                            <DropdownMenuItem onClick={() => insertBlockAtHandle('mainRecipe')}>
-                                                                <Utensils className="size-4 mr-2" />
-                                                                Recipe details
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                        {contentType === 'roundup' && typeof onRoundupChange === 'function' && (
-                                                            <DropdownMenuItem onClick={() => insertBlockAtHandle('roundupList')}>
-                                                                <LayoutGrid className="size-4 mr-2" />
-                                                                Roundup list
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('recipeEmbed')}>
-                                                            <Utensils className="w-4 h-4 mr-2" />
-                                                            Embed recipe
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => insertBlockAtHandle('relatedContent')}>
-                                                            <LayoutGrid className="w-4 h-4 mr-2" />
-                                                            Related content
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                    <Plus className="size-4" />
+                                                </button>
                                             </div>
                                         )}
                                     </div>
@@ -1812,6 +1539,13 @@ export default function BlockEditor({
           .block-insert-button {
             animation: none;
           }
+        }
+
+        .bn-editor [data-placeholder]:empty:before {
+          content: attr(data-placeholder);
+          color: hsl(var(--muted-foreground));
+          opacity: 0.6;
+          cursor: text;
         }
 
         .block-editor-wrapper .bn-side-menu {
