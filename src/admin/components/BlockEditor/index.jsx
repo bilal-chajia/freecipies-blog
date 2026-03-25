@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BlockNoteViewWithPortal } from './BlockNoteViewWithPortal';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import EditorToolbar from './components/EditorToolbar';
+
 import {
     useCreateBlockNote,
     SuggestionMenuController,
@@ -1115,11 +1115,7 @@ export default function BlockEditor({
                                         "block-editor-canvas flex-1 min-h-0 relative",
                                         structureOpen && "mr-[--sidebar]"
                                     )}>
-                                        <EditorToolbar 
-                                            editor={editor} 
-                                            structureOpen={structureOpen}
-                                            onToggleStructurePanel={() => setStructureOpen(!structureOpen)}
-                                        />
+
                                         <DndContext
                                             sensors={canvasSensors}
                                             onDragStart={handleCanvasDragStart}

@@ -47,6 +47,8 @@ import {
     Copy,
     Trash2,
     Plus,
+    ListTree,
+    BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
@@ -310,7 +312,7 @@ export default function BlockInserter({
     className,
 }) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [panelTab, setPanelTab] = useState('blocks');
+    const [panelTab, setPanelTab] = useState('list');
     const [dropTarget, setDropTarget] = useState(null);
     const [expandedCategories, setExpandedCategories] = useState(
         blockCategories.reduce((acc, cat) => ({ ...acc, [cat.id]: true }), {})
@@ -450,16 +452,10 @@ export default function BlockInserter({
                     <div className="flex items-center gap-1">
                         <button
                             type="button"
-                            className={cn('structure-tab', panelTab === 'blocks' && 'is-active')}
-                            onClick={() => setPanelTab('blocks')}
-                        >
-                            Blocks
-                        </button>
-                        <button
-                            type="button"
                             className={cn('structure-tab', panelTab === 'list' && 'is-active')}
                             onClick={() => setPanelTab('list')}
                         >
+                            <ListTree className="w-3.5 h-3.5" />
                             List View
                         </button>
                         <button
@@ -467,6 +463,7 @@ export default function BlockInserter({
                             className={cn('structure-tab', panelTab === 'outline' && 'is-active')}
                             onClick={() => setPanelTab('outline')}
                         >
+                            <BookOpen className="w-3.5 h-3.5" />
                             Outline
                         </button>
                     </div>
@@ -487,90 +484,10 @@ export default function BlockInserter({
                 </div>
             </div>
 
-            {panelTab === 'blocks' && (
-                <div className="px-3 py-2 border-b border-border">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                            type="text"
-                            placeholder="Search blocks..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-8 h-8 text-sm"
-                        />
-                    </div>
-                </div>
-            )}
+
 
             <ScrollArea className="flex-1 min-h-0">
-                {panelTab === 'blocks' ? (
-                    <div className="p-2 space-y-1">
-                        {filteredCategories.length === 0 ? (
-                            <div className="p-4 text-center text-sm text-muted-foreground">
-                                No blocks found
-                            </div>
-                        ) : (
-                            filteredCategories.map((category) => (
-                                <div key={category.id} className="mb-2">
-                                    {/* Category header */}
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleCategory(category.id)}
-                                        className={cn(
-                                            'flex items-center justify-between w-full',
-                                            'px-2 py-1.5 text-xs font-semibold uppercase tracking-wide',
-                                            'text-muted-foreground hover:text-foreground',
-                                            'rounded-sm hover:bg-muted/50'
-                                        )}
-                                    >
-                                        {category.label}
-                                        <ChevronDown
-                                            className={cn(
-                                                'w-3.5 h-3.5 transition-transform',
-                                                expandedCategories[category.id] && 'rotate-180'
-                                            )}
-                                        />
-                                    </button>
-
-                                    {/* Blocks */}
-                                    <AnimatePresence>
-                                        {expandedCategories[category.id] && (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: 'auto', opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.15 }}
-                                                className="overflow-hidden"
-                                            >
-                                                <div className="py-1 space-y-0.5">
-                                                    {category.blocks.map((block) => (
-                                                        <Tooltip key={block.type}>
-                                                            <TooltipTrigger asChild>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleBlockClick(block.type)}
-                                                                    className={cn('structure-item', 'w-full')}
-                                                                >
-                                                                    <block.icon className="structure-item-icon" />
-                                                                    <span className="structure-item-label">
-                                                                        {block.label}
-                                                                    </span>
-                                                                </button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent side="right" className="text-xs">
-                                                                {block.description}
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    ))}
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                ) : (
+                {(
                     <div className="structure-panel-list">
                         {visibleStructureItems.length === 0 ? (
                             <div className="structure-empty">No blocks yet.</div>
