@@ -89,6 +89,7 @@ export default function GutenbergArticleEditor() {
         setSelectedBlock,
         structureItems,
         activeBlockId,
+        forceSelectBlockId,
         handleStructureUpdate,
         handleSelectStructureBlock,
         handleReorderBlock,
@@ -310,6 +311,7 @@ export default function GutenbergArticleEditor() {
                             sidebarOpen={sidebarOpen}
                             onStructureUpdate={handleStructureUpdate}
                             onSelectedBlockChange={setSelectedBlock}
+                            forceSelectBlockId={forceSelectBlockId}
                             blockEditorProps={{
                                 faqs: faqsJson,
                                 onFaqsChange: (newValue) => {

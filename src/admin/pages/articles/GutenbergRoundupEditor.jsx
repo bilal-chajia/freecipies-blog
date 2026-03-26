@@ -89,6 +89,7 @@ export default function GutenbergRoundupEditor() {
         setSelectedBlock,
         structureItems,
         activeBlockId,
+        forceSelectBlockId,
         handleStructureUpdate,
         handleSelectStructureBlock,
         handleReorderBlock,
@@ -312,6 +313,7 @@ export default function GutenbergRoundupEditor() {
                                 sidebarOpen={sidebarOpen}
                                 onStructureUpdate={handleStructureUpdate}
                                 onSelectedBlockChange={setSelectedBlock}
+                                forceSelectBlockId={forceSelectBlockId}
                                 blockEditorProps={{
                                     roundup: roundupJson,
                                     onRoundupChange: (newValue) => {

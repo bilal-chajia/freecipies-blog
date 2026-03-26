@@ -98,6 +98,7 @@ export default function GutenbergEditorMain({
     onEditorReady,
     onStructureUpdate,
     onSelectedBlockChange,
+    forceSelectBlockId,
     className,
     viewMode = 'visual',
     sidebarOpen = true,
@@ -151,6 +152,7 @@ export default function GutenbergEditorMain({
                             isSidebarOpen={sidebarOpen}
                             onStructureUpdate={onStructureUpdate}
                             onSelectedBlockChange={onSelectedBlockChange}
+                            forceSelectBlockId={forceSelectBlockId}
                             placeholder={placeholder}
                             context={relatedContext}
                             onEditorReady={onEditorReady}

@@ -61,6 +61,7 @@ export default function BlockEditor({
     isSidebarOpen = true,
     onStructureUpdate,
     onSelectedBlockChange,
+    forceSelectBlockId,
     recipe,
     onRecipeChange,
     roundup,
@@ -366,6 +367,14 @@ export default function BlockEditor({
                 if (!editorWrapper.contains(activeElement)) {
                     const currentActiveId = activeBlockIdRef.current;
                     if (currentActiveId && editor.getBlock(currentActiveId)) {
+                        // Check if cursor was programmatically moved to a different block
+                        // (e.g. via List View / Outline click)
+                        let cursorBlock = null;
+                        try { cursorBlock = editor.getTextCursorPosition().block; } catch {}
+                        if (cursorBlock && cursorBlock.id !== currentActiveId) {
+                            setActiveBlockId(cursorBlock.id);
+                            onSelectedBlockChange?.(cursorBlock);
+                        }
                         return;
                     }
                 }
@@ -517,6 +526,17 @@ export default function BlockEditor({
             activeBlockId,
         });
     }, [structureItems, activeBlockId, onStructureUpdate]);
+
+    // Allow parent to programmatically select a block (e.g. from List View click on custom blocks)
+    useEffect(() => {
+        if (!forceSelectBlockId || !editor) return;
+        if (forceSelectBlockId === activeBlockId) return;
+        const block = editor.getBlock(forceSelectBlockId) || null;
+        if (block) {
+            setActiveBlockId(forceSelectBlockId);
+            onSelectedBlockChange?.(block);
+        }
+    }, [forceSelectBlockId, editor]);
 
     useEffect(() => {
         if (!onSelectedBlockChange) return;
