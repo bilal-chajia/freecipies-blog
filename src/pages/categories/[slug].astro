@@ -1,17 +1,20 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import CategoryHeader from "../../components/CategoryHeader.astro";
-import ArticleGrid from "../../components/ArticleGrid.astro";
-import ArticleCard from "../../components/ArticleCard.astro";
-import Pagination from "../../components/Pagination.astro";
-import PopularRecipes from "../../components/PopularRecipes.astro";
-import NewsletterWidget from "../../components/NewsletterWidget.astro";
-import { getCategories, type HydratedCategory } from "@modules/categories";
-import { getArticles, getArticleById, type HydratedArticle } from "@modules/articles";
-import { hydrateCategories, hydrateArticles, safeParseJson } from "@shared/utils";
+import { env } from 'cloudflare:workers';
+import Layout from "@layouts/Layout.astro";
+import CategoryHeader from "@components/CategoryHeader.astro";
+import ArticleGrid from "@components/ArticleGrid.astro";
+import ArticleCard from "@components/ArticleCard.astro";
+import Pagination from "@components/Pagination.astro";
+import PopularRecipes from "@components/PopularRecipes.astro";
+import NewsletterWidget from "@components/NewsletterWidget.astro";
+import { getCategories } from "@modules/categories";
+import { hydrateCategories } from "@shared/utils/hydration";
+import { getArticles, getArticleById } from "@modules/articles";
+import { safeParseJson } from "@shared/utils";
+import type { HydratedCategory } from "@modules/categories/types/categories.types";
+import type { HydratedArticle } from "@modules/articles/types";
 
 let { slug } = Astro.params;
-const { env } = Astro.locals.runtime;
 
 if (!slug) {
   return Astro.redirect("/404");
@@ -49,8 +52,15 @@ const currentPage = Math.max(
 );
 
 // Fetch all categories in a single query
-const allRawCategories = await getCategories(env.DB, { isOnline: true });
-const allCategories = hydrateCategories(allRawCategories);
+let allCategories: any[] = [];
+try {
+  if (env.DB) {
+    const raw = await getCategories(env.DB, { isOnline: true });
+    allCategories = hydrateCategories(raw);
+  }
+} catch (e) {
+  console.error("Category page: Error fetching categories:", e);
+}
 
 // Find current category
 const category = allCategories.find((c) => c.slug === slug) as HydratedCategory | undefined;
@@ -77,28 +87,43 @@ const breadcrumbItems = showBreadcrumb
 
 // Fetch articles with pagination and sorting
 const offset = (currentPage - 1) * perPage;
-const { items: articles, total } = await getArticles(env.DB, {
-  categorySlug: slug,
-  isOnline: true,
-  limit: perPage,
-  offset,
-  sortBy,
-  sortOrder,
-});
+let articles: any[] = [];
+let total = 0;
+
+try {
+  if (env.DB) {
+    const result = await getArticles(env.DB, {
+      categorySlug: slug,
+      isOnline: true,
+      limit: perPage,
+      offset,
+      sortBy,
+      sortOrder,
+    });
+    articles = result.items;
+    total = result.total;
+  }
+} catch (e) {
+  console.error("Category page: Error fetching articles:", e);
+}
 
 const totalPages = Math.ceil(total / perPage);
 let featuredArticle: HydratedArticle | null = null;
 
 if (currentPage === 1 && headerStyle === "hero" && showFeaturedRecipe) {
-  if (typeof category.featuredArticleId === "number") {
-    const candidate = await getArticleById(env.DB, category.featuredArticleId);
-    if (
-      candidate &&
-      (candidate as any).isOnline &&
-      (candidate as any).categoryId === category.id
-    ) {
-      featuredArticle = candidate;
+  try {
+    if (env.DB && typeof category.featuredArticleId === "number") {
+      const candidate = await getArticleById(env.DB, category.featuredArticleId);
+      if (
+        candidate &&
+        (candidate as any).isOnline &&
+        (candidate as any).categoryId === category.id
+      ) {
+        featuredArticle = candidate;
+      }
     }
+  } catch (e) {
+    console.error("Category page: Error fetching featured article:", e);
   }
 
   if (!featuredArticle) {

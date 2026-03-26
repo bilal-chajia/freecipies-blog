@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import {
     getEquipment,
     getEquipmentBySlug,
@@ -23,7 +24,7 @@ export const prerender = false;
  */
 export const GET: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
+
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
@@ -76,7 +77,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
  */
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
+
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -107,7 +108,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
  */
 export const PUT: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
+
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -151,7 +152,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
  */
 export const DELETE: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
+
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);

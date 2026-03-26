@@ -21,6 +21,8 @@
       "@admin/*": ["src/admin/*"],
       "@shared/*": ["src/shared/*"],
       "@components/*": ["src/components/*"],
+      "@layouts/*": ["src/layouts/*"],
+      "@styles/*": ["src/styles/*"],
       "@lib/*": ["src/lib/*"]
     }
   }

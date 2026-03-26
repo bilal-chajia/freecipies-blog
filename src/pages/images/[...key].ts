@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { getImage } from '@modules/media';
 
@@ -11,8 +12,17 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
             return new Response('Image key required', { status: 400 });
         }
 
-        const env = locals.runtime.env as Env;
         const bucket = env.IMAGES;
+        
+        // DEBUG: Inspect the bucket object if it's failing
+        if (!bucket || typeof bucket.get !== 'function') {
+            console.error('DEBUG: env.IMAGES is not a valid R2Bucket', {
+                type: typeof bucket,
+                keys: bucket ? Object.keys(bucket) : [],
+                allKeys: bucket ? Object.getOwnPropertyNames(bucket) : [],
+                isProxy: bucket ? !!(bucket as any)._proxy : false
+            });
+        }
 
         // Check for conditional GET (If-None-Match)
         const ifNoneMatch = request.headers.get('If-None-Match');

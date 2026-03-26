@@ -1,13 +1,18 @@
 ---
+import { env } from 'cloudflare:workers';
 import Layout from "../../layouts/Layout.astro";
 import CategoryCard from "../../components/CategoryCard.astro";
 import { getCategories } from "@modules/categories";
 import { hydrateCategory } from "@shared/utils";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+let categories: any[] = [];
 
-const { env } = Astro.locals.runtime;
-const rawCategories = await getCategories(env.DB, { isOnline: true });
-const categories = rawCategories.map(hydrateCategory);
+try {
+  const rawCategories = await getCategories(env.DB, { isOnline: true });
+  categories = rawCategories.map(hydrateCategory);
+} catch (error) {
+  console.error("Categories index: Error fetching categories:", error);
+}
 
 // Featured category (first one or one marked as featured)
 const featured = categories.find((c) => c.isFeatured) || categories[0];

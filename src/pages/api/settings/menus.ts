@@ -7,6 +7,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import {
     getMenuByKey,
     getMenuItems,
@@ -23,7 +24,7 @@ import type { MenuItem } from '@modules/menus/types/menus.types';
  */
 export const GET: APIRoute = async ({ url, locals }) => {
     try {
-        const db = locals.runtime?.env?.DB;
+        const db = env?.DB;
         if (!db) {
             return new Response(JSON.stringify({ error: 'Database not available' }), {
                 status: 500,
@@ -81,7 +82,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
  */
 export const PUT: APIRoute = async ({ request, locals }) => {
     try {
-        const db = locals.runtime?.env?.DB;
+        const db = env?.DB;
         if (!db) {
             return new Response(JSON.stringify({ error: 'Database not available' }), {
                 status: 500,
@@ -148,7 +149,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
  */
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const db = locals.runtime?.env?.DB;
+        const db = env?.DB;
         if (!db) {
             return new Response(JSON.stringify({ error: 'Database not available' }), {
                 status: 500,
@@ -216,7 +217,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
  */
 export const DELETE: APIRoute = async ({ url, locals }) => {
     try {
-        const db = locals.runtime?.env?.DB;
+        const db = env?.DB;
         if (!db) {
             return new Response(JSON.stringify({ error: 'Database not available' }), {
                 status: 500,

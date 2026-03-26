@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getImageUploadSettings, updateImageUploadSettings, resetImageUploadSettings, IMAGE_UPLOAD_DEFAULTS } from '@modules/settings';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -12,7 +13,6 @@ export const prerender = false;
  */
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
-    const env = locals.runtime.env as Env;
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
     // Check authentication (viewer+ can read settings)
@@ -45,7 +45,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
  */
 export const PUT: APIRoute = async ({ request, locals }) => {
   try {
-    const env = locals.runtime.env as Env;
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
     // Check authentication (editor+ can modify settings)
@@ -103,7 +102,6 @@ export const PUT: APIRoute = async ({ request, locals }) => {
  */
 export const DELETE: APIRoute = async ({ request, locals }) => {
   try {
-    const env = locals.runtime.env as Env;
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
     // Check authentication (admin only can reset)

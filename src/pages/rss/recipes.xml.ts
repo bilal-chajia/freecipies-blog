@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { extractImage } from '@shared/utils';
 
 export const GET: APIRoute = async ({ locals, site }) => {
@@ -6,7 +7,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
     const siteUrl = site?.toString() || 'https://recipes-saas.com';
 
     // Fetch recent articles from D1
-    const db = locals.runtime?.env?.DB;
+    const db = env?.DB;
 
     let articles: any[] = [];
     if (db) {

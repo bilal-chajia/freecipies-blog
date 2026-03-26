@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { uploadImage, createMedia, type NewMedia } from '@modules/media';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
@@ -25,7 +26,6 @@ function isPrivateHost(url: URL): boolean {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const env = (locals as any).runtime?.env as Env;
 
     if (!env?.IMAGES) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500);

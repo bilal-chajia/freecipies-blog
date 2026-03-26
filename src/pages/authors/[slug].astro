@@ -1,26 +1,39 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import RecipeCard from "../../components/RecipeCard.astro";
-import { getAuthorBySlug } from "@modules/authors";
+import { env } from 'cloudflare:workers';
+import Layout from "@layouts/Layout.astro";
+import RecipeCard from "@components/RecipeCard.astro";
+import { getAuthorBySlug } from "@modules/authors/services/authors.service";
 import { getArticles } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 
 const { slug } = Astro.params;
-const { env } = Astro.locals.runtime;
 
 if (!slug) {
   return Astro.redirect("/404");
 }
 
-const author = await getAuthorBySlug(env.DB, slug);
+let author: any = null;
+let articles: any[] = [];
+let total = 0;
+
+try {
+  if (env.DB) {
+    author = await getAuthorBySlug(env.DB, slug);
+    if (author) {
+      const result = await getArticles(env.DB, {
+        authorSlug: slug,
+      });
+      articles = result.items;
+      total = result.total;
+    }
+  }
+} catch (error) {
+  console.error(`Error fetching author profile (${slug}):`, error);
+}
 
 if (!author) {
   return Astro.redirect("/404");
 }
-
-const { items: articles, total } = await getArticles(env.DB, {
-  authorSlug: slug,
-});
 
 const avatar = extractImage(author.imagesJson, "avatar", 200);
 const avatarSrcSet = getImageSrcSet(author.imagesJson, "avatar");
@@ -148,7 +161,7 @@ if (author.bioJson) {
           articles.length > 0 ? (
             <div class="recipes-grid">
               {articles.map((article) => (
-                <RecipeCard recipe={article} />
+                <RecipeCard article={article} recipeJson={article.recipeJson} />
               ))}
             </div>
           ) : (

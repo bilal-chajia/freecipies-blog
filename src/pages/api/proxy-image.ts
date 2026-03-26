@@ -3,6 +3,7 @@
  * Returns the image as a blob for client-side processing
  */
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -32,7 +33,7 @@ function isPrivateHost(url: URL): boolean {
 
 export const GET: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
+
         const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         // Authenticate

@@ -1,4 +1,5 @@
 ---
+import { env } from 'cloudflare:workers';
 import Layout from "./Layout.astro";
 import type { Category } from "@modules/categories/schema/categories.schema";
 import SocialShareBar from "../components/SocialShareBar.astro";
@@ -38,7 +39,7 @@ const categoryColor = category?.color || "#ff6600";
 // Load TOC settings from database
 let tocSettings: TocSettings = TOC_DEFAULTS;
 try {
-  const db = Astro.locals.runtime?.env?.DB;
+  const db = env?.DB;
   if (db) {
     tocSettings = await getTocSettings(db);
   }

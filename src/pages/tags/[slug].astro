@@ -1,23 +1,35 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import RecipeCard from "../../components/RecipeCard.astro";
-import { getArticles } from "@modules/articles";
+import { env } from 'cloudflare:workers';
+import Layout from "@layouts/Layout.astro";
+import RecipeCard from "@components/RecipeCard.astro";
 import { getTagBySlug } from "@modules/tags";
-import { hydrateArticles } from "@shared/utils";
+import { getArticles } from "@modules/articles";
+import { hydrateArticles } from "@shared/utils/hydration";
 
 const { slug } = Astro.params;
-const { env } = Astro.locals.runtime;
 
 if (!slug) return Astro.redirect("/404");
 
-const tag = await getTagBySlug(env.DB, slug);
+let tag: any = null;
+let articles: any[] = [];
+let total = 0;
+
+try {
+  if (env.DB) {
+    tag = await getTagBySlug(env.DB, slug);
+    if (tag) {
+      const result = await getArticles(env.DB, {
+        tagSlug: slug,
+      });
+      articles = result.items;
+      total = result.total;
+    }
+  }
+} catch (error) {
+  console.error(`Error fetching tag recipes (${slug}):`, error);
+}
 
 if (!tag) return Astro.redirect("/404");
-
-const { items: rawArticles, total } = await getArticles(env.DB, {
-  tagSlug: slug,
-});
-const articles = hydrateArticles(rawArticles);
 ---
 
 <Layout
@@ -47,7 +59,7 @@ const articles = hydrateArticles(rawArticles);
           articles.length > 0 ? (
             <div class="recipes-grid">
               {articles.map((article) => (
-                <RecipeCard recipe={article} />
+                <RecipeCard article={article} recipeJson={article.recipeJson} />
               ))}
             </div>
           ) : (

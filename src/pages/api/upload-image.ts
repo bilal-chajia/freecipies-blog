@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { uploadImage, createMedia, type NewMedia } from '@modules/media';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
@@ -9,15 +10,9 @@ import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const env = (locals as any).runtime?.env as Env;
-
-    if (!env?.IMAGES) {
-      throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500);
-    }
 
     const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
 
-    // Authenticate (Optional? Usually yes for upload)
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
     const authContext = await extractAuthContext(request, jwtSecret);
     // Allow EDITOR or ADMIN
@@ -54,9 +49,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     let arrayBuffer: ArrayBuffer | null = null;
     try {
       arrayBuffer = await file.arrayBuffer();
-      const dimensions = getImageDimensions(new Uint8Array(arrayBuffer));
-      width = dimensions.width;
-      height = dimensions.height;
+      if (arrayBuffer) {
+        const dimensions = getImageDimensions(new Uint8Array(arrayBuffer));
+        width = dimensions.width;
+        height = dimensions.height;
+      }
     } catch (e) {
       console.warn('Could not extract image dimensions:', e);
     }
@@ -116,9 +113,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch (error) {
     console.error('Error uploading image:', error);
     const { body, status, headers } = formatErrorResponse(
-      error instanceof AppError
-        ? error
-        : new AppError(ErrorCodes.INTERNAL_ERROR, 'Upload failed', 500)
+      new AppError(ErrorCodes.INTERNAL_ERROR, error instanceof Error ? error.stack || error.message : String(error), 500)
     );
     return new Response(body, { status, headers });
   }

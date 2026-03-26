@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { hardDeleteMedia, getMediaById } from '@modules/media';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -35,7 +36,7 @@ function getAllR2Keys(variantsJson: string | null): string[] {
 
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const env = locals.runtime.env as Env;
+
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         // Check authentication

@@ -1,19 +1,17 @@
 ---
+import { env } from 'cloudflare:workers';
 import Layout from "../../layouts/Layout.astro";
 import { getArticles } from "@modules/articles";
 import { getCategories } from "@modules/categories";
 import { getTags } from "@modules/tags";
 import {
-  extractImage,
-  getImageSrcSet,
   hydrateArticles,
   hydrateCategories,
   hydrateTags,
-} from "@shared/utils";
+} from "@shared/utils/hydration";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 
 export const prerender = false;
-
-const { env } = Astro.locals.runtime;
 
 // Get filter params from URL
 const url = Astro.url;
@@ -30,22 +28,24 @@ let categories: any[] = [];
 let tags: any[] = [];
 
 try {
-  // Get articles with optional filter
-  const result = await getArticles(env.DB, {
-    type: "recipe",
-    categorySlug: categoryFilter || undefined,
-    tagSlug: tagFilter || undefined,
-    limit,
-    offset,
-  });
-  recipes = hydrateArticles(result.items);
-  totalRecipes = result.total;
+  if (env.DB) {
+    // Get articles with optional filter
+    const result = await getArticles(env.DB, {
+      type: "recipe",
+      categorySlug: categoryFilter || undefined,
+      tagSlug: tagFilter || undefined,
+      limit,
+      offset,
+    });
+    recipes = result.items;
+    totalRecipes = result.total;
 
-  // Get all categories and tags for filters
-  const rawCategories = await getCategories(env.DB, { isOnline: true });
-  const rawTags = await getTags(env.DB);
-  categories = hydrateCategories(rawCategories);
-  tags = hydrateTags(rawTags);
+    // Get all categories and tags for filters
+    const rawCategories = await getCategories(env.DB, { isOnline: true });
+    const rawTags = await getTags(env.DB);
+    categories = hydrateCategories(rawCategories);
+    tags = hydrateTags(rawTags);
+  }
 } catch (error) {
   console.error("Error fetching recipes:", error);
 }

@@ -7,6 +7,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -28,8 +29,8 @@ export const prerender = false;
  */
 export const GET: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         // Auth check - require admin for settings
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -82,8 +83,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
  */
 export const PUT: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         // Auth check - require admin for settings
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -195,8 +196,8 @@ export const PUT: APIRoute = async ({ request, locals }) => {
  */
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         // Auth check
         const authContext = await extractAuthContext(request, jwtSecret);

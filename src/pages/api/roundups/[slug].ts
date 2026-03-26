@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getArticleBySlug } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
@@ -78,11 +79,10 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
     }
 
     try {
-        const env = (locals as any).runtime?.env as Env;
-        if (!env?.DB) {
+        const db = env.DB;
+        if (!db) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
-        const db = env.DB;
 
         // Get roundup specifically
         const article = await getArticleBySlug(db, slug, 'roundup');

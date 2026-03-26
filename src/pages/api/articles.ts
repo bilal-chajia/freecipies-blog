@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getArticles, getArticleBySlug, createArticle, setArticleTagsById, syncCachedFields } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, validatePaginationParams, ErrorCodes, AppError } from '@shared/utils';
@@ -28,11 +29,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const { limit, page, offset } = paginationValidation;
 
   try {
-    const env = (locals as any).runtime?.env as Env;
-    if (!env?.DB) {
+    const db = env.DB;
+    if (!db) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
-    const db = env.DB;
 
     if (slug) {
       const article = await getArticleBySlug(db, slug, type || undefined);
@@ -105,7 +105,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const env = (locals as any).runtime?.env as Env;
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
     const authContext = await extractAuthContext(request, jwtSecret);

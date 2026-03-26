@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getMedia } from '@modules/media';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -8,7 +9,6 @@ export const prerender = false;
 
 export const GET: APIRoute = async ({ request, locals, url }) => {
     try {
-        const env = locals.runtime.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         // Check authentication

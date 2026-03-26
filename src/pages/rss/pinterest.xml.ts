@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 
 export const GET: APIRoute = async ({ locals, site }) => {
   try {
     const siteUrl = site?.toString() || 'https://recipes-saas.com';
 
-    const db = locals.runtime?.env?.DB;
+    const db = env?.DB;
 
     if (!db) {
       throw new Error('Database not available');

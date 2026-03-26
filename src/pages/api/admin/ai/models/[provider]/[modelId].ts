@@ -11,6 +11,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -24,8 +25,8 @@ export const prerender = false;
  */
 export const GET: APIRoute = async ({ params, request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
@@ -68,8 +69,8 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
  */
 export const POST: APIRoute = async ({ params, request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
@@ -149,8 +150,8 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
  */
 export const PUT: APIRoute = async ({ params, request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
@@ -190,8 +191,11 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         if (maxTokens !== undefined) models[modelIndex].maxTokens = maxTokens;
         if (typeof deprecated === 'boolean') models[modelIndex].deprecated = deprecated;
 
-        providerConfig.availableModels = models;
-        settings.providers[provider] = providerConfig;
+        if (providerConfig) {
+            providerConfig.availableModels = models;
+            settings.providers[provider] = providerConfig;
+        }
+
 
         const success = await saveAISettings(env.DB, settings);
         if (!success) {
@@ -220,8 +224,8 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
  */
 export const DELETE: APIRoute = async ({ params, request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
@@ -251,8 +255,11 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
             throw new AppError(ErrorCodes.NOT_FOUND, 'Model not found', 404);
         }
 
-        providerConfig.availableModels = filteredModels;
-        settings.providers[provider] = providerConfig;
+        if (providerConfig) {
+            providerConfig.availableModels = filteredModels;
+            settings.providers[provider] = providerConfig;
+        }
+
 
         const success = await saveAISettings(env.DB, settings);
         if (!success) {
@@ -282,8 +289,8 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
  */
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
@@ -316,8 +323,11 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
         // Toggle enabled
         models[modelIndex].enabled = !models[modelIndex].enabled;
 
-        providerConfig.availableModels = models;
-        settings.providers[provider] = providerConfig;
+        if (providerConfig) {
+            providerConfig.availableModels = models;
+            settings.providers[provider] = providerConfig;
+        }
+
 
         const success = await saveAISettings(env.DB, settings);
         if (!success) {

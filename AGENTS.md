@@ -267,10 +267,10 @@ import {
 
 ```typescript
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from "@lib/error-handler";
+import { env } from 'cloudflare:workers';
 
 export const GET: APIRoute = async ({ locals }) => {
   try {
-    const env = locals.runtime.env as Env;
     const data = await getArticles(env.DB, { limit: 10 });
     const { body, status, headers } = formatSuccessResponse(data);
     return new Response(body, { status, headers });

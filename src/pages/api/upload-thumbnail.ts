@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
@@ -16,7 +17,6 @@ export const prerender = false;
  */
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env as Env;
 
         if (!env?.IMAGES) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500);

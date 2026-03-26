@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import fs from 'node:fs/promises';
@@ -19,7 +20,7 @@ const ALLOWED_EXTENSIONS = ['.ttf', '.otf', '.woff', '.woff2'];
 
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env;
+
 
         // Authenticate user
         const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
@@ -126,7 +127,7 @@ export const GET: APIRoute = async ({ locals }) => {
 // DELETE - Remove a font
 export const DELETE: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env;
+
 
         // Authenticate user
         const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;

@@ -6,6 +6,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getTocSettings, updateTocSettings, type TocSettings } from '@modules/settings/services/settings.service';
 
 /**
@@ -14,7 +15,7 @@ import { getTocSettings, updateTocSettings, type TocSettings } from '@modules/se
  */
 export const GET: APIRoute = async ({ locals }) => {
     try {
-        const db = locals.runtime?.env?.DB;
+        const db = env?.DB;
         if (!db) {
             return new Response(JSON.stringify({ error: 'Database not available' }), {
                 status: 500,
@@ -48,7 +49,7 @@ export const GET: APIRoute = async ({ locals }) => {
  */
 export const PUT: APIRoute = async ({ request, locals }) => {
     try {
-        const db = locals.runtime?.env?.DB;
+        const db = env?.DB;
         if (!db) {
             return new Response(JSON.stringify({ error: 'Database not available' }), {
                 status: 500,

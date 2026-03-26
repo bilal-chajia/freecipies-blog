@@ -1,15 +1,15 @@
-import { Instagram, Twitter, Facebook, Globe, Youtube } from 'lucide-react';
+import { Camera, Bird, Users, Globe, Play } from 'lucide-react';
 import { Label } from '@/ui/label.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card.jsx';
 
 export default function SocialLinksSection({ socialLinks, onSocialChange }) {
     const links = [
-        { id: 'instagram', label: 'Instagram', icon: Instagram, placeholder: '@username' },
-        { id: 'twitter', label: 'Twitter', icon: Twitter, placeholder: '@username' },
-        { id: 'facebook', label: 'Facebook', icon: Facebook, placeholder: 'username or URL' },
+        { id: 'instagram', label: 'Instagram', icon: Camera, placeholder: '@username' },
+        { id: 'twitter', label: 'Twitter', icon: Bird, placeholder: '@username' },
+        { id: 'facebook', label: 'Facebook', icon: Users, placeholder: 'username or URL' },
         { id: 'website', label: 'Website', icon: Globe, placeholder: 'https://...' },
-        { id: 'youtube', label: 'YouTube', icon: Youtube, placeholder: 'channel name or URL' },
+        { id: 'youtube', label: 'YouTube', icon: Play, placeholder: 'channel name or URL' },
     ];
 
     return (

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import type { Env } from '@shared/types';
@@ -17,7 +18,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
     const slug = url.searchParams.get('slug');
 
-    const env = (locals as any).runtime?.env as Env;
     if (!env?.DB) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
@@ -58,7 +58,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const env = (locals as any).runtime?.env as Env;
     const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
 
     // Authenticate user
@@ -105,7 +104,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 export const PUT: APIRoute = async ({ request, locals }) => {
   try {
-    const env = (locals as any).runtime?.env as Env;
     const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
 
     // Authenticate user
@@ -147,7 +145,6 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 
 export const DELETE: APIRoute = async ({ request, locals }) => {
   try {
-    const env = (locals as any).runtime?.env as Env;
     const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
 
     // Authenticate user

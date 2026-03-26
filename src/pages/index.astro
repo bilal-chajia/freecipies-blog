@@ -1,16 +1,16 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import { env } from 'cloudflare:workers';
+import Layout from "@layouts/Layout.astro";
+import StoriesBar from "@components/StoriesBar.astro";
+import WebStoryViewer from "@components/WebStoryViewer.astro";
 import { getArticles } from "@modules/articles";
 import { getCategories } from "@modules/categories";
 import { getAuthors } from "@modules/authors";
-import type { HydratedArticle } from "@modules/articles";
-import type { HydratedCategory } from "@modules/categories"; 
-import type { Author } from "@modules/authors";
-import { hydrateArticle, hydrateCategory, extractImage, getImageSrcSet } from "@shared/utils";
-import StoriesBar from "../components/StoriesBar.astro";
-import WebStoryViewer from "../components/WebStoryViewer.astro";
-
-const { env } = Astro.locals.runtime;
+import { hydrateArticles, hydrateCategory } from "@shared/utils/hydration";
+import { extractImage, getImageSrcSet } from "@shared/utils";
+import type { HydratedArticle } from "@modules/articles/types";
+import type { HydratedCategory } from "@modules/categories/types/categories.types";
+import type { Author } from "@modules/authors/schema/authors.schema";
 
 const siteTitle = "Easy and Quick Recipes for Everyone - Freecipies";
 const siteDescription =

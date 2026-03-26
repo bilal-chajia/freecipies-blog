@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getCategories, createCategory, transformCategoryRequestBody, transformCategoryResponse } from '@modules/categories';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
@@ -8,11 +9,10 @@ export const prerender = false;
 
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
-    const env = locals.runtime.env;
-    if (!env?.DB) {
+    const db = env.DB;
+    if (!db) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
-    const db = env.DB;
 
     const categories = await getCategories(db);
     const responseCategories = categories.map(transformCategoryResponse);
@@ -40,7 +40,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const env = locals.runtime.env;
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
     const authContext = await extractAuthContext(request, jwtSecret);

@@ -1,4 +1,5 @@
 ---
+import { env } from 'cloudflare:workers';
 import { getArticles } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 
@@ -12,9 +13,8 @@ const { currentSlug = "", limit = 5 } = Astro.props;
 // Fetch popular recipes (using isFavorite or just recent ones for now)
 let recipes: any[] = [];
 try {
-  const { runtime } = Astro.locals;
-  if (runtime?.env?.DB) {
-    const result = await getArticles(runtime.env.DB, {
+  if (env?.DB) {
+    const result = await getArticles(env.DB, {
       type: "recipe",
       limit: limit + 1, // Get one extra in case we need to filter out current
     });

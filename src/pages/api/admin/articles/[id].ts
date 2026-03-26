@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import {
     getArticleById,
     updateArticleById,
@@ -40,7 +41,6 @@ export const GET: APIRoute = async ({ params, locals }) => {
     }
 
     try {
-        const env = (locals as any).runtime?.env as Env;
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
@@ -82,7 +82,6 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
     }
 
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -149,7 +148,6 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
     }
 
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -208,7 +206,6 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
     }
 
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);

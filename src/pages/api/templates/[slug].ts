@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { AppError, ErrorCodes, formatErrorResponse, formatSuccessResponse } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -9,7 +10,7 @@ export const prerender = false;
 // GET /api/templates/[slug] - Get single template by slug
 export const GET: APIRoute = async ({ params, locals }) => {
     try {
-        const env = locals.runtime.env as Env;
+
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
@@ -40,7 +41,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
 // PUT /api/templates/[slug] - Update template
 export const PUT: APIRoute = async ({ params, request, locals }) => {
     try {
-        const env = locals.runtime.env as Env;
+
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -87,7 +88,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 // DELETE /api/templates/[slug] - Delete template
 export const DELETE: APIRoute = async ({ params, request, locals }) => {
     try {
-        const env = locals.runtime.env as Env;
+
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { generateJWT, AuthRoles } from '@modules/auth';
 
 export const prerender = false;
@@ -10,7 +11,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         // Get credentials from environment variables
         // In a real app, you might want to check against a database
-        const env = (locals as any).runtime?.env || {};
+
         const adminUsername = env.ADMIN_USERNAME || import.meta.env.ADMIN_USERNAME;
         const adminPassword = env.ADMIN_PASSWORD || import.meta.env.ADMIN_PASSWORD;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;

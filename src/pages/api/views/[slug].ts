@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getArticleBySlug, incrementViewCount } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
@@ -16,7 +17,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
   }
 
   try {
-    const env = (locals as any).runtime?.env as Env;
+
     if (!env?.DB) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
@@ -48,7 +49,7 @@ export const POST: APIRoute = async ({ params, locals }) => {
   }
 
   try {
-    const env = (locals as any).runtime?.env as Env;
+
     if (!env?.DB) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }

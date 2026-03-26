@@ -1588,6 +1588,9 @@ CREATE TABLE IF NOT EXISTS articles (
     -- ]
     -- UPDATE STRATEGY: Refresh when equipment table updates or recipe saves.
 
+    cached_comment_count INTEGER DEFAULT 0,
+    -- Denormalized comment count for card display (refreshed on new comment).
+
     cached_rating_json TEXT DEFAULT '{}' CHECK (json_valid(cached_rating_json)),
     -- Optional denormalized rating snapshot for cards/lists:
     -- {

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { getPopularArticles } from '@modules/articles';
@@ -8,7 +9,7 @@ export const prerender = false;
 // GET /api/stats/popular - Get popular articles by view count
 export const GET: APIRoute = async ({ request, locals }) => {
     try {
-        const env = locals.runtime.env as Env;
+
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { deleteMedia, hardDeleteMedia, getMediaById, updateMedia } from '@modules/media';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -55,7 +56,7 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
     }
 
     try {
-        const env = locals.runtime.env as Env;
+
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
         
         // Check authentication
@@ -173,7 +174,7 @@ export const DELETE: APIRoute = async ({ request, locals, params }) => {
     }
 
     try {
-        const env = locals.runtime.env as Env;
+
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         // Check authentication

@@ -1,19 +1,30 @@
 ---
+import { env } from 'cloudflare:workers';
 import Layout from "../../layouts/Layout.astro";
 import TagCard from "../../components/TagCard.astro";
 import { getTags } from "@modules/tags";
 import { getArticles } from "@modules/articles";
 import { hydrateTag } from "@shared/utils";
+let tags: any[] = [];
+let tagArticleCounts = new Map<string, number>();
 
-const { env } = Astro.locals.runtime;
-const rawTags = await getTags(env.DB);
-const tags = rawTags.map(hydrateTag);
+try {
+  if (env.DB) {
+    const rawTags = await getTags(env.DB);
+    tags = rawTags.map(hydrateTag);
 
-// Get article counts for each tag
-const tagArticleCounts = new Map<string, number>();
-for (const tag of tags) {
-  const { total } = await getArticles(env.DB, { tagSlug: tag.slug });
-  tagArticleCounts.set(tag.slug, total);
+    // Get article counts for each tag
+    for (const tag of tags) {
+      try {
+        const { total } = await getArticles(env.DB, { tagSlug: tag.slug });
+        tagArticleCounts.set(tag.slug, total);
+      } catch (e) {
+        tagArticleCounts.set(tag.slug, 0);
+      }
+    }
+  }
+} catch (error) {
+  console.error("Tags index: Error fetching tags:", error);
 }
 
 // Sort tags by article count (most popular first)

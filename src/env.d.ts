@@ -13,3 +13,8 @@ declare module '*?worker' {
   };
   export default workerConstructor;
 }
+
+declare module "cloudflare:workers" {
+  export const env: import("@shared/types").Env;
+}
+

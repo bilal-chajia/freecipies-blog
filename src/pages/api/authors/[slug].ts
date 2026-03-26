@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getAuthorBySlug, updateAuthor, deleteAuthor, transformAuthorRequestBody, transformAuthorResponse } from '@modules/authors';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
@@ -41,10 +42,6 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
 
     try {
         console.log('[DEBUG] Connecting to DB...');
-        const env = (locals as any).runtime?.env as Env;
-        if (!env?.DB) {
-            throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
-        }
         const db = env.DB;
 
         // Smart routing: check if it's a number (ID) or string (slug)
@@ -99,7 +96,6 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
     }
 
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         // Auth check
@@ -154,7 +150,6 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
     }
 
     try {
-        const env = (locals as any).runtime?.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);

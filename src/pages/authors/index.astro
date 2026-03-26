@@ -1,19 +1,28 @@
 ---
+import { env } from 'cloudflare:workers';
 import Layout from "../../layouts/Layout.astro";
 import AuthorCard from "../../components/AuthorCard.astro";
 import { getAuthors } from "@modules/authors";
 import { getArticles } from "@modules/articles";
 import { hydrateAuthor } from "@shared/utils";
+let authors: any[] = [];
+let authorArticleCounts = new Map<string, number>();
 
-const { env } = Astro.locals.runtime;
-const rawAuthors = await getAuthors(env.DB, { isOnline: true });
-const authors = rawAuthors.map(hydrateAuthor);
+try {
+  const rawAuthors = await getAuthors(env.DB, { isOnline: true });
+  authors = rawAuthors.map(hydrateAuthor);
 
-// Get article counts for each author
-const authorArticleCounts = new Map<string, number>();
-for (const author of authors) {
-  const { total } = await getArticles(env.DB, { authorSlug: author.slug });
-  authorArticleCounts.set(author.slug, total);
+  // Get article counts for each author
+  for (const author of authors) {
+    try {
+      const { total } = await getArticles(env.DB, { authorSlug: author.slug });
+      authorArticleCounts.set(author.slug, total);
+    } catch (e) {
+      authorArticleCounts.set(author.slug, 0);
+    }
+  }
+} catch (error) {
+  console.error("Authors index: Error fetching authors:", error);
 }
 
 const pageTitle = "Our Recipe Creators - Freecipies";

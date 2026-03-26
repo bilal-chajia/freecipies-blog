@@ -12,6 +12,12 @@ export interface Env {
   R2_PUBLIC_URL: string;
   JWT_SECRET: string;
   ENVIRONMENT?: 'development' | 'production';
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  R2_BUCKET_NAME?: string;
+  ADMIN_USERNAME?: string;
+  ADMIN_PASSWORD?: string;
 }
 
 // Astro locals type extension

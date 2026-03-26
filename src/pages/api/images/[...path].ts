@@ -1,11 +1,12 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ params, locals, request }) => {
-  const env = (locals as any).runtime?.env as Env;
+
 
   if (!env?.IMAGES) {
     const { body, status, headers } = formatErrorResponse(

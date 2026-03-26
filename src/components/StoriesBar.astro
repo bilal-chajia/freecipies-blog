@@ -1,27 +1,32 @@
 ---
+import { env } from 'cloudflare:workers';
 import {
   getArticles,
   type HydratedArticle as Article,
 } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 
-const { env } = Astro.locals.runtime;
-
 // Calculate 24 hours ago
 const oneDayAgo = new Date();
 oneDayAgo.setHours(oneDayAgo.getHours() - 24);
 
 // Fetch recent articles (strictly last 24h first)
-let { items: stories } = await getArticles(env.DB, {
-  isOnline: true,
-  publishedAfter: oneDayAgo,
-  limit: 15,
-});
+let stories: Article[] = [];
+try {
+  const result = await getArticles(env.DB, {
+    isOnline: true,
+    publishedAfter: oneDayAgo,
+    limit: 15,
+  });
+  stories = result.items;
 
-// Fallback: If absolutely empty, fetch latest 12 to show SOMETHING.
-if (stories.length === 0) {
-  const { items: fallback } = await getArticles(env.DB, { limit: 12 });
-  stories = fallback;
+  // Fallback: If absolutely empty, fetch latest 12 to show SOMETHING.
+  if (stories.length === 0) {
+    const { items: fallback } = await getArticles(env.DB, { limit: 12 });
+    stories = fallback;
+  }
+} catch (error) {
+  console.error("StoriesBar: Error fetching stories:", error);
 }
 
 // Sort by view count (most viewed first)

@@ -3,6 +3,8 @@ import MegaMenu from "./MegaMenu.astro";
 import { getMenuItems } from "@modules/menus/services/menus.service";
 import type { MenuItem } from "@modules/menus/types/menus.types";
 
+import { env } from "cloudflare:workers";
+
 const currentPath = Astro.url.pathname;
 const logoMain = "/logos/logo-main.png";
 const logoDark = null;
@@ -20,7 +22,7 @@ const defaultHeaderMenu: MenuItem[] = [
 // Try to load menu from database
 let headerMenu: MenuItem[] = defaultHeaderMenu;
 try {
-  const db = Astro.locals?.runtime?.env?.DB;
+  const db = env.DB;
   if (db) {
     const storedMenu = await getMenuItems(db, "header");
     if (storedMenu && Array.isArray(storedMenu) && storedMenu.length > 0) {

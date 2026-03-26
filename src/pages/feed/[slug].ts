@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getArticles } from '@modules/articles';
 import { getCategoryBySlug } from '@modules/categories';
 import { extractImage } from '@shared/utils';
@@ -7,8 +8,8 @@ import type { Env } from '@shared/types';
 export const prerender = false;
 
 export const GET: APIRoute = async ({ params, locals, site }) => {
-    const env = locals.runtime.env as Env;
     const categorySlug = params.slug;
+
     const baseUrl = site?.toString().replace(/\/$/, '') || 'https://recipes-saas.com';
 
     if (!categorySlug) {

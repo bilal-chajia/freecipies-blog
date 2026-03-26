@@ -1,7 +1,7 @@
 import React from 'react';
 import { Label } from '@/ui/label.jsx';
 import { Input } from '@/ui/input.jsx';
-import { Facebook, Twitter, Instagram, Youtube, Hash, ExternalLink, Globe, Info, Share2 } from 'lucide-react';
+import { Users, Bird, Camera, Play, Hash, ExternalLink, Globe, Info, Share2 } from 'lucide-react';
 
 // Tabs configuration for this settings page
 export const socialSettingsTabs = [
@@ -10,11 +10,11 @@ export const socialSettingsTabs = [
 
 const SocialSettings = ({ formData, handleInputChange }) => {
     const socialPlatforms = [
-        { id: 'facebookUrl', label: 'Facebook', icon: Facebook, color: 'text-[#1877F2]', placeholder: 'https://facebook.com/yourpage' },
-        { id: 'twitterUrl', label: 'Twitter (X)', icon: Twitter, color: 'text-foreground', placeholder: 'https://twitter.com/yourhandle' },
-        { id: 'instagramUrl', label: 'Instagram', icon: Instagram, color: 'text-[#E4405F]', placeholder: 'https://instagram.com/yourhandle' },
+        { id: 'facebookUrl', label: 'Facebook', icon: Users, color: 'text-[#1877F2]', placeholder: 'https://facebook.com/yourpage' },
+        { id: 'twitterUrl', label: 'Twitter (X)', icon: Bird, color: 'text-foreground', placeholder: 'https://twitter.com/yourhandle' },
+        { id: 'instagramUrl', label: 'Instagram', icon: Camera, color: 'text-[#E4405F]', placeholder: 'https://instagram.com/yourhandle' },
         { id: 'pinterestUrl', label: 'Pinterest', icon: Hash, color: 'text-[#BD081C]', placeholder: 'https://pinterest.com/yourprofile' },
-        { id: 'youtubeUrl', label: 'YouTube', icon: Youtube, color: 'text-[#FF0000]', placeholder: 'https://youtube.com/yourchannel' },
+        { id: 'youtubeUrl', label: 'YouTube', icon: Play, color: 'text-[#FF0000]', placeholder: 'https://youtube.com/yourchannel' },
     ];
 
     return (

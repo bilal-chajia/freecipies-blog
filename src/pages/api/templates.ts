@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { AppError, ErrorCodes, formatErrorResponse, formatSuccessResponse } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -9,7 +10,6 @@ export const prerender = false;
 // GET /api/templates - List all templates
 export const GET: APIRoute = async ({ request, locals }) => {
     try {
-        const env = locals.runtime.env as Env;
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
@@ -35,7 +35,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
 // POST /api/templates - Create new template
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const env = locals.runtime.env as Env;
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         const authContext = await extractAuthContext(request, jwtSecret);

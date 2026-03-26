@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getArticles } from '@modules/articles';
 import { getCategories } from '@modules/categories';
 import { getTags } from '@modules/tags';
@@ -8,8 +9,7 @@ import type { Env } from '@shared/types';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ locals, site }) => {
-    const env = locals.runtime.env as Env;
+export const GET: APIRoute = async ({ site }) => {
     const baseUrl = site?.toString().replace(/\/$/, '') || 'https://recipes-saas.com';
 
     // Fetch all data for sitemap dynamically from database

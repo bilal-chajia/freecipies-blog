@@ -23,6 +23,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { AwsClient } from 'aws4fetch';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
@@ -39,12 +40,7 @@ const VARIANT_EXTENSIONS: Record<string, string> = {
 
 export const GET: APIRoute = async ({ request, locals, url }) => {
   try {
-    const env = (locals as any).runtime?.env as Env & {
-      R2_ACCESS_KEY_ID?: string;
-      R2_SECRET_ACCESS_KEY?: string;
-      CLOUDFLARE_ACCOUNT_ID?: string;
-      R2_BUCKET_NAME?: string;
-    };
+
 
     // Validate R2 credentials
     if (!env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.CLOUDFLARE_ACCOUNT_ID) {
@@ -104,7 +100,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         {
           aws: { signQuery: true },
           expiresIn: 600, // 10 minutes
-        }
+        } as any
       );
 
       urls[variant] = {

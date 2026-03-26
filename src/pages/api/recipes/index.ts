@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getArticles } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
@@ -29,11 +30,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const offset = (page - 1) * limit;
 
     try {
-        const env = (locals as any).runtime?.env as Env;
-        if (!env?.DB) {
+        const db = env.DB;
+        if (!db) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
-        const db = env.DB;
 
         // Build query options - always filter by type='recipe'
         const options: any = {

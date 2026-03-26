@@ -1,12 +1,13 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { verifyAuthToken } from '@modules/auth';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env || {};
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         if (!jwtSecret) {
             return new Response(JSON.stringify({ error: 'Server configuration error' }), {

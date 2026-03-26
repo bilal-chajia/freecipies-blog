@@ -1,12 +1,13 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { generateJWT, verifyAuthToken, AuthRoles } from '@modules/auth';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
-        const env = (locals as any).runtime?.env || {};
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
 
         if (!jwtSecret) {
             return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500 });
