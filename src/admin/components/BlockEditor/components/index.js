@@ -28,7 +28,7 @@ export {
 
 // Layout components
 export { default as BlockInserter } from './BlockInserter';
-export { default as SettingsSidebar, SidebarSection } from './SettingsSidebar';
+export { default as SettingsSidebar } from './SettingsSidebar';
 export {
     default as GutenbergEditorLayout,
     ContentCanvas,

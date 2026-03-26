@@ -15,13 +15,12 @@
 import { createReactBlockSpec } from '@blocknote/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Table2, Plus, Trash2, Columns, Rows } from 'lucide-react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
+import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
 const parseList = (value, fallback = []) => {
     if (!value) return fallback;
@@ -59,6 +58,21 @@ export const TableBlock = createReactBlockSpec(
             const wrapperRef = useRef(null);
             const tableRef = useRef(null);
             const { isSelected, selectBlock } = useBlockSelection(block.id);
+            const {
+                moveUp: moveBlockUp,
+                moveDown: moveBlockDown,
+                remove: removeBlock,
+            } = useBlockActionPrimitives({
+                editor,
+                blockId: block.id,
+                onSelect: selectBlock,
+            });
+            const {
+                dragHandleProps,
+                setDragNodeRef,
+                dragStyle,
+                isDragging,
+            } = useBlockDragHandle(block.id);
 
             const headers = useMemo(
                 () => parseList(block.props.headersJson),
@@ -250,28 +264,6 @@ export const TableBlock = createReactBlockSpec(
                 }
             }, [isSelected]);
 
-            const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const {
-                attributes: dragAttributes,
-                listeners: dragListeners,
-                setNodeRef: setDragNodeRef,
-                transform: dragTransform,
-                isDragging,
-            } = useDraggable({ id: block.id });
-            const dragHandleProps = { ...dragAttributes, ...dragListeners };
-            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
-
             const toolbar = (
                 <BlockToolbar
                     blockIcon={Table2}
@@ -279,7 +271,7 @@ export const TableBlock = createReactBlockSpec(
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
-                    onDelete={() => editor.removeBlocks([block])}
+                    onDelete={removeBlock}
                     showMoreMenu={false}
                 >
                     <span className="px-2 text-xs text-muted-foreground">

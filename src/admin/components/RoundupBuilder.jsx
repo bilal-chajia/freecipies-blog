@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
@@ -38,31 +38,36 @@ const defaultItem = {
 
 export default function RoundupBuilder({ value, onChange }) {
     const [data, setData] = useState(defaultRoundup);
+    const lastNormalizedRef = useRef('');
     const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
     const [jsonImportValue, setJsonImportValue] = useState('');
     const [jsonError, setJsonError] = useState('');
 
     useEffect(() => {
+        if (!value) return;
         try {
-            if (value && value !== '{}' && value !== '{"items":[],"listType":"ItemList"}') {
-                const parsed = JSON.parse(value);
-                setData({
-                    listType: parsed.listType || 'ItemList',
-                    items: (parsed.items || []).map((item, idx) => ({
-                        ...defaultItem,
-                        ...item,
-                        position: item.position || idx + 1,
-                    })),
-                });
-            }
+            const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+            const normalized = {
+                listType: parsed?.listType || 'ItemList',
+                items: (parsed?.items || []).map((item, idx) => ({
+                    ...defaultItem,
+                    ...item,
+                    position: item.position || idx + 1,
+                })),
+            };
+            const serialized = JSON.stringify(normalized);
+            if (serialized === lastNormalizedRef.current) return;
+            lastNormalizedRef.current = serialized;
+            setData(normalized);
         } catch (e) {
             console.error("RoundupBuilder: Invalid JSON", e);
         }
-    }, []);
+    }, [value]);
 
     const updateData = (updates) => {
         const newData = { ...data, ...updates };
         setData(newData);
+        lastNormalizedRef.current = JSON.stringify(newData);
         onChange(JSON.stringify(newData, null, 2));
     };
 

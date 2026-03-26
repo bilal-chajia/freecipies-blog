@@ -1,0 +1,25 @@
+[
+  {
+    "type": "paragraph",
+    "text": "I focus on practical Mediterranean weeknight meals."
+  },
+  {
+    "type": "heading",
+    "level": 3,
+    "text": "Experience"
+  },
+  {
+    "type": "paragraph",
+    "text": "10+ years of recipe development and food photography."
+  },
+  {
+    "type": "image",
+    "media_id": 999,
+    "alt": "Author portrait in kitchen",
+    "caption": "Cooking in my home studio.",
+    "variants": {
+      "sm": { "url": "/images/author-sm.webp", "width": 720, "height": 720 },
+      "md": { "url": "/images/author-md.webp", "width": 1200, "height": 1200 }
+    }
+  }
+]

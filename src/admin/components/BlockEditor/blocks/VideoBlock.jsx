@@ -15,8 +15,6 @@
 import { createReactBlockSpec } from '@blocknote/react';
 import { Video, X, RectangleHorizontal, Square, RectangleVertical } from 'lucide-react';
 import { useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { EmbedPlaceholder } from '../components/BlockPlaceholder';
 import {
@@ -29,6 +27,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
+import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
 // Video provider extraction
 function extractVideoId(url) {
@@ -135,6 +134,21 @@ export const VideoBlock = createReactBlockSpec(
             const [inputUrl, setInputUrl] = useState(block.props.url);
             const { isSelected, selectBlock } = useBlockSelection(block.id);
             const hasVideo = block.props.provider && block.props.videoId;
+            const {
+                moveUp: moveBlockUp,
+                moveDown: moveBlockDown,
+                remove: removeBlock,
+            } = useBlockActionPrimitives({
+                editor,
+                blockId: block.id,
+                onSelect: selectBlock,
+            });
+            const {
+                dragHandleProps,
+                setDragNodeRef,
+                dragStyle,
+                isDragging,
+            } = useBlockDragHandle(block.id);
 
             const handleUrlChange = (url) => {
                 setInputUrl(url);
@@ -170,28 +184,6 @@ export const VideoBlock = createReactBlockSpec(
                 });
             };
 
-            const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const {
-                attributes: dragAttributes,
-                listeners: dragListeners,
-                setNodeRef: setDragNodeRef,
-                transform: dragTransform,
-                isDragging,
-            } = useDraggable({ id: block.id });
-            const dragHandleProps = { ...dragAttributes, ...dragListeners };
-            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
-
             const toolbar = (
                 <BlockToolbar
                     blockIcon={Video}
@@ -199,7 +191,7 @@ export const VideoBlock = createReactBlockSpec(
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
-                    onDelete={() => editor.removeBlocks([block])}
+                    onDelete={removeBlock}
                     showMoreMenu={false}
                 >
                     <AspectRatioToolbar

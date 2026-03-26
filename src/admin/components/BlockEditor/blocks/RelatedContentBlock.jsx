@@ -7,12 +7,11 @@
 import { createReactBlockSpec } from '@blocknote/react';
 import { useMemo } from 'react';
 import { LayoutGrid } from 'lucide-react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { getBestVariantUrl, getSrcSet } from '@shared/types/images';
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
 import { useBlockSelection } from '../selection-context';
+import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
 const parseList = (value) => {
     if (!value) return [];
@@ -62,28 +61,21 @@ export const RelatedContentBlock = createReactBlockSpec(
         render: (props) => {
             const { block, editor } = props;
             const { isSelected, selectBlock } = useBlockSelection(block.id);
-
-            const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
-                requestAnimationFrame(() => selectBlock());
-            };
-
             const {
-                attributes: dragAttributes,
-                listeners: dragListeners,
-                setNodeRef: setDragNodeRef,
-                transform: dragTransform,
+                moveUp: moveBlockUp,
+                moveDown: moveBlockDown,
+                remove: removeBlock,
+            } = useBlockActionPrimitives({
+                editor,
+                blockId: block.id,
+                onSelect: selectBlock,
+            });
+            const {
+                dragHandleProps,
+                setDragNodeRef,
+                dragStyle,
                 isDragging,
-            } = useDraggable({ id: block.id });
-            const dragHandleProps = { ...dragAttributes, ...dragListeners };
-            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
+            } = useBlockDragHandle(block.id);
 
             const toolbar = (
                 <BlockToolbar
@@ -92,7 +84,7 @@ export const RelatedContentBlock = createReactBlockSpec(
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
-                    onDelete={() => editor.removeBlocks([block])}
+                    onDelete={removeBlock}
                     showMoreMenu={false}
                 />
             );

@@ -1,12 +1,11 @@
 import React, { createContext, useContext } from 'react';
 import { createReactBlockSpec } from "@blocknote/react";
 import { List } from 'lucide-react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import RoundupBuilder from "../../RoundupBuilder";
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
 import { useBlockSelection } from '../selection-context';
+import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
 /**
  * Context to share roundup data between the BlockEditor and RoundupListBlock
@@ -35,28 +34,21 @@ export const RoundupListBlock = createReactBlockSpec(
             const { block, editor } = props;
             const { roundup, setRoundup } = useRoundupData();
             const { isSelected, selectBlock } = useBlockSelection(block.id);
-
-            const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
-                requestAnimationFrame(() => selectBlock());
-            };
-
             const {
-                attributes: dragAttributes,
-                listeners: dragListeners,
-                setNodeRef: setDragNodeRef,
-                transform: dragTransform,
+                moveUp: moveBlockUp,
+                moveDown: moveBlockDown,
+                remove: removeBlock,
+            } = useBlockActionPrimitives({
+                editor,
+                blockId: block.id,
+                onSelect: selectBlock,
+            });
+            const {
+                dragHandleProps,
+                setDragNodeRef,
+                dragStyle,
                 isDragging,
-            } = useDraggable({ id: block.id });
-            const dragHandleProps = { ...dragAttributes, ...dragListeners };
-            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
+            } = useBlockDragHandle(block.id);
 
             const toolbar = (
                 <BlockToolbar
@@ -65,7 +57,7 @@ export const RoundupListBlock = createReactBlockSpec(
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
-                    onDelete={() => editor.removeBlocks([block])}
+                    onDelete={removeBlock}
                     showMoreMenu={false}
                 />
             );

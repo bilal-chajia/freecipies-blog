@@ -1,0 +1,34 @@
+[
+  {
+    "type": "paragraph",
+    "text": "Our top air fryer recipes for quick weeknights."
+  },
+  {
+    "type": "roundup_marker",
+    "note": "UI-only builder state is canonical in roundup_json"
+  },
+  {
+    "type": "related_content",
+    "title": "More Air Fryer Ideas",
+    "layout": "carousel",
+    "mode": "manual",
+    "limit": 6,
+    "recipes": [
+      {
+        "id": 401,
+        "slug": "air-fryer-chicken-thighs",
+        "headline": "Air Fryer Chicken Thighs",
+        "total_time": 25
+      }
+    ],
+    "articles": [],
+    "roundups": []
+  },
+  {
+    "type": "faq_section",
+    "title": "Roundup FAQs",
+    "items": [
+      { "q": "How many recipes should a roundup include?", "a": "Aim for 8 to 15 high-quality picks." }
+    ]
+  }
+]

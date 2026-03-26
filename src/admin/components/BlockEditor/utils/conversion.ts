@@ -7,6 +7,7 @@ import {
     buildVideoUrl, 
     resolveCoverUrl 
 } from './blockHelpers';
+import { parseJsonArray, parseJsonObject } from './json';
 import type { ContentBlock } from '../../../../modules/articles/types/content-blocks.types';
 import type { Block } from '@blocknote/core';
 import type { ImageVariants } from '../../../../shared/types/images';
@@ -147,6 +148,14 @@ export function contentJsonToBlocks(contentJson: string | any[] | { blocks: any[
                         props: {}
                     };
 
+                case 'roundup_list':
+                case 'roundupList':
+                    return {
+                        id,
+                        type: 'roundupList',
+                        props: {},
+                    };
+
                 case 'recipe_card': {
                     const coverUrl = resolveCoverUrl(block.cover || block.thumbnail);
                     return {
@@ -276,12 +285,10 @@ export function blocksToContentJson(blocks: AnyBlock[]): ContentBlock[] {
             case 'customImage':
                 if (props?.url) {
                     let variants = { lg: { url: props.url } };
-                    try {
-                        const parsed = JSON.parse(props.variantsJson || '{}');
-                        if (Object.keys(parsed).length > 0) {
-                            variants = parsed;
-                        }
-                    } catch { }
+                    const parsed = parseJsonObject(props.variantsJson, {});
+                    if (Object.keys(parsed).length > 0) {
+                        variants = parsed as any;
+                    }
 
                     result.push({
                         type: 'image',
@@ -334,6 +341,10 @@ export function blocksToContentJson(blocks: AnyBlock[]): ContentBlock[] {
                 result.push({ type: 'main_recipe' } as any);
                 break;
 
+            case 'roundupList':
+                // Roundup data is stored in roundupJson; keep content_json schema unchanged.
+                break;
+
             case 'recipeEmbed':
                 if (props.articleId) {
                     const articleId = parseInt(props.articleId, 10);
@@ -354,30 +365,9 @@ export function blocksToContentJson(blocks: AnyBlock[]): ContentBlock[] {
                 break;
 
             case 'relatedContent': {
-                const recipes = (() => {
-                    try {
-                        const parsed = JSON.parse(props.recipesJson || '[]');
-                        return Array.isArray(parsed) ? parsed : [];
-                    } catch {
-                        return [];
-                    }
-                })();
-                const articles = (() => {
-                    try {
-                        const parsed = JSON.parse(props.articlesJson || '[]');
-                        return Array.isArray(parsed) ? parsed : [];
-                    } catch {
-                        return [];
-                    }
-                })();
-                const roundups = (() => {
-                    try {
-                        const parsed = JSON.parse(props.roundupsJson || '[]');
-                        return Array.isArray(parsed) ? parsed : [];
-                    } catch {
-                        return [];
-                    }
-                })();
+                const recipes = parseJsonArray(props.recipesJson);
+                const articles = parseJsonArray(props.articlesJson);
+                const roundups = parseJsonArray(props.roundupsJson);
 
                 const parsedLimit = parseInt(props.limit, 10);
                 const limit = Number.isFinite(parsedLimit) ? parsedLimit : undefined;
@@ -398,22 +388,8 @@ export function blocksToContentJson(blocks: AnyBlock[]): ContentBlock[] {
                 break;
             }
             case 'beforeAfter': {
-                const before = (() => {
-                    try {
-                        const parsed = JSON.parse(props.beforeJson || 'null');
-                        return parsed && typeof parsed === 'object' ? parsed : null;
-                    } catch {
-                        return null;
-                    }
-                })();
-                const after = (() => {
-                    try {
-                        const parsed = JSON.parse(props.afterJson || 'null');
-                        return parsed && typeof parsed === 'object' ? parsed : null;
-                    } catch {
-                        return null;
-                    }
-                })();
+                const before = parseJsonObject<{ media_id?: number } | null>(props.beforeJson, null);
+                const after = parseJsonObject<{ media_id?: number } | null>(props.afterJson, null);
                 if (before?.media_id && after?.media_id) {
                     result.push({
                         type: 'before_after',
@@ -425,22 +401,8 @@ export function blocksToContentJson(blocks: AnyBlock[]): ContentBlock[] {
                 break;
             }
             case 'simpleTable': {
-                const headers = (() => {
-                    try {
-                        const parsed = JSON.parse(props.headersJson || '[]');
-                        return Array.isArray(parsed) ? parsed : [];
-                    } catch {
-                        return [];
-                    }
-                })();
-                const rows = (() => {
-                    try {
-                        const parsed = JSON.parse(props.rowsJson || '[]');
-                        return Array.isArray(parsed) ? parsed : [];
-                    } catch {
-                        return [];
-                    }
-                })();
+                const headers = parseJsonArray(props.headersJson);
+                const rows = parseJsonArray(props.rowsJson);
                 if (headers.length || rows.length) {
                     result.push({
                         type: 'table',

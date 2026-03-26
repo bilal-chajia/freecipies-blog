@@ -54,6 +54,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Input } from '@/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
+import { renderInlineMarkdownHtml } from '../utils/safeInlineHtml';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -124,7 +125,7 @@ function SortableStructureItem({
                 <span
                     className="structure-item-label"
                     title={item.label ? item.label.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1') : ''}
-                    dangerouslySetInnerHTML={{ __html: renderInlineLabel(item.label) }}
+                    dangerouslySetInnerHTML={{ __html: renderInlineMarkdownHtml(item.label, { allowStyles: true, preserveLineBreaks: false }) }}
                 />
             </div>
             <DropdownMenu>
@@ -189,68 +190,6 @@ function SortableStructureItem({
         </div>
     );
 }
-
-const escapeHtml = (value) => (
-    String(value || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-);
-
-const sanitizeHref = (href) => {
-    if (!href) return '';
-    if (href.startsWith('/') || href.startsWith('#')) return href;
-    try {
-        const url = new URL(href);
-        if (['http:', 'https:', 'mailto:', 'tel:'].includes(url.protocol)) {
-            return href;
-        }
-    } catch {
-        return '';
-    }
-    return '';
-};
-
-const renderInlineStyles = (value) => (
-    value
-        .replace(/\*\*\*([\s\S]+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-        .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
-);
-
-const renderInlineLabel = (text) => {
-    const source = String(text || '');
-    if (!source) return '';
-    const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
-    let result = '';
-    let lastIndex = 0;
-    let match;
-
-    while ((match = pattern.exec(source)) !== null) {
-        if (match.index > lastIndex) {
-            const chunk = escapeHtml(source.slice(lastIndex, match.index));
-            result += renderInlineStyles(chunk);
-        }
-        const label = escapeHtml(match[1]);
-        const safeHref = sanitizeHref(match[2] || '');
-        const styledLabel = renderInlineStyles(label);
-        if (safeHref) {
-            result += `<a href="${safeHref}">${styledLabel}</a>`;
-        } else {
-            result += styledLabel;
-        }
-        lastIndex = match.index + match[0].length;
-    }
-
-    if (lastIndex < source.length) {
-        const tail = escapeHtml(source.slice(lastIndex));
-        result += renderInlineStyles(tail);
-    }
-
-    return result;
-};
 
 // Block categories with their blocks
 const blockCategories = [

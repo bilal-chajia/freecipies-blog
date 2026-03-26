@@ -19,8 +19,6 @@
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import {
     Image,
     Upload,
@@ -39,6 +37,7 @@ import MediaDialog from '../../MediaDialog';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
+import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
 export const ImageBlock = createReactBlockSpec(
     {
@@ -68,14 +67,20 @@ export const ImageBlock = createReactBlockSpec(
             const autoOpenedRef = useRef(false);
             const isOverlayOpen = mediaDialogOpen || uploaderOpen || choiceDialogOpen;
             const {
-                attributes: dragAttributes,
-                listeners: dragListeners,
-                setNodeRef: setDragNodeRef,
-                transform: dragTransform,
+                moveUp: moveBlockUp,
+                moveDown: moveBlockDown,
+                remove: removeBlock,
+            } = useBlockActionPrimitives({
+                editor,
+                blockId: block.id,
+                onSelect: selectBlock,
+            });
+            const {
+                dragHandleProps,
+                setDragNodeRef,
+                dragStyle,
                 isDragging,
-            } = useDraggable({ id: block.id, disabled: isOverlayOpen });
-            const dragHandleProps = { ...dragAttributes, ...dragListeners };
-            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
+            } = useBlockDragHandle(block.id, { disabled: isOverlayOpen });
             const handleSelect = useCallback((event) => {
                 if (event?.target instanceof HTMLElement) {
                     if (event.target.closest('.wp-block-toolbar') || event.target.closest('.wp-block-toolbar-wrap')) {
@@ -181,7 +186,7 @@ export const ImageBlock = createReactBlockSpec(
             }, [inputUrl, block, editor]);
 
             const handleRemove = () => {
-                editor.removeBlocks([block.id]);
+                removeBlock();
                 setMediaDialogOpen(false);
                 setUploaderOpen(false);
             };
@@ -287,18 +292,6 @@ export const ImageBlock = createReactBlockSpec(
                 right: 'ml-auto',
             }[alignment];
 
-            const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
-                requestAnimationFrame(() => selectBlock());
-            };
-
             const toolbar = isOverlayOpen ? null : (
                 <BlockToolbar
                     blockIcon={Image}
@@ -306,7 +299,7 @@ export const ImageBlock = createReactBlockSpec(
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
-                    onDelete={() => editor.removeBlocks([block])}
+                    onDelete={removeBlock}
                     showMoreMenu={false}
                 >
                     <ToolbarButton

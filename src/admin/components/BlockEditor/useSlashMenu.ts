@@ -1,4 +1,3 @@
-import { getDefaultReactSlashMenuItems } from "@blocknote/react";
 import { safeInsertBlock } from "./utils/insert-block";
 import type { BlockNoteEditor } from "@blocknote/core";
 import { 
@@ -48,6 +47,16 @@ export const getCustomSlashMenuItems = (
         hasRecipeContext = false,
         hasRoundupContext = false,
     } = options;
+    const hasBlockType = (blocks: any[] | undefined, type: string): boolean => {
+        if (!Array.isArray(blocks)) return false;
+        for (const block of blocks) {
+            if (!block) continue;
+            if (block.type === type) return true;
+            if (hasBlockType(block.children, type)) return true;
+        }
+        return false;
+    };
+    const hasRoundupListBlock = hasBlockType(editor.document, 'roundupList');
 
     // Define our premium custom blocks
     const customItems = [
@@ -147,7 +156,7 @@ export const getCustomSlashMenuItems = (
         });
     }
 
-    if (contentType === 'roundup' && hasRoundupContext) {
+    if (contentType === 'roundup' && hasRoundupContext && !hasRoundupListBlock) {
         customItems.unshift({
             title: 'Roundup List',
             onItemClick: () =>

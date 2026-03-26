@@ -22,8 +22,6 @@ import {
     ChevronRight,
     GripVertical
 } from 'lucide-react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { useRef, useState, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -32,72 +30,24 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
+import { toInlineMarkdownHtml } from '../utils/safeInlineHtml';
+import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
 /**
  * Context to share FAQ data between the BlockEditor and FAQSectionBlock
  * This mirrors the RecipeDataContext pattern for consistent architecture.
  */
-export const FAQDataContext = createContext({
+const DEFAULT_FAQ_CONTEXT = {
     faqs: [],
     setFaqs: () => { },
     faqTitle: 'Frequently Asked Questions',
     setFaqTitle: () => { },
-});
+    hasExternalFaqState: false,
+};
+
+export const FAQDataContext = createContext(DEFAULT_FAQ_CONTEXT);
 
 export const useFAQData = () => useContext(FAQDataContext);
-
-// HTML escape for safe rendering
-const escapeHtml = (value) => (
-    String(value || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-);
-
-const sanitizeHref = (href) => {
-    if (!href) return '';
-    if (href.startsWith('/') || href.startsWith('#')) return href;
-    try {
-        const url = new URL(href);
-        if (['http:', 'https:', 'mailto:', 'tel:'].includes(url.protocol)) {
-            return href;
-        }
-    } catch {
-        return '';
-    }
-    return '';
-};
-
-const renderInlineMarkdown = (text) => {
-    const source = String(text || '');
-    if (!source) return { __html: '' };
-    const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
-    let lastIndex = 0;
-    let match;
-    let html = '';
-
-    while ((match = pattern.exec(source)) !== null) {
-        if (match.index > lastIndex) {
-            html += escapeHtml(source.slice(lastIndex, match.index));
-        }
-        const label = escapeHtml(match[1]);
-        const href = sanitizeHref(match[2].trim());
-        if (href) {
-            html += `<a href="${escapeHtml(href)}">${label}</a>`;
-        } else {
-            html += label;
-        }
-        lastIndex = match.index + match[0].length;
-    }
-
-    if (lastIndex < source.length) {
-        html += escapeHtml(source.slice(lastIndex));
-    }
-
-    return { __html: html.replace(/\n/g, '<br />') };
-};
 
 export const FAQSectionBlock = createReactBlockSpec(
     {
@@ -115,11 +65,8 @@ export const FAQSectionBlock = createReactBlockSpec(
             const { block, editor } = props;
 
             // Use context for FAQ data (mirrors RecipeDataContext pattern)
-            const { faqs, setFaqs, faqTitle, setFaqTitle } = useFAQData();
-
-            // Check if context is actually provided (setFaqs will be a real function, not the default no-op)
-            // If setFaqs is the default no-op, it won't have a name or will be anonymous
-            const hasRealContext = setFaqs && setFaqs.length !== undefined && setFaqs !== FAQDataContext._currentValue?.setFaqs;
+            const { faqs, setFaqs, faqTitle, setFaqTitle, hasExternalFaqState } = useFAQData();
+            const hasFaqContext = Boolean(hasExternalFaqState);
 
             // For now, always use local state until parent editors provide context
             // This ensures backward compatibility
@@ -134,11 +81,30 @@ export const FAQSectionBlock = createReactBlockSpec(
                 block.props.title || 'Frequently Asked Questions'
             );
 
-            // Use context if provided by parent, otherwise use local state
-            const items = (faqs && faqs.length > 0) ? faqs : localItems;
-            const title = faqTitle || localTitle;
+            // Use context when available, even for empty arrays, so deletes sync correctly.
+            const items = hasFaqContext
+                ? (Array.isArray(faqs) ? faqs : [])
+                : localItems;
+            const title = hasFaqContext
+                ? (faqTitle || 'Frequently Asked Questions')
+                : localTitle;
 
             const { isSelected, selectBlock } = useBlockSelection(block.id);
+            const {
+                moveUp: moveBlockUp,
+                moveDown: moveBlockDown,
+                remove: removeBlock,
+            } = useBlockActionPrimitives({
+                editor,
+                blockId: block.id,
+                onSelect: selectBlock,
+            });
+            const {
+                dragHandleProps,
+                setDragNodeRef,
+                dragStyle,
+                isDragging,
+            } = useBlockDragHandle(block.id);
             const [expanded, setExpanded] = useState({});
             const [editing, setEditing] = useState({});
             const answerRefs = useRef({});
@@ -170,28 +136,6 @@ export const FAQSectionBlock = createReactBlockSpec(
                     setFaqTitle(newTitle);
                 }
             };
-
-            const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const {
-                attributes: dragAttributes,
-                listeners: dragListeners,
-                setNodeRef: setDragNodeRef,
-                transform: dragTransform,
-                isDragging,
-            } = useDraggable({ id: block.id });
-            const dragHandleProps = { ...dragAttributes, ...dragListeners };
-            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
 
             const addItem = () => {
                 updateItems([...items, { q: '', a: '' }]);
@@ -241,7 +185,7 @@ export const FAQSectionBlock = createReactBlockSpec(
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
-                    onDelete={() => editor.removeBlocks([block])}
+                    onDelete={removeBlock}
                     showMoreMenu={false}
                 >
                     <span className="px-2 text-xs text-muted-foreground">
@@ -400,7 +344,7 @@ export const FAQSectionBlock = createReactBlockSpec(
                                                                         '[&_a]:text-primary [&_a]:underline'
                                                                     )}
                                                                     dangerouslySetInnerHTML={
-                                                                        renderInlineMarkdown(item.a || 'Click to add an answer...')
+                                                                        toInlineMarkdownHtml(item.a || 'Click to add an answer...')
                                                                     }
                                                                 />
                                                             )}

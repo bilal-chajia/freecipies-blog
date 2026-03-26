@@ -101,6 +101,10 @@ export default function GutenbergEditorMain({
     className,
     viewMode = 'visual',
     sidebarOpen = true,
+    contentType,
+    blockEditorProps = {},
+    placeholder = 'Start writing...',
+    jsonHeight = '70vh',
 }) {
     return (
         <>
@@ -117,7 +121,7 @@ export default function GutenbergEditorMain({
                 {/* Block Editor or JSON Editor */}
                 <div className="gutenberg-block-editor">
                     {viewMode === 'json' ? (
-                        <div className="h-[70vh] border rounded-md overflow-hidden bg-[#1e1e1e] mt-4">
+                        <div className="border rounded-md overflow-hidden bg-[#1e1e1e] mt-4" style={{ height: jsonHeight }}>
                             <Editor
                                 height="100%"
                                 defaultLanguage="json"
@@ -143,13 +147,14 @@ export default function GutenbergEditorMain({
                                 setContentJson(nextValue);
                                 validateJSON?.('content', nextValue);
                             }}
-                            contentType={formData.type}
+                            contentType={contentType || formData.type}
                             isSidebarOpen={sidebarOpen}
                             onStructureUpdate={onStructureUpdate}
                             onSelectedBlockChange={onSelectedBlockChange}
-                            placeholder="Start writing..."
+                            placeholder={placeholder}
                             context={relatedContext}
                             onEditorReady={onEditorReady}
+                            {...blockEditorProps}
                         />
                     )}
                 </div>

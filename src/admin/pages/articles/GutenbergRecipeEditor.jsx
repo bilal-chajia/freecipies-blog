@@ -10,18 +10,17 @@
  * - Right: Settings Sidebar (Document/Block tabs)
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, Save, Loader2, Menu, Settings, ChefHat, LayoutTemplate, Code } from 'lucide-react';
+import { ArrowLeft, Eye, Save, Loader2, Menu, Settings, LayoutTemplate, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
 import { Badge } from '@/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
-import { Label } from '@/ui/label';
 
 // Hooks
-import { useContentEditor } from './shared';
+import { useContentEditor, useEditorViewportLock, useGutenbergCanvasHandlers } from './shared';
 
 // New Gutenberg components
 import {
@@ -30,16 +29,13 @@ import {
     DocumentSettings,
     BlockSettings,
 } from '@/components/BlockEditor/components';
-import { TitleInput } from '@/components/BlockEditor/components/GutenbergEditorMain';
+import GutenbergEditorMain, { TitleInput } from '@/components/BlockEditor/components/GutenbergEditorMain';
 import AISettings from '@/components/BlockEditor/components/AISettings';
 import { insertBlockFromInserter } from '@/components/BlockEditor/utils/insert-block';
 
 // Existing components
-import BlockEditor from '@/components/BlockEditor';
-import RecipeBuilder from '@/components/RecipeBuilder';
 import MediaDialog from '@/components/MediaDialog';
 import ArticlePreview from '@/components/ArticlePreview';
-import Editor from '@monaco-editor/react';
 
 // ... imports
 
@@ -85,12 +81,20 @@ export default function GutenbergRecipeEditor() {
     const [inserterOpen, setInserterOpen] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [previewOpen, setPreviewOpen] = useState(false);
-    const [selectedBlock, setSelectedBlock] = useState(null);
-    const [structureItems, setStructureItems] = useState([]);
-    const [activeBlockId, setActiveBlockId] = useState(null);
     const canvasWidthClass = (!sidebarOpen && !inserterOpen)
         ? 'max-w-6xl'
         : (!sidebarOpen || !inserterOpen ? 'max-w-5xl' : 'max-w-4xl');
+    const {
+        selectedBlock,
+        setSelectedBlock,
+        structureItems,
+        activeBlockId,
+        handleStructureUpdate,
+        handleSelectStructureBlock,
+        handleReorderBlock,
+        handleBlockAction,
+        handleConvertBlock,
+    } = useGutenbergCanvasHandlers(editorInstance, { smoothScrollOnSelect: true });
 
     // Related content context
     const categorySlug = categories.find((c) => c.id === formData.categoryId)?.slug || null;
@@ -109,98 +113,6 @@ export default function GutenbergRecipeEditor() {
     // Handle block insertion from inserter
     const handleInsertBlock = useCallback((blockType) => {
         insertBlockFromInserter(editorInstance, blockType);
-    }, [editorInstance]);
-
-    const handleStructureUpdate = useCallback(({ items, activeBlockId: nextActiveId }) => {
-        setStructureItems(items || []);
-        setActiveBlockId(nextActiveId || null);
-    }, []);
-
-    const handleSelectStructureBlock = useCallback((blockId) => {
-        if (!blockId || !editorInstance) return;
-        editorInstance.setTextCursorPosition(blockId, 'start');
-        editorInstance.focus();
-
-        // Manual scroll for reliability
-        setTimeout(() => {
-            const el = document.querySelector(`[data-id="${blockId}"]`);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }, 50);
-    }, [editorInstance]);
-
-    const handleReorderBlock = useCallback((draggedId, targetId, position) => {
-        if (!editorInstance || !draggedId || !targetId) return;
-        const dragged = structureItems.find((item) => item.id === draggedId);
-        const target = structureItems.find((item) => item.id === targetId);
-        if (!dragged || !target) return;
-        if (dragged.parentId !== target.parentId) return;
-
-        const siblings = structureItems
-            .filter((item) => item.parentId === dragged.parentId)
-            .map((item) => item.id);
-        const fromIndex = siblings.indexOf(draggedId);
-        const targetIndex = siblings.indexOf(targetId);
-        if (fromIndex < 0 || targetIndex < 0) return;
-        let desiredIndex = targetIndex + (position === 'after' ? 1 : 0);
-        if (fromIndex < targetIndex) desiredIndex -= 1;
-        desiredIndex = Math.max(0, Math.min(siblings.length - 1, desiredIndex));
-        let steps = desiredIndex - fromIndex;
-        editorInstance.setTextCursorPosition(draggedId, 'start');
-        while (steps < 0) {
-            editorInstance.moveBlocksUp();
-            steps += 1;
-        }
-        while (steps > 0) {
-            editorInstance.moveBlocksDown();
-            steps -= 1;
-        }
-        editorInstance.focus();
-    }, [editorInstance, structureItems]);
-
-    const handleBlockAction = useCallback((action, blockId) => {
-        if (!editorInstance || !blockId) return;
-        switch (action) {
-            case 'delete':
-                editorInstance.removeBlocks([blockId]);
-                break;
-            case 'duplicate': {
-                const block = editorInstance.getBlock(blockId);
-                if (!block) return;
-                const { type, props, content, children } = block;
-                editorInstance.insertBlocks([{ type, props, content, children }], blockId, 'after');
-                break;
-            }
-            case 'add-before':
-                editorInstance.insertBlocks([{ type: 'paragraph' }], blockId, 'before');
-                break;
-            case 'add-after':
-                editorInstance.insertBlocks([{ type: 'paragraph' }], blockId, 'after');
-                break;
-            default:
-                break;
-        }
-        editorInstance.focus();
-    }, [editorInstance]);
-
-    const handleConvertBlock = useCallback((blockId, next) => {
-        if (!editorInstance || !blockId || !next) return;
-        const block = editorInstance.getBlock(blockId);
-        if (!block) return;
-        if (next.type === 'heading') {
-            editorInstance.updateBlock(block, {
-                type: 'heading',
-                props: { level: next.level || 2 },
-                content: block.content,
-            });
-        } else if (next.type === 'paragraph') {
-            editorInstance.updateBlock(block, {
-                type: 'paragraph',
-                content: block.content,
-            });
-        }
-        editorInstance.focus();
     }, [editorInstance]);
 
     // Handle AI-generated content
@@ -241,18 +153,7 @@ export default function GutenbergRecipeEditor() {
         }
     }, [handleInputChange, setRecipeJson, editorInstance]);
 
-    useEffect(() => {
-        const html = document.documentElement;
-        const body = document.body;
-        const prevHtmlOverflow = html.style.overflow;
-        const prevBodyOverflow = body.style.overflow;
-        html.style.overflow = 'hidden';
-        body.style.overflow = 'hidden';
-        return () => {
-            html.style.overflow = prevHtmlOverflow;
-            body.style.overflow = prevBodyOverflow;
-        };
-    }, []);
+    useEditorViewportLock();
 
     // Loading state
     if (loading) {
@@ -428,58 +329,37 @@ export default function GutenbergRecipeEditor() {
                         'mx-auto py-8 px-6 w-full',
                         canvasWidthClass
                     )}>
-                        {/* Editor Canvas */}
-                        <div className="min-h-[500px]">
-                            {viewMode === 'json' ? (
-                                <div className="h-[70vh] border rounded-md overflow-hidden bg-[#1e1e1e]">
-                                    <Editor
-                                        height="100%"
-                                        defaultLanguage="json"
-                                        value={typeof contentJson === 'string'
-                                            ? contentJson
-                                            : JSON.stringify(contentJson, null, 2)}
-                                        onChange={(value) => {
-                                            const nextValue = value ?? '';
-                                            setContentJson(nextValue);
-                                            validateJSON?.('content', nextValue);
-                                        }}
-                                        theme="vs-dark"
-                                        options={{
-                                            minimap: { enabled: false },
-                                            fontSize: 14,
-                                            wordWrap: 'on',
-                                        }}
-                                    />
-                                </div>
-                            ) : (
-                                <BlockEditor
-                                    value={contentJson}
-                                    onChange={(value) => {
-                                        const nextValue = value ?? '';
-                                        setContentJson(nextValue);
-                                        validateJSON?.('content', nextValue);
-                                    }}
-                                    onEditorReady={setEditorInstance}
-                                    contentType="recipe"
-                                    recipe={recipeJson}
-                                    onRecipeChange={(newValue) => {
-                                        const nextValue = newValue ?? '';
-                                        setRecipeJson(nextValue);
-                                        validateJSON('recipe', nextValue);
-                                    }}
-                                    faqs={faqsJson}
-                                    onFaqsChange={(newValue) => {
-                                        const nextValue = newValue ?? '[]';
-                                        setFaqsJson(typeof nextValue === 'string' ? nextValue : JSON.stringify(nextValue));
-                                    }}
-                                    placeholder="Add additional content..."
-                                    context={relatedContext}
-                                    isSidebarOpen={sidebarOpen}
-                                    onStructureUpdate={handleStructureUpdate}
-                                    onSelectedBlockChange={setSelectedBlock}
-                                />
-                            )}
-                        </div>
+                        <GutenbergEditorMain
+                            formData={formData}
+                            onInputChange={handleInputChange}
+                            contentJson={contentJson}
+                            setContentJson={setContentJson}
+                            validateJSON={validateJSON}
+                            relatedContext={relatedContext}
+                            onEditorReady={setEditorInstance}
+                            viewMode={viewMode}
+                            contentType="recipe"
+                            placeholder="Add additional content..."
+                            sidebarOpen={sidebarOpen}
+                            onStructureUpdate={handleStructureUpdate}
+                            onSelectedBlockChange={setSelectedBlock}
+                            blockEditorProps={{
+                                recipe: recipeJson,
+                                onRecipeChange: (newValue) => {
+                                    const nextValue = newValue ?? '';
+                                    setRecipeJson(nextValue);
+                                    validateJSON('recipe', nextValue);
+                                },
+                                faqs: faqsJson,
+                                onFaqsChange: (newValue) => {
+                                    const nextValue = Array.isArray(newValue)
+                                        ? JSON.stringify(newValue, null, 2)
+                                        : (newValue ?? '[]');
+                                    setFaqsJson(nextValue);
+                                    validateJSON('faqs', nextValue);
+                                },
+                            }}
+                        />
                     </div>
                 </main>
 

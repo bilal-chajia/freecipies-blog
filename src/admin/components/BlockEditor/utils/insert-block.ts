@@ -23,6 +23,20 @@ const blockTypeMap: Record<string, () => BlockSpec> = {
     divider: () => ({ type: 'divider' }),
     mainRecipe: () => ({ type: 'mainRecipe' }),
     recipeEmbed: () => ({ type: 'recipeEmbed' }),
+    roundupList: () => ({ type: 'roundupList' }),
+};
+
+const SINGLETON_BLOCK_TYPES = new Set(['roundupList']);
+
+const findBlockByType = (blocks: any[] | undefined, type: string): any | null => {
+    if (!Array.isArray(blocks)) return null;
+    for (const block of blocks) {
+        if (!block) continue;
+        if (block.type === type) return block;
+        const nested = findBlockByType(block.children, type);
+        if (nested) return nested;
+    }
+    return null;
 };
 
 /**
@@ -37,6 +51,19 @@ export const safeInsertBlock = (
     props: Record<string, any> = {}
 ): void => {
     if (!editor) return;
+
+    if (SINGLETON_BLOCK_TYPES.has(type)) {
+        const existing = findBlockByType(editor.document, type);
+        if (existing?.id) {
+            try {
+                editor.setTextCursorPosition(existing.id, 'start');
+            } catch {
+                // Ignore selection errors if block cannot accept text cursor.
+            }
+            editor.focus();
+            return;
+        }
+    }
 
     const currentPos = editor.getTextCursorPosition();
     if (!currentPos) return;
