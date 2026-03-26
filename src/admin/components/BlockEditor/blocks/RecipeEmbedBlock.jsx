@@ -12,6 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar, { ToolbarButton } from '../components/BlockToolbar';
 import { useBlockSelection } from '../selection-context';
+import { moveBlockById } from './primitives';
 
 // Mock function for searching recipes (replace with real API later)
 const searchRecipes = async (query) => {
@@ -45,14 +46,12 @@ export const RecipeEmbedBlock = createReactBlockSpec(
             const { isSelected, selectBlock } = useBlockSelection(block.id);
 
             const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
+                moveBlockById(editor, block.id, 'up');
                 requestAnimationFrame(() => selectBlock());
             };
 
             const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
+                moveBlockById(editor, block.id, 'down');
                 requestAnimationFrame(() => selectBlock());
             };
 

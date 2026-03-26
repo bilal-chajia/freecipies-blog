@@ -47,6 +47,7 @@ import {
 } from './utils/conversion';
 import { parseJsonArray } from './utils/json';
 import { safeInsertBlock } from './utils/insert-block';
+import { moveBlockById } from './blocks/primitives';
 import CustomSlashMenu from './components/CustomSlashMenu';
 import CustomSideMenu from './components/CustomSideMenu';
 
@@ -338,13 +339,17 @@ export default function BlockEditor({
                 if (moveBlock) {
                     setActiveBlockId(moveId);
                     onSelectedBlockChange?.(moveBlock);
-                    requestAnimationFrame(() => {
-                        try {
-                            editor.setTextCursorPosition(moveId, 'start');
-                        } catch {
-                            // Ignore selection errors during block move.
-                        }
-                    });
+                    // Only set text cursor for non-custom blocks;
+                    // custom blocks have content:'none' so setTextCursorPosition fails.
+                    if (!CUSTOM_BLOCK_TYPES.has(moveBlock.type)) {
+                        requestAnimationFrame(() => {
+                            try {
+                                editor.setTextCursorPosition(moveId, 'start');
+                            } catch {
+                                // Ignore selection errors during block move.
+                            }
+                        });
+                    }
                     return;
                 }
             }
@@ -865,14 +870,11 @@ export default function BlockEditor({
         desiredIndex = Math.max(0, Math.min(siblings.length - 1, desiredIndex));
 
         let steps = desiredIndex - fromIndex;
-        editor.setTextCursorPosition(draggedId, 'start');
-        while (steps < 0) {
-            editor.moveBlocksUp();
-            steps += 1;
-        }
-        while (steps > 0) {
-            editor.moveBlocksDown();
-            steps -= 1;
+        // Use moveBlockById for reliable block moves (works for custom blocks too)
+        const direction = steps < 0 ? 'up' : 'down';
+        const absSteps = Math.abs(steps);
+        for (let i = 0; i < absSteps; i++) {
+            moveBlockById(editor, draggedId, direction);
         }
         moveActionBlockIdRef.current = draggedId;
         setActiveBlockId(draggedId);
