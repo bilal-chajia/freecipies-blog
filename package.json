@@ -108,6 +108,11 @@
     "wrangler": "^4.77.0"
   },
   "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "msw",
+      "sharp"
+    ],
     "overrides": {
       "vite": "^7.3.1",
       "@tailwindcss/vite>vite": "^7.3.1",
