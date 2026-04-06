@@ -10,18 +10,18 @@
 
 | Technology      | Version  | Purpose        |
 | :-------------- | :------- | :------------- |
-| **Astro**       | 5.16.6   | SSR Framework  |
-| **React**       | 19.2.3   | Admin Panel UI |
-| **TailwindCSS** | 4.1.18   | Styling        |
-| **TypeScript**  | 5.9.3    | Type Safety    |
-| **Drizzle ORM** | 0.45.1   | Database ORM   |
+| **Astro**       | ^6.0.8   | SSR Framework  |
+| **React**       | ^19.2.4  | Admin Panel UI |
+| **TailwindCSS** | ^4.2.2   | Styling        |
+| **TypeScript**  | ^6.0.2   | Type Safety    |
+| **Drizzle ORM** | ^0.45.1  | Database ORM   |
 
 ### Cloudflare Stack
 
 | Service     | Package                           | Purpose                  |
 | :---------- | :-------------------------------- | :----------------------- |
-| **D1**      | via `@astrojs/cloudflare` 12.6.12 | SQLite Database          |
-| **R2**      | via Wrangler 4.56.0               | Object Storage (Images)  |
+| **D1**      | via `@astrojs/cloudflare` ^13.1.3 | SQLite Database          |
+| **R2**      | via Wrangler ^4.77.0              | Object Storage (Images)  |
 | **Workers** | via Wrangler                      | Edge Runtime             |
 | **KV**      | via Wrangler                      | Session Storage          |
 
@@ -29,29 +29,32 @@
 
 | Package            | Version | Purpose                      |
 | :----------------- | :------ | :--------------------------- |
-| `react-router-dom` | 7.11.0  | Admin SPA Routing            |
-| `zustand`          | 5.0.9   | State Management             |
-| `jose`             | 6.1.3   | JWT Auth                     |
-| `react-hook-form`  | 7.68.0  | Form Management              |
-| `react-easy-crop`  | 5.5.6   | Image Cropping               |
-| `recharts`         | 2.15.4  | Analytics Charts             |
+| `react-router-dom` | ^7.13.2 | Admin SPA Routing            |
+| `zustand`          | ^5.0.12 | State Management             |
+| `jose`             | ^6.2.2  | JWT Auth                     |
+| `react-hook-form`  | ^7.72.0 | Form Management              |
+| `react-easy-crop`  | ^5.5.7  | Image Cropping               |
+| `recharts`         | ^3.8.1  | Analytics Charts             |
 | `@radix-ui/*`      | 1.x-2.x | UI Primitives (shadcn)       |
-| `lucide-react`     | 0.562.0 | Icons                        |
-| `sonner`           | 2.0.7   | Toast Notifications          |
-| `@blocknote/*`     | 0.45.0  | Block Editor                 |
-| `konva`            | 10.0.12 | Canvas rendering (Templates) |
-| `react-konva`      | 19.2.1  | React Konva bindings         |
+| `lucide-react`     | ^1.7.0  | Icons                        |
+| `sonner`           | ^2.0.7  | Toast Notifications          |
+| `@blocknote/*`     | ^0.47.3 | Block Editor                 |
+| `konva`            | ^10.2.3 | Canvas rendering (Templates) |
+| `react-konva`      | ^19.2.3 | React Konva bindings         |
 | `@dnd-kit/*`       | 6.x-10.x| Drag & Drop                  |
-| `@jsquash/webp`    | 1.5.0   | WebP encoding (WASM)         |
-| `@jsquash/avif`    | 2.1.1   | AVIF encoding (WASM)         |
+| `@jsquash/webp`    | ^1.5.0  | WebP encoding (WASM)         |
+| `@jsquash/avif`    | ^2.1.1  | AVIF encoding (WASM)         |
+| `openai`           | ^6.33.0 | OpenAI SDK                   |
+| `@anthropic-ai/sdk`| ^0.80.0 | Anthropic SDK                |
+| `@google/generative-ai` | ^0.24.1 | Google Gemini SDK        |
 
 ### Dev Dependencies
 
 | Package       | Version | Purpose        |
 | :------------ | :------ | :------------- |
-| `drizzle-kit` | 0.31.8  | DB Migrations  |
-| `wrangler`    | 4.56.0  | Cloudflare CLI |
-| `shadcn`      | 3.6.2   | UI CLI         |
+| `drizzle-kit` | ^0.31.10| DB Migrations  |
+| `wrangler`    | ^4.77.0 | Cloudflare CLI |
+| `shadcn`      | ^4.1.0  | UI CLI         |
 
 - **Package Manager**: `pnpm` (NOT npm)
 - **Rendering**: SSR for public pages, CSR for Admin Panel

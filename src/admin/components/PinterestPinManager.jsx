@@ -30,7 +30,7 @@ const PinterestPinManager = ({ articleId }) => {
     try {
       const response = await fetch('/api/pinterest-boards');
       const data = await response.json();
-      setBoards(data.boards || []);
+      setBoards(data.data?.boards || data.boards || []);
     } catch (error) {
       console.error('Error fetching boards:', error);
     }
@@ -41,7 +41,7 @@ const PinterestPinManager = ({ articleId }) => {
       setLoading(true);
       const response = await fetch(`/api/pins?article_id=${articleId}`);
       const data = await response.json();
-      setPins(data.pins || []);
+      setPins(data.data?.pins || data.pins || []);
     } catch (error) {
       console.error('Error fetching pins:', error);
     } finally {

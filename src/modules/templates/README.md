@@ -1,18 +1,17 @@
 # Template Module
 
-> Core module for Pinterest pin template management - types, services, and API handlers.
+> Core module for Pinterest pin template management - types, services, and UI components.
 
 ## Overview
 
-This module provides the backend logic for template management:
+This module provides comprehensive template management functionality:
 
 - **Schema** - Drizzle ORM table definition
 - **Types** - TypeScript interfaces for templates and elements
 - **Services** - CRUD operations with Drizzle
-- **API Handlers** - Reusable request handlers
-- **Utils** - Placeholder substitution
-
-> **Note:** UI components (PinCanvas, TemplateEditor, etc.) remain in `src/admin/` due to dependencies on admin stores and services.
+- **Components** - Canvas editor, template list, pin creator
+- **Store** - Zustand state management (canvas, UI)
+- **Utils** - Placeholder substitution, font loading
 
 ## Usage
 
@@ -25,12 +24,12 @@ import {
   type ImageElement,
   type ArticleData,
 
-  // API Handlers
-  handleListTemplates,
-  handleGetTemplate,
-  handleCreateTemplate,
-  handleUpdateTemplate,
-  handleDeleteTemplate,
+  // Components
+  TemplateEditor,
+  PinCanvas,
+
+  // Store
+  useEditorStore,
 
   // Utils
   substitutePlaceholders,
@@ -39,19 +38,17 @@ import {
 } from "@modules/templates";
 ```
 
-## API Handlers
+## API Endpoints
 
-Use in Astro API routes:
+Template API routes are handled via `/api/templates`:
 
-```typescript
-// src/pages/api/templates.ts
-import { handleListTemplates } from "@modules/templates";
-
-export const GET: APIRoute = async ({ locals }) => {
-  const env = locals.runtime.env as Env;
-  return handleListTemplates(env.DB);
-};
-```
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/templates` | List templates | No |
+| GET | `/api/templates/:slug` | Get template by slug | No |
+| POST | `/api/templates` | Create template | Yes |
+| PUT | `/api/templates/:slug` | Update template | Yes |
+| DELETE | `/api/templates/:slug` | Delete template | Yes |
 
 ## Element Types
 
@@ -74,6 +71,13 @@ const result = substitutePlaceholders(text, article);
 // → "Recipe: Chocolate Cake"
 ```
 
+**Supported Placeholders:**
+- `{{article.title}}` - Article headline
+- `{{article.image}}` - Article cover image
+- `{{author.name}}` - Author name
+- `{{author.avatar}}` - Author avatar
+- `{{category.label}}` - Category name
+
 ## File Structure
 
 ```
@@ -86,12 +90,41 @@ src/modules/templates/
 │   └── index.ts
 ├── services/
 │   └── templates.service.ts    # Drizzle CRUD
-├── api/
-│   ├── handlers.ts             # D1 request handlers
-│   └── index.ts
+├── store/
+│   ├── useEditorStore.ts       # Canvas state management
+│   └── useUIStore.ts           # UI state management
+├── components/
+│   ├── canvas/                 # Konva canvas components
+│   │   ├── PinCanvas.tsx       # Main canvas renderer
+│   │   ├── ElementPanel.tsx    # Element controls
+│   │   ├── hooks/              # Canvas hooks
+│   │   └── modern/             # Modern UI components
+│   ├── editor/                 # Editor pages
+│   │   ├── TemplateEditor.tsx  # Main editor
+│   │   └── TemplatesList.tsx   # Template list view
+│   └── pins/                   # Pin components
+│       └── TemplateSelector.tsx
 ├── utils/
 │   ├── placeholders.ts         # Variable substitution
+│   ├── fontLoader.ts           # Google Fonts loader
 │   └── index.ts
 ├── index.ts                    # Module export
 └── README.md
 ```
+
+## Admin Integration
+
+Import from module in admin pages:
+
+```typescript
+// src/admin/pages/TemplatesPage.tsx
+import { TemplateEditor, useEditorStore } from "@modules/templates";
+```
+
+## Key Features
+
+- **Canvas-based editing** - Konva renderer with draggable, resizable elements
+- **Data binding** - Template placeholders bind to article data
+- **Font loading** - Dynamic Google Fonts loading with opentype.js
+- **Responsive design** - Works with various canvas sizes
+- **State management** - Zustand stores for canvas and UI state

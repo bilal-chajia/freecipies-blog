@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Search, ExternalLink, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, ExternalLink, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Badge } from '@/ui/badge.jsx';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { pinterestBoardsAPI } from '../../services/api';
+import { toAdminImageUrl } from '../../utils/helpers';
+import { extractImage } from '@shared/utils';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
 import { toast } from 'sonner';
 
@@ -48,7 +51,7 @@ const BoardsList = () => {
       setLoading(true);
       setError(null);
       const response = await pinterestBoardsAPI.getAll();
-      const data = response.data?.boards || response.data || [];
+      const data = response.data?.data || response.data?.boards || response.data || [];
       setBoards(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load boards:', err);
@@ -93,15 +96,15 @@ const BoardsList = () => {
   // Skeleton board card
   const SkeletonBoard = () => (
     <div className="border rounded-lg p-4 animate-pulse">
-      <div className="flex items-start justify-between mb-2">
-        <div className="h-6 w-32 bg-muted rounded" />
-        <div className="h-5 w-16 bg-muted rounded-full" />
-      </div>
-      <div className="h-4 w-full bg-muted rounded mb-3" />
-      <div className="h-4 w-24 bg-muted rounded mb-4" />
-      <div className="flex gap-2">
-        <div className="h-8 w-16 bg-muted rounded" />
-        <div className="h-8 w-18 bg-muted rounded" />
+      <div className="aspect-video w-full bg-muted relative overflow-hidden rounded-t-lg" />
+      <div className="p-4">
+        <div className="h-6 w-32 bg-muted rounded mb-2" />
+        <div className="h-4 w-full bg-muted rounded mb-3" />
+        <div className="h-4 w-24 bg-muted rounded mb-4" />
+        <div className="flex gap-2">
+          <div className="h-8 w-16 bg-muted rounded" />
+          <div className="h-8 w-18 bg-muted rounded" />
+        </div>
       </div>
     </div>
   );
@@ -143,7 +146,7 @@ const BoardsList = () => {
       {/* Search Bar + Buttons */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <Input
             type="text"
             placeholder="Search boards..."
@@ -185,45 +188,82 @@ const BoardsList = () => {
               layout
               whileHover={{ y: -4, scale: 1.02 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className="border rounded-lg p-4 hover:shadow-lg transition-colors"
             >
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-bold text-lg">{board.name}</h3>
-                <Badge variant={board.is_active ? 'default' : 'secondary'}>
-                  {board.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mb-3">{board.description || 'No description'}</p>
-              <div className="flex items-center gap-4 mb-4">
-                <span className="text-sm text-muted-foreground">
-                  Slug: {board.slug}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Link to={`/pinterest/boards/${board.slug}`}>
-                  <Button size="sm" variant="outline">
-                    <Edit className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive"
-                  onClick={() => handleDeleteClick(board)}
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
-                </Button>
-                {board.board_url && (
-                  <a href={board.board_url} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="ghost">
-                      <ExternalLink className="w-4 h-4 mr-1" />
-                      View
+              <Card className="overflow-hidden flex flex-col group h-full hover:shadow-md transition-all">
+                <div className="aspect-video w-full bg-muted relative overflow-hidden">
+                  {(() => {
+                    if (!board.cover_image_url) return (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                        <ImageIcon size={40} />
+                      </div>
+                    );
+
+                    const imageSlot = typeof board.cover_image_url === 'object' 
+                      ? board.cover_image_url 
+                      : { cover: { url: board.cover_image_url } };
+                    
+                    const { imageUrl, alt } = extractImage(imageSlot, 'cover', 1200);
+                    const previewUrl = toAdminImageUrl(imageUrl);
+
+                    if (!previewUrl) return (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                        <ImageIcon size={40} />
+                      </div>
+                    );
+
+                    return (
+                      <img 
+                        src={previewUrl} 
+                        alt={alt || board.name}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    );
+                  })()}
+                  <div className="absolute top-2 right-2">
+                    <Badge variant={board.is_active ? "success" : "secondary"}>
+                      {board.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <CardHeader className="p-4 pb-2">
+                  <CardTitle className="text-lg line-clamp-1">{board.name}</CardTitle>
+                </CardHeader>
+                
+                <CardContent className="p-4 pt-0 flex-1">
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                    {board.description || 'No description'}
+                  </p>
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
+                    <span>Slug: {board.slug}</span>
+                  </div>
+                </CardContent>
+
+                <CardFooter className="p-4 pt-0 gap-2">
+                  <Link to={`/pinterest/boards/${board.slug}`}>
+                    <Button size="sm" variant="outline" className="h-8">
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
                     </Button>
-                  </a>
-                )}
-              </div>
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteClick(board)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete
+                  </Button>
+                  {board.board_url && (
+                    <a href={board.board_url} target="_blank" rel="noopener noreferrer" className="ml-auto">
+                      <Button size="sm" variant="ghost" className="h-8 px-2">
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    </a>
+                  )}
+                </CardFooter>
+              </Card>
             </motion.div>
           ))
         )}

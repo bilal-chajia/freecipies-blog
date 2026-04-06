@@ -2,13 +2,12 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
-import type { Env } from '@shared/types';
-import { 
-  getPinterestBoards, 
-  getPinterestBoard, 
-  createPinterestBoard, 
-  updatePinterestBoard, 
-  deletePinterestBoard 
+import {
+  getPinterestBoards,
+  getPinterestBoard,
+  createPinterestBoard,
+  updatePinterestBoard,
+  deletePinterestBoard
 } from '@modules/pinterest';
 
 export const prerender = false;
@@ -39,11 +38,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     // Get all boards
     const allBoards = await getPinterestBoards(env.DB);
-    const activeBoards = allBoards
-      .filter((b) => b.is_active)
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const sortedBoards = [...allBoards].sort((a, b) => a.name.localeCompare(b.name));
 
-    const { body, status, headers } = formatSuccessResponse({ boards: activeBoards });
+    const { body, status, headers } = formatSuccessResponse(sortedBoards);
     return new Response(body, { status, headers });
   } catch (error) {
     console.error('Error fetching boards:', error);
@@ -71,7 +68,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const body = await request.json();
-    const { slug, name, description, board_url } = body;
+    const { slug, name, description, board_url, is_active, cover_image_url } = body;
 
     if (!slug || !name) {
       const { body: errBody, status, headers } = formatErrorResponse(
@@ -81,10 +78,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const inserted = await createPinterestBoard(env.DB, {
-      slug, 
-      name, 
-      description: description || '', 
-      board_url: board_url || ''
+      slug,
+      name,
+      description: description || '',
+      board_url: board_url || '',
+      cover_image_url: cover_image_url || '',
+      is_active
     });
 
     const { body: respBody, status, headers } = formatSuccessResponse({
@@ -117,7 +116,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     }
 
     const body = await request.json();
-    const { id, slug, name, description, board_url, is_active } = body;
+    const { id, slug, name, description, board_url, is_active, cover_image_url } = body;
 
     if (!id) {
       const { body: errBody, status, headers } = formatErrorResponse(
@@ -126,8 +125,8 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       return new Response(errBody, { status, headers });
     }
 
-    await updatePinterestBoard(env.DB, id, {
-      slug, name, description, board_url, is_active
+    await updatePinterestBoard(env.DB, typeof id === 'string' ? parseInt(id, 10) : id, {
+      slug, name, description, board_url, is_active, cover_image_url
     });
 
     const { body: respBody, status, headers } = formatSuccessResponse({ updated: true });

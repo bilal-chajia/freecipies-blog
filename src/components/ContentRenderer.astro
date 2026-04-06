@@ -461,6 +461,27 @@ const numberedBlocks = parsed.map((block) => {
     margin-top: var(--block-spacing);
   }
 
+  /* General list styling for the main content */
+  .content-blocks :global(ul) {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: var(--block-spacing);
+  }
+
+  .content-blocks :global(ol) {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: var(--block-spacing);
+  }
+
+  .content-blocks :global(li) {
+    margin-bottom: 0.5rem;
+  }
+
+  .content-blocks :global(li:last-child) {
+    margin-bottom: 0;
+  }
+
   /* Headings get extra top space for visual hierarchy */
   .content-blocks > :global(h2) {
     margin-top: calc(var(--block-spacing) * 2);

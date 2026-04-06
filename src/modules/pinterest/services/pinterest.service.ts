@@ -6,23 +6,34 @@
 
 import { eq, and, desc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
-import { 
-  pinterestBoards, 
-  pinterestPins, 
-  type PinterestBoard, 
+import {
+  pinterestBoards,
+  pinterestPins,
+  type PinterestBoard,
   type NewPinterestBoard,
   type PinterestPin,
-  type NewPinterestPin 
+  type NewPinterestPin
 } from '../schema/pinterest.schema';
 import { createDb } from '../../../shared/database/drizzle';
+import { AppError, ErrorCodes } from '../../../shared/utils/error-handler';
 
 // Helpers mapping Drizzle to old snake_case format for the frontend
 function mapBoardToSnakeCase(board: PinterestBoard | null): any {
   if (!board) return board;
+  
+  let coverImageUrl = board.coverImageUrl;
+  if (typeof coverImageUrl === 'string' && coverImageUrl.startsWith('{')) {
+    try {
+      coverImageUrl = JSON.parse(coverImageUrl);
+    } catch {
+      // Keep as string if parsing fails
+    }
+  }
+
   return {
     ...board,
     board_url: board.boardUrl,
-    cover_image_url: board.coverImageUrl,
+    cover_image_url: coverImageUrl,
     is_active: board.isActive,
     created_at: board.createdAt,
     updated_at: board.updatedAt,
@@ -61,7 +72,7 @@ export async function getPinterestBoards(db: D1Database): Promise<any[]> {
     .select()
     .from(pinterestBoards)
     .where(isNull(pinterestBoards.deletedAt));
-  
+
   return boards.map(mapBoardToSnakeCase);
 }
 
@@ -70,14 +81,14 @@ export async function getPinterestBoards(db: D1Database): Promise<any[]> {
  */
 export async function getPinterestBoard(db: D1Database, identifier: number | string): Promise<any | null> {
   const drizzle = createDb(db);
-  const condition = typeof identifier === 'string' 
-    ? eq(pinterestBoards.slug, identifier) 
+  const condition = typeof identifier === 'string'
+    ? eq(pinterestBoards.slug, identifier)
     : eq(pinterestBoards.id, identifier);
-  
+
   const board = await drizzle.query.pinterestBoards.findFirst({
     where: and(condition, isNull(pinterestBoards.deletedAt)),
   }) || null;
-  
+
   return mapBoardToSnakeCase(board);
 }
 
@@ -89,14 +100,44 @@ export async function createPinterestBoard(
   data: any
 ): Promise<any | null> {
   const drizzle = createDb(db);
+
+  // Check if a board with the same slug already exists
+  const existingBoard = await drizzle.query.pinterestBoards.findFirst({
+    where: eq(pinterestBoards.slug, data.slug),
+  });
+
+  if (existingBoard) {
+    if (existingBoard.deletedAt) {
+      throw new AppError(
+        ErrorCodes.VALIDATION_ERROR,
+        `A board with slug "${data.slug}" was previously deleted. Please use a different slug or restore the existing board.`,
+        400
+      );
+    }
+    throw new AppError(
+      ErrorCodes.VALIDATION_ERROR,
+      `A board with slug "${data.slug}" already exists. Please use a different slug.`,
+      400
+    );
+  }
+
+  const coverImageUrlRaw = data.coverImageUrl ?? data.cover_image_url;
+  const coverImageUrl = typeof coverImageUrlRaw === 'object' && coverImageUrlRaw !== null 
+    ? JSON.stringify(coverImageUrlRaw) 
+    : coverImageUrlRaw;
+
   const insertData = {
-    slug: data.slug,
-    name: data.name,
+    slug: data.slug as string,
+    name: data.name as string,
     description: data.description,
     boardUrl: data.boardUrl ?? data.board_url,
-    coverImageUrl: data.coverImageUrl ?? data.cover_image_url,
-    isActive: data.isActive ?? data.is_active,
+    coverImageUrl: coverImageUrl as string,
+    // Include isActive if either isActive or is_active is provided in the data
+    ...(data.isActive !== undefined || data.is_active !== undefined
+      ? { isActive: data.isActive ?? data.is_active }
+      : {}),
   };
+
   const [inserted] = await drizzle.insert(pinterestBoards).values(insertData).returning();
   return mapBoardToSnakeCase(inserted || null);
 }
@@ -111,12 +152,18 @@ export async function updatePinterestBoard(
 ): Promise<boolean> {
   const drizzle = createDb(db);
   const updateData: Partial<NewPinterestBoard> = { updatedAt: new Date().toISOString() };
-  
+
   if (data.slug !== undefined) updateData.slug = data.slug;
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.boardUrl !== undefined || data.board_url !== undefined) updateData.boardUrl = data.boardUrl ?? data.board_url;
-  if (data.coverImageUrl !== undefined || data.cover_image_url !== undefined) updateData.coverImageUrl = data.coverImageUrl ?? data.cover_image_url;
+  
+  if (data.coverImageUrl !== undefined || data.cover_image_url !== undefined) {
+    const raw = data.coverImageUrl ?? data.cover_image_url;
+    updateData.coverImageUrl = typeof raw === 'object' && raw !== null 
+      ? JSON.stringify(raw) 
+      : raw;
+  }
   if (data.isActive !== undefined || data.is_active !== undefined) updateData.isActive = data.isActive ?? data.is_active;
 
   await drizzle.update(pinterestBoards)
@@ -219,7 +266,7 @@ export async function updatePinterestPin(
 ): Promise<boolean> {
   const drizzle = createDb(db);
   const updateData: Partial<NewPinterestPin> = { updatedAt: new Date().toISOString() };
-  
+
   if (data.articleId !== undefined || data.article_id !== undefined) updateData.articleId = data.articleId ?? data.article_id;
   if (data.boardId !== undefined || data.board_id !== undefined) updateData.boardId = data.boardId ?? data.board_id;
   if (data.sectionName !== undefined || data.section_name !== undefined) updateData.sectionName = data.sectionName ?? data.section_name;

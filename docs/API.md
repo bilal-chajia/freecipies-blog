@@ -1,8 +1,9 @@
 # API Documentation
 
-> **Last Updated:** 2025-12-19  
-> **Base URL:** `/api`  
+> **Last Updated:** 2026-04-06
+> **Base URL:** `/api`
 > **Auth:** Bearer Token (Admin endpoints)
+> **Version:** Astro 6 + React 19
 
 ---
 
@@ -869,6 +870,246 @@ Update template. **Requires Auth.**
 ### DELETE /api/templates/:slug
 
 Delete template. **Requires Auth.**
+
+---
+
+## Equipment
+
+### GET /api/equipment
+
+List kitchen equipment with affiliate links.
+
+**Query Parameters:**
+
+| Param      | Type    | Default | Description       |
+| ---------- | ------- | ------- | ----------------- |
+| `page`     | number  | 1       | Page number       |
+| `limit`    | number  | 24      | Per page          |
+| `category` | string  | -       | Filter by category|
+| `online`   | boolean | `true`  | Visibility filter |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Chef's Knife 8\"",
+      "slug": "chefs-knife-8",
+      "description": "Professional grade chef's knife",
+      "affiliateUrl": "https://amazon.com/...",
+      "imageUrl": "https://...",
+      "price": "$89.99",
+      "category": "Knives",
+      "route": "/equipment/chefs-knife-8"
+    }
+  ],
+  "pagination": {...}
+}
+```
+
+---
+
+### POST /api/equipment
+
+Create equipment entry. **Requires Auth.**
+
+```json
+{
+  "name": "New Equipment",
+  "slug": "new-equipment",
+  "description": "Description...",
+  "affiliateUrl": "https://...",
+  "price": "$49.99",
+  "category": "Category"
+}
+```
+
+---
+
+### PUT /api/equipment/:id
+
+Update equipment. **Requires Auth.**
+
+---
+
+### DELETE /api/equipment/:id
+
+Soft delete equipment. **Requires Auth.**
+
+---
+
+## Menus
+
+### GET /api/menus
+
+List navigation menus.
+
+**Query Parameters:**
+
+| Param    | Type   | Default | Description              |
+| -------- | ------ | ------- | ------------------------ |
+| `location` | string | -     | Filter by menu location  |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Main Navigation",
+      "location": "header",
+      "items": [
+        {
+          "label": "Home",
+          "url": "/",
+          "target": "_self"
+        },
+        {
+          "label": "Recipes",
+          "url": "/recipes",
+          "target": "_self"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### POST /api/menus
+
+Create menu. **Requires Auth.**
+
+```json
+{
+  "name": "Footer Menu",
+  "location": "footer",
+  "items": [
+    { "label": "About", "url": "/about" },
+    { "label": "Contact", "url": "/contact" }
+  ]
+}
+```
+
+---
+
+### PUT /api/menus/:id
+
+Update menu. **Requires Auth.**
+
+---
+
+### DELETE /api/menus/:id
+
+Delete menu. **Requires Auth.**
+
+---
+
+## Authentication
+
+### POST /api/auth/login
+
+Authenticate admin user.
+
+**Request Body:**
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "securepassword"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "user": {
+      "id": 1,
+      "email": "admin@example.com",
+      "name": "Admin User"
+    }
+  }
+}
+```
+
+---
+
+### POST /api/auth/verify
+
+Verify JWT token.
+
+**Headers:**
+
+```http
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "valid": true,
+    "user": {
+      "id": 1,
+      "email": "admin@example.com"
+    }
+  }
+}
+```
+
+---
+
+## AI Content Generation
+
+### POST /api/ai/generate
+
+Generate content using AI. **Requires Auth.**
+
+**Request Body:**
+
+```json
+{
+  "provider": "openai",
+  "model": "gpt-4",
+  "prompt": "Write a recipe introduction for chocolate brownies",
+  "context": {
+    "articleType": "recipe",
+    "topic": "chocolate brownies"
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "content": "These decadent chocolate brownies...",
+    "usage": {
+      "promptTokens": 45,
+      "completionTokens": 120
+    }
+  }
+}
+```
+
+**Supported Providers:**
+- `openai` - OpenAI (GPT-4, GPT-3.5-turbo)
+- `anthropic` - Anthropic (Claude 3, Claude 3.5)
+- `google` - Google Gemini (gemini-pro, gemini-1.5-pro)
 
 ---
 

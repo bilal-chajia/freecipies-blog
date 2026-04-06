@@ -29,7 +29,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button.jsx';
-import { Input } from '@/ui/input.jsx';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/ui/dialog.jsx';
 import { parseVariantsJson, getVariantMap } from '@shared/types/images';
 import ImageUploader from '../../ImageUploader';
@@ -222,7 +221,8 @@ export const ImageBlock = createReactBlockSpec(
                                     <Button
                                         variant="default"
                                         size="sm"
-                                        onClick={() => setChoiceDialogOpen(true)}
+                                        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setChoiceDialogOpen(true); }}
                                         className="gap-2"
                                     >
                                         <FolderOpen className="h-4 w-4" />
@@ -257,7 +257,10 @@ export const ImageBlock = createReactBlockSpec(
                                     <Button
                                         type="button"
                                         className="justify-start gap-2"
-                                        onClick={() => {
+                                        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
                                             setChoiceDialogOpen(false);
                                             setUploaderOpen(true);
                                         }}
@@ -269,7 +272,10 @@ export const ImageBlock = createReactBlockSpec(
                                         type="button"
                                         variant="secondary"
                                         className="justify-start gap-2"
-                                        onClick={() => {
+                                        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
                                             setChoiceDialogOpen(false);
                                             setMediaDialogOpen(true);
                                         }}

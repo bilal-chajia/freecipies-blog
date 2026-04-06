@@ -44,6 +44,11 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
         : null;
 
     useEffect(() => {
+        // Only close dialogs if neither is currently open.
+        // This prevents the race condition where clicking "Media Library"
+        // causes ProseMirror to shift focus (changing selectedBlock.id),
+        // which would immediately close the just-opened dialog.
+        if (imageDialogOpen || imageUploaderOpen) return;
         setImageDialogOpen(false);
         setImageUploaderOpen(false);
     }, [selectedBlock?.id]);
@@ -209,7 +214,8 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                                     variant="secondary"
                                     size="sm"
                                     className="h-8 gap-1.5"
-                                    onClick={() => setImageDialogOpen(true)}
+                                    onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                                    onClick={(e) => { e.stopPropagation(); setImageDialogOpen(true); }}
                                 >
                                     <FolderOpen className="w-3.5 h-3.5" />
                                     Media Library
@@ -218,7 +224,8 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                                     variant="secondary"
                                     size="sm"
                                     className="h-8 gap-1.5"
-                                    onClick={() => setImageUploaderOpen(true)}
+                                    onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                                    onClick={(e) => { e.stopPropagation(); setImageUploaderOpen(true); }}
                                 >
                                     <Upload className="w-3.5 h-3.5" />
                                     Upload

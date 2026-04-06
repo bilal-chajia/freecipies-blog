@@ -35,7 +35,7 @@
         
         /* Remove default min-height from editor as wrapper handles it */
         .block-editor-wrapper .bn-editor {
-          padding: 16px var(--gutter) 72px;
+          padding: calc(var(--wp-toolbar-height) + var(--wp-toolbar-gap) + 8px) var(--gutter) 72px;
           min-height: 100%;
           height: auto;
           overflow-y: auto;

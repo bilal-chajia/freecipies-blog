@@ -1,14 +1,16 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Image as ImageIcon, X } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Label } from '@/ui/label.jsx';
 import { Textarea } from '@/ui/textarea.jsx';
 import { Switch } from '@/ui/switch.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ui/card.jsx';
+import MediaDialog from '@/components/MediaDialog';
 import { pinterestBoardsAPI } from '../../services/api';
-import { generateSlug } from '../../utils/helpers';
+import { toAdminImageUrl, generateSlug, buildImageSlotFromMedia } from '../../utils/helpers';
+import { extractImage } from '@shared/utils';
 
 const BoardEditor = () => {
   const { id } = useParams();
@@ -17,12 +19,16 @@ const BoardEditor = () => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEditMode);
   const loadedRef = useRef(false);
+  const [error, setError] = useState('');
+  const [boardId, setBoardId] = useState(null);
+  const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     slug: '',
     name: '',
     description: '',
     board_url: '',
-    is_active: true,
+    cover_image_url: '',
+    is_active: false,
   });
 
   useEffect(() => {
@@ -36,14 +42,18 @@ const BoardEditor = () => {
     try {
       setLoading(true);
       const response = await pinterestBoardsAPI.getBySlug(id);
-      const board = response.data.board;
-      setFormData({
-        slug: board.slug,
-        name: board.name,
-        description: board.description || '',
-        board_url: board.board_url || '',
-        is_active: board.is_active === 1,
-      });
+      const board = response.data?.data?.board || response.data?.board;
+      if (board) {
+        setBoardId(board.id);
+        setFormData({
+          slug: board.slug,
+          name: board.name,
+          description: board.description || '',
+          board_url: board.board_url || '',
+          cover_image_url: board.cover_image_url || '',
+          is_active: board.is_active || false,
+        });
+      }
     } catch {
       alert('Failed to load board');
       navigate('/pinterest/boards');
@@ -54,23 +64,34 @@ const BoardEditor = () => {
 
   const handleSave = async () => {
     if (!formData.name || !formData.slug) {
-      alert('Name and slug are required');
+      setError('Name and slug are required');
       return;
     }
 
     try {
       setSaving(true);
-      if (isEditMode) {
-        await pinterestBoardsAPI.update(id, formData);
+      if (isEditMode && boardId) {
+        await pinterestBoardsAPI.update(boardId, formData);
       } else {
         await pinterestBoardsAPI.create(formData);
       }
       navigate('/pinterest/boards');
-    } catch {
-      alert('Failed to save board');
+    } catch (error) {
+      console.error('Error saving board:', error);
+      setError('Failed to save board');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleMediaSelect = (item) => {
+    const slot = buildImageSlotFromMedia(item, {
+      alt: item.altText || formData.name || '',
+    });
+    if (slot) {
+      handleChange('cover_image_url', { cover: slot });
+    }
+    setMediaDialogOpen(false);
   };
 
   const handleChange = (field, value) => {
@@ -157,6 +178,60 @@ const BoardEditor = () => {
           </div>
 
           <div className="space-y-2">
+            <Label>Cover Image</Label>
+            <div className="flex flex-col gap-3">
+              {formData.cover_image_url ? (() => {
+                const imageData = typeof formData.cover_image_url === 'object' 
+                  ? extractImage(formData.cover_image_url, 'cover', 1200)
+                  : { imageUrl: formData.cover_image_url };
+                
+                const previewUrl = toAdminImageUrl(imageData.imageUrl);
+
+                if (!previewUrl) return null;
+
+                return (
+                  <div className="relative aspect-video w-full max-w-[240px] rounded-lg border bg-muted group">
+                    <img
+                      src={previewUrl}
+                      alt={imageData.imageAlt || "Board cover"}
+                      className="h-full w-full object-cover rounded-lg"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleChange('cover_image_url', '')}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                );
+              })() : (
+                <div 
+                  className="flex aspect-video w-full max-w-[240px] cursor-pointer items-center justify-center rounded-lg border border-dashed border-muted-foreground/25 bg-muted/50 hover:bg-muted transition-colors"
+                  onClick={() => setMediaDialogOpen(true)}
+                >
+                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                    <ImageIcon className="h-6 w-6" />
+                    <span className="text-xs">Select Image</span>
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  value={formData.cover_image_url}
+                  onChange={(e) => handleChange('cover_image_url', e.target.value)}
+                  placeholder="Or enter image URL"
+                  className="flex-1"
+                />
+                <Button variant="outline" onClick={() => setMediaDialogOpen(true)}>
+                  Library
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="board_url">Pinterest Board URL</Label>
             <Input
               id="board_url"
@@ -209,29 +284,11 @@ const BoardEditor = () => {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>How to Use</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <div>
-            <strong className="text-foreground">1. Create the board</strong>
-            <p>Save this form to create the Pinterest board in the system.</p>
-          </div>
-          <div>
-            <strong className="text-foreground">2. Assign pins to this board</strong>
-            <p>When creating pins for articles, select this board from the dropdown.</p>
-          </div>
-          <div>
-            <strong className="text-foreground">3. Connect to automation</strong>
-            <p>Use the RSS feed URL with IFTTT or Zapier to automatically post pins to Pinterest.</p>
-          </div>
-          <div>
-            <strong className="text-foreground">4. Monitor the feed</strong>
-            <p>The RSS feed updates every 5 minutes and shows pins from the last 24 hours.</p>
-          </div>
-        </CardContent>
-      </Card>
+      <MediaDialog
+        open={mediaDialogOpen}
+        onOpenChange={setMediaDialogOpen}
+        onSelect={handleMediaSelect}
+      />
     </div>
   );
 };
