@@ -40,6 +40,9 @@ export default defineConfig({
     imageService: 'passthrough'
   }),
   output: 'server',
+  build: {
+    inlineStylesheets: 'always'
+  },
   vite: {
     plugins: [...tailwindcss()],
     resolve: {
