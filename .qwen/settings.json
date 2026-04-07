@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx *)",
+      "Bash(dir *)",
+      "Bash(node *)",
+      "Bash(type *)",
+      "WebFetch(0bcf695b.recipes-saas.pages.dev)",
+      "WebFetch(recipes-saas.chajia-bilal23.workers.dev)",
+      "Bash(where *)",
+      "Bash(sqlite3 *)"
+    ]
+  },
+  "$version": 3
+}
