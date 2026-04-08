@@ -1,4 +1,5 @@
 import { defineMiddleware } from 'astro/middleware';
+import { env } from 'cloudflare:workers';
 
 const DEFAULT_ALLOWED_HEADERS = [
   'Content-Type',
@@ -54,15 +55,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
                        url.pathname.startsWith('/_') ||
                        url.pathname.includes('.'); // Skip static files with extensions
 
-  if (!isSystemPath && context.locals.runtime?.env?.DB) {
+  if (!isSystemPath && env?.DB) {
     try {
       const { getRedirectByFromPath, incrementHitCount } = await import('@modules/redirects');
-      const db = context.locals.runtime.env.DB;
-      const redirect = await getRedirectByFromPath(db, url.pathname);
+      const redirect = await getRedirectByFromPath(env.DB, url.pathname);
       
       if (redirect && redirect.isActive) {
         // Increment hit count asynchronously
-        context.locals.runtime.waitUntil?.(incrementHitCount(db, redirect.id));
+        context.locals.runtime?.waitUntil?.(incrementHitCount(env.DB, redirect.id));
         
         return context.redirect(redirect.toPath, redirect.statusCode || 301);
       }
