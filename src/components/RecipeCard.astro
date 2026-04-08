@@ -32,6 +32,7 @@ interface Props {
   showDescription?: boolean;
   showRating?: boolean;
   showActions?: boolean;
+  embedded?: boolean;
 }
 
 const {
@@ -43,6 +44,7 @@ const {
   showDescription = true,
   showRating = true,
   showActions = true,
+  embedded = false,
 } = Astro.props;
 
 const recipe = recipeJson;
@@ -142,8 +144,8 @@ const navItems = [
         <meta itemprop="datePublished" content={article.publishedAt} />
       )}
 
-      {/* Hero Image Section */}
-      {showImage && coverImage.imageUrl && (
+      {/* Hero Image Section - Only in standalone mode */}
+      {!embedded && showImage && coverImage.imageUrl && (
         <div
           class="recipe-hero"
           itemprop="image"
@@ -220,7 +222,8 @@ const navItems = [
 
       {/* Recipe Header Content */}
       <div class="recipe-content">
-        {/* Title Section */}
+        {/* Title Section - Hidden in embedded mode (already in RecipeLayout) */}
+        {!embedded && (
         <div class="recipe-header">
           {/* Author */}
           {author && (
@@ -322,6 +325,7 @@ const navItems = [
             </p>
           )}
         </div>
+        )}
 
         {/* Stats Grid - 4 Columns */}
         <div class="stats-grid">

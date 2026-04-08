@@ -69,6 +69,8 @@ export default defineConfig({
         '@blocknote/core',
         '@blocknote/mantine',
         'framer-motion',
+        'motion > react',
+        'zustand',
         'lucide-react',
         '@radix-ui/react-dialog',
         '@radix-ui/react-dropdown-menu',
