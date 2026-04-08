@@ -1,7 +1,7 @@
 ---
 import { env } from "cloudflare:workers";
 import Layout from "@layouts/Layout.astro";
-import RecipeCard from "@components/RecipeCard.astro";
+import RecipePreviewCard from "@components/RecipePreviewCard.astro";
 import { getAuthorBySlug } from "@modules/authors/services/authors.service";
 import { getArticles } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
@@ -307,7 +307,10 @@ if (author.bioJson) {
           articles.length > 0 ? (
             <div class="recipes-grid">
               {articles.map((article) => (
-                <RecipeCard article={article} recipeJson={article.recipeJson} />
+                <RecipePreviewCard
+                  article={article}
+                  recipeJson={article.recipeJson}
+                />
               ))}
             </div>
           ) : (
