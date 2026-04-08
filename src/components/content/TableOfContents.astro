@@ -5,6 +5,12 @@
  * Renders a collapsible outline of headings extracted from article content.
  * Supports h2–h4 nesting with optional hierarchical numbering, smooth-scroll,
  * and active-heading highlighting via IntersectionObserver.
+ *
+ * VIBRATION-FREE DESIGN:
+ * - Content is ALWAYS visible in the DOM (no is-open / grid / opacity tricks)
+ * - max-height truncation is set synchronously via inline style (no animation)
+ * - CSS transition (.toc-ready) is only added AFTER layout settles
+ * - Zero layout shifts on page load
  */
 
 import type { TocSettings } from "@modules/settings/services/settings.service";
@@ -29,7 +35,6 @@ const { toc: tocInput, class: className = "", settings } = Astro.props;
 const enabled = settings?.enabled ?? true;
 const numbering = settings?.numbering ?? true;
 const collapsible = settings?.collapsible ?? true;
-const defaultOpen = settings?.defaultOpen ?? true;
 const showJumpButton = settings?.showJumpButton ?? true;
 const accentColor = settings?.accentColor || "#3b82f6";
 const maxDepth = settings?.maxDepth ?? 4;
@@ -90,22 +95,17 @@ numberedToc.forEach((item) => {
     } else if (currentGroup && item.level > 2) {
         currentGroup.children!.push(item);
     } else {
-        // Fallback for h3/h4 that appear before any h2
         groupedToc.push({ ...item, children: [] });
     }
 });
-
-const Tag = collapsible ? "details" : "div";
-const tagProps = collapsible ? { open: defaultOpen } : {};
 ---
 
-<Tag
+<div
     class:list={["blog-toc", className]}
-    {...tagProps}
     style={`--toc-accent: ${accentColor};`}
 >
-    {/* Header / Summary */}
-    <summary class="toc-header">
+    <!-- Header -->
+    <div class="toc-header">
         <div class="toc-title-group">
             <svg
                 class="toc-book-icon"
@@ -118,8 +118,7 @@ const tagProps = collapsible ? { open: defaultOpen } : {};
                 stroke-linecap="round"
                 stroke-linejoin="round"
             >
-                <path
-                    d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"
                 ></path>
                 <path d="M8 2v20"></path>
             </svg>
@@ -128,83 +127,100 @@ const tagProps = collapsible ? { open: defaultOpen } : {};
         <div class="toc-header-actions">
             {
                 showJumpButton && (
-                    <a href="#recipe" class="toc-jump-btn" data-astro-prefetch>
+                    <a href="#recipe" class="toc-jump-btn">
                         Jump to Recipe
                     </a>
                 )
             }
-        </div>
-    </summary>
-
-    {/* Links */}
-    <div class="toc-nav-wrapper">
-        <div class="toc-nav-inner">
-            <nav class="toc-nav" aria-label="Table of contents">
-                <ul class="toc-list">
-                    {
-                        groupedToc.map((group) => (
-                            <li class="toc-group">
-                                <a
-                                    href={`#${group.id}`}
-                                    class="toc-link"
-                                    data-toc-target={group.id}
-                                >
-                                    {group.num && (
-                                        <span class="toc-num">{group.num}</span>
-                                    )}
-                                    <span>{group.text}</span>
-                                </a>
-
-                                {group.children &&
-                                    group.children.length > 0 && (
-                                        <ul class="toc-sublist">
-                                            {group.children.map((child) => (
-                                                <li
-                                                    class={`toc-item toc-lvl-${child.level}`}
-                                                >
-                                                    <a
-                                                        href={`#${child.id}`}
-                                                        class="toc-link"
-                                                        data-toc-target={
-                                                            child.id
-                                                        }
-                                                    >
-                                                        {child.num && (
-                                                            <span class="toc-num">
-                                                                {child.num}
-                                                            </span>
-                                                        )}
-                                                        <span>
-                                                            {child.text}
-                                                        </span>
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                            </li>
-                        ))
-                    }
-                </ul>
-            </nav>
+            {
+                collapsible && (
+                    <button
+                        type="button"
+                        class="toc-toggle-btn"
+                        aria-label="Toggle contents"
+                        aria-expanded="false"
+                    >
+                        <svg
+                            class="toc-chevron"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#111827"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                )
+            }
         </div>
     </div>
 
+    <!-- Links: always in DOM, truncated via inline max-height from JS -->
+    <div class="toc-body">
+        <nav class="toc-nav" aria-label="Table of contents">
+            <ul class="toc-list">
+                {
+                    groupedToc.map((group) => (
+                        <li class="toc-group">
+                            <a
+                                href={`#${group.id}`}
+                                class="toc-link"
+                                data-toc-target={group.id}
+                            >
+                                {group.num && (
+                                    <span class="toc-num">{group.num}</span>
+                                )}
+                                <span>{group.text}</span>
+                            </a>
+
+                            {group.children &&
+                                group.children.length > 0 && (
+                                    <ul class="toc-sublist">
+                                        {group.children.map((child) => (
+                                            <li
+                                                class={`toc-item toc-lvl-${child.level}`}
+                                            >
+                                                <a
+                                                    href={`#${child.id}`}
+                                                    class="toc-link"
+                                                    data-toc-target={child.id}
+                                                >
+                                                    {child.num && (
+                                                        <span class="toc-num">
+                                                            {child.num}
+                                                        </span>
+                                                    )}
+                                                    <span>{child.text}</span>
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                        </li>
+                    ))
+                }
+            </ul>
+        </nav>
+    </div>
+
+    {/* Show-all button is OUTSIDE toc-body so overflow:hidden never clips it */}
     {
         collapsible && (
-            <div class="toc-bottom-toggle">
-                <button
-                    type="button"
-                    class="toc-chevron-btn"
-                    aria-label="Toggle contents"
-                >
+            <div class="toc-show-more">
+                <button type="button" class="toc-show-more-btn">
+                    <span class="toc-show-more-label">Show all</span>
                     <svg
-                        class="toc-chevron"
-                        width="18"
-                        height="18"
+                        class="toc-show-more-icon"
+                        width="12"
+                        height="12"
+
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#111827"
+                        stroke="currentColor"
                         stroke-width="2.5"
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -215,459 +231,471 @@ const tagProps = collapsible ? { open: defaultOpen } : {};
             </div>
         )
     }
+</div>
 
-    <!-- ─── Styles ─────────────────────────────────────────────────────────── -->
-    <style>
-        /* Container */
+<style>
+    /* ── Container ─────────────────────────────────────────────────────────── */
+    .blog-toc {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+        margin: 2rem 0 3rem; /* extra bottom margin for the floating button */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        font-family:
+            "Work Sans",
+            system-ui,
+            -apple-system,
+            sans-serif;
+        position: relative;
+        overflow: visible;
+    }
+
+
+    /* ── Header ─────────────────────────────────────────────────────────────── */
+    .toc-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem 1.5rem 0.75rem 1.75rem;
+        user-select: none;
+    }
+
+    .toc-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .toc-book-icon {
+        color: var(--toc-accent, #f59e0b);
+    }
+
+    /* Bottom floating toggle */
+    .toc-bottom-toggle {
+        position: absolute;
+        bottom: -16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+    }
+
+    .toc-label {
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: #1a1a1a;
+        letter-spacing: -0.01em;
+    }
+
+    .toc-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .toc-jump-btn {
+        background-color: var(--toc-accent, #f59e0b);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.375rem 0.75rem;
+        border-radius: 4px;
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: opacity 0.2s ease;
+    }
+    .toc-jump-btn:hover {
+        opacity: 0.9;
+    }
+
+    /* Header chevron toggle button */
+    .toc-toggle-btn {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        color: #111827;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    .toc-toggle-btn:hover {
+        transform: scale(1.05);
+        background: #f9fafb;
+    }
+
+    /* Show all / Show less button container */
+    .toc-show-more {
+        display: none; /* Hidden by default, JS enables if needed */
+        justify-content: center;
+        width: 100%;
+        position: absolute;
+        bottom: -12px; /* Very tight fit */
+
+
+        left: 0;
+        z-index: 20;
+    }
+
+    /* Shown only when JS determines content is long enough to truncate */
+    .blog-toc.can-truncate .toc-show-more {
+        display: flex;
+    }
+
+    .toc-show-more-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #ffffff;
+        background: #111827;
+        border: none;
+        border-radius: 100px;
+        padding: 0.2rem 0.6rem;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+    }
+
+
+
+
+    .toc-show-more-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        background: #000000;
+    }
+
+    .toc-show-more-btn:active {
+        transform: translateY(0);
+    }
+
+    .toc-show-more-icon {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        flex-shrink: 0;
+    }
+
+    .blog-toc.is-expanded .toc-show-more-icon {
+        transform: rotate(180deg);
+    }
+
+    .toc-chevron {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        flex-shrink: 0;
+    }
+
+    /* Rotate header chevron when expanded */
+    .blog-toc.is-expanded .toc-toggle-btn .toc-chevron {
+        transform: rotate(180deg);
+    }
+
+    /* ── Body: always visible, truncated via inline max-height from JS ─────── */
+    .toc-body {
+        overflow: hidden;
+        /* Default fallback — JS will set the exact half-height as inline style.
+           No transition here — .toc-ready enables it after layout settles. */
+        max-height: 260px;
+    }
+
+    /* Transition enabled ONLY after JS has set up the initial height (no flash) */
+    .blog-toc.toc-ready .toc-body {
+        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────────────────────── */
+    .toc-nav {
+        padding: 0 1.5rem 1rem 1.75rem;
+    }
+
+    .toc-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        column-count: 2;
+        column-gap: 2rem;
+    }
+
+    .toc-group {
+        margin: 0;
+        break-inside: avoid;
+        padding: 0;
+    }
+    .toc-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .toc-sublist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .toc-item {
+        margin: 0;
+        padding: 0;
+        position: relative;
+    }
+
+    .toc-link {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.625rem;
+        padding: 0.625rem 0;
+        text-decoration: none;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        line-height: 1.3;
+        color: #1a1a1a;
+        border-left: 2px solid transparent;
+        transition: color 0.15s ease;
+    }
+
+    .toc-link::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 1px;
+        background: #e5e7eb;
+    }
+
+    .toc-list > .toc-group:last-child .toc-link::after {
+        display: none;
+    }
+    .toc-list
+        > .toc-group:last-child
+        .toc-sublist
+        .toc-item:last-child
+        > .toc-link::after {
+        display: none;
+    }
+    .toc-list > .toc-group:last-child:has(.toc-sublist) > .toc-link::after {
+        display: block;
+    }
+
+    .toc-link:hover {
+        color: var(--toc-accent, #f59e0b);
+    }
+
+    .toc-link.active {
+        color: var(--toc-accent, #f59e0b);
+    }
+
+    .toc-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #1a1a1a;
+        color: #ffffff;
+        font-weight: 800;
+        min-width: 1.5rem;
+        height: 1.5rem;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        margin-top: 1px;
+        flex-shrink: 0;
+        padding: 0 0.35rem;
+    }
+
+    .toc-lvl-3 {
+        margin-left: 1.5rem;
+    }
+    .toc-lvl-4 {
+        margin-left: 3rem;
+    }
+
+    /* ── Print ───────────────────────────────────────────────────────────────── */
+    @media print {
         .blog-toc {
-            background: #ffffff;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            border-radius: 6px;
-            margin: 2rem 0;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
-            font-family:
-                "Work Sans",
-                system-ui,
-                -apple-system,
-                sans-serif;
-            overflow: visible; /* Now visible so the absolute button can overflow the border */
-            position: relative;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            box-shadow: none;
         }
-
-        /* Header */
-        .toc-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.25rem 1.5rem 0.5rem 1.75rem;
-            cursor: pointer;
-            list-style: none;
-            user-select: none;
-            transition: background 0.15s ease;
+        .toc-body {
+            max-height: none !important;
         }
-        .blog-toc:not(details) .toc-header {
-            cursor: default;
-        }
-        .toc-header::-webkit-details-marker {
+        .toc-chevron-btn {
             display: none;
         }
+    }
 
-        /* When details is open, but we use JS for smooth transition so we just style the header */
-        .blog-toc.is-expanded .toc-chevron {
-            transform: rotate(180deg);
-        }
-        .blog-toc:not(.is-expanded) .toc-chevron {
-            transform: rotate(0deg);
-        }
-
-        .toc-bottom-toggle {
-            position: absolute;
-            bottom: -16px; /* Halfway over the border */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-        }
-
-        .toc-chevron-btn {
-            background: #ffffff;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            color: #111827;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* Gives it a slight lift */
-        }
-
-        .toc-chevron-btn:hover {
-            transform: scale(1.05);
-            background: #f9fafb;
-        }
-
-        .toc-title-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .toc-book-icon {
-            color: var(--toc-accent, #f59e0b);
-        }
-
-        .toc-label {
-            font-weight: 800;
-            font-size: 1.25rem;
-            color: #1a1a1a;
-            letter-spacing: -0.01em;
-        }
-
-        .toc-header-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .toc-jump-btn {
-            background-color: var(--toc-accent, #f59e0b);
-            color: white;
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 0.375rem 0.75rem;
-            border-radius: 4px;
-            text-decoration: none;
-            transition: opacity 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .toc-jump-btn:hover {
-            opacity: 0.9;
-        }
-
-        .toc-chevron {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0;
-        }
-
-        /* Navigation / Accordion wrapper */
-        .toc-nav-wrapper {
-            display: grid;
-            grid-template-rows: 0fr;
-            transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .blog-toc.is-open .toc-nav-wrapper {
-            grid-template-rows: 1fr;
-        }
-
-        .toc-nav-inner {
-            position: relative;
-            overflow: hidden;
-        }
-
-        .toc-nav {
-            padding: 0.25rem 1.5rem 1rem 1.75rem;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            visibility: hidden;
-            /* Maximum initial height before 'Show More' */
-            max-height: var(--collapsed-height, 250px);
-            overflow-y: hidden;
-            /* Custom variable for transitioning max-height */
-            --max-h: var(--collapsed-height, 250px);
-        }
-
-        .blog-toc.is-expanded .toc-nav {
-            max-height: 3000px; /* Big enough to fit everything */
-            --max-h: 3000px;
-            transition:
-                max-height 0.5s ease-in-out,
-                opacity 0.4s ease 0.1s;
-        }
-
-        .blog-toc.is-open .toc-nav {
-            opacity: 1;
-            visibility: visible;
-            transition:
-                max-height 0.5s ease-in-out,
-                opacity 0.4s ease 0.1s;
-        }
-
+    /* ── Mobile ──────────────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
         .toc-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            column-count: 2;
-            column-gap: 2rem;
+            column-count: 1;
         }
-
-        /* Grouping to prevent column breaks */
         .toc-group {
             margin: 0;
-            break-inside: avoid;
-            padding: 0;
-            /* Removed bottom border from group to prevent double lines */
+            padding-bottom: 0;
+            border-bottom: none;
         }
-        .toc-group:last-child {
-            margin-bottom: 0;
-        }
-
-        .toc-sublist {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        /* Items */
         .toc-item {
-            margin: 0;
+            border-bottom: none;
             padding: 0;
-            position: relative; /* For pseudo-element positioning */
         }
-
-        /* The separator line directly under an H2 before its H3 children start */
-        /* Replaced by pseudo-elements on .toc-link below */
-
-        .toc-link {
-            position: relative; /* Context for ::after separator */
-            display: flex;
-            align-items: flex-start;
-            gap: 0.625rem;
-            padding: 0.625rem 0; /* Standardized height/padding for all links */
-            text-decoration: none;
-            font-size: 0.9375rem;
-            font-weight: 700;
-            line-height: 1.3;
-            color: #1a1a1a;
-            border-left: 2px solid transparent;
-            transition: all 0.15s ease;
-        }
-
-        /* The custom separator line that starts *with* the number */
         .toc-link::after {
-            content: "";
-            position: absolute;
-            left: 0; /* starts exactly at the left edge of the number box */
-            right: 0;
-            bottom: 0;
-            height: 1px;
-            background: #e5e7eb;
+            background: #f3f4f6;
         }
-
-        /* Remove border from ONLY the very last item in the entire TOC list */
-        .toc-list > .toc-group:last-child .toc-link::after {
-            display: none;
+        .toc-group > .toc-link {
+            padding: 0.625rem 0;
         }
-        /* Except if that last group has children, then the very last child's link gets no border instead */
-        .toc-list
-            > .toc-group:last-child
-            .toc-sublist
-            .toc-item:last-child
-            > .toc-link::after {
-            display: none;
-            /* But we must restore the group's link border if it has children */
+        .blog-toc {
+            margin: 1.25rem 0;
         }
-        .toc-list > .toc-group:last-child:has(.toc-sublist) > .toc-link::after {
-            display: block;
+        .toc-header {
+            padding: 0.75rem 1rem;
         }
-        .toc-link:hover {
-            color: var(--toc-accent, #f59e0b);
+        .toc-nav {
+            padding: 0 0.75rem 0.875rem;
         }
-
-        /* Active heading highlight */
-        .toc-link.active {
-            color: var(--toc-accent, #f59e0b);
+        .toc-link {
+            font-size: 0.8125rem;
+            padding: 0.375rem 0.5rem;
         }
-
-        .toc-num {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: #1a1a1a;
-            color: #ffffff;
-            font-weight: 800;
-            min-width: 1.5rem;
-            height: 1.5rem;
-            font-size: 0.75rem;
-            border-radius: 4px;
-            margin-top: 1px;
-            flex-shrink: 0;
-            padding: 0 0.35rem;
-        }
-
-        /* Level indentation — using margin so borders start at number position */
         .toc-lvl-3 {
-            margin-left: 1.5rem;
+            margin-left: 1rem;
         }
         .toc-lvl-4 {
-            margin-left: 3rem;
+            margin-left: 2rem;
+        }
+    }
+</style>
+
+<script>
+    // ── Smooth anchor scroll ──────────────────────────────────────────────────
+    document.querySelectorAll('.blog-toc a[href^="#"]').forEach((link) => {
+        link.addEventListener("click", (e) => {
+            const href = link.getAttribute("href");
+            if (!href) return;
+            const target = document.querySelector(href);
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+                history.pushState(null, "", href);
+            }
+        });
+    });
+
+    // ── Active heading tracking ───────────────────────────────────────────────
+    const tocLinks = document.querySelectorAll<HTMLAnchorElement>(
+        ".blog-toc .toc-link",
+    );
+    if (tocLinks.length > 0) {
+        const ids = Array.from(tocLinks).map((a) => a.dataset.tocTarget!);
+        const headings = ids
+            .map((id) => document.getElementById(id))
+            .filter(Boolean) as HTMLElement[];
+
+        if (headings.length > 0) {
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting) {
+                            tocLinks.forEach((l) =>
+                                l.classList.remove("active"),
+                            );
+                            const match = document.querySelector(
+                                `.blog-toc .toc-link[data-toc-target="${entry.target.id}"]`,
+                            );
+                            match?.classList.add("active");
+                        }
+                    }
+                },
+                { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
+            );
+            headings.forEach((h) => observer.observe(h));
+        }
+    }
+
+    // ── TOC height + expand/collapse ──────────────────────────────────────────
+    //
+    // DESIGN: The .toc-body is always visible in the DOM. No is-open class,
+    // no grid-template-rows animation, no opacity fade — these caused the
+    // layout-shift vibration of all content below the TOC.
+    //
+    // On load  : max-height is set synchronously as inline style (no CSS
+    //            transition fires because .toc-ready class is not yet present).
+    // After 2 rAF: .toc-ready class added → enables max-height transition
+    //            so subsequent user clicks animate smoothly.
+    // On click  : max-height switches between truncated and full height.
+    //
+    document.querySelectorAll<HTMLElement>(".blog-toc").forEach((toc) => {
+        const body = toc.querySelector<HTMLElement>(".toc-body");
+        const nav = toc.querySelector<HTMLElement>(".toc-nav");
+        const toggleBtn = toc.querySelector<HTMLElement>(".toc-toggle-btn");
+        const showMoreBtn = toc.querySelector<HTMLElement>(".toc-show-more-btn");
+        const showMoreLabel = toc.querySelector<HTMLElement>(".toc-show-more-label");
+
+        if (!body || !nav) return;
+
+        // MEASURE & INITIALIZE ------------------------------------------------
+        const fullHeight = nav.scrollHeight;
+        const threshold = 280; // Only show 'Show all' if content > 280px
+        const truncHeight = 160; // Truncate to a smaller readable fragment
+
+        if (fullHeight > threshold) {
+            toc.classList.add("can-truncate");
+            body.style.maxHeight = truncHeight + "px";
+        } else {
+            // Short list: no truncation, hide floating button
+            body.style.maxHeight = "none";
+            toc.classList.add("is-expanded"); // Header chevron logic
         }
 
-        /* Print */
-        @media print {
-            .blog-toc {
-                border: 1px solid #e5e7eb;
-                background: #fff;
-                box-shadow: none;
-            }
-            .toc-chevron {
-                display: none;
-            }
-        }
 
-        /* Mobile */
-        @media (max-width: 768px) {
-            .toc-list {
-                column-count: 1;
-            }
-            .toc-group {
-                margin: 0;
-                padding-bottom: 0;
-                border-bottom: none;
-            }
-            .toc-item {
-                border-bottom: none;
-                padding: 0; /* Keep padding on the link itself */
-            }
-            .toc-link::after {
-                background: #f3f4f6; /* Lighter mobile border */
-            }
-            .toc-group > .toc-link {
-                padding: 0.625rem 0;
-            }
-            .blog-toc {
-                margin: 1.25rem 0;
-            }
-            .toc-header {
-                padding: 0.75rem 1rem;
-            }
-            .toc-nav {
-                padding: 0.375rem 0.75rem 0.875rem;
-            }
-            .toc-link {
-                font-size: 0.8125rem;
-                padding: 0.375rem 0.5rem;
-            }
-            .toc-lvl-3 {
-                margin-left: 1rem; /* Reduced from 1.5rem for mobile */
-            }
-            .toc-lvl-4 {
-                margin-left: 2rem; /* Reduced from 3rem for mobile */
-            }
-        }
-    </style>
-
-    <!-- ─── Smooth scroll + active heading highlight ───────────────────────── -->
-    <script>
-        // Smooth scroll
-        document.querySelectorAll('.blog-toc a[href^="#"]').forEach((link) => {
-            link.addEventListener("click", (e) => {
-                const href = link.getAttribute("href");
-                if (!href) return;
-                const target = document.querySelector(href);
-                if (target) {
-                    e.preventDefault();
-                    target.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start",
-                    });
-                    history.pushState(null, "", href);
-                }
+        // After 2 animation frames (layout settled), enable smooth transitions
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                toc.classList.add("toc-ready");
             });
         });
 
-        // Active heading tracking via IntersectionObserver
-        const tocLinks = document.querySelectorAll<HTMLAnchorElement>(
-            ".blog-toc .toc-link",
-        );
-        if (tocLinks.length > 0) {
-            const ids = Array.from(tocLinks).map((a) => a.dataset.tocTarget!);
-            const headings = ids
-                .map((id) => document.getElementById(id))
-                .filter(Boolean) as HTMLElement[];
-
-            if (headings.length > 0) {
-                const observer = new IntersectionObserver(
-                    (entries) => {
-                        for (const entry of entries) {
-                            if (entry.isIntersecting) {
-                                tocLinks.forEach((l) =>
-                                    l.classList.remove("active"),
-                                );
-                                const match = document.querySelector(
-                                    `.blog-toc .toc-link[data-toc-target="${entry.target.id}"]`,
-                                );
-                                match?.classList.add("active");
-                            }
-                        }
-                    },
-                    { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
-                );
-                headings.forEach((h) => observer.observe(h));
+        const syncUI = (expanded: boolean) => {
+            toggleBtn?.setAttribute("aria-expanded", String(expanded));
+            showMoreBtn?.setAttribute("aria-expanded", String(expanded));
+            if (showMoreLabel) {
+                showMoreLabel.textContent = expanded ? "Show less" : "Show all";
             }
-        }
+        };
 
-        // Smooth Details/Summary Toggle
-        const tocs = document.querySelectorAll(".blog-toc");
-        tocs.forEach((toc) => {
-            if (toc.tagName.toLowerCase() === "details") {
-                const summary = toc.querySelector("summary");
+        const expand = () => {
+            toc.classList.add("is-expanded");
+            body.style.maxHeight = fullHeight + "px";
+            syncUI(true);
+        };
 
-                // Make sure the TOC is always technically open in the details tag
-                toc.setAttribute("open", "");
-                toc.classList.add("is-open");
+        const collapse = () => {
+            toc.classList.remove("is-expanded");
+            body.style.maxHeight = truncHeight + "px";
+            syncUI(false);
+        };
 
-                summary?.addEventListener("click", (e) => {
-                    e.preventDefault(); // Stop default instant toggle
+        const toggle = () => {
+            toc.classList.contains("is-expanded") ? collapse() : expand();
+        };
 
-                    if (toc.classList.contains("is-expanded")) {
-                        // Collapse to partial height
-                        toc.classList.remove("is-expanded");
-                    } else {
-                        // Expand fully
-                        toc.classList.add("is-expanded");
-                    }
-                });
+        // Both buttons trigger the toggle
+        toggleBtn?.addEventListener("click", toggle);
+        showMoreBtn?.addEventListener("click", toggle);
 
-                // Dynamic height calculation
-                const tocNav = toc.querySelector(".toc-nav") as HTMLElement;
-
-                const calculateAndSetHalfHeight = () => {
-                    if (tocNav) {
-                        // Temporarily expand to get full height
-                        const wasExpanded =
-                            toc.classList.contains("is-expanded");
-                        if (!wasExpanded) toc.classList.add("is-expanded");
-
-                        const fullHeight = tocNav.scrollHeight;
-                        const halfHeight = Math.floor(fullHeight / 2);
-
-                        // Set CSS Custom Variable for collapsed state
-                        tocNav.style.setProperty(
-                            "--collapsed-height",
-                            `${halfHeight}px`,
-                        );
-
-                        // Revert expansion state if it wasn't expanded
-                        if (!wasExpanded) toc.classList.remove("is-expanded");
-                    }
-                };
-
-                // Calculate initially and on resize
-                setTimeout(calculateAndSetHalfHeight, 100);
-                window.addEventListener("resize", calculateAndSetHalfHeight);
-
-                // Set initial state to partially collapsed
-                toc.classList.remove("is-expanded");
-
-                // Handle Jump to Recipe Button correctly within `<summary>`
-                // Without this, clicking the button toggles the `<details>` immediately.
-                const jumpBtn = summary?.querySelector(".toc-jump-btn");
-                if (jumpBtn) {
-                    jumpBtn.addEventListener("click", (e) => {
-                        e.stopPropagation(); // prevent `<summary>` click
-                    });
-                }
-
-                // Handle Bottom Chevron Toggle
-                const bottomBtn = toc.querySelector(".toc-chevron-btn");
-                if (bottomBtn) {
-                    bottomBtn.addEventListener("click", (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (toc.classList.contains("is-expanded")) {
-                            toc.classList.remove("is-expanded");
-                        } else {
-                            toc.classList.add("is-expanded");
-                        }
-                    });
-                }
+        // Recalculate on window resize
+        window.addEventListener("resize", () => {
+            const newFull = nav.scrollHeight;
+            const newTrunc = Math.max(120, Math.floor(newFull / 2));
+            if (toc.classList.contains("is-expanded")) {
+                body.style.maxHeight = newFull + "px";
             } else {
-                // Not a details tag (collapsible = false), so it's always open by default in CSS wrapper.
-                toc.classList.add("is-open");
+                body.style.maxHeight = newTrunc + "px";
             }
         });
-    </script>
-</Tag>
+    });
+</script>
