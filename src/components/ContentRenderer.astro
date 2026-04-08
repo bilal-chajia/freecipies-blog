@@ -462,13 +462,14 @@ const numberedBlocks = parsed.map((block) => {
   }
 
   /* General list styling for the main content */
-  .content-blocks :global(ul) {
+  /* Exclude ingredient lists and other custom lists */
+  .content-blocks :global(ul:not(.group-items)) {
     list-style-type: disc;
     padding-left: 1.5rem;
     margin-bottom: var(--block-spacing);
   }
 
-  .content-blocks :global(ol) {
+  .content-blocks :global(ol:not(.group-items)) {
     list-style-type: decimal;
     padding-left: 1.5rem;
     margin-bottom: var(--block-spacing);

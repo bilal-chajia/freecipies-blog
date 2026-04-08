@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "node -e \"process.env.NODE_OPTIONS='--max-old-space-size=4096';require('child_process').execSync('npx astro build',{stdio:'inherit'})\"",
+    "build": "node scripts/build.mjs",
     "preview": "wrangler pages dev dist",
     "deploy": "wrangler pages deploy dist --project-name=freecipies-blog",
     "deploy:local": "deploy.bat",

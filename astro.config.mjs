@@ -36,7 +36,7 @@ export default defineConfig({
     enabled: false,
   },
   adapter: cloudflare({
-    imageService: 'passthrough'
+    imageService: 'passthrough',
   }),
   output: 'server',
   build: {
