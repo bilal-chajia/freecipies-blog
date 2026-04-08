@@ -102,7 +102,7 @@ const BoardEditor = () => {
   };
 
   const getRSSFeedURL = () => {
-    const baseURL = import.meta.env.VITE_SITE_URL || 'http://localhost:4321';
+    const baseURL = import.meta.env.VITE_SITE_URL || window.location.origin;
     return `${baseURL}/rss/pinterest/${formData.slug}.xml`;
   };
 

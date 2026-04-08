@@ -8,7 +8,12 @@
       "WebFetch(0bcf695b.recipes-saas.pages.dev)",
       "WebFetch(recipes-saas.chajia-bilal23.workers.dev)",
       "Bash(where *)",
-      "Bash(sqlite3 *)"
+      "Bash(sqlite3 *)",
+      "Bash(git commit *)",
+      "Bash(find *)",
+      "Bash(start *)",
+      "Bash(timeout *)",
+      "Bash(taskkill *)"
     ]
   },
   "$version": 3

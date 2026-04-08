@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/useStore';
 
 // API Base URL - Update this to match your Astro backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4321/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance with default config
 const api = axios.create({

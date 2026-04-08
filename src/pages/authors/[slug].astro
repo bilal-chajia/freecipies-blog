@@ -1,5 +1,5 @@
 ---
-import { env } from 'cloudflare:workers';
+import { env } from "cloudflare:workers";
 import Layout from "@layouts/Layout.astro";
 import RecipeCard from "@components/RecipeCard.astro";
 import { getAuthorBySlug } from "@modules/authors/services/authors.service";
@@ -44,6 +44,36 @@ const pageDescription =
   author.shortDescription ||
   `Recipes and tips by ${author.name}.`;
 
+// Helper function for social icons
+function getSocialIcon(networkName: string) {
+  const name = networkName.toLowerCase();
+
+  if (name.includes("instagram")) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`;
+  } else if (name.includes("twitter") || name.includes("x.com")) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"></path><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"></path></svg>`;
+  } else if (name.includes("facebook")) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>`;
+  } else if (name.includes("pinterest")) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4"></path><path d="M10 16l1-5"></path></svg>`;
+  } else if (name.includes("youtube")) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>`;
+  } else if (name.includes("tiktok")) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>`;
+  } else if (name.includes("linkedin")) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>`;
+  } else if (
+    name.includes("website") ||
+    name.includes("blog") ||
+    name.includes("link")
+  ) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`;
+  } else {
+    // Default link icon
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`;
+  }
+}
+
 // Parse bio if it's JSON
 let bioParagraphs: string[] = [];
 let socialNetworks: { name: string; url: string }[] = [];
@@ -69,30 +99,67 @@ if (author.bioJson) {
       <div class="hero-container">
         <div class="author-header">
           <!-- Avatar -->
-          <div class="avatar-container">
-            {
-              (avatar.imageUrl || author.imageUrl) ? (
-                <img
-                  src={avatar.imageUrl || author.imageUrl}
-                  alt={avatar.imageAlt || author.imageAlt || author.name}
-                  width={avatar.imageWidth || author.imageWidth || 150}
-                  height={avatar.imageHeight || author.imageHeight || 150}
-                  srcset={avatarSrcSet || undefined}
-                  sizes={avatarSrcSet ? avatarSizes : undefined}
-                  class="author-avatar"
-                  style={avatar.imageStyle || undefined}
-                />
-              ) : (
-                <div class="avatar-placeholder">
-                  <span>{author.name.charAt(0).toUpperCase()}</span>
-                </div>
-              )
-            }
+          <div class="avatar-wrapper">
+            <div class="avatar-container">
+              {
+                avatar.imageUrl || author.imageUrl ? (
+                  <img
+                    src={avatar.imageUrl || author.imageUrl}
+                    alt={avatar.imageAlt || author.imageAlt || author.name}
+                    width={avatar.imageWidth || author.imageWidth || 150}
+                    height={avatar.imageHeight || author.imageHeight || 150}
+                    srcset={avatarSrcSet || undefined}
+                    sizes={avatarSrcSet ? avatarSizes : undefined}
+                    class="author-avatar"
+                    style={avatar.imageStyle || undefined}
+                  />
+                ) : (
+                  <div class="avatar-placeholder">
+                    <span>{author.name.charAt(0).toUpperCase()}</span>
+                  </div>
+                )
+              }
+            </div>
+            <div class="avatar-badge">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
           </div>
 
           <!-- Info -->
           <div class="author-info">
-            <h1 class="author-name">{author.name}</h1>
+            <div class="author-header-top">
+              <h1 class="author-name">{author.name}</h1>
+              {
+                author.isFeatured && (
+                  <span class="featured-badge">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      stroke="none"
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    Featured Chef
+                  </span>
+                )
+              }
+            </div>
             {author.job && <p class="author-job">{author.job}</p>}
             <p class="author-description">
               {author.shortDescription}
@@ -100,11 +167,34 @@ if (author.bioJson) {
 
             <!-- Stats -->
             <div class="author-stats">
-              <div class="stat">
-                <span class="stat-value">{total}</span>
-                <span class="stat-label"
-                  >{total === 1 ? "Recipe" : "Recipes"}</span
-                >
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                    ></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <line x1="10" y1="9" x2="8" y2="9"></line>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <span class="stat-value">{total}</span>
+                  <span class="stat-label"
+                    >{total === 1 ? "Recipe" : "Recipes"}</span
+                  >
+                </div>
               </div>
             </div>
 
@@ -120,7 +210,8 @@ if (author.bioJson) {
                       class="social-link"
                       title={network.name}
                     >
-                      {network.name}
+                      {getSocialIcon(network.name)}
+                      <span class="social-label">{network.name}</span>
                     </a>
                   ))}
                 </div>
@@ -136,7 +227,27 @@ if (author.bioJson) {
       bioParagraphs.length > 0 && (
         <section class="bio-section">
           <div class="section-container">
-            <h2 class="section-title">About {author.name}</h2>
+            <div class="bio-header">
+              <h2 class="section-title">
+                <svg
+                  class="section-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                About {author.name}
+              </h2>
+              <div class="section-divider" />
+            </div>
             <div class="bio-content">
               {bioParagraphs.map((paragraph) => (
                 <p>{paragraph}</p>
@@ -151,10 +262,45 @@ if (author.bioJson) {
     <section class="recipes-section">
       <div class="section-container">
         <div class="section-header">
-          <h2 class="section-title">Recipes by {author.name}</h2>
-          <span class="recipe-count"
-            >{total} {total === 1 ? "recipe" : "recipes"}</span
-          >
+          <div class="section-header-left">
+            <h2 class="section-title">
+              <svg
+                class="section-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 3v18h18"></path>
+                <path d="M9 9l6-6 6 6"></path>
+              </svg>
+              Recipes by {author.name}
+            </h2>
+            <div class="section-divider"></div>
+          </div>
+          <span class="recipe-count">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            {total}
+            {total === 1 ? "recipe" : "recipes"}
+          </span>
         </div>
 
         {
@@ -166,7 +312,24 @@ if (author.bioJson) {
             </div>
           ) : (
             <div class="empty-state">
-              <p>No recipes published yet.</p>
+              <div class="empty-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="64"
+                  height="64"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <h3>No recipes yet</h3>
+              <p>Check back soon for delicious recipes from {author.name}!</p>
             </div>
           )
         }
@@ -180,15 +343,52 @@ if (author.bioJson) {
     min-height: 100vh;
   }
 
+  /* Hero Section */
   .hero-section {
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%);
     padding: clamp(3rem, 8vw, 5rem) 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-section::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(
+      circle,
+      rgba(255, 107, 53, 0.08) 0%,
+      transparent 70%
+    );
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .hero-section::after {
+    content: "";
+    position: absolute;
+    bottom: -30%;
+    left: -5%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(
+      circle,
+      rgba(247, 147, 30, 0.06) 0%,
+      transparent 70%
+    );
+    border-radius: 50%;
+    pointer-events: none;
   }
 
   .hero-container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 1.5rem);
+    position: relative;
+    z-index: 1;
   }
 
   .author-header {
@@ -196,7 +396,7 @@ if (author.bioJson) {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 2rem;
+    gap: 2.5rem;
   }
 
   @media (min-width: 768px) {
@@ -204,112 +404,244 @@ if (author.bioJson) {
       flex-direction: row;
       text-align: left;
       align-items: flex-start;
+      gap: 3rem;
     }
   }
 
-  .avatar-container {
+  /* Avatar */
+  .avatar-wrapper {
+    position: relative;
     flex-shrink: 0;
   }
 
+  .avatar-container {
+    position: relative;
+  }
+
   .author-avatar {
-    width: 150px;
-    height: 150px;
+    width: 180px;
+    height: 180px;
     border-radius: 50%;
     object-fit: cover;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    box-shadow:
+      0 12px 40px rgba(255, 107, 53, 0.25),
+      0 0 0 6px rgba(255, 255, 255, 0.8);
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .author-avatar:hover {
+    transform: scale(1.05);
+    box-shadow:
+      0 16px 48px rgba(255, 107, 53, 0.3),
+      0 0 0 6px rgba(255, 255, 255, 0.9);
   }
 
   .avatar-placeholder {
-    width: 150px;
-    height: 150px;
+    width: 180px;
+    height: 180px;
     border-radius: 50%;
     background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    box-shadow:
+      0 12px 40px rgba(255, 107, 53, 0.3),
+      0 0 0 6px rgba(255, 255, 255, 0.8);
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .avatar-placeholder:hover {
+    transform: scale(1.05);
+    box-shadow:
+      0 16px 48px rgba(255, 107, 53, 0.35),
+      0 0 0 6px rgba(255, 255, 255, 0.9);
   }
 
   .avatar-placeholder span {
-    font-size: 4rem;
+    font-size: 4.5rem;
     font-weight: 700;
     color: white;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
+  .avatar-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    border: 3px solid white;
+  }
+
+  /* Author Info */
   .author-info {
     flex: 1;
+    max-width: 700px;
+  }
+
+  .author-header-top {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
   }
 
   .author-name {
-    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-size: clamp(2.25rem, 5vw, 3rem);
     font-weight: 800;
     margin: 0;
     color: #1a1a1a;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .featured-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
   }
 
   .author-job {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     color: #ff6b35;
-    margin: 0.5rem 0 0 0;
+    margin: 0.75rem 0 0 0;
     font-weight: 600;
   }
 
   .author-description {
-    font-size: 1rem;
-    color: #555;
-    line-height: 1.6;
+    font-size: 1.0625rem;
+    color: #4b5563;
+    line-height: 1.7;
     margin: 1rem 0 0 0;
-    max-width: 600px;
+    max-width: 650px;
   }
 
+  /* Stats */
   .author-stats {
     display: flex;
-    gap: 2rem;
-    margin-top: 1.5rem;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
   }
 
-  .stat {
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1.25rem;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: all 0.2s ease;
+  }
+
+  .stat-item:hover {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    border-radius: 10px;
+    color: white;
+  }
+
+  .stat-content {
     display: flex;
     flex-direction: column;
   }
 
   .stat-value {
-    font-size: 1.75rem;
-    font-weight: 700;
+    font-size: 1.5rem;
+    font-weight: 800;
     color: #1a1a1a;
+    line-height: 1;
   }
 
   .stat-label {
-    font-size: 0.875rem;
-    color: #666;
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    font-weight: 500;
   }
 
+  /* Social Links */
   .social-links {
     display: flex;
-    gap: 1rem;
-    margin-top: 1.5rem;
+    gap: 0.75rem;
+    margin-top: 2rem;
     flex-wrap: wrap;
   }
 
   .social-link {
-    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.125rem;
     background: white;
-    border-radius: 8px;
-    color: #333;
+    border-radius: 10px;
+    color: #374151;
     text-decoration: none;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.06);
   }
 
   .social-link:hover {
-    background: #ff6b35;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
     color: white;
+    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+    transform: translateY(-2px);
   }
 
+  .social-link svg {
+    flex-shrink: 0;
+  }
+
+  .social-label {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .social-label {
+      display: inline;
+    }
+  }
+
+  /* Bio Section */
   .bio-section {
-    padding: clamp(2rem, 5vw, 3rem) 0;
+    padding: clamp(3rem, 6vw, 4rem) 0;
     background: white;
   }
 
@@ -319,11 +651,30 @@ if (author.bioJson) {
     padding: 0 clamp(1rem, 3vw, 1.5rem);
   }
 
+  .bio-header {
+    margin-bottom: 2rem;
+  }
+
   .section-title {
-    font-size: clamp(1.5rem, 3vw, 2rem);
-    font-weight: 700;
-    margin: 0 0 1.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+    font-weight: 800;
+    margin: 0 0 1rem 0;
     color: #1a1a1a;
+    letter-spacing: -0.01em;
+  }
+
+  .section-icon {
+    color: #ff6b35;
+  }
+
+  .section-divider {
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(90deg, #ff6b35 0%, #f7931e 100%);
+    border-radius: 2px;
   }
 
   .bio-content {
@@ -331,50 +682,147 @@ if (author.bioJson) {
   }
 
   .bio-content p {
-    font-size: 1rem;
+    font-size: 1.0625rem;
     line-height: 1.8;
-    color: #444;
-    margin: 0 0 1rem 0;
+    color: #374151;
+    margin: 0 0 1.25rem 0;
   }
 
+  .bio-content p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Recipes Section */
   .recipes-section {
-    padding: clamp(3rem, 8vw, 5rem) 0;
-    background: #f9f9f9;
+    padding: clamp(3rem, 6vw, 4rem) 0;
+    background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
   }
 
   .section-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
+    align-items: flex-start;
+    margin-bottom: 2.5rem;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.5rem;
+  }
+
+  .section-header-left {
+    flex: 1;
+  }
+
+  .section-header .section-title {
+    margin-bottom: 1rem;
+  }
+
+  .section-header .section-divider {
+    width: 80px;
   }
 
   .recipe-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 0.875rem;
-    color: #666;
+    color: #6b7280;
     background: white;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
+    padding: 0.625rem 1.25rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .recipe-count svg {
+    color: #ff6b35;
   }
 
   .recipes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 2rem;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 4rem 0;
-    color: #666;
   }
 
   @media (max-width: 768px) {
     .recipes-grid {
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 1.5rem;
+    }
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+
+  .empty-icon {
+    margin-bottom: 1.5rem;
+    color: #d1d5db;
+  }
+
+  .empty-state h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .empty-state p {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  /* Mobile Optimizations */
+  @media (max-width: 640px) {
+    .author-avatar,
+    .avatar-placeholder {
+      width: 140px;
+      height: 140px;
+    }
+
+    .avatar-placeholder span {
+      font-size: 3.5rem;
+    }
+
+    .avatar-badge {
+      width: 32px;
+      height: 32px;
+      bottom: 4px;
+      right: 4px;
+    }
+
+    .stat-item {
+      padding: 0.75rem 1rem;
+    }
+
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+    }
+
+    .stat-value {
+      font-size: 1.375rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .author-header-top {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .social-links {
+      gap: 0.5rem;
+    }
+
+    .social-link {
+      padding: 0.5rem 0.75rem;
     }
   }
 </style>

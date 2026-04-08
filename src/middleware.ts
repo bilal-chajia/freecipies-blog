@@ -59,11 +59,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Allows 'unsafe-eval' to fix libraries using eval/new Function (e.g., some dev tools, extensive libs)
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https: blob:",
-    "style-src 'self' 'unsafe-inline' https:",
-    "img-src 'self' data: https: blob:",
-    "font-src 'self' data: https:",
-    "connect-src 'self' wss: ws: https:",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https: blob: data: http://localhost:* http://127.0.0.1:*",
+    "style-src 'self' 'unsafe-inline' https: http://localhost:* http://127.0.0.1:*",
+    "img-src 'self' data: https: blob: http://localhost:* http://127.0.0.1:*",
+    "font-src 'self' data: https: http://localhost:* http://127.0.0.1:*",
+    "connect-src 'self' wss: ws: https: http://localhost:* http://127.0.0.1:*",
     "worker-src 'self' blob:",
     "frame-src 'self' https:",
     "object-src 'none'",
