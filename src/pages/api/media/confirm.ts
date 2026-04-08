@@ -92,10 +92,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     }
 
-    // Build public URL from R2 key
-    const publicUrl = env.R2_PUBLIC_URL
-      ? env.R2_PUBLIC_URL.replace(/\/$/, '')
-      : '/images';
+    // Build public URL using proxy endpoint (NOT R2 public URL)
+    const publicUrl = '/api/images';
 
     // Build variants JSON for storage
     const variantsJson = {
@@ -117,8 +115,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Build focal point JSON
-    const focalPointJson = body.focalPoint 
-      ? JSON.stringify(body.focalPoint) 
+    const focalPointJson = body.focalPoint
+      ? JSON.stringify(body.focalPoint)
       : '{"x": 50, "y": 50}';
 
     // Create media record

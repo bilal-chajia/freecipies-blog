@@ -209,6 +209,7 @@ export interface ContentImageBlock {
 /**
  * Parse variants JSON from API or DB response
  * Handles both string and object formats
+ * Also rewrites any R2 public URLs to use the proxy endpoint (/api/images/)
  * @param item - Object with variants_json or variantsJson property
  * @returns Parsed MediaVariantsJson or null
  */
@@ -216,12 +217,39 @@ export function parseVariantsJson(item: { variants_json?: string; variantsJson?:
     if (!item) return null;
     const json = item.variants_json || item.variantsJson;
     if (!json) return null;
-    if (typeof json === 'object') return json as MediaVariantsJson;
+    if (typeof json === 'object') {
+        // Deep clone and rewrite URLs
+        return rewriteR2UrlsInVariants(json as MediaVariantsJson);
+    }
     try {
-        return JSON.parse(json) as MediaVariantsJson;
+        const parsed = JSON.parse(json) as MediaVariantsJson;
+        // Rewrite URLs after parsing
+        return rewriteR2UrlsInVariants(parsed);
     } catch {
         return null;
     }
+}
+
+/**
+ * Recursively rewrite R2 URLs in a parsed variants object
+ */
+function rewriteR2UrlsInVariants(obj: unknown): MediaVariantsJson | null {
+    if (!obj || typeof obj !== 'object') return obj as MediaVariantsJson | null;
+
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (key === 'url' && typeof value === 'string') {
+            result[key] = rewriteR2UrlToProxy(value);
+        } else if (key === 'placeholder' && typeof value === 'string' && value.startsWith('http')) {
+            // Also rewrite placeholder URLs if they're external
+            result[key] = rewriteR2UrlToProxy(value);
+        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+            result[key] = rewriteR2UrlsInVariants(value);
+        } else {
+            result[key] = value;
+        }
+    }
+    return result as MediaVariantsJson;
 }
 
 /**
@@ -425,4 +453,34 @@ export function getVariantUrlForContainer(
 ): string | null {
     const variant = getVariantForContainer(slot, containerType, size);
     return variant?.url || null;
+}
+
+// ============================================
+// URL REWRITE (R2 -> Proxy)
+// ============================================
+
+/**
+ * Rewrite R2 public URLs to use the local proxy endpoint.
+ * Converts: https://pub-*.r2.dev/media/... -> /api/images/media/...
+ * This is needed because R2 bucket is not publicly accessible.
+ * @param url - The original URL (may be R2 public URL or already proxy URL)
+ * @returns Rewritten URL using /api/images/ proxy, or original if not an R2 URL
+ */
+export function rewriteR2UrlToProxy(url: string): string {
+    if (!url) return url;
+
+    // If already a proxy URL, return as-is
+    if (url.startsWith('/api/images/')) return url;
+
+    // Match R2 public URLs: https://pub-*.r2.dev/...
+    const r2Pattern = /^https:\/\/pub-[a-f0-9]+\.r2\.dev\/(.+)$/i;
+    const match = url.match(r2Pattern);
+
+    if (match) {
+        const key = match[1];
+        return `/api/images/${key}`;
+    }
+
+    // Not an R2 URL - return as-is (could be external URL, data URI, etc.)
+    return url;
 }

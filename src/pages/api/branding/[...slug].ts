@@ -117,7 +117,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 httpMetadata: { contentType: file.type }
             });
 
-            const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
+            const publicUrl = '/api/images';
             const { body, status, headers } = formatSuccessResponse({
                 url: `${publicUrl}/${key}`,
                 type,
@@ -131,7 +131,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 httpMetadata: { contentType: file.type }
             });
 
-            const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
+            const publicUrl = '/api/images';
             const { body, status, headers } = formatSuccessResponse({
                 url: `${publicUrl}/${key}`,
                 filename: `favicon.${extension}`,
@@ -185,7 +185,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
             httpMetadata: { contentType: file.type }
         });
 
-        const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
+        const publicUrl = '/api/images';
         const { body, status, headers } = formatSuccessResponse({
             url: `${publicUrl}/${key}`,
             filename

@@ -19,7 +19,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     try {
 
         if (!env?.IMAGES) { throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500); }
-        const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
+        // Use proxy endpoint for image URLs (NOT R2 public URL)
+        const publicUrl = '/api/images';
 
         // Auth (Admin only)
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
@@ -39,7 +40,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
                     continue;
                 }
                 const blob = await response.blob();
-                
+
                 // 2. Upload to R2
                 const uploadResult = await uploadImage(
                     env.IMAGES,
@@ -74,7 +75,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 };
 
                 const newMedia = await createMedia(env.DB, mediaData);
-                
+
                 if (newMedia) {
                     results.push({ id: newMedia.id, name: newMedia.name });
 
@@ -82,7 +83,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
                     // Construction of the JSON object that goes into categories.images_json (or cover_image_json)
                     // Checking schema.sql for categories table... 
                     // It has `cover_image_json` and `hero_image_json`.
-                    
+
                     const imageJson = JSON.stringify({
                         media_id: newMedia.id,
                         alt: newMedia.altText,
@@ -102,10 +103,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
             }
         }
 
-        const { body, status, headers } = formatSuccessResponse({ 
-            success: true, 
-            message: `Seeded ${results.length} images`, 
-            seeded: results 
+        const { body, status, headers } = formatSuccessResponse({
+            success: true,
+            message: `Seeded ${results.length} images`,
+            seeded: results
         });
         return new Response(body, { status: 200, headers });
 

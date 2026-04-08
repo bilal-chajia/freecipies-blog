@@ -31,7 +31,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500);
     }
 
-    const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
+    // Use proxy endpoint for image URLs (NOT R2 public URL)
+    const publicUrl = '/api/images';
 
     // Authenticate
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;

@@ -23,7 +23,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
 
         const bucket = env.IMAGES;
-        const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
+        // Use proxy endpoint for image URLs (NOT R2 public URL)
+        const publicUrl = '/api/images';
 
         // Authenticate and authorize user
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;

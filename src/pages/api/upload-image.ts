@@ -11,7 +11,8 @@ import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
 
-    const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
+    // Use proxy endpoint for image URLs (NOT R2 public URL)
+    const publicUrl = '/api/images';
 
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
     const authContext = await extractAuthContext(request, jwtSecret);

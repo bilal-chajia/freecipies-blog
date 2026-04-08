@@ -38,7 +38,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const publicUrl = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : '/images';
+    // Use proxy endpoint for image URLs (NOT R2 public URL)
+    const publicUrl = '/api/images';
 
     // Load upload settings
     const settings = await getImageUploadSettings(env.DB);

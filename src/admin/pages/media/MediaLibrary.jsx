@@ -7,7 +7,8 @@ import {
   getLargestVariant,
   getVariantForContainer,
   pickVariantByWidth,
-  CONTAINER_SIZES
+  CONTAINER_SIZES,
+  rewriteR2UrlToProxy
 } from '@shared/types/images';
 import ImageEditor from '@/components/ImageEditor.jsx';
 import ImageUploader from '@/components/ImageUploader';
@@ -106,24 +107,24 @@ const formatDisplayedSize = (item) => {
 const getThumbnailUrl = (item) => {
   const parsed = parseVariants(item);
   const variants = getVariantMap(parsed);
-  if (!variants) return item.url;
+  if (!variants) return rewriteR2UrlToProxy(item.url);
 
   // Thumbnail grid is ~150px, need 300px for retina
   const slot = { variants };
   const variant = getVariantForContainer(slot, 'thumbnail', 'lg'); // 180px * 2 = 360px
-  return variant?.url || item.url;
+  return rewriteR2UrlToProxy(variant?.url || item.url);
 };
 
 // Get full resolution URL (uses container-based selection for lightbox)
 const getFullUrl = (item) => {
   const parsed = parseVariants(item);
   const variants = getVariantMap(parsed);
-  if (!variants) return item.url;
+  if (!variants) return rewriteR2UrlToProxy(item.url);
 
   // Lightbox/preview needs full resolution, use hero xl (2048px)
   const slot = { variants };
   const variant = getVariantForContainer(slot, 'hero', 'xl'); // 2048px
-  return variant?.url || item.url;
+  return rewriteR2UrlToProxy(variant?.url || item.url);
 };
 
 const OptimizedImage = ({ item, className = "", priority = false }) => {
@@ -134,32 +135,32 @@ const OptimizedImage = ({ item, className = "", priority = false }) => {
 
   // Build srcset from available variants
   let srcset = '';
-  let src = item.url;
+  let src = rewriteR2UrlToProxy(item.url);
   let width = undefined;
   let height = undefined;
 
   if (variants) {
     const srcsetParts = [];
-    // Add all available variants to srcset
-    if (variants.xs?.url) srcsetParts.push(`${variants.xs.url} ${variants.xs.width}w`);
-    if (variants.sm?.url) srcsetParts.push(`${variants.sm.url} ${variants.sm.width}w`);
-    if (variants.md?.url) srcsetParts.push(`${variants.md.url} ${variants.md.width}w`);
-    if (variants.lg?.url) srcsetParts.push(`${variants.lg.url} ${variants.lg.width}w`);
-    if (variants.original?.url) srcsetParts.push(`${variants.original.url} ${variants.original.width}w`);
+    // Add all available variants to srcset (rewritten to proxy URLs)
+    if (variants.xs?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.xs.url)} ${variants.xs.width}w`);
+    if (variants.sm?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.sm.url)} ${variants.sm.width}w`);
+    if (variants.md?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.md.url)} ${variants.md.width}w`);
+    if (variants.lg?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.lg.url)} ${variants.lg.width}w`);
+    if (variants.original?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.original.url)} ${variants.original.width}w`);
     srcset = srcsetParts.join(', ');
 
     // Use container-based selection for default src (thumbnail size ~150px)
     const slot = { variants };
     const selectedVariant = getVariantForContainer(slot, 'thumbnail', 'lg');
     if (selectedVariant) {
-      src = selectedVariant.url;
+      src = rewriteR2UrlToProxy(selectedVariant.url);
       width = selectedVariant.width;
       height = selectedVariant.height;
     }
   }
 
   // Fallback to item URL if calculation failed
-  if (!src) src = item.url;
+  if (!src) src = rewriteR2UrlToProxy(item.url);
 
   return (
     <div className={`relative w-full h-full overflow-hidden ${className}`}>
@@ -258,9 +259,9 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
         if (!d) return undefined;
         const date = new Date(d);
         if (isEndOfDay) {
-            date.setHours(23, 59, 59, 999);
+          date.setHours(23, 59, 59, 999);
         } else {
-            date.setHours(0, 0, 0, 0);
+          date.setHours(0, 0, 0, 0);
         }
         return date.toISOString();
       };

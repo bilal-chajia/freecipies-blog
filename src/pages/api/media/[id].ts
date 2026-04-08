@@ -13,7 +13,7 @@ function getAllR2Keys(variantsJson: string | null): string[] {
     const keys: string[] = [];
     try {
         const data = JSON.parse(variantsJson);
-        
+
         // Handle new structure: { variants: { lg: { r2_key: ... }, ... } }
         if (data.variants && typeof data.variants === 'object') {
             Object.values(data.variants).forEach((variant: any) => {
@@ -21,10 +21,10 @@ function getAllR2Keys(variantsJson: string | null): string[] {
                     keys.push(variant.r2_key);
                 }
             });
-        } 
+        }
         // Handle potential legacy flat structure or other formats
         else {
-             // Try to find R2 key in simple object
+            // Try to find R2 key in simple object
             const simpleVariant = data.original || data.lg || data.md || data.sm || data.xs;
             if (simpleVariant?.r2_key) keys.push(simpleVariant.r2_key);
         }
@@ -58,7 +58,7 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
     try {
 
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-        
+
         // Check authentication
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.EDITOR)) {
@@ -108,7 +108,7 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
         const timestamp = Date.now();
         const newKey = `media/${id}/${timestamp}.webp`;
         const cacheBuster = `?v=${timestamp}`;
-        const newUrl = `${env.R2_PUBLIC_URL}/${newKey}${cacheBuster}`;
+        const newUrl = `/api/images/${newKey}${cacheBuster}`;
 
         try {
             const arrayBuffer = await file.arrayBuffer();
@@ -137,7 +137,7 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
                 name: file.name
             });
         } catch (dbError) {
-             // ... error handling
+            // ... error handling
             const { body, status, headers } = formatErrorResponse(
                 new AppError(ErrorCodes.DATABASE_ERROR, 'Database update failed', 500)
             );
@@ -149,7 +149,7 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
 
     } catch (error) {
         console.error('Error replacing media:', error);
-         const { body, status, headers } = formatErrorResponse(
+        const { body, status, headers } = formatErrorResponse(
             new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to replace media', 500)
         );
         return new Response(body, { status, headers });
@@ -195,7 +195,7 @@ export const DELETE: APIRoute = async ({ request, locals, params }) => {
         // Delete ALL variants from R2
         let r2DeleteFailed = false;
         const r2Keys = getAllR2Keys(mediaRecord.variantsJson);
-        
+
         // Execute deletions in parallel for speed
         await Promise.all(r2Keys.map(async (key) => {
             try {
