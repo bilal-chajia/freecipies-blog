@@ -47,6 +47,8 @@ const {
   embedded = false,
 } = Astro.props;
 
+const TitleTag = embedded ? "h2" : "h1";
+
 const recipe = recipeJson;
 
 const imagesJson: ArticleImagesJson = article.imagesJson
@@ -144,8 +146,8 @@ const navItems = [
         <meta itemprop="datePublished" content={article.publishedAt} />
       )}
 
-      {/* Hero Image Section - Only in standalone mode */}
-      {!embedded && showImage && coverImage.imageUrl && (
+      {/* Hero Image Section - Now shown in all modes if showImage is true */}
+      {showImage && coverImage.imageUrl && (
         <div
           class="recipe-hero"
           itemprop="image"
@@ -222,8 +224,7 @@ const navItems = [
 
       {/* Recipe Header Content */}
       <div class="recipe-content">
-        {/* Title Section - Hidden in embedded mode (already in RecipeLayout) */}
-        {!embedded && (
+        {/* Title Section - Now shown in all modes */}
         <div class="recipe-header">
           {/* Author */}
           {author && (
@@ -249,10 +250,10 @@ const navItems = [
             </div>
           )}
 
-          {/* Title */}
-          <h1 class="recipe-title" itemprop="name">
+          {/* Title - Uses dynamic tag for SEO (H2 when embedded) */}
+          <TitleTag class="recipe-title" itemprop="name">
             {article.headline}
-          </h1>
+          </TitleTag>
 
           {/* Rating */}
           {showRating && hasRating && (
@@ -325,7 +326,6 @@ const navItems = [
             </p>
           )}
         </div>
-        )}
 
         {/* Stats Grid - 4 Columns */}
         <div class="stats-grid">

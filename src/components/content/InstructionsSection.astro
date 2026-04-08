@@ -32,7 +32,7 @@ let globalStep = 0;
             <h3 class="tl-section-title">{section.section_title}</h3>
           </div>
         )}
-        <ol class="tl-steps" start={globalStep + 1}>
+        <ol class="tl-steps group-items" start={globalStep + 1}>
           {section.steps.map((step) => {
             const stepNumber = ++globalStep;
             return (
@@ -137,7 +137,7 @@ let globalStep = 0;
   /* ── Single Step ── */
   .tl-step {
     display: flex;
-    gap: 14px;
+    gap: 18px;
     align-items: flex-start;
     scroll-margin-top: 100px;
     position: relative;
@@ -147,9 +147,9 @@ let globalStep = 0;
   .tl-step::before {
     content: "";
     position: absolute;
-    left: 17px; /* Half of the 36px step number (18px) minus half of the line width (1px) */
-    top: 36px; /* Start at the bottom of the step number */
-    bottom: -24px; /* Extend into the 24px gap between steps */
+    left: 19px; /* Half of 40px step number minus half line width */
+    top: 40px; /* Bottom of 40px step number */
+    bottom: -24px;
     width: 2px;
     background: #e5e7eb;
     z-index: 0;
@@ -161,15 +161,15 @@ let globalStep = 0;
   }
 
   .tl-step-number {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #ffffff;
     color: #374151;
     font-weight: 700;
-    font-size: 15px;
+    font-size: 1.125rem;
     border-radius: 50%;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     border: 1px solid #e5e7eb;
@@ -213,14 +213,14 @@ let globalStep = 0;
   }
 
   .tl-step-name {
-    font-size: 17px;
+    font-size: 1.125rem;
     font-weight: 700;
     color: #111827;
     margin: 0;
   }
 
   .tl-step-text {
-    font-size: 15px;
+    font-size: 1.125rem;
     line-height: 1.7;
     color: #4b5563;
     margin: 0;
