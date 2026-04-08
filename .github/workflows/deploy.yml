@@ -3,22 +3,20 @@ name: Deploy to Cloudflare
 on:
   push:
     branches:
-      - main  # Changez si votre branche principale est différente
-  pull_request:
-    branches:
       - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy
+    environment: production
     steps:
       - uses: actions/checkout@v4
       
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,10 +29,13 @@ jobs:
       
       - name: Build
         run: pnpm build
+        env:
+          SITE_URL: https://recipes-saas.chajia-bilal23.workers.dev
       
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4'
           command: pages deploy dist --project-name=freecipies-blog

@@ -4,12 +4,14 @@
  * Cloudflare environment bindings.
  */
 
-import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
+import type { D1Database, R2Bucket, KVNamespace } from '@cloudflare/workers-types';
 
 export interface Env {
   DB: D1Database;
   IMAGES: R2Bucket;
+  SESSION: KVNamespace;
   R2_PUBLIC_URL: string;
+  SITE_URL: string;
   JWT_SECRET: string;
   ENVIRONMENT?: 'development' | 'production';
   R2_ACCESS_KEY_ID?: string;

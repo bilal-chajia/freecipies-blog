@@ -1,10 +1,4 @@
 import { defineMiddleware } from 'astro/middleware';
-import { MessageChannel } from 'node:worker_threads';
-
-// Polyfill MessageChannel synchronously if possible
-if (typeof globalThis.MessageChannel === 'undefined') {
-    (globalThis as any).MessageChannel = MessageChannel;
-}
 
 const DEFAULT_ALLOWED_HEADERS = [
   'Content-Type',
@@ -57,19 +51,35 @@ export const onRequest = defineMiddleware(async (context, next) => {
   
   // Content Security Policy
   // Allows 'unsafe-eval' to fix libraries using eval/new Function (e.g., some dev tools, extensive libs)
-  const csp = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https: blob: data: http://localhost:* http://127.0.0.1:*",
-    "style-src 'self' 'unsafe-inline' https: http://localhost:* http://127.0.0.1:*",
-    "img-src 'self' data: https: blob: http://localhost:* http://127.0.0.1:*",
-    "font-src 'self' data: https: http://localhost:* http://127.0.0.1:*",
-    "connect-src 'self' wss: ws: https: http://localhost:* http://127.0.0.1:*",
-    "worker-src 'self' blob:",
-    "frame-src 'self' https:",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "frame-ancestors 'self'",
-  ].join('; ');
+  const isDev = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+
+  const csp = isDev
+    ? [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-eval' 'unsafe-inline' https: blob: data: http://localhost:* http://127.0.0.1:*",
+        "style-src 'self' 'unsafe-inline' https: http://localhost:* http://127.0.0.1:*",
+        "img-src 'self' data: https: blob: http://localhost:* http://127.0.0.1:*",
+        "font-src 'self' data: https: http://localhost:* http://127.0.0.1:*",
+        "connect-src 'self' wss: ws: https: http://localhost:* http://127.0.0.1:*",
+        "worker-src 'self' blob:",
+        "frame-src 'self' https:",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "frame-ancestors 'self'",
+      ].join('; ')
+    : [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "img-src 'self' data: https: blob:",
+        "font-src 'self' https://fonts.gstatic.com",
+        "connect-src 'self' https:",
+        "worker-src 'self' blob:",
+        "frame-src 'self' https:",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "frame-ancestors 'self'",
+      ].join('; ');
 
   // Apply CSP only if not already set by a route
   if (!response.headers.has('Content-Security-Policy')) {

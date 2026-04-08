@@ -1,4 +1,3 @@
-// @ts-nocheck
 // @ts-check
 
 import { defineConfig } from 'astro/config';
@@ -31,7 +30,7 @@ const messageChannelPolyfill = `if (typeof MessageChannel === 'undefined') {
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'http://localhost:4321',
+  site: process.env.SITE_URL || 'http://localhost:4321',
   integrations: [react()],
   devToolbar: {
     enabled: false,

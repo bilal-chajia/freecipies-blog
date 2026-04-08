@@ -1,6 +1,7 @@
 name = "recipes-saas"
 compatibility_date = "2026-03-17"
 compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
 
 # D1 Database
 [[d1_databases]]
@@ -21,7 +22,8 @@ preview_bucket_name = "saas-blog-images"
 #   - `.dev.vars` file for local development
 [vars]
 ENVIRONMENT = "production"
-R2_PUBLIC_URL = "https://pub-8c953b641d9c4b61a94975008940914d.r2.dev"  # Production R2 public URL
+R2_PUBLIC_URL = "https://pub-8c953b641d9c4b61a94975008940914d.r2.dev"
+SITE_URL = "https://recipes-saas.chajia-bilal23.workers.dev"
 
 # KV Namespaces (for sessions)
 [[kv_namespaces]]
