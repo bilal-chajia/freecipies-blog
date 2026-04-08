@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ScrollArea } from '@/ui/scroll-area.jsx';
 import MediaSection from './MediaSection';
 import SEOSection from './SEOSection';

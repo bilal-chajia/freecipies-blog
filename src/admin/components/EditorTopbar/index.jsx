@@ -9,7 +9,7 @@
  */
 
 import { Calendar, Star, Globe, FolderOpen, User, Check, Code, LayoutTemplate } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/ui/button.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';

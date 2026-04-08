@@ -15,7 +15,7 @@
 import { createReactBlockSpec } from '@blocknote/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Table2, Plus, Trash2, Columns, Rows } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';

@@ -8,7 +8,7 @@
  * https://developer.wordpress.org/block-editor/
  */
 
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Editor from '@monaco-editor/react';
 import BlockEditor from '..';

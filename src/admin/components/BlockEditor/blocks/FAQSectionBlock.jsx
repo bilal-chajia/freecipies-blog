@@ -32,7 +32,7 @@ import {
     GripVertical
 } from 'lucide-react';
 import { useRef, useState, createContext, useContext, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import {
     DndContext,
     closestCenter,

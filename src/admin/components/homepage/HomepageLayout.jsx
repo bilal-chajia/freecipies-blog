@@ -5,7 +5,7 @@
  * Uses the SAME CSS classes as SettingsLayout for design consistency
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';

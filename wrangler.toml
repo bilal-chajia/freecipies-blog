@@ -16,10 +16,19 @@ binding = "IMAGES"
 bucket_name = "saas-blog-images"
 preview_bucket_name = "saas-blog-images"
 
+# ──────────────────────────────────────────────────
 # Environment Variables
-# NOTE: Secrets (JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD) are set via:
+# ──────────────────────────────────────────────────
+# Production values live here in [vars].
+# For local development (`pnpm preview`), .dev.vars
+# overrides these automatically. See .env.example
+# for the full list of available variables.
+#
+# Secrets (JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD)
+# are set via:
 #   - `npx wrangler secret put <KEY>` for production
 #   - `.dev.vars` file for local development
+# ──────────────────────────────────────────────────
 [vars]
 ENVIRONMENT = "production"
 R2_PUBLIC_URL = "https://pub-8c953b641d9c4b61a94975008940914d.r2.dev"
