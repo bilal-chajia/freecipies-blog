@@ -47,6 +47,30 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return preflight;
   }
 
+  // 1. Check for database redirects
+  // Skip API, Admin, and system paths
+  const isSystemPath = url.pathname.startsWith('/api') || 
+                       url.pathname.startsWith('/admin') || 
+                       url.pathname.startsWith('/_') ||
+                       url.pathname.includes('.'); // Skip static files with extensions
+
+  if (!isSystemPath && context.locals.runtime?.env?.DB) {
+    try {
+      const { getRedirectByFromPath, incrementHitCount } = await import('@modules/redirects');
+      const db = context.locals.runtime.env.DB;
+      const redirect = await getRedirectByFromPath(db, url.pathname);
+      
+      if (redirect && redirect.isActive) {
+        // Increment hit count asynchronously
+        context.locals.runtime.waitUntil?.(incrementHitCount(db, redirect.id));
+        
+        return context.redirect(redirect.toPath, redirect.statusCode || 301);
+      }
+    } catch (err) {
+      console.error('Middleware redirect error:', err);
+    }
+  }
+
   const response = await next();
   
   // Content Security Policy

@@ -31,6 +31,7 @@ const getBreadcrumbs = (pathname) => {
     authors: "Authors",
     tags: "Tags",
     media: "Media",
+    redirects: "Redirects",
     settings: "Settings",
     homepage: "Homepage",
     pinterest: "Pinterest",

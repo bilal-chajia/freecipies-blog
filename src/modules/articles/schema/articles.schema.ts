@@ -33,7 +33,6 @@ export const articles = sqliteTable('articles', {
   recipeJson: text('recipe_json'),
   roundupJson: text('roundup_json'),
   faqsJson: text('faqs_json'),
-  relatedArticlesJson: text('related_articles_json'),
 
   // Cached Fields (Zero-Join)
   cachedTagsJson: text('cached_tags_json'),

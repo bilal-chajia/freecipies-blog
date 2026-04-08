@@ -30,6 +30,7 @@ const Settings = lazy(() => importWithRetry(() => import('./pages/settings/Setti
 const Login = lazy(() => importWithRetry(() => import('./pages/auth/Login')));
 const BoardsList = lazy(() => importWithRetry(() => import('./pages/pinterest/BoardsList')));
 const BoardEditor = lazy(() => importWithRetry(() => import('./pages/pinterest/BoardEditor')));
+const RedirectsList = lazy(() => importWithRetry(() => import('./pages/redirects/RedirectsList')));
 const TemplatesList = lazy(() => importWithRetry(() => import('@modules/templates/components/editor/TemplatesList')));
 const TemplateEditor = lazy(() => importWithRetry(() => import('@modules/templates/components/editor/TemplateEditor')));
 
@@ -165,6 +166,9 @@ function AdminApp() {
 
               {/* Media */}
               <Route path="media" element={<MediaLibrary />} />
+
+              {/* Redirects */}
+              <Route path="redirects" element={<RedirectsList />} />
 
               {/* Pinterest Boards */}
               <Route path="pinterest/boards" element={<BoardsList />} />

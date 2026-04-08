@@ -1,6 +1,6 @@
 # Agent Instructions
 
-> **Last Updated:** 2026-02-03
+> **Last Updated:** 2026-04-08
 
 This document provides comprehensive guidance for AI coding agents working on the Freecipies recipes blog project.
 
@@ -14,20 +14,20 @@ This document provides comprehensive guidance for AI coding agents working on th
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| **Astro** | 5.16.6 | SSR Framework |
-| **React** | 19.2.3 | Admin Panel UI |
-| **TypeScript** | 5.9.3 | Type Safety |
-| **TailwindCSS** | 4.1.18 | Styling |
-| **Drizzle ORM** | 0.45.1 | Database ORM |
+| **Astro** | 6.1.4 | SSR Framework |
+| **React** | 19.2.4 | Admin Panel UI |
+| **TypeScript** | 6.0.2 | Type Safety |
+| **TailwindCSS** | 4.2.2 | Styling |
+| **Drizzle ORM** | 0.45.2 | Database ORM |
 
 ### Cloudflare Stack
 
 | Service | Package | Purpose |
 |---------|---------|---------|
-| **D1** | `@astrojs/cloudflare` 12.6.12 | SQLite Database |
-| **R2** | via Wrangler | Object Storage (Images) |
-| **Workers** | via Wrangler | Edge Runtime |
-| **KV** | Wrangler | Session Storage |
+| **D1** | `@astrojs/cloudflare` 13.1.7 | SQLite Database |
+| **R2** | via Wrangler 4.x | Object Storage (Images) |
+| **Workers** | via Wrangler 4.x | Edge Runtime |
+| **KV** | Wrangler 4.x | Session Storage |
 
 ### Key Dependencies
 

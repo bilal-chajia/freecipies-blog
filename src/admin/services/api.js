@@ -428,5 +428,17 @@ export const aiAPI = {
   generate: (params) => api.post('/admin/ai/generate', params),
 };
 
+// ============================================
+// REDIRECTS API
+// ============================================
+
+export const redirectsAPI = {
+  getAll: (params = {}) => api.get('/redirects', { params }),
+  getById: (id) => api.get(`/redirects/${id}`),
+  create: (data) => api.post('/redirects', data),
+  update: (id, data) => api.put(`/redirects/${id}`, data),
+  delete: (id) => api.delete(`/redirects/${id}`),
+};
+
 export default api;
 

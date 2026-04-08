@@ -113,6 +113,7 @@ const navGroups = [
     title: "General",
     items: [
       { title: "Media", url: "/media", icon: Image },
+      { title: "Redirects", url: "/redirects", icon: ArrowRightLeft },
     ],
   },
 ];

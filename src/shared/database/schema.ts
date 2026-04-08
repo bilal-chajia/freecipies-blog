@@ -18,5 +18,6 @@ export * from '@modules/settings/schema/settings.schema';
 // Feature Modules
 export * from '@modules/templates/schema/templates.schema';
 export * from '@modules/pinterest/schema/pinterest.schema';
+export * from '@modules/redirects/schema/redirects.schema';
 
 // Export any other schemas needing strict typing or relations
