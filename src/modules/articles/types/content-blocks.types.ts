@@ -151,6 +151,16 @@ export interface TableBlock {
     rows: string[][];
 }
 
+export interface RoundupItemPlaceholderBlock {
+    type: 'roundup_item';
+    article_id?: number | null;
+    external_url?: string;
+    title?: string;
+    subtitle?: string;
+    note?: string;
+    cover?: string | null;
+}
+
 // ============================================
 // FOOD BLOG BLOCKS
 // ============================================
@@ -256,6 +266,7 @@ export type ContentBlock =
     | SpacerBlock
     | AdSlotBlock
     | TableBlock
+    | RoundupItemPlaceholderBlock
     // Food Blog
     | BeforeAfterBlock
     | IngredientSpotlightBlock

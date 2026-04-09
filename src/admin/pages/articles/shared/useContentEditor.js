@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../../services/api';
 import { buildImageSlotFromMedia, generateSlug, isValidJSON } from '../../../utils/helpers';
+import { generateRoundupItemList } from '../../../utils/seo-helpers';
 
 /**
  * Shared hook for content editors (articles, recipes, roundups)
@@ -63,6 +64,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
     const [keywordsJson, setKeywordsJson] = useState('[]');
     const [referencesJson, setReferencesJson] = useState('[]');
     const [mediaJson, setMediaJson] = useState('{}');
+    const [jsonldJson, setJsonldJson] = useState('{}');
     const [imagesData, setImagesData] = useState({});
 
     // Validation
@@ -197,6 +199,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
                 setFaqsJson(safeStringify(article.faqsJson, []));
                 setKeywordsJson(safeStringify(article.keywords, []));
                 setReferencesJson(safeStringify(article.references, []));
+                setJsonldJson(safeStringify(article.jsonldJson, {}));
                 setMediaJson(safeStringify(article.media, {}));
             } else {
                 alert(`Content "${slug}" not found.`);
@@ -321,6 +324,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             faqs: faqsJson,
             keywords: keywordsJson,
             references: referencesJson,
+            jsonld: jsonldJson,
             media: mediaJson,
         };
 
@@ -353,6 +357,24 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             return;
         }
 
+        // AUTO-SYNC ItemList for Roundups
+        let finalJsonld = jsonldJson;
+        if (contentType === 'roundup') {
+            try {
+                const blocks = JSON.parse(contentJson);
+                const itemList = generateRoundupItemList(blocks, {
+                    headline: trimmedLabel,
+                    shortDescription: restFormData.shortDescription
+                });
+                if (itemList) {
+                    finalJsonld = JSON.stringify(itemList, null, 2);
+                    setJsonldJson(finalJsonld);
+                }
+            } catch (err) {
+                console.error("Failed to generate ItemList LD", err);
+            }
+        }
+
         const data = {
             ...restFormData,
             slug: computedSlug,
@@ -364,6 +386,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             faqsJson,
             keywordsJson,
             referencesJson,
+            jsonldJson: finalJsonld,
             mediaJson,
             imagesJson: JSON.stringify(imagesData),
         };
@@ -413,6 +436,8 @@ export function useContentEditor({ slug, contentType = 'article' }) {
         setReferencesJson,
         mediaJson,
         setMediaJson,
+        jsonldJson,
+        setJsonldJson,
         imagesData,
         setImagesData,
 

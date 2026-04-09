@@ -1,38 +1,34 @@
-import React, { createContext, useContext } from 'react';
+import React, { useMemo } from 'react';
 import { createReactBlockSpec } from "@blocknote/react";
-import { List } from 'lucide-react';
-import RoundupBuilder from "../../RoundupBuilder";
+import { LayoutList, Link2, ExternalLink, Info, Plus } from 'lucide-react';
+import { Button } from "@/ui/button";
+import { Badge } from "@/ui/badge";
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
 import { useBlockSelection } from '../selection-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
-
-/**
- * Context to share roundup data between the BlockEditor and RoundupListBlock
- */
-export const RoundupDataContext = createContext({
-    roundup: null,
-    setRoundup: () => { },
-});
-
-export const useRoundupData = () => useContext(RoundupDataContext);
+import { getBestVariantUrl } from '@shared/types/images';
 
 /**
  * RoundupListBlock
  * 
- * A BlockNote custom block that renders the RoundupBuilder.
- * It uses the RoundupDataContext to sync data with the parent editor.
+ * A BlockNote custom block representing a collection of items in a roundup.
+ * This is the "Smart List" version where multiple items are managed within one block.
  */
 export const RoundupListBlock = createReactBlockSpec(
     {
         type: "roundupList",
-        propSchema: {},
+        propSchema: {
+            title: { default: "" },
+            description: { default: "" },
+            itemsJson: { default: "[]" },
+            showStats: { default: true },
+        },
         content: "none",
     },
     {
         render: (props) => {
             const { block, editor } = props;
-            const { roundup, setRoundup } = useRoundupData();
             const { isSelected, selectBlock } = useBlockSelection(block.id);
             const {
                 moveUp: moveBlockUp,
@@ -50,10 +46,19 @@ export const RoundupListBlock = createReactBlockSpec(
                 isDragging,
             } = useBlockDragHandle(block.id);
 
+            const items = useMemo(() => {
+                try {
+                    const parsed = JSON.parse(block.props.itemsJson);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch {
+                    return [];
+                }
+            }, [block.props.itemsJson]);
+
             const toolbar = (
                 <BlockToolbar
-                    blockIcon={List}
-                    blockLabel="Roundup"
+                    blockIcon={LayoutList}
+                    blockLabel="Roundup List"
                     onMoveUp={moveBlockUp}
                     onMoveDown={moveBlockDown}
                     dragHandleProps={dragHandleProps}
@@ -61,16 +66,6 @@ export const RoundupListBlock = createReactBlockSpec(
                     showMoreMenu={false}
                 />
             );
-
-            if (!roundup && !setRoundup) {
-                return (
-                    <div className="p-4 border border-dashed rounded-lg bg-muted/20 text-center">
-                        <p className="text-sm text-muted-foreground">
-                            Roundup data context not found.
-                        </p>
-                    </div>
-                );
-            }
 
             return (
                 <BlockWrapper
@@ -82,27 +77,135 @@ export const RoundupListBlock = createReactBlockSpec(
                     onPointerDownCapture={selectBlock}
                     blockType="roundup-list"
                     blockId={block.id}
-                    className="my-4"
+                    className="my-8"
                     style={{
                         ...dragStyle,
                         opacity: isDragging ? 0.5 : undefined,
-                        pointerEvents: isDragging ? 'none' : undefined,
                     }}
                 >
-                    <div className="wp-roundup-list-block">
-                        <RoundupBuilder
-                            value={roundup}
-                            onChange={(newValue) => {
-                                setRoundup(newValue);
-                            }}
-                        />
+                    <div className="bg-card border rounded-2xl overflow-hidden shadow-sm transition-all hover:border-primary/20">
+                        {/* Group Header */}
+                        {(block.props.title || block.props.description) ? (
+                            <div className="p-6 border-b bg-muted/10">
+                                {block.props.title && (
+                                    <h3 className="text-xl font-bold text-foreground mb-2">
+                                        {block.props.title}
+                                    </h3>
+                                )}
+                                {block.props.description && (
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        {block.props.description}
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="p-4 border-b bg-muted/5 flex items-center justify-between">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                    <LayoutList className="h-3 w-3" /> Roundup Collection
+                                </span>
+                                <Badge variant="outline" className="text-[10px]">
+                                    {items.length} Items
+                                </Badge>
+                            </div>
+                        )}
+
+                        {/* Items List */}
+                        <div className="p-2 space-y-2">
+                            {items.length === 0 ? (
+                                <div className="p-12 text-center space-y-3">
+                                    <div className="bg-muted w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Plus className="h-6 w-6 text-muted-foreground" />
+                                    </div>
+                                    <p className="text-sm font-medium text-foreground">Your collection is empty</p>
+                                    <p className="text-xs text-muted-foreground max-w-[240px] mx-auto">
+                                        Search and add recipes from the "Block" settings tab in the sidebar.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-2">
+                                    {items.map((item, index) => (
+                                        <div 
+                                            key={`${item.articleId || item.externalUrl}-${index}`}
+                                            className="flex gap-4 p-3 rounded-xl border bg-background/50 hover:bg-background transition-colors group"
+                                        >
+                                            {/* Thumbnail */}
+                                            <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-muted relative">
+                                                {item.image?.variants ? (
+                                                    <img 
+                                                        src={getBestVariantUrl(item.image, 'xs')} 
+                                                        alt="" 
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground font-bold">
+                                                        NO IMAGE
+                                                    </div>
+                                                )}
+                                                <div className="absolute top-1 left-1 bg-primary text-primary-foreground h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold shadow-sm">
+                                                    #{index + 1}
+                                                </div>
+                                            </div>
+
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0 py-1">
+                                                <div className="flex items-start justify-between gap-4 mb-1">
+                                                    <h4 className="font-bold text-sm text-foreground line-clamp-1">
+                                                        {item.title || "Untitled Item"}
+                                                    </h4>
+                                                    {item.articleId ? (
+                                                        <Link2 className="h-3 w-3 text-muted-foreground opacity-50" />
+                                                    ) : (
+                                                        <ExternalLink className="h-3 w-3 text-muted-foreground opacity-50" />
+                                                    )}
+                                                </div>
+
+                                                {item.subtitle && (
+                                                    <p className="text-xs text-muted-foreground line-clamp-1 mb-2 italic">
+                                                        {item.subtitle}
+                                                    </p>
+                                                )}
+
+                                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                                    {item.note || "Add an editorial note in the settings side panel..."}
+                                                </p>
+
+                                                {/* Stats Mini */}
+                                                {(block.props.showStats && item.stats) && (
+                                                    <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/50">
+                                                        {item.stats.totalTime && (
+                                                            <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
+                                                                {item.stats.totalTime}m
+                                                            </span>
+                                                        )}
+                                                        {item.stats.difficulty && (
+                                                            <span className="text-[10px] font-bold text-muted-foreground">
+                                                                {item.stats.difficulty}
+                                                            </span>
+                                                        )}
+                                                        {item.stats.rating && (
+                                                            <span className="text-[10px] font-bold text-orange-500">
+                                                                ★ {item.stats.rating}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer / Hint */}
+                        <div className="px-4 py-3 bg-muted/5 border-t flex items-center gap-2">
+                             <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                             <span className="text-[11px] text-muted-foreground">
+                                Customize title, description and manage recipes in the <b>Block Settings</b> sidebar.
+                             </span>
+                        </div>
                     </div>
                 </BlockWrapper>
             );
         }
     }
 );
-
-
-
-

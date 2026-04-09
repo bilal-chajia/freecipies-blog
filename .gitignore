@@ -26,3 +26,9 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# AI history and planning logs
+history/
+
+# TypeScript build info
+*.tsbuildinfo

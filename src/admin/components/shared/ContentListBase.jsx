@@ -83,14 +83,20 @@ const ContentListBase = ({
     useEffect(() => {
         const loadMetadata = async () => {
             try {
-                const [catRes, authRes, tagRes] = await Promise.all([
-                    categoriesAPI.getAll(),
-                    authorsAPI.getAll(),
-                    tagsAPI.getAll()
-                ]);
-                if (catRes.data.success) setCategories(catRes.data.data);
-                if (authRes.data.success) setAuthors(authRes.data.data);
-                if (tagRes.data.success) setTags(tagRes.data.data);
+                // Fetch sequentially to avoid concurrent SQLite lock contention in dev mode.
+                // Only re-fetch if the store is empty (metadata rarely changes per session).
+                if (categories.length === 0) {
+                    const catRes = await categoriesAPI.getAll();
+                    if (catRes.data.success) setCategories(catRes.data.data);
+                }
+                if (authors.length === 0) {
+                    const authRes = await authorsAPI.getAll();
+                    if (authRes.data.success) setAuthors(authRes.data.data);
+                }
+                if (tags.length === 0) {
+                    const tagRes = await tagsAPI.getAll();
+                    if (tagRes.data.success) setTags(tagRes.data.data);
+                }
             } catch (error) {
                 console.error('Failed to load metadata:', error);
             }

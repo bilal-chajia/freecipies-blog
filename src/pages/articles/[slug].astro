@@ -1,0 +1,69 @@
+---
+import { env } from 'cloudflare:workers';
+import ArticleLayout from "@layouts/ArticleLayout.astro";
+import SEO from "@components/SEO.astro";
+import { getArticleBySlug } from "@modules/articles";
+import { getAuthorById } from "@modules/authors/services/authors.service";
+import { getCategoryById } from "@modules/categories/services/categories.service";
+import { extractImage, getImageSrcSet } from "@shared/utils";
+import type { Author } from "@modules/authors/schema/authors.schema";
+import type { Category } from "@modules/categories/schema/categories.schema";
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return new Response("Slug is missing", { status: 400 });
+}
+
+let author: Author | null = null;
+let category: Category | null = null;
+let article: any = null;
+
+try {
+  if (env.DB) {
+    article = await getArticleBySlug(env.DB, slug, "article");
+  }
+} catch (error) {
+  console.error(`Error fetching article (${slug}):`, error);
+}
+
+if (!article) {
+  return Astro.redirect("/404");
+}
+
+const heroCover = extractImage(article.imagesJson, "cover", 1200);
+const heroThumb = extractImage(article.imagesJson, "thumbnail", 1200);
+const coverSrcSet = getImageSrcSet(article.imagesJson, "cover");
+const thumbSrcSet = getImageSrcSet(article.imagesJson, "thumbnail");
+const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
+const heroImage = useCover ? heroCover : heroThumb;
+
+try {
+  if (env.DB) {
+    if (article.authorId) {
+      author = await getAuthorById(env.DB, article.authorId);
+    }
+    if (article.categoryId) {
+      category = await getCategoryById(env.DB, article.categoryId);
+    }
+  }
+} catch (error) {
+  console.error(`Error fetching article related data (${slug}):`, error);
+}
+
+const pageTitle = article.metaTitle || article.headline;
+const pageDescription = article.metaDescription || article.shortDescription;
+---
+
+<ArticleLayout article={article} author={author} category={category}>
+  <SEO
+    slot="head"
+    title={pageTitle}
+    description={pageDescription}
+    type="article"
+    publishedTime={article.publishedAt || undefined}
+    author={{ name: author?.name || "Freecipies Team" }}
+    image={heroImage.imageUrl || article.imageUrl || ""}
+    imageAlt={heroImage.imageAlt || article.imageAlt || undefined}
+  />
+</ArticleLayout>

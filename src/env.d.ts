@@ -4,6 +4,7 @@ type Runtime = import("@astrojs/cloudflare").Runtime<import("@shared/types").Env
 
 declare namespace App {
   interface Locals extends Runtime {
+    cfContext: import("@cloudflare/workers-types").ExecutionContext;
   }
 }
 

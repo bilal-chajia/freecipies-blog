@@ -14,13 +14,13 @@ import {
   type PinterestPin,
   type NewPinterestPin
 } from '../schema/pinterest.schema';
-import { createDb } from '../../../shared/database/drizzle';
+import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { AppError, ErrorCodes } from '../../../shared/utils/error-handler';
 
 // Helpers mapping Drizzle to old snake_case format for the frontend
 function mapBoardToSnakeCase(board: PinterestBoard | null): any {
   if (!board) return board;
-  
+
   let coverImageUrl = board.coverImageUrl;
   if (typeof coverImageUrl === 'string' && coverImageUrl.startsWith('{')) {
     try {
@@ -66,8 +66,8 @@ function mapPinToSnakeCase(pin: PinterestPin | null): any {
 /**
  * Get all Pinterest boards
  */
-export async function getPinterestBoards(db: D1Database): Promise<any[]> {
-  const drizzle = createDb(db);
+export async function getPinterestBoards(db: D1Database | DrizzleDb): Promise<any[]> {
+  const drizzle = getDb(db);
   const boards = await drizzle
     .select()
     .from(pinterestBoards)
@@ -79,8 +79,8 @@ export async function getPinterestBoards(db: D1Database): Promise<any[]> {
 /**
  * Get a board by ID or slug
  */
-export async function getPinterestBoard(db: D1Database, identifier: number | string): Promise<any | null> {
-  const drizzle = createDb(db);
+export async function getPinterestBoard(db: D1Database | DrizzleDb, identifier: number | string): Promise<any | null> {
+  const drizzle = getDb(db);
   const condition = typeof identifier === 'string'
     ? eq(pinterestBoards.slug, identifier)
     : eq(pinterestBoards.id, identifier);
@@ -96,10 +96,10 @@ export async function getPinterestBoard(db: D1Database, identifier: number | str
  * Create a new board
  */
 export async function createPinterestBoard(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   data: any
 ): Promise<any | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   // Check if a board with the same slug already exists
   const existingBoard = await drizzle.query.pinterestBoards.findFirst({
@@ -122,8 +122,8 @@ export async function createPinterestBoard(
   }
 
   const coverImageUrlRaw = data.coverImageUrl ?? data.cover_image_url;
-  const coverImageUrl = typeof coverImageUrlRaw === 'object' && coverImageUrlRaw !== null 
-    ? JSON.stringify(coverImageUrlRaw) 
+  const coverImageUrl = typeof coverImageUrlRaw === 'object' && coverImageUrlRaw !== null
+    ? JSON.stringify(coverImageUrlRaw)
     : coverImageUrlRaw;
 
   const insertData = {
@@ -146,22 +146,22 @@ export async function createPinterestBoard(
  * Update a board
  */
 export async function updatePinterestBoard(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   id: number,
   data: any
 ): Promise<boolean> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const updateData: Partial<NewPinterestBoard> = { updatedAt: new Date().toISOString() };
 
   if (data.slug !== undefined) updateData.slug = data.slug;
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.boardUrl !== undefined || data.board_url !== undefined) updateData.boardUrl = data.boardUrl ?? data.board_url;
-  
+
   if (data.coverImageUrl !== undefined || data.cover_image_url !== undefined) {
     const raw = data.coverImageUrl ?? data.cover_image_url;
-    updateData.coverImageUrl = typeof raw === 'object' && raw !== null 
-      ? JSON.stringify(raw) 
+    updateData.coverImageUrl = typeof raw === 'object' && raw !== null
+      ? JSON.stringify(raw)
       : raw;
   }
   if (data.isActive !== undefined || data.is_active !== undefined) updateData.isActive = data.isActive ?? data.is_active;
@@ -175,8 +175,8 @@ export async function updatePinterestBoard(
 /**
  * Delete a board
  */
-export async function deletePinterestBoard(db: D1Database, id: number): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deletePinterestBoard(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
+  const drizzle = getDb(db);
   // Soft delete
   await drizzle.update(pinterestBoards)
     .set({ deletedAt: new Date().toISOString(), isActive: false })
@@ -192,10 +192,10 @@ export async function deletePinterestBoard(db: D1Database, id: number): Promise<
  * Get pins with optional filters
  */
 export async function getPinterestPins(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   options?: { boardId?: number; articleId?: number; status?: string; limit?: number }
 ): Promise<any[]> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const conditions: any[] = [];
 
@@ -222,8 +222,8 @@ export async function getPinterestPins(
 /**
  * Get a pin by ID
  */
-export async function getPinterestPinById(db: D1Database, id: number): Promise<any | null> {
-  const drizzle = createDb(db);
+export async function getPinterestPinById(db: D1Database | DrizzleDb, id: number): Promise<any | null> {
+  const drizzle = getDb(db);
   const pin = await drizzle.query.pinterestPins.findFirst({
     where: eq(pinterestPins.id, id),
   }) || null;
@@ -234,10 +234,10 @@ export async function getPinterestPinById(db: D1Database, id: number): Promise<a
  * Create a new pin
  */
 export async function createPinterestPin(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   data: any
 ): Promise<any | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const insertData = {
     articleId: data.articleId ?? data.article_id,
     boardId: data.boardId ?? data.board_id,
@@ -260,11 +260,11 @@ export async function createPinterestPin(
  * Update a pin
  */
 export async function updatePinterestPin(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   id: number,
   data: any
 ): Promise<boolean> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const updateData: Partial<NewPinterestPin> = { updatedAt: new Date().toISOString() };
 
   if (data.articleId !== undefined || data.article_id !== undefined) updateData.articleId = data.articleId ?? data.article_id;
@@ -289,8 +289,8 @@ export async function updatePinterestPin(
 /**
  * Delete a pin
  */
-export async function deletePinterestPin(db: D1Database, id: number): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deletePinterestPin(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
+  const drizzle = getDb(db);
   await drizzle.delete(pinterestPins).where(eq(pinterestPins.id, id));
   return true;
 }

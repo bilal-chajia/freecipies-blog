@@ -1,8 +1,10 @@
 ---
+import { env } from 'cloudflare:workers';
 import RelatedContent from "./RelatedContent.astro";
 import TableBlock from "./TableBlock.astro";
 import BeforeAfter from "./BeforeAfter.astro";
 import RecipeCard from "./RecipeCard.astro";
+import RoundupItemList from "./RoundupItemList.astro";
 import type { TocSettings } from "@modules/settings/services/settings.service";
 import type { Article } from "@modules/articles";
 import type { RecipeJson } from "@modules/articles/types";
@@ -251,12 +253,18 @@ const numberedBlocks = parsed.map((block) => {
   }
   return block;
 });
+
+// Counter for sequential numbering across multiple roundup blocks
+let globalRoundupIndex = 1;
+const processedBlocks = numberedBlocks;
 ---
 
 <div class="content-blocks">
   {
-    numberedBlocks.map((block) => {
+    processedBlocks.map((block) => {
       if (!block?.type) return null;
+      
+
       if (block.type === "paragraph")
         return <p set:html={renderInlineMarkdown(block.text)} />;
       if (block.type === "heading") {
@@ -342,6 +350,13 @@ const numberedBlocks = parsed.map((block) => {
       }
       if (block.type === "related_content")
         return <RelatedContent block={block} />;
+      if (block.type === "roundupList") {
+        const startIndex = globalRoundupIndex;
+        const items = typeof block.itemsJson === 'string' ? JSON.parse(block.itemsJson) : (block.items || []);
+        globalRoundupIndex += items.length;
+        
+        return <RoundupItemList block={block} db={env.DB} startNumber={startIndex} />;
+      }
       if (block.type === "table")
         return <TableBlock headers={block.headers} rows={block.rows} />;
       if (block.type === "before_after") return <BeforeAfter block={block} />;

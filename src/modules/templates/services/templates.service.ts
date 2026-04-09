@@ -6,7 +6,7 @@
 
 import { eq } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
-import { createDb } from '../../../shared/database/drizzle';
+import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { pinTemplates, type PinTemplate, type NewPinTemplate } from '../schema/templates.schema';
 import type { TemplateElement, UpdateTemplateInput } from '../types';
 
@@ -31,19 +31,19 @@ function mapToSnakeCase(t: PinTemplate | undefined): any {
  * Get all templates
  */
 export async function getTemplates(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   options: { activeOnly?: boolean } = {}
 ): Promise<any[]> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const { activeOnly = true } = options;
-  
+
   let results;
   if (activeOnly) {
     results = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.isActive, true)).all();
   } else {
     results = await drizzle.select().from(pinTemplates).all();
   }
-  
+
   return results.map(mapToSnakeCase);
 }
 
@@ -51,10 +51,10 @@ export async function getTemplates(
  * Get template by slug
  */
 export async function getTemplateBySlug(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   slug: string
 ): Promise<any | undefined> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const result = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.slug, slug)).get();
   return mapToSnakeCase(result);
 }
@@ -63,10 +63,10 @@ export async function getTemplateBySlug(
  * Get template by ID
  */
 export async function getTemplateById(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   id: number
 ): Promise<any | undefined> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const result = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.id, id)).get();
   return mapToSnakeCase(result);
 }
@@ -75,11 +75,11 @@ export async function getTemplateById(
  * Create new template
  */
 export async function createTemplate(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   data: any
 ): Promise<any> {
-  const drizzle = createDb(db);
-  
+  const drizzle = getDb(db);
+
   // Support both camelCase and snake_case inputs from frontend
   const rawElements = data.elementsJson ?? data.elements_json;
   const elementsStr = typeof rawElements === 'string'
@@ -106,34 +106,34 @@ export async function createTemplate(
  * Update template by slug
  */
 export async function updateTemplate(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   slug: string,
   data: any
 ): Promise<any | undefined> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const updates: Partial<NewPinTemplate> = {};
 
   if (data.name !== undefined) updates.name = data.name;
   if (data.description !== undefined) updates.description = data.description;
   if (data.category !== undefined) updates.category = data.category;
-  
+
   const w = data.width ?? data.canvas_width;
   if (w !== undefined) updates.width = w;
-  
+
   const h = data.height ?? data.canvas_height;
   if (h !== undefined) updates.height = h;
-  
+
   const thumb = data.thumbnailUrl ?? data.thumbnail_url;
   if (thumb !== undefined) updates.thumbnailUrl = thumb;
-  
+
   const active = data.isActive ?? data.is_active;
   if (active !== undefined) updates.isActive = active;
-  
+
   const bg = data.backgroundColor ?? data.background_color;
   if (bg !== undefined) updates.backgroundColor = bg;
-  
+
   if (data.slug !== undefined) updates.slug = data.slug;
-  
+
   const rootElements = data.elementsJson ?? data.elements_json;
   if (rootElements !== undefined) {
     updates.elementsJson = typeof rootElements === 'string'
@@ -150,7 +150,7 @@ export async function updateTemplate(
     .where(eq(pinTemplates.slug, slug))
     .returning()
     .get();
-    
+
   return mapToSnakeCase(result);
 }
 
@@ -158,15 +158,15 @@ export async function updateTemplate(
  * Delete template by slug
  */
 export async function deleteTemplate(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   slug: string
 ): Promise<boolean> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const result = await drizzle.delete(pinTemplates)
     .where(eq(pinTemplates.slug, slug))
     .returning()
     .get();
-  
+
   return result !== undefined;
 }
 
@@ -174,10 +174,10 @@ export async function deleteTemplate(
  * Check if slug exists
  */
 export async function slugExists(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   slug: string
 ): Promise<boolean> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const template = await drizzle.select({ id: pinTemplates.id })
     .from(pinTemplates)
     .where(eq(pinTemplates.slug, slug))

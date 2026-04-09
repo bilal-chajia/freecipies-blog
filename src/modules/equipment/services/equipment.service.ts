@@ -8,16 +8,16 @@ import { eq, and, asc, isNull, like, or } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { equipment, type Equipment, type NewEquipment } from '../schema/equipment.schema';
 import { articles } from '../../articles/schema/articles.schema';
-import { createDb } from '../../../shared/database/drizzle';
+import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
  * Get all equipment
  */
 export async function getEquipment(
-    db: D1Database,
+    db: D1Database | DrizzleDb,
     options?: { limit?: number; category?: string; activeOnly?: boolean }
 ): Promise<Equipment[]> {
-    const drizzle = createDb(db);
+    const drizzle = getDb(db);
 
     const conditions = [isNull(equipment.deletedAt)];
 
@@ -45,8 +45,8 @@ export async function getEquipment(
 /**
  * Get a single equipment by slug
  */
-export async function getEquipmentBySlug(db: D1Database, slug: string): Promise<Equipment | null> {
-    const drizzle = createDb(db);
+export async function getEquipmentBySlug(db: D1Database | DrizzleDb, slug: string): Promise<Equipment | null> {
+    const drizzle = getDb(db);
     const [found] = await drizzle
         .select()
         .from(equipment)
@@ -58,8 +58,8 @@ export async function getEquipmentBySlug(db: D1Database, slug: string): Promise<
 /**
  * Get a single equipment by ID
  */
-export async function getEquipmentById(db: D1Database, id: number): Promise<Equipment | null> {
-    const drizzle = createDb(db);
+export async function getEquipmentById(db: D1Database | DrizzleDb, id: number): Promise<Equipment | null> {
+    const drizzle = getDb(db);
     const [found] = await drizzle
         .select()
         .from(equipment)
@@ -72,10 +72,10 @@ export async function getEquipmentById(db: D1Database, id: number): Promise<Equi
  * Create a new equipment
  */
 export async function createEquipment(
-    db: D1Database,
+    db: D1Database | DrizzleDb,
     item: NewEquipment
 ): Promise<Equipment | null> {
-    const drizzle = createDb(db);
+    const drizzle = getDb(db);
     const [inserted] = await drizzle.insert(equipment).values(item).returning();
     return inserted || null;
 }
@@ -84,11 +84,11 @@ export async function createEquipment(
  * Update an equipment
  */
 export async function updateEquipment(
-    db: D1Database,
+    db: D1Database | DrizzleDb,
     slug: string,
     item: Partial<NewEquipment>
 ): Promise<Equipment | null> {
-    const drizzle = createDb(db);
+    const drizzle = getDb(db);
 
     const updateData = {
         ...item,
@@ -105,8 +105,8 @@ export async function updateEquipment(
 /**
  * Soft delete an equipment
  */
-export async function deleteEquipment(db: D1Database, slug: string): Promise<boolean> {
-    const drizzle = createDb(db);
+export async function deleteEquipment(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
+    const drizzle = getDb(db);
     await drizzle.update(equipment)
         .set({ deletedAt: new Date().toISOString() })
         .where(eq(equipment.slug, slug));
@@ -150,7 +150,7 @@ export interface EquipmentMatch extends Equipment {
  * Returns matches sorted by confidence (highest first), deduplicated.
  */
 export async function matchEquipmentInText(
-    db: D1Database,
+    db: D1Database | DrizzleDb,
     text: string
 ): Promise<EquipmentMatch[]> {
     // Get all active equipment
@@ -207,10 +207,10 @@ export async function matchEquipmentInText(
  *  3. For each match, rebuild the array with fresh equipment data and save
  */
 export async function refreshCachedEquipmentForArticles(
-    db: D1Database,
+    db: D1Database | DrizzleDb,
     equipmentId: number
 ): Promise<number> {
-    const drizzle = createDb(db);
+    const drizzle = getDb(db);
 
     // 1. Fetch all articles with cached equipment
     const allArticles = await drizzle

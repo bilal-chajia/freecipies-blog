@@ -148,12 +148,32 @@ export function contentJsonToBlocks(contentJson: string | any[] | { blocks: any[
                         props: {}
                     };
 
+                case 'roundup_item':
+                    const parsedArticleId = parseInt(block.article_id, 10);
+                    return {
+                        id,
+                        type: 'roundupItem',
+                        props: {
+                            articleId: Number.isFinite(parsedArticleId) ? parsedArticleId.toString() : '',
+                            externalUrl: block.external_url || '',
+                            title: block.title || '',
+                            subtitle: block.subtitle || '',
+                            note: block.note || '',
+                            cover: block.cover || '',
+                        }
+                    };
+
                 case 'roundup_list':
                 case 'roundupList':
                     return {
                         id,
                         type: 'roundupList',
-                        props: {},
+                        props: {
+                            title: block.title || '',
+                            description: block.description || '',
+                            itemsJson: JSON.stringify(block.items || []),
+                            showStats: block.show_stats !== false,
+                        },
                     };
 
                 case 'recipe_card': {
@@ -342,7 +362,26 @@ export function blocksToContentJson(blocks: AnyBlock[]): ContentBlock[] {
                 break;
 
             case 'roundupList':
-                // Roundup data is stored in roundupJson; keep content_json schema unchanged.
+                result.push({
+                    type: 'roundup_list',
+                    title: props.title || '',
+                    description: props.description || '',
+                    items: parseJsonArray(props.itemsJson),
+                    show_stats: props.showStats !== false,
+                } as any);
+                break;
+
+            case 'roundupItem':
+                const parsedId = parseInt(props.articleId, 10);
+                result.push({
+                    type: 'roundup_item',
+                    article_id: Number.isFinite(parsedId) ? parsedId : null,
+                    external_url: props.externalUrl || '',
+                    title: props.title || '',
+                    subtitle: props.subtitle || '',
+                    note: props.note || '',
+                    cover: props.cover || null,
+                } as any);
                 break;
 
             case 'recipeEmbed':

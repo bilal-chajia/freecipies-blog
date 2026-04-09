@@ -1207,9 +1207,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- │   "text": "**Bold** and lists:\n1. Item\n2. Item"                  │
     -- │ }                                                                  │
     -- │   TEXT FIELD: Supports full Markdown (bold, lists, links).         │
-    -- │   Use \n for line breaks. Render with react-markdown or marked.   │                                                                  │
-    -- │                                                                    │
-    -- │ }                                                                  │
+    -- │   Use \n for line breaks. Render with react-markdown or marked.   │
     -- │                                                                    │
     -- │ EMBED BLOCKS:                                                      │
     -- │ ─────────────────────────────────────────────────────────────────  │
@@ -1284,11 +1282,32 @@ CREATE TABLE IF NOT EXISTS articles (
     -- │   NOTE: All faq_section blocks are aggregated into faqs_json       │
     -- │         for easy JSON-LD FAQPage schema generation.                │
     -- │                                                                    │
+    -- │ { "type": "roundup_list",                                          │
+    -- │   "title": "Summer Salads",       -- Group heading                 │
+    -- │   "description": "Refreshing...", -- Group introduction            │
+    -- │   "show_stats": true,             -- Show rating/time badges       │
+    -- │   "items": [                                                       │
+    -- │     {                                                              │
+    -- │       "article_id": 123,          -- Internal recipe ID            │
+    -- │       "title": "Greek Salad",     -- Override title                │
+    -- │       "note": "Our favorite!",    -- Editorial note                │
+    -- │       "cover": { "variants": {...} }                               │
+    -- │     }                                                              │
+    -- │   ]                                                                │
+    -- │ }                                                                  │
+    -- │   USE CASES: Curated recipe groups with editorial notes.           │
+    -- │   NOTE: Automatically flattened into ItemList JSON-LD on save.     │
+    -- │                                                                    │
+    -- │ { "type": "roundup_item", [DEPRECATED]                             │
+    -- │   "article_id": 456, "title": "...", "note": "..."                 │
+    -- │ }                                                                  │
+    -- │   NOTE: Legacy block. Use 'roundup_list' for all new content.      │
+    -- │                                                                    │
     -- │ { "type": "related_content",                                       │
     -- │   "title": "You Might Also Like",  -- Optional heading             │
     -- │   "layout": "grid",                -- "grid", "carousel", "list"   │
-    -- ?   "mode": "manual",                 -- "manual" | "auto"             ?
-    -- ?   "limit": 4,                       -- Max items per type             ?
+    -- │   "mode": "manual",                -- "manual" | "auto"            │
+    -- │   "limit": 4,                      -- Max items per type           │
     -- │   "recipes": [                     -- Related recipes              │
     -- │     { "id": 42, "slug": "...", "headline": "...",                  │
     -- │       "thumbnail": {...}, "total_time": 35, "difficulty": "Easy" } │
@@ -1505,7 +1524,8 @@ CREATE TABLE IF NOT EXISTS articles (
       "items": [],
       "listType": "ItemList"
     }' CHECK (json_valid(roundup_json)),
-    -- Roundup / collection structure.
+    -- [DEPRECATED] Source of truth is now content_json (roundupList blocks).
+    -- This field may be kept for legacy data but is no longer used for rendering.
     -- {
     --   "listType": "ItemList",
     --   "items": [
@@ -1756,7 +1776,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- SCHEMA TYPES STORED:
     --   - Recipe         : type='recipe' articles (Google Recipe cards)
     --   - HowTo          : Step-by-step tutorials
-    --   - ItemList       : type='roundup' articles (listicles)
+    --   - ItemList       : type='roundup' articles (listicles, generated from roundupList blocks)
     --   - FAQPage        : Built from faqs_json cache
     --   - Article        : Standard article schema
     --   - BreadcrumbList : Navigation path

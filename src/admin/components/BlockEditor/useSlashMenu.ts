@@ -56,7 +56,6 @@ export const getCustomSlashMenuItems = (
         }
         return false;
     };
-    const hasRoundupListBlock = hasBlockType(editor.document, 'roundupList');
 
     // Define our premium custom blocks
     const customItems = [
@@ -141,6 +140,15 @@ export const getCustomSlashMenuItems = (
             subtext: 'Add a horizontal divider',
             icon: React.createElement(Minus, { className: "size-4 text-slate-400" }),
         },
+        {
+            title: 'Roundup List',
+            onItemClick: () =>
+                safeInsertBlock(editor, 'roundupList'),
+            aliases: ['roundup', 'list', 'curated', 'collection'],
+            group: 'Engagement',
+            subtext: 'Manage a collection of curated recipes',
+            icon: React.createElement(List, { className: "size-4 text-rose-500" }),
+        },
     ];
 
     // Contextual blocks (pushed to the top if applicable)
@@ -153,18 +161,6 @@ export const getCustomSlashMenuItems = (
             group: 'Primary',
             subtext: 'The main recipe editor',
             icon: React.createElement(ClipboardList, { className: "size-4 text-rose-500" }),
-        });
-    }
-
-    if (contentType === 'roundup' && hasRoundupContext && !hasRoundupListBlock) {
-        customItems.unshift({
-            title: 'Roundup List',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'roundupList'),
-            aliases: ['roundup', 'list', 'curated'],
-            group: 'Primary',
-            subtext: 'Manage curated items',
-            icon: React.createElement(BookOpen, { className: "size-4 text-rose-500" }),
         });
     }
 

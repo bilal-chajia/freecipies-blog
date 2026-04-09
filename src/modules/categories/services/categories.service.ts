@@ -7,16 +7,16 @@
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { categories, type Category, type NewCategory } from '../schema/categories.schema';
-import { createDb } from '../../../shared/database/drizzle';
+import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
  * Get all categories
  */
 export async function getCategories(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   options?: { isOnline?: boolean; parentId?: number | null }
 ): Promise<Category[]> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const conditions = [isNull(categories.deletedAt)];
 
@@ -42,8 +42,8 @@ export async function getCategories(
 /**
  * Get a single category by slug
  */
-export async function getCategoryBySlug(db: D1Database, slug: string): Promise<Category | null> {
-  const drizzle = createDb(db);
+export async function getCategoryBySlug(db: D1Database | DrizzleDb, slug: string): Promise<Category | null> {
+  const drizzle = getDb(db);
   return await drizzle.query.categories.findFirst({
     where: and(eq(categories.slug, slug), isNull(categories.deletedAt)),
   }) || null;
@@ -52,8 +52,8 @@ export async function getCategoryBySlug(db: D1Database, slug: string): Promise<C
 /**
  * Get a single category by ID
  */
-export async function getCategoryById(db: D1Database, id: number): Promise<Category | null> {
-  const drizzle = createDb(db);
+export async function getCategoryById(db: D1Database | DrizzleDb, id: number): Promise<Category | null> {
+  const drizzle = getDb(db);
   return await drizzle.query.categories.findFirst({
     where: and(eq(categories.id, id), isNull(categories.deletedAt)),
   }) || null;
@@ -63,7 +63,7 @@ export async function getCategoryById(db: D1Database, id: number): Promise<Categ
  * Calculate depth based on parentId
  * Returns 0 for root categories, parent.depth + 1 for child categories
  */
-async function calculateDepth(db: D1Database, parentId: number | null | undefined): Promise<number> {
+async function calculateDepth(db: D1Database | DrizzleDb, parentId: number | null | undefined): Promise<number> {
   if (!parentId) return 0;
 
   const parent = await getCategoryById(db, parentId);
@@ -76,10 +76,10 @@ async function calculateDepth(db: D1Database, parentId: number | null | undefine
  * Create a new category
  */
 export async function createCategory(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   category: NewCategory
 ): Promise<Category | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   // Auto-calculate depth based on parentId
   const depth = await calculateDepth(db, category.parentId);
@@ -95,11 +95,11 @@ export async function createCategory(
  * Update a category
  */
 export async function updateCategory(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   slug: string,
   category: Partial<NewCategory>
 ): Promise<Category | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   // Recalculate depth if parentId is being changed
   const depth = category.parentId !== undefined
@@ -123,11 +123,11 @@ export async function updateCategory(
  * Update a category by ID
  */
 export async function updateCategoryById(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   id: number,
   category: Partial<NewCategory>
 ): Promise<Category | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   // Recalculate depth if parentId is being changed
   const depth = category.parentId !== undefined
@@ -150,8 +150,8 @@ export async function updateCategoryById(
 /**
  * Soft delete a category
  */
-export async function deleteCategory(db: D1Database, slug: string): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deleteCategory(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
+  const drizzle = getDb(db);
   const result = await drizzle.update(categories)
     .set({ deletedAt: new Date().toISOString() })
     .where(eq(categories.slug, slug));
@@ -161,8 +161,8 @@ export async function deleteCategory(db: D1Database, slug: string): Promise<bool
 /**
  * Soft delete a category by ID
  */
-export async function deleteCategoryById(db: D1Database, id: number): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deleteCategoryById(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
+  const drizzle = getDb(db);
   const result = await drizzle.update(categories)
     .set({ deletedAt: new Date().toISOString() })
     .where(eq(categories.id, id));

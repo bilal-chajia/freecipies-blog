@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Sparkles, FileText, Settings } from 'lucide-react';
+import { X, Sparkles, FileText, Settings, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
 import {
@@ -112,12 +112,12 @@ export default function SettingsSidebar({
             {/* Header with tabs */}
             <div className="structure-panel-header">
                 <div className="structure-tabs justify-between w-full">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
                         {/* Only show Post tab if documentSettings is provided */}
                         {documentSettings && (
                             <button
                                 type="button"
-                                className={cn('structure-tab', resolvedTab === 'document' && 'is-active')}
+                                className={cn('structure-tab shrink-0', resolvedTab === 'document' && 'is-active')}
                                 onClick={() => handleTabChange('document')}
                             >
                                 <FileText className="w-3.5 h-3.5" />
@@ -130,7 +130,7 @@ export default function SettingsSidebar({
                                 type="button"
                                 disabled={!selectedBlock}
                                 className={cn(
-                                    'structure-tab',
+                                    'structure-tab shrink-0',
                                     resolvedTab === 'block' && 'is-active',
                                     !selectedBlock && 'opacity-50 cursor-not-allowed'
                                 )}
@@ -147,7 +147,7 @@ export default function SettingsSidebar({
                         {aiSettings && (
                             <button
                                 type="button"
-                                className={cn('structure-tab', resolvedTab === 'ai' && 'is-active')}
+                                className={cn('structure-tab shrink-0', resolvedTab === 'ai' && 'is-active')}
                                 onClick={() => handleTabChange('ai')}
                             >
                                 <Sparkles className="w-3.5 h-3.5" />
@@ -177,6 +177,7 @@ export default function SettingsSidebar({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.15 }}
+                            className="w-full max-w-[320px] overflow-x-hidden"
                         >
                             {documentSettings || (
                                 <div className="p-4 text-sm text-muted-foreground">
@@ -186,6 +187,7 @@ export default function SettingsSidebar({
                         </motion.div>
                     )}
 
+
                     {resolvedTab === 'block' && (
                         <motion.div
                             key="block"
@@ -193,6 +195,7 @@ export default function SettingsSidebar({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.15 }}
+                            className="w-full max-w-[320px] overflow-x-hidden"
                         >
                             {selectedBlock ? (
                                 blockSettings || (
@@ -215,6 +218,7 @@ export default function SettingsSidebar({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.15 }}
+                            className="w-full"
                         >
                             {aiSettings}
                         </motion.div>

@@ -5,7 +5,7 @@
  * Built on BlockNote for React with custom blocks.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BlockNoteViewWithPortal } from './BlockNoteViewWithPortal';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 
@@ -32,8 +32,8 @@ import { RelatedContentProvider } from './related-content-context';
 import { BlockSelectionProvider } from './selection-context';
 
 // Utility imports
-import { 
-    CUSTOM_BLOCK_TYPES 
+import {
+    CUSTOM_BLOCK_TYPES
 } from './utils/constants';
 import {
     flattenBlocks,
@@ -52,8 +52,12 @@ import CustomSlashMenu from './components/CustomSlashMenu';
 import CustomSideMenu from './components/CustomSideMenu';
 
 import { RecipeDataContext } from './blocks/MainRecipeBlock';
-import { RoundupDataContext } from './blocks/RoundupListBlock';
 import { FAQDataContext } from './blocks/FAQSectionBlock';
+// RoundupDataContext: shares roundup data between BlockEditor and child blocks
+const RoundupDataContext = createContext({
+    roundup: null,
+    setRoundup: () => { },
+});
 
 export default function BlockEditor({
     value,
@@ -80,6 +84,7 @@ export default function BlockEditor({
     const canvasRef = useRef(null);
     const onChangeRef = useRef(onChange);
     const lastSerializedRef = useRef('');
+    const lastRoundupRef = useRef('');
     const lastPointerBlockIdRef = useRef(null);
     const roundupSyncRef = useRef(false);
 
@@ -154,53 +159,7 @@ export default function BlockEditor({
         updateContent();
     }, [editor, value]);
 
-    const ensureRoundupSingletonBlock = useCallback(() => {
-        if (!editor || contentType !== 'roundup') return;
-        const roundupBlocks = flattenBlocks(editor.document)
-            .filter(({ block }) => block.type === 'roundupList')
-            .map(({ block }) => block);
 
-        if (roundupBlocks.length === 0) {
-            const rootBlocks = Array.isArray(editor.document) ? editor.document : [];
-            const anchorId = rootBlocks[rootBlocks.length - 1]?.id;
-            if (anchorId) {
-                editor.insertBlocks([{ type: 'roundupList' }], anchorId, 'after');
-            } else {
-                safeInsertBlock(editor, 'roundupList');
-            }
-            return;
-        }
-
-        if (roundupBlocks.length > 1) {
-            const [primary, ...duplicates] = roundupBlocks;
-            editor.removeBlocks(duplicates.map((block) => block.id));
-            try {
-                editor.setTextCursorPosition(primary.id, 'start');
-            } catch {
-                // Ignore selection failures after normalization.
-            }
-            editor.focus();
-        }
-    }, [contentType, editor]);
-
-    useEffect(() => {
-        if (!editor || contentType !== 'roundup') return undefined;
-        const normalizeRoundupBlocks = () => {
-            if (roundupSyncRef.current) return;
-            roundupSyncRef.current = true;
-            try {
-                ensureRoundupSingletonBlock();
-            } finally {
-                roundupSyncRef.current = false;
-            }
-        };
-
-        normalizeRoundupBlocks();
-        const unsubscribe = editor.onEditorContentChange(normalizeRoundupBlocks);
-        return () => {
-            if (typeof unsubscribe === 'function') unsubscribe();
-        };
-    }, [contentType, editor, ensureRoundupSingletonBlock]);
 
     const [structureItems, setStructureItems] = useState([]);
     const structureItemsRef = useRef(structureItems);
@@ -308,7 +267,39 @@ export default function BlockEditor({
         };
 
         handleChange();
-        const unsubscribe = editor.onEditorContentChange(handleChange);
+        const unsubscribe = editor.onEditorContentChange(() => {
+            handleChange();
+
+            // Sync Engine: Extract Roundup Items
+            if (contentType === 'roundup' && onRoundupChange) {
+                const currentBlocks = editor.document;
+                const flat = flattenBlocks(currentBlocks);
+                const itemBlocks = flat
+                    .filter(({ block }) => block.type === 'roundupItem')
+                    .map(({ block }) => block);
+
+                const roundupItems = itemBlocks.map((b, idx) => ({
+                    position: idx + 1,
+                    article_id: b.props.articleId,
+                    external_url: b.props.externalUrl,
+                    title: b.props.title,
+                    subtitle: b.props.subtitle,
+                    note: b.props.note,
+                    cover: b.props.cover,
+                }));
+
+                const nextRoundup = JSON.stringify({
+                    listType: 'ItemList',
+                    items: roundupItems
+                }, null, 2);
+
+                // Avoid infinite loops by checking if changed
+                if (nextRoundup !== lastRoundupRef.current) {
+                    lastRoundupRef.current = nextRoundup;
+                    onRoundupChange(nextRoundup);
+                }
+            }
+        });
         return () => {
             if (typeof unsubscribe === 'function') unsubscribe();
         };
@@ -375,7 +366,7 @@ export default function BlockEditor({
                         // Check if cursor was programmatically moved to a different block
                         // (e.g. via List View / Outline click)
                         let cursorBlock = null;
-                        try { cursorBlock = editor.getTextCursorPosition().block; } catch {}
+                        try { cursorBlock = editor.getTextCursorPosition().block; } catch { }
                         if (cursorBlock && cursorBlock.id !== currentActiveId) {
                             setActiveBlockId(cursorBlock.id);
                             onSelectedBlockChange?.(cursorBlock);
@@ -675,7 +666,7 @@ export default function BlockEditor({
                 }
                 const info = getBlockInfo(nearest);
                 blockId = info?.bnBlock?.node?.attrs?.id || null;
-                
+
                 // Hide if this block is also a list item
                 if (blockId) {
                     const block = editor.getBlock(blockId);
@@ -966,15 +957,15 @@ export default function BlockEditor({
                                             onDragEnd={handleCanvasDragEnd}
                                             onDragCancel={handleCanvasDragCancel}
                                         >
-                                                <BlockNoteViewWithPortal
-                                                    editor={editor}
-                                                    theme="light"
-                                                    sideMenu={false}
-                                                    slashMenu={false}
-                                                    formattingToolbar={false}
-                                                    linkToolbar={false}
-                                                    placeholder={placeholder}
-                                                >
+                                            <BlockNoteViewWithPortal
+                                                editor={editor}
+                                                theme="light"
+                                                sideMenu={false}
+                                                slashMenu={false}
+                                                formattingToolbar={false}
+                                                linkToolbar={false}
+                                                placeholder={placeholder}
+                                            >
                                                 <SuggestionMenuController
                                                     triggerCharacter="/"
                                                     getItems={async (query) =>
@@ -985,12 +976,12 @@ export default function BlockEditor({
                                                                 contentType,
                                                                 hasRecipeContext: contentType === 'recipe',
                                                                 hasRoundupContext: contentType === 'roundup',
-                                                    }
+                                                            }
                                                         )
                                                     }
                                                     suggestionMenuComponent={SlashMenuComponent}
                                                 />
-                                                    <SideMenuController sideMenu={CustomSideMenu} />
+                                                <SideMenuController sideMenu={CustomSideMenu} />
                                             </BlockNoteViewWithPortal>
                                         </DndContext>
                                         {linkToolbar.open && (

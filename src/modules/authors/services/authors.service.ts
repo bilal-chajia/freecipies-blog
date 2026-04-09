@@ -7,16 +7,16 @@
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { authors, type Author, type NewAuthor } from '../schema/authors.schema';
-import { createDb } from '../../../shared/database/drizzle';
+import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
  * Get all authors
  */
 export async function getAuthors(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   options?: { isOnline?: boolean }
 ): Promise<Author[]> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const conditions = [isNull(authors.deletedAt)];
   if (options?.isOnline !== undefined) {
@@ -33,8 +33,8 @@ export async function getAuthors(
 /**
  * Get a single author by slug
  */
-export async function getAuthorBySlug(db: D1Database, slug: string): Promise<Author | null> {
-  const drizzle = createDb(db);
+export async function getAuthorBySlug(db: D1Database | DrizzleDb, slug: string): Promise<Author | null> {
+  const drizzle = getDb(db);
   return await drizzle.query.authors.findFirst({
     where: and(eq(authors.slug, slug), isNull(authors.deletedAt)),
   }) || null;
@@ -43,8 +43,8 @@ export async function getAuthorBySlug(db: D1Database, slug: string): Promise<Aut
 /**
  * Get a single author by ID
  */
-export async function getAuthorById(db: D1Database, id: number): Promise<Author | null> {
-  const drizzle = createDb(db);
+export async function getAuthorById(db: D1Database | DrizzleDb, id: number): Promise<Author | null> {
+  const drizzle = getDb(db);
   return await drizzle.query.authors.findFirst({
     where: and(eq(authors.id, id), isNull(authors.deletedAt)),
   }) || null;
@@ -54,10 +54,10 @@ export async function getAuthorById(db: D1Database, id: number): Promise<Author 
  * Create a new author
  */
 export async function createAuthor(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   author: NewAuthor
 ): Promise<Author | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const [inserted] = await drizzle.insert(authors).values(author).returning();
   return inserted || null;
@@ -67,11 +67,11 @@ export async function createAuthor(
  * Update an author
  */
 export async function updateAuthor(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   slug: string,
   author: Partial<NewAuthor>
 ): Promise<Author | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const updateData = {
     ...author,
@@ -88,8 +88,8 @@ export async function updateAuthor(
 /**
  * Soft delete an author
  */
-export async function deleteAuthor(db: D1Database, slug: string): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deleteAuthor(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
+  const drizzle = getDb(db);
   await drizzle.update(authors)
     .set({ deletedAt: new Date().toISOString() })
     .where(eq(authors.slug, slug));
@@ -100,11 +100,11 @@ export async function deleteAuthor(db: D1Database, slug: string): Promise<boolea
  * Update an author by ID
  */
 export async function updateAuthorById(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   id: number,
   author: Partial<NewAuthor>
 ): Promise<Author | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const updateData = {
     ...author,
@@ -121,8 +121,8 @@ export async function updateAuthorById(
 /**
  * Soft delete an author by ID
  */
-export async function deleteAuthorById(db: D1Database, id: number): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deleteAuthorById(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
+  const drizzle = getDb(db);
   await drizzle.update(authors)
     .set({ deletedAt: new Date().toISOString() })
     .where(eq(authors.id, id));
@@ -132,8 +132,8 @@ export async function deleteAuthorById(db: D1Database, id: number): Promise<bool
 /**
  * Toggle isOnline status by ID
  */
-export async function toggleOnlineById(db: D1Database, id: number): Promise<Author | null> {
-  const drizzle = createDb(db);
+export async function toggleOnlineById(db: D1Database | DrizzleDb, id: number): Promise<Author | null> {
+  const drizzle = getDb(db);
 
   const author = await getAuthorById(db, id);
   if (!author) return null;
@@ -151,8 +151,8 @@ export async function toggleOnlineById(db: D1Database, id: number): Promise<Auth
 /**
  * Toggle isFeatured status by ID
  */
-export async function toggleFeaturedById(db: D1Database, id: number): Promise<Author | null> {
-  const drizzle = createDb(db);
+export async function toggleFeaturedById(db: D1Database | DrizzleDb, id: number): Promise<Author | null> {
+  const drizzle = getDb(db);
 
   const author = await getAuthorById(db, id);
   if (!author) return null;

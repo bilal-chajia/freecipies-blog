@@ -4,6 +4,13 @@ import { useAuthStore } from '../store/useStore';
 // API Base URL - Update this to match your Astro backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+// Retry configuration for transient errors (5xx, network errors)
+const RETRY_CONFIG = {
+  maxRetries: 2,
+  retryDelayMs: 1000,
+  retryableStatuses: [500, 502, 503, 504],
+};
+
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -13,6 +20,7 @@ const api = axios.create({
     'Pragma': 'no-cache',
     'Expires': '0',
   },
+  timeout: 30000, // 30s timeout to prevent indefinite hangs
 });
 
 // Request interceptor to add auth token and cache-busting
@@ -29,22 +37,40 @@ api.interceptors.request.use(
         _t: Date.now(),
       };
     }
+    // Initialize retry count on the config
+    if (!config._retryCount) config._retryCount = 0;
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Response interceptor for error handling with automatic retry for transient errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error.config;
+    
+    // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      // Unauthorized - clear auth state and dispatch event for React Router to handle
       useAuthStore.getState().clearAuth();
       localStorage.removeItem('admin_token');
-      // Dispatch custom event for auth redirect - React components can listen to this
       window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+      return Promise.reject(error);
     }
+
+    // Auto-retry transient server errors (5xx) and network timeouts
+    const status = error.response?.status;
+    const isRetryable = !status || RETRY_CONFIG.retryableStatuses.includes(status);
+    const canRetry = config && config._retryCount < RETRY_CONFIG.maxRetries && isRetryable;
+
+    if (canRetry) {
+      config._retryCount += 1;
+      const delay = RETRY_CONFIG.retryDelayMs * config._retryCount;
+      console.warn(`[API] Retrying ${config.method?.toUpperCase()} ${config.url} (attempt ${config._retryCount}/${RETRY_CONFIG.maxRetries}) after ${delay}ms`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return api(config);
+    }
+
     return Promise.reject(error);
   }
 );

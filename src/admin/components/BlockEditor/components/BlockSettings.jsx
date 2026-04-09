@@ -9,6 +9,7 @@ import MediaDialog from '@/components/MediaDialog';
 import ImageUploader from '@/components/ImageUploader';
 import RelatedContentSettings from './block-settings/RelatedContentSettings';
 import RecipeSettingsSidebar from './block-settings/RecipeSettingsSidebar';
+import RoundupListSettings from './block-settings/RoundupListSettings';
 import {
     parseJsonArray,
     clampNumber,
@@ -119,21 +120,23 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
 
     // Render varied settings based on block type
     return (
-        <div className="divide-y divide-border">
+        <div className="relative w-full overflow-x-hidden">
             {/* Common Settings */}
-            <div className="p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Type</span>
-                    <span className="text-sm font-semibold capitalize">{selectedBlock.type}</span>
-                </div>
+            <SettingsSection title="Block Info" icon={Settings} defaultOpen>
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">Type</span>
+                        <span className="text-xs font-semibold capitalize">{selectedBlock.type}</span>
+                    </div>
 
-                <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">ID</span>
-                    <span className="text-xs font-mono text-muted-foreground truncate max-w-[150px]" title={selectedBlock.id}>
-                        {selectedBlock.id}
-                    </span>
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">ID</span>
+                        <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[150px]" title={selectedBlock.id}>
+                            {selectedBlock.id}
+                        </span>
+                    </div>
                 </div>
-            </div>
+            </SettingsSection>
 
             {/* Type Specific Settings */}
             {selectedBlock.type === 'heading' && (
@@ -590,11 +593,10 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
             )}
 
             {selectedBlock.type === 'roundupList' && (
-                <SettingsSection title="Roundup Builder" icon={Settings} defaultOpen>
-                    <div className="text-xs text-muted-foreground">
-                        This block is managed by the roundup builder.
-                    </div>
-                </SettingsSection>
+                <RoundupListSettings
+                    selectedBlock={selectedBlock}
+                    updateProps={updateProps}
+                />
             )}
 
             {!isHandled && hasTextAlignment && (

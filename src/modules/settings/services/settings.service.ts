@@ -7,21 +7,21 @@
 import { eq } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { siteSettings, type SiteSetting, type NewSiteSetting } from '../schema/settings.schema';
-import { createDb } from '../../../shared/database/drizzle';
+import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
  * Get all settings
  */
-export async function getSettings(db: D1Database): Promise<SiteSetting[]> {
-  const drizzle = createDb(db);
+export async function getSettings(db: D1Database | DrizzleDb): Promise<SiteSetting[]> {
+  const drizzle = getDb(db);
   return await drizzle.select().from(siteSettings);
 }
 
 /**
  * Get a single setting by key
  */
-export async function getSetting(db: D1Database, key: string): Promise<SiteSetting | null> {
-  const drizzle = createDb(db);
+export async function getSetting(db: D1Database | DrizzleDb, key: string): Promise<SiteSetting | null> {
+  const drizzle = getDb(db);
   return await drizzle.query.siteSettings.findFirst({
     where: eq(siteSettings.key, key),
   }) || null;
@@ -45,12 +45,12 @@ export async function getSettingValue<T = any>(db: D1Database, key: string): Pro
  * Create or update a setting
  */
 export async function upsertSetting(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   key: string,
   value: string | object,
   options?: { description?: string; category?: string; type?: string }
 ): Promise<boolean> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const valueStr = typeof value === 'object' ? JSON.stringify(value) : value;
 
@@ -83,8 +83,8 @@ export async function upsertSetting(
 /**
  * Delete a setting
  */
-export async function deleteSetting(db: D1Database, key: string): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deleteSetting(db: D1Database | DrizzleDb, key: string): Promise<boolean> {
+  const drizzle = getDb(db);
   await drizzle.delete(siteSettings).where(eq(siteSettings.key, key));
   return true;
 }
@@ -92,8 +92,8 @@ export async function deleteSetting(db: D1Database, key: string): Promise<boolea
 /**
  * Get settings by category
  */
-export async function getSettingsByCategory(db: D1Database, category: string): Promise<SiteSetting[]> {
-  const drizzle = createDb(db);
+export async function getSettingsByCategory(db: D1Database | DrizzleDb, category: string): Promise<SiteSetting[]> {
+  const drizzle = getDb(db);
   return await drizzle
     .select()
     .from(siteSettings)
@@ -103,15 +103,18 @@ export async function getSettingsByCategory(db: D1Database, category: string): P
 /**
  * Get dashboard statistics (aggregated data for admin dashboard)
  */
-export async function getDashboardStats(db: D1Database): Promise<{
+export async function getDashboardStats(db: D1Database | DrizzleDb): Promise<{
   articles: number;
   categories: number;
   authors: number;
   tags: number;
   totalViews: number;
 }> {
+  // Get the underlying D1Database for raw SQL queries
+  const d1 = 'prepare' in db ? db : (db as any).client as D1Database;
+
   // Use raw SQL for cross-table aggregation
-  const result = await db.prepare(`
+  const result = await d1.prepare(`
     SELECT
       (SELECT COUNT(*) FROM articles WHERE deleted_at IS NULL) as articles,
       (SELECT COUNT(*) FROM categories WHERE deleted_at IS NULL) as categories,
@@ -144,7 +147,7 @@ const IMAGE_SETTINGS_KEY = IMAGE_SETTINGS_DB_KEY;
 /**
  * Get image upload settings (merged with defaults)
  */
-export async function getImageUploadSettings(db: D1Database): Promise<ImageUploadSettings> {
+export async function getImageUploadSettings(db: D1Database | DrizzleDb): Promise<ImageUploadSettings> {
   const stored = await getSettingValue<Partial<ImageUploadSettings>>(db, IMAGE_SETTINGS_KEY);
   return { ...IMAGE_UPLOAD_DEFAULTS, ...stored };
 }
@@ -153,7 +156,7 @@ export async function getImageUploadSettings(db: D1Database): Promise<ImageUploa
  * Update image upload settings (partial update)
  */
 export async function updateImageUploadSettings(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   updates: Partial<ImageUploadSettings>
 ): Promise<ImageUploadSettings> {
   // Get current settings
@@ -175,7 +178,7 @@ export async function updateImageUploadSettings(
 /**
  * Reset image upload settings to defaults
  */
-export async function resetImageUploadSettings(db: D1Database): Promise<ImageUploadSettings> {
+export async function resetImageUploadSettings(db: D1Database | DrizzleDb): Promise<ImageUploadSettings> {
   await upsertSetting(db, IMAGE_SETTINGS_KEY, IMAGE_UPLOAD_DEFAULTS, {
     description: 'Image upload module configuration',
     category: 'media',
@@ -213,7 +216,7 @@ const TOC_SETTINGS_KEY = 'toc_settings';
 /**
  * Get TOC settings (merged with defaults)
  */
-export async function getTocSettings(db: D1Database): Promise<TocSettings> {
+export async function getTocSettings(db: D1Database | DrizzleDb): Promise<TocSettings> {
   const stored = await getSettingValue<Partial<TocSettings>>(db, TOC_SETTINGS_KEY);
   return { ...TOC_DEFAULTS, ...stored };
 }
@@ -222,7 +225,7 @@ export async function getTocSettings(db: D1Database): Promise<TocSettings> {
  * Update TOC settings (partial update)
  */
 export async function updateTocSettings(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   updates: Partial<TocSettings>
 ): Promise<TocSettings> {
   const current = await getTocSettings(db);

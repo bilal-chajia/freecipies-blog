@@ -44,6 +44,7 @@ export {
     ExcerptsSectionContent,
 } from './DocumentSettings';
 export { default as BlockSettings } from './BlockSettings';
+export { default as CuratedListSettings } from './CuratedListSettings';
 
 export {
     default as GutenbergEditorMain,

@@ -49,7 +49,7 @@ function SettingsSection({
 
     return (
         <div className={cn('border-b border-border', className)}>
-            <div className="px-2 py-2">
+            <div className="px-4 py-2">
                 <button
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
@@ -583,7 +583,7 @@ export default function DocumentSettings({
     isEditMode,
 }) {
     return (
-        <div className="divide-y divide-border">
+        <div className="relative">
             <SettingsSection title="Post" icon={Globe} defaultOpen>
                 <StatusSection
                     formData={formData}

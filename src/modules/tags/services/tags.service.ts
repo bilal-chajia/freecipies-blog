@@ -7,16 +7,16 @@
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { tags, type Tag, type NewTag } from '../schema/tags.schema';
-import { createDb } from '../../../shared/database/drizzle';
+import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
  * Get all tags
  */
 export async function getTags(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   options?: { limit?: number }
 ): Promise<Tag[]> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const conditions = [isNull(tags.deletedAt)];
 
@@ -36,8 +36,8 @@ export async function getTags(
 /**
  * Get a single tag by slug
  */
-export async function getTagBySlug(db: D1Database, slug: string): Promise<Tag | null> {
-  const drizzle = createDb(db);
+export async function getTagBySlug(db: D1Database | DrizzleDb, slug: string): Promise<Tag | null> {
+  const drizzle = getDb(db);
   return await drizzle.query.tags.findFirst({
     where: and(eq(tags.slug, slug), isNull(tags.deletedAt)),
   }) || null;
@@ -47,10 +47,10 @@ export async function getTagBySlug(db: D1Database, slug: string): Promise<Tag | 
  * Create a new tag
  */
 export async function createTag(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   tag: NewTag
 ): Promise<Tag | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const [inserted] = await drizzle.insert(tags).values(tag).returning();
   return inserted || null;
@@ -60,11 +60,11 @@ export async function createTag(
  * Update a tag
  */
 export async function updateTag(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   slug: string,
   tag: Partial<NewTag>
 ): Promise<Tag | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const updateData = {
     ...tag,
@@ -81,8 +81,8 @@ export async function updateTag(
 /**
  * Soft delete a tag
  */
-export async function deleteTag(db: D1Database, slug: string): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deleteTag(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
+  const drizzle = getDb(db);
   await drizzle.update(tags)
     .set({ deletedAt: new Date().toISOString() })
     .where(eq(tags.slug, slug));

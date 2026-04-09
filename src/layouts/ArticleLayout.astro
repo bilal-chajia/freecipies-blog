@@ -1,0 +1,411 @@
+---
+import { env } from 'cloudflare:workers';
+import Layout from "./Layout.astro";
+import type { Category } from "@modules/categories/schema/categories.schema";
+import SocialShareBar from "../components/SocialShareBar.astro";
+import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
+import PopularRecipes from "../components/PopularRecipes.astro";
+import NewsletterWidget from "../components/NewsletterWidget.astro";
+import ContentRenderer from "../components/ContentRenderer.astro";
+import HeroImage from "../components/content/HeroImage.astro";
+import FAQSection from "../components/content/FAQSection.astro";
+import TableOfContents from "../components/content/TableOfContents.astro";
+import { extractImage, getImageSrcSet } from "@shared/utils";
+import {
+  getTocSettings,
+  TOC_DEFAULTS,
+  type TocSettings,
+} from "@modules/settings/services/settings.service";
+
+interface Props {
+  article: Record<string, any>;
+  author?: Record<string, any> | null;
+  category?: Category | null;
+}
+
+const { article, author, category } = Astro.props;
+const categoryColor = category?.color || "#ff6600";
+
+let tocSettings: TocSettings = TOC_DEFAULTS;
+try {
+  const db = env?.DB;
+  if (db) {
+    tocSettings = await getTocSettings(db);
+  }
+} catch (error) {
+  console.error("Failed to load TOC settings:", error);
+}
+
+const wordCount = [
+  article.shortDescription,
+  article.introduction,
+  JSON.stringify(article.contentJson || []),
+]
+  .filter(Boolean)
+  .join(" ")
+  .split(/\s+/).length;
+
+const readingTime = Math.max(3, Math.ceil(wordCount / 200));
+
+const heroCover = extractImage(article.imagesJson, "cover", 1200);
+const heroThumb = extractImage(article.imagesJson, "thumbnail", 1200);
+const coverSrcSet = getImageSrcSet(article.imagesJson, "cover");
+const thumbSrcSet = getImageSrcSet(article.imagesJson, "thumbnail");
+const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
+const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
+const heroSizes = "(max-width: 768px) 90vw, 800px";
+
+const authorAvatar = author?.imagesJson
+  ? extractImage(author.imagesJson, "avatar", 96)
+  : {};
+const authorAvatarSrcSet = author?.imagesJson
+  ? getImageSrcSet(author.imagesJson, "avatar")
+  : "";
+const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
+const authorImage = authorAvatar.imageUrl || author?.imageUrl;
+const authorImageWidth = authorAvatar.imageWidth || 48;
+const authorImageHeight = authorAvatar.imageHeight || 48;
+const authorImageStyle = authorAvatar.imageStyle;
+
+const contentBlocks = Array.isArray(article.contentJson)
+  ? article.contentJson
+  : [];
+---
+
+<Layout
+  title={article.metaTitle || article.label}
+  description={article.metaDescription || article.shortDescription}
+  image={heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl || undefined}
+>
+  <slot name="head" slot="head" />
+  {
+    (heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl) && (
+      <link
+        slot="head"
+        rel="preload"
+        as="image"
+        href={heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl}
+        imagesrcset={heroSrcSet || undefined}
+        imagesizes={heroSrcSet ? heroSizes : undefined}
+        fetchpriority="high"
+      />
+    )
+  }
+  {
+    author && (
+      <script
+        slot="head"
+        type="application/ld+json"
+        set:html={JSON.stringify(
+          {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: article.headline || article.label,
+            description: article.shortDescription,
+            image: heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl,
+            author: {
+              "@type": "Person",
+              name: author.name,
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "Freecipies",
+              logo: {
+                "@type": "ImageObject",
+                url: `${Astro.site?.toString() || Astro.url.origin}/logo.png`,
+              },
+            },
+            datePublished: article.publishedAt,
+            dateModified: article.updatedAt || article.publishedAt,
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": new URL(
+                Astro.url.pathname,
+                Astro.site?.toString() || Astro.url.origin
+              ).toString(),
+            },
+          },
+          null,
+          0,
+        )}
+      />
+    )
+  }
+  <article
+    class="article-page"
+    style={`--toc-accent: ${tocSettings.accentColor};`}
+  >
+    <div class="article-container">
+      <div class="main-content">
+        {
+          article.categoryLabel && (
+            <a
+              href={`/categories/${article.categorySlug}`}
+              class="category-badge"
+              style={`--badge-color: ${categoryColor};`}
+            >
+              {article.categoryLabel}
+            </a>
+          )
+        }
+
+        <h1 class="article-title">{article.label}</h1>
+
+        {
+          article.shortDescription && (
+            <p class="article-description">{article.shortDescription}</p>
+          )
+        }
+
+        <SocialShareBar
+          title={article.label}
+          readingTime={`${readingTime} Min Read`}
+        />
+
+        <RecipeAuthorCard
+          authorName={author?.name || article.authorName}
+          authorImage={authorImage || undefined}
+          authorImageSrcSet={authorAvatarSrcSet || undefined}
+          authorImageSizes={authorAvatarSizes}
+          authorImageWidth={authorImageWidth}
+          authorImageHeight={authorImageHeight}
+          authorImageStyle={authorImageStyle}
+          authorRole={author?.job || "Writer"}
+          lastUpdated={article.publishedAt || undefined}
+          viewCount={article.viewCount}
+        />
+
+        <div class="disclosure-notice">
+          <strong>Disclosure:</strong> This website may contain affiliate links, which
+          means I may earn a commission if you click on the link and make a purchase.
+          I only recommend products or services that I personally use and believe
+          will add value to my readers. Your support is appreciated!
+        </div>
+
+        <TableOfContents toc={article.cachedTocJson} settings={tocSettings} />
+
+        <HeroImage
+          src={heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl}
+          alt={heroCover.imageAlt || heroThumb.imageAlt || article.imageAlt || article.label}
+          width={heroCover.imageWidth || heroThumb.imageWidth || article.imageWidth}
+          height={heroCover.imageHeight || heroThumb.imageHeight || article.imageHeight}
+          srcset={heroSrcSet}
+          sizes={heroSizes}
+          style={heroCover.imageStyle || heroThumb.imageStyle}
+        />
+
+        {
+          article.introduction && (
+            <section class="content-section introduction-section">
+              <div class="prose" set:html={article.introduction} />
+            </section>
+          )
+        }
+
+        {
+          contentBlocks.length > 0 && (
+            <section class="content-section content-json-section">
+              <ContentRenderer
+                content={contentBlocks}
+                faqsJson={article.faqsJson}
+                settings={tocSettings}
+                article={article}
+                author={author}
+                category={category}
+              />
+            </section>
+          )
+        }
+
+        <FAQSection faqs={article.faqsJson} />
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-sticky">
+          <PopularRecipes currentSlug={article.slug} limit={5} />
+          <NewsletterWidget />
+        </div>
+      </aside>
+    </div>
+  </article>
+</Layout>
+
+<script define:vars={{ slug: article.slug }}>
+  const trackView = async () => {
+    try {
+      await fetch(`/api/views/${slug}`, { method: "POST" });
+    } catch (e) {}
+  };
+
+  if (document.readyState === "complete") {
+    trackView();
+  } else {
+    window.addEventListener("load", trackView);
+  }
+</script>
+
+<style>
+  .article-page {
+    background: #fff;
+    min-height: 100vh;
+    padding-bottom: 4rem;
+  }
+
+  .article-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(0px, 2vw, 2rem) clamp(1rem, 3vw, 2rem);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(1.5rem, 3vw, 2rem);
+  }
+
+  @media (min-width: 1024px) {
+    .article-container {
+      grid-template-columns: 1fr 360px;
+    }
+  }
+
+  .main-content {
+    background: #fff;
+    padding: clamp(1rem, 2vw, 1rem) 0;
+    min-width: 0;
+  }
+
+  .category-badge {
+    display: inline-block;
+    background: var(--badge-color, #ff6600);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.375rem 0.875rem;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-bottom: 1rem;
+    transition: filter 0.2s;
+  }
+
+  .category-badge:hover {
+    filter: brightness(0.9);
+  }
+
+  .article-title {
+    font-size: clamp(1.375rem, 3vw + 0.5rem, 2.5rem);
+    font-weight: 800;
+    color: #111;
+    line-height: 1.2;
+    margin: 0 0 clamp(0.75rem, 2vw, 1rem);
+  }
+
+  .article-description {
+    font-family: "Source Sans 3", "Segoe UI", Roboto, sans-serif;
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    color: #444;
+    line-height: 1.6;
+    margin: 0 0 clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .disclosure-notice {
+    background: #f8f8f8;
+    border-left: 3px solid #ddd;
+    padding: clamp(0.75rem, 2vw, 1rem) clamp(0.875rem, 2vw, 1.25rem);
+    font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.8125rem);
+    color: #666;
+    line-height: 1.6;
+    margin: clamp(1rem, 2vw, 1.5rem) 0;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .disclosure-notice strong {
+    color: #333;
+  }
+
+  .content-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .content-section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #111;
+  }
+
+  .content-section h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #333;
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  :global(.numbered-heading .heading-number) {
+    color: var(--toc-accent, #f97316);
+    font-weight: 700;
+    margin-right: 0.4rem;
+  }
+
+  :global(h2.numbered-heading) {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.6rem, 1.4rem + 1vw, 2rem);
+    font-weight: 800;
+    color: #111;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid #e5e7eb;
+    letter-spacing: -0.01em;
+  }
+
+  :global(h3.numbered-heading) {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+    font-weight: 700;
+    color: #222;
+    margin: 2rem 0 0.75rem;
+  }
+
+  :global(h4.numbered-heading) {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
+    font-weight: 600;
+    color: #444;
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  .introduction-section {
+    background: #fff8e6;
+    margin: 0 calc(-1 * clamp(1rem, 3vw, 2rem)) clamp(1.5rem, 3vw, 2.5rem);
+    padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem);
+    border-left: 4px solid #f59e0b;
+  }
+
+  .prose {
+    color: #444;
+    line-height: 1.7;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sidebar-sticky {
+    position: sticky;
+    top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media print {
+    .sidebar,
+    .disclosure-notice,
+    .social-share-bar {
+      display: none !important;
+    }
+  }
+</style>

@@ -1,0 +1,42 @@
+---
+import { env } from 'cloudflare:workers';
+import RoundupLayout from "@layouts/RoundupLayout.astro";
+import { getArticleBySlug } from "@modules/articles";
+import { getAuthorById } from "@modules/authors/services/authors.service";
+import { getCategoryById } from "@modules/categories/services/categories.service";
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return new Response("Slug is missing", { status: 400 });
+}
+
+let roundup: any = null;
+let author: any = null;
+let category: any = null;
+
+try {
+  if (env.DB) {
+    roundup = await getArticleBySlug(env.DB, slug, "roundup");
+    
+    if (roundup) {
+      if (roundup.authorId) {
+        author = await getAuthorById(env.DB, roundup.authorId);
+      }
+      if (roundup.categoryId) {
+        category = await getCategoryById(env.DB, roundup.categoryId);
+      }
+    }
+  }
+} catch (error) {
+  console.error(`Error fetching roundup (${slug}):`, error);
+}
+
+if (!roundup) {
+  return Astro.redirect("/404");
+}
+---
+
+<RoundupLayout article={roundup} author={author} category={category} />

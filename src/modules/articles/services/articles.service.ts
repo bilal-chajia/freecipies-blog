@@ -13,7 +13,7 @@ import { categories } from '../../categories/schema/categories.schema';
 import { authors } from '../../authors/schema/authors.schema';
 import { tags as tagsTable } from '../../tags/schema/tags.schema';
 import { equipment as equipmentTable } from '../../equipment/schema/equipment.schema';
-import { createDb } from '../../../shared/database/drizzle';
+import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedTag } from '../../../shared/utils/hydration';
 import type { HydratedArticle } from '../types/articles.types';
 
@@ -29,11 +29,11 @@ async function getTagsForArticleId(drizzle: any, articleId: number): Promise<Hyd
 }
 
 export async function setArticleTagsById(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   articleId: number,
   tagIds: number[]
 ): Promise<HydratedTag[]> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const uniqueTagIds = Array.from(new Set(tagIds.filter((id) => Number.isFinite(id) && id > 0)));
 
   // Resolve to existing (non-deleted) tags only (prevents FK failures + keeps cache clean)
@@ -88,10 +88,10 @@ export interface PaginatedArticles {
  * Get articles with filtering and pagination
  */
 export async function getArticles(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   options?: ArticleQueryOptions
 ): Promise<PaginatedArticles> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const conditions: any[] = [];
 
@@ -204,11 +204,11 @@ export async function getArticles(
  * Get a single article by slug
  */
 export async function getArticleBySlug(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   slug: string,
   type?: 'recipe' | 'article' | 'roundup'
 ): Promise<HydratedArticle | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const conditions = [eq(articles.slug, slug), isNull(articles.deletedAt)];
   if (type) {
@@ -254,10 +254,10 @@ function prepareJsonFields(patch: Record<string, any>): Record<string, any> {
  * Create a new article
  */
 export async function createArticle(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   article: NewArticle
 ): Promise<Article | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
   const processed = prepareJsonFields(article as any);
 
   const [inserted] = await drizzle.insert(articles).values(processed as any).returning();
@@ -268,11 +268,11 @@ export async function createArticle(
  * Update an article
  */
 export async function updateArticle(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   slug: string,
   article: Partial<NewArticle>
 ): Promise<boolean> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const processed = prepareJsonFields(article as any);
   const updateData = {
@@ -290,8 +290,8 @@ export async function updateArticle(
 /**
  * Soft delete an article
  */
-export async function deleteArticle(db: D1Database, slug: string): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deleteArticle(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
+  const drizzle = getDb(db);
   await drizzle.update(articles)
     .set({ deletedAt: new Date().toISOString() })
     .where(eq(articles.slug, slug));
@@ -301,8 +301,8 @@ export async function deleteArticle(db: D1Database, slug: string): Promise<boole
 /**
  * Increment view count
  */
-export async function incrementViewCount(db: D1Database, slug: string): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function incrementViewCount(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
+  const drizzle = getDb(db);
   await drizzle.update(articles)
     .set({ viewCount: sql`${articles.viewCount} + 1` })
     .where(eq(articles.slug, slug));
@@ -317,10 +317,10 @@ export async function incrementViewCount(db: D1Database, slug: string): Promise<
  * Get a single article by ID (for admin operations)
  */
 export async function getArticleById(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   id: number
 ): Promise<HydratedArticle | null> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const result = await drizzle
     .select({
@@ -349,11 +349,11 @@ export async function getArticleById(
  * Update an article by ID (admin mutations)
  */
 export async function updateArticleById(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   id: number,
   patch: Partial<NewArticle>
 ): Promise<boolean> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const processedPatch = prepareJsonFields(patch);
 
@@ -373,8 +373,8 @@ export async function updateArticleById(
 /**
  * Soft delete an article by ID
  */
-export async function deleteArticleById(db: D1Database, id: number): Promise<boolean> {
-  const drizzle = createDb(db);
+export async function deleteArticleById(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
+  const drizzle = getDb(db);
 
   const result = await drizzle.update(articles)
     .set({ deletedAt: new Date().toISOString() })
@@ -387,8 +387,8 @@ export async function deleteArticleById(db: D1Database, id: number): Promise<boo
 /**
  * Toggle online status by ID
  */
-export async function toggleOnlineById(db: D1Database, id: number): Promise<{ isOnline: boolean } | null> {
-  const drizzle = createDb(db);
+export async function toggleOnlineById(db: D1Database | DrizzleDb, id: number): Promise<{ isOnline: boolean } | null> {
+  const drizzle = getDb(db);
 
   const current = await drizzle.query.articles.findFirst({
     where: and(eq(articles.id, id), isNull(articles.deletedAt)),
@@ -409,8 +409,8 @@ export async function toggleOnlineById(db: D1Database, id: number): Promise<{ is
 /**
  * Toggle favorite status by ID
  */
-export async function toggleFavoriteById(db: D1Database, id: number): Promise<{ isFavorite: boolean } | null> {
-  const drizzle = createDb(db);
+export async function toggleFavoriteById(db: D1Database | DrizzleDb, id: number): Promise<{ isFavorite: boolean } | null> {
+  const drizzle = getDb(db);
 
   const current = await drizzle.query.articles.findFirst({
     where: and(eq(articles.id, id), isNull(articles.deletedAt)),
@@ -512,10 +512,10 @@ function extractTocFromContent(contentJson: string | null, headline?: string): {
  * Populates optimized fields like cachedAuthorJson, cachedCategoryJson, and cachedTocJson
  */
 export async function syncCachedFields(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   id: number
 ): Promise<boolean> {
-  const drizzle = createDb(db);
+  const drizzle = getDb(db);
 
   const article = await drizzle
     .select({
@@ -660,11 +660,11 @@ export async function syncCachedFields(
  * Get popular articles by view count (and recent fallback)
  */
 export async function getPopularArticles(
-  db: D1Database,
+  db: D1Database | DrizzleDb,
   limit: number = 10
 ) {
-  const drizzle = createDb(db);
-  
+  const drizzle = getDb(db);
+
   const result = await drizzle
     .select({
       id: articles.id,

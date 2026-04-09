@@ -37,8 +37,6 @@ import { insertBlockFromInserter } from '@/components/BlockEditor/utils/insert-b
 import MediaDialog from '@/components/MediaDialog';
 import ArticlePreview from '@/components/ArticlePreview';
 
-// ... imports
-
 export default function GutenbergRoundupEditor() {
     const { slug } = useParams();
     const navigate = useNavigate();
