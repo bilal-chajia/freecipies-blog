@@ -4,7 +4,7 @@
  * Cloudflare environment bindings.
  */
 
-import type { D1Database, R2Bucket, KVNamespace } from '@cloudflare/workers-types';
+import type { D1Database, R2Bucket, KVNamespace, ExecutionContext } from '@cloudflare/workers-types';
 
 export interface Env {
   DB: D1Database;
@@ -22,9 +22,8 @@ export interface Env {
   ADMIN_PASSWORD?: string;
 }
 
-// Astro locals type extension
+// Astro v6: runtime.env is removed from locals.
+// Use `import { env } from 'cloudflare:workers'` instead.
 export interface AstroLocals {
-  runtime: {
-    env: Env;
-  };
+  cfContext: ExecutionContext;
 }

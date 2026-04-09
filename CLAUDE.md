@@ -214,6 +214,7 @@ src/
 
 ```typescript
 // Always use standardized responses
+import { env } from 'cloudflare:workers';
 import {
   formatSuccessResponse,
   formatErrorResponse,
@@ -221,9 +222,8 @@ import {
   ErrorCodes,
 } from "@lib/error-handler";
 
-export const GET: APIRoute = async ({ locals }) => {
+export const GET: APIRoute = async () => {
   try {
-    const env = locals.runtime.env as Env;
     const data = await getArticles(env.DB, { limit: 10 });
     const { body, status, headers } = formatSuccessResponse(data);
     return new Response(body, { status, headers });

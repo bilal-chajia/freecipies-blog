@@ -2400,3 +2400,23 @@ BEGIN
   )
   WHERE id = OLD.category_id;
 END;
+
+-- ============================================================
+-- TABLE: redirects
+-- ============================================================
+-- Manages 301/302/307/308 redirects for SEO and content moves.
+CREATE TABLE IF NOT EXISTS redirects (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_path   TEXT    UNIQUE NOT NULL,          -- Source path, e.g. /old-recipe
+  to_path     TEXT    NOT NULL,                 -- Destination path or URL
+  status_code INTEGER NOT NULL DEFAULT 301,     -- 301, 302, 307, 308
+  is_active   INTEGER NOT NULL DEFAULT 1,       -- 1 = active, 0 = paused
+  notes       TEXT,                             -- Internal notes for editors
+  hit_count   INTEGER NOT NULL DEFAULT 0,       -- Number of times triggered
+  last_hit_at TEXT,                             -- ISO-8601 timestamp of last hit
+  created_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_redirects_from_path ON redirects (from_path);
+CREATE INDEX IF NOT EXISTS idx_redirects_active    ON redirects (is_active);

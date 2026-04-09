@@ -61,10 +61,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
       const redirect = await getRedirectByFromPath(env.DB, url.pathname);
       
       if (redirect && redirect.isActive) {
-        // Increment hit count asynchronously
-        context.locals.runtime?.waitUntil?.(incrementHitCount(env.DB, redirect.id));
+        // Increment hit count asynchronously (fire-and-forget)
+        incrementHitCount(env.DB, redirect.id).catch(() => {});
         
-        return context.redirect(redirect.toPath, redirect.statusCode || 301);
+        return context.redirect(redirect.toPath, (redirect.statusCode || 301) as any);
       }
     } catch (err) {
       console.error('Middleware redirect error:', err);
