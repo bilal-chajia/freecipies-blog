@@ -1,5 +1,6 @@
 import { defineMiddleware } from 'astro/middleware';
 import { env } from 'cloudflare:workers';
+import { getRedirectByFromPath, incrementHitCount } from '@modules/redirects';
 
 const DEFAULT_ALLOWED_HEADERS = [
   'Content-Type',
@@ -57,7 +58,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (!isSystemPath && env?.DB) {
     try {
-      const { getRedirectByFromPath, incrementHitCount } = await import('@modules/redirects');
       const redirect = await getRedirectByFromPath(env.DB, url.pathname);
       
       if (redirect && redirect.isActive) {
