@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "node scripts/build.mjs",
-    "preview": "wrangler pages dev dist",
-    "deploy": "wrangler pages deploy dist --project-name=freecipies-blog",
+    "preview": "astro preview",
+    "deploy": "wrangler deploy",
     "deploy:local": "deploy.bat",
     "astro": "astro",
     "migrate": "node scripts/migrate-csv-to-d1.js"
@@ -106,7 +106,7 @@
     "sql.js": "^1.14.1",
     "sqlite3": "^6.0.1",
     "typescript": "^6.0.2",
-    "wrangler": "^4.81.0"
+    "wrangler": "^4.81.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

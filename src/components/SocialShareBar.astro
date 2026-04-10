@@ -672,14 +672,28 @@ const encodedTitle = encodeURIComponent(title);
 </style>
 
 <script>
-    // Copy link functionality
+    async function copyToClipboard(text: string): Promise<void> {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return;
+        }
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+    }
+
     document.querySelectorAll(".copy-link").forEach((btn) => {
         const htmlBtn = btn as HTMLElement;
         htmlBtn.addEventListener("click", async () => {
             const url = htmlBtn.getAttribute("data-url");
             if (url) {
                 try {
-                    await navigator.clipboard.writeText(url);
+                    await copyToClipboard(url);
                     htmlBtn.style.background = "#10b981";
                     htmlBtn.style.color = "white";
                     setTimeout(() => {
@@ -745,7 +759,7 @@ const encodedTitle = encodeURIComponent(title);
             const url = sheetCopyLink.getAttribute("data-url");
             if (url) {
                 try {
-                    await navigator.clipboard.writeText(url);
+                    await copyToClipboard(url);
                     const label = sheetCopyLink.querySelector("span");
                     const circle = sheetCopyLink.querySelector(
                         ".share-icon-circle",

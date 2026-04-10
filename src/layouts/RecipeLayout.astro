@@ -829,22 +829,19 @@ const contentBlocks = Array.isArray(recipe.contentJson)
 </style>
 
 <script>
-  // Interactive checkboxes for ingredients
-  document.querySelectorAll(".ingredient-list li").forEach((item) => {
-    item.addEventListener("click", () => {
-      const checkbox = item.querySelector(".checkbox") as HTMLElement;
-      if (checkbox) {
-        const isChecked = checkbox.style.background === "rgb(16, 185, 129)";
-        if (isChecked) {
-          checkbox.style.background = "";
-          (item as HTMLElement).style.opacity = "1";
-          (item as HTMLElement).style.textDecoration = "none";
-        } else {
-          checkbox.style.background = "#10b981";
-          (item as HTMLElement).style.opacity = "0.6";
-          (item as HTMLElement).style.textDecoration = "line-through";
-        }
+  document.querySelectorAll("[data-ingredient-check]").forEach((input) => {
+    const el = input as HTMLInputElement;
+    const handler = () => {
+      const item = el.closest(".ingredient-item") as HTMLElement | null;
+      if (!item) return;
+      if (el.checked) {
+        item.style.opacity = "0.6";
+        item.style.textDecoration = "line-through";
+      } else {
+        item.style.opacity = "1";
+        item.style.textDecoration = "none";
       }
-    });
+    };
+    el.addEventListener("change", handler);
   });
 </script>

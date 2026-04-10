@@ -1,6 +1,6 @@
 # Agent Instructions
 
-> **Last Updated:** 2026-04-08
+> **Last Updated:** 2026-04-09
 
 This document provides comprehensive guidance for AI coding agents working on the Freecipies recipes blog project.
 
@@ -45,13 +45,13 @@ This document provides comprehensive guidance for AI coding agents working on th
 ## Build and Development Commands
 
 ```bash
-# Development (local only, no D1/R2)
+# Development (Astro 6: Uses workerd runtime, includes local D1/R2 bindings via Vite)
 pnpm dev
 
 # Production build
 pnpm build
 
-# Preview with full Cloudflare bindings (D1/R2 work)
+# Preview built output with full Edge simulation (Crucial final test before deploy)
 pnpm preview
 
 # Database migrations (via drizzle-kit)

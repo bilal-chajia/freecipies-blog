@@ -37,6 +37,7 @@ export default defineConfig({
   },
   adapter: cloudflare({
     imageService: 'passthrough',
+    prerenderEnvironment: 'node',
   }),
   output: 'server',
   build: {

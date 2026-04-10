@@ -35,8 +35,8 @@ if (existsSync(wranglerPath)) {
     
     // Remove assets binding (Pages provides this automatically)
     if (config.assets) {
-      delete config.assets;
-      console.log('  ✓ Removed assets property');
+      // delete config.assets; // COMMENTED OUT: We need this for local `pnpm preview`!
+      console.log('  ✓ Skipped removing assets property to keep local preview working');
     }
     
     // Also filter from bindings array if present

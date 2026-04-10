@@ -2836,7 +2836,11 @@ const navItems = [
     function initCookingMode() {
       if (!recipeDataEl || !cookingStepsContainer) return;
       try {
-        const recipe = JSON.parse(recipeDataEl.textContent || "{}");
+        const raw = recipeDataEl.textContent?.trim() || "{}";
+        if (!raw.startsWith("{") && !raw.startsWith("[")) {
+          throw new Error("Invalid recipe data format");
+        }
+        const recipe = JSON.parse(raw);
         const allSteps: any[] = [];
 
         if (recipe.instructions && Array.isArray(recipe.instructions)) {

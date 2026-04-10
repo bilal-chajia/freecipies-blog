@@ -98,7 +98,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       ].join('; ')
     : [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "img-src 'self' data: https: blob:",
         "font-src 'self' https://fonts.gstatic.com",
