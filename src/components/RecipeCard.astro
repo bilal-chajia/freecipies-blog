@@ -130,11 +130,10 @@ const navItems = [
     <div
       class="recipe-card"
       id="recipe-card"
-      itemscope
-      itemtype="https://schema.org/Recipe"
       data-recipe-card
       data-recipe-slug={article.slug}
       data-default-servings={defaultServings}
+      {...(article.type !== "recipe" ? { itemscope: true, itemtype: "https://schema.org/Recipe" } : {})}
     >
       <meta itemprop="name" content={article.headline} />
       <meta itemprop="description" content={article.shortDescription} />
@@ -2233,9 +2232,22 @@ const navItems = [
     border: none;
     color: #94a3b8;
     cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: -8px;
   }
+  
+  .cm-btn-close-ing svg {
+    width: 24px;
+    height: 24px;
+  }
+  
   .cm-btn-close-ing:hover {
     color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.1);
   }
   .cm-ing-list {
     list-style: none;
@@ -2278,6 +2290,7 @@ const navItems = [
       position: absolute;
       inset: 0;
       width: 100%;
+      max-width: none;
       z-index: 10;
       background: rgba(15, 17, 23, 0.97);
       backdrop-filter: blur(12px);

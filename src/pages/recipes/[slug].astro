@@ -72,36 +72,10 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
     slot="head"
     title={pageTitle}
     description={pageDescription}
-    type="recipe"
+    type="article"
     publishedTime={recipe.publishedAt || undefined}
     author={{ name: author?.name || "Freecipies Team" }}
     image={heroImage.imageUrl || recipe.imageUrl || ""}
     imageAlt={heroImage.imageAlt || recipe.imageAlt || undefined}
-    recipe={recipeDetails
-      ? {
-          name: recipe.headline,
-          description: recipe.shortDescription,
-          image: heroImage.imageUrl || recipe.imageUrl || "",
-          prepTime: recipeDetails.prep
-            ? String(recipeDetails.prep)
-            : undefined,
-          cookTime: recipeDetails.cook
-            ? String(recipeDetails.cook)
-            : undefined,
-          totalTime: undefined,
-          recipeYield: recipeDetails.servings
-            ? String(recipeDetails.servings)
-            : undefined,
-          recipeCategory: category?.label,
-          recipeIngredient:
-            recipeDetails.ingredients?.flatMap((i: IngredientGroup) =>
-              i.items.map((item: IngredientItem) => item.name)
-            ) || [],
-          recipeInstructions:
-            recipeDetails.instructions?.flatMap((i: InstructionSection) =>
-              i.steps.map((step: InstructionStep) => step.text)
-            ) || [],
-        }
-      : undefined}
   />
 </RecipeLayout>

@@ -6,7 +6,8 @@ import type { MenuItem } from "@modules/menus/types/menus.types";
 import { env } from "cloudflare:workers";
 
 const currentPath = Astro.url.pathname;
-const logoMain = "/logos/logo-main.png";
+const logoMain = "/logos/logo-mobile.svg";
+const logoMainFallback = "/logos/logo-main.png";
 const logoDark = null;
 
 // Default menu items (fallback if database is not available)
