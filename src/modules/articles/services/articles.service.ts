@@ -169,30 +169,36 @@ export async function getArticles(
     ? asc(sortColumn)
     : desc(sortColumn);
 
-  const items = await drizzle
-    .select({
-      ...getTableColumns(articles),
-      categoryLabel: categories.label,
-      categorySlug: categories.slug,
-      categoryColor: categories.color,
-      authorName: authors.name,
-      authorSlug: authors.slug,
-      authorImagesJson: authors.imagesJson,
-    })
-    .from(articles)
-    .leftJoin(categories, eq(articles.categoryId, categories.id))
-    .leftJoin(authors, eq(articles.authorId, authors.id))
+  const itemsQuery = drizzle
+    .select(getTableColumns(articles))
+    .from(articles);
+
+  // Link for filtering if slugs provided
+  if (options?.categorySlug && !options.categoryId) {
+    (itemsQuery as any).leftJoin(categories, eq(articles.categoryId, categories.id));
+  }
+  if (options?.authorSlug && !options.authorId) {
+    (itemsQuery as any).leftJoin(authors, eq(articles.authorId, authors.id));
+  }
+
+  const items = await itemsQuery
     .where(whereClause)
     .orderBy(orderByClause)
     .limit(options?.limit || 100)
     .offset(options?.offset || 0);
 
-  const [{ count: total }] = await drizzle
+  const countQuery = drizzle
     .select({ count: sql<number>`count(*)` })
-    .from(articles)
-    .leftJoin(categories, eq(articles.categoryId, categories.id))
-    .leftJoin(authors, eq(articles.authorId, authors.id))
-    .where(whereClause);
+    .from(articles);
+
+  if (options?.categorySlug && !options.categoryId) {
+    (countQuery as any).leftJoin(categories, eq(articles.categoryId, categories.id));
+  }
+  if (options?.authorSlug && !options.authorId) {
+    (countQuery as any).leftJoin(authors, eq(articles.authorId, authors.id));
+  }
+
+  const [{ count: total }] = await countQuery.where(whereClause);
 
   return {
     items: hydrateArticles(items as any[]),
@@ -523,6 +529,7 @@ export async function syncCachedFields(
       authorName: authors.name,
       authorSlug: authors.slug,
       authorAvatar: authors.imagesJson,
+      authorRole: authors.jobTitle,
       categoryLabel: categories.label,
       categorySlug: categories.slug,
       categoryColor: categories.color,
@@ -543,6 +550,7 @@ export async function syncCachedFields(
       name: article.authorName,
       slug: article.authorSlug,
       avatar: hydrator.authorAvatar || null,
+      role: (article as any).authorRole || null,
     });
   }
 
@@ -684,3 +692,54 @@ export async function getPopularArticles(
 
   return result;
 }
+
+/**
+ * Add a vote to a recipe (Express Method: updates JSON directly)
+ */
+export async function addRecipeVote(
+  db: D1Database | DrizzleDb,
+  articleId: number,
+  rating: number
+): Promise<{ ratingValue: number; ratingCount: number } | null> {
+  const drizzle = getDb(db);
+
+  // 1. Get current article
+  const article = await drizzle.query.articles.findFirst({
+    where: and(eq(articles.id, articleId), isNull(articles.deletedAt)),
+    columns: { recipeJson: true, cachedRatingJson: true }
+  });
+
+  if (!article) return null;
+
+  // 2. Parse current rating
+  const recipe = safeParseJson<any>(article.recipeJson);
+  if (!recipe) return null;
+
+  const currentValue = recipe.aggregateRating?.ratingValue || 0;
+  const currentCount = recipe.aggregateRating?.ratingCount || 0;
+
+  // 3. Calculate exact average
+  const newCount = currentCount + 1;
+  const newValue = Number(((currentValue * currentCount + rating) / newCount).toFixed(1));
+
+  const newRating = {
+    ratingValue: newValue,
+    ratingCount: newCount
+  };
+
+  // 4. Update recipeJson
+  recipe.aggregateRating = newRating;
+  const recipeJson = JSON.stringify(recipe);
+
+  // 5. Update database (and cache)
+  await drizzle.update(articles)
+    .set({ 
+      recipeJson, 
+      cachedRatingJson: JSON.stringify(newRating),
+      updatedAt: new Date().toISOString() 
+    })
+    .where(eq(articles.id, articleId));
+
+  return newRating;
+}
+

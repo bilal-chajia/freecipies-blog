@@ -7,6 +7,8 @@
 import type { Article } from "@modules/articles/schema/articles.schema";
 import type { RecipeJson } from "@modules/articles/types/recipes.types";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import RatingSystem from "./content/RatingSystem";
+
 
 interface Props {
   article: Article;
@@ -38,8 +40,8 @@ function formatTime(minutes: number): string {
 const category = article.cachedCategoryJson
   ? JSON.parse(article.cachedCategoryJson)
   : null;
-const categoryLabel = category?.label || article.categoryLabel;
-const categoryColor = category?.color || article.categoryColor || "#ff6b35";
+const categoryLabel = category?.label || "Recipe";
+const categoryColor = category?.color || "#ff6b35";
 
 // Parse author
 const author = article.cachedAuthorJson
@@ -98,6 +100,15 @@ const author = article.cachedAuthorJson
     <div class="card-content">
       <h3 class="card-title">{article.headline}</h3>
 
+      <!-- Rating -->
+      <RatingSystem
+        client:load
+        articleId={article.id}
+        initialValue={recipe?.aggregateRating?.ratingValue || 0}
+        initialCount={recipe?.aggregateRating?.ratingCount || 0}
+        size="sm"
+      />
+
       <!-- Meta Info -->
       <div class="card-meta">
         {
@@ -150,9 +161,9 @@ const author = article.cachedAuthorJson
       {
         author?.name && (
           <div class="card-author">
-            {author.avatarUrl && (
+            {author.avatar && (
               <img
-                src={author.avatarUrl}
+                src={author.avatar}
                 alt={author.name}
                 class="author-avatar"
               />

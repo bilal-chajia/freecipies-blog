@@ -22,6 +22,7 @@ import InstructionsSection from "./content/InstructionsSection.astro";
 import EquipmentSection from "./content/EquipmentSection.astro";
 import NutritionFacts from "./content/NutritionFacts.astro";
 import PrintRecipeOverlay from "./content/PrintRecipeOverlay.astro";
+import RatingSystem from "./content/RatingSystem";
 
 interface Props {
   article: Article;
@@ -69,6 +70,22 @@ const hasTips = tips.length > 0;
 const video = recipe?.video;
 const hasVideo = video?.url;
 
+function formatAmount(num: number): string {
+  if (!num || isNaN(num)) return "0";
+  const whole = Math.floor(num);
+  const remainder = num - whole;
+  let fractionStr = "";
+  
+  const frac = Math.round(remainder * 16) / 16;
+  if (Math.abs(frac - 0.5) < 0.01) fractionStr = "½";
+  else if (Math.abs(frac - 0.25) < 0.01) fractionStr = "¼";
+  else if (Math.abs(frac - 0.75) < 0.01) fractionStr = "¾";
+  else if (remainder > 0) fractionStr = remainder.toString().replace(/^0/, "");
+
+  if (whole > 0) return fractionStr ? `${whole} ${fractionStr}` : String(whole);
+  return fractionStr || String(whole);
+}
+
 const defaultServings = recipe?.servings || 4;
 const yieldText = recipe?.recipeYield;
 
@@ -85,31 +102,6 @@ function formatTime(minutes: number | null | undefined): string {
   const hrs = Math.floor(minutes / 60);
   const mins = minutes % 60;
   return mins > 0 ? hrs + " hr " + mins + " min" : hrs + " hr";
-}
-
-function generateStars(ratingValue: number): string {
-  const fullStars = Math.floor(ratingValue);
-  const hasHalfStar = ratingValue % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-  let stars = "";
-
-  for (let i = 0; i < fullStars; i++) {
-    stars +=
-      '<svg class="star full" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-  }
-
-  if (hasHalfStar) {
-    stars +=
-      '<svg class="star half" viewBox="0 0 24 24"><defs><linearGradient id="star-half"><stop offset="50%" stop-color="#6B8F71"/><stop offset="50%" stop-color="#e5e7eb"/></linearGradient></defs><path fill="url(#star-half)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-  }
-
-  for (let i = 0; i < emptyStars; i++) {
-    stars +=
-      '<svg class="star empty" viewBox="0 0 24 24" fill="#e5e7eb"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-  }
-
-  return stars;
 }
 
 // Navigation items
@@ -133,7 +125,9 @@ const navItems = [
       data-recipe-card
       data-recipe-slug={article.slug}
       data-default-servings={defaultServings}
-      {...(article.type !== "recipe" ? { itemscope: true, itemtype: "https://schema.org/Recipe" } : {})}
+      {...(article.type !== "recipe"
+        ? { itemscope: true, itemtype: "https://schema.org/Recipe" }
+        : {})}
     >
       <meta itemprop="name" content={article.headline} />
       <meta itemprop="description" content={article.shortDescription} />
@@ -225,55 +219,46 @@ const navItems = [
       <div class="recipe-content">
         {/* Title Section - Now shown in all modes */}
         <div class="recipe-header">
-          {/* Author */}
-          {author && (
-            <div
-              class="recipe-author"
-              itemprop="author"
-              itemscope
-              itemtype="https://schema.org/Person"
-            >
-              {extractImage(author.imagesJson, "avatar").imageUrl && (
-                <img
-                  src={extractImage(author.imagesJson, "avatar").imageUrl}
-                  alt={author.name}
-                  class="author-avatar"
-                />
-              )}
-              <span class="author-name">
-                Recipe by{" "}
-                <a href={"/authors/" + author.slug} itemprop="url">
-                  <span itemprop="name">{author.name}</span>
-                </a>
-              </span>
+          {/* Author & Rating Row */}
+          <div class="author-rating-row">
+            {author && (
+              <div
+                class="recipe-author"
+                itemprop="author"
+                itemscope
+                itemtype="https://schema.org/Person"
+              >
+                {extractImage(author.imagesJson, "avatar").imageUrl && (
+                  <img
+                    src={extractImage(author.imagesJson, "avatar").imageUrl}
+                    alt={author.name}
+                    class="author-avatar"
+                  />
+                )}
+                <span class="author-name">
+                  Recipe by{" "}
+                  <a href={"/authors/" + author.slug} itemprop="url">
+                    <span itemprop="name">{author.name}</span>
+                  </a>
+                </span>
+              </div>
+            )}
+
+            <div class="recipe-rating-card">
+              <RatingSystem
+                client:load
+                articleId={article.id}
+                initialValue={rating?.ratingValue || 0}
+                initialCount={rating?.ratingCount || 0}
+                size="lg"
+              />
             </div>
-          )}
+          </div>
 
           {/* Title - Uses dynamic tag for SEO (H2 when embedded) */}
           <TitleTag class="recipe-title" itemprop="name">
             {article.headline}
           </TitleTag>
-
-          {/* Rating */}
-          {showRating && hasRating && (
-            <div
-              class="recipe-rating"
-              itemprop="aggregateRating"
-              itemscope
-              itemtype="https://schema.org/AggregateRating"
-            >
-              <div
-                class="star-rating"
-                set:html={generateStars(rating.ratingValue || 0)}
-              />
-              <span class="rating-value" itemprop="ratingValue">
-                {rating.ratingValue}
-              </span>
-              <span class="rating-count">({rating.ratingCount} votes)</span>
-              <meta itemprop="bestRating" content="5" />
-              <meta itemprop="worstRating" content="1" />
-            </div>
-          )}
 
           {/* Metadata Row */}
           <div class="metadata-pills">
@@ -366,7 +351,7 @@ const navItems = [
                 </svg>
               </button>
               <span class="servings-value" data-servings-display>
-                {defaultServings}
+                {formatAmount(defaultServings)}
               </span>
               <button
                 type="button"
@@ -446,6 +431,7 @@ const navItems = [
               {recipe?.nutrition?.calories
                 ? `${recipe.nutrition.calories} kcal`
                 : "—"}
+              <span class="unit-per-serving">/ serving</span>
             </span>
           </div>
         </div>
@@ -566,6 +552,12 @@ const navItems = [
                 </svg>
               </span>
               <h2 class="section-heading">Ingredients</h2>
+              <div class="servings-presets">
+                <button type="button" class="preset-btn" data-servings-half>½</button>
+                <button type="button" class="preset-btn active" data-servings-default>1x</button>
+                <button type="button" class="preset-btn" data-servings-double>2x</button>
+                <button type="button" class="preset-btn" data-servings-triple>3x</button>
+              </div>
               <button
                 type="button"
                 class="clear-btn"
@@ -886,7 +878,7 @@ const navItems = [
     overflow: visible; /* Changed from hidden to allow floating buttons to overlap */
     background: #f5f5f5;
     border-radius: 0 0 16px 16px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
 
   .recipe-hero-image {
@@ -964,7 +956,7 @@ const navItems = [
 
   /* ===== Recipe Content ===== */
   .recipe-content {
-    padding: clamp(16px, 4cqi, 24px);
+    padding: clamp(10px, 2.5cqi, 14px) clamp(16px, 4cqi, 24px) clamp(16px, 4cqi, 24px);
   }
 
   /* ===== Header ===== */
@@ -973,18 +965,31 @@ const navItems = [
     margin-bottom: 32px;
   }
 
+  .author-rating-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 16px;
+  }
+
   .recipe-author {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     gap: 8px;
-    margin-bottom: 24px; /* Increased margin to separate from title */
-    padding: 6px 16px 6px 6px; /* Pill-shape padding, less on left for image */
+    padding: 6px 16px 6px 6px;
     border: 1.5px solid #e5e7eb;
-    border-radius: 40px; /* Pill shape */
+    border-radius: 40px;
     font-size: 14px;
     color: #6b7280;
     background: #fff;
+    margin-bottom: 0;
+  }
+
+  .recipe-rating-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .author-avatar {
@@ -1002,6 +1007,19 @@ const navItems = [
     color: #059669; /* Match screenshot green color */
     font-weight: 600;
     text-decoration: none;
+  }
+
+  .stat-value {
+    font-size: clamp(14px, 2cqi, 16px);
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .unit-per-serving {
+    font-size: 0.75em;
+    font-weight: 500;
+    color: #6b7280;
+    margin-left: 2px;
   }
 
   .recipe-title {
@@ -1363,15 +1381,15 @@ const navItems = [
   .servings-presets {
     display: flex;
     gap: 4px;
-    margin-top: 4px;
+    margin-left: auto;
   }
 
   .preset-btn {
-    padding: 4px 10px;
+    padding: 6px 12px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border-radius: 8px;
     background: #fff;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: #6b7280;
     cursor: pointer;
@@ -1610,7 +1628,6 @@ const navItems = [
     font-weight: 500;
     color: #6b7280;
     cursor: pointer;
-    margin-left: auto;
   }
 
   .clear-btn:hover {
@@ -2239,12 +2256,12 @@ const navItems = [
     border-radius: 50%;
     margin-right: -8px;
   }
-  
+
   .cm-btn-close-ing svg {
     width: 24px;
     height: 24px;
   }
-  
+
   .cm-btn-close-ing:hover {
     color: #f1f5f9;
     background: rgba(255, 255, 255, 0.1);
@@ -2499,7 +2516,7 @@ const navItems = [
     const safeCard = card;
 
     const slug = card.getAttribute("data-recipe-slug");
-    const defaultServings = parseInt(
+    const defaultServings = parseFloat(
       card.getAttribute("data-default-servings") || "4",
     );
     let currentServings = defaultServings;
@@ -2527,40 +2544,103 @@ const navItems = [
 
     function formatScaledAmount(num: number): string {
       if (num === 0) return "";
-      if (num >= 1) {
-        return Number.isInteger(num)
-          ? String(num)
-          : num.toFixed(1).replace(/\.0$/, "");
+      
+      const whole = Math.floor(num);
+      const remainder = num - whole;
+      
+      let fractionStr = "";
+      if (remainder > 0.01) {
+        const frac = Math.round(remainder * 16) / 16;
+        if (Math.abs(frac - 0.125) < 0.01) fractionStr = "⅛";
+        else if (Math.abs(frac - 0.25) < 0.01) fractionStr = "¼";
+        else if (Math.abs(frac - 0.33) < 0.02) fractionStr = "⅓";
+        else if (Math.abs(frac - 0.375) < 0.01) fractionStr = "⅜";
+        else if (Math.abs(frac - 0.5) < 0.01) fractionStr = "½";
+        else if (Math.abs(frac - 0.625) < 0.01) fractionStr = "⅝";
+        else if (Math.abs(frac - 0.66) < 0.02) fractionStr = "⅔";
+        else if (Math.abs(frac - 0.75) < 0.01) fractionStr = "¾";
+        else if (Math.abs(frac - 0.875) < 0.01) fractionStr = "⅞";
+        else if (whole === 0) fractionStr = remainder.toFixed(2).replace(/\.?0+$/, "").replace(/^0/, "");
       }
-      const frac = Math.round(num * 16) / 16;
-      if (Math.abs(frac - 0.25) < 0.01) return "¼";
-      if (Math.abs(frac - 1 / 3) < 0.02) return "⅓";
-      if (Math.abs(frac - 0.5) < 0.01) return "½";
-      if (Math.abs(frac - 2 / 3) < 0.02) return "⅔";
-      if (Math.abs(frac - 0.75) < 0.01) return "¾";
-      return num.toFixed(2).replace(/\.?0+$/, "");
+      
+      if (whole > 0) {
+        return fractionStr ? `${whole} ${fractionStr}` : String(whole);
+      }
+      return fractionStr || "0";
+    }
+
+    function formatUnitJS(unit: string, amount: number): string {
+      if (!unit) return "";
+      if (amount > 1 && !unit.endsWith("s")) {
+        const irregulars: Record<string, string> = {
+          tbsp: "tbsp",
+          tsp: "tsp",
+          oz: "oz",
+          lb: "lbs",
+          cup: "cups",
+          can: "cans",
+          clove: "cloves",
+          slice: "slices",
+          piece: "pieces",
+          bunch: "bunches",
+        };
+        return irregulars[unit] || unit + "s";
+      }
+      return unit;
     }
 
     function updateServings(newServings: number) {
-      currentServings = Math.max(1, newServings);
-      if (servingsDisplay)
-        servingsDisplay.textContent = String(currentServings);
+      currentServings = Math.max(0.1, newServings);
+      if (servingsDisplay) {
+        servingsDisplay.textContent = formatScaledAmount(currentServings);
+        const isChanged = Math.abs(currentServings - defaultServings) > 0.01;
+        servingsDisplay.setAttribute("data-changed", isChanged.toString());
+      }
 
-      // Scale ingredient amounts
+      // Also update print overlay servings if present
+      const printServingsDisplay = document.querySelector("[data-print-servings]");
+      if (printServingsDisplay)
+        printServingsDisplay.textContent = formatScaledAmount(currentServings);
+
+      // Scale ingredient amounts (search document to include print overlay)
       const ratio = currentServings / defaultServings;
-      safeCard.querySelectorAll("[data-ingredient-amount]").forEach((el) => {
-        const original = parseFloat(
-          (el as HTMLElement).getAttribute("data-original-amount") || "0",
-        );
+      document.querySelectorAll("[data-ingredient-amount]").forEach((el) => {
+        const amountEl = el as HTMLElement;
+        const parent = amountEl.parentElement;
+        const unitEl = parent?.querySelector("[data-ingredient-unit]") as HTMLElement | null;
+        
+        const original = parseFloat(amountEl.getAttribute("data-original-amount") || "0");
         if (!original || isNaN(original)) return;
-        (el as HTMLElement).textContent = formatScaledAmount(original * ratio);
+        
+        const scaled = original * ratio;
+        amountEl.textContent = formatScaledAmount(scaled);
+        
+        if (unitEl) {
+          const originalUnit = unitEl.getAttribute("data-original-unit") || "";
+          unitEl.textContent = formatUnitJS(originalUnit, scaled);
+        }
       });
+
+      // Update active preset button
+      const presets = safeCard.querySelectorAll(".preset-btn");
+      presets.forEach(btn => btn.classList.remove("active"));
+      
+      const eps = 0.01;
+      if (Math.abs(currentServings - defaultServings) < eps) {
+        safeCard.querySelector("[data-servings-default]")?.classList.add("active");
+      } else if (Math.abs(currentServings - defaultServings * 2) < eps) {
+        safeCard.querySelector("[data-servings-double]")?.classList.add("active");
+      } else if (Math.abs(currentServings - defaultServings * 3) < eps) {
+        safeCard.querySelector("[data-servings-triple]")?.classList.add("active");
+      } else if (Math.abs(currentServings - defaultServings / 2) < eps) {
+        safeCard.querySelector("[data-servings-half]")?.classList.add("active");
+      }
     }
 
     card
       .querySelector("[data-servings-decr]")
       ?.addEventListener("click", function () {
-        updateServings(currentServings - 1);
+        if (currentServings > 1) updateServings(currentServings - 1);
       });
 
     card
@@ -2570,9 +2650,15 @@ const navItems = [
       });
 
     card
+      .querySelector("[data-servings-default]")
+      ?.addEventListener("click", function () {
+        updateServings(defaultServings);
+      });
+
+    card
       .querySelector("[data-servings-half]")
       ?.addEventListener("click", function () {
-        updateServings(Math.round(defaultServings / 2));
+        updateServings(defaultServings / 2);
       });
 
     card
@@ -2608,7 +2694,13 @@ const navItems = [
       card
         .querySelectorAll("[data-ingredient-check]")
         .forEach(function (check) {
-          (check as HTMLInputElement).checked = false;
+          const input = check as HTMLInputElement;
+          input.checked = false;
+          // IMPORTANT: Changing .checked in JS doesn't trigger 'change' event
+          // and might not update the DOM state visually in some browsers for CSS selectors.
+          // Triggering event and removing attribute for maximum compatibility.
+          input.removeAttribute("checked");
+          input.dispatchEvent(new Event("change"));
         });
       updateClearBtnVisibility();
     });

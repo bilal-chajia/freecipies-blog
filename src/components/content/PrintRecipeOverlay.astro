@@ -45,20 +45,30 @@ function formatAmount(amount: number | string | null | undefined): string {
     let num = typeof amount === "string" ? parseFloat(amount) : amount;
     if (num === null || num === undefined || isNaN(num as number)) return "";
     num = num as number;
-    if (num >= 1) {
-        return Number.isInteger(num)
-            ? String(num)
-            : num.toFixed(1).replace(/\.0$/, "");
+    if (num === 0) return "";
+
+    const whole = Math.floor(num);
+    const remainder = num - whole;
+
+    let fractionStr = "";
+    if (remainder > 0.01) {
+        const fraction = Math.round(remainder * 16) / 16;
+        if (Math.abs(fraction - 0.125) < 0.01) fractionStr = "⅛";
+        else if (Math.abs(fraction - 0.25) < 0.01) fractionStr = "¼";
+        else if (Math.abs(fraction - 0.33) < 0.02) fractionStr = "⅓";
+        else if (Math.abs(fraction - 0.375) < 0.01) fractionStr = "⅜";
+        else if (Math.abs(fraction - 0.5) < 0.01) fractionStr = "½";
+        else if (Math.abs(fraction - 0.625) < 0.01) fractionStr = "⅝";
+        else if (Math.abs(fraction - 0.66) < 0.02) fractionStr = "⅔";
+        else if (Math.abs(fraction - 0.75) < 0.01) fractionStr = "¾";
+        else if (Math.abs(fraction - 0.875) < 0.01) fractionStr = "⅞";
+        else if (whole === 0) fractionStr = remainder.toFixed(2).replace(/\.?0+$/, "").replace(/^0/, "");
     }
-    const fraction = Math.round(num * 16) / 16;
-    if (Math.abs(fraction - 0.25) < 0.01) return "¼";
-    if (Math.abs(fraction - 0.33) < 0.01 || Math.abs(fraction - 1 / 3) < 0.01)
-        return "⅓";
-    if (Math.abs(fraction - 0.5) < 0.01) return "½";
-    if (Math.abs(fraction - 0.67) < 0.01 || Math.abs(fraction - 2 / 3) < 0.01)
-        return "⅔";
-    if (Math.abs(fraction - 0.75) < 0.01) return "¾";
-    return num.toFixed(2).replace(/\.?0+$/, "");
+
+    if (whole > 0) {
+        return fractionStr ? `${whole} ${fractionStr}` : String(whole);
+    }
+    return fractionStr || "0";
 }
 
 function fmtNutrition(
@@ -177,7 +187,7 @@ let stepCounter = 0;
                 <div class="print-stats">
                     <div class="print-stat">
                         <span class="print-stat-label">Servings</span>
-                        <span class="print-stat-value">{servings}</span>
+                        <span class="print-stat-value" data-print-servings>{servings}</span>
                     </div>
                     {
                         prepTime > 0 && (
@@ -238,8 +248,8 @@ let stepCounter = 0;
                                         {group.items.map((item) => (
                                             <li class="print-ingredient-item">
                                                 <span class="print-ing-amount">
-                                                    {formatAmount(item.amount)}{" "}
-                                                    {item.unit || ""}
+                                                    <span data-ingredient-amount data-original-amount={item.amount}>{formatAmount(item.amount)}</span>{" "}
+                                                    <span data-ingredient-unit data-original-unit={item.unit || ""}>{item.unit || ""}</span>
                                                 </span>
                                                 <span class="print-ing-name">
                                                     {item.name}

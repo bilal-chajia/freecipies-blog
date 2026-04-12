@@ -66,7 +66,7 @@ export function getImageSlot(
 
 const LOCAL_IMAGE_HOST_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i;
 
-const normalizeImageUrl = (url?: string): string | undefined => {
+export const normalizeImageUrl = (url?: string): string | undefined => {
   if (!url) return url;
   const trimmed = url.trim();
   if (!trimmed || !LOCAL_IMAGE_HOST_RE.test(trimmed)) return trimmed;
@@ -300,6 +300,8 @@ export function hydrateArticle<T extends {
   seoJson?: string | null;
   authorImagesJson?: string | null;
   cachedAuthorJson?: string | null;
+  cachedCategoryJson?: string | null;
+  cachedTagsJson?: string | null;
   headline?: string;
   slug: string;
   type?: string;
@@ -308,6 +310,10 @@ export function hydrateArticle<T extends {
 
   const cachedAuthor = article.cachedAuthorJson
     ? safeParseJson<any>(article.cachedAuthorJson)
+    : null;
+
+  const cachedCategory = article.cachedCategoryJson
+    ? safeParseJson<any>(article.cachedCategoryJson)
     : null;
 
   // Support multiple author source formats
@@ -328,6 +334,23 @@ export function hydrateArticle<T extends {
   const authorSlug = (article as any).authorSlug
     ?? cachedAuthor?.slug
     ?? (article as any).author?.slug;
+  const authorRole = (article as any).authorJob
+    ?? cachedAuthor?.role
+    ?? (article as any).author?.jobTitle;
+
+  const categoryLabel = (article as any).categoryLabel
+    ?? cachedCategory?.label
+    ?? (article as any).category?.label;
+  const categoryColor = (article as any).categoryColor
+    ?? cachedCategory?.color
+    ?? (article as any).category?.color;
+  const categorySlug = (article as any).categorySlug
+    ?? cachedCategory?.slug
+    ?? (article as any).category?.slug;
+
+  const tags = article.cachedTagsJson
+    ? safeParseJson<string[]>(article.cachedTagsJson) || []
+    : [];
 
   const seo = extractSeo(article.seoJson);
   const route = article.type === 'recipe' ? `/recipes/${article.slug}` : `/articles/${article.slug}`;
@@ -344,8 +367,15 @@ export function hydrateArticle<T extends {
     label: article.headline, // Alias for UI consistency
     route,
     authorAvatar,
+    author: cachedAuthor ? { ...cachedAuthor, role: authorRole, avatar: normalizeImageUrl(cachedAuthor.avatar) } : null,
+    category: cachedCategory ? { ...cachedCategory, label: categoryLabel, color: categoryColor, slug: categorySlug } : null,
+    tags,
     ...(typeof authorName === 'string' ? { authorName } : {}),
     ...(typeof authorSlug === 'string' ? { authorSlug } : {}),
+    ...(typeof authorRole === 'string' ? { authorRole } : {}),
+    ...(typeof categoryLabel === 'string' ? { categoryLabel } : {}),
+    ...(typeof categoryColor === 'string' ? { categoryColor } : {}),
+    ...(typeof categorySlug === 'string' ? { categorySlug } : {}),
   };
 }
 

@@ -3,7 +3,7 @@ import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 import { Textarea } from "@/ui/textarea";
-import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye, Sparkles, Loader2, Timer, Wrench, Zap, X } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye, Sparkles, Loader2, Timer, Wrench, Zap, X, Star } from "lucide-react";
 import { equipmentAPI } from '@/services/api';
 import { Badge } from '@/ui/badge';
 import {
@@ -434,6 +434,18 @@ export default function RecipeBuilder({ value, onChange }) {
         });
     };
 
+    // --- Rating ---
+    const handleRatingChange = (field, val) => {
+        const num = val === '' ? 0 : parseFloat(val);
+        const currentRating = data.aggregateRating || { ratingValue: 5, ratingCount: 1 };
+        updateData({
+            aggregateRating: {
+                ...currentRating,
+                [field]: isNaN(num) ? 0 : num
+            }
+        });
+    };
+
     // --- Diet ---
     const toggleDiet = (diet) => {
         const current = data.suitableForDiet || [];
@@ -578,6 +590,44 @@ export default function RecipeBuilder({ value, onChange }) {
                             )}
                         </div>
                     )}
+
+                    {/* Rating & Social Proof */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-primary/5 border border-primary/10 rounded-xl">
+                        <div className="space-y-2">
+                            <Label className="flex items-center gap-2 text-primary">
+                                <Star className="size-4 fill-primary" /> Recipe Rating (0-5)
+                            </Label>
+                            <div className="flex items-center gap-3">
+                                <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="5"
+                                    value={data.aggregateRating?.ratingValue ?? ''}
+                                    onChange={(e) => handleRatingChange('ratingValue', e.target.value)}
+                                    placeholder="4.8"
+                                    className="w-24 font-bold text-lg"
+                                />
+                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full bg-primary" 
+                                        style={{ width: `${(data.aggregateRating?.ratingValue || 0) * 20}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Total Votes / Reviews</Label>
+                            <Input
+                                type="number"
+                                min="0"
+                                value={data.aggregateRating?.ratingCount ?? ''}
+                                onChange={(e) => handleRatingChange('ratingCount', e.target.value)}
+                                placeholder="24"
+                                className="font-mono"
+                            />
+                        </div>
+                    </div>
 
                     {/* Ingredients - Multi-Section */}
                     <div className="space-y-4">

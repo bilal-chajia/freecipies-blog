@@ -21,8 +21,6 @@ if (!slug) {
   return new Response("Slug is missing", { status: 400 });
 }
 
-let author: Author | null = null;
-let category: Category | null = null;
 let recipe: any = null;
 
 try {
@@ -38,6 +36,9 @@ if (!recipe) {
   return Astro.redirect("/404");
 }
 
+const author = recipe.author;
+const category = recipe.category;
+
 const recipeDetails = (recipe as RecipeContent | null)?.recipeJson || undefined;
 
 const heroCover = extractImage(recipe.imagesJson, "cover", 1200);
@@ -46,22 +47,6 @@ const coverSrcSet = getImageSrcSet(recipe.imagesJson, "cover");
 const thumbSrcSet = getImageSrcSet(recipe.imagesJson, "thumbnail");
 const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
 const heroImage = useCover ? heroCover : heroThumb;
-
-try {
-  if (env.DB) {
-    // Fetch author data using authorId from the raw article
-    if (recipe.authorId) {
-      author = await getAuthorById(env.DB, recipe.authorId);
-    }
-
-    // Fetch category data using categoryId from the raw article
-    if (recipe.categoryId) {
-      category = await getCategoryById(env.DB, recipe.categoryId);
-    }
-  }
-} catch (error) {
-  console.error(`Error fetching recipe related data (${slug}):`, error);
-}
 
 const recipeDetailsObj = typeof recipeDetails === 'string' ? JSON.parse(recipeDetails) : recipeDetails;
 const faqs = typeof recipe.faqsJson === 'string' ? JSON.parse(recipe.faqsJson || '[]') : (recipe.faqsJson || []);

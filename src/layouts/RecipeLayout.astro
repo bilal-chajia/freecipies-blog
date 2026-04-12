@@ -15,7 +15,9 @@ import EquipmentSection from "../components/content/EquipmentSection.astro";
 import NutritionFacts from "../components/content/NutritionFacts.astro";
 import FAQSection from "../components/content/FAQSection.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
-import { extractImage, getImageSrcSet } from "@shared/utils";
+import RatingSystem from "../components/content/RatingSystem";
+
+import { extractImage, getImageSrcSet, normalizeImageUrl } from "@shared/utils";
 import {
   getTocSettings,
   TOC_DEFAULTS,
@@ -80,7 +82,8 @@ const heroSizes = "(max-width: 768px) 90vw, 800px";
 
 const authorAvatar = author?.imagesJson
   ? extractImage(author.imagesJson, "avatar", 96)
-  : {};
+  : { imageUrl: normalizeImageUrl(author?.avatar) };
+
 const authorAvatarSrcSet = author?.imagesJson
   ? getImageSrcSet(author.imagesJson, "avatar")
   : "";
@@ -136,6 +139,18 @@ const contentBlocks = Array.isArray(recipe.contentJson)
 
         <!-- Recipe Title -->
         <h1 class="recipe-title">{recipe.label}</h1>
+
+        <!-- Rating -->
+        <div class="recipe-rating-header">
+          <RatingSystem
+            client:load
+            articleId={recipe.id}
+            initialValue={recipeJson?.aggregateRating?.ratingValue || 0}
+            initialCount={recipeJson?.aggregateRating?.ratingCount || 0}
+            size="lg"
+          />
+        </div>
+
 
         <!-- Short Description -->
         {
@@ -399,6 +414,12 @@ const contentBlocks = Array.isArray(recipe.contentJson)
     color: #111;
     line-height: 1.2;
     margin: 0 0 clamp(0.75rem, 2vw, 1rem);
+  }
+
+  .recipe-rating-header {
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
   }
 
   /* Description */

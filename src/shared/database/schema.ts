@@ -8,6 +8,7 @@
 export * from '@modules/articles/schema/articles.schema';
 export * from '@modules/articles/schema/articles-to-tags.schema';
 export * from '@modules/categories/schema/categories.schema';
+
 export * from '@modules/authors/schema/authors.schema';
 export * from '@modules/tags/schema/tags.schema';
 export * from '@modules/equipment/schema/equipment.schema';
