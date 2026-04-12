@@ -63,6 +63,9 @@ try {
   console.error(`Error fetching recipe related data (${slug}):`, error);
 }
 
+const recipeDetailsObj = typeof recipeDetails === 'string' ? JSON.parse(recipeDetails) : recipeDetails;
+const faqs = typeof recipe.faqsJson === 'string' ? JSON.parse(recipe.faqsJson || '[]') : (recipe.faqsJson || []);
+
 const pageTitle = recipe.metaTitle || recipe.headline;
 const pageDescription = recipe.metaDescription || recipe.shortDescription;
 ---
@@ -72,10 +75,45 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
     slot="head"
     title={pageTitle}
     description={pageDescription}
-    type="article"
+    type="recipe"
     publishedTime={recipe.publishedAt || undefined}
-    author={{ name: author?.name || "Freecipies Team" }}
+    modifiedTime={recipe.updatedAt || recipe.publishedAt || undefined}
+    author={{ 
+      name: author?.name || "Freecipies Team",
+      url: author?.slug ? `${Astro.url.origin}/authors/${author.slug}` : undefined
+    }}
     image={heroImage.imageUrl || recipe.imageUrl || ""}
     imageAlt={heroImage.imageAlt || recipe.imageAlt || undefined}
+    faqs={faqs}
+    recipe={{
+      name: recipe.headline || recipe.label,
+      description: recipe.shortDescription,
+      image: heroImage.imageUrl || recipe.imageUrl || "",
+      prepTime: recipeDetailsObj?.prep ? `PT${recipeDetailsObj.prep}M` : undefined,
+      cookTime: recipeDetailsObj?.cook ? `PT${recipeDetailsObj.cook}M` : undefined,
+      totalTime: recipeDetailsObj?.total 
+        ? `PT${recipeDetailsObj.total}M` 
+        : (recipeDetailsObj?.prep || recipeDetailsObj?.cook)
+          ? `PT${(recipeDetailsObj?.prep || 0) + (recipeDetailsObj?.cook || 0)}M`
+          : undefined,
+      recipeYield: recipeDetailsObj?.recipeYield,
+      recipeCategory: recipeDetailsObj?.recipeCategory || category?.label,
+      recipeCuisine: recipeDetailsObj?.recipeCuisine,
+      keywords: recipeDetailsObj?.keywords,
+      recipeIngredient: recipeDetailsObj?.ingredients?.flatMap((g: any) =>
+        (g.items || []).map((item: any) =>
+          typeof item === "string"
+            ? item
+            : [item.amount, item.unit, item.name].filter(Boolean).join(" ")
+        )
+      ),
+      recipeInstructions: recipeDetailsObj?.instructions?.flatMap((section: any) =>
+        (section.steps || []).map((step: any) => ({
+          text: typeof step === "string" ? step : step.text
+        }))
+      ),
+      nutrition: recipeDetailsObj?.nutrition,
+      aggregateRating: recipeDetailsObj?.aggregateRating
+    }}
   />
 </RecipeLayout>

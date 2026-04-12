@@ -1,9 +1,11 @@
 ---
 import { env } from 'cloudflare:workers';
 import RoundupLayout from "@layouts/RoundupLayout.astro";
+import SEO from "@components/SEO.astro";
 import { getArticleBySlug } from "@modules/articles";
 import { getAuthorById } from "@modules/authors/services/authors.service";
 import { getCategoryById } from "@modules/categories/services/categories.service";
+import { extractImage } from "@shared/utils";
 
 export const prerender = false;
 
@@ -37,6 +39,34 @@ try {
 if (!roundup) {
   return Astro.redirect("/404");
 }
+
+const heroCover = extractImage(roundup.imagesJson, "cover", 1200);
+const heroThumb = extractImage(roundup.imagesJson, "thumbnail", 1200);
+const heroImage = heroCover.imageUrl ? heroCover : heroThumb;
+
+const pageTitle = roundup.metaTitle || roundup.headline;
+const pageDescription = roundup.metaDescription || roundup.shortDescription;
+const faqs = typeof roundup.faqsJson === 'string' ? JSON.parse(roundup.faqsJson || '[]') : (roundup.faqsJson || []);
 ---
 
-<RoundupLayout article={roundup} author={author} category={category} />
+<RoundupLayout article={roundup} author={author} category={category}>
+  <SEO
+    slot="head"
+    title={pageTitle}
+    description={pageDescription}
+    type="article"
+    publishedTime={roundup.publishedAt || undefined}
+    modifiedTime={roundup.updatedAt || roundup.publishedAt || undefined}
+    author={{ 
+      name: author?.name || "Freecipies Team",
+      url: author?.slug ? `${Astro.url.origin}/authors/${author.slug}` : undefined
+    }}
+    image={heroImage.imageUrl || roundup.imageUrl || ""}
+    imageAlt={heroImage.imageAlt || roundup.imageAlt || undefined}
+    faqs={faqs}
+    roundup={{
+      itemList: roundup.jsonldJson
+    }}
+  />
+</RoundupLayout>
+

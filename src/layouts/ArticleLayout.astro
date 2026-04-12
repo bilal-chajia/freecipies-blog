@@ -91,46 +91,7 @@ const contentBlocks = Array.isArray(article.contentJson)
       />
     )
   }
-  {
-    author && (
-      <script
-        slot="head"
-        type="application/ld+json"
-        set:html={JSON.stringify(
-          {
-            "@context": "https://schema.org",
-            "@type": "Article",
-            headline: article.headline || article.label,
-            description: article.shortDescription,
-            image: heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl,
-            author: {
-              "@type": "Person",
-              name: author.name,
-            },
-            publisher: {
-              "@type": "Organization",
-              name: "Freecipies",
-              logo: {
-                "@type": "ImageObject",
-                url: `${Astro.site?.toString() || Astro.url.origin}/logo.png`,
-              },
-            },
-            datePublished: article.publishedAt,
-            dateModified: article.updatedAt || article.publishedAt,
-            mainEntityOfPage: {
-              "@type": "WebPage",
-              "@id": new URL(
-                Astro.url.pathname,
-                Astro.site?.toString() || Astro.url.origin
-              ).toString(),
-            },
-          },
-          null,
-          0,
-        )}
-      />
-    )
-  }
+
   <article
     class="article-page"
     style={`--toc-accent: ${tocSettings.accentColor};`}

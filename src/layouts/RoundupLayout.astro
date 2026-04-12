@@ -73,42 +73,7 @@ const baseUrl = Astro.site?.toString().replace(/\/$/, "") || Astro.url.origin;
   <slot name="head" slot="head" />
   
   {/* JSON-LD for Article */}
-  {author && (
-    <script
-      slot="head"
-      type="application/ld+json"
-      set:html={JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "Article",
-        headline: article.headline || article.label,
-        description: article.shortDescription,
-        image: heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl,
-        author: {
-          "@type": "Person",
-          name: author.name,
-        },
-        publisher: {
-          "@type": "Organization",
-          name: "Freecipies",
-          logo: {
-            "@type": "ImageObject",
-            url: `${baseUrl}/logo.png`,
-          },
-        },
-        datePublished: article.publishedAt,
-        dateModified: article.updatedAt || article.publishedAt,
-      })}
-    />
-  )}
 
-  {/* JSON-LD for ItemList (Roundup - from pre-computed cache) */}
-  {itemListSchema && (
-    <script
-      slot="head"
-      type="application/ld+json"
-      set:html={typeof itemListSchema === 'string' ? itemListSchema : JSON.stringify(itemListSchema)}
-    />
-  )}
 
   <article class="article-page" style={`--toc-accent: ${tocSettings.accentColor};`}>
     <div class="article-container">

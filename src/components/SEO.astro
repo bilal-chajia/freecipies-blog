@@ -12,6 +12,7 @@ interface Props {
     name: string;
     url?: string;
   };
+  faqs?: Array<{ q: string; a: string }>;
   recipe?: {
     name: string;
     description: string;
@@ -32,6 +33,9 @@ interface Props {
       ratingCount?: number;
     };
   };
+  roundup?: {
+    itemList?: any;
+  };
 }
 
 const {
@@ -44,13 +48,40 @@ const {
   publishedTime,
   modifiedTime,
   author,
-  recipe
+  faqs = [],
+  recipe,
+  roundup
 } = Astro.props;
 
 const siteUrl = Astro.site?.toString() || Astro.url.origin;
 const canonicalURL = canonical || new URL(Astro.url.pathname, siteUrl).toString();
 const imageUrl = image ? new URL(image, siteUrl).toString() : `${siteUrl}/og-image.jpg`;
 const recipeImageUrl = recipe?.image ? new URL(recipe.image, siteUrl).toString() : imageUrl;
+
+// Shared Publisher Object (Google Search Central 2026 recommends width/height for logo)
+const publisher = {
+  "@type": "Organization",
+  "name": "Freecipies",
+  "logo": {
+    "@type": "ImageObject",
+    "url": `${siteUrl}/logo.png`,
+    "width": 600,
+    "height": 60
+  }
+};
+
+// FAQ Schema generator
+const faqSchema = faqs.length > 0 ? {
+  "@type": "FAQPage",
+  "mainEntity": faqs.map(faq => ({
+    "@type": "Question",
+    "name": faq.q,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": faq.a
+    }
+  }))
+} : null;
 ---
 
 <!-- Structured data only; BaseHead handles standard meta tags. -->
@@ -85,18 +116,12 @@ const recipeImageUrl = recipe?.image ? new URL(recipe.image, siteUrl).toString()
       "name": author.name,
       "url": author.url
     },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Freecipies",
-      "logo": {
-        "@type": "ImageObject",
-        "url": `${siteUrl}/logo.png`
-      }
-    },
+    "publisher": publisher,
     "mainEntityOfPage": {
       "@type": "WebPage",
       "@id": canonicalURL
-    }
+    },
+    ...(faqSchema ? { "mainEntity": faqSchema.mainEntity } : {})
   })} />
 )}
 
@@ -107,10 +132,11 @@ const recipeImageUrl = recipe?.image ? new URL(recipe.image, siteUrl).toString()
     "name": recipe.name,
     "description": recipe.description,
     "image": recipeImageUrl,
-    "author": author ? {
+    "author": {
       "@type": "Person",
-      "name": author.name
-    } : undefined,
+      "name": author?.name || "Freecipies Team",
+      "url": author?.url
+    },
     "datePublished": publishedTime,
     "dateModified": modifiedTime || publishedTime,
     "prepTime": recipe.prepTime,
@@ -140,9 +166,20 @@ const recipeImageUrl = recipe?.image ? new URL(recipe.image, siteUrl).toString()
       "@type": "AggregateRating",
       "ratingValue": recipe.aggregateRating.ratingValue,
       "ratingCount": recipe.aggregateRating.reviewCount ?? recipe.aggregateRating.ratingCount
-    } : undefined
+    } : undefined,
+    "publisher": publisher,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": canonicalURL
+    },
+    ...(faqSchema ? { "subjectOf": faqSchema } : {})
   })} />
+)}
+
+{type === 'article' && roundup?.itemList && (
+  <script type="application/ld+json" set:html={typeof roundup.itemList === 'string' ? roundup.itemList : JSON.stringify(roundup.itemList)} />
 )}
 
 <!-- Breadcrumb Schema -->
 <slot name="breadcrumb-schema" />
+

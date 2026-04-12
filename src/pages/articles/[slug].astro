@@ -51,6 +51,8 @@ try {
   console.error(`Error fetching article related data (${slug}):`, error);
 }
 
+const faqs = typeof article.faqsJson === 'string' ? JSON.parse(article.faqsJson || '[]') : (article.faqsJson || []);
+
 const pageTitle = article.metaTitle || article.headline;
 const pageDescription = article.metaDescription || article.shortDescription;
 ---
@@ -62,8 +64,13 @@ const pageDescription = article.metaDescription || article.shortDescription;
     description={pageDescription}
     type="article"
     publishedTime={article.publishedAt || undefined}
-    author={{ name: author?.name || "Freecipies Team" }}
+    modifiedTime={article.updatedAt || article.publishedAt || undefined}
+    author={{ 
+      name: author?.name || "Freecipies Team",
+      url: author?.slug ? `${Astro.url.origin}/authors/${author.slug}` : undefined
+    }}
     image={heroImage.imageUrl || article.imageUrl || ""}
     imageAlt={heroImage.imageAlt || article.imageAlt || undefined}
+    faqs={faqs}
   />
 </ArticleLayout>

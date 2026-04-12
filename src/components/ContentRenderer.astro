@@ -191,37 +191,7 @@ const parsed = (() => {
   return [];
 })();
 
-// Parse FAQ data from faqsJson prop (stored separately from content_json)
-const parsedFaqs: Array<{ q?: string; a?: string; title?: string }> = (() => {
-  if (!faqsJson) return [];
-  if (Array.isArray(faqsJson)) return faqsJson;
-  if (typeof faqsJson === "string") {
-    try {
-      const json = JSON.parse(faqsJson);
-      return Array.isArray(json) ? json : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-})();
 
-// Generate FAQPage JSON-LD if there are FAQ items
-const faqJsonLd =
-  parsedFaqs.length > 0
-    ? {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        mainEntity: parsedFaqs.map((faq: { q?: string; a?: string }) => ({
-          "@type": "Question",
-          name: faq.q || "",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: faq.a || "",
-          },
-        })),
-      }
-    : null;
 
 // Pre-process blocks to add hierarchical numbering to headings
 let h2Count = 0;
@@ -451,12 +421,7 @@ const processedBlocks = numberedBlocks;
   }
 </div>
 
-{/* FAQ JSON-LD for SEO */}
-{
-  faqJsonLd && (
-    <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
-  )
-}
+
 
 <style>
   /* Unified block spacing — matches editor --wp-block-spacing: 1.25rem */
