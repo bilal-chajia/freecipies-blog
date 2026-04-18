@@ -5,16 +5,12 @@ import { Label } from '@/ui/label';
 import { Input } from '@/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import { SettingsSection } from './DocumentSettings';
-import MediaDialog from '@/components/MediaDialog';
-import ImageUploader from '@/components/ImageUploader';
 import RelatedContentSettings from './block-settings/RelatedContentSettings';
 import RecipeSettingsSidebar from './block-settings/RecipeSettingsSidebar';
 import RoundupListSettings from './block-settings/RoundupListSettings';
 import {
     parseJsonArray,
     clampNumber,
-    buildImageReplaceProps,
-    buildImageUploadProps,
 } from './block-settings/helpers';
 
 /**
@@ -26,8 +22,9 @@ import {
 
 export default function BlockSettings({ editor, selectedBlock: initialSelectedBlock, relatedContext, recipeData, onRecipeChange }) {
     const [, setBlockVersion] = useState(0);
-    const [imageDialogOpen, setImageDialogOpen] = useState(false);
-    const [imageUploaderOpen, setImageUploaderOpen] = useState(false);
+    // NOTE: ImageBlock owns its own MediaDialog/ImageUploader.
+    // We dispatch custom events to the block instead of mounting a second dialog.
+    // This prevents double /api/media calls from two MediaLibrary instances.
 
     useEffect(() => {
         if (!editor || !initialSelectedBlock?.id) return undefined;
@@ -44,15 +41,7 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
         ? (editor?.getBlock(initialSelectedBlock.id) ?? initialSelectedBlock)
         : null;
 
-    useEffect(() => {
-        // Only close dialogs if neither is currently open.
-        // This prevents the race condition where clicking "Media Library"
-        // causes ProseMirror to shift focus (changing selectedBlock.id),
-        // which would immediately close the just-opened dialog.
-        if (imageDialogOpen || imageUploaderOpen) return;
-        setImageDialogOpen(false);
-        setImageUploaderOpen(false);
-    }, [selectedBlock?.id]);
+    // Note: dialog state for customImage blocks is now owned by ImageBlock itself.
 
     if (!selectedBlock) return null;
 
@@ -70,16 +59,20 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
         updateBlock({ type: currentBlock.type, props: { ...currentBlock.props, ...props } });
     };
 
-    const handleImageReplaceSelect = (item) => {
-        if (!item || selectedBlock.type !== 'customImage') return;
-        updateProps(buildImageReplaceProps(item, selectedBlock.props));
-        setImageDialogOpen(false);
+    /** Tells the ImageBlock to open its own Media Library dialog. */
+    const openBlockMediaDialog = () => {
+        if (!selectedBlock?.id) return;
+        document.dispatchEvent(
+            new CustomEvent('imageblock:open-media', { detail: { blockId: selectedBlock.id } })
+        );
     };
 
-    const handleImageUploadComplete = (data) => {
-        if (!data || selectedBlock.type !== 'customImage') return;
-        updateProps(buildImageUploadProps(data, selectedBlock.props));
-        setImageUploaderOpen(false);
+    /** Tells the ImageBlock to open its own Image Uploader dialog. */
+    const openBlockUploaderDialog = () => {
+        if (!selectedBlock?.id) return;
+        document.dispatchEvent(
+            new CustomEvent('imageblock:open-uploader', { detail: { blockId: selectedBlock.id } })
+        );
     };
 
     const deleteBlock = () => {
@@ -218,7 +211,7 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                                     size="sm"
                                     className="h-8 gap-1.5"
                                     onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
-                                    onClick={(e) => { e.stopPropagation(); setImageDialogOpen(true); }}
+                                    onClick={(e) => { e.stopPropagation(); openBlockMediaDialog(); }}
                                 >
                                     <FolderOpen className="w-3.5 h-3.5" />
                                     Media Library
@@ -228,7 +221,7 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                                     size="sm"
                                     className="h-8 gap-1.5"
                                     onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
-                                    onClick={(e) => { e.stopPropagation(); setImageUploaderOpen(true); }}
+                                    onClick={(e) => { e.stopPropagation(); openBlockUploaderDialog(); }}
                                 >
                                     <Upload className="w-3.5 h-3.5" />
                                     Upload
@@ -288,16 +281,8 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                             />
                         </div>
                     </div>
-                    <MediaDialog
-                        open={imageDialogOpen}
-                        onOpenChange={setImageDialogOpen}
-                        onSelect={handleImageReplaceSelect}
-                    />
-                    <ImageUploader
-                        open={imageUploaderOpen}
-                        onOpenChange={setImageUploaderOpen}
-                        onUploadComplete={handleImageUploadComplete}
-                    />
+                    {/* MediaDialog and ImageUploader are owned by ImageBlock itself.
+                         Buttons above dispatch custom events to open them there. */}
                 </SettingsSection>
             )}
 

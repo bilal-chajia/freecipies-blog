@@ -117,28 +117,52 @@ export const ImageBlock = createReactBlockSpec(
                 if (!isSelected) return;
                 if (autoOpenedRef.current) return;
                 if (mediaDialogOpen || uploaderOpen) return;
-
-                let cursorBlockId = null;
-                try {
-                    cursorBlockId = editor.getTextCursorPosition().block?.id || null;
-                } catch {
-                    cursorBlockId = null;
-                }
-                if (cursorBlockId !== block.id) return;
-
+                
+                // NOTE: Do NOT check editor.getTextCursorPosition() here.
+                // customImage has content: 'none', so the text cursor will never
+                // be on this block. We rely solely on the custom selection context
+                // (isSelected) to determine when to auto-open the picker.
                 autoOpenedRef.current = true;
                 setMediaDialogOpen(true);
-            }, [block.id, block.props.url, editor, isSelected, mediaDialogOpen, uploaderOpen]);
+            }, [block.id, block.props.url, isSelected, mediaDialogOpen, uploaderOpen]);
 
             // Restore block selection when dialogs open (fixes focus loss bug)
             useEffect(() => {
                 if (mediaDialogOpen || uploaderOpen) {
                     if (!isSelected) {
-                        scheduleBlockSelection(block.id);
+                        // Only use the custom selection context — do NOT call
+                        // editor.setTextCursorPosition() here because this block has
+                        // content: 'none' and ProseMirror will move the cursor to the
+                        // next text block, which steals focus and closes the modal dialog.
                         selectBlock();
                     }
                 }
-            }, [mediaDialogOpen, uploaderOpen, isSelected, block.id, scheduleBlockSelection, selectBlock]);
+            }, [mediaDialogOpen, uploaderOpen, isSelected, block.id, selectBlock]);
+
+            // Listen for sidebar-dispatched events so BlockSettings can open our
+            // dialogs without mounting a second MediaLibrary (which would double /api/media).
+            useEffect(() => {
+                const onOpenMedia = (e) => {
+                    if (e.detail?.blockId === block.id) {
+                        autoOpenedRef.current = true;
+                        selectBlock();
+                        setMediaDialogOpen(true);
+                    }
+                };
+                const onOpenUploader = (e) => {
+                    if (e.detail?.blockId === block.id) {
+                        selectBlock();
+                        setUploaderOpen(true);
+                    }
+                };
+                document.addEventListener('imageblock:open-media', onOpenMedia);
+                document.addEventListener('imageblock:open-uploader', onOpenUploader);
+                return () => {
+                    document.removeEventListener('imageblock:open-media', onOpenMedia);
+                    document.removeEventListener('imageblock:open-uploader', onOpenUploader);
+                };
+            }, [block.id, selectBlock]);
+
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data) => {

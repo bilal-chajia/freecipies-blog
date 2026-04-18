@@ -79,9 +79,10 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         return new Response(body, { status, headers });
 
     } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         console.error('Error fetching media:', error);
         const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to fetch media', 500)
+            new AppError(ErrorCodes.DATABASE_ERROR, `Failed to fetch media: ${message}`, 500)
         );
         return new Response(body, { status, headers });
     }
