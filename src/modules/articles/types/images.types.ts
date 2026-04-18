@@ -9,7 +9,6 @@
 
 // Re-export all image types from shared
 export {
-    // Public types
     type ImageVariant,
     type ImageVariants,
     type FocalPoint,
@@ -20,21 +19,24 @@ export {
     type ImagesJson,
     type ImageSlotName,
 
-    // Storage types (for media module only)
     type StorageVariant,
     type StorageVariants,
     type MediaVariantsJson,
 
-    // Content block types
+    type StoredImageVariant,
+    type StoredImageVariants,
+
     type ContentImageBlock,
 
-    // Utility functions
+    buildImageUrl,
+    resolveVariantUrl,
+    storedToPublicVariant,
+    storedVariantsToPublic,
     getBestVariantUrl,
     getSrcSet,
     getFocalPointCss,
     stripStorageKeys,
 
-    // Constants
     DEFAULT_FOCAL_POINT,
     DEFAULT_IMAGES_JSON,
 } from '@shared/types/images';

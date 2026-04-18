@@ -53,6 +53,7 @@ export default function ImageUploader({
     markItemError,
     retryItem: retryQueueItem,
     setItemFinalName,
+    resetCurrentIndex,
   } = useUploadQueue();
 
   // Progress bar visibility with delayed hide
@@ -407,9 +408,8 @@ export default function ImageUploader({
     setSelectedFile(null);
     setPreviewUrl('');
     setFocalPoint({ x: 50, y: 50 });
-    // Reset to queue view so user can add more images
-    setCurrentQueueIndex(-1);
-  }, [abortUpload, previewUrl]);
+    resetCurrentIndex();
+  }, [abortUpload, previewUrl, resetCurrentIndex]);
 
   // Handle close
   const handleClose = useCallback(() => {

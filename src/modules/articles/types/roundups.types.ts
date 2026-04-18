@@ -6,6 +6,7 @@
  */
 
 import type { ImageVariants } from './images.types';
+import { resolveVariantUrl } from '@shared/types/images';
 
 // ============================================
 // Roundup Item
@@ -96,7 +97,7 @@ export function toSchemaOrgItemList(
             name: item.title,
             ...(item.article_id && { url: `${baseUrl}/recipes/${item.article_id}` }),
             ...(item.external_url && { url: item.external_url }),
-            ...(item.cover?.variants?.lg?.url && { image: item.cover.variants.lg.url }),
+            ...(item.cover?.variants?.lg && { image: resolveVariantUrl(item.cover.variants.lg) }),
             ...(item.subtitle && { description: item.subtitle }),
         })),
     };

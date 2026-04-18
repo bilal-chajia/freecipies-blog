@@ -67,6 +67,7 @@ export default function BlockEditor({
     onStructureUpdate,
     onSelectedBlockChange,
     forceSelectBlockId,
+    onForceSelectHandled,
     recipe,
     onRecipeChange,
     roundup,
@@ -84,6 +85,7 @@ export default function BlockEditor({
     const canvasRef = useRef(null);
     const onChangeRef = useRef(onChange);
     const lastSerializedRef = useRef('');
+    const lastEmittedValueRef = useRef('');
     const lastRoundupRef = useRef('');
     const lastPointerBlockIdRef = useRef(null);
     const roundupSyncRef = useRef(false);
@@ -120,23 +122,27 @@ export default function BlockEditor({
         }
     }, [editor, onEditorReady]);
 
-    // Update content when value changes (for initial load)
+    // Update content when value changes (for initial load OR external updates)
+    // CRITICAL FIX: To prevent infinite update loops, we ONLY replace blocks if:
+    // 1. The editor is empty (initial load scenario)
+    // 2. The incoming value is NOT a duplicate of what we just emitted (echo prevention)
     useEffect(() => {
-        if (!editor || !value) return;
-
-        // If editor is empty or we want to force update
-        // We need to check if the content is actually different to avoid loops
-        // For now, we'll trust that the parent component only passes loaded content
-
         async function updateContent() {
+            if (!editor || !value) return;
+
+            // Check if this value is just an echo of what we recently emitted
+            const stringifiedValue = typeof value === 'string' ? value : JSON.stringify(value);
+            if (stringifiedValue === lastEmittedValueRef.current) {
+                return;
+            }
+
             const currentBlocks = editor.document;
-            // Only update if editor is effectively empty (just has one empty paragraph)
             const isEmpty = currentBlocks.length === 0 ||
                 (currentBlocks.length === 1 &&
                     currentBlocks[0].type === 'paragraph' &&
                     (!currentBlocks[0].content || currentBlocks[0].content.length === 0));
 
-            // Check if value has blocks (handle string, array, or object with .blocks)
+            // Parse incoming value for checking hasBlocks
             let parsedValue = value;
             if (typeof value === 'string') {
                 try {
@@ -151,6 +157,8 @@ export default function BlockEditor({
             if (isEmpty && hasBlocks) {
                 const newBlocks = contentJsonToBlocks(value);
                 if (newBlocks && newBlocks.length > 0) {
+                    lastEmittedValueRef.current = stringifiedValue;
+                    lastSerializedRef.current = stringifiedValue;
                     await editor.replaceBlocks(editor.document, newBlocks);
                 }
             }
@@ -259,7 +267,8 @@ export default function BlockEditor({
             if (onChangeRef.current) {
                 const contentJson = blocksToContentJson(blocks);
                 const serialized = JSON.stringify(contentJson, null, 2);
-                if (serialized !== lastSerializedRef.current) {
+                if (serialized !== lastEmittedValueRef.current) {
+                    lastEmittedValueRef.current = serialized;
                     lastSerializedRef.current = serialized;
                     onChangeRef.current(serialized);
                 }
@@ -398,16 +407,30 @@ export default function BlockEditor({
                 }
             }
 
-            setActiveBlockId(block?.id || null);
-            onSelectedBlockChange?.(block || null);
+            const nextBlockId = block?.id || null;
+            if (nextBlockId !== activeBlockId) {
+                // If the selection changed, we only apply it if we're NOT in a forced selection
+                // or if the new selection is valid (not null).
+                // CRITICAL FIX: To prevent jumping back to the previous block when clicking in List View,
+                // we check if forceSelectBlockId is active. If it is, and the cursor is still in 
+                // a DIFFERENT block than the forced one, we ignore the natural selection change.
+                if (forceSelectBlockId && nextBlockId && nextBlockId !== forceSelectBlockId) {
+                    return;
+                }
+
+                setActiveBlockId(nextBlockId);
+                onSelectedBlockChange?.(block || null);
+            }
             lastPointerBlockIdRef.current = null;
         };
+        
+        // Immediate call to ensure initial selection is correct
         handleSelection();
         const unsubscribe = editor.onSelectionChange(handleSelection);
         return () => {
             if (typeof unsubscribe === 'function') unsubscribe();
         };
-    }, [editor, onSelectedBlockChange]);
+    }, [editor, onSelectedBlockChange, activeBlockId, forceSelectBlockId]);
 
     useEffect(() => {
         const wrapper = wrapperRef.current;
@@ -437,8 +460,11 @@ export default function BlockEditor({
                 if (blockId) {
                     lastPointerBlockIdRef.current = blockId;
                     if (blockId !== activeBlockId) {
+                        const block = editor?.getBlock(blockId);
                         setActiveBlockId(blockId);
-                        onSelectedBlockChange?.(editor?.getBlock(blockId) || null);
+                        if (block) {
+                            onSelectedBlockChange?.(block);
+                        }
                     }
                     return;
                 }
@@ -531,8 +557,23 @@ export default function BlockEditor({
         if (block) {
             setActiveBlockId(forceSelectBlockId);
             onSelectedBlockChange?.(block);
+            
+            // If it's not already focused or the cursor is elsewhere, try to move it
+            // but ONLY if the editor is not already at that position.
+            try {
+                const currentPos = editor.getTextCursorPosition();
+                if (currentPos?.block?.id !== forceSelectBlockId) {
+                    editor.setTextCursorPosition(forceSelectBlockId, 'start');
+                }
+            } catch {
+                // Ignore failures for blocks that don't support cursor
+            }
+            
+            // Notify parent that the forced selection has been handled
+            // so they can clear the forceSelectBlockId state.
+            onForceSelectHandled?.();
         }
-    }, [forceSelectBlockId, editor]);
+    }, [forceSelectBlockId, editor, activeBlockId, onSelectedBlockChange, onForceSelectHandled]);
 
     useEffect(() => {
         if (!onSelectedBlockChange) return;

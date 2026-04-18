@@ -11,6 +11,7 @@ import { parseJsonArray, parseJsonObject } from './json';
 import type { ContentBlock } from '../../../../modules/articles/types/content-blocks.types';
 import type { Block } from '@blocknote/core';
 import type { ImageVariants } from '../../../../shared/types/images';
+import { resolveVariantUrl } from '../../../../shared/types/images';
 
 type AnyBlock = Block<any, any, any>;
 
@@ -80,8 +81,14 @@ export function contentJsonToBlocks(contentJson: string | any[] | { blocks: any[
 
                 case 'image':
                     const imgVariants = (block.variants || {}) as ImageVariants;
-                    const bestUrl = imgVariants.lg?.url || imgVariants.md?.url || imgVariants.sm?.url || '';
-                    const bestVariant: any = imgVariants.lg || imgVariants.md || imgVariants.sm || {};
+                    const bestUrl =
+                        resolveVariantUrl(imgVariants.lg) ||
+                        resolveVariantUrl(imgVariants.md) ||
+                        resolveVariantUrl(imgVariants.sm) ||
+                        resolveVariantUrl(imgVariants.xs) ||
+                        resolveVariantUrl(imgVariants.original) ||
+                        '';
+                    const bestVariant: any = imgVariants.lg || imgVariants.md || imgVariants.sm || imgVariants.xs || imgVariants.original || {};
 
                     return {
                         id,

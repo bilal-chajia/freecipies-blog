@@ -15,6 +15,7 @@ import { tags as tagsTable } from '../../tags/schema/tags.schema';
 import { equipment as equipmentTable } from '../../equipment/schema/equipment.schema';
 import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedTag } from '../../../shared/utils/hydration';
+import { resolveVariantUrl } from '../../../shared/types/images';
 import type { HydratedArticle } from '../types/articles.types';
 
 async function getTagsForArticleId(drizzle: any, articleId: number): Promise<HydratedTag[]> {
@@ -630,7 +631,8 @@ export async function syncCachedFields(
           let imageUrl: string | undefined;
           try {
             const imgData = typeof eq.imageJson === 'string' ? JSON.parse(eq.imageJson) : eq.imageJson;
-            imageUrl = imgData?.variants?.md?.url || imgData?.variants?.sm?.url || imgData?.url || undefined;
+            imageUrl = resolveVariantUrl(imgData?.variants?.md || imgData?.variants?.sm || null)
+              || imgData?.url || undefined;
           } catch { /* ignore */ }
 
           return {

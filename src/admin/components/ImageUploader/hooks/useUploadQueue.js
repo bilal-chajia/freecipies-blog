@@ -146,6 +146,8 @@ export function useUploadQueue() {
     ));
   }, []);
 
+  const resetCurrentIndex = useCallback(() => setCurrentIndex(-1), []);
+
   const pendingCount = queue.filter(q => q.status === 'pending').length;
   const isQueueActive = currentIndex >= 0;
   const currentItem = currentIndex >= 0 ? queue[currentIndex] : null;
@@ -168,5 +170,6 @@ export function useUploadQueue() {
     markItemError,
     retryItem,
     setItemFinalName,
+    resetCurrentIndex,
   };
 }

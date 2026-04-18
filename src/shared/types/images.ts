@@ -150,21 +150,56 @@ export type ImagesJson = ArticleImagesJson | AuthorImagesJson | CategoryImagesJs
 export type ImageSlotName = 'cover' | 'thumbnail' | 'avatar' | 'banner' | 'pinterest';
 
 // ============================================
+// URL BUILDING
+// ============================================
+
+const IMAGE_PROXY_PREFIX = '/api/images';
+
+export function buildImageUrl(r2Key: string): string {
+    return `${IMAGE_PROXY_PREFIX}/${r2Key}`;
+}
+
+export function resolveVariantUrl(variant: { url?: string; r2_key?: string } | null | undefined): string | null {
+    if (!variant) return null;
+    if (variant.r2_key) return buildImageUrl(variant.r2_key);
+    if (variant.url) return variant.url;
+    return null;
+}
+
+// ============================================
+// STORED VARIANT TYPES (DB persistence)
+// ============================================
+
+export interface StoredImageVariant {
+    r2_key: string;
+    width: number;
+    height: number;
+    sizeBytes?: number;
+}
+
+export interface StoredImageVariants {
+    xs?: StoredImageVariant;
+    sm?: StoredImageVariant;
+    md?: StoredImageVariant;
+    lg?: StoredImageVariant;
+    original?: StoredImageVariant;
+}
+
+// ============================================
 // STORAGE TYPES (Media module internal)
 // ============================================
 
-/**
- * Storage variant with R2 key (internal use only)
- * Never expose r2_key to frontend consumers
- */
-export interface StorageVariant extends ImageVariant {
+export interface StorageVariant {
     /** R2 bucket key for file operations */
     r2_key: string;
+    /** Width in pixels */
+    width: number;
+    /** Height in pixels (for CLS prevention) */
+    height: number;
+    /** File size in bytes (optional, for admin display) */
+    sizeBytes?: number;
 }
 
-/**
- * Storage variants collection
- */
 export interface StorageVariants {
     xs?: StorageVariant;
     sm?: StorageVariant;
@@ -173,16 +208,27 @@ export interface StorageVariants {
     original?: StorageVariant;
 }
 
-/**
- * Media table variants_json structure
- * This is what gets stored in media.variants_json column
- */
 export interface MediaVariantsJson {
-    /** All responsive variants with R2 keys */
     variants: StorageVariants;
-
-    /** Base64 LQIP placeholder */
     placeholder?: string;
+}
+
+// ============================================
+// CONVERSION FUNCTIONS
+// ============================================
+
+export function storedToPublicVariant(sv: StoredImageVariant): ImageVariant {
+    return { url: buildImageUrl(sv.r2_key), width: sv.width, height: sv.height, sizeBytes: sv.sizeBytes };
+}
+
+export function storedVariantsToPublic(variants: StoredImageVariants): ImageVariants {
+    const result: ImageVariants = {};
+    const keys: (keyof StoredImageVariants)[] = ['xs', 'sm', 'md', 'lg', 'original'];
+    for (const key of keys) {
+        const v = variants[key];
+        if (v) result[key] = storedToPublicVariant(v);
+    }
+    return result;
 }
 
 // ============================================
@@ -209,7 +255,6 @@ export interface ContentImageBlock {
 /**
  * Parse variants JSON from API or DB response
  * Handles both string and object formats
- * Also rewrites any R2 public URLs to use the proxy endpoint (/api/images/)
  * @param item - Object with variants_json or variantsJson property
  * @returns Parsed MediaVariantsJson or null
  */
@@ -218,39 +263,16 @@ export function parseVariantsJson(item: { variants_json?: string; variantsJson?:
     const json = item.variants_json || item.variantsJson;
     if (!json) return null;
     if (typeof json === 'object') {
-        // Deep clone and rewrite URLs
-        return rewriteR2UrlsInVariants(json as MediaVariantsJson);
+        return json as MediaVariantsJson;
     }
     try {
-        const parsed = JSON.parse(json) as MediaVariantsJson;
-        // Rewrite URLs after parsing
-        return rewriteR2UrlsInVariants(parsed);
+        return JSON.parse(json) as MediaVariantsJson;
     } catch {
         return null;
     }
 }
 
-/**
- * Recursively rewrite R2 URLs in a parsed variants object
- */
-function rewriteR2UrlsInVariants(obj: unknown): MediaVariantsJson | null {
-    if (!obj || typeof obj !== 'object') return obj as MediaVariantsJson | null;
 
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj)) {
-        if (key === 'url' && typeof value === 'string') {
-            result[key] = rewriteR2UrlToProxy(value);
-        } else if (key === 'placeholder' && typeof value === 'string' && value.startsWith('http')) {
-            // Also rewrite placeholder URLs if they're external
-            result[key] = rewriteR2UrlToProxy(value);
-        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-            result[key] = rewriteR2UrlsInVariants(value);
-        } else {
-            result[key] = value;
-        }
-    }
-    return result as MediaVariantsJson;
-}
 
 /**
  * Extract variants map from parsed JSON
@@ -310,7 +332,7 @@ export function getBestVariantUrl(slot: ImageSlot | undefined): string | null {
         slot.variants.original ||
         slot.variants.xs;
 
-    return variant?.url || null;
+    return resolveVariantUrl(variant);
 }
 
 /**
@@ -322,10 +344,10 @@ export function getSrcSet(slot: ImageSlot | undefined): string {
     const entries: string[] = [];
     const v = slot.variants;
 
-    if (v.xs) entries.push(`${v.xs.url} ${v.xs.width}w`);
-    if (v.sm) entries.push(`${v.sm.url} ${v.sm.width}w`);
-    if (v.md) entries.push(`${v.md.url} ${v.md.width}w`);
-    if (v.lg) entries.push(`${v.lg.url} ${v.lg.width}w`);
+    if (v.xs) entries.push(`${resolveVariantUrl(v.xs)} ${v.xs.width}w`);
+    if (v.sm) entries.push(`${resolveVariantUrl(v.sm)} ${v.sm.width}w`);
+    if (v.md) entries.push(`${resolveVariantUrl(v.md)} ${v.md.width}w`);
+    if (v.lg) entries.push(`${resolveVariantUrl(v.lg)} ${v.lg.width}w`);
 
     return entries.join(', ');
 }
@@ -341,15 +363,19 @@ export function getFocalPointCss(slot: ImageSlot | undefined): string {
 /**
  * Strip storage keys from variants (for API responses)
  */
-export function stripStorageKeys(storageVariants: StorageVariants): ImageVariants {
+export function stripStorageKeys(storageVariants: StorageVariants | StoredImageVariants): ImageVariants {
     const result: ImageVariants = {};
     const keys: (keyof StorageVariants)[] = ['xs', 'sm', 'md', 'lg', 'original'];
 
     for (const key of keys) {
         const variant = storageVariants[key];
-        if (variant) {
-            const { r2_key, ...publicVariant } = variant;
-            result[key] = publicVariant;
+        if (variant && 'r2_key' in variant) {
+            result[key] = {
+                url: buildImageUrl(variant.r2_key),
+                width: variant.width,
+                height: variant.height,
+                sizeBytes: variant.sizeBytes,
+            };
         }
     }
 
@@ -452,35 +478,7 @@ export function getVariantUrlForContainer(
     size: ContainerSize = 'md'
 ): string | null {
     const variant = getVariantForContainer(slot, containerType, size);
-    return variant?.url || null;
+    return resolveVariantUrl(variant);
 }
 
-// ============================================
-// URL REWRITE (R2 -> Proxy)
-// ============================================
 
-/**
- * Rewrite R2 public URLs to use the local proxy endpoint.
- * Converts: https://pub-*.r2.dev/media/... -> /api/images/media/...
- * This is needed because R2 bucket is not publicly accessible.
- * @param url - The original URL (may be R2 public URL or already proxy URL)
- * @returns Rewritten URL using /api/images/ proxy, or original if not an R2 URL
- */
-export function rewriteR2UrlToProxy(url: string): string {
-    if (!url) return url;
-
-    // If already a proxy URL, return as-is
-    if (url.startsWith('/api/images/')) return url;
-
-    // Match R2 public URLs: https://pub-*.r2.dev/...
-    const r2Pattern = /^https:\/\/pub-[a-f0-9]+\.r2\.dev\/(.+)$/i;
-    const match = url.match(r2Pattern);
-
-    if (match) {
-        const key = match[1];
-        return `/api/images/${key}`;
-    }
-
-    // Not an R2 URL - return as-is (could be external URL, data URI, etc.)
-    return url;
-}

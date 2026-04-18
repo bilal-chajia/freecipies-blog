@@ -5,6 +5,7 @@
  */
 
 import type { CategoryImagesJson, ImageVariants } from '../../articles/types/images.types';
+import { resolveVariantUrl } from '@shared/types/images';
 
 interface SeoJson {
   metaTitle?: string;
@@ -43,6 +44,17 @@ const getBestVariant = (variants?: ImageVariants) => {
   return variants?.lg || variants?.md || variants?.sm || variants?.original || variants?.xs;
 };
 
+const extractR2KeyFromUrl = (url: string): string | null => {
+  if (!url) return null;
+  const proxyMatch = url.match(/^\/api\/images\/(.+)$/);
+  if (proxyMatch) return proxyMatch[1];
+  const r2Match = url.match(/^https:\/\/pub-[a-f0-9]+\.r2\.dev\/(.+)$/i);
+  if (r2Match) return r2Match[1];
+  const localMatch = url.match(/^https?:\/\/[^\/]+\/api\/images\/(.+)$/);
+  if (localMatch) return localMatch[1];
+  return null;
+};
+
 const normalizeImageSlot = (slot: any) => {
   if (!slot || typeof slot !== 'object') return slot;
 
@@ -51,11 +63,12 @@ const normalizeImageSlot = (slot: any) => {
   }
 
   if (slot.url) {
+    const r2Key = extractR2KeyFromUrl(slot.url);
     return {
       ...slot,
       variants: {
         original: {
-          url: slot.url,
+          ...(r2Key ? { r2_key: r2Key } : { url: slot.url }),
           width: slot.width ?? 0,
           height: slot.height ?? 0,
         },
@@ -306,11 +319,12 @@ export function transformCategoryRequestBody(body: any): any {
   } else if (hasLegacyImageFields) {
     const images: CategoryImagesJson = {};
     if (body.imageUrl) {
+      const r2Key = extractR2KeyFromUrl(body.imageUrl);
       images.thumbnail = {
         alt: body.imageAlt,
         variants: {
           original: {
-            url: body.imageUrl,
+            ...(r2Key ? { r2_key: r2Key } : { url: body.imageUrl }),
             width: body.imageWidth ?? 0,
             height: body.imageHeight ?? 0,
           },
@@ -401,12 +415,11 @@ export function transformCategoryResponse(category: any): any {
       const images: CategoryImagesJson = JSON.parse(category.imagesJson);
       const primarySlot = images.thumbnail ?? images.cover;
       const variant = getBestVariant(primarySlot?.variants);
-      response.imageUrl = variant?.url;
+      response.imageUrl = resolveVariantUrl(variant);
       response.imageAlt = primarySlot?.alt;
       response.imageWidth = variant?.width;
       response.imageHeight = variant?.height;
     } catch {
-      // Invalid JSON, skip
     }
   }
 

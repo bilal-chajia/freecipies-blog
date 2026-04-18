@@ -4,6 +4,7 @@ import { getMedia } from '@modules/media';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
+import { resolveVariantUrl } from '@shared/types/images';
 
 export const prerender = false;
 
@@ -56,12 +57,11 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
                     
                     const variants = parsed.variants || parsed;
 
-                    // Try to find the best available URL
-                    url = variants.original?.url || 
-                          variants.lg?.url || 
-                          variants.md?.url || 
-                          variants.sm?.url || 
-                          variants.public?.url || 
+                    url = resolveVariantUrl(variants.original) ||
+                          resolveVariantUrl(variants.lg) ||
+                          resolveVariantUrl(variants.md) ||
+                          resolveVariantUrl(variants.sm) ||
+                          resolveVariantUrl(variants.public) ||
                           '';
 
                 } catch (e) {

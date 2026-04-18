@@ -1,4 +1,4 @@
-import { getVariantMap, parseVariantsJson } from '@shared/types/images';
+import { getVariantMap, parseVariantsJson, resolveVariantUrl } from '@shared/types/images';
 
 export const parseJsonArray = (value: unknown) => {
     if (!value) return [];
@@ -44,7 +44,7 @@ interface UploadPayload {
 export const buildImageReplaceProps = (item: MediaSelectPayload, currentProps: BlockImageProps) => {
     const parsed = parseVariantsJson(item);
     const variants = getVariantMap(parsed);
-    const url = variants.md?.url || variants.sm?.url || variants.lg?.url || item.url || '';
+    const url = resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.lg) || item.url || '';
     const bestVariant = variants.md || variants.lg || variants.original;
 
     return {
@@ -60,7 +60,7 @@ export const buildImageReplaceProps = (item: MediaSelectPayload, currentProps: B
 
 export const buildImageUploadProps = (data: UploadPayload, currentProps: BlockImageProps) => {
     const variants = data.variants || {};
-    const url = variants.md?.url || variants.sm?.url || variants.lg?.url || data.url;
+    const url = resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.lg) || data.url;
     const bestVariant = variants.md || variants.lg || variants.original;
 
     return {

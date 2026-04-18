@@ -82,6 +82,9 @@ export async function updateAuthor(
     .set(updateData)
     .where(eq(authors.slug, slug));
 
+  // Note: cached_author_json in articles is auto-refreshed by SQL trigger
+  // defined in db/triggers-cached-fields.sql
+
   return getAuthorBySlug(db, slug);
 }
 
@@ -115,6 +118,7 @@ export async function updateAuthorById(
     .set(updateData)
     .where(eq(authors.id, id));
 
+  // Note: cached_author_json in articles is auto-refreshed by SQL trigger
   return getAuthorById(db, id);
 }
 

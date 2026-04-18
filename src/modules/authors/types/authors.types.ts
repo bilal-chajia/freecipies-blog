@@ -5,6 +5,7 @@
  */
 
 import type { AuthorImagesJson, ImageVariants } from '../../articles/types/images.types';
+import { resolveVariantUrl } from '@shared/types/images';
 
 // ============================================
 // Images JSON Structure
@@ -111,7 +112,7 @@ export function imagesJsonToFlat(imagesJson: string | null): FlatAuthorImages {
     const avatar = images.avatar;
     const variant = getBestVariant(avatar?.variants);
     return {
-      imageUrl: variant?.url || null,
+      imageUrl: resolveVariantUrl(variant) || null,
       imageAlt: avatar?.alt || null,
       imageWidth: variant?.width ?? null,
       imageHeight: variant?.height ?? null,

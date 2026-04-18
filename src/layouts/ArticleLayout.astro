@@ -1,5 +1,5 @@
 ---
-import { env } from 'cloudflare:workers';
+import { env } from "cloudflare:workers";
 import Layout from "./Layout.astro";
 import type { Category } from "@modules/categories/schema/categories.schema";
 import SocialShareBar from "../components/SocialShareBar.astro";
@@ -53,7 +53,7 @@ const coverSrcSet = getImageSrcSet(article.imagesJson, "cover");
 const thumbSrcSet = getImageSrcSet(article.imagesJson, "thumbnail");
 const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
 const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
-const heroSizes = "(max-width: 768px) 90vw, 800px";
+const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
 const authorAvatar = author?.imagesJson
   ? extractImage(author.imagesJson, "avatar", 96)
@@ -75,7 +75,10 @@ const contentBlocks = Array.isArray(article.contentJson)
 <Layout
   title={article.metaTitle || article.label}
   description={article.metaDescription || article.shortDescription}
-  image={heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl || undefined}
+  image={heroCover.imageUrl ||
+    heroThumb.imageUrl ||
+    article.imageUrl ||
+    undefined}
 >
   <slot name="head" slot="head" />
   {
@@ -147,9 +150,16 @@ const contentBlocks = Array.isArray(article.contentJson)
 
         <HeroImage
           src={heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl}
-          alt={heroCover.imageAlt || heroThumb.imageAlt || article.imageAlt || article.label}
-          width={heroCover.imageWidth || heroThumb.imageWidth || article.imageWidth}
-          height={heroCover.imageHeight || heroThumb.imageHeight || article.imageHeight}
+          alt={heroCover.imageAlt ||
+            heroThumb.imageAlt ||
+            article.imageAlt ||
+            article.label}
+          width={heroCover.imageWidth ||
+            heroThumb.imageWidth ||
+            article.imageWidth}
+          height={heroCover.imageHeight ||
+            heroThumb.imageHeight ||
+            article.imageHeight}
           srcset={heroSrcSet}
           sizes={heroSizes}
           style={heroCover.imageStyle || heroThumb.imageStyle}

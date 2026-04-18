@@ -92,12 +92,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     }
 
-    // Build public URL using proxy endpoint (NOT R2 public URL)
-    const publicUrl = '/api/images';
-
-    // Build variants JSON for storage
+    // Build variants JSON for storage (r2_key only, no url)
     const variantsJson = {
-      variants: {} as Record<string, { url: string; r2_key: string; width: number; height: number; sizeBytes?: number }>,
+      variants: {} as Record<string, { r2_key: string; width: number; height: number; sizeBytes?: number }>,
       placeholder: body.placeholder || '',
     };
 
@@ -105,7 +102,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     for (const [key, variant] of Object.entries(body.variants)) {
       if (variant) {
         variantsJson.variants[key] = {
-          url: `${publicUrl}/${variant.r2Key}`,
           r2_key: variant.r2Key,
           width: variant.width,
           height: variant.height,

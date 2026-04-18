@@ -90,6 +90,7 @@ export default function GutenbergRecipeEditor() {
         structureItems,
         activeBlockId,
         forceSelectBlockId,
+        handleClearForceSelect,
         handleStructureUpdate,
         handleSelectStructureBlock,
         handleReorderBlock,
@@ -345,6 +346,7 @@ export default function GutenbergRecipeEditor() {
                             onStructureUpdate={handleStructureUpdate}
                             onSelectedBlockChange={setSelectedBlock}
                             forceSelectBlockId={forceSelectBlockId}
+                            onForceSelectHandled={handleClearForceSelect}
                             blockEditorProps={{
                                 recipe: recipeJson,
                                 onRecipeChange: (newValue) => {

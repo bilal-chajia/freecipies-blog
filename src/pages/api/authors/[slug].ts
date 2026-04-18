@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import { getAuthorBySlug, updateAuthor, deleteAuthor, transformAuthorRequestBody, transformAuthorResponse } from '@modules/authors';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { resolveVariantUrl } from '@shared/types/images';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 
 export const prerender = false;
@@ -20,7 +21,7 @@ const getAvatarUrlFromImagesJson = (value: any): string | null => {
                 avatar.variants.sm ||
                 avatar.variants.original ||
                 avatar.variants.xs;
-            return variant?.url || null;
+            return resolveVariantUrl(variant) || null;
         }
         return avatar.url || null;
     } catch {

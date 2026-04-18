@@ -6,6 +6,17 @@
 
 import { safeParseJson } from '../../../shared/utils/hydration';
 
+const extractR2KeyFromUrl = (url: string): string | null => {
+    if (!url) return null;
+    const proxyMatch = url.match(/^\/api\/images\/(.+)$/);
+    if (proxyMatch) return proxyMatch[1];
+    const r2Match = url.match(/^https:\/\/pub-[a-f0-9]+\.r2\.dev\/(.+)$/i);
+    if (r2Match) return r2Match[1];
+    const localMatch = url.match(/^https?:\/\/[^\/]+\/api\/images\/(.+)$/);
+    if (localMatch) return localMatch[1];
+    return null;
+};
+
 /**
  * Transform article request body into a standardized database format
  * Handles legacy flat image fields and ensures JSON fields are objects where expected.
@@ -34,8 +45,9 @@ export function transformArticleRequestBody(body: any): any {
         const images: any = {};
 
         if (body.imageUrl) {
+            const r2Key = extractR2KeyFromUrl(body.imageUrl);
             images.thumbnail = {
-                url: body.imageUrl,
+                ...(r2Key ? { r2_key: r2Key } : { url: body.imageUrl }),
                 alt: body.imageAlt || '',
                 width: body.imageWidth,
                 height: body.imageHeight
@@ -43,8 +55,9 @@ export function transformArticleRequestBody(body: any): any {
         }
 
         if (body.coverUrl) {
+            const r2Key = extractR2KeyFromUrl(body.coverUrl);
             images.cover = {
-                url: body.coverUrl,
+                ...(r2Key ? { r2_key: r2Key } : { url: body.coverUrl }),
                 alt: body.coverAlt || '',
                 width: body.coverWidth,
                 height: body.coverHeight

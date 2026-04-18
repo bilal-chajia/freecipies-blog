@@ -1,5 +1,6 @@
 ---
-import { env } from 'cloudflare:workers';
+import { env } from "cloudflare:workers";
+import { resolveVariantUrl } from "@shared/types/images";
 import RelatedContent from "./RelatedContent.astro";
 import TableBlock from "./TableBlock.astro";
 import BeforeAfter from "./BeforeAfter.astro";
@@ -191,8 +192,6 @@ const parsed = (() => {
   return [];
 })();
 
-
-
 // Pre-process blocks to add hierarchical numbering to headings
 let h2Count = 0;
 let h3Count = 0;
@@ -233,7 +232,6 @@ const processedBlocks = numberedBlocks;
   {
     processedBlocks.map((block) => {
       if (!block?.type) return null;
-      
 
       if (block.type === "paragraph")
         return <p set:html={renderInlineMarkdown(block.text)} />;
@@ -322,10 +320,15 @@ const processedBlocks = numberedBlocks;
         return <RelatedContent block={block} />;
       if (block.type === "roundupList") {
         const startIndex = globalRoundupIndex;
-        const items = typeof block.itemsJson === 'string' ? JSON.parse(block.itemsJson) : (block.items || []);
+        const items =
+          typeof block.itemsJson === "string"
+            ? JSON.parse(block.itemsJson)
+            : block.items || [];
         globalRoundupIndex += items.length;
-        
-        return <RoundupItemList block={block} db={env.DB} startNumber={startIndex} />;
+
+        return (
+          <RoundupItemList block={block} db={env.DB} startNumber={startIndex} />
+        );
       }
       if (block.type === "table")
         return <TableBlock headers={block.headers} rows={block.rows} />;
@@ -378,18 +381,28 @@ const processedBlocks = numberedBlocks;
       if (block.type === "image" && block.variants) {
         const variants = block.variants || {};
         const imgUrl =
-          variants.md?.url || variants.lg?.url || variants.sm?.url || "";
+          resolveVariantUrl(variants.md) ||
+          resolveVariantUrl(variants.lg) ||
+          resolveVariantUrl(variants.sm) ||
+          "";
         const imgVariant = variants.md || variants.lg || variants.sm || {};
-        // Build srcset from all available variants
         const srcEntries: string[] = [];
-        if (variants.xs?.url && variants.xs?.width)
-          srcEntries.push(`${variants.xs.url} ${variants.xs.width}w`);
-        if (variants.sm?.url && variants.sm?.width)
-          srcEntries.push(`${variants.sm.url} ${variants.sm.width}w`);
-        if (variants.md?.url && variants.md?.width)
-          srcEntries.push(`${variants.md.url} ${variants.md.width}w`);
-        if (variants.lg?.url && variants.lg?.width)
-          srcEntries.push(`${variants.lg.url} ${variants.lg.width}w`);
+        if (variants.xs && variants.xs.width) {
+          const u = resolveVariantUrl(variants.xs);
+          if (u) srcEntries.push(`${u} ${variants.xs.width}w`);
+        }
+        if (variants.sm && variants.sm.width) {
+          const u = resolveVariantUrl(variants.sm);
+          if (u) srcEntries.push(`${u} ${variants.sm.width}w`);
+        }
+        if (variants.md && variants.md.width) {
+          const u = resolveVariantUrl(variants.md);
+          if (u) srcEntries.push(`${u} ${variants.md.width}w`);
+        }
+        if (variants.lg && variants.lg.width) {
+          const u = resolveVariantUrl(variants.lg);
+          if (u) srcEntries.push(`${u} ${variants.lg.width}w`);
+        }
         const imgSrcSet = srcEntries.join(", ");
         if (!imgUrl) return null;
         return (
@@ -400,7 +413,11 @@ const processedBlocks = numberedBlocks;
               width={imgVariant.width || undefined}
               height={imgVariant.height || undefined}
               srcset={imgSrcSet || undefined}
-              sizes={imgSrcSet ? "(max-width: 768px) 100vw, 720px" : undefined}
+              sizes={
+                imgSrcSet
+                  ? "(max-width: 768px) calc(100vw - 2rem), min(720px, 100vw - 4rem)"
+                  : undefined
+              }
               loading="lazy"
               decoding="async"
               style="width:100%;height:auto;border-radius:8px;"
@@ -420,8 +437,6 @@ const processedBlocks = numberedBlocks;
     })
   }
 </div>
-
-
 
 <style>
   /* Unified block spacing — matches editor --wp-block-spacing: 1.25rem */

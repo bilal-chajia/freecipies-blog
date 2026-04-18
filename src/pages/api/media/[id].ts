@@ -128,7 +128,7 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
             // Updated to match new structure even for single file
             const newVariants = {
                 variants: {
-                    original: { url: newUrl.split('?')[0], r2_key: newKey, width: 0, height: 0 }
+                    original: { r2_key: newKey, width: 0, height: 0 }
                 },
                 placeholder: ''
             };

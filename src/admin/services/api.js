@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/useStore';
+import { resolveVariantUrl } from '@shared/types/images';
 
 // API Base URL - Update this to match your Astro backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
@@ -201,7 +202,7 @@ export const mediaAPI = {
       if (!data.url && data.variantsJson) {
         try {
           const variants = typeof data.variantsJson === 'string' ? JSON.parse(data.variantsJson) : data.variantsJson;
-          const url = variants.original?.url || variants.lg?.url || '';
+          const url = resolveVariantUrl(variants.original) || resolveVariantUrl(variants.lg) || resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.xs) || '';
           response.data.data.url = url;
           // Also set top-level url if some components look there (though typically they look at data.data)
           if (!response.data.url) response.data.url = url;
@@ -231,7 +232,7 @@ export const mediaAPI = {
       if (!data.url && data.variantsJson) {
         try {
           const variants = typeof data.variantsJson === 'string' ? JSON.parse(data.variantsJson) : data.variantsJson;
-          const url = variants.original?.url || variants.lg?.url || '';
+          const url = resolveVariantUrl(variants.original) || resolveVariantUrl(variants.lg) || resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.xs) || '';
           response.data.data.url = url;
           if (!response.data.url) response.data.url = url;
         } catch (e) {

@@ -8,7 +8,7 @@ import {
   getVariantForContainer,
   pickVariantByWidth,
   CONTAINER_SIZES,
-  rewriteR2UrlToProxy
+  resolveVariantUrl
 } from '@shared/types/images';
 import ImageEditor from '@/components/ImageEditor.jsx';
 import ImageUploader from '@/components/ImageUploader';
@@ -107,24 +107,21 @@ const formatDisplayedSize = (item) => {
 const getThumbnailUrl = (item) => {
   const parsed = parseVariants(item);
   const variants = getVariantMap(parsed);
-  if (!variants) return rewriteR2UrlToProxy(item.url);
+  if (!variants) return resolveVariantUrl(null) || item.url;
 
-  // Thumbnail grid is ~150px, need 300px for retina
   const slot = { variants };
-  const variant = getVariantForContainer(slot, 'thumbnail', 'lg'); // 180px * 2 = 360px
-  return rewriteR2UrlToProxy(variant?.url || item.url);
+  const variant = getVariantForContainer(slot, 'thumbnail', 'lg');
+  return resolveVariantUrl(variant) || item.url;
 };
 
-// Get full resolution URL (uses container-based selection for lightbox)
 const getFullUrl = (item) => {
   const parsed = parseVariants(item);
   const variants = getVariantMap(parsed);
-  if (!variants) return rewriteR2UrlToProxy(item.url);
+  if (!variants) return item.url;
 
-  // Lightbox/preview needs full resolution, use hero xl (2048px)
   const slot = { variants };
-  const variant = getVariantForContainer(slot, 'hero', 'xl'); // 2048px
-  return rewriteR2UrlToProxy(variant?.url || item.url);
+  const variant = getVariantForContainer(slot, 'hero', 'xl');
+  return resolveVariantUrl(variant) || item.url;
 };
 
 const OptimizedImage = ({ item, className = "", priority = false }) => {
@@ -135,32 +132,30 @@ const OptimizedImage = ({ item, className = "", priority = false }) => {
 
   // Build srcset from available variants
   let srcset = '';
-  let src = rewriteR2UrlToProxy(item.url);
+  let src = item.url; // item.url should now be resolved via resolveVariantUrl in the API
   let width = undefined;
   let height = undefined;
 
   if (variants) {
     const srcsetParts = [];
-    // Add all available variants to srcset (rewritten to proxy URLs)
-    if (variants.xs?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.xs.url)} ${variants.xs.width}w`);
-    if (variants.sm?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.sm.url)} ${variants.sm.width}w`);
-    if (variants.md?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.md.url)} ${variants.md.width}w`);
-    if (variants.lg?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.lg.url)} ${variants.lg.width}w`);
-    if (variants.original?.url) srcsetParts.push(`${rewriteR2UrlToProxy(variants.original.url)} ${variants.original.width}w`);
+    if (variants.xs) srcsetParts.push(`${resolveVariantUrl(variants.xs)} ${variants.xs.width}w`);
+    if (variants.sm) srcsetParts.push(`${resolveVariantUrl(variants.sm)} ${variants.sm.width}w`);
+    if (variants.md) srcsetParts.push(`${resolveVariantUrl(variants.md)} ${variants.md.width}w`);
+    if (variants.lg) srcsetParts.push(`${resolveVariantUrl(variants.lg)} ${variants.lg.width}w`);
+    if (variants.original) srcsetParts.push(`${resolveVariantUrl(variants.original)} ${variants.original.width}w`);
     srcset = srcsetParts.join(', ');
 
-    // Use container-based selection for default src (thumbnail size ~150px)
     const slot = { variants };
     const selectedVariant = getVariantForContainer(slot, 'thumbnail', 'lg');
     if (selectedVariant) {
-      src = rewriteR2UrlToProxy(selectedVariant.url);
+      src = resolveVariantUrl(selectedVariant) || src;
       width = selectedVariant.width;
       height = selectedVariant.height;
     }
   }
 
   // Fallback to item URL if calculation failed
-  if (!src) src = rewriteR2UrlToProxy(item.url);
+  if (!src) src = item.url;
 
   return (
     <div className={`relative w-full h-full overflow-hidden ${className}`}>

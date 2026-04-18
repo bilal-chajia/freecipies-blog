@@ -29,14 +29,25 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button.jsx';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/ui/dialog.jsx';
-import { parseVariantsJson, getVariantMap } from '@shared/types/images';
+import { parseVariantsJson, getVariantMap, resolveVariantUrl, stripStorageKeys } from '@shared/types/images';
 import ImageUploader from '../../ImageUploader';
 import MediaDialog from '../../MediaDialog';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+
+// Extract r2_key from image URLs (internal proxy URLs or R2 public URLs)
+const extractR2KeyFromUrl = (url) => {
+    if (!url) return null;
+    const proxyMatch = url.match(/^\/api\/images\/(.+)$/);
+    if (proxyMatch) return proxyMatch[1];
+    const r2Match = url.match(/^https:\/\/pub-[a-f0-9]+\.r2\.dev\/(.+)$/i);
+    if (r2Match) return r2Match[1];
+    const localMatch = url.match(/^https?:\/\/[^\/]+\/api\/images\/(.+)$/);
+    if (localMatch) return localMatch[1];
+    return null;
+};
 
 export const ImageBlock = createReactBlockSpec(
     {
@@ -57,14 +68,15 @@ export const ImageBlock = createReactBlockSpec(
     {
         render: (props) => {
             const { block, editor } = props;
-            const [inputUrl, setInputUrl] = useState(block.props.url);
+
             const [uploaderOpen, setUploaderOpen] = useState(false);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
-            const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
+            const [inputUrl, setInputUrl] = useState(block.props.url || '');
+
             const { isSelected, selectBlock } = useBlockSelection(block.id);
             const captionRef = useRef(null);
             const autoOpenedRef = useRef(false);
-            const isOverlayOpen = mediaDialogOpen || uploaderOpen || choiceDialogOpen;
+            const isOverlayOpen = mediaDialogOpen || uploaderOpen;
             const {
                 moveUp: moveBlockUp,
                 moveDown: moveBlockDown,
@@ -103,8 +115,9 @@ export const ImageBlock = createReactBlockSpec(
             useEffect(() => {
                 if (block.props.url) return;
                 if (!isSelected) return;
-                if (mediaDialogOpen || uploaderOpen || choiceDialogOpen) return;
                 if (autoOpenedRef.current) return;
+                if (mediaDialogOpen || uploaderOpen) return;
+
                 let cursorBlockId = null;
                 try {
                     cursorBlockId = editor.getTextCursorPosition().block?.id || null;
@@ -112,14 +125,25 @@ export const ImageBlock = createReactBlockSpec(
                     cursorBlockId = null;
                 }
                 if (cursorBlockId !== block.id) return;
+
                 autoOpenedRef.current = true;
-                setChoiceDialogOpen(true);
-            }, [block.id, block.props.url, choiceDialogOpen, editor, isSelected, mediaDialogOpen, uploaderOpen]);
+                setMediaDialogOpen(true);
+            }, [block.id, block.props.url, editor, isSelected, mediaDialogOpen, uploaderOpen]);
+
+            // Restore block selection when dialogs open (fixes focus loss bug)
+            useEffect(() => {
+                if (mediaDialogOpen || uploaderOpen) {
+                    if (!isSelected) {
+                        scheduleBlockSelection(block.id);
+                        selectBlock();
+                    }
+                }
+            }, [mediaDialogOpen, uploaderOpen, isSelected, block.id, scheduleBlockSelection, selectBlock]);
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data) => {
                 const variants = data.variants || {};
-                const url = variants.md?.url || variants.sm?.url || variants.lg?.url || data.url;
+                const url = resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.lg) || data.url;
                 const bestVariant = variants.md || variants.lg || variants.original;
                 const currentBlock = editor.getBlock(block.id) || block;
 
@@ -132,22 +156,27 @@ export const ImageBlock = createReactBlockSpec(
                         alt: data.altText || '',
                         credit: data.credit || '',
                         width: bestVariant?.width || data.width || 512,
-                        height: bestVariant?.height || data.height || 0,
+                        height: bestVariant?.height || data.height || 300,
                         variantsJson: JSON.stringify(variants),
                     },
                 });
                 setInputUrl(url || '');
                 setUploaderOpen(false);
-                scheduleBlockSelection(currentBlock.id);
-                selectBlock();
+                
+                // Ensure the block is visually selected after upload
+                setTimeout(() => {
+                    selectBlock();
+                    scheduleBlockSelection(currentBlock.id);
+                }, 50);
             }, [block, editor, scheduleBlockSelection, selectBlock]);
 
             // Handle media selection from MediaDialog
             const handleMediaSelect = useCallback((item) => {
                 const parsed = parseVariantsJson(item);
-                const variants = getVariantMap(parsed);
-                const url = variants.md?.url || variants.sm?.url || variants.lg?.url || item.url;
-                const bestVariant = variants.md || variants.lg || variants.original;
+                const rawVariants = getVariantMap(parsed);
+                const variants = stripStorageKeys(rawVariants);
+                const url = variants.md?.url || variants.sm?.url || variants.lg?.url || variants.xs?.url || item.url;
+                const bestVariant = variants.md || variants.lg || variants.sm || variants.xs || variants.original;
                 const currentBlock = editor.getBlock(block.id) || block;
 
                 editor.updateBlock(currentBlock, {
@@ -158,31 +187,22 @@ export const ImageBlock = createReactBlockSpec(
                         mediaId: item.id?.toString() || '',
                         alt: item.altText || item.alt_text || item.name || '',
                         credit: item.credit || item.credit_text || '',
-                        width: bestVariant?.width || 512,
-                        height: bestVariant?.height || 0,
+                        width: bestVariant?.width || item.width || 512,
+                        height: bestVariant?.height || item.height || 0,
                         variantsJson: JSON.stringify(variants),
                     },
                 });
                 setInputUrl(url || '');
                 setMediaDialogOpen(false);
-                scheduleBlockSelection(currentBlock.id);
-                selectBlock();
+                
+                // Ensure the block is visually selected after selection
+                setTimeout(() => {
+                    selectBlock();
+                    scheduleBlockSelection(currentBlock.id);
+                }, 50);
             }, [block, editor, scheduleBlockSelection, selectBlock]);
 
-            // Handle URL submit
-            const handleUrlSubmit = useCallback(() => {
-                if (!inputUrl) return;
-                const currentBlock = editor.getBlock(block.id) || block;
-                editor.updateBlock(currentBlock, {
-                    type: 'customImage',
-                    props: {
-                        ...currentBlock.props,
-                        url: inputUrl,
-                        mediaId: '',
-                        variantsJson: JSON.stringify({ lg: { url: inputUrl } }),
-                    },
-                });
-            }, [inputUrl, block, editor]);
+
 
             const handleRemove = () => {
                 removeBlock();
@@ -221,8 +241,13 @@ export const ImageBlock = createReactBlockSpec(
                                     <Button
                                         variant="default"
                                         size="sm"
-                                        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
-                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setChoiceDialogOpen(true); }}
+                                        onMouseDown={(e) => { e.stopPropagation(); }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            autoOpenedRef.current = true;
+                                            selectBlock();
+                                            setMediaDialogOpen(true);
+                                        }}
                                         className="gap-2"
                                     >
                                         <FolderOpen className="h-4 w-4" />
@@ -247,45 +272,7 @@ export const ImageBlock = createReactBlockSpec(
                             onSelect={handleMediaSelect}
                         />
 
-                        <Dialog open={choiceDialogOpen} onOpenChange={setChoiceDialogOpen}>
-                            <DialogContent className="sm:max-w-md">
-                                <DialogTitle>Add image</DialogTitle>
-                                <DialogDescription>
-                                    Choose an upload or select from your media library.
-                                </DialogDescription>
-                                <div className="mt-4 grid grid-cols-1 gap-2">
-                                    <Button
-                                        type="button"
-                                        className="justify-start gap-2"
-                                        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            setChoiceDialogOpen(false);
-                                            setUploaderOpen(true);
-                                        }}
-                                    >
-                                        <Upload className="h-4 w-4" />
-                                        Upload image
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        className="justify-start gap-2"
-                                        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            setChoiceDialogOpen(false);
-                                            setMediaDialogOpen(true);
-                                        }}
-                                    >
-                                        <FolderOpen className="h-4 w-4" />
-                                        Media library
-                                    </Button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+
                     </>
                 );
             }
@@ -319,7 +306,7 @@ export const ImageBlock = createReactBlockSpec(
                     <ToolbarButton
                         icon={Type}
                         label="Edit caption"
-                        onClick={() => captionRef.current?.focus()}
+                        onClick={() => { try { captionRef.current?.focus(); } catch {} }}
                     />
                     <ToolbarSeparator />
                     <ToolbarButton
@@ -354,6 +341,8 @@ export const ImageBlock = createReactBlockSpec(
                             <img
                                 src={block.props.url}
                                 alt={block.props.alt}
+                                width={block.props.width || undefined}
+                                height={block.props.height || undefined}
                                 className={cn(
                                     'max-w-full h-auto',
                                     alignmentClass

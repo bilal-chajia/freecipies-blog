@@ -4,6 +4,7 @@ import { getArticleBySlug } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import type { RoundupJson } from '@modules/articles/types/roundups.types';
+import { resolveVariantUrl } from '@shared/types/images';
 
 export const prerender = false;
 
@@ -20,14 +21,14 @@ function generateItemListJsonLd(article: any, baseUrl: string): object {
         : article.imagesJson || {};
 
     // Get main image
-    const mainImage = imagesData.cover?.variants?.lg?.url ||
-        imagesData.cover?.variants?.md?.url;
+    const mainImage = resolveVariantUrl(imagesData.cover?.variants?.lg) ||
+        resolveVariantUrl(imagesData.cover?.variants?.md);
 
     // Build ItemList elements
     const itemListElement = (roundupData.items || []).map(item => {
         // Get item image
-        const itemImage = item.cover?.variants?.lg?.url ||
-            item.cover?.variants?.md?.url;
+        const itemImage = resolveVariantUrl(item.cover?.variants?.lg) ||
+            resolveVariantUrl(item.cover?.variants?.md);
 
         // Determine URL
         let itemUrl: string | undefined;

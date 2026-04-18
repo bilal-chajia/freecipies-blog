@@ -1,5 +1,5 @@
 ---
-import { env } from 'cloudflare:workers';
+import { env } from "cloudflare:workers";
 import Layout from "./Layout.astro";
 import type { Category } from "@modules/categories/schema/categories.schema";
 import SocialShareBar from "../components/SocialShareBar.astro";
@@ -17,7 +17,7 @@ import FAQSection from "../components/content/FAQSection.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
 import RatingSystem from "../components/content/RatingSystem";
 
-import { extractImage, getImageSrcSet, normalizeImageUrl } from "@shared/utils";
+import { extractImage, getImageSrcSet } from "@shared/utils";
 import {
   getTocSettings,
   TOC_DEFAULTS,
@@ -78,11 +78,19 @@ const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
 const heroSlotName = useCover ? "cover" : "thumbnail";
 const heroImage = useCover ? heroCover : heroThumb;
 const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
-const heroSizes = "(max-width: 768px) 90vw, 800px";
+const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
 const authorAvatar = author?.imagesJson
   ? extractImage(author.imagesJson, "avatar", 96)
-  : { imageUrl: normalizeImageUrl(author?.avatar) };
+  : {
+      imageUrl: author?.avatar,
+      imageAlt: undefined,
+      imageWidth: 96,
+      imageHeight: 96,
+      imageAspectRatio: undefined,
+      imageObjectPosition: undefined,
+      imageStyle: undefined,
+    };
 
 const authorAvatarSrcSet = author?.imagesJson
   ? getImageSrcSet(author.imagesJson, "avatar")
@@ -150,7 +158,6 @@ const contentBlocks = Array.isArray(recipe.contentJson)
             size="lg"
           />
         </div>
-
 
         <!-- Short Description -->
         {

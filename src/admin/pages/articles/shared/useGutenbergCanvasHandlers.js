@@ -21,6 +21,10 @@ export function useGutenbergCanvasHandlers(editorInstance, options = {}) {
         setActiveBlockId(nextActiveId || null);
     }, []);
 
+    const handleClearForceSelect = useCallback(() => {
+        setForceSelectBlockId(null);
+    }, []);
+
     const handleSelectStructureBlock = useCallback((blockId) => {
         if (!blockId || !editorInstance) return;
 
@@ -135,6 +139,7 @@ export function useGutenbergCanvasHandlers(editorInstance, options = {}) {
         forceSelectBlockId,
         handleStructureUpdate,
         handleSelectStructureBlock,
+        handleClearForceSelect,
         handleReorderBlock,
         handleBlockAction,
         handleConvertBlock,

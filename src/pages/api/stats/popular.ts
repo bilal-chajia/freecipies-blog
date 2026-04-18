@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { getPopularArticles } from '@modules/articles';
+import { resolveVariantUrl } from '@shared/types/images';
 
 export const prerender = false;
 
@@ -24,7 +25,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
             let imageUrl = '';
             try {
                 const images = a.images_json ? JSON.parse(a.images_json) : {};
-                imageUrl = images?.cover?.variants?.md?.url || images?.cover?.variants?.sm?.url || '';
+                imageUrl = resolveVariantUrl(images?.cover?.variants?.md || images?.cover?.variants?.sm) || '';
             } catch { }
             
             return {

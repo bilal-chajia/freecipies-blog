@@ -4,6 +4,7 @@ import { MAX_STRUCTURE_LABEL, BLOCK_TYPE_ICONS } from './constants';
 import { extractText, truncateInlineContent, serializeInlineContent } from './inlineContent';
 import type { ContentBlock } from '../../../../modules/articles/types/content-blocks.types';
 import type { ImageVariants, ImageSlot } from '../../../../shared/types/images';
+import { resolveVariantUrl } from '../../../../shared/types/images';
 
 type AnyBlock = Block<any, any, any>;
 
@@ -148,10 +149,10 @@ export const resolveCoverUrl = (cover: string | ImageSlot | undefined): string =
     if (typeof cover === 'string') return cover;
     const variants = (cover.variants || {}) as ImageVariants;
     return (
-        variants.md?.url ||
-        variants.sm?.url ||
-        variants.lg?.url ||
-        variants.xs?.url ||
+        resolveVariantUrl(variants.md) ||
+        resolveVariantUrl(variants.sm) ||
+        resolveVariantUrl(variants.lg) ||
+        resolveVariantUrl(variants.xs) ||
         (cover as any).url ||
         ''
     );

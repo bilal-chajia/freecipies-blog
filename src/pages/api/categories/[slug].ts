@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { resolveVariantUrl } from '@shared/types/images';
 import {
     getCategoryBySlug,
     getCategoryById,
@@ -29,7 +30,7 @@ const getThumbnailUrlFromImagesJson = (value: any): string | null => {
                 primarySlot.variants.sm ||
                 primarySlot.variants.original ||
                 primarySlot.variants.xs;
-            return variant?.url || null;
+            return resolveVariantUrl(variant) || null;
         }
         return primarySlot.url || null;
     } catch {

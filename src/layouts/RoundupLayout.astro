@@ -1,5 +1,5 @@
 ---
-import { env } from 'cloudflare:workers';
+import { env } from "cloudflare:workers";
 import Layout from "./Layout.astro";
 import type { Category } from "@modules/categories/schema/categories.schema";
 import SocialShareBar from "../components/SocialShareBar.astro";
@@ -16,7 +16,10 @@ import {
   TOC_DEFAULTS,
   type TocSettings,
 } from "@modules/settings/services/settings.service";
-import { toSchemaOrgItemList, type RoundupJson } from "@modules/articles/types/roundups.types";
+import {
+  toSchemaOrgItemList,
+  type RoundupJson,
+} from "@modules/articles/types/roundups.types";
 
 interface Props {
   article: Record<string, any>;
@@ -41,7 +44,10 @@ const wordCount = [
   article.shortDescription,
   article.introduction,
   JSON.stringify(article.contentJson || []),
-].filter(Boolean).join(" ").split(/\s+/).length;
+]
+  .filter(Boolean)
+  .join(" ")
+  .split(/\s+/).length;
 
 const readingTime = Math.max(3, Math.ceil(wordCount / 200));
 
@@ -51,14 +57,20 @@ const coverSrcSet = getImageSrcSet(article.imagesJson, "cover");
 const thumbSrcSet = getImageSrcSet(article.imagesJson, "thumbnail");
 const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
 const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
-const heroSizes = "(max-width: 768px) 90vw, 800px";
+const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
-const authorAvatar = author?.imagesJson ? extractImage(author.imagesJson, "avatar", 96) : {};
-const authorAvatarSrcSet = author?.imagesJson ? getImageSrcSet(author.imagesJson, "avatar") : "";
+const authorAvatar = author?.imagesJson
+  ? extractImage(author.imagesJson, "avatar", 96)
+  : {};
+const authorAvatarSrcSet = author?.imagesJson
+  ? getImageSrcSet(author.imagesJson, "avatar")
+  : "";
 const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
 const authorImage = authorAvatar.imageUrl || author?.imageUrl;
 
-const contentBlocks = Array.isArray(article.contentJson) ? article.contentJson : [];
+const contentBlocks = Array.isArray(article.contentJson)
+  ? article.contentJson
+  : [];
 
 // Roundup-specific SEO (using pre-computed cache)
 const itemListSchema = article.jsonldJson;
@@ -68,31 +80,40 @@ const baseUrl = Astro.site?.toString().replace(/\/$/, "") || Astro.url.origin;
 <Layout
   title={article.metaTitle || article.label}
   description={article.metaDescription || article.shortDescription}
-  image={heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl || undefined}
+  image={heroCover.imageUrl ||
+    heroThumb.imageUrl ||
+    article.imageUrl ||
+    undefined}
 >
   <slot name="head" slot="head" />
-  
+
   {/* JSON-LD for Article */}
 
-
-  <article class="article-page" style={`--toc-accent: ${tocSettings.accentColor};`}>
+  <article
+    class="article-page"
+    style={`--toc-accent: ${tocSettings.accentColor};`}
+  >
     <div class="article-container">
       <div class="main-content">
-        {article.categoryLabel && (
-          <a
-            href={`/categories/${article.categorySlug}`}
-            class="category-badge"
-            style={`--badge-color: ${categoryColor};`}
-          >
-            {article.categoryLabel}
-          </a>
-        )}
+        {
+          article.categoryLabel && (
+            <a
+              href={`/categories/${article.categorySlug}`}
+              class="category-badge"
+              style={`--badge-color: ${categoryColor};`}
+            >
+              {article.categoryLabel}
+            </a>
+          )
+        }
 
         <h1 class="article-title">{article.label}</h1>
 
-        {article.shortDescription && (
-          <p class="article-description">{article.shortDescription}</p>
-        )}
+        {
+          article.shortDescription && (
+            <p class="article-description">{article.shortDescription}</p>
+          )
+        }
 
         <SocialShareBar
           title={article.label}
@@ -126,24 +147,28 @@ const baseUrl = Astro.site?.toString().replace(/\/$/, "") || Astro.url.origin;
           style={heroCover.imageStyle || heroThumb.imageStyle}
         />
 
-        {article.introduction && (
-          <section class="content-section introduction-section">
-            <div class="prose" set:html={article.introduction} />
-          </section>
-        )}
+        {
+          article.introduction && (
+            <section class="content-section introduction-section">
+              <div class="prose" set:html={article.introduction} />
+            </section>
+          )
+        }
 
-        {contentBlocks.length > 0 && (
-          <section class="content-section content-json-section">
-            <ContentRenderer
-              content={contentBlocks}
-              faqsJson={article.faqsJson}
-              settings={tocSettings}
-              article={article}
-              author={author}
-              category={category}
-            />
-          </section>
-        )}
+        {
+          contentBlocks.length > 0 && (
+            <section class="content-section content-json-section">
+              <ContentRenderer
+                content={contentBlocks}
+                faqsJson={article.faqsJson}
+                settings={tocSettings}
+                article={article}
+                author={author}
+                category={category}
+              />
+            </section>
+          )
+        }
 
         <FAQSection faqs={article.faqsJson} />
       </div>
@@ -259,9 +284,21 @@ const baseUrl = Astro.site?.toString().replace(/\/$/, "") || Astro.url.origin;
     gap: 1.5rem;
   }
 
-  :global(.dark) .article-page { background: #0f172a; color: #f8fafc; }
-  :global(.dark) .main-content { background: transparent; }
-  :global(.dark) .article-title { color: #f3f4f6; }
-  :global(.dark) .article-description { color: #9ca3af; }
-  :global(.dark) .disclosure-notice { background: #1e293b; border-color: #334155; }
+  :global(.dark) .article-page {
+    background: #0f172a;
+    color: #f8fafc;
+  }
+  :global(.dark) .main-content {
+    background: transparent;
+  }
+  :global(.dark) .article-title {
+    color: #f3f4f6;
+  }
+  :global(.dark) .article-description {
+    color: #9ca3af;
+  }
+  :global(.dark) .disclosure-notice {
+    background: #1e293b;
+    border-color: #334155;
+  }
 </style>

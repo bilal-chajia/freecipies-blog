@@ -59,8 +59,9 @@ const description = "Saved recipes from Freecipies.";
       if (!slot) return null;
       const variants = slot.variants || {};
       const variant = variants.sm || variants.md || variants.lg || variants.original || variants.xs;
+      const resolveUrl = (v) => v?.r2_key ? `/api/images/${v.r2_key}` : v?.url || '';
       return {
-        url: variant?.url || slot.url || '',
+        url: resolveUrl(variant) || slot.url || '',
         alt: slot.alt || '',
         width: variant?.width || slot.width || 800,
         height: variant?.height || slot.height || 600,

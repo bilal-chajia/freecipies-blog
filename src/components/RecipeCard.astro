@@ -75,7 +75,7 @@ function formatAmount(num: number): string {
   const whole = Math.floor(num);
   const remainder = num - whole;
   let fractionStr = "";
-  
+
   const frac = Math.round(remainder * 16) / 16;
   if (Math.abs(frac - 0.5) < 0.01) fractionStr = "½";
   else if (Math.abs(frac - 0.25) < 0.01) fractionStr = "¼";
@@ -228,13 +228,33 @@ const navItems = [
                 itemscope
                 itemtype="https://schema.org/Person"
               >
-                {extractImage(author.imagesJson, "avatar").imageUrl && (
-                  <img
-                    src={extractImage(author.imagesJson, "avatar").imageUrl}
-                    alt={author.name}
-                    class="author-avatar"
-                  />
-                )}
+                {(() => {
+                  const authorImg = extractImage(author.imagesJson, "avatar");
+                  const hasAuthorImage = authorImg.imageUrl;
+                  const initials = author.name
+                    .split(" ")
+                    .map((word) => word.charAt(0))
+                    .join("")
+                    .substring(0, 2)
+                    .toUpperCase();
+                  return (
+                    <>
+                      {hasAuthorImage ? (
+                        <img
+                          src={authorImg.imageUrl}
+                          alt={author.name}
+                          class="author-avatar"
+                          width={authorImg.imageWidth || 48}
+                          height={authorImg.imageHeight || 48}
+                        />
+                      ) : (
+                        <div class="author-avatar author-avatar-fallback">
+                          {initials}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 <span class="author-name">
                   Recipe by{" "}
                   <a href={"/authors/" + author.slug} itemprop="url">
@@ -553,10 +573,22 @@ const navItems = [
               </span>
               <h2 class="section-heading">Ingredients</h2>
               <div class="servings-presets">
-                <button type="button" class="preset-btn" data-servings-half>½</button>
-                <button type="button" class="preset-btn active" data-servings-default>1x</button>
-                <button type="button" class="preset-btn" data-servings-double>2x</button>
-                <button type="button" class="preset-btn" data-servings-triple>3x</button>
+                <button type="button" class="preset-btn" data-servings-half>
+                  ½
+                </button>
+                <button
+                  type="button"
+                  class="preset-btn active"
+                  data-servings-default
+                >
+                  1x
+                </button>
+                <button type="button" class="preset-btn" data-servings-double>
+                  2x
+                </button>
+                <button type="button" class="preset-btn" data-servings-triple>
+                  3x
+                </button>
               </div>
               <button
                 type="button"
@@ -956,7 +988,8 @@ const navItems = [
 
   /* ===== Recipe Content ===== */
   .recipe-content {
-    padding: clamp(10px, 2.5cqi, 14px) clamp(16px, 4cqi, 24px) clamp(16px, 4cqi, 24px);
+    padding: clamp(10px, 2.5cqi, 14px) clamp(16px, 4cqi, 24px)
+      clamp(16px, 4cqi, 24px);
   }
 
   /* ===== Header ===== */
@@ -997,6 +1030,17 @@ const navItems = [
     height: 32px;
     border-radius: 50%;
     object-fit: cover;
+  }
+
+  .author-avatar-fallback {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .author-name {
@@ -2544,10 +2588,10 @@ const navItems = [
 
     function formatScaledAmount(num: number): string {
       if (num === 0) return "";
-      
+
       const whole = Math.floor(num);
       const remainder = num - whole;
-      
+
       let fractionStr = "";
       if (remainder > 0.01) {
         const frac = Math.round(remainder * 16) / 16;
@@ -2560,9 +2604,13 @@ const navItems = [
         else if (Math.abs(frac - 0.66) < 0.02) fractionStr = "⅔";
         else if (Math.abs(frac - 0.75) < 0.01) fractionStr = "¾";
         else if (Math.abs(frac - 0.875) < 0.01) fractionStr = "⅞";
-        else if (whole === 0) fractionStr = remainder.toFixed(2).replace(/\.?0+$/, "").replace(/^0/, "");
+        else if (whole === 0)
+          fractionStr = remainder
+            .toFixed(2)
+            .replace(/\.?0+$/, "")
+            .replace(/^0/, "");
       }
-      
+
       if (whole > 0) {
         return fractionStr ? `${whole} ${fractionStr}` : String(whole);
       }
@@ -2598,7 +2646,9 @@ const navItems = [
       }
 
       // Also update print overlay servings if present
-      const printServingsDisplay = document.querySelector("[data-print-servings]");
+      const printServingsDisplay = document.querySelector(
+        "[data-print-servings]",
+      );
       if (printServingsDisplay)
         printServingsDisplay.textContent = formatScaledAmount(currentServings);
 
@@ -2607,14 +2657,18 @@ const navItems = [
       document.querySelectorAll("[data-ingredient-amount]").forEach((el) => {
         const amountEl = el as HTMLElement;
         const parent = amountEl.parentElement;
-        const unitEl = parent?.querySelector("[data-ingredient-unit]") as HTMLElement | null;
-        
-        const original = parseFloat(amountEl.getAttribute("data-original-amount") || "0");
+        const unitEl = parent?.querySelector(
+          "[data-ingredient-unit]",
+        ) as HTMLElement | null;
+
+        const original = parseFloat(
+          amountEl.getAttribute("data-original-amount") || "0",
+        );
         if (!original || isNaN(original)) return;
-        
+
         const scaled = original * ratio;
         amountEl.textContent = formatScaledAmount(scaled);
-        
+
         if (unitEl) {
           const originalUnit = unitEl.getAttribute("data-original-unit") || "";
           unitEl.textContent = formatUnitJS(originalUnit, scaled);
@@ -2623,15 +2677,21 @@ const navItems = [
 
       // Update active preset button
       const presets = safeCard.querySelectorAll(".preset-btn");
-      presets.forEach(btn => btn.classList.remove("active"));
-      
+      presets.forEach((btn) => btn.classList.remove("active"));
+
       const eps = 0.01;
       if (Math.abs(currentServings - defaultServings) < eps) {
-        safeCard.querySelector("[data-servings-default]")?.classList.add("active");
+        safeCard
+          .querySelector("[data-servings-default]")
+          ?.classList.add("active");
       } else if (Math.abs(currentServings - defaultServings * 2) < eps) {
-        safeCard.querySelector("[data-servings-double]")?.classList.add("active");
+        safeCard
+          .querySelector("[data-servings-double]")
+          ?.classList.add("active");
       } else if (Math.abs(currentServings - defaultServings * 3) < eps) {
-        safeCard.querySelector("[data-servings-triple]")?.classList.add("active");
+        safeCard
+          .querySelector("[data-servings-triple]")
+          ?.classList.add("active");
       } else if (Math.abs(currentServings - defaultServings / 2) < eps) {
         safeCard.querySelector("[data-servings-half]")?.classList.add("active");
       }

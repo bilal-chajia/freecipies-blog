@@ -52,11 +52,10 @@ const BlockWrapper = forwardRef(({
     }, []);
 
     const handleClick = useCallback((e) => {
-        // Prevent triggering on inner element clicks if already selected
-        if (e.target === e.currentTarget || !isSelected) {
-            onClick?.();
-        }
-    }, [isSelected, onClick]);
+        // Always trigger selection on click to ensure focus is restored
+        // particularly for custom blocks where focus might be lost but state is still 'selected'
+        onClick?.();
+    }, [onClick]);
 
     const handleKeyDown = useCallback((e) => {
         // Don't intercept keyboard events from form elements

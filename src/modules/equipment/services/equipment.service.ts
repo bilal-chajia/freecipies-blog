@@ -9,6 +9,7 @@ import type { D1Database } from '@cloudflare/workers-types';
 import { equipment, type Equipment, type NewEquipment } from '../schema/equipment.schema';
 import { articles } from '../../articles/schema/articles.schema';
 import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { resolveVariantUrl } from '../../../shared/types/images';
 
 /**
  * Get all equipment
@@ -248,7 +249,8 @@ export async function refreshCachedEquipmentForArticles(
         const imgData = typeof updatedEquip.imageJson === 'string'
             ? JSON.parse(updatedEquip.imageJson)
             : updatedEquip.imageJson;
-        imageUrl = imgData?.variants?.md?.url || imgData?.variants?.sm?.url || imgData?.url || undefined;
+        imageUrl = resolveVariantUrl(imgData?.variants?.md || imgData?.variants?.sm || null)
+            || imgData?.url || undefined;
     } catch { /* ignore */ }
 
     // 4. For each affected article, replace the old entry with fresh data

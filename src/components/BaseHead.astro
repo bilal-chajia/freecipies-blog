@@ -92,6 +92,11 @@ const hasRootFavicon = false; // We prefer logos/* structure
 <!-- Font preloads - Non-blocking Google Fonts loading -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+<!-- Image CDN preconnect - Speeds up LCP by resolving DNS early -->
+<link rel="preconnect" href="/api" />
+<link rel="dns-prefetch" href="/api" />
+
 <link
   rel="preload"
   as="style"

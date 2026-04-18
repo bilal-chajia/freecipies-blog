@@ -90,6 +90,7 @@ export default function GutenbergArticleEditor() {
         structureItems,
         activeBlockId,
         forceSelectBlockId,
+        handleClearForceSelect,
         handleStructureUpdate,
         handleSelectStructureBlock,
         handleReorderBlock,

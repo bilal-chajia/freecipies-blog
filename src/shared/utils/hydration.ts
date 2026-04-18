@@ -11,6 +11,7 @@ import type {
   ImageSlot,
   ImageSlotName,
 } from '@shared/types/images';
+import { resolveVariantUrl } from '@shared/types/images';
 
 // Re-export for backwards compatibility
 export type { ImageVariant, ImageVariants, ImageSlot };
@@ -64,20 +65,7 @@ export function getImageSlot(
   return images[slot] || null;
 }
 
-const LOCAL_IMAGE_HOST_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i;
 
-export const normalizeImageUrl = (url?: string): string | undefined => {
-  if (!url) return url;
-  const trimmed = url.trim();
-  if (!trimmed || !LOCAL_IMAGE_HOST_RE.test(trimmed)) return trimmed;
-
-  try {
-    const parsed = new URL(trimmed);
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-  } catch {
-    return trimmed.replace(LOCAL_IMAGE_HOST_RE, '');
-  }
-};
 
 const buildSrcSet = (variants?: ImageSlot['variants']): string => {
   if (!variants) return '';
@@ -86,9 +74,9 @@ const buildSrcSet = (variants?: ImageSlot['variants']): string => {
 
   for (const key of ordered) {
     const variant = variants[key];
-    const normalizedUrl = normalizeImageUrl(variant?.url);
-    if (normalizedUrl && variant?.width) {
-      entries.push(`${normalizedUrl} ${variant.width}w`);
+    const resolvedUrl = resolveVariantUrl(variant);
+    if (resolvedUrl && variant?.width) {
+      entries.push(`${resolvedUrl} ${variant.width}w`);
     }
   }
 
@@ -137,7 +125,7 @@ const pickVariantByWidth = (
   if (!variants) return null;
 
   const entries = Object.entries(variants)
-    .filter(([, variant]) => variant && typeof variant.url === 'string')
+    .filter(([, variant]) => variant && (resolveVariantUrl(variant) !== null))
     .map(([key, variant]) => ({ key, ...(variant as ImageVariant) }));
 
   if (!entries.length) return null;
@@ -155,7 +143,7 @@ const pickVariantByWidth = (
 
   for (const key of fallbackOrder) {
     const candidate = variants[key];
-    if (candidate?.url) return candidate;
+    if (resolveVariantUrl(candidate) !== null) return candidate!;
   }
 
   return entries[0] || null;
@@ -183,10 +171,10 @@ export function extractImage(
   const imageObjectPosition = imageSlot.focal_point
     ? `${imageSlot.focal_point.x}% ${imageSlot.focal_point.y}%`
     : undefined;
-  const normalizedVariantUrl = normalizeImageUrl(variant?.url);
-  if (normalizedVariantUrl && variant) {
+  const resolvedUrl = resolveVariantUrl(variant);
+  if (resolvedUrl && variant) {
     return {
-      imageUrl: normalizedVariantUrl,
+      imageUrl: resolvedUrl,
       imageAlt: imageSlot.alt,
       imageWidth: variant.width,
       imageHeight: variant.height,
@@ -326,7 +314,6 @@ export function hydrateArticle<T extends {
   if (!authorAvatar && (article as any).author?.imagesJson) {
     authorAvatar = extractImage((article as any).author.imagesJson, 'avatar').imageUrl;
   }
-  authorAvatar = normalizeImageUrl(authorAvatar);
 
   const authorName = (article as any).authorName
     ?? cachedAuthor?.name
@@ -367,7 +354,7 @@ export function hydrateArticle<T extends {
     label: article.headline, // Alias for UI consistency
     route,
     authorAvatar,
-    author: cachedAuthor ? { ...cachedAuthor, role: authorRole, avatar: normalizeImageUrl(cachedAuthor.avatar) } : null,
+    author: cachedAuthor ? { ...cachedAuthor, role: authorRole, avatar: cachedAuthor.avatar } : null,
     category: cachedCategory ? { ...cachedCategory, label: categoryLabel, color: categoryColor, slug: categorySlug } : null,
     tags,
     ...(typeof authorName === 'string' ? { authorName } : {}),

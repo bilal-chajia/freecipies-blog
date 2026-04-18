@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useCallback } from 'react';
 
 const BlockSelectionContext = createContext({
     activeBlockId: null,
@@ -17,11 +17,11 @@ export function useBlockSelection(blockId) {
     const { activeBlockId, setActiveBlockId } = useContext(BlockSelectionContext);
     const isSelected = Boolean(blockId && activeBlockId === blockId);
 
-    const selectBlock = () => {
+    const selectBlock = useCallback(() => {
         if (blockId) {
             setActiveBlockId?.(blockId);
         }
-    };
+    }, [blockId, setActiveBlockId]);
 
     return { activeBlockId, setActiveBlockId, isSelected, selectBlock };
 }

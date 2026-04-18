@@ -148,11 +148,11 @@ CREATE TABLE IF NOT EXISTS media (
     -- SCHEMA:
     -- {
     --   "variants": {
-    --     "original": { "url": "...", "r2_key": "...", "width": 4000, "height": 3000, "sizeBytes": 412345 },  -- OPTIONAL
-    --     "xs": { "url": "https://...", "r2_key": "2025/03/image-xs.webp", "width": 360,  "height": 240, "sizeBytes": 23123 },
-    --     "sm": { "url": "https://...", "r2_key": "2025/03/image-sm.webp", "width": 720,  "height": 480, "sizeBytes": 54321 },
-    --     "md": { "url": "https://...", "r2_key": "2025/03/image-md.webp", "width": 1200, "height": 800, "sizeBytes": 102345 },
-    --     "lg": { "url": "https://...", "r2_key": "2025/03/image-lg.webp", "width": 2048, "height": 1365, "sizeBytes": 198765 }
+    --     "original": { "r2_key": "2025/03/image-original.jpg", "width": 4000, "height": 3000, "sizeBytes": 412345 },  -- OPTIONAL
+    --     "xs": { "r2_key": "2025/03/image-xs.webp", "width": 360,  "height": 240, "sizeBytes": 23123 },
+    --     "sm": { "r2_key": "2025/03/image-sm.webp", "width": 720,  "height": 480, "sizeBytes": 54321 },
+    --     "md": { "r2_key": "2025/03/image-md.webp", "width": 1200, "height": 800, "sizeBytes": 102345 },
+    --     "lg": { "r2_key": "2025/03/image-lg.webp", "width": 2048, "height": 1365, "sizeBytes": 198765 }
     --   },
     --   "placeholder": "data:image/jpeg;base64,/9j/4AAQ..." (Blurhash/LQIP, <1KB)
     -- }
@@ -165,8 +165,8 @@ CREATE TABLE IF NOT EXISTS media (
     --
     -- AGENT RULE: When source < 2048px, use source as "lg" and skip "original".
     -- TYPESCRIPT: Import from @shared/types/images
-    --   - StorageVariant (with r2_key) for internal processing
-    --   - ImageVariant (without r2_key) for API responses
+    --   - StorageVariant (r2_key only, no url) for internal processing
+    --   - ImageVariant (with url, built dynamically at API boundary) for API responses
     --   - MediaVariantsJson for full { variants, placeholder } structure
     
     variants_json TEXT NOT NULL,
@@ -312,7 +312,7 @@ CREATE TABLE IF NOT EXISTS categories (
     -- 3. VISUALS (Display-Ready Image Data)
     -- =========================================================================
     -- Contains "Display-Ready" data mapped from the 'media' table.
-    -- SECURITY: Does NOT contain administrative keys (r2_key).
+    -- STORAGE: Contains r2_key (not url). URLs are built dynamically via buildImageUrl().
     -- AGENT RULE: When selecting an image from Media Library, copy the full
     --             variant set here for zero-join rendering.
     --
@@ -327,11 +327,11 @@ CREATE TABLE IF NOT EXISTS categories (
     --     "focal_point": { "x": 50, "y": 30 },  <-- Optional override for cropping
     --     "aspectRatio": "16:9",           <-- Layout hint for space reservation
     --     "variants": {                    <-- FULL SET copied from Media
-    --        "original": { "url": "...", "width": 4000, "height": 3000, "sizeBytes": 50000 },  <-- OPTIONAL
-    --        "lg": { "url": "...", "width": 2048, "height": 1365, "sizeBytes": 50000 },
-    --        "md": { "url": "...", "width": 1200, "height": 800, "sizeBytes": 102345 },
-    --        "sm": { "url": "...", "width": 720, "height": 480, "sizeBytes": 54321 },
-    --        "xs": { "url": "...", "width": 360, "height": 240, "sizeBytes": 23123 }
+    --        "original": { "r2_key": "media/image-original.jpg", "width": 4000, "height": 3000, "sizeBytes": 50000 },  <-- OPTIONAL
+    --        "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1365, "sizeBytes": 50000 },
+    --        "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 800, "sizeBytes": 102345 },
+    --        "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 480, "sizeBytes": 54321 },
+    --        "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 240, "sizeBytes": 23123 }
     --     }
     --   },
     --   "cover": {                         <-- Slot 2: Hero Background Image
@@ -341,18 +341,18 @@ CREATE TABLE IF NOT EXISTS categories (
     --     "focal_point": { "x": 50, "y": 50 },
     --     "aspectRatio": "16:9",
     --     "variants": {
-    --        "original": { "url": "...", "width": 4000, "height": 2250, "sizeBytes": 50000 },
-    --        "lg": { "url": "...", "width": 2048, "height": 1152, "sizeBytes": 198765 },
-    --        "md": { "url": "...", "width": 1200, "height": 675, "sizeBytes": 102345 },
-    --        "sm": { "url": "...", "width": 720, "height": 405, "sizeBytes": 54321 },
-    --        "xs": { "url": "...", "width": 360, "height": 203, "sizeBytes": 23123 }
+    --        "original": { "r2_key": "media/image-original.jpg", "width": 4000, "height": 2250, "sizeBytes": 50000 },
+    --        "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1152, "sizeBytes": 198765 },
+    --        "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 675, "sizeBytes": 102345 },
+    --        "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 405, "sizeBytes": 54321 },
+    --        "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 203, "sizeBytes": 23123 }
     --     }
     --   }
     -- }
     --
     -- VARIANT STRUCTURE:
     --   Each variant contains:
-    --   - url (string, REQUIRED): Public CDN URL
+    --   - r2_key (string, REQUIRED): R2 object key. URL is built dynamically via buildImageUrl().
     --   - width (integer, REQUIRED): Width in pixels
     --   - height (integer, REQUIRED): Height in pixels (for CLS prevention)
     --
@@ -365,7 +365,7 @@ CREATE TABLE IF NOT EXISTS categories (
         -- TYPESCRIPT: Import CategoryImagesJson, ImageSlot from @shared/types/images
     --
     --   - format: "webp" | "avif" | "jpeg" (for multi-format serving)
-    --   - avif: { "url": "...", ... } (alternative AVIF variants)
+    --   - avif: { "r2_key": "...", ... } (alternative AVIF variants)
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
     -- =========================================================================
@@ -602,11 +602,11 @@ CREATE TABLE IF NOT EXISTS authors (
     --     "focal_point": { "x": 50, "y": 30 },  <-- Cropping hint (0-100)
     --     "aspectRatio": "1:1",            <-- Square for avatars
     --     "variants": {                    <-- SPECIAL SIZES for avatars!
-    --        "original": { "url": "...", "width": 800, "height": 800, "sizeBytes": 50000 },
-    --        "lg": { "url": "...", "width": 400, "height": 400, "sizeBytes": 50000 },
-    --        "md": { "url": "...", "width": 200, "height": 200, "sizeBytes": 50000 },
-    --        "sm": { "url": "...", "width": 100, "height": 100, "sizeBytes": 50000 },
-    --        "xs": { "url": "...", "width": 50, "height": 50, "sizeBytes": 50000 }
+    --        "original": { "r2_key": "media/avatar-original.jpg", "width": 800, "height": 800, "sizeBytes": 50000 },
+    --        "lg": { "r2_key": "media/avatar-lg.webp", "width": 400, "height": 400, "sizeBytes": 50000 },
+    --        "md": { "r2_key": "media/avatar-md.webp", "width": 200, "height": 200, "sizeBytes": 50000 },
+    --        "sm": { "r2_key": "media/avatar-sm.webp", "width": 100, "height": 100, "sizeBytes": 50000 },
+    --        "xs": { "r2_key": "media/avatar-xs.webp", "width": 50, "height": 50, "sizeBytes": 50000 }
     --     }
     --   },
     --   "cover": {                         <-- Slot 2: Profile page hero
@@ -618,10 +618,10 @@ CREATE TABLE IF NOT EXISTS authors (
     --     "focal_point": { "x": 50, "y": 50 },
     --     "aspectRatio": "16:9",
     --     "variants": {                    <-- Standard breakpoints
-    --        "lg": { "url": "...", "width": 2048, "height": 1152, "sizeBytes": 198765 },
-    --        "md": { "url": "...", "width": 1200, "height": 675, "sizeBytes": 102345 },
-    --        "sm": { "url": "...", "width": 720, "height": 405, "sizeBytes": 54321 },
-    --        "xs": { "url": "...", "width": 360, "height": 203, "sizeBytes": 23123 }
+    --        "lg": { "r2_key": "media/cover-lg.webp", "width": 2048, "height": 1152, "sizeBytes": 198765 },
+    --        "md": { "r2_key": "media/cover-md.webp", "width": 1200, "height": 675, "sizeBytes": 102345 },
+    --        "sm": { "r2_key": "media/cover-sm.webp", "width": 720, "height": 405, "sizeBytes": 54321 },
+    --        "xs": { "r2_key": "media/cover-xs.webp", "width": 360, "height": 203, "sizeBytes": 23123 }
     --     }
     --   }
     -- }
@@ -1119,11 +1119,11 @@ CREATE TABLE IF NOT EXISTS articles (
     --     "focal_point": { "x": 50, "y": 50 },  <-- Cropping hint
     --     "aspectRatio": "16:9",            <-- Layout hint
     --     "variants": {
-    --        "original": { "url": "...", "width": 4000, "height": 2250, "sizeBytes": 50000 },  <-- Optional
-    --        "lg": { "url": "...", "width": 2048, "height": 1152, "sizeBytes": 198765 },
-    --        "md": { "url": "...", "width": 1200, "height": 675, "sizeBytes": 102345 },
-    --        "sm": { "url": "...", "width": 720, "height": 405, "sizeBytes": 54321 },
-    --        "xs": { "url": "...", "width": 360, "height": 203, "sizeBytes": 23123 }
+    --        "original": { "r2_key": "media/image-original.jpg", "width": 4000, "height": 2250, "sizeBytes": 50000 },  <-- Optional
+    --        "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1152, "sizeBytes": 198765 },
+    --        "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 675, "sizeBytes": 102345 },
+    --        "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 405, "sizeBytes": 54321 },
+    --        "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 203, "sizeBytes": 23123 }
     --     }
     --   },
     --   "thumbnail": {                      <-- Optional: For cards if different from cover
@@ -1146,7 +1146,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- }
     --
     -- VARIANT RULES:
-    --   - Use "url" key (not "src") for consistency across all tables.
+    --   - Use "r2_key" for storage. URLs are built dynamically via buildImageUrl().
     --   - Standard breakpoints: 360, 720, 1200, 2048 (xs, sm, md, lg).
     --   - Include height for CLS prevention.
     --   - "original" only if source > 2048px (for Pin Creator).
@@ -1190,7 +1190,12 @@ CREATE TABLE IF NOT EXISTS articles (
     -- │   "alt": "...",                                                    │
     -- │   "caption": "...",                                                │
     -- │   "credit": "(c) Photographer",                                    │
-    -- │   "variants": { "lg": {...}, "md": {...}, ... }                    │
+    -- │   "variants": {                                                    │
+    -- │     "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1365 }, │
+    -- │     "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 800 },  │
+    -- │     "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 480 },   │
+    -- │     "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 240 }    │
+    -- │   }                                                                │
     -- │ }                                                                  │
     -- │                                                                    │
     -- │ { "type": "video",                                                 │
@@ -1587,10 +1592,8 @@ CREATE TABLE IF NOT EXISTS articles (
     --   "slug": "jane-doe",
     --   "name": "Jane Doe",
     --   "job_title": "Recipe Developer",
-    --   "avatar": {
-    --     "url": "...",
-    --     "alt": "Jane Doe"
-    --   }
+    --   "avatar": "/api/images/media/avatar-lg.webp",  <-- Built dynamically from r2_key
+    --   "avatar_alt": "Jane Doe",
     -- }
     -- UPDATE STRATEGY: Refresh when author updates profile or avatar.
 
@@ -1700,10 +1703,10 @@ CREATE TABLE IF NOT EXISTS articles (
     --   "thumbnail": {
     --     "alt": "Lemon Blueberry Biscuits",
     --     "variants": {
-    --       "xs": { "url": "...", "width": 360, "height": 0, "sizeBytes": 0 },
-    --       "sm": { "url": "...", "width": 720, "height": 0, "sizeBytes": 0 },
-    --       "md": { "url": "...", "width": 1200, "height": 0, "sizeBytes": 0 },
-    --       "lg": { "url": "...", "width": 2048, "height": 0, "sizeBytes": 0 }
+    --       "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 0, "sizeBytes": 0 },
+    --       "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 0, "sizeBytes": 0 },
+    --       "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 0, "sizeBytes": 0 },
+    --       "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 0, "sizeBytes": 0 }
     --     }
     --   },
     --   "total_time": 35,
