@@ -75,7 +75,6 @@ const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);
 const coverSrcSet = getImageSrcSet(recipe.imagesJson, "cover");
 const thumbSrcSet = getImageSrcSet(recipe.imagesJson, "thumbnail");
 const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
-const heroSlotName = useCover ? "cover" : "thumbnail";
 const heroImage = useCover ? heroCover : heroThumb;
 const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
 const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";

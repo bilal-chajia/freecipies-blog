@@ -48,14 +48,9 @@ const heroImage = heroCover.imageUrl ? heroCover : heroThumb;
 const pageTitle = roundup.metaTitle || roundup.headline;
 const pageDescription = roundup.metaDescription || roundup.shortDescription;
 const faqs = typeof roundup.faqsJson === 'string' ? JSON.parse(roundup.faqsJson || '[]') : (roundup.faqsJson || []);
-
-// Parse roundupJson for the content
-const parsedRoundupJson = typeof roundup.roundupJson === 'string'
-  ? JSON.parse(roundup.roundupJson || '{"items":[]}')
-  : (roundup.roundupJson || { items: [] });
 ---
 
-<RoundupLayout article={roundup} author={author} category={category} roundupJson={parsedRoundupJson}>
+<RoundupLayout article={roundup} author={author} category={category}>
   <SEO
     slot="head"
     title={pageTitle}

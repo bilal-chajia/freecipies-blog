@@ -16,24 +16,17 @@ import {
   TOC_DEFAULTS,
   type TocSettings,
 } from "@modules/settings/services/settings.service";
-import {
-  toSchemaOrgItemList,
-  type RoundupJson,
-} from "@modules/articles/types/roundups.types";
-
 interface Props {
   article: Record<string, any>;
   author?: Record<string, any> | null;
   category?: Category | null;
-  roundupJson?: any;
 }
 
-const { article, author, category, roundupJson: propRoundupJson } = Astro.props;
+const { article, author, category } = Astro.props;
 
-// Parse roundupJson from article or use the prop
-const parsedRoundupJson = propRoundupJson || (typeof article.roundupJson === 'string'
+const parsedRoundupJson = typeof article.roundupJson === 'string'
   ? JSON.parse(article.roundupJson || '{"items":[]}')
-  : (article.roundupJson || { items: [] }));
+  : (article.roundupJson || { items: [] });
 const categoryColor = category?.color || "#ff6600";
 
 let tocSettings: TocSettings = TOC_DEFAULTS;
@@ -78,9 +71,6 @@ const contentBlocks = Array.isArray(article.contentJson)
   ? article.contentJson
   : [];
 
-// Roundup-specific SEO (using pre-computed cache)
-const itemListSchema = article.jsonldJson;
-const baseUrl = Astro.site?.toString().replace(/\/$/, "") || Astro.url.origin;
 ---
 
 <Layout
