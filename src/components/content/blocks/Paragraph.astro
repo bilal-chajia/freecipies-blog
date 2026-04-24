@@ -1,0 +1,5 @@
+---
+import { renderInlineMarkdown } from '../../utils/markdown';
+const { block } = Astro.props as { block: { type: 'paragraph'; text: string } };
+---
+<p set:html={renderInlineMarkdown(block.text)} />

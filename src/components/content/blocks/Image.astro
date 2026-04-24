@@ -1,0 +1,46 @@
+---
+import { resolveVariantUrl } from '@shared/types/images';
+import { renderInlineMarkdown } from '../../utils/markdown';
+const { block } = Astro.props as { block: any };
+const variants = block.variants || {};
+const imgUrl = resolveVariantUrl(variants.md) || resolveVariantUrl(variants.lg) || resolveVariantUrl(variants.sm) || '';
+const imgVariant = variants.md || variants.lg || variants.sm || {};
+const srcEntries: string[] = [];
+if (variants.xs && variants.xs.width) {
+  const u = resolveVariantUrl(variants.xs);
+  if (u) srcEntries.push(`${u} ${variants.xs.width}w`);
+}
+if (variants.sm && variants.sm.width) {
+  const u = resolveVariantUrl(variants.sm);
+  if (u) srcEntries.push(`${u} ${variants.sm.width}w`);
+}
+if (variants.md && variants.md.width) {
+  const u = resolveVariantUrl(variants.md);
+  if (u) srcEntries.push(`${u} ${variants.md.width}w`);
+}
+if (variants.lg && variants.lg.width) {
+  const u = resolveVariantUrl(variants.lg);
+  if (u) srcEntries.push(`${u} ${variants.lg.width}w`);
+}
+const imgSrcSet = srcEntries.join(', ');
+if (!imgUrl) return null;
+---
+<figure class="content-image">
+  <img
+    src={imgUrl}
+    alt={block.alt || ''}
+    width={imgVariant.width || undefined}
+    height={imgVariant.height || undefined}
+    srcset={imgSrcSet || undefined}
+    sizes={imgSrcSet ? "(max-width: 768px) calc(100vw - 2rem), min(720px, 100vw - 4rem)" : undefined}
+    loading="lazy"
+    decoding="async"
+    style="width:100%;height:auto;border-radius:8px;"
+  />
+  {(block.caption || block.credit) && (
+    <figcaption>
+      {block.caption && <span set:html={renderInlineMarkdown(block.caption)} />}
+      {block.credit && <span class="credit"> — {block.credit}</span>}
+    </figcaption>
+  )}
+</figure>

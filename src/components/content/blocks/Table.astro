@@ -1,0 +1,5 @@
+---
+import TableBlock from '../../TableBlock.astro';
+const { block } = Astro.props as { block: { type: 'table'; headers: string[]; rows: string[][] } };
+---
+<TableBlock headers={block.headers} rows={block.rows} />

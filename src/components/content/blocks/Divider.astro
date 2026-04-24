@@ -1,0 +1,7 @@
+---
+const { block } = Astro.props as { block: { type: 'divider'; style?: string } };
+const style = block.style || 'solid';
+---
+<div class="py-4">
+  <hr class="w-full border-0 m-0" style={{ borderTopWidth: style === 'double' ? '4px' : '2px', borderTopStyle: style, borderTopColor: 'var(--text-tertiary)' }} />
+</div>
