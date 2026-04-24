@@ -1,190 +1,36 @@
 ---
 import { env } from "cloudflare:workers";
-import { resolveVariantUrl } from "@shared/types/images";
-import RelatedContent from "./RelatedContent.astro";
-import TableBlock from "./TableBlock.astro";
-import BeforeAfter from "./BeforeAfter.astro";
-import RecipeCard from "./RecipeCard.astro";
-import RoundupItemList from "./RoundupItemList.astro";
 import type { TocSettings } from "@modules/settings/services/settings.service";
-import type { Article } from "@modules/articles";
-import type { RecipeJson } from "@modules/articles/types";
-import type { Author } from "@modules/authors/schema/authors.schema";
-import type { Category } from "@modules/categories/schema/categories.schema";
 
-// SVG Icons for Alerts
-const AlertIcons = {
-  tip: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`,
-  warning: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
-  info: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
-  note: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`,
+// Block partials
+import Alert from "./content/blocks/Alert.astro";
+import BlockBlock from "./content/blocks/Blockquote.astro";
+import BeforeAfter from "./content/blocks/BeforeAfter.astro";
+import Divider from "./content/blocks/Divider.astro";
+import FaqSection from "./content/blocks/FaqSection.astro";
+import Heading from "./content/blocks/Heading.astro";
+import Image from "./content/blocks/Image.astro";
+import List from "./content/blocks/List.astro";
+import MainRecipe from "./content/blocks/MainRecipe.astro";
+import Paragraph from "./content/blocks/Paragraph.astro";
+import RelatedContent from "./content/blocks/RelatedContent.astro";
+import RoundupList from "./content/blocks/RoundupList.astro";
+import TableBlock from "./content/blocks/Table.astro";
+import Video from "./content/blocks/Video.astro";
+
+const { article, settings } = Astro.props as {
+  article: Record<string, any>;
+  settings?: TocSettings;
 };
 
-// Premium alert variant configurations matching screenshot design
-const alertVariants = {
-  tip: {
-    accent: "var(--success)",
-    titleColor: "var(--text)",
-    textColor: "var(--text-secondary)",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
-    defaultTitle: "Why I Love This Recipe",
-  },
-  warning: {
-    accent: "var(--warning)",
-    titleColor: "var(--text)",
-    textColor: "var(--text-secondary)",
-    icon: AlertIcons.warning,
-    defaultTitle: "Attention",
-  },
-  note: {
-    accent: "var(--text-secondary)",
-    titleColor: "var(--text)",
-    textColor: "var(--text-secondary)",
-    icon: AlertIcons.note,
-    defaultTitle: "Note",
-  },
-  info: {
-    accent: "var(--info)",
-    titleColor: "var(--text)",
-    textColor: "var(--text-secondary)",
-    icon: AlertIcons.info,
-    defaultTitle: "Info",
-  },
-} as {
-  [key: string]: {
-    accent: string;
-    titleColor: string;
-    textColor: string;
-    icon: string;
-    defaultTitle: string;
-  };
-};
-
-const { content, faqsJson, settings, article, recipeJson, roundupJson, author, category } =
-  Astro.props as {
-    content?: unknown;
-    faqsJson?: unknown;
-    settings?: TocSettings;
-    article?: Article;
-    recipeJson?: RecipeJson | null;
-    roundupJson?: any;
-    author?: Author | null;
-    category?: Category | null;
-  };
-
-const numberingEnabled = settings?.numbering ?? true;
-
-const sanitizeHref = (href: string) => {
-  if (!href) return "";
-  if (href.startsWith("/") || href.startsWith("#")) return href;
-  try {
-    const url = new URL(href);
-    if (["http:", "https:", "mailto:", "tel:"].includes(url.protocol)) {
-      return href;
-    }
-  } catch {
-    return "";
-  }
-  return "";
-};
-
-const renderInlineMarkdown = (text?: string): string => {
-  const source = String(text || "");
-  if (!source) return "";
-  const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
-
-  const withLinks = source.replace(pattern, (_, label, href) => {
-    const safeHref = sanitizeHref(href || "");
-    if (!safeHref) return label;
-    const isExternal = safeHref.startsWith("http");
-    const target = isExternal ? ' target="_blank"' : "";
-    const rel = isExternal ? ' rel="noreferrer noopener"' : "";
-    return `<a href="${safeHref}" class="text-[var(--info)] underline underline-offset-2"${target}${rel}>${label}</a>`;
-  });
-
-  return withLinks
-    .replace(/\*\*\*([\s\S]+?)\*\*\*/g, "<strong><em>$1</em></strong>")
-    .replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*([^*]+?)\*/g, "<em>$1</em>");
-};
-
-/**
- * Render markdown text with \n line breaks as paragraphs.
- * Supports: bold, italic, links, line breaks, and lists (- , * , 1. ).
- */
-const renderMarkdownText = (text?: string): string => {
-  const source = String(text || "");
-  if (!source) return "";
-
-  const lines = source
-    .split(/\n/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-  if (lines.length === 0) return "";
-
-  const UL_RE = /^[-*]\s+(.+)$/;
-  const OL_RE = /^\d+\.\s+(.+)$/;
-
-  const result: string[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Unordered list group
-    if (UL_RE.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && UL_RE.test(lines[i])) {
-        const match = lines[i].match(UL_RE);
-        items.push(`<li>${renderInlineMarkdown(match![1])}</li>`);
-        i++;
-      }
-      result.push(`<ul>${items.join("")}</ul>`);
-      continue;
-    }
-
-    // Ordered list group
-    if (OL_RE.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && OL_RE.test(lines[i])) {
-        const match = lines[i].match(OL_RE);
-        items.push(`<li>${renderInlineMarkdown(match![1])}</li>`);
-        i++;
-      }
-      result.push(`<ol>${items.join("")}</ol>`);
-      continue;
-    }
-
-    // Regular paragraph
-    result.push(`<p>${renderInlineMarkdown(line)}</p>`);
-    i++;
-  }
-
-  return result.join("");
-};
-
-const getEmbedUrl = (url: string) => {
-  if (!url) return "";
-
-  // YouTube
-  const ytMatch = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-  );
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-
-  // Vimeo
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-
-  return url;
-};
-
+// Parse content blocks from article
 const parsed = (() => {
-  if (!content) return [];
-  if (Array.isArray(content)) return content;
-  if (typeof content === "string") {
+  const raw = article?.contentJson;
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
     try {
-      const json = JSON.parse(content);
+      const json = JSON.parse(raw);
       return Array.isArray(json) ? json : [];
     } catch {
       return [];
@@ -193,271 +39,131 @@ const parsed = (() => {
   return [];
 })();
 
-// Pre-process blocks to add hierarchical numbering to headings
-let h2Count = 0;
-let h3Count = 0;
-let h4Count = 0;
+// Recipe/FAQ/Roundup from dedicated columns
+const recipeJson = article?.recipeJson
+  ? typeof article.recipeJson === "string"
+    ? JSON.parse(article.recipeJson)
+    : article.recipeJson
+  : null;
+const faqsJson = article?.faqsJson
+  ? typeof article.faqsJson === "string"
+    ? JSON.parse(article.faqsJson)
+    : article.faqsJson
+  : [];
+const roundupJson = article?.roundupJson
+  ? typeof article.roundupJson === "string"
+    ? JSON.parse(article.roundupJson)
+    : article.roundupJson
+  : null;
 
-const numberedBlocks = parsed.map((block) => {
+// Author/category from hydration
+const author = (article as any)?.author || null;
+const category = (article as any)?.category || null;
+
+// Heading numbering
+const numberingEnabled = settings?.numbering ?? true;
+let h2 = 0,
+  h3 = 0,
+  h4 = 0;
+const processedBlocks = parsed.map((block: any) => {
   if (block?.type === "heading") {
     const level = block.level || 2;
-    let headingNumber = "";
-
+    let num = "";
     if (numberingEnabled) {
       if (level === 2) {
-        h2Count++;
-        h3Count = 0;
-        h4Count = 0;
-        headingNumber = `${h2Count}`;
+        h2++;
+        h3 = 0;
+        h4 = 0;
+        num = `${h2}`;
       } else if (level === 3) {
-        h3Count++;
-        h4Count = 0;
-        headingNumber = `${h2Count}.${h3Count}`;
+        h3++;
+        h4 = 0;
+        num = `${h2}.${h3}`;
       } else if (level === 4) {
-        h4Count++;
-        headingNumber = `${h2Count}.${h3Count}.${h4Count}`;
+        h4++;
+        num = `${h2}.${h3}.${h4}`;
       }
     }
-
-    return { ...block, headingNumber };
+    return { ...block, headingNumber: num };
   }
   return block;
 });
 
-// Counter for sequential numbering across multiple roundup blocks
 let globalRoundupIndex = 1;
-const processedBlocks = numberedBlocks;
-
-// Check if there's a roundupList block in content
-const hasRoundupListBlock = processedBlocks.some(
+const hasRoundupList = processedBlocks.some(
   (b: any) => b.type === "roundupList" || b.type === "roundup_list",
 );
-
-// If no roundupList block but roundupJson has items, render them at the end
-const shouldRenderStandaloneRoundup =
-  !hasRoundupListBlock && (roundupJson as any)?.items?.length > 0;
+const standaloneRoundup =
+  !hasRoundupList && roundupJson?.items?.length > 0;
 ---
 
 <div class="content-blocks">
-  {
-    processedBlocks.map((block) => {
-      if (!block?.type) return null;
-
-      if (block.type === "paragraph")
-        return <p set:html={renderInlineMarkdown(block.text)} />;
-      if (block.type === "heading") {
-        const HeadingTag =
-          `h${block.level || 2}` as keyof HTMLElementTagNameMap;
-        // Generate slug ID matching TOC extraction logic
-        const headingId = (block.text || "")
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, "")
-          .replace(/\s+/g, "-")
-          .replace(/-+/g, "-")
-          .slice(0, 50);
-        // Add number prefix if available
-        const headingContent = block.headingNumber
-          ? `<span class="heading-number">${block.headingNumber}.</span> ${block.text || ""}`
-          : block.text || "";
-        return (
-          <HeadingTag
-            id={headingId}
-            class="numbered-heading"
-            set:html={renderInlineMarkdown(headingContent)}
-          />
-        );
-      }
-      if (block.type === "list") {
-        const ListTag = block.style === "ordered" ? "ol" : "ul";
-        return (
-          <ListTag>
-            {Array.isArray(block.items) &&
-              block.items.map((item: string, idx: number) => (
-                <li set:html={renderInlineMarkdown(item)} />
-              ))}
-          </ListTag>
-        );
-      }
-      if (block.type === "blockquote") {
-        return (
-          <blockquote>
-            <p set:html={renderInlineMarkdown(block.text)} />
-          </blockquote>
-        );
-      }
-      if (block.type === "alert" || block.type === "tip_box") {
-        const type =
-          block.props?.type ||
-          block.variant ||
-          (block.type === "tip_box" ? "tip" : "warning");
-        const alignment = block.props?.textAlignment || "left";
-
-        const v = alertVariants[type] || alertVariants.info;
-        let alertTitle = block.title || v.defaultTitle;
-        // Strip subtitle separator if present
-        if (alertTitle.includes("|")) {
-          alertTitle = alertTitle.split("|")[0].trim();
-        }
-
-        const rawText = block.text || block.content || "";
-        const alertContent = renderMarkdownText(rawText);
-
-        return (
-          <div
-            class="tip-box-premium"
-            role={type === "warning" ? "alert" : "note"}
-            style={`--tip-accent: ${v.accent};`}
-          >
-            {/* Header: Icon + Title inline */}
-            <div class="tip-box-header">
-              <div class="tip-box-icon-badge" set:html={v.icon} />
-              <h4
-                class="tip-box-title"
-                set:html={renderInlineMarkdown(alertTitle)}
-              />
-            </div>
-            {/* Content Area */}
-            <div class="tip-box-content" set:html={alertContent} />
-          </div>
-        );
-      }
-      if (block.type === "faq_section") {
-        // FAQ is rendered by RecipeLayout's dedicated section from faqsJson
-        // This marker exists only to indicate position - skip rendering here
-        return null;
-      }
-      if (block.type === "related_content")
+  {processedBlocks.map((block: any) => {
+    if (!block?.type) return null;
+    switch (block.type) {
+      case "paragraph":
+        return <Paragraph block={block} />;
+      case "heading":
+        return <Heading block={block} />;
+      case "list":
+        return <List block={block} />;
+      case "blockquote":
+        return <BlockBlock block={block} />;
+      case "alert":
+      case "tip_box":
+        return <Alert block={block} />;
+      case "image":
+        return <Image block={block} />;
+      case "video":
+        return <Video block={block} />;
+      case "divider":
+        return <Divider block={block} />;
+      case "table":
+        return <TableBlock block={block} />;
+      case "before_after":
+        return <BeforeAfter block={block} />;
+      case "related_content":
         return <RelatedContent block={block} />;
-      if (block.type === "roundupList" || block.type === "roundup_list") {
-        const startIndex = globalRoundupIndex;
+      case "roundupList":
+      case "roundup_list": {
+        const idx = globalRoundupIndex;
         const items =
           typeof block.itemsJson === "string"
             ? JSON.parse(block.itemsJson)
             : block.items || [];
         globalRoundupIndex += items.length;
-
         return (
-          <RoundupItemList block={block} db={env.DB} startNumber={startIndex} />
+          <RoundupList
+            block={block}
+            roundupJson={roundupJson}
+            startNumber={idx}
+          />
         );
       }
-      if (block.type === "table")
-        return <TableBlock headers={block.headers} rows={block.rows} />;
-      if (block.type === "before_after") return <BeforeAfter block={block} />;
-      if (block.type === "main_recipe") {
-        if (!article || !recipeJson) return null;
+      case "main_recipe":
         return (
-          <RecipeCard
+          <MainRecipe
+            block={block}
             article={article}
             recipeJson={recipeJson}
             author={author}
             category={category}
-            embedded={true}
           />
         );
-      }
-      if (block.type === "divider") {
-        const style = block.style || "solid";
-        return (
-          <div class="py-4">
-            <hr
-              class="w-full border-0 m-0"
-              style={{
-                borderTopWidth: style === "double" ? "4px" : "2px",
-                borderTopStyle: style,
-                borderTopColor: "var(--text-tertiary)",
-              }}
-            />
-          </div>
-        );
-      }
-      if (block.type === "video") {
-        const videoUrl = getEmbedUrl(block.url || block.props?.url);
-        if (!videoUrl) return null;
-        return (
-          <div
-            class="video-embed"
-            style={`aspect-ratio: ${(block.aspectRatio || block.props?.aspectRatio || "16:9").replace(":", "/")};`}
-          >
-            <iframe
-              src={videoUrl}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-              loading="lazy"
-              style="width:100%;height:100%;border:0;border-radius:8px;"
-            />
-          </div>
-        );
-      }
-      if (block.type === "image" && block.variants) {
-        const variants = block.variants || {};
-        const imgUrl =
-          resolveVariantUrl(variants.md) ||
-          resolveVariantUrl(variants.lg) ||
-          resolveVariantUrl(variants.sm) ||
-          "";
-        const imgVariant = variants.md || variants.lg || variants.sm || {};
-        const srcEntries: string[] = [];
-        if (variants.xs && variants.xs.width) {
-          const u = resolveVariantUrl(variants.xs);
-          if (u) srcEntries.push(`${u} ${variants.xs.width}w`);
-        }
-        if (variants.sm && variants.sm.width) {
-          const u = resolveVariantUrl(variants.sm);
-          if (u) srcEntries.push(`${u} ${variants.sm.width}w`);
-        }
-        if (variants.md && variants.md.width) {
-          const u = resolveVariantUrl(variants.md);
-          if (u) srcEntries.push(`${u} ${variants.md.width}w`);
-        }
-        if (variants.lg && variants.lg.width) {
-          const u = resolveVariantUrl(variants.lg);
-          if (u) srcEntries.push(`${u} ${variants.lg.width}w`);
-        }
-        const imgSrcSet = srcEntries.join(", ");
-        if (!imgUrl) return null;
-        return (
-          <figure class="content-image">
-            <img
-              src={imgUrl}
-              alt={block.alt || ""}
-              width={imgVariant.width || undefined}
-              height={imgVariant.height || undefined}
-              srcset={imgSrcSet || undefined}
-              sizes={
-                imgSrcSet
-                  ? "(max-width: 768px) calc(100vw - 2rem), min(720px, 100vw - 4rem)"
-                  : undefined
-              }
-              loading="lazy"
-              decoding="async"
-              style="width:100%;height:auto;border-radius:8px;"
-            />
-            {(block.caption || block.credit) && (
-              <figcaption>
-                {block.caption && (
-                  <span set:html={renderInlineMarkdown(block.caption)} />
-                )}
-                {block.credit && <span class="credit"> — {block.credit}</span>}
-              </figcaption>
-            )}
-          </figure>
-        );
-      }
-      return null;
-    })
-  }
-
-  {/* Standalone Roundup List - renders if no roundupList block in content but roundupJson exists */}
-  {
-    shouldRenderStandaloneRoundup && (
-      <div class="standalone-roundup-list">
-        <div class="standalone-header">
-          <h2 class="standalone-title">Featured Recipes</h2>
-        </div>
-        <RoundupItemList roundup={roundupJson} db={env.DB} />
+      case "faq_section":
+        return <FaqSection />;
+      default:
+        return null;
+    }
+  })}
+  {standaloneRoundup && (
+    <div class="standalone-roundup-list">
+      <div class="standalone-header">
+        <h2 class="standalone-title">Featured Recipes</h2>
       </div>
-    )
-  }
+      <RoundupList roundup={roundupJson} db={env.DB} />
+    </div>
+  )}
 </div>
 
 <style>
