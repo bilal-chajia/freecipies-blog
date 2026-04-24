@@ -3,67 +3,9 @@ import { env } from 'cloudflare:workers';
 import { getArticleBySlug } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
-import type { RoundupJson } from '@modules/articles/types/roundups.types';
-import { resolveVariantUrl } from '@shared/types/images';
+import { generateJsonLd } from '@modules/articles/utils/jsonld';
 
 export const prerender = false;
-
-/**
- * Generate Schema.org ItemList JSON-LD for roundups
- */
-function generateItemListJsonLd(article: any, baseUrl: string): object {
-    const roundupData: RoundupJson = typeof article.roundupJson === 'string'
-        ? JSON.parse(article.roundupJson || '{"items":[],"listType":"ItemList"}')
-        : article.roundupJson || { items: [], listType: 'ItemList' };
-
-    const imagesData = typeof article.imagesJson === 'string'
-        ? JSON.parse(article.imagesJson || '{}')
-        : article.imagesJson || {};
-
-    // Get main image
-    const mainImage = resolveVariantUrl(imagesData.cover?.variants?.lg) ||
-        resolveVariantUrl(imagesData.cover?.variants?.md);
-
-    // Build ItemList elements
-    const itemListElement = (roundupData.items || []).map(item => {
-        // Get item image
-        const itemImage = resolveVariantUrl(item.cover?.variants?.lg) ||
-            resolveVariantUrl(item.cover?.variants?.md);
-
-        // Determine URL
-        let itemUrl: string | undefined;
-        if (item.article_id) {
-            itemUrl = `${baseUrl}/recipes/${item.article_id}`;
-        } else if (item.external_url) {
-            itemUrl = item.external_url;
-        }
-
-        return {
-            '@type': 'ListItem',
-            position: item.position,
-            name: item.title,
-            description: item.subtitle,
-            url: itemUrl,
-            image: itemImage,
-        };
-    });
-
-    return {
-        '@context': 'https://schema.org',
-        '@type': 'ItemList',
-        name: article.headline,
-        description: article.shortDescription,
-        image: mainImage,
-        numberOfItems: roundupData.items?.length || 0,
-        itemListElement,
-        author: {
-            '@type': 'Person',
-            name: article.authorName || article.cachedAuthorJson?.name,
-        },
-        datePublished: article.publishedAt,
-        dateModified: article.updatedAt,
-    };
-}
 
 /**
  * GET /api/roundups/:slug
@@ -95,9 +37,11 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
             return new Response(body, { status, headers });
         }
 
-        // Generate JSON-LD ItemList
+        // Use pre-generated JSON-LD with fallback to runtime generation
         const baseUrl = `${url.protocol}//${url.host}`;
-        const jsonLd = generateItemListJsonLd(article, baseUrl);
+        const jsonLd = article.jsonldJson
+            ? (typeof article.jsonldJson === 'string' ? JSON.parse(article.jsonldJson) : article.jsonldJson)
+            : generateJsonLd(article, baseUrl);
 
         // Include JSON-LD in response
         const responseData = {

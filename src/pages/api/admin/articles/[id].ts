@@ -115,7 +115,7 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
         }
 
         // Automatically synchronize cached fields (zero-join optimization)
-        await syncCachedFields(env.DB, id);
+        await syncCachedFields(env.DB, id, env.SITE_URL);
 
         // Fetch updated article to return
         const updatedArticle = await getArticleById(env.DB, id);
@@ -230,7 +230,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
 
         // If toggled online, also sync cached fields to be safe (though not strictly required for just online toggle)
         if (action === 'toggle-online') {
-            await syncCachedFields(env.DB, id);
+            await syncCachedFields(env.DB, id, env.SITE_URL);
         }
 
         const { body, status, headers } = formatSuccessResponse({ id, ...result });

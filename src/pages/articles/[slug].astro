@@ -46,7 +46,9 @@ const heroImage = useCover ? heroCover : heroThumb;
 const author = (article as any).author || null;
 const category = (article as any).category || null;
 
-const faqs = typeof article.faqsJson === 'string' ? JSON.parse(article.faqsJson || '[]') : (article.faqsJson || []);
+const jsonldSchemas = typeof article.jsonldJson === 'string' 
+  ? JSON.parse(article.jsonldJson || '[]') 
+  : (article.jsonldJson || []);
 
 const pageTitle = article.metaTitle || article.headline;
 const pageDescription = article.metaDescription || article.shortDescription;
@@ -57,15 +59,8 @@ const pageDescription = article.metaDescription || article.shortDescription;
     slot="head"
     title={pageTitle}
     description={pageDescription}
-    type="article"
-    publishedTime={article.publishedAt || undefined}
-    modifiedTime={article.updatedAt || article.publishedAt || undefined}
-    author={{ 
-      name: author?.name || "Freecipies Team",
-      url: author?.slug ? `${Astro.url.origin}/authors/${author.slug}` : undefined
-    }}
     image={heroImage.imageUrl || article.imageUrl || ""}
     imageAlt={heroImage.imageAlt || article.imageAlt || undefined}
-    faqs={faqs}
+    schemas={jsonldSchemas}
   />
 </ArticleLayout>

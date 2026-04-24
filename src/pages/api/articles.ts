@@ -131,7 +131,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
 
       // Sync cached fields immediately after creation
-      await syncCachedFields(env.DB, article.id);
+      await syncCachedFields(env.DB, article.id, env.SITE_URL);
     }
 
     const { body, status, headers } = formatSuccessResponse(article);

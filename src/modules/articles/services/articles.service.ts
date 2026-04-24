@@ -16,6 +16,7 @@ import { equipment as equipmentTable } from '../../equipment/schema/equipment.sc
 import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedTag } from '../../../shared/utils/hydration';
 import { resolveVariantUrl } from '../../../shared/types/images';
+import { generateJsonLd } from '../utils/jsonld';
 import type { HydratedArticle } from '../types/articles.types';
 
 async function getTagsForArticleId(drizzle: any, articleId: number): Promise<HydratedTag[]> {
@@ -520,7 +521,8 @@ function extractTocFromContent(contentJson: string | null, headline?: string): {
  */
 export async function syncCachedFields(
   db: D1Database | DrizzleDb,
-  id: number
+  id: number,
+  siteUrl?: string
 ): Promise<boolean> {
   const drizzle = getDb(db);
 
@@ -710,6 +712,15 @@ export async function syncCachedFields(
     }
 
     (updateData as any).cachedCardJson = JSON.stringify(card);
+  }
+
+  // ── Generate JSON-LD schemas for SEO ──
+  // Stores all Schema.org structured data at save time.
+  // Frontend reads jsonldJson directly via SEO.astro — no per-page reconstruction.
+  {
+    const resolvedSiteUrl = siteUrl || (article as any).siteUrl || 'https://freecipies.com';
+    const schemas = generateJsonLd(article as any, resolvedSiteUrl);
+    (updateData as any).jsonldJson = JSON.stringify(schemas);
   }
 
   await drizzle.update(articles)

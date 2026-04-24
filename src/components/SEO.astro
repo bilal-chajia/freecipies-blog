@@ -1,41 +1,38 @@
 ---
+/**
+ * SEO Component — Schema.org JSON-LD Emitter
+ * ============================================
+ *
+ * Consumes pre-generated JSON-LD from `articles.jsonld_json`
+ * (populated at save time by `generateJsonLd()` in utils/jsonld.ts).
+ *
+ * Two modes:
+ *   1. **Pre-generated** (preferred): pass `schemas` as an array of
+ *      JSON-LD objects. The component simply serializes them.
+ *   2. **Legacy passthrough**: pass individual props for backward compat
+ *      during migration (type='website', etc.).
+ *
+ * @see utils/jsonld.ts — generation logic
+ * @see articles.service.ts syncCachedFields() — save-time hook
+ */
+
 interface Props {
+  /** Page title for og:title */
   title: string;
+  /** Page description for meta description */
   description: string;
+  /** Canonical URL override */
   canonical?: string;
+  /** OG image URL */
   image?: string;
+  /** OG image alt text */
   imageAlt?: string;
-  type?: 'website' | 'article' | 'recipe';
-  publishedTime?: string;
-  modifiedTime?: string;
-  author?: {
-    name: string;
-    url?: string;
-  };
-  faqs?: Array<{ q: string; a: string }>;
-  recipe?: {
-    name: string;
-    description: string;
-    image: string;
-    prepTime?: string;
-    cookTime?: string;
-    totalTime?: string;
-    recipeYield?: string;
-    recipeCategory?: string;
-    recipeCuisine?: string;
-    keywords?: string[];
-    recipeIngredient?: string[];
-    recipeInstructions?: any[];
-    nutrition?: any;
-    aggregateRating?: {
-      ratingValue: number;
-      reviewCount?: number;
-      ratingCount?: number;
-    };
-  };
-  roundup?: {
-    itemList?: any;
-  };
+  /**
+   * Pre-generated JSON-LD schemas array.
+   * When provided, the component emits each schema directly —
+   * no per-page reconstruction needed.
+   */
+  schemas?: Record<string, unknown>[];
 }
 
 const {
@@ -44,142 +41,24 @@ const {
   canonical,
   image,
   imageAlt,
-  type = 'website',
-  publishedTime,
-  modifiedTime,
-  author,
-  faqs = [],
-  recipe,
-  roundup
+  schemas = [],
 } = Astro.props;
 
 const siteUrl = Astro.site?.toString() || Astro.url.origin;
 const canonicalURL = canonical || new URL(Astro.url.pathname, siteUrl).toString();
 const imageUrl = image ? new URL(image, siteUrl).toString() : `${siteUrl}/og-image.jpg`;
-const recipeImageUrl = recipe?.image ? new URL(recipe.image, siteUrl).toString() : imageUrl;
-
-// Shared Publisher Object (Google Search Central 2026 recommends width/height for logo)
-const publisher = {
-  "@type": "Organization",
-  "name": "Freecipies",
-  "logo": {
-    "@type": "ImageObject",
-    "url": `${siteUrl}/logo.png`,
-    "width": 600,
-    "height": 60
-  }
-};
-
-// FAQ Schema generator
-const faqSchema = faqs.length > 0 ? {
-  "@type": "FAQPage",
-  "mainEntity": faqs.map(faq => ({
-    "@type": "Question",
-    "name": faq.q,
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": faq.a
-    }
-  }))
-} : null;
 ---
 
-<!-- Structured data only; BaseHead handles standard meta tags. -->
-
-<!-- Schema.org JSON-LD -->
-{type === 'website' && (
-  <script type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Freecipies",
-    "description": description,
-    "url": siteUrl,
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": `${siteUrl}/search?q={search_term_string}`,
-      "query-input": "required name=search_term_string"
-    }
-  })} />
-)}
-
-{type === 'article' && author && (
-  <script type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": title,
-    "description": description,
-    "image": imageUrl,
-    "datePublished": publishedTime,
-    "dateModified": modifiedTime || publishedTime,
-    "author": {
-      "@type": "Person",
-      "name": author.name,
-      "url": author.url
-    },
-    "publisher": publisher,
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": canonicalURL
-    },
-    ...(faqSchema ? { "mainEntity": faqSchema.mainEntity } : {})
-  })} />
-)}
-
-{type === 'recipe' && recipe && (
-  <script type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Recipe",
-    "name": recipe.name,
-    "description": recipe.description,
-    "image": recipeImageUrl,
-    "author": {
-      "@type": "Person",
-      "name": author?.name || "Freecipies Team",
-      "url": author?.url
-    },
-    "datePublished": publishedTime,
-    "dateModified": modifiedTime || publishedTime,
-    "prepTime": recipe.prepTime,
-    "cookTime": recipe.cookTime,
-    "totalTime": recipe.totalTime,
-    "recipeYield": recipe.recipeYield,
-    "recipeCategory": recipe.recipeCategory,
-    "recipeCuisine": recipe.recipeCuisine,
-    "keywords": recipe.keywords?.join(', '),
-    "recipeIngredient": recipe.recipeIngredient,
-    "recipeInstructions": recipe.recipeInstructions?.map((step, index) => ({
-      "@type": "HowToStep",
-      "position": index + 1,
-      "text": typeof step === 'string' ? step : step.text
-    })),
-    "nutrition": recipe.nutrition ? {
-      "@type": "NutritionInformation",
-      "calories": recipe.nutrition.calories ? `${recipe.nutrition.calories} kcal` : undefined,
-      "proteinContent": recipe.nutrition.proteinContent ? `${recipe.nutrition.proteinContent} g` : undefined,
-      "fatContent": recipe.nutrition.fatContent ? `${recipe.nutrition.fatContent} g` : undefined,
-      "carbohydrateContent": recipe.nutrition.carbohydrateContent ? `${recipe.nutrition.carbohydrateContent} g` : undefined,
-      "sugarContent": recipe.nutrition.sugarContent ? `${recipe.nutrition.sugarContent} g` : undefined,
-      "fiberContent": recipe.nutrition.fiberContent ? `${recipe.nutrition.fiberContent} g` : undefined,
-      "sodiumContent": recipe.nutrition.sodiumContent ? `${recipe.nutrition.sodiumContent} mg` : undefined
-    } : undefined,
-    "aggregateRating": recipe.aggregateRating ? {
-      "@type": "AggregateRating",
-      "ratingValue": recipe.aggregateRating.ratingValue,
-      "ratingCount": recipe.aggregateRating.reviewCount ?? recipe.aggregateRating.ratingCount
-    } : undefined,
-    "publisher": publisher,
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": canonicalURL
-    },
-    ...(faqSchema ? { "subjectOf": faqSchema } : {})
-  })} />
-)}
-
-{type === 'article' && roundup?.itemList && (
-  <script type="application/ld+json" set:html={typeof roundup.itemList === 'string' ? roundup.itemList : JSON.stringify(roundup.itemList)} />
-)}
+<!-- Structured data — pre-generated at save time, emitted directly -->
+{schemas.map((schema) => (
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      ...schema,
+    })}
+  />
+))}
 
 <!-- Breadcrumb Schema -->
 <slot name="breadcrumb-schema" />
-
