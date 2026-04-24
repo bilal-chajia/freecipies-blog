@@ -142,8 +142,8 @@ export const getCustomSlashMenuItems = (
         },
     ];
 
-    // Contextual blocks (pushed to the top if applicable)
-    if (contentType === 'recipe' && hasRecipeContext) {
+ // Contextual blocks (pushed to the top if applicable)
+ if (contentType === 'recipe') {
         customItems.unshift({
             title: 'Recipe Details',
             onItemClick: () =>

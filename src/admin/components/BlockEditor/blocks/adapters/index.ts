@@ -12,21 +12,23 @@ import { DividerAdapter } from './DividerAdapter';
 import { TableAdapter } from './TableAdapter';
 import { BeforeAfterAdapter } from './BeforeAfterAdapter';
 import { RoundupListAdapter } from './RoundupListAdapter';
+import { MainRecipeAdapter } from './MainRecipeAdapter';
 
 export {
-    ParagraphAdapter,
-    HeadingAdapter,
-    ImageAdapter,
-    VideoAdapter,
-    AlertAdapter,
-    BlockquoteAdapter,
-    ListAdapter,
-    FAQAdapter,
-    RelatedContentAdapter,
-    DividerAdapter,
-    TableAdapter,
-    BeforeAfterAdapter,
-    RoundupListAdapter,
+ ParagraphAdapter,
+ HeadingAdapter,
+ ImageAdapter,
+ VideoAdapter,
+ AlertAdapter,
+ BlockquoteAdapter,
+ ListAdapter,
+ FAQAdapter,
+ RelatedContentAdapter,
+ DividerAdapter,
+ TableAdapter,
+ BeforeAfterAdapter,
+ RoundupListAdapter,
+ MainRecipeAdapter,
 };
 
 /**
@@ -34,17 +36,18 @@ export {
  * Call once at application initialization.
  */
 export function registerAllBlockAdapters(): void {
-    registerBlockAdapter(ParagraphAdapter);
-    registerBlockAdapter(HeadingAdapter);
-    registerBlockAdapter(ImageAdapter);
-    registerBlockAdapter(VideoAdapter);
-    registerBlockAdapter(AlertAdapter);
-    registerBlockAdapter(BlockquoteAdapter);
-    registerBlockAdapter(ListAdapter);
-    registerBlockAdapter(FAQAdapter);
-    registerBlockAdapter(RelatedContentAdapter);
-    registerBlockAdapter(DividerAdapter);
-    registerBlockAdapter(TableAdapter);
-    registerBlockAdapter(BeforeAfterAdapter);
-    registerBlockAdapter(RoundupListAdapter);
+ registerBlockAdapter(ParagraphAdapter);
+ registerBlockAdapter(HeadingAdapter);
+ registerBlockAdapter(ImageAdapter);
+ registerBlockAdapter(VideoAdapter);
+ registerBlockAdapter(AlertAdapter);
+ registerBlockAdapter(BlockquoteAdapter);
+ registerBlockAdapter(ListAdapter);
+ registerBlockAdapter(FAQAdapter);
+ registerBlockAdapter(RelatedContentAdapter);
+ registerBlockAdapter(DividerAdapter);
+ registerBlockAdapter(TableAdapter);
+ registerBlockAdapter(BeforeAfterAdapter);
+ registerBlockAdapter(RoundupListAdapter);
+ registerBlockAdapter(MainRecipeAdapter);
 }
