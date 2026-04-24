@@ -39,7 +39,6 @@ export const articles = sqliteTable('articles', {
   cachedCategoryJson: text('cached_category_json'),
   cachedAuthorJson: text('cached_author_json'),
   cachedEquipmentJson: text('cached_equipment_json'),
-  cachedCommentCount: integer('cached_comment_count').default(0),
   cachedRatingJson: text('cached_rating_json'),
   cachedTocJson: text('cached_toc_json'),
   cachedRecipeJson: text('cached_recipe_json'),
