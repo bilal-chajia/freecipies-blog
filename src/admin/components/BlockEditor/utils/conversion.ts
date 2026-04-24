@@ -1,437 +1,202 @@
-import { 
-    parseInlineMarkdown, 
-    extractText 
-} from './inlineContent';
-import { 
-    normalizeTipVariant, 
-    buildVideoUrl, 
-    resolveCoverUrl 
-} from './blockHelpers';
-import { parseJsonArray, parseJsonObject } from './json';
-import type { ContentBlock } from '../../../../modules/articles/types/content-blocks.types';
-import type { Block } from '@blocknote/core';
-import type { ImageVariants } from '../../../../shared/types/images';
-import { resolveVariantUrl } from '../../../../shared/types/images';
+/**
+ * Data Conversion Utilities — Adapter-based dispatch
+ *
+ * Replaces the monolithic switch-case conversion with the BlockAdapter registry.
+ * Each block type's conversion logic lives in its own adapter file.
+ */
+import type { ContentBlock } from '@modules/articles/types/content-blocks.types';
+import type { AppBlock } from '../types/editor.types';
+import type { BlockAdapter } from '../blocks/BlockAdapter';
+import { getBlockAdapter, blockAdapters } from '../blocks/BlockAdapter';
+import { registerAllBlockAdapters } from '../blocks/adapters';
+import { parseInlineMarkdown, extractText } from './inlineContent';
 
-type AnyBlock = Block<any, any, any>;
+// ── Init: register all adapters on module load ──────────────────────────────
+registerAllBlockAdapters();
+
+// ── Reverse map: editor block type → adapter ───────────────────────────────
+let editorTypeToAdapter: Map<string, BlockAdapter> | null = null;
+
+function getEditorTypeMap(): Map<string, BlockAdapter> {
+    if (editorTypeToAdapter) return editorTypeToAdapter;
+    editorTypeToAdapter = new Map();
+    for (const adapter of blockAdapters.values()) {
+        // Probe: call toEditor on a minimal block to discover the editor type
+        // We build the map lazily from a known mapping instead.
+        // (See buildEditorTypeMap below)
+    }
+    // Hardcoded mapping — kept in sync with adapter implementations
+    const mapping: Record<string, string> = {
+        'paragraph':        'paragraph',
+        'heading':          'heading',
+        'customImage':      'image',
+        'video':            'video',
+        'alert':            'tip_box',
+        'blockquote':       'blockquote',
+        'bulletListItem':   'list',
+        'numberedListItem': 'list',
+        'checkListItem':    'list',
+        'faqSection':       'faq_section',
+        'relatedContent':   'related_content',
+        'divider':          'divider',
+        'simpleTable':      'table',
+        'beforeAfter':      'before_after',
+        'roundupList':      'roundup_item',
+    };
+
+    for (const [editorType, contentType] of Object.entries(mapping)) {
+        const adapter = getBlockAdapter(contentType);
+        if (adapter) {
+            editorTypeToAdapter.set(editorType, adapter);
+        }
+    }
+    return editorTypeToAdapter;
+}
+
+// ── List grouping helpers ───────────────────────────────────────────────────
+const LIST_EDITOR_TYPES = new Set(['bulletListItem', 'numberedListItem', 'checkListItem']);
+
+const editorTypeToListStyle: Record<string, 'ordered' | 'unordered' | 'checklist'> = {
+    bulletListItem:   'unordered',
+    numberedListItem: 'ordered',
+    checkListItem:    'checklist',
+};
+
+// ── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * Data Conversion Utilities (TypeScript)
+ * Convert content_json (API/storage format) into BlockNote editor blocks.
+ *
+ * Accepts:
+ * - A JSON string
+ * - A raw array of ContentBlock objects
+ * - A wrapped { blocks: [...] } object
+ *
+ * Returns an array of partial AppBlock objects for the editor.
  */
-
-export function contentJsonToBlocks(contentJson: string | any[] | { blocks: any[] } | undefined): AnyBlock[] | undefined {
+export function contentJsonToBlocks(
+    contentJson: string | any[] | { blocks: any[] } | undefined
+): AppBlock[] | undefined {
     if (!contentJson) return undefined;
 
-    // Handle string input
+    // Parse input
     let parsed = contentJson;
     if (typeof contentJson === 'string') {
         try {
             parsed = JSON.parse(contentJson);
         } catch (e) {
-            console.warn('contentJsonToBlocks: failed to parse JSON string', e);
+            console.warn('[conversion] contentJsonToBlocks: failed to parse JSON string', e);
             return undefined;
         }
     }
 
-    // Handle both { blocks: [...] } and direct array formats
     let blocks = parsed as any[];
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         blocks = (parsed as any).blocks;
     }
-
-    if (!blocks || !Array.isArray(blocks)) {
-        return undefined;
-    }
+    if (!blocks || !Array.isArray(blocks)) return undefined;
 
     try {
-        const rawBlocks = blocks.map((block: any, index: number) => {
-            if (!block || typeof block !== 'object') return null;
-            const id = block.id || `block-${index}`;
-            const type = block.type as any;
+        const rawBlocks: any[] = [];
 
-            switch (type) {
-                case 'paragraph':
-                    return { id, type: 'paragraph', content: parseInlineMarkdown(block.text || '') };
+        for (let i = 0; i < blocks.length; i++) {
+            const block = blocks[i];
+            if (!block || typeof block !== 'object') continue;
 
-                case 'heading':
-                    return {
-                        id,
-                        type: 'heading',
-                        props: { level: block.level || 2 },
-                        content: parseInlineMarkdown(block.text || ''),
-                    };
+            const id = block.id || `block-${i}`;
+            const contentType = block.type as string;
+            const adapter = getBlockAdapter(contentType);
 
-                case 'list':
-                    const listType = block.style === 'ordered'
-                        ? 'numberedListItem'
-                        : block.style === 'checklist'
-                            ? 'checkListItem'
-                            : 'bulletListItem';
-                    if (Array.isArray(block.items)) {
-                        return block.items.map((item: any, i: number) => ({
-                            id: `${id}-${i}`,
-                            type: listType,
-                            content: parseInlineMarkdown(typeof item === 'string' ? item : ''),
-                        }));
-                    }
-                    return { id, type: listType, content: '' };
-
-                case 'blockquote':
-                    return { id, type: 'blockquote', content: parseInlineMarkdown(block.text || '') };
-
-                case 'image':
-                    const imgVariants = (block.variants || {}) as ImageVariants;
-                    const bestUrl =
-                        resolveVariantUrl(imgVariants.lg) ||
-                        resolveVariantUrl(imgVariants.md) ||
-                        resolveVariantUrl(imgVariants.sm) ||
-                        resolveVariantUrl(imgVariants.xs) ||
-                        resolveVariantUrl(imgVariants.original) ||
-                        '';
-                    const bestVariant: any = imgVariants.lg || imgVariants.md || imgVariants.sm || imgVariants.xs || imgVariants.original || {};
-
-                    return {
-                        id,
-                        type: 'customImage',
-                        props: {
-                            url: bestUrl,
-                            alt: block.alt || '',
-                            caption: block.caption || '',
-                            credit: block.credit || '',
-                            width: bestVariant.width || 512,
-                            height: bestVariant.height || 0,
-                            mediaId: block.media_id?.toString() || '',
-                            variantsJson: JSON.stringify(imgVariants),
-                        },
-                    };
-
-                case 'video': {
-                    const url = block.url || buildVideoUrl(block.provider, block.videoId);
-                    return {
-                        id,
-                        type: 'video',
-                        props: {
-                            url,
-                            provider: block.provider || '',
-                            videoId: block.videoId || '',
-                            aspectRatio: block.aspectRatio || '16:9',
-                        }
-                    };
+            if (adapter) {
+                const partial = adapter.toEditor(block);
+                // List blocks expand into multiple editor items
+                if (contentType === 'list' && Array.isArray(block.items)) {
+                    const listItems = block.items.map((item: any, j: number) => ({
+                        id: `${id}-${j}`,
+                        ...partial,
+                        content: parseInlineMarkdown(typeof item === 'string' ? item : ''),
+                    }));
+                    rawBlocks.push(...listItems);
+                } else {
+                    rawBlocks.push({ id, ...partial });
                 }
-
-                case 'tip_box':
-                case 'alert':
-                    return {
-                        id,
-                        type: 'alert',
-                        props: {
-                            type: normalizeTipVariant(block.variant),
-                            title: block.title || '',
-                        },
-                        content: parseInlineMarkdown(block.text || ''),
-                    };
-
-                case 'faq_section':
-                    return {
-                        id,
-                        type: 'faqSection',
-                        props: {
-                            title: block.title || 'Frequently Asked Questions',
-                            items: JSON.stringify(block.items || []),
-                        }
-                    };
-
-                case 'divider':
-                    return {
-                        id,
-                        type: 'divider',
-                        props: { style: block.style || 'solid' }
-                    };
-
-                case 'main_recipe':
-                    return {
-                        id,
-                        type: 'mainRecipe',
-                        props: {}
-                    };
-
-                case 'roundup_item':
-                    const parsedArticleId = parseInt(block.article_id, 10);
-                    return {
-                        id,
-                        type: 'roundupItem',
-                        props: {
-                            articleId: Number.isFinite(parsedArticleId) ? parsedArticleId.toString() : '',
-                            externalUrl: block.external_url || '',
-                            title: block.title || '',
-                            subtitle: block.subtitle || '',
-                            note: block.note || '',
-                            cover: block.cover || '',
-                        }
-                    };
-
-                case 'roundup_list':
-                case 'roundupList':
-                    return {
-                        id,
-                        type: 'roundupList',
-                        props: {
-                            title: block.title || '',
-                            description: block.description || '',
-                            itemsJson: JSON.stringify(block.items || []),
-                            showStats: block.show_stats !== false,
-                        },
-                    };
-
-                case 'related_content': {
-                    const parsedLimit = parseInt(block.limit, 10);
-                    return {
-                        id,
-                        type: 'relatedContent',
-                        props: {
-                            title: block.title || '',
-                            layout: block.layout || 'grid',
-                            mode: block.mode || 'manual',
-                            limit: Number.isFinite(parsedLimit) ? parsedLimit : 4,
-                            recipesJson: JSON.stringify(block.recipes || []),
-                            articlesJson: JSON.stringify(block.articles || []),
-                            roundupsJson: JSON.stringify(block.roundups || []),
-                        }
-                    };
-                }
-                case 'before_after': {
-                    return {
-                        id,
-                        type: 'beforeAfter',
-                        props: {
-                            layout: block.layout || 'slider',
-                            beforeJson: JSON.stringify(block.before || null),
-                            afterJson: JSON.stringify(block.after || null),
-                        },
-                    };
-                }
-                case 'table':
-                case 'simpleTable': {
-                    return {
-                        id,
-                        type: 'simpleTable',
-                        props: {
-                            headersJson: JSON.stringify(block.headers || block.props?.headersJson || []),
-                            rowsJson: JSON.stringify(block.rows || block.props?.rowsJson || []),
-                        }
-                    };
-                }
-
-                default:
-                    return { id, type: 'paragraph', content: block.text || `[${block.type}]` };
+            } else {
+                // Fallback: unknown block types become paragraphs
+                console.warn(`[conversion] No adapter for content type "${contentType}", falling back to paragraph`);
+                rawBlocks.push({
+                    id,
+                    type: 'paragraph',
+                    content: parseInlineMarkdown(block.text || `[${contentType}]`),
+                });
             }
-        }).flat();
+        }
 
-        const cleanBlocks = rawBlocks.filter(b => b && typeof b === 'object' && typeof (b as any).type === 'string');
-        return cleanBlocks.length > 0 ? cleanBlocks as AnyBlock[] : [{ id: 'init-0', type: 'paragraph', props: {}, content: [], children: [] }] as AnyBlock[];
+        const cleanBlocks = rawBlocks.filter(
+            (b) => b && typeof b === 'object' && typeof b.type === 'string'
+        );
+
+        return cleanBlocks.length > 0
+            ? (cleanBlocks as AppBlock[])
+            : ([{ id: 'init-0', type: 'paragraph', props: {}, content: [], children: [] }] as AppBlock[]);
     } catch (error) {
-        console.error('Error converting contentJson to blocks:', error);
-        return [{ id: 'error-0', type: 'paragraph', props: {}, content: [], children: [] }] as AnyBlock[];
+        console.error('[conversion] Error converting contentJson to blocks:', error);
+        return [{ id: 'error-0', type: 'paragraph', props: {}, content: [], children: [] }] as AppBlock[];
     }
 }
 
-export function blocksToContentJson(blocks: AnyBlock[]): ContentBlock[] {
-    if (!blocks || !Array.isArray(blocks)) {
-        return [];
-    }
+/**
+ * Convert BlockNote editor blocks back into ContentBlock[] (API/storage format).
+ *
+ * Handles list item grouping: consecutive bulletListItem/numberedListItem/checkListItem
+ * of the same style are merged into a single ListBlock.
+ */
+export function blocksToContentJson(blocks: AppBlock[]): ContentBlock[] {
+    if (!blocks || !Array.isArray(blocks)) return [];
 
     const result: ContentBlock[] = [];
-    let currentList: any = null;
+    let currentList: { type: 'list'; style: 'ordered' | 'unordered' | 'checklist'; items: string[] } | null = null;
+
+    const editorTypeMap = getEditorTypeMap();
 
     for (const block of blocks) {
-        if (block.type === 'bulletListItem' || block.type === 'numberedListItem' || block.type === 'checkListItem') {
-            const style = block.type === 'numberedListItem'
-                ? 'ordered'
-                : block.type === 'checkListItem'
-                    ? 'checklist'
-                    : 'unordered';
-            const text = extractText(block.content as any);
+        // ── List grouping ────────────────────────────────────────────
+        if (LIST_EDITOR_TYPES.has(block.type)) {
+            const style = editorTypeToListStyle[block.type] || 'unordered';
+            const text = extractText((block as any).content);
 
             if (currentList && currentList.style === style) {
                 currentList.items.push(text);
             } else {
-                if (currentList) result.push(currentList);
+                if (currentList) result.push(currentList as any);
                 currentList = { type: 'list', style, items: [text] };
             }
             continue;
         }
 
+        // Flush pending list
         if (currentList) {
-            result.push(currentList);
+            result.push(currentList as any);
             currentList = null;
         }
 
-        const props = block.props as any;
-        const type = block.type as any;
-
-        switch (type) {
-            case 'paragraph': {
-                const text = extractText(block.content as any);
-                if (text.trim()) {
-                    result.push({ type: 'paragraph', text } as any);
-                }
-                break;
+        // ── Adapter dispatch ─────────────────────────────────────────
+        const adapter = editorTypeMap.get(block.type);
+        if (adapter) {
+            const contentBlock = adapter.fromEditor(block);
+            if (contentBlock) {
+                result.push(contentBlock as any);
             }
-
-            case 'blockquote':
-                result.push({
-                    type: 'blockquote',
-                    text: extractText(block.content as any),
-                } as any);
-                break;
-
-            case 'heading':
-                result.push({
-                    type: 'heading',
-                    level: (props?.level || 2) as any,
-                    text: extractText(block.content as any),
-                } as any);
-                break;
-
-            case 'customImage':
-                if (props?.url) {
-                    let variants = { lg: { url: props.url } };
-                    const parsed = parseJsonObject(props.variantsJson, {});
-                    if (Object.keys(parsed).length > 0) {
-                        variants = parsed as any;
-                    }
-
-                    result.push({
-                        type: 'image',
-                        media_id: props.mediaId ? parseInt(props.mediaId, 10) : null,
-                        alt: props.alt || '',
-                        caption: props.caption || '',
-                        credit: props.credit || '',
-                        variants,
-                    } as any);
-                }
-                break;
-
-            case 'video':
-                if (props?.videoId || props?.url) {
-                    result.push({
-                        type: 'video',
-                        url: props.url || '',
-                        provider: props.provider as any,
-                        videoId: props.videoId || '',
-                        aspectRatio: (props.aspectRatio || '16:9') as any,
-                    } as any);
-                }
-                break;
-
-            case 'alert': {
-                const alertText = extractText(block.content as any);
-                if (alertText.trim()) {
-                    const alertObj: any = {
-                        type: 'tip_box',
-                        variant: normalizeTipVariant(props?.type),
-                        text: alertText,
-                    };
-                    if (props?.title) {
-                        alertObj.title = props.title;
-                    }
-                    result.push(alertObj);
-                }
-                break;
+        } else {
+            // Fallback: unknown editor types become paragraphs if they have text
+            const text = extractText((block as any).content);
+            if (text?.trim()) {
+                result.push({ type: 'paragraph', text } as any);
             }
-
-            case 'faqSection':
-                result.push({ type: 'faq_section' } as any);
-                break;
-
-            case 'divider':
-                result.push({ type: 'divider' } as any);
-                break;
-
-            case 'mainRecipe':
-                result.push({ type: 'main_recipe' } as any);
-                break;
-
-            case 'roundupList':
-                result.push({
-                    type: 'roundup_list',
-                    title: props.title || '',
-                    description: props.description || '',
-                    items: parseJsonArray(props.itemsJson),
-                    show_stats: props.showStats !== false,
-                } as any);
-                break;
-
-            case 'roundupItem':
-                const parsedId = parseInt(props.articleId, 10);
-                result.push({
-                    type: 'roundup_item',
-                    article_id: Number.isFinite(parsedId) ? parsedId : null,
-                    external_url: props.externalUrl || '',
-                    title: props.title || '',
-                    subtitle: props.subtitle || '',
-                    note: props.note || '',
-                    cover: props.cover || null,
-                } as any);
-                break;
-
-            case 'relatedContent': {
-                const recipes = parseJsonArray(props.recipesJson);
-                const articles = parseJsonArray(props.articlesJson);
-                const roundups = parseJsonArray(props.roundupsJson);
-
-                const parsedLimit = parseInt(props.limit, 10);
-                const limit = Number.isFinite(parsedLimit) ? parsedLimit : undefined;
-                const mode = props.mode || undefined;
-
-                if (recipes.length || articles.length || roundups.length || props.title || limit || mode) {
-                    result.push({
-                        type: 'related_content',
-                        title: props.title || undefined,
-                        layout: (props.layout || 'grid') as any,
-                        ...(mode ? { mode } : {}),
-                        ...(limit ? { limit } : {}),
-                        recipes,
-                        articles,
-                        roundups,
-                    } as any);
-                }
-                break;
-            }
-            case 'beforeAfter': {
-                const before = parseJsonObject<{ media_id?: number } | null>(props.beforeJson, null);
-                const after = parseJsonObject<{ media_id?: number } | null>(props.afterJson, null);
-                if (before?.media_id && after?.media_id) {
-                    result.push({
-                        type: 'before_after',
-                        layout: (props.layout || 'slider') as any,
-                        before,
-                        after,
-                    } as any);
-                }
-                break;
-            }
-            case 'simpleTable': {
-                const headers = parseJsonArray(props.headersJson);
-                const rows = parseJsonArray(props.rowsJson);
-                if (headers.length || rows.length) {
-                    result.push({
-                        type: 'table',
-                        headers,
-                        rows,
-                    } as any);
-                }
-                break;
-            }
-
-            default:
-                const content = extractText(block.content as any);
-                if (content?.trim()) {
-                    result.push({ type: 'paragraph', text: content } as any);
-                }
         }
     }
 
-    if (currentList) result.push(currentList);
+    // Flush trailing list
+    if (currentList) result.push(currentList as any);
+
     return result;
 }
