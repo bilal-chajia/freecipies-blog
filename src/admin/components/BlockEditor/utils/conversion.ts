@@ -41,8 +41,9 @@ function getEditorTypeMap(): Map<string, BlockAdapter> {
         'divider':          'divider',
         'simpleTable':      'table',
         'beforeAfter':      'before_after',
-        'roundupList':      'roundup_item',
-    };
+ 'roundupList': 'roundup_item',
+    'mainRecipe': 'main_recipe',
+  };
 
     for (const [editorType, contentType] of Object.entries(mapping)) {
         const adapter = getBlockAdapter(contentType);

@@ -29,7 +29,6 @@ import { Plus, Bold, Italic, Link as LinkIcon, Check, X } from 'lucide-react';
 import { RelatedContentProvider } from './related-content-context';
 import { BlockSelectionProvider } from './selection-context';
 import { contentJsonToBlocks, blocksToContentJson } from './utils/conversion';
-import { parseJsonArray } from './utils/json';
 import CustomSlashMenu from './components/CustomSlashMenu';
 import CustomSideMenu from './components/CustomSideMenu';
 
@@ -40,9 +39,6 @@ import { useLinkToolbar } from './hooks/useLinkToolbar';
 import { useInsertHandle } from './hooks/useInsertHandle';
 import { useCanvasDragDrop } from './hooks/useCanvasDragDrop';
 
-// Context providers (Phase 3.2 will eliminate FAQDataContext)
-import { FAQDataContext } from './blocks/FAQSectionBlock';
-
 export default function BlockEditor({
   value,
   onChange,
@@ -52,13 +48,10 @@ export default function BlockEditor({
   onSelectedBlockChange,
   forceSelectBlockId,
   onForceSelectHandled,
-  // RecipeDataContext eliminated (Phase 3.1): MainRecipeBlock now uses recipeJson prop
-  // RoundupDataContext eliminated (Phase 3.3): RoundupListBlock is self-contained, hook handles sync
+  // RecipeDataContext eliminated (Phase 3.1): MainRecipeBlock uses recipeJson prop
+  // RoundupDataContext eliminated (Phase 3.3): RoundupListBlock is self-contained
+  // FAQDataContext eliminated (Phase 3.2): FAQSectionBlock uses itemsJson prop
   onRoundupChange,
-  faqs,
-  onFaqsChange,
-  faqTitle,
-  onFaqTitleChange,
   onEditorReady,
   placeholder = 'Start writing your article...',
   className = '',
@@ -133,13 +126,6 @@ export default function BlockEditor({
   const { canvasSensors, handleCanvasDragStart, handleCanvasDragEnd, handleCanvasDragCancel } =
     useCanvasDragDrop({ editor, structureItemsRef, setActiveBlockId });
 
-  // FAQ prop normalization (Phase 3.2 will eliminate this)
-  const faqItems = useMemo(() => parseJsonArray(faqs), [faqs]);
-  const handleFaqsChange = useCallback((newFaqs) => {
-    if (!onFaqsChange) return;
-    onFaqsChange(Array.isArray(newFaqs) ? newFaqs : parseJsonArray(newFaqs));
-  }, [onFaqsChange]);
-
   const relatedContext = useMemo(() => ({
     categorySlug: context?.categorySlug || null,
     tagSlugs: Array.isArray(context?.tagSlugs) ? context.tagSlugs : [],
@@ -186,54 +172,46 @@ export default function BlockEditor({
   return (
     <RelatedContentProvider value={relatedContext}>
       <BlockSelectionProvider activeBlockId={activeBlockId} setActiveBlockId={setActiveBlockId}>
-        <FAQDataContext.Provider value={{
-          faqs: faqItems,
-          setFaqs: handleFaqsChange,
-          faqTitle: faqTitle || 'Frequently Asked Questions',
-          setFaqTitle: onFaqTitleChange || (() => {}),
-          hasExternalFaqState: faqs !== undefined || typeof onFaqsChange === 'function' || faqTitle !== undefined || typeof onFaqTitleChange === 'function',
-        }}>
-          <div ref={wrapperRef} className={cn('block-editor-wrapper relative', isSidebarOpen && 'sidebar-open', className)}>
-            <div className="block-editor-main flex min-h-0">
-              <div ref={canvasRef} className="block-editor-canvas flex-1 min-h-0 relative">
-                <DndContext sensors={canvasSensors} onDragStart={handleCanvasDragStart} onDragEnd={handleCanvasDragEnd} onDragCancel={handleCanvasDragCancel}>
-                  <BlockNoteViewWithPortal editor={editor} theme="light" sideMenu={false} slashMenu={false} formattingToolbar={false} linkToolbar={false} placeholder={placeholder}>
-                    <SuggestionMenuController
-                      triggerCharacter="/"
-                      getItems={async (query) => getCustomSlashMenuItems(editor, query, { contentType })}
-                      suggestionMenuComponent={SlashMenuComponent}
-                    />
-                    <SideMenuController sideMenu={CustomSideMenu} />
-                  </BlockNoteViewWithPortal>
-                </DndContext>
+        <div ref={wrapperRef} className={cn('block-editor-wrapper relative', isSidebarOpen && 'sidebar-open', className)}>
+          <div className="block-editor-main flex min-h-0">
+            <div ref={canvasRef} className="block-editor-canvas flex-1 min-h-0 relative">
+              <DndContext sensors={canvasSensors} onDragStart={handleCanvasDragStart} onDragEnd={handleCanvasDragEnd} onDragCancel={handleCanvasDragCancel}>
+                <BlockNoteViewWithPortal editor={editor} theme="light" sideMenu={false} slashMenu={false} formattingToolbar={false} linkToolbar={false} placeholder={placeholder}>
+                  <SuggestionMenuController
+                    triggerCharacter="/"
+                    getItems={async (query) => getCustomSlashMenuItems(editor, query, { contentType })}
+                    suggestionMenuComponent={SlashMenuComponent}
+                  />
+                  <SideMenuController sideMenu={CustomSideMenu} />
+                </BlockNoteViewWithPortal>
+              </DndContext>
 
-                {linkToolbar.open && (
-                  <div className="inline-link-toolbar" style={{ top: `${linkToolbar.top}px`, left: `${linkToolbar.left}px` }} onMouseDown={(e) => { if (!(e.target instanceof HTMLInputElement)) e.preventDefault(); }}>
-                    <div className="inline-link-toolbar-inner">
-                      <button type="button" className={cn('inline-link-button', activeStyles?.bold && 'is-active')} onClick={() => { editor.toggleStyles({ bold: true }); editor.focus(); setActiveStyles(editor.getActiveStyles() || {}); }} title="Bold"><Bold className="size-4" /></button>
-                      <button type="button" className={cn('inline-link-button', activeStyles?.italic && 'is-active')} onClick={() => { editor.toggleStyles({ italic: true }); editor.focus(); setActiveStyles(editor.getActiveStyles() || {}); }} title="Italic"><Italic className="size-4" /></button>
-                      <button type="button" className={cn('inline-link-button', linkToolbar.mode === 'link' && 'is-active')} onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'link', url: prev.url || 'https://' }))} title="Insert link"><LinkIcon className="size-4" /></button>
-                      {linkToolbar.mode === 'link' && (
-                        <div className="inline-link-input">
-                          <input type="url" value={linkToolbar.url} onChange={(e) => setLinkToolbar((prev) => ({ ...prev, url: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyLink(); } if (e.key === 'Escape') { e.preventDefault(); setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' })); } }} className="inline-link-input-field" placeholder="https://" autoFocus />
-                          <button type="button" className="inline-link-action" onClick={applyLink} title="Apply link"><Check className="size-4" /></button>
-                          <button type="button" className="inline-link-action" onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }))} title="Cancel"><X className="size-4" /></button>
-                        </div>
-                      )}
-                    </div>
+              {linkToolbar.open && (
+                <div className="inline-link-toolbar" style={{ top: `${linkToolbar.top}px`, left: `${linkToolbar.left}px` }} onMouseDown={(e) => { if (!(e.target instanceof HTMLInputElement)) e.preventDefault(); }}>
+                  <div className="inline-link-toolbar-inner">
+                    <button type="button" className={cn('inline-link-button', activeStyles?.bold && 'is-active')} onClick={() => { editor.toggleStyles({ bold: true }); editor.focus(); setActiveStyles(editor.getActiveStyles() || {}); }} title="Bold"><Bold className="size-4" /></button>
+                    <button type="button" className={cn('inline-link-button', activeStyles?.italic && 'is-active')} onClick={() => { editor.toggleStyles({ italic: true }); editor.focus(); setActiveStyles(editor.getActiveStyles() || {}); }} title="Italic"><Italic className="size-4" /></button>
+                    <button type="button" className={cn('inline-link-button', linkToolbar.mode === 'link' && 'is-active')} onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'link', url: prev.url || 'https://' }))} title="Insert link"><LinkIcon className="size-4" /></button>
+                    {linkToolbar.mode === 'link' && (
+                      <div className="inline-link-input">
+                        <input type="url" value={linkToolbar.url} onChange={(e) => setLinkToolbar((prev) => ({ ...prev, url: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyLink(); } if (e.key === 'Escape') { e.preventDefault(); setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' })); } }} className="inline-link-input-field" placeholder="https://" autoFocus />
+                        <button type="button" className="inline-link-action" onClick={applyLink} title="Apply link"><Check className="size-4" /></button>
+                        <button type="button" className="inline-link-action" onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }))} title="Cancel"><X className="size-4" /></button>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+              )}
 
-                {insertHandle && (
-                  <div className="block-insert-handle" style={{ top: `${insertHandle.top}px`, left: `${insertHandle.left}px`, width: `${insertHandle.width}px` }}>
-                    <div className="block-insert-line" />
-                    <button type="button" className="block-insert-button" onClick={insertParagraphAtHandle} title="Add Block"><Plus className="size-4" /></button>
-                  </div>
-                )}
-              </div>
+              {insertHandle && (
+                <div className="block-insert-handle" style={{ top: `${insertHandle.top}px`, left: `${insertHandle.left}px`, width: `${insertHandle.width}px` }}>
+                  <div className="block-insert-line" />
+                  <button type="button" className="block-insert-button" onClick={insertParagraphAtHandle} title="Add Block"><Plus className="size-4" /></button>
+                </div>
+              )}
             </div>
           </div>
-        </FAQDataContext.Provider>
+        </div>
       </BlockSelectionProvider>
     </RelatedContentProvider>
   );
