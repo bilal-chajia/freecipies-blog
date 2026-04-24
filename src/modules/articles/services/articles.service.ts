@@ -569,14 +569,27 @@ export async function syncCachedFields(
     updateData.cachedTocJson = JSON.stringify(toc);
   }
 
+  // ── Extract FAQs from content_json faq_section blocks ──
+  if (article.contentJson) {
+    const contentBlocks = safeParseJson<any[]>(article.contentJson) || [];
+    const faqs = contentBlocks
+      .filter((b: any) => b.type === 'faq_section')
+      .flatMap((b: any) => b.items || []);
+    (updateData as any).faqsJson = faqs.length > 0
+      ? JSON.stringify(faqs)
+      : '[]';
+  }
+
   // ── Sync recipe scalar indexes & cached recipe summary ──
   // These populate articles.totalTimeMinutes, articles.difficultyLabel,
   // and articles.cachedRecipeJson for optimized SQL filtering/listing.
+  let recipe: any = null;
+  let totalTimeMinutes: number | null = null;
   if (article.type === 'recipe' && article.recipeJson) {
-    const recipe = safeParseJson<any>(article.recipeJson);
+    recipe = safeParseJson<any>(article.recipeJson);
     if (recipe) {
       // Derive total time: explicit total, or prep + cook
-      const totalTimeMinutes = recipe.total
+      totalTimeMinutes = recipe.total
         ?? (((recipe.prep ?? 0) + (recipe.cook ?? 0)) || null);
 
       // Scalar index columns for SQL WHERE/ORDER BY
@@ -657,6 +670,46 @@ export async function syncCachedFields(
         (updateData as any).cachedEquipmentJson = '[]';
       }
     }
+  }
+
+  // ── Generate cached_card_json for zero-join card rendering ──
+  {
+    const images = safeParseJson<any>(article.imagesJson) || {};
+    const coverVariants = images?.cover?.variants;
+
+    const thumbnail = coverVariants ? {
+      alt: images?.cover?.alt || article.headline,
+      variants: {
+        xs: coverVariants.xs ? { url: resolveVariantUrl(coverVariants.xs), width: coverVariants.xs.width } : undefined,
+        sm: coverVariants.sm ? { url: resolveVariantUrl(coverVariants.sm), width: coverVariants.sm.width } : undefined,
+        md: coverVariants.md ? { url: resolveVariantUrl(coverVariants.md), width: coverVariants.md.width } : undefined,
+        lg: coverVariants.lg ? { url: resolveVariantUrl(coverVariants.lg), width: coverVariants.lg.width } : undefined,
+      }
+    } : null;
+
+    const card: Record<string, any> = {
+      id: article.id,
+      type: article.type,
+      slug: article.slug,
+      headline: article.headline,
+      short_description: article.shortDescription,
+      thumbnail,
+    };
+
+    if (article.type === 'recipe' && recipe) {
+      card.total_time = totalTimeMinutes;
+      card.difficulty = recipe.difficulty ?? null;
+      card.servings = recipe.servings ?? null;
+      card.rating = safeParseJson<any>(article.cachedRatingJson) || null;
+    } else if (article.type === 'article') {
+      card.reading_time = article.readingTimeMinutes || null;
+      card.category = safeParseJson<any>(article.cachedCategoryJson)?.label || null;
+    } else if (article.type === 'roundup') {
+      const roundupData = safeParseJson<any>(article.roundupJson);
+      card.item_count = roundupData?.items?.length ?? 0;
+    }
+
+    (updateData as any).cachedCardJson = JSON.stringify(card);
   }
 
   await drizzle.update(articles)
