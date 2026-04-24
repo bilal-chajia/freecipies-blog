@@ -3,16 +3,10 @@
  *
  * Strongly typed schema and editor types for the application.
  */
-import type { AppSchema } from '../schema';
 
-export type { AppSchema } from '../schema';
-
-/**
- * Strongly typed BlockNote editor for the application schema.
- */
-export type AppEditor = AppSchema['BlockNoteEditor'];
+export type { AppSchema, AppEditor } from '../schema';
 
 /**
  * Strongly typed Block for the application schema.
  */
-export type AppBlock = AppEditor['document'][number];
+export type AppBlock = import('@blocknote/core').Block<import('../schema').AppSchema>;
