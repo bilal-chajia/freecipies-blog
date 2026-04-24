@@ -165,13 +165,8 @@ const baseUrl = Astro.site?.toString().replace(/\/$/, "") || Astro.url.origin;
           (contentBlocks.length > 0 || parsedRoundupJson?.items?.length > 0) && (
             <section class="content-section content-json-section">
               <ContentRenderer
-                content={contentBlocks}
-                faqsJson={article.faqsJson}
-                settings={tocSettings}
                 article={article}
-                roundupJson={parsedRoundupJson}
-                author={author}
-                category={category}
+                settings={tocSettings}
               />
             </section>
           )

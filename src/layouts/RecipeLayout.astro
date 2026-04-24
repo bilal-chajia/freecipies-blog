@@ -222,13 +222,8 @@ const contentBlocks = Array.isArray(recipe.contentJson)
           contentBlocks.length > 0 && (
             <section class="content-section content-json-section">
               <ContentRenderer
-                content={contentBlocks}
-                faqsJson={recipe.faqsJson}
-                settings={tocSettings}
                 article={recipe}
-                recipeJson={recipeJson}
-                author={author}
-                category={category}
+                settings={tocSettings}
               />
             </section>
           )

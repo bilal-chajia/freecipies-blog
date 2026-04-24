@@ -67,9 +67,6 @@ const authorImageWidth = authorAvatar.imageWidth || 48;
 const authorImageHeight = authorAvatar.imageHeight || 48;
 const authorImageStyle = authorAvatar.imageStyle;
 
-const contentBlocks = Array.isArray(article.contentJson)
-  ? article.contentJson
-  : [];
 ---
 
 <Layout
@@ -174,15 +171,11 @@ const contentBlocks = Array.isArray(article.contentJson)
         }
 
         {
-          contentBlocks.length > 0 && (
+          article.contentJson && (Array.isArray(article.contentJson) ? article.contentJson.length > 0 : true) && (
             <section class="content-section content-json-section">
               <ContentRenderer
-                content={contentBlocks}
-                faqsJson={article.faqsJson}
-                settings={tocSettings}
                 article={article}
-                author={author}
-                category={category}
+                settings={tocSettings}
               />
             </section>
           )
