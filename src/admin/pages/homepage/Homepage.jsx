@@ -33,7 +33,7 @@ const Homepage = () => {
       title: 'Welcome to Our Blog',
       subtitle: 'Discover amazing recipes and cooking tips',
       backgroundImage: '',
-      backgroundColor: '#f8fafc',
+      backgroundColor: 'var(--bg-alt)',
       ctaText: 'Explore Recipes',
       ctaLink: '/articles?type=recipe',
       showSearch: true,

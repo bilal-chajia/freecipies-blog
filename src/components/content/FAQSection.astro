@@ -119,9 +119,9 @@ if (faqs.length === 0) {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #2d6a4f;
+        background: var(--success);
         border-radius: 50%;
-        color: #fff;
+        color: var(--bg);
         box-shadow: 0 4px 12px rgba(45, 106, 79, 0.25);
     }
 
@@ -129,7 +129,7 @@ if (faqs.length === 0) {
         font-family: "Playfair Display", Georgia, serif;
         font-size: clamp(1.4rem, 1.2rem + 0.8vw, 1.75rem);
         font-weight: 700;
-        color: #111827;
+        color: var(--text);
         margin: 0;
         padding: 0;
         border: none;
@@ -142,11 +142,11 @@ if (faqs.length === 0) {
     }
 
     .faq-item {
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--border);
     }
 
     .faq-item:first-child {
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid var(--border);
     }
 
     /* ── Question (Button) ── */
@@ -169,13 +169,13 @@ if (faqs.length === 0) {
         font-family: "Lora", Georgia, serif;
         font-size: clamp(0.975rem, 0.925rem + 0.2vw, 1.0625rem);
         font-weight: 600;
-        color: #1f2937;
+        color: var(--text);
         line-height: 1.5;
         flex: 1;
     }
 
     .faq-item:hover .faq-q-text {
-        color: #2d6a4f;
+        color: var(--success-text);
     }
 
     /* ── Toggle icon (plus → X via rotation) ── */
@@ -187,19 +187,19 @@ if (faqs.length === 0) {
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: #f3f4f6;
-        color: #6b7280;
+        background: var(--bg-hover);
+        color: var(--text-tertiary);
         transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .faq-item:hover .faq-toggle {
-        background: #ecfdf5;
-        color: #2d6a4f;
+        background: var(--success-bg);
+        color: var(--success-text);
     }
 
     .faq-item.is-open .faq-toggle {
-        background: #2d6a4f;
-        color: #fff;
+        background: var(--success);
+        color: var(--bg);
         transform: rotate(45deg);
     }
 
@@ -224,7 +224,7 @@ if (faqs.length === 0) {
     .faq-answer p {
         font-family: "Lora", Georgia, serif;
         font-size: clamp(0.925rem, 0.875rem + 0.2vw, 1rem);
-        color: #4b5563;
+        color: var(--text-secondary);
         line-height: 1.7;
         margin: 0;
     }

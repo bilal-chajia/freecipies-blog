@@ -7,6 +7,7 @@ import { Input } from '@/ui/input.jsx';
 import { Card } from '@/ui/card.jsx';
 import { tagsAPI } from '../../services/api';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { EmptyState } from '@/components/ui/EmptyState';
 import ColorPicker from '@/components/ColorPicker';
 import { generateSlug, getContrastColor } from '../../utils/helpers';
 import { toast } from 'sonner';
@@ -38,13 +39,13 @@ const TagsList = () => {
 
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
-  const [editingColor, setEditingColor] = useState('#ff6600');
+  const [editingColor, setEditingColor] = useState('#ff6b35');
   const [saving, setSaving] = useState(false);
   const [showEditColorPicker, setShowEditColorPicker] = useState(false);
 
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState('#ff6600');
+  const [newTagColor, setNewTagColor] = useState('#ff6b35');
   const [showNewColorPicker, setShowNewColorPicker] = useState(false);
 
   const [deleteModal, setDeleteModal] = useState({
@@ -65,12 +66,11 @@ const TagsList = () => {
       const mappedTags = tagsData.map(tag => ({
         slug: tag.slug,
         name: tag.label || tag.name,
-        color: tag.color || '#ff6600'
+        color: tag.color || '#ff6b35'
       }));
       setTags(mappedTags);
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch tags:', err);
       setError('Failed to load tags. Please try again.');
     } finally {
       setLoading(false);
@@ -91,7 +91,7 @@ const TagsList = () => {
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditingName('');
-    setEditingColor('#ff6600');
+    setEditingColor('#ff6b35');
   };
 
   const handleSaveEdit = async () => {
@@ -113,7 +113,6 @@ const TagsList = () => {
       toast.success('Tag updated');
       handleCancelEdit();
     } catch (err) {
-      console.error('Failed to update tag:', err);
       toast.error('Failed to update tag');
     } finally {
       setSaving(false);
@@ -138,7 +137,6 @@ const TagsList = () => {
       toast.success('New tag created');
       handleCancelNew();
     } catch (err) {
-      console.error('Failed to create tag:', err);
       toast.error('Failed to create tag');
     } finally {
       setSaving(false);
@@ -148,7 +146,7 @@ const TagsList = () => {
   const handleCancelNew = () => {
     setIsCreatingNew(false);
     setNewTagName('');
-    setNewTagColor('#ff6600');
+    setNewTagColor('#ff6b35');
   };
 
   const handleDeleteConfirm = async () => {
@@ -159,7 +157,6 @@ const TagsList = () => {
       setDeleteModal({ isOpen: false, tagToDelete: null });
       toast.success('Tag deleted');
     } catch (err) {
-      console.error('Failed to delete tag:', err);
       toast.error('Failed to delete tag');
     }
   };
@@ -190,8 +187,8 @@ const TagsList = () => {
             <Tag className="size-4" />
             Metatags & Logic
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Content Tags</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-balance">Content Tags</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             System labels to aggregate content and power smart recommendations.
           </p>
         </div>
@@ -270,9 +267,14 @@ const TagsList = () => {
 
           {/* Tags List */}
           {filteredTags.length === 0 && !isCreatingNew ? (
-            <div className="col-span-full py-20 flex flex-col items-center justify-center opacity-40">
-              <Hash className="size-10 mb-2" />
-              <p className="text-sm font-medium">No matching tags found</p>
+            <div className="col-span-full">
+              <EmptyState
+                icon="search"
+                title={tags.length === 0 ? 'No tags yet' : 'No matching tags'}
+                description={tags.length === 0 ? 'Create your first tag to label and organize content.' : 'Try adjusting your search terms.'}
+                actionLabel={tags.length === 0 ? 'New Label' : undefined}
+                onAction={tags.length === 0 ? () => setIsCreatingNew(true) : undefined}
+              />
             </div>
           ) : (
             filteredTags.map((tag) => (

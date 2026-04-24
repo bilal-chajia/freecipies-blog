@@ -25,9 +25,15 @@ interface Props {
   article: Record<string, any>;
   author?: Record<string, any> | null;
   category?: Category | null;
+  roundupJson?: any;
 }
 
-const { article, author, category } = Astro.props;
+const { article, author, category, roundupJson: propRoundupJson } = Astro.props;
+
+// Parse roundupJson from article or use the prop
+const parsedRoundupJson = propRoundupJson || (typeof article.roundupJson === 'string'
+  ? JSON.parse(article.roundupJson || '{"items":[]}')
+  : (article.roundupJson || { items: [] }));
 const categoryColor = category?.color || "#ff6600";
 
 let tocSettings: TocSettings = TOC_DEFAULTS;
@@ -156,13 +162,14 @@ const baseUrl = Astro.site?.toString().replace(/\/$/, "") || Astro.url.origin;
         }
 
         {
-          contentBlocks.length > 0 && (
+          (contentBlocks.length > 0 || parsedRoundupJson?.items?.length > 0) && (
             <section class="content-section content-json-section">
               <ContentRenderer
                 content={contentBlocks}
                 faqsJson={article.faqsJson}
                 settings={tocSettings}
                 article={article}
+                roundupJson={parsedRoundupJson}
                 author={author}
                 category={category}
               />

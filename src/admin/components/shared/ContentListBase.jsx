@@ -37,6 +37,9 @@ import { formatDate, formatRelativeTime, formatNumber, debounce, toAdminImageUrl
 import { useArticlesStore, useCategoriesStore, useAuthorsStore, useTagsStore } from '../../store/useStore';
 import PinCreator from '../pins/PinCreator';
 import ArticleFilters from '../../pages/articles/ArticleFilters';
+import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { toast } from 'sonner';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const ContentListBase = ({
     contentType,
@@ -74,6 +77,11 @@ const ContentListBase = ({
     const [showPinCreator, setShowPinCreator] = useState(false);
     const [selectedArticleForPin, setSelectedArticleForPin] = useState(null);
 
+    const [deleteModal, setDeleteModal] = useState({
+        isOpen: false,
+        itemToDelete: null
+    });
+
     // Initialize filter on mount or when contentType changes
     useEffect(() => {
         setFilters({ type: contentType });
@@ -98,7 +106,7 @@ const ContentListBase = ({
                     if (tagRes.data.success) setTags(tagRes.data.data);
                 }
             } catch (error) {
-                console.error('Failed to load metadata:', error);
+                toast.error('Failed to load metadata');
             }
         };
         loadMetadata();
@@ -136,7 +144,7 @@ const ContentListBase = ({
                 setArticles([]);
             }
         } catch (error) {
-            console.error('Failed to load content:', error);
+            toast.error('Failed to load content');
             setArticles([]);
         } finally {
             setLoading(false);
@@ -151,22 +159,30 @@ const ContentListBase = ({
         setSelectedRows(rows);
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this item?')) return;
+    const handleDelete = (id) => {
+        setDeleteModal({ isOpen: true, itemToDelete: id });
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteModal.itemToDelete) return;
         try {
-            await articlesAPI.delete(id);
+            await articlesAPI.delete(deleteModal.itemToDelete);
+            toast.success('Item deleted successfully');
             loadArticles();
         } catch (error) {
-            console.error('Failed to delete item:', error);
+            toast.error('Failed to delete item');
+        } finally {
+            setDeleteModal({ isOpen: false, itemToDelete: null });
         }
     };
 
     const handleToggleOnline = async (id) => {
         try {
             await articlesAPI.toggleOnline(id);
+            toast.success('Status updated');
             loadArticles();
         } catch (error) {
-            console.error('Failed to toggle status:', error);
+            toast.error('Failed to update status');
         }
     };
 
@@ -274,6 +290,7 @@ const ContentListBase = ({
         {
             accessorKey: 'authorName',
             header: 'Author',
+            meta: { className: 'hidden md:table-cell' },
             cell: ({ row }) => {
                 const item = row.original;
                 return (
@@ -308,6 +325,7 @@ const ContentListBase = ({
         {
             accessorKey: 'publishedAt',
             header: 'Date',
+            meta: { className: 'hidden md:table-cell' },
             cell: ({ row }) => (
                 <div className="flex flex-col">
                     <span className="text-sm font-medium">
@@ -337,7 +355,7 @@ const ContentListBase = ({
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent rounded-full">
+                                <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-accent rounded-full">
                                     <MoreVertical className="size-4 text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -393,8 +411,8 @@ const ContentListBase = ({
             {/* Premium Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-                    <p className="text-muted-foreground mt-1">{description}</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-balance">{title}</h1>
+                    <p className="text-sm text-muted-foreground mt-1">{description}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button className="h-10 px-6 gap-2 shadow-sm" onClick={() => navigate(newButtonPath)}>
@@ -470,20 +488,30 @@ const ContentListBase = ({
                     </motion.div>
                 )}
 
-                <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
-                    <DataTable
-                        columns={columns}
-                        data={articles}
-                        loading={loading}
-                        enableRowSelection={true}
-                        enableSorting={true}
-                        enableFiltering={false}
-                        enablePagination={true}
-                        pageSize={pagination.limit}
-                        pageSizeOptions={[10, 20, 50]}
-                        onRowSelectionChange={handleRowSelectionChange}
+                {articles.length === 0 && !loading ? (
+                    <EmptyState
+                        icon={TypeIcon}
+                        title={`No ${title} Yet`}
+                        description={`Get started by creating your first ${contentType}.`}
+                        actionLabel={`New ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}`}
+                        actionPath={newButtonPath}
                     />
-                </div>
+                ) : (
+                    <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
+                        <DataTable
+                            columns={columns}
+                            data={articles}
+                            loading={loading}
+                            enableRowSelection={true}
+                            enableSorting={true}
+                            enableFiltering={false}
+                            enablePagination={true}
+                            pageSize={pagination.limit}
+                            pageSizeOptions={[10, 20, 50]}
+                            onRowSelectionChange={handleRowSelectionChange}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Pin Creator Dialog */}
@@ -496,7 +524,18 @@ const ContentListBase = ({
                     setSelectedArticleForPin(null);
                 }}
             />
+
+            <ConfirmationModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, itemToDelete: null })}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Content"
+                description="Are you sure you want to delete this item? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+            />
         </div>
+
     );
 };
 

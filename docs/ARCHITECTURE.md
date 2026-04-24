@@ -381,7 +381,7 @@ Articles use a block-based JSON structure (`content_json`):
 | **Text** | `paragraph`, `heading`, `blockquote`, `list` |
 | **Media** | `image`, `video` |
 | **Callouts** | `tip_box` |
-| **Embeds** | `embed`, `recipe_card`, `product_card` |
+| **Embeds** | `embed`, `product_card` |
 | **Layout** | `divider`, `spacer`, `ad_slot`, `table` |
 | **Food Blog** | `before_after`, `ingredient_spotlight`, `faq_section`, `related_content` |
 

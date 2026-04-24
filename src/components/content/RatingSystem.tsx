@@ -20,8 +20,8 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
   const [hasVoted, setHasVoted] = useState(false);
   const [message, setMessage] = useState('');
 
-  const starColor = "#6B8F71"; // Sage Green
-  const emptyColor = "#e5e7eb"; // Gray 200
+  const starColor = "var(--accent-sage)"; // Sage Green
+  const emptyColor = "var(--border)"; // Gray 200
 
   const sizes = {
     sm: { star: 14, font: '0.8rem', gap: '0.5rem' },
@@ -174,15 +174,15 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
             display: 'flex', 
             alignItems: 'center', 
             gap: '0.25rem', 
-            color: '#4b5563', 
+            color: 'var(--text-secondary)', 
             fontWeight: 500,
             fontSize: sizes[size].font 
           }}
         >
-          <span style={{ color: '#111827', fontWeight: 700 }}>
+          <span style={{ color: 'var(--text)', fontWeight: 700 }}>
             {rating.toFixed(1)}
           </span>
-          <span style={{ color: '#6b7280', fontSize: '0.9em', fontWeight: 400 }}>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: '0.9em', fontWeight: 400 }}>
             ({count} {count === 1 ? 'Review' : 'Reviews'})
           </span>
         </div>

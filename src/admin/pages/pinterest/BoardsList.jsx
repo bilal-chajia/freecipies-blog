@@ -10,6 +10,7 @@ import { pinterestBoardsAPI } from '../../services/api';
 import { toAdminImageUrl } from '../../utils/helpers';
 import { extractImage } from '@shared/utils';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { toast } from 'sonner';
 
 // Animation variants for staggered entrance
@@ -54,7 +55,6 @@ const BoardsList = () => {
       const data = response.data?.data || response.data?.boards || response.data || [];
       setBoards(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Failed to load boards:', err);
       setError('Failed to load boards');
       toast.error('Failed to load boards');
     } finally {
@@ -82,7 +82,6 @@ const BoardsList = () => {
         toast.success('Board deleted successfully');
         loadBoards(); // Reload boards from API
       } catch (err) {
-        console.error('Failed to delete board:', err);
         toast.error('Failed to delete board');
       }
       setDeleteModal({ isOpen: false, boardToDelete: null });
@@ -175,10 +174,14 @@ const BoardsList = () => {
         animate="show"
       >
         {filteredBoards.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <p className="text-muted-foreground">
-              {boards.length === 0 ? 'No boards yet. Create your first one!' : 'No boards found'}
-            </p>
+          <div className="col-span-full">
+            <EmptyState
+              icon="pinterest"
+              title={boards.length === 0 ? 'No boards yet' : 'No boards found'}
+              description={boards.length === 0 ? 'Create your first Pinterest board to organize your pins.' : 'Try adjusting your search terms.'}
+              actionLabel={boards.length === 0 ? 'New Board' : undefined}
+              actionHref={boards.length === 0 ? '/pinterest/boards/new' : undefined}
+            />
           </div>
         ) : (
           filteredBoards.map((board) => (

@@ -17,6 +17,7 @@ import {
 } from "@/ui/popover";
 import { articlesAPI } from '../services/api';
 import { extractImage } from '@shared/utils/hydration';
+import { toast } from 'sonner';
 
 export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search recipes...", className }) {
     const [open, setOpen] = useState(false);
@@ -46,7 +47,7 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
                 setResults(items);
             }
         } catch (error) {
-            console.error("Failed to fetch articles for search:", error);
+            toast.error('Failed to fetch articles');
             setResults([]);
         } finally {
             setLoading(false);

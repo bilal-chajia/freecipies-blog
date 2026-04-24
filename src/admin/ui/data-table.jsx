@@ -150,7 +150,7 @@ const DataTable = ({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className={header.column.columnDef.meta?.className}>
                       {header.isPlaceholder ? null : (
                         <div
                           className={
@@ -194,9 +194,10 @@ const DataTable = ({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className="table-row-hover"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

@@ -128,7 +128,7 @@ function formatUnit(unit: string, amount: number): string {
   .group-title {
     font-size: 16px;
     font-weight: 700;
-    color: #374151;
+    color: var(--text-secondary);
     margin: 0 0 12px 0;
     display: flex;
     align-items: center;
@@ -140,7 +140,7 @@ function formatUnit(unit: string, amount: number): string {
     content: "";
     flex: 1;
     height: 1px;
-    background-color: #e5e7eb; /* Gray color */
+    background-color: var(--border); /* Gray color */
   }
 
   .group-items {
@@ -168,13 +168,13 @@ function formatUnit(unit: string, amount: number): string {
 
   .ingredient-item {
     padding: 12px 16px;
-    background: #f9fafb;
+    background: var(--bg-alt);
     border-radius: 8px;
     transition: background 0.2s;
   }
 
   .ingredient-item:hover {
-    background: #f3f4f6;
+    background: var(--bg-hover);
   }
 
   .ingredient-label {
@@ -191,7 +191,7 @@ function formatUnit(unit: string, amount: number): string {
   .checkmark {
     width: 22px;
     height: 22px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border-strong);
     border-radius: 25%; /* Slightly rounded square, matching the reference image closely */
     flex-shrink: 0;
     margin-top: 4px;
@@ -202,8 +202,8 @@ function formatUnit(unit: string, amount: number): string {
   }
 
   .ingredient-check:checked + .checkmark {
-    background: #10b981;
-    border-color: #10b981;
+    background: var(--success);
+    border-color: var(--success);
   }
 
   .ingredient-check:checked + .checkmark::after {
@@ -220,31 +220,31 @@ function formatUnit(unit: string, amount: number): string {
   .ingredient-text {
     font-size: 1.125rem;
     line-height: 1.5;
-    color: #374151;
+    color: var(--text-secondary);
   }
 
   .amount {
     font-weight: 700;
-    color: #111827;
+    color: var(--text);
     margin-right: 4px;
   }
 
   .unit {
-    color: #6b7280;
+    color: var(--text-tertiary);
     margin-right: 4px;
   }
 
   .name {
-    color: #111827;
+    color: var(--text);
   }
 
   .prep {
-    color: #6b7280;
+    color: var(--text-tertiary);
     font-style: italic;
   }
 
   .optional {
-    color: #9ca3af;
+    color: var(--text-tertiary);
     font-size: 13px;
     margin-left: 4px;
   }
@@ -252,7 +252,7 @@ function formatUnit(unit: string, amount: number): string {
   .ingredient-note {
     margin: 6px 0 0 34px;
     font-size: 13px;
-    color: #6b7280;
+    color: var(--text-tertiary);
     font-style: italic;
   }
 

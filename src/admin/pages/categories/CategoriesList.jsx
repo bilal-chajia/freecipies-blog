@@ -7,6 +7,7 @@ import { Input } from '@/ui/input.jsx';
 import { Badge } from '@/ui/badge.jsx';
 import { categoriesAPI } from '../../services/api';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { EmptyState } from '@/components/ui/EmptyState';
 import CategoryCard from './CategoryCard';
 import { toast } from 'sonner';
 
@@ -53,7 +54,6 @@ const CategoriesList = () => {
       const categoriesData = response.data?.data || response.data || [];
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
     } catch (err) {
-      console.error('Failed to load categories:', err);
       setError('Failed to load categories. Please try again.');
       setCategories([]);
     } finally {
@@ -83,7 +83,6 @@ const CategoriesList = () => {
       setDeleteModal({ isOpen: false, categoryToDelete: null });
       toast.success('Category deleted successfully');
     } catch (err) {
-      console.error('Failed to delete category:', err);
       toast.error('Failed to delete category');
       setDeleteModal({ isOpen: false, categoryToDelete: null });
     }
@@ -100,7 +99,6 @@ const CategoriesList = () => {
       ));
       toast.success('Category updated');
     } catch (err) {
-      console.error('Failed to update category:', err);
       toast.error('Failed to update category');
     } finally {
       setUpdating(null);
@@ -136,8 +134,8 @@ const CategoriesList = () => {
             <FolderTree className="h-4 w-4" />
             Taxonomy Management
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Content Categories</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-balance">Content Categories</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Organize your recipes and articles into logical groups for better discoverability.
           </p>
         </div>
@@ -186,14 +184,14 @@ const CategoriesList = () => {
           key={searchTerm}
         >
           {filteredCategories.length === 0 ? (
-            <div className="col-span-full py-20 flex flex-col items-center justify-center text-center space-y-4 opacity-60">
-              <div className="p-4 bg-muted/50 rounded-full">
-                <Search className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">No categories found</h3>
-                <p className="text-sm text-muted-foreground">Try adjusting your search or create a new category.</p>
-              </div>
+            <div className="col-span-full">
+              <EmptyState
+                icon="categories"
+                title="No categories found"
+                description={categories.length === 0 ? 'Create your first category to organize content.' : 'Try adjusting your search terms.'}
+                actionLabel={categories.length === 0 ? 'New Category' : undefined}
+                actionHref={categories.length === 0 ? '/categories/new' : undefined}
+              />
             </div>
           ) : (
             filteredCategories.map((category) => (

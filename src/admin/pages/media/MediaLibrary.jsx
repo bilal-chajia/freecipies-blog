@@ -234,7 +234,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
       const authorsData = response.data?.data || response.data || [];
       setAuthors(Array.isArray(authorsData) ? authorsData : []);
     } catch (error) {
-      console.error('Failed to load authors:', error);
+      toast.error('Failed to load authors');
     }
   };
 
@@ -269,7 +269,6 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
         setMedia(response.data.data);
       }
     } catch (error) {
-      console.error('Failed to load media:', error);
       toast.error('Failed to load media assets');
     }
   };
@@ -342,7 +341,6 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
         }, 500);
       }
     } catch (error) {
-      console.error('Upload failed:', error);
       toast.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);
@@ -367,7 +365,6 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
       }
       loadMedia();
     } catch (error) {
-      console.error('Delete failed:', error);
       toast.error('Failed to delete asset(s)');
     } finally {
       setDeleteModal({ isOpen: false, id: null, isBulk: false });
@@ -403,7 +400,6 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
         }
       }
     } catch (error) {
-      console.error('Save failed:', error);
       toast.error('Failed to update image');
     } finally {
       setUploading(false);
@@ -577,9 +573,9 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
 
           {/* Actions */}
           <div className="w-24 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={(e) => { e.stopPropagation(); handleCopyUrl(getFullUrl(item)); }}><Copy className="size-3" /></Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={(e) => { e.stopPropagation(); window.open(getFullUrl(item), '_blank'); }}><Eye className="size-3" /></Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item.id, isBulk: false }); }}><Trash2 className="size-3" /></Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={(e) => { e.stopPropagation(); handleCopyUrl(getFullUrl(item)); }}><Copy className="size-3" /></Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={(e) => { e.stopPropagation(); window.open(getFullUrl(item), '_blank'); }}><Eye className="size-3" /></Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item.id, isBulk: false }); }}><Trash2 className="size-3" /></Button>
           </div>
         </div>
       ))}
@@ -595,8 +591,8 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
             <ImageIcon className="size-4" />
             Assets & CDN
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Media Library</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-balance">Media Library</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Centralized repository for high-fidelity images, videos, and documentation.
           </p>
         </div>

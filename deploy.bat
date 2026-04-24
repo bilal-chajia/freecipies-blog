@@ -16,7 +16,7 @@ echo [2/3] Build successful!
 echo.
 
 echo [3/3] Deploying to Cloudflare...
-call wrangler pages deploy dist --project-name=freecipies-blog
+call wrangler deploy
 if %errorlevel% neq 0 (
     echo Deploy failed!
     exit /b 1

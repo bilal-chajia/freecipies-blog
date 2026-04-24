@@ -235,14 +235,11 @@ const contentBlocks = Array.isArray(recipe.contentJson)
         }
 
         {
-          /* Recipe card is now rendered via ContentRenderer when 'recipe_card' block is present */
-        }
-        {
-          /* Fallback: if no recipe_card block in content, show recipe sections after content */
+          /* Fallback: if no main_recipe block in content, show recipe sections after content */
         }
         {
           !contentBlocks.some(
-            (b: any) => b.type === "recipe_card" || b.type === "main_recipe",
+            (b: any) => b.type === "main_recipe",
           ) &&
             recipeJson && (
               <>

@@ -4,6 +4,7 @@ import AdminLayout from './components/AdminLayout';
 import ThemeProvider from './components/ThemeProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/dashboard/Dashboard';
+import { Toaster } from './ui/sonner';
 import './App.css';
 import './index.css'; // Import global styles including Tailwind
 import { importWithRetry } from './utils/importWithRetry';
@@ -77,6 +78,7 @@ function AdminApp() {
     <ThemeProvider>
       <BrowserRouter basename="/admin">
         <AuthRedirectHandler />
+        <Toaster position="top-right" richColors closeButton duration={4000} />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Login Route */}

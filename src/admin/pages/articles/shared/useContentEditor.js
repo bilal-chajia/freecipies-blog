@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../../services/api';
 import { buildImageSlotFromMedia, generateSlug, isValidJSON } from '../../../utils/helpers';
 import { generateRoundupItemList } from '../../../utils/seo-helpers';
@@ -202,16 +203,16 @@ export function useContentEditor({ slug, contentType = 'article' }) {
                 setJsonldJson(safeStringify(article.jsonldJson, {}));
                 setMediaJson(safeStringify(article.media, {}));
             } else {
-                alert(`Content "${slug}" not found.`);
+                toast.error(`Content "${slug}" not found.`);
                 navigate(`/${contentType}s`);
             }
         } catch (error) {
             console.error('Failed to load content:', error);
             if (error.response?.status === 404) {
-                alert(`Content "${slug}" not found.`);
+                toast.error(`Content "${slug}" not found.`);
                 navigate(`/${contentType}s`);
             } else {
-                alert('Failed to load: ' + (error.response?.data?.message || error.message));
+                toast.error('Failed to load: ' + (error.response?.data?.message || error.message));
             }
         } finally {
             setLoading(false);
@@ -336,7 +337,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
         });
 
         if (hasErrors) {
-            alert('Please fix JSON errors before saving');
+            toast.error('Please fix JSON errors before saving');
             return;
         }
 
@@ -353,7 +354,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
         if (restFormData.authorId == null) requiredFields.push('Author');
 
         if (requiredFields.length > 0) {
-            alert(`Please fill required fields: ${requiredFields.join(', ')}`);
+            toast.error(`Please fill required fields: ${requiredFields.join(', ')}`);
             return;
         }
 
@@ -396,15 +397,17 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             if (isEditMode && articleId) {
                 // Update: stay on the same page
                 await articlesAPI.update(articleId, data);
+                toast.success('Content saved successfully');
             } else {
                 // Create: navigate to the edit page of the new article
                 const response = await articlesAPI.create(data);
                 const newSlug = response?.data?.data?.slug || data.slug;
                 navigate(`/${contentType}s/${newSlug}`);
+                toast.success('Content created successfully');
             }
         } catch (error) {
             console.error('Failed to save:', error);
-            alert('Failed to save: ' + (error.response?.data?.message || error.message));
+            toast.error('Failed to save: ' + (error.response?.data?.message || error.message));
         } finally {
             setSaving(false);
         }

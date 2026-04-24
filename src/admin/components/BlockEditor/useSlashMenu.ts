@@ -105,15 +105,6 @@ export const getCustomSlashMenuItems = (
             icon: React.createElement(HelpCircle, { className: "size-4 text-sky-500" }),
         },
         {
-            title: 'Embed Recipe',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'recipeEmbed'),
-            aliases: ['recipe', 'embed', 'link'],
-            group: 'Linked Content',
-            subtext: 'Link to another recipe',
-            icon: React.createElement(Utensils, { className: "size-4 text-emerald-500" }),
-        },
-        {
             title: 'Related Content',
             onItemClick: () =>
                 safeInsertBlock(editor, 'relatedContent'),
@@ -129,7 +120,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['table', 'grid', 'matrix'],
             group: 'Layout',
             subtext: 'Add a table',
-            icon: React.createElement(Table, { className: "size-4 text-slate-500" }),
+            icon: React.createElement(Table, { className: "size-4 text-muted-foreground" }),
         },
         {
             title: 'Divider',
@@ -138,7 +129,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['divider', 'separator', 'line'],
             group: 'Layout',
             subtext: 'Add a horizontal divider',
-            icon: React.createElement(Minus, { className: "size-4 text-slate-400" }),
+            icon: React.createElement(Minus, { className: "size-4 text-muted-foreground/70" }),
         },
         {
             title: 'Roundup List',
@@ -172,7 +163,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['p', 'text', 'normal', 'paragraph'],
             group: 'Text',
             subtext: 'Write normal text',
-            icon: React.createElement(Type, { className: "size-4 text-slate-500" }),
+            icon: React.createElement(Type, { className: "size-4 text-muted-foreground" }),
         },
         {
             title: 'Heading 1',
@@ -180,7 +171,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['h1', 'title', 'header'],
             group: 'Text',
             subtext: 'Large heading',
-            icon: React.createElement(Heading1, { className: "size-4 text-slate-700" }),
+            icon: React.createElement(Heading1, { className: "size-4 text-foreground" }),
         },
         {
             title: 'Heading 2',
@@ -188,7 +179,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['h2', 'title', 'header'],
             group: 'Text',
             subtext: 'Medium heading',
-            icon: React.createElement(Heading2, { className: "size-4 text-slate-700" }),
+            icon: React.createElement(Heading2, { className: "size-4 text-foreground" }),
         },
         {
             title: 'Heading 3',
@@ -196,7 +187,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['h3', 'title', 'header'],
             group: 'Text',
             subtext: 'Small heading',
-            icon: React.createElement(Heading3, { className: "size-4 text-slate-700" }),
+            icon: React.createElement(Heading3, { className: "size-4 text-foreground" }),
         },
         {
             title: 'Heading 4',
@@ -204,7 +195,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['h4', 'title'],
             group: 'Text',
             subtext: 'Level 4 heading',
-            icon: React.createElement(Heading4, { className: "size-4 text-slate-600" }),
+            icon: React.createElement(Heading4, { className: "size-4 text-muted-foreground/90" }),
         },
         {
             title: 'Heading 5',
@@ -212,7 +203,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['h5', 'title'],
             group: 'Text',
             subtext: 'Level 5 heading',
-            icon: React.createElement(Heading5, { className: "size-4 text-slate-600" }),
+            icon: React.createElement(Heading5, { className: "size-4 text-muted-foreground/90" }),
         },
         {
             title: 'Heading 6',
@@ -220,7 +211,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['h6', 'title'],
             group: 'Text',
             subtext: 'Level 6 heading',
-            icon: React.createElement(Heading6, { className: "size-4 text-slate-600" }),
+            icon: React.createElement(Heading6, { className: "size-4 text-muted-foreground/90" }),
         },
         {
             title: 'Bullet List',
@@ -228,7 +219,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['ul', 'li', 'list'],
             group: 'Text',
             subtext: 'Unordered list',
-            icon: React.createElement(List, { className: "size-4 text-slate-600" }),
+            icon: React.createElement(List, { className: "size-4 text-muted-foreground/90" }),
         },
         {
             title: 'Numbered List',
@@ -236,7 +227,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['ol', 'li', 'list'],
             group: 'Text',
             subtext: 'Ordered list',
-            icon: React.createElement(ListOrdered, { className: "size-4 text-slate-600" }),
+            icon: React.createElement(ListOrdered, { className: "size-4 text-muted-foreground/90" }),
         },
         {
             title: 'Quote',
@@ -244,7 +235,7 @@ export const getCustomSlashMenuItems = (
             aliases: ['quote', 'cite', 'citation'],
             group: 'Text',
             subtext: 'Add a blockquote',
-            icon: React.createElement(Quote, { className: "size-4 text-slate-600" }),
+            icon: React.createElement(Quote, { className: "size-4 text-muted-foreground/90" }),
         },
     ];
 

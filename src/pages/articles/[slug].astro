@@ -2,7 +2,7 @@
 import { env } from 'cloudflare:workers';
 import ArticleLayout from "@layouts/ArticleLayout.astro";
 import SEO from "@components/SEO.astro";
-import { getArticleBySlug } from "@modules/articles";
+import { getArticleBySlug, getArticleById } from "@modules/articles";
 import { getAuthorById } from "@modules/authors/services/authors.service";
 import { getCategoryById } from "@modules/categories/services/categories.service";
 import { extractImage, getImageSrcSet } from "@shared/utils";
@@ -21,7 +21,17 @@ let article: any = null;
 
 try {
   if (env.DB) {
-    article = await getArticleBySlug(env.DB, slug, "article");
+    // Smart routing: support both numeric ID and slug
+    const isNumeric = /^\d+$/.test(slug);
+    if (isNumeric) {
+      article = await getArticleById(env.DB, parseInt(slug));
+      // Ensure it's an article
+      if (article && article.type !== 'article') {
+        article = null;
+      }
+    } else {
+      article = await getArticleBySlug(env.DB, slug, "article");
+    }
   }
 } catch (error) {
   console.error(`Error fetching article (${slug}):`, error);

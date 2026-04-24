@@ -1,51 +1,11 @@
 @import "tailwindcss";
+@import "../shared/design-tokens.css";
 
 /* ========================================
  * CSS Cascade Layers
  * Organizes styles by specificity and purpose
  * ======================================== */
 @layer reset, base, tokens, accessibility, components, utilities, overrides;
-
-/* ========================================
- * LAYER: TOKENS
- * Shared design tokens and CSS custom properties
- * ======================================== */
-@layer tokens {
-  :root {
-    /* Breakpoint Tokens - Viewport */
-    --bp-sm: 640px;
-    --bp-md: 768px;
-    --bp-lg: 1024px;
-    --bp-xl: 1280px;
-    --bp-2xl: 1536px;
-
-    /* Breakpoint Tokens - Container Query */
-    --cq-sm: 40rem;
-    --cq-md: 48rem;
-    --cq-lg: 64rem;
-    --cq-xl: 80rem;
-    --cq-2xl: 96rem;
-
-    /* Focus Ring Tokens */
-    --focus-ring-width: 3px;
-    --focus-ring-offset: 2px;
-    --focus-ring-color: #3b82f6;
-    --focus-ring-color-high-contrast: #000000;
-
-    /* Animation Tokens */
-    --transition-fast: 150ms;
-    --transition-normal: 250ms;
-    --transition-slow: 350ms;
-    --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-out: cubic-bezier(0, 0, 0.2, 1);
-
-    /* Container Names */
-    --container-grid: article-grid;
-    --container-card: recipe-card;
-    --container-list: recipe-list;
-  }
-}
 
 /* ========================================
  * LAYER: BASE
@@ -58,9 +18,9 @@
     overflow-x: hidden;
     max-width: 100vw;
     box-sizing: border-box;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-sans);
     font-size: clamp(14px, 0.875rem + 0.2vw, 16px);
-    line-height: 1.6;
+    line-height: var(--leading-normal);
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
     text-size-adjust: 100%;
@@ -75,109 +35,73 @@
   *::after {
     box-sizing: inherit;
   }
-}
 
-/* Fluid typography — Playfair Display for headings */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
-}
+  /* Fluid typography — Playfair Display for headings */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    color: var(--text);
+  }
 
-h1 {
-  font-size: clamp(1.75rem, 1.5rem + 1.5vw, 2.75rem);
-  font-weight: 800;
-}
+  h1 {
+    font-size: clamp(1.75rem, 1.5rem + 1.5vw, 2.75rem);
+    font-weight: var(--font-extrabold);
+    line-height: var(--leading-tight);
+  }
 
-h2 {
-  font-size: clamp(1.375rem, 1.15rem + 1.1vw, 2rem);
-  font-weight: 700;
-}
+  h2 {
+    font-size: clamp(1.375rem, 1.15rem + 1.1vw, 2rem);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-snug);
+  }
 
-h3 {
-  font-size: clamp(1.125rem, 1rem + 0.6vw, 1.5rem);
-  font-weight: 600;
-}
+  h3 {
+    font-size: clamp(1.125rem, 1rem + 0.6vw, 1.5rem);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-snug);
+  }
 
-h4 {
-  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.25rem);
-  font-weight: 600;
-}
+  h4 {
+    font-size: clamp(1rem, 0.95rem + 0.3vw, 1.25rem);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-snug);
+  }
 
-/* Responsive images & tables */
-img {
-  max-width: 100%;
-  height: auto;
-}
+  p {
+    color: var(--text-secondary);
+  }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  overflow-x: auto;
-  display: block;
+  a {
+    color: var(--brand-primary);
+    transition: color var(--transition-fast);
+  }
+
+  a:hover {
+    color: var(--brand-primary-hover);
+  }
+
+  /* Responsive images & tables */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow-x: auto;
+    display: block;
+  }
 }
 
 /* Fluid container padding */
 .container {
   padding-left: clamp(1rem, 3vw, 2rem);
   padding-right: clamp(1rem, 3vw, 2rem);
-}
-
-/* Skeleton shimmer animation */
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-/* BlockNote popover fallback styles (for portaled dropdowns) */
-.bn-form-popover {
-  background-color: var(--bn-colors-menu-background, #ffffff);
-  border: var(--bn-border, 1px solid #e5e7eb);
-  border-radius: var(--bn-border-radius-medium, 8px);
-  box-shadow: var(--bn-shadow-medium, 0 10px 25px rgba(0, 0, 0, 0.12));
-  color: var(--bn-colors-menu-text, #111827);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 180px;
-  padding: 6px;
-}
-
-.bn-form-popover .mantine-TextInput-label,
-.bn-form-popover .mantine-FileInput-label {
-  color: var(--bn-colors-menu-text, #6b7280);
-  font-size: 11px;
-  margin-bottom: 2px;
-}
-
-.bn-form-popover .bn-text-input {
-  width: 300px;
-  max-width: min(320px, 75vw);
-}
-
-.bn-form-popover input,
-.bn-form-popover textarea,
-.bn-form-popover select {
-  background-color: var(--bn-colors-background, #ffffff);
-  border: 1px solid var(--bn-border-color, #e5e7eb);
-  border-radius: 6px;
-  color: var(--bn-colors-menu-text, #111827);
-  font-size: 12px;
-  padding: 6px 10px 6px 28px;
-  width: 100%;
-}
-
-.bn-form-popover input::placeholder,
-.bn-form-popover textarea::placeholder {
-  color: var(--bn-colors-menu-text, #6b7280);
-}
-
-.bn-form-popover svg {
-  color: var(--bn-colors-menu-text, #6b7280);
 }
 
 /* ========================================
@@ -199,7 +123,7 @@ table {
   :focus-visible {
     outline: var(--focus-ring-width) solid var(--focus-ring-color);
     outline-offset: var(--focus-ring-offset);
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
   }
 
   /* Ensure focus is visible on all interactive elements */
@@ -218,12 +142,14 @@ table {
     position: absolute;
     top: -40px;
     left: 0;
-    background: #000;
-    color: #fff;
-    padding: 8px 16px;
+    background: var(--neutral-900);
+    color: var(--text-inverse);
+    padding: var(--space-2) var(--space-4);
     text-decoration: none;
-    z-index: 10000;
-    transition: top 0.3s;
+    z-index: var(--z-devtools);
+    transition: top var(--transition-base);
+    border-radius: var(--radius-md);
+    font-weight: var(--font-medium);
   }
 
   .skip-link:focus {
@@ -248,7 +174,7 @@ table {
     :root {
       --focus-ring-color: #000000;
       --focus-ring-width: 4px;
-      --color-border: #000000;
+      --border: #000000;
     }
 
     /* High contrast borders on interactive elements */
@@ -312,20 +238,15 @@ table {
     /* Reduce border intensity */
     .card,
     .recipe-list-card {
-      border-color: #e5e5e5;
+      border-color: var(--neutral-100);
     }
 
     /* Softer focus indicator */
     :focus-visible {
-      outline-color: #999;
+      outline-color: var(--neutral-400);
     }
   }
 }
-
-/* ========================================
- * Container Query Design System
- * Reusable breakpoints and utilities
- * ======================================== */
 
 /* ========================================
  * LAYER: UTILITIES
@@ -414,9 +335,9 @@ table {
   }
 
   /* ========================================
- * :has() Selector Utilities
- * Parent-based state styling
- * ======================================== */
+   * :has() Selector Utilities
+   * Parent-based state styling
+   * ======================================== */
 
   /* Card with badge - adds padding for absolute positioned badges */
   .has-badge:has(.badge) {
@@ -430,12 +351,12 @@ table {
 
   /* Form field states */
   .field:has(.error-message) {
-    --field-border-color: #ef4444;
-    --field-bg-color: #fef2f2;
+    --field-border-color: var(--error);
+    --field-bg-color: var(--error-bg);
   }
 
   .field:has(input:focus) {
-    --field-ring-color: var(--color-ring, #3b82f6);
+    --field-ring-color: var(--brand-primary);
   }
 
   .field:has(input:disabled) {
@@ -449,28 +370,12 @@ table {
   }
 
   /* ========================================
- * Enhanced prefers-reduced-motion
- * ======================================== */
-
-  @media (prefers-reduced-motion: reduce) {
-
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
-
-  /* ========================================
- * High Contrast Mode Support
- * ======================================== */
+   * High Contrast Mode Support
+   * ======================================== */
 
   @media (prefers-contrast: high) {
     :root {
-      --color-border: #000000;
+      --border: #000000;
       --shadow-opacity: 0;
     }
 
@@ -486,8 +391,8 @@ table {
   }
 
   /* ========================================
- * @supports Feature Detection
- * ======================================== */
+   * @supports Feature Detection
+   * ======================================== */
 
   @supports not (container-type: inline-size) {
 
@@ -505,4 +410,192 @@ table {
       container-name: grid;
     }
   }
+}
+
+/* ========================================
+ * BlockNote popover fallback styles
+ * (for portaled dropdowns)
+ * ======================================== */
+.bn-form-popover {
+  background-color: var(--bn-colors-menu-background, var(--bg));
+  border: var(--bn-border, 1px solid var(--border));
+  border-radius: var(--bn-border-radius-medium, var(--radius-lg));
+  box-shadow: var(--bn-shadow-medium, var(--shadow-lg));
+  color: var(--bn-colors-menu-text, var(--text));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  padding: 6px;
+}
+
+.bn-form-popover .mantine-TextInput-label,
+.bn-form-popover .mantine-FileInput-label {
+  color: var(--bn-colors-menu-text, var(--text-tertiary));
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.bn-form-popover .bn-text-input {
+  width: 300px;
+  max-width: min(320px, 75vw);
+}
+
+.bn-form-popover input,
+.bn-form-popover textarea,
+.bn-form-popover select {
+  background-color: var(--bn-colors-background, var(--bg));
+  border: 1px solid var(--bn-border-color, var(--border));
+  border-radius: var(--radius-md);
+  color: var(--bn-colors-menu-text, var(--text));
+  font-size: 12px;
+  padding: 6px 10px 6px 28px;
+  width: 100%;
+}
+
+.bn-form-popover input::placeholder,
+.bn-form-popover textarea::placeholder {
+  color: var(--bn-colors-menu-text, var(--text-tertiary));
+}
+
+.bn-form-popover svg {
+  color: var(--bn-colors-menu-text, var(--text-tertiary));
+}
+
+/* ========================================
+ * Skeleton shimmer animation
+ * ======================================== */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ========================================
+ * Selection color
+ * ======================================== */
+::selection {
+  background-color: var(--brand-primary);
+  color: var(--text-inverse);
+}
+
+/* ========================================
+ * Fade-up scroll animations
+ * ======================================== */
+/* Elements are visible by default; JS adds .js-fade-enabled to body to activate */
+.js-fade-enabled [data-fade-up] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+}
+
+.js-fade-enabled [data-fade-up].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children within fade-up containers */
+.js-fade-enabled [data-fade-up] > *:nth-child(1) { transition-delay: 0ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(2) { transition-delay: 50ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(3) { transition-delay: 100ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(4) { transition-delay: 150ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(5) { transition-delay: 200ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(6) { transition-delay: 250ms; }
+
+/* TOC active link highlight */
+.toc-active {
+  color: var(--brand-primary) !important;
+  font-weight: var(--font-semibold);
+  border-left-color: var(--brand-primary) !important;
+}
+
+/* Back-to-top hover */
+#back-to-top:hover {
+  background: var(--bg-hover);
+  transform: translateY(-2px);
+}
+
+/* ========================================
+ * Motion & Micro-interactions
+ * ======================================== */
+
+/* Hover lift for cards */
+.hover-lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Button press feedback */
+.btn-press {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+/* Link underline animation */
+.link-underline {
+  position: relative;
+  text-decoration: none;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: width var(--transition-base);
+}
+.link-underline:hover::after {
+  width: 100%;
+}
+
+/* Image zoom on hover */
+.img-zoom {
+  overflow: hidden;
+}
+.img-zoom img {
+  transition: transform var(--transition-slow);
+}
+.img-zoom:hover img {
+  transform: scale(1.04);
+}
+
+/* Badge soft pulse */
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.badge-pulse {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeUp 0.4s var(--ease-out) forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.08s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.12s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.16s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.20s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.24s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.28s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.32s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Standalone fade-up animation class */
+.animate-fade-up {
+  animation: fadeUp 0.5s var(--ease-out) forwards;
 }

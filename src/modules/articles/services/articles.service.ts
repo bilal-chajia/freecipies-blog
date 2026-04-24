@@ -469,7 +469,7 @@ function slugify(text: string): string {
 /**
  * Extract Table of Contents from contentJson.
  * - Strips markdown from heading text for clean display
- * - Includes recipe_card / main_recipe blocks as "Recipe" entry
+ * - Includes main_recipe blocks as "Recipe" entry
  * - Includes faq_section blocks as "FAQ" entry
  */
 function extractTocFromContent(contentJson: string | null, headline?: string): { id: string; text: string; level: number }[] {
@@ -498,7 +498,7 @@ function extractTocFromContent(contentJson: string | null, headline?: string): {
       }
 
       // ── Recipe block → "Recipe" TOC entry ───────────────
-      if (block.type === 'recipe_card' || block.type === 'main_recipe') {
+      if (block.type === 'main_recipe') {
         toc.push({ id: 'recipe-card', text: headline || 'Recipe', level: 2 });
       }
 

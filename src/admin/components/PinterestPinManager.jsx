@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, X, Star, GripVertical, Eye, Plus, Trash2, Edit2, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 const PinterestPinManager = ({ articleId }) => {
   const [pins, setPins] = useState([]);
   const [boards, setBoards] = useState([]);
-  const [loading, setLoading] = useState(false);
+const [saving, setSaving] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, pinToDelete: null });
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPin, setEditingPin] = useState(null);
   const [formData, setFormData] = useState({
@@ -32,7 +34,7 @@ const PinterestPinManager = ({ articleId }) => {
       const data = await response.json();
       setBoards(data.data?.boards || data.boards || []);
     } catch (error) {
-      console.error('Error fetching boards:', error);
+      toast.error('Failed to load boards');
     }
   };
 
@@ -43,7 +45,7 @@ const PinterestPinManager = ({ articleId }) => {
       const data = await response.json();
       setPins(data.data?.pins || data.pins || []);
     } catch (error) {
-      console.error('Error fetching pins:', error);
+      toast.error('Failed to load pins');
     } finally {
       setLoading(false);
     }
@@ -54,12 +56,12 @@ const PinterestPinManager = ({ articleId }) => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
+      toast.error('Please upload an image file');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('Image size must be less than 10MB');
+      toast.error('Image size must be less than 10MB');
       return;
     }
 
@@ -108,8 +110,8 @@ const PinterestPinManager = ({ articleId }) => {
       }
 
     } catch (error) {
-      console.error('Error uploading image:', error);
-      alert('Failed to upload image');
+      toast.error('Failed to upload image');
+      toast.error('Failed to upload image');
     } finally {
       setLoading(false);
     }
@@ -119,7 +121,7 @@ const PinterestPinManager = ({ articleId }) => {
     e.preventDefault();
 
     if (!formData.title || !formData.description || !formData.image_url) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -157,8 +159,8 @@ const PinterestPinManager = ({ articleId }) => {
       await fetchPins();
 
     } catch (error) {
-      console.error('Error saving pin:', error);
-      alert('Failed to save pin');
+      toast.error('Failed to save pin');
+      toast.error('Failed to save pin');
     } finally {
       setLoading(false);
     }
@@ -180,9 +182,13 @@ const PinterestPinManager = ({ articleId }) => {
     setShowAddForm(true);
   };
 
-  const handleDelete = async (pinId) => {
-    if (!confirm('Are you sure you want to delete this pin?')) return;
+  const handleDeletePin = (pinId) => {
+    setDeleteModal({ isOpen: true, pinToDelete: pinId });
+  };
 
+  const handleDeleteConfirm = async () => {
+    const pinId = deleteModal.pinToDelete;
+    if (!pinId) return;
     try {
       setLoading(true);
       const response = await fetch(`/api/pins?id=${pinId}`, {
@@ -192,8 +198,8 @@ const PinterestPinManager = ({ articleId }) => {
       if (!response.ok) throw new Error('Failed to delete pin');
       await fetchPins();
     } catch (error) {
-      console.error('Error deleting pin:', error);
-      alert('Failed to delete pin');
+      toast.error('Failed to delete pin');
+      toast.error('Failed to delete pin');
     } finally {
       setLoading(false);
     }
@@ -217,8 +223,8 @@ const PinterestPinManager = ({ articleId }) => {
       if (!response.ok) throw new Error('Failed to set primary pin');
       await fetchPins();
     } catch (error) {
-      console.error('Error setting primary pin:', error);
-      alert('Failed to set primary pin');
+      toast.error('Failed to set primary pin');
+      toast.error('Failed to set primary pin');
     } finally {
       setLoading(false);
     }
@@ -485,6 +491,16 @@ const PinterestPinManager = ({ articleId }) => {
           </div>
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, pinToDelete: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Pin"
+        description="Are you sure you want to delete this pin?"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

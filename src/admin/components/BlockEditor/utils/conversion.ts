@@ -183,22 +183,6 @@ export function contentJsonToBlocks(contentJson: string | any[] | { blocks: any[
                         },
                     };
 
-                case 'recipe_card': {
-                    const coverUrl = resolveCoverUrl(block.cover || block.thumbnail);
-                    return {
-                        id,
-                        type: 'recipeEmbed',
-                        props: {
-                            articleId: block.article_id,
-                            slug: block.slug,
-                            headline: block.headline,
-                            thumbnail: coverUrl,
-                            difficulty: block.difficulty,
-                            totalTime: block.total_time,
-                        }
-                    };
-                }
-
                 case 'related_content': {
                     const parsedLimit = parseInt(block.limit, 10);
                     return {
@@ -389,25 +373,6 @@ export function blocksToContentJson(blocks: AnyBlock[]): ContentBlock[] {
                     note: props.note || '',
                     cover: props.cover || null,
                 } as any);
-                break;
-
-            case 'recipeEmbed':
-                if (props.articleId) {
-                    const articleId = parseInt(props.articleId, 10);
-                    if (!Number.isFinite(articleId)) break;
-                    const cover = props.thumbnail
-                        ? { variants: { lg: { url: props.thumbnail } } }
-                        : undefined;
-                    result.push({
-                        type: 'recipe_card',
-                        article_id: articleId,
-                        headline: props.headline || '',
-                        ...(props.slug ? { slug: props.slug } : {}),
-                        ...(props.totalTime ? { total_time: props.totalTime } : {}),
-                        ...(props.difficulty ? { difficulty: props.difficulty } : {}),
-                        ...(cover ? { cover } : {}),
-                    } as any);
-                }
                 break;
 
             case 'relatedContent': {

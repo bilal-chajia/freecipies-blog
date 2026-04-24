@@ -7,6 +7,7 @@ import { buildImageSlotFromMedia, generateSlug } from '../../utils/helpers';
 import MediaDialog from '@/components/MediaDialog';
 import AuthorSidebar from '@/components/AuthorSidebar';
 import AuthorEditorMain from '@/components/AuthorEditorMain';
+import { toast } from 'sonner';
 
 const AVATAR_VARIANT_SIZES = {
   lg: 400,
@@ -150,7 +151,7 @@ const AuthorEditor = () => {
         setError('Author not found');
       }
     } catch (err) {
-      console.error('Failed to load author:', err);
+      toast.error('Failed to load author');
       setError('Failed to load author');
     } finally {
       setLoading(false);
@@ -229,7 +230,7 @@ const AuthorEditor = () => {
 
       navigate('/authors', { state: { refresh: Date.now() } });
     } catch (err) {
-      console.error('Save error:', err);
+      toast.error('Failed to save author');
       setError(err.response?.data?.error || 'Failed to save author');
     } finally {
       setSaving(false);
@@ -266,7 +267,7 @@ const AuthorEditor = () => {
             </Button>
           </Link>
           <div>
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-2xl font-bold tracking-tight text-balance">
               {isEditMode ? 'Edit Author' : 'New Author'}
             </h2>
             <p className="text-sm text-muted-foreground">

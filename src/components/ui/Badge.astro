@@ -1,0 +1,90 @@
+---
+/**
+ * Badge — Catégories, tags, diet badges avec variantes de couleur
+ * Usage: <Badge variant="diet" size="sm">Vegan</Badge>
+ */
+interface Props {
+  variant?: "default" | "primary" | "secondary" | "diet" | "time" | "difficulty" | "ghost";
+  size?: "sm" | "md" | "lg";
+  class?: string;
+}
+
+const { variant = "default", size = "md", class: className = "" } = Astro.props;
+---
+
+<span class:list={["ui-badge", `ui-badge--${variant}`, `ui-badge--${size}`, className]}>
+  <slot />
+</span>
+
+<style>
+  .ui-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-weight: var(--font-semibold);
+    line-height: 1;
+    white-space: nowrap;
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+  }
+
+  .ui-badge--sm {
+    font-size: var(--text-xs);
+    padding: 0.25rem 0.5rem;
+  }
+
+  .ui-badge--md {
+    font-size: var(--text-sm);
+    padding: 0.375rem 0.75rem;
+  }
+
+  .ui-badge--lg {
+    font-size: var(--text-base);
+    padding: 0.5rem 1rem;
+  }
+
+  .ui-badge--default {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+
+  .ui-badge--primary {
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+  }
+
+  .ui-badge--secondary {
+    background: var(--brand-secondary);
+    color: var(--text-inverse);
+  }
+
+  .ui-badge--diet {
+    background: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--success);
+  }
+
+  .ui-badge--time {
+    background: var(--info-bg);
+    color: var(--info-text);
+    border: 1px solid var(--info);
+  }
+
+  .ui-badge--difficulty {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border: 1px solid var(--warning);
+  }
+
+  .ui-badge--ghost {
+    background: transparent;
+    color: var(--text-tertiary);
+    border: 1px solid var(--border);
+  }
+
+  .ui-badge--ghost:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+</style>

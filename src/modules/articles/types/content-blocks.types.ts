@@ -99,15 +99,7 @@ export interface EmbedBlock {
     html?: string;
 }
 
-export interface RecipeCardBlock {
-    type: 'recipe_card';
-    /** Internal article/recipe ID */
-    article_id: number;
-    /** Cached headline */
-    headline: string;
-    /** Cached cover image */
-    cover?: ImageSlot;
-}
+
 
 export interface ProductCardBlock {
     type: 'product_card';
@@ -259,7 +251,6 @@ export type ContentBlock =
     | TipBoxBlock
     // Embeds
     | EmbedBlock
-    | RecipeCardBlock
     | ProductCardBlock
     // Layout
     | DividerBlock

@@ -23,30 +23,30 @@ const AlertIcons = {
 // Premium alert variant configurations matching screenshot design
 const alertVariants = {
   tip: {
-    accent: "#2d6a4f",
-    titleColor: "#111827",
-    textColor: "#374151",
+    accent: "var(--success)",
+    titleColor: "var(--text)",
+    textColor: "var(--text-secondary)",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
     defaultTitle: "Why I Love This Recipe",
   },
   warning: {
-    accent: "#b45309",
-    titleColor: "#111827",
-    textColor: "#374151",
+    accent: "var(--warning)",
+    titleColor: "var(--text)",
+    textColor: "var(--text-secondary)",
     icon: AlertIcons.warning,
     defaultTitle: "Attention",
   },
   note: {
-    accent: "#475569",
-    titleColor: "#111827",
-    textColor: "#374151",
+    accent: "var(--text-secondary)",
+    titleColor: "var(--text)",
+    textColor: "var(--text-secondary)",
     icon: AlertIcons.note,
     defaultTitle: "Note",
   },
   info: {
-    accent: "#1d4ed8",
-    titleColor: "#111827",
-    textColor: "#374151",
+    accent: "var(--info)",
+    titleColor: "var(--text)",
+    textColor: "var(--text-secondary)",
     icon: AlertIcons.info,
     defaultTitle: "Info",
   },
@@ -60,13 +60,14 @@ const alertVariants = {
   };
 };
 
-const { content, faqsJson, settings, article, recipeJson, author, category } =
+const { content, faqsJson, settings, article, recipeJson, roundupJson, author, category } =
   Astro.props as {
     content?: unknown;
     faqsJson?: unknown;
     settings?: TocSettings;
     article?: Article;
     recipeJson?: RecipeJson | null;
+    roundupJson?: any;
     author?: Author | null;
     category?: Category | null;
   };
@@ -98,7 +99,7 @@ const renderInlineMarkdown = (text?: string): string => {
     const isExternal = safeHref.startsWith("http");
     const target = isExternal ? ' target="_blank"' : "";
     const rel = isExternal ? ' rel="noreferrer noopener"' : "";
-    return `<a href="${safeHref}" class="text-blue-600 underline underline-offset-2"${target}${rel}>${label}</a>`;
+    return `<a href="${safeHref}" class="text-[var(--info)] underline underline-offset-2"${target}${rel}>${label}</a>`;
   });
 
   return withLinks
@@ -226,6 +227,15 @@ const numberedBlocks = parsed.map((block) => {
 // Counter for sequential numbering across multiple roundup blocks
 let globalRoundupIndex = 1;
 const processedBlocks = numberedBlocks;
+
+// Check if there's a roundupList block in content
+const hasRoundupListBlock = processedBlocks.some(
+  (b: any) => b.type === "roundupList" || b.type === "roundup_list",
+);
+
+// If no roundupList block but roundupJson has items, render them at the end
+const shouldRenderStandaloneRoundup =
+  !hasRoundupListBlock && (roundupJson as any)?.items?.length > 0;
 ---
 
 <div class="content-blocks">
@@ -318,7 +328,7 @@ const processedBlocks = numberedBlocks;
       }
       if (block.type === "related_content")
         return <RelatedContent block={block} />;
-      if (block.type === "roundupList") {
+      if (block.type === "roundupList" || block.type === "roundup_list") {
         const startIndex = globalRoundupIndex;
         const items =
           typeof block.itemsJson === "string"
@@ -333,7 +343,7 @@ const processedBlocks = numberedBlocks;
       if (block.type === "table")
         return <TableBlock headers={block.headers} rows={block.rows} />;
       if (block.type === "before_after") return <BeforeAfter block={block} />;
-      if (block.type === "recipe_card" || block.type === "main_recipe") {
+      if (block.type === "main_recipe") {
         if (!article || !recipeJson) return null;
         return (
           <RecipeCard
@@ -354,7 +364,7 @@ const processedBlocks = numberedBlocks;
               style={{
                 borderTopWidth: style === "double" ? "4px" : "2px",
                 borderTopStyle: style,
-                borderTopColor: "#9ca3af",
+                borderTopColor: "var(--text-tertiary)",
               }}
             />
           </div>
@@ -436,6 +446,18 @@ const processedBlocks = numberedBlocks;
       return null;
     })
   }
+
+  {/* Standalone Roundup List - renders if no roundupList block in content but roundupJson exists */}
+  {
+    shouldRenderStandaloneRoundup && (
+      <div class="standalone-roundup-list">
+        <div class="standalone-header">
+          <h2 class="standalone-title">Featured Recipes</h2>
+        </div>
+        <RoundupItemList roundup={roundupJson} db={env.DB} />
+      </div>
+    )
+  }
 </div>
 
 <style>
@@ -445,7 +467,7 @@ const processedBlocks = numberedBlocks;
     font-family: "Source Sans 3", "Segoe UI", Roboto, sans-serif;
     font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
     line-height: 1.6;
-    color: #333;
+    color: var(--text);
   }
 
   .content-blocks > :global(*) {
@@ -495,14 +517,14 @@ const processedBlocks = numberedBlocks;
 
   .content-blocks > :global(figcaption) {
     font-size: 0.8125rem;
-    color: #666;
+    color: var(--neutral-500);
     margin-top: 0.5rem;
     text-align: center;
   }
 
   .content-blocks > :global(.credit) {
     font-style: italic;
-    color: #999;
+    color: var(--neutral-400);
   }
 
   .content-blocks > :global(.video-embed) {
@@ -514,8 +536,8 @@ const processedBlocks = numberedBlocks;
   /* ── Premium Tip Box ── */
   .content-blocks :global(.tip-box-premium) {
     position: relative;
-    background: #ffffff;
-    border: 1.5px solid var(--tip-accent, #2d6a4f);
+    background: var(--bg);
+    border: 1.5px solid var(--tip-accent, var(--success));
     border-radius: 16px;
     margin: 40px 0;
     padding: 48px 32px 32px;
@@ -528,7 +550,7 @@ const processedBlocks = numberedBlocks;
     display: flex;
     align-items: center;
     gap: 12px;
-    background: #ffffff;
+    background: var(--bg);
     padding: 0 6px;
   }
 
@@ -539,9 +561,9 @@ const processedBlocks = numberedBlocks;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--tip-accent, #2d6a4f);
+    background: var(--tip-accent, var(--success));
     border-radius: 50%;
-    color: #ffffff;
+    color: var(--bg);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
@@ -551,17 +573,17 @@ const processedBlocks = numberedBlocks;
     font-size: 26px;
     font-weight: 400;
     font-style: italic;
-    color: #111827;
+    color: var(--text);
     line-height: 44px;
     letter-spacing: -0.01em;
-    background: #ffffff;
+    background: var(--bg);
     padding: 0 8px;
   }
 
   .content-blocks :global(.tip-box-content) {
     font-size: 1.125rem;
     line-height: 1.8;
-    color: #374151;
+    color: var(--text-secondary);
   }
 
   .content-blocks :global(.tip-box-content p:not(:last-child)) {
@@ -583,7 +605,7 @@ const processedBlocks = numberedBlocks;
     padding-left: 24px;
     margin: 0;
     line-height: 1.7;
-    color: #374151;
+    color: var(--text-secondary);
   }
 
   .content-blocks :global(.tip-box-premium .tip-box-content ul li::before) {
@@ -594,7 +616,7 @@ const processedBlocks = numberedBlocks;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--tip-accent, #2d6a4f);
+    background: var(--tip-accent, var(--success));
   }
 
   /* Ordered list - dark numbered circles */
@@ -616,7 +638,7 @@ const processedBlocks = numberedBlocks;
     min-height: 30px;
     line-height: 1.75;
     font-size: 15px;
-    color: #374151;
+    color: var(--text-secondary);
   }
 
   .content-blocks :global(.tip-box-premium .tip-box-content ol li::before) {
@@ -626,8 +648,8 @@ const processedBlocks = numberedBlocks;
     top: 3px;
     width: 22px;
     height: 22px;
-    background: var(--tip-accent, #2d6a4f) !important;
-    color: #fff !important;
+    background: var(--tip-accent, var(--success)) !important;
+    color: var(--bg) !important;
     border-radius: 50%;
     text-align: center;
     line-height: 22px;

@@ -2,7 +2,7 @@
 import { env } from 'cloudflare:workers';
 import RoundupLayout from "@layouts/RoundupLayout.astro";
 import SEO from "@components/SEO.astro";
-import { getArticleBySlug } from "@modules/articles";
+import { getArticleBySlug, getArticleById } from "@modules/articles";
 import { getAuthorById } from "@modules/authors/services/authors.service";
 import { getCategoryById } from "@modules/categories/services/categories.service";
 import { extractImage } from "@shared/utils";
@@ -21,8 +21,18 @@ let category: any = null;
 
 try {
   if (env.DB) {
-    roundup = await getArticleBySlug(env.DB, slug, "roundup");
-    
+    // Smart routing: support both numeric ID and slug
+    const isNumeric = /^\d+$/.test(slug);
+    if (isNumeric) {
+      roundup = await getArticleById(env.DB, parseInt(slug));
+      // Ensure it's a roundup
+      if (roundup && roundup.type !== 'roundup') {
+        roundup = null;
+      }
+    } else {
+      roundup = await getArticleBySlug(env.DB, slug, "roundup");
+    }
+
     if (roundup) {
       if (roundup.authorId) {
         author = await getAuthorById(env.DB, roundup.authorId);
@@ -47,9 +57,14 @@ const heroImage = heroCover.imageUrl ? heroCover : heroThumb;
 const pageTitle = roundup.metaTitle || roundup.headline;
 const pageDescription = roundup.metaDescription || roundup.shortDescription;
 const faqs = typeof roundup.faqsJson === 'string' ? JSON.parse(roundup.faqsJson || '[]') : (roundup.faqsJson || []);
+
+// Parse roundupJson for the content
+const parsedRoundupJson = typeof roundup.roundupJson === 'string'
+  ? JSON.parse(roundup.roundupJson || '{"items":[]}')
+  : (roundup.roundupJson || { items: [] });
 ---
 
-<RoundupLayout article={roundup} author={author} category={category}>
+<RoundupLayout article={roundup} author={author} category={category} roundupJson={parsedRoundupJson}>
   <SEO
     slot="head"
     title={pageTitle}

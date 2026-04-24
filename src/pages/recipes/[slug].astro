@@ -2,7 +2,7 @@
 import { env } from 'cloudflare:workers';
 import RecipeLayout from "@layouts/RecipeLayout.astro";
 import SEO from "@components/SEO.astro";
-import { getArticleBySlug } from "@modules/articles";
+import { getArticleBySlug, getArticleById } from "@modules/articles";
 import { getAuthorById } from "@modules/authors/services/authors.service";
 import { getCategoryById } from "@modules/categories/services/categories.service";
 import { extractImage, getImageSrcSet } from "@shared/utils";
@@ -25,7 +25,17 @@ let recipe: any = null;
 
 try {
   if (env.DB) {
-    recipe = await getArticleBySlug(env.DB, slug, "recipe");
+    // Smart routing: support both numeric ID and slug
+    const isNumeric = /^\d+$/.test(slug);
+    if (isNumeric) {
+      recipe = await getArticleById(env.DB, parseInt(slug));
+      // Ensure it's a recipe
+      if (recipe && recipe.type !== 'recipe') {
+        recipe = null;
+      }
+    } else {
+      recipe = await getArticleBySlug(env.DB, slug, "recipe");
+    }
   }
 } catch (error) {
   console.error(`Error fetching recipe (${slug}):`, error);

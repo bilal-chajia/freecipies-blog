@@ -1,0 +1,90 @@
+---
+/**
+ * SectionTitle — Titre de section avec dot décoratif et ligne
+ * Usage: <SectionTitle>Latest Recipes</SectionTitle>
+ */
+interface Props {
+  as?: "h1" | "h2" | "h3" | "h4";
+  centered?: boolean;
+  subtitle?: string;
+  class?: string;
+}
+
+const {
+  as: Tag = "h2",
+  centered = false,
+  subtitle,
+  class: className = "",
+} = Astro.props;
+---
+
+<div class:list={["ui-section-title", centered && "ui-section-title--centered", className]}>
+  <div class="ui-section-title__header">
+    <span class="ui-section-title__dot" aria-hidden="true"></span>
+    <Tag class="ui-section-title__text">
+      <slot />
+    </Tag>
+  </div>
+  {subtitle && <p class="ui-section-title__subtitle">{subtitle}</p>}
+</div>
+
+<style>
+  .ui-section-title {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-8);
+  }
+
+  .ui-section-title--centered {
+    align-items: center;
+    text-align: center;
+  }
+
+  .ui-section-title__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .ui-section-title--centered .ui-section-title__header {
+    justify-content: center;
+  }
+
+  .ui-section-title__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: var(--brand-primary);
+    flex-shrink: 0;
+  }
+
+  .ui-section-title__text {
+    font-family: var(--font-serif);
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    color: var(--text);
+    margin: 0;
+    line-height: var(--leading-tight);
+    letter-spacing: -0.02em;
+  }
+
+  .ui-section-title__subtitle {
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 600px;
+    line-height: var(--leading-relaxed);
+  }
+
+  .ui-section-title--centered .ui-section-title__subtitle {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (max-width: 640px) {
+    .ui-section-title__text {
+      font-size: var(--text-2xl);
+    }
+  }
+</style>

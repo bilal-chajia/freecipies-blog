@@ -340,7 +340,12 @@ export function hydrateArticle<T extends {
     : [];
 
   const seo = extractSeo(article.seoJson);
-  const route = article.type === 'recipe' ? `/recipes/${article.slug}` : `/articles/${article.slug}`;
+  // Generate correct route based on article type
+  const route = article.type === 'recipe'
+    ? `/recipes/${article.slug}`
+    : article.type === 'roundup'
+      ? `/roundups/${article.slug}`
+      : `/articles/${article.slug}`;
 
   return {
     ...article,

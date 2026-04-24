@@ -4,7 +4,8 @@
  * Configuration page for AI providers (Gemini, OpenAI, Anthropic).
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Sparkles, Key, Check, X, Loader2, AlertCircle, Eye, EyeOff, Thermometer, FileText, Plus } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
@@ -253,20 +254,18 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }) => {
 
     // Handle model migration
     const handleMigrateModels = async () => {
-        if (!confirm('This will populate the database with all available models from types.ts. Continue?')) {
-            return;
-        }
+        toast.info('Starting model migration...');
 
         try {
             setMigrating(true);
             const response = await api.post('/admin/ai/migrate-models');
             if (response.data.success) {
-                alert(`Successfully migrated ${response.data.data.totalModels} models!`);
+                toast.success(`Successfully migrated ${response.data.data.totalModels} models!`);
                 await loadSettings(); // Reload to show new models
             }
         } catch (err) {
             console.error('Failed to migrate models:', err);
-            alert('Failed to migrate models. Check console for details.');
+            toast.error('Failed to migrate models. Check console for details.');
         } finally {
             setMigrating(false);
         }
@@ -358,7 +357,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }) => {
                                                     />
                                                     <Button
                                                         size="sm"
-                                                        className="h-7 w-7 p-0 rounded-full"
+                                                        className="h-9 w-9 p-0 rounded-full"
                                                         onClick={() => setAddModelDialogProvider(providerKey)}
                                                         title="Add Model"
                                                     >
@@ -386,7 +385,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }) => {
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowKeys(prev => ({ ...prev, [providerKey]: !prev[providerKey] }))}
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
                                                 >
                                                     {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                                                 </button>

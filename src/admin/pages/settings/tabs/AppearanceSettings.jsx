@@ -8,6 +8,7 @@ import ColorPicker from '@/components/ColorPicker';
 import BrandingCards from '@/components/BrandingCards';
 import { brandingAPI } from '../../../services/api';
 import { Palette, Layout, Sparkles, Loader2, Info, Image, ListTree } from 'lucide-react';
+import { toast } from 'sonner';
 
 const AppearanceSettings = ({ formData, handleInputChange }) => {
     const [activeSection, setActiveSection] = useState('branding');
@@ -38,7 +39,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                     setFaviconVariants(response.data.data.faviconVariants || {});
                 }
             } catch (error) {
-                console.error('Failed to load branding:', error);
+                toast.error('Failed to load branding');
             } finally {
                 setLoading(false);
             }
@@ -129,7 +130,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                         >
                             <div
                                 className="w-full h-full rounded"
-                                style={{ backgroundColor: formData.badgeColor || '#3b82f6' }}
+                                style={{ backgroundColor: formData.badgeColor || 'var(--info)' }}
                             />
                         </Button>
                         <div className="font-mono text-xs text-muted-foreground">
@@ -152,20 +153,20 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                     <div className="flex gap-2 mt-2">
                         <div
                             className="px-3 py-1 rounded-full text-white text-xs font-medium"
-                            style={{ backgroundColor: formData.badgeColor || '#3b82f6' }}
+                            style={{ backgroundColor: formData.badgeColor || 'var(--info)' }}
                         >
                             Featured
                         </div>
                         <div
                             className="px-3 py-1 rounded-full text-xs font-medium border"
-                            style={{ borderColor: formData.badgeColor || '#3b82f6', color: formData.badgeColor || '#3b82f6' }}
+                            style={{ borderColor: formData.badgeColor || 'var(--info)', color: formData.badgeColor || 'var(--info)' }}
                         >
                             Category
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-start gap-2 p-2.5 bg-amber-500/10 rounded-md text-xs text-amber-700 dark:text-amber-400">
+                <div className="flex items-start gap-2 p-2.5 bg-warning/10 rounded-md text-xs text-warning dark:text-warning">
                     <Info className="size-3.5 mt-0.5 shrink-0" />
                     Ensure contrast for accessibility on both light and dark backgrounds.
                 </div>
@@ -282,7 +283,7 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                             >
                                 <div
                                     className="w-full h-full rounded"
-                                    style={{ backgroundColor: formData.tocAccentColor || '#f97316' }}
+                                    style={{ backgroundColor: formData.tocAccentColor || 'var(--brand-accent)' }}
                                 />
                             </Button>
                             <div className="font-mono text-xs text-muted-foreground">
@@ -304,15 +305,15 @@ const AppearanceSettings = ({ formData, handleInputChange }) => {
                     <div className="p-4 rounded-lg border-2 bg-secondary/10 border-secondary/20">
                         <span className="text-[10px] font-medium text-secondary-foreground">TOC Preview</span>
                         <div className="mt-2 space-y-1.5">
-                            <div className="flex items-center gap-2 text-sm" style={{ color: formData.tocAccentColor || '#f97316' }}>
+                            <div className="flex items-center gap-2 text-sm" style={{ color: formData.tocAccentColor || 'var(--brand-accent)' }}>
                                 <span className="font-bold">1.</span>
                                 <span className="text-secondary-foreground">Introduction</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm pl-4" style={{ color: formData.tocAccentColor || '#f97316' }}>
+                            <div className="flex items-center gap-2 text-sm pl-4" style={{ color: formData.tocAccentColor || 'var(--brand-accent)' }}>
                                 <span className="font-bold">1.1.</span>
                                 <span className="text-secondary-foreground">Background</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm" style={{ color: formData.tocAccentColor || '#f97316' }}>
+                            <div className="flex items-center gap-2 text-sm" style={{ color: formData.tocAccentColor || 'var(--brand-accent)' }}>
                                 <span className="font-bold">2.</span>
                                 <span className="text-secondary-foreground">Ingredients</span>
                             </div>

@@ -232,7 +232,7 @@ export const Alert = createReactBlockSpec(
                             background: config.bg,
                             border: `1px solid ${config.borderColor}`,
                             borderRadius: '16px',
-                            boxShadow: '0 4px 20px -4px rgba(0,0,0,0.03)',
+                            boxShadow: 'var(--shadow-sm)',
                         }}
                         data-alert-type={alertType}
                     >
@@ -242,7 +242,7 @@ export const Alert = createReactBlockSpec(
                             display: 'flex',
                             alignItems: 'flex-start',
                             gap: '16px',
-                            borderBottom: '1px solid rgba(0,0,0,0.04)',
+                            borderBottom: '1px solid var(--border)',
                         }}>
                             {/* Icon Badge */}
                             <div
@@ -343,8 +343,7 @@ export const Alert = createReactBlockSpec(
                                         }, true);
                                     }
                                 }}
-                                className="prose prose-sm max-w-none focus:outline-none"
-                                style={{ color: '#374151' }}
+                                className="prose prose-sm max-w-none focus:outline-none text-foreground"
                             />
                         </div>
                     </div>

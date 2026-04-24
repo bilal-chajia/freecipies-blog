@@ -41,7 +41,7 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
         }
     };
 
-    const badgeColor = pendingColor || category.color || '#ff6600';
+    const badgeColor = pendingColor || category.color || '#ff6b35';
     const textColor = getContrastColor(badgeColor);
     const cover = extractImage(category.imagesJson, 'cover', 1200);
     const thumbnail = extractImage(category.imagesJson, 'thumbnail', 720);
@@ -133,14 +133,14 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
                 >
                     <span
                         className="font-bold text-[11px] uppercase tracking-wide line-clamp-1 w-full pr-6 leading-tight"
-                        style={{ color: '#ffffff' }}
+                        style={{ color: 'var(--text-inverse)' }}
                     >
                         {category.label}
                     </span>
 
                     <span
                         className="text-[9px] mt-0.5 font-medium leading-none"
-                        style={{ color: '#ffffff' }}
+                        style={{ color: 'var(--text-inverse)' }}
                     >
                         {category.cachedPostCount || 0} posts
                     </span>

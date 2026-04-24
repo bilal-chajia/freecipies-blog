@@ -1,102 +1,402 @@
 @import "tailwindcss";
+@import "../shared/design-tokens.css";
 
 /* WordPress Block Editor Design System */
 @import "./components/BlockEditor/styles/block-editor-tokens.css";
 
-/* Define theme variables for Tailwind v4 */
+/* ========================================
+ * Tailwind v4 Theme Configuration
+ * Bridges design tokens into Tailwind utilities
+ * ======================================== */
 @theme {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-chart-1: hsl(var(--chart-1));
-  --color-chart-2: hsl(var(--chart-2));
-  --color-chart-3: hsl(var(--chart-3));
-  --color-chart-4: hsl(var(--chart-4));
-  --color-chart-5: hsl(var(--chart-5));
-  --radius-xs: calc(var(--radius) - 6px);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* Colors mapped to design tokens */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--bg-elevated);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--bg-elevated);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--brand-primary);
+  --color-primary-foreground: var(--text-inverse);
+  --color-secondary: var(--bg-alt);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--bg-alt);
+  --color-muted-foreground: var(--text-tertiary);
+  --color-accent: var(--brand-accent);
+  --color-accent-foreground: var(--text-inverse);
+  --color-destructive: var(--error);
+  --color-destructive-foreground: var(--text-inverse);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--brand-primary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+
+  /* Typography */
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+
+  /* Radii */
+  --radius-xs: calc(var(--radius-sm) - 2px);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  /* Spacing shortcuts */
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+  --spacing-10: var(--space-10);
+  --spacing-12: var(--space-12);
+  --spacing-16: var(--space-16);
+  --spacing-20: var(--space-20);
 }
 
-/* shadcn/ui CSS Variables - zinc theme */
+/* ========================================
+ * shadcn/ui CSS Variables — Brand Theme
+ * Synced with design tokens
+ * IMPORTANT: ces valeurs HSL doivent rester synchronisées avec :
+ *   --primary   ↔ --brand-primary (#e74c3c)
+ *   --secondary ↔ --bg-alt (#f8f9fa light / #1a1a1a dark)
+ *   --accent    ↔ --brand-accent (#f7931e)
+ *   --destructive ↔ --error (#ef4444)
+ * ======================================== */
 :root {
   --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+  --foreground: 0 0% 10%;
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 0 0% 10%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 5.9% 10%;
-  --radius: 0.5rem;
-  --chart-1: 12 76% 61%;
-  --chart-2: 173 58% 39%;
-  --chart-3: 197 37% 24%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 27 87% 67%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 6 78% 57%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 30 10% 96%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 30 10% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 24 95% 53%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 10% 90%;
+  --input: 30 10% 90%;
+  --ring: 6 78% 57%;
+  --radius: 0.625rem;
+  --chart-1: 6 78% 57%;
+  --chart-2: 24 95% 53%;
+  --chart-3: 30 100% 60%;
+  --chart-4: 150 60% 45%;
+  --chart-5: 220 70% 50%;
 }
 
 .dark {
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 0 0% 98%;
-  --primary-foreground: 240 5.9% 10%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 240 4.9% 83.9%;
-  --chart-1: 220 70% 50%;
-  --chart-2: 160 60% 45%;
-  --chart-3: 30 80% 55%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 75% 55%;
+  --background: 0 0% 7%;
+  --foreground: 30 10% 95%;
+  --card: 0 0% 10%;
+  --card-foreground: 30 10% 95%;
+  --popover: 0 0% 10%;
+  --popover-foreground: 30 10% 95%;
+  --primary: 6 78% 57%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 30 10% 95%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 24 80% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 18%;
+  --input: 0 0% 18%;
+  --ring: 6 78% 57%;
+  --chart-1: 6 78% 57%;
+  --chart-2: 24 80% 45%;
+  --chart-3: 30 60% 30%;
+  --chart-4: 150 50% 40%;
+  --chart-5: 220 60% 55%;
 }
 
 * {
-  border-color: var(--color-border);
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-padding-top: 1rem;
 }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+}
+
+/* ========================================
+ * Custom Scrollbar
+ * ======================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--neutral-300);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--neutral-400);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--neutral-700);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--neutral-600);
+}
+
+/* ========================================
+ * Toggle Switch
+ * ======================================== */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--neutral-300);
+  border-radius: var(--radius-full);
+  transition: var(--transition-base);
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: var(--radius-full);
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--brand-primary);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.dark .toggle-slider {
+  background-color: var(--neutral-700);
+}
+
+.dark .toggle-switch input:checked + .toggle-slider {
+  background-color: var(--brand-primary);
+}
+
+/* ========================================
+ * Skeleton Shimmer Animation
+ * ======================================== */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--background)) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite ease-in-out;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 75%
+  );
+}
+
+/* ========================================
+ * Selection
+ * ======================================== */
+::selection {
+  background-color: var(--brand-primary);
+  color: var(--text-inverse);
+}
+
+/* ========================================
+ * Motion & Micro-interactions
+ * ======================================== */
+
+/* Hover lift for cards */
+.hover-lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Button press feedback */
+.btn-press {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+/* Table row hover highlight */
+.table-row-hover {
+  transition: background-color var(--transition-fast);
+}
+.table-row-hover:hover {
+  background-color: hsl(var(--accent) / 0.06);
+}
+
+/* Sidebar active item indicator */
+.sidebar-item-indicator {
+  position: relative;
+}
+.sidebar-item-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 3px;
+  height: 60%;
+  background: var(--brand-primary);
+  border-radius: 0 4px 4px 0;
+  transition: transform var(--transition-base);
+}
+.sidebar-item-indicator.is-active::before,
+.sidebar-item-indicator[data-active="true"]::before {
+  transform: translateY(-50%) scaleY(1);
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeUp 0.4s var(--ease-out) forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.08s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.12s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.16s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.20s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.24s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.28s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.32s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Standalone fade-up animation class */
+.animate-fade-up {
+  animation: fadeUp 0.5s var(--ease-out) forwards;
+}
+
+/* ========================================
+ * Mobile-First Admin Responsive Styles
+ * ======================================== */
+
+/* Reduce table cell padding on mobile */
+@media (max-width: 768px) {
+  [data-slot="table-cell"] {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  [data-slot="table-head"] {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+  /* Ensure table wrapper scrolls smoothly */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Mobile card-style table rows for very small screens */
+@media (max-width: 640px) {
+  /* Reduce font sizes in tables */
+  [data-slot="table"] {
+    font-size: 0.8125rem;
+  }
+  /* Make action buttons more tappable */
+  [data-slot="table-cell"] button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+}
+
+/* Form improvements on mobile */
+@media (max-width: 640px) {
+  /* Stack form grids */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  /* Full width inputs */
+  input, select, textarea {
+    font-size: 16px; /* Prevent iOS zoom on focus */
+  }
+}
+
+/* Editor toolbar responsive */
+@media (max-width: 768px) {
+  .editor-toolbar {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  .editor-toolbar-group {
+    padding: 0 0.25rem;
+  }
 }

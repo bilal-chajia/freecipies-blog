@@ -1,0 +1,113 @@
+---
+/**
+ * Card — Wrapper réutilisable avec hover lift et shadow transition
+ * Usage: <Card href="/recipes/slug" image={...}><slot /></Card>
+ */
+interface Props {
+  href?: string;
+  image?: {
+    src: string;
+    alt: string;
+    width?: number;
+    height?: number;
+  };
+  class?: string;
+  variant?: "default" | "compact" | "featured";
+}
+
+const { href, image, class: className = "", variant = "default" } = Astro.props;
+
+const Tag = href ? "a" : "article";
+const isExternal = href?.startsWith("http");
+---
+
+<Tag
+  class:list={["ui-card", `ui-card--${variant}`, className]}
+  {...href && { href, ...(isExternal && { target: "_blank", rel: "noreferrer noopener" }) }}
+>
+  {image && (
+    <div class="ui-card__media">
+      <img
+        src={image.src}
+        alt={image.alt}
+        width={image.width || 400}
+        height={image.height || 300}
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  )}
+  <div class="ui-card__body">
+    <slot />
+  </div>
+</Tag>
+
+<style>
+  .ui-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition:
+      transform var(--transition-base),
+      box-shadow var(--transition-base),
+      border-color var(--transition-fast);
+    will-change: transform;
+  }
+
+  .ui-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--border-strong);
+  }
+
+  .ui-card:active {
+    transform: translateY(-2px);
+  }
+
+  .ui-card--compact {
+    border-radius: var(--radius-lg);
+  }
+
+  .ui-card--featured {
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-md);
+  }
+
+  .ui-card--featured:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .ui-card__media {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+  }
+
+  .ui-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+  }
+
+  .ui-card:hover .ui-card__media img {
+    transform: scale(1.04);
+  }
+
+  .ui-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-5);
+    flex: 1;
+  }
+
+  .ui-card--compact .ui-card__body {
+    padding: var(--space-4);
+  }
+</style>

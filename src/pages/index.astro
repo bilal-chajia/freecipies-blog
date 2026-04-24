@@ -1233,7 +1233,11 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     border: none;
     border-radius: var(--radius);
     font-size: 14px;
-    outline: none;
+  }
+
+  .newsletter-form input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }
 
   .newsletter-form button {

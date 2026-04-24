@@ -35,8 +35,8 @@ const hasHalfStar = safeRating % 1 >= 0.4 && safeRating % 1 <= 0.8;
 const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
 // Colors based on project's palette (Natural greens)
-const starColor = "#6B8F71"; // Accent Sage Green
-const emptyColor = "#e5e7eb"; // Gray 200
+const starColor = "var(--accent-sage)"; // Accent Sage Green
+const emptyColor = "var(--border)"; // Gray 200
 ---
 
 {
@@ -138,24 +138,24 @@ const emptyColor = "#e5e7eb"; // Gray 200
   }
 
   .star.full {
-    color: #6b8f71; /* Accent Color */
+    color: var(--accent-sage); /* Accent Color */
   }
 
   .rating-info {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    color: #4b5563; /* text-gray-600 */
+    color: var(--text-secondary); /* text-gray-600 */
     font-weight: 500;
   }
 
   .rating-number {
-    color: #111827; /* text-gray-900 */
+    color: var(--text); /* text-gray-900 */
     font-weight: 700;
   }
 
   .rating-count {
-    color: #6b7280; /* text-gray-500 */
+    color: var(--text-tertiary); /* text-gray-500 */
     font-size: 0.9em;
   }
 

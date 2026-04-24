@@ -1,5 +1,6 @@
 ---
 import MegaMenu from "./MegaMenu.astro";
+import ThemeToggle from "./ThemeToggle.astro";
 import { getMenuItems } from "@modules/menus/services/menus.service";
 import type { MenuItem } from "@modules/menus/types/menus.types";
 
@@ -100,6 +101,7 @@ try {
             <path d="m21 21-4.35-4.35"></path>
           </svg>
         </button>
+        <ThemeToggle />
         <button
           class="mobile-menu-btn"
           aria-label="Show menu"
@@ -125,12 +127,38 @@ try {
 
   <!-- Mobile Navigation -->
   <nav class="mobile-nav" id="mobile-nav">
-    <a href="/categories" class="mobile-nav-link">Categories</a>
-    <a href="/recipes" class="mobile-nav-link">Explore</a>
-    <a href="/my-bookmarks" class="mobile-nav-link">Bookmarks</a>
-    <a href="/authors" class="mobile-nav-link">Authors</a>
-    <a href="/about" class="mobile-nav-link">About</a>
-    <a href="/contact" class="mobile-nav-link">Contact</a>
+    <a
+      href="/categories"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/categories" ? "page" : undefined}
+      >Categories</a
+    >
+    <a
+      href="/recipes"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/recipes" ? "page" : undefined}>Explore</a
+    >
+    <a
+      href="/my-bookmarks"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/my-bookmarks" ? "page" : undefined}
+      >Bookmarks</a
+    >
+    <a
+      href="/authors"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/authors" ? "page" : undefined}>Authors</a
+    >
+    <a
+      href="/about"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/about" ? "page" : undefined}>About</a
+    >
+    <a
+      href="/contact"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/contact" ? "page" : undefined}>Contact</a
+    >
   </nav>
 
   <!-- Search Modal -->
@@ -176,33 +204,34 @@ try {
   .site-header {
     position: sticky;
     top: 0;
-    z-index: 100;
-    background: white;
-    border-bottom: 1px solid #e0e0e0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    z-index: var(--z-sticky, 100);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
   }
 
   .skip-link {
     position: absolute;
     left: -9999px;
-    top: 8px;
-    background: #111;
-    color: #fff;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
+    top: var(--space-2);
+    background: var(--neutral-900);
+    color: var(--text-inverse);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
     text-decoration: none;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
   }
 
   .skip-link:focus {
-    left: 12px;
-    z-index: 101;
+    left: var(--space-3);
+    z-index: calc(var(--z-sticky, 100) + 1);
   }
 
   .header-container {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0 0.25rem;
+    padding: 0 var(--space-1);
   }
 
   .header-content {
@@ -214,13 +243,13 @@ try {
 
   .logo {
     text-decoration: none;
-    margin-left: 0.5rem;
+    margin-left: var(--space-2);
   }
 
   .logo-text {
     font-size: 1.5rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    font-weight: var(--font-extrabold);
+    background: var(--brand-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -240,14 +269,12 @@ try {
     display: none;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .logo-light {
-      display: none;
-    }
+  html.dark .logo-light {
+    display: none;
+  }
 
-    .logo-dark {
-      display: block;
-    }
+  html.dark .logo-dark {
+    display: block;
   }
 
   .desktop-nav {
@@ -257,36 +284,36 @@ try {
   }
 
   .nav-link {
-    color: #333;
+    color: var(--text);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: var(--font-medium);
     font-size: 0.95rem;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
   }
 
   .nav-link:hover,
   .nav-link.active {
-    background: #fff3e0;
-    color: #ff6b35;
+    background: var(--brand-primary-light);
+    color: var(--brand-secondary);
   }
 
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .search-btn,
   .mobile-menu-btn {
     background: none;
     border: none;
-    color: #666;
+    color: var(--text-tertiary);
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -294,8 +321,8 @@ try {
 
   .search-btn:hover,
   .mobile-menu-btn:hover {
-    background: #f0f0f0;
-    color: #333;
+    background: var(--bg-hover);
+    color: var(--text);
   }
 
   .mobile-menu-btn {
@@ -305,29 +332,43 @@ try {
   .mobile-nav {
     display: flex;
     flex-direction: column;
-    background: white;
+    background: var(--bg);
     border-top: 0;
     max-height: 0;
+    opacity: 0;
+    transform: translateY(-8px);
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition:
+      max-height 0.35s var(--ease-out),
+      opacity 0.25s var(--ease-out),
+      transform 0.35s var(--ease-out);
   }
 
   .mobile-nav.active {
-    max-height: 300px;
-    border-top: 1px solid #e0e0e0;
+    max-height: 400px;
+    opacity: 1;
+    transform: translateY(0);
+    border-top: 1px solid var(--border);
   }
 
   .mobile-nav-link {
-    padding: 1rem 1.5rem;
-    color: #333;
+    padding: var(--space-4) var(--space-6);
+    color: var(--text);
     text-decoration: none;
-    font-weight: 500;
-    border-bottom: 1px solid #f0f0f0;
-    transition: background 0.2s ease;
+    font-weight: var(--font-medium);
+    border-bottom: 1px solid var(--border-subtle);
+    transition:
+      background var(--transition-fast),
+      padding-left var(--transition-fast);
+    min-height: 48px;
+    display: flex;
+    align-items: center;
   }
 
-  .mobile-nav-link:hover {
-    background: #f8f9fa;
+  .mobile-nav-link:hover,
+  .mobile-nav-link:active {
+    background: var(--bg-alt);
+    padding-left: calc(var(--space-6) + 4px);
   }
 
   .search-modal {
@@ -336,12 +377,12 @@ try {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--bg-overlay);
     display: none;
     align-items: flex-start;
     justify-content: center;
     padding-top: 10vh;
-    z-index: 1000;
+    z-index: var(--z-modal);
   }
 
   .search-modal.active {
@@ -349,75 +390,80 @@ try {
   }
 
   .search-modal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
+    background: var(--bg);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
     width: 90%;
     max-width: 600px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-xl);
   }
 
   .search-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--space-6);
   }
 
   .search-header h2 {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
     margin: 0;
-    color: #1a1a1a;
+    color: var(--text);
   }
 
   .close-search {
     background: none;
     border: none;
-    color: #666;
+    color: var(--text-tertiary);
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
   }
 
   .close-search:hover {
-    background: #f0f0f0;
-    color: #333;
+    background: var(--bg-hover);
+    color: var(--text);
   }
 
   .search-form {
     display: flex;
-    gap: 1rem;
+    gap: var(--space-4);
     flex-direction: column;
   }
 
   .search-input {
     flex: 1;
     padding: 0.875rem 1.25rem;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.2s ease;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: var(--text-base);
+    background: var(--bg);
+    color: var(--text);
+    transition:
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
-  .search-input:focus {
+  .search-input:focus-visible {
     outline: none;
-    border-color: #ff6b35;
+    border-color: var(--brand-secondary);
+    box-shadow: var(--shadow-focus);
   }
 
   .search-submit {
     padding: 0.875rem 2rem;
-    background: #ff6b35;
-    color: white;
+    background: var(--brand-secondary);
+    color: var(--text-inverse);
     border: none;
-    border-radius: 8px;
-    font-weight: 600;
+    border-radius: var(--radius-md);
+    font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-fast);
   }
 
   .search-submit:hover {
-    background: #ff5722;
+    background: var(--brand-secondary-hover);
     transform: translateY(-1px);
   }
 

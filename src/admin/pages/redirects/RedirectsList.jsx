@@ -13,6 +13,7 @@ import { Textarea } from '@/ui/textarea.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select.jsx';
 import { redirectsAPI } from '../../services/api';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { toast } from 'sonner';
 
 const STATUS_CODES = [
@@ -52,7 +53,6 @@ const RedirectsList = () => {
             const data = response.data?.data || response.data || [];
             setItems(data);
         } catch (err) {
-            console.error('Failed to fetch redirects:', err);
             toast.error('Failed to load redirects');
         } finally {
             setLoading(false);
@@ -122,7 +122,6 @@ const RedirectsList = () => {
 
             handleCancel();
         } catch (err) {
-            console.error('Failed to save redirect:', err);
             toast.error('Failed to save redirect');
         } finally {
             setSaving(false);
@@ -137,7 +136,6 @@ const RedirectsList = () => {
             setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)));
             toast.success(`Redirect ${updatedStatus ? 'activated' : 'deactivated'}`);
         } catch (err) {
-            console.error('Failed to toggle redirect status:', err);
             toast.error('Failed to update status');
         }
     };
@@ -150,7 +148,6 @@ const RedirectsList = () => {
             setDeleteModal({ isOpen: false, item: null });
             toast.success('Redirect deleted');
         } catch (err) {
-            console.error('Failed to delete redirect:', err);
             toast.error('Failed to delete redirect');
         }
     };
@@ -253,8 +250,8 @@ const RedirectsList = () => {
                         <ArrowRightLeft className="size-4" />
                         Traffic Management
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tight">Redirects</h1>
-                    <p className="text-muted-foreground mt-1">
+                    <h1 className="text-3xl font-bold tracking-tight text-balance">Redirects</h1>
+                    <p className="text-sm text-muted-foreground mt-1">
                         Handle 301 and 302 redirects from old URLs to new paths.
                     </p>
                 </div>
@@ -291,9 +288,14 @@ const RedirectsList = () => {
             <div className="space-y-4">
                 <AnimatePresence mode="popLayout">
                     {filteredItems.length === 0 ? (
-                        <div className="py-20 flex flex-col items-center justify-center opacity-40 border-2 border-dashed rounded-2xl">
-                            <ArrowRightLeft className="size-10 mb-2" />
-                            <p className="text-sm font-medium">No redirect rules found</p>
+                        <div className="col-span-full">
+                            <EmptyState
+                                icon="alert"
+                                title="No redirect rules"
+                                description={items.length === 0 ? 'Create your first redirect to manage URL migrations.' : 'Try adjusting your search or filter.'}
+                                actionLabel={items.length === 0 ? 'New Redirect' : undefined}
+                                onAction={items.length === 0 ? handleStartCreate : undefined}
+                            />
                         </div>
                     ) : (
                         filteredItems.map((item) => (

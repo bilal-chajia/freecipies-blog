@@ -1,5 +1,5 @@
 ---
-import { createDb } from "@shared/database/drizzle";
+import { getDb } from "@shared/database/drizzle";
 import { articles } from "@modules/articles/schema/articles.schema";
 import { inArray } from "drizzle-orm";
 import type {
@@ -11,6 +11,7 @@ import {
   getImageSrcSet,
   hydrateArticles,
 } from "@shared/utils/hydration";
+import AuthorBadge from "./AuthorBadge.astro";
 
 interface Props {
   roundup?: any; // Leaving for legacy
@@ -33,10 +34,10 @@ if (block) {
   items =
     typeof props.itemsJson === "string"
       ? JSON.parse(props.itemsJson)
-      : props.items || [];
-  groupTitle = props.title || "";
-  groupDescription = props.description || "";
-  showStats = props.showStats !== false;
+      : props.items || block.items || [];
+  groupTitle = props.title || block.title || "";
+  groupDescription = props.description || block.description || "";
+  showStats = props.showStats !== false && block.show_stats !== false;
 } else {
   // Legacy roundupJson support
   const roundup: RoundupJson =
@@ -59,7 +60,7 @@ const internalIds = items
 let internalData = new Map<number, any>();
 if (internalIds.length > 0) {
   try {
-    const drizzle = createDb(db);
+    const drizzle = getDb(db);
     const results = await drizzle
       .select({
         id: articles.id,
@@ -74,6 +75,8 @@ if (internalIds.length > 0) {
         totalTimeMinutes: articles.totalTimeMinutes,
         difficultyLabel: articles.difficultyLabel,
         cachedRatingJson: articles.cachedRatingJson,
+        cachedAuthorJson: articles.cachedAuthorJson,
+        shortDescription: articles.shortDescription,
       })
       .from(articles)
       .where(inArray(articles.id, internalIds));
@@ -117,7 +120,7 @@ if (internalIds.length > 0) {
       // Resolve content (prefer manual item title/subtitle/note, fallback to article)
       const title = item.title || article?.headline || "Untitled";
       const subtitle =
-        item.subtitle || article?.subtitle || article?.excerpt || "";
+        item.subtitle || article?.subtitle || article?.shortDescription || article?.excerpt || "";
       const note = item.note || "";
 
       // Resolve image
@@ -167,6 +170,15 @@ if (internalIds.length > 0) {
                 />
               </a>
             </div>
+          )}
+
+          {article?.author && (
+            <AuthorBadge
+              name={article.author.name}
+              slug={article.author.slug}
+              avatar={article.author.avatar}
+              role={article.author.role}
+            />
           )}
 
           <div class="item-content">

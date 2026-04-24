@@ -28,6 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar.jsx';
 import { Badge } from '@/ui/badge.jsx';
 import { authorsAPI } from '../../services/api';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { toast } from 'sonner';
 import { extractImage, getImageSrcSet } from '@shared/utils';
 import { buildImageStyle, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
@@ -63,7 +64,6 @@ const AuthorsList = () => {
       const authorsData = response.data?.data || response.data || [];
       setAuthors(Array.isArray(authorsData) ? authorsData : []);
     } catch (err) {
-      console.error('Failed to load authors:', err);
       setError('Failed to load authors. Please try again.');
       setAuthors([]);
     } finally {
@@ -89,7 +89,6 @@ const AuthorsList = () => {
       ));
       toast.success(`${field === 'isOnline' ? 'Visibility' : 'Featured status'} updated`);
     } catch (err) {
-      console.error('Failed to update author:', err);
       toast.error('Failed to update author');
     } finally {
       setUpdating(null);
@@ -105,7 +104,6 @@ const AuthorsList = () => {
       setDeleteModal({ isOpen: false, authorToDelete: null });
       toast.success('Author removed successfully');
     } catch (err) {
-      console.error('Failed to delete author:', err);
       toast.error('Failed to delete author');
       setDeleteModal({ isOpen: false, authorToDelete: null });
     }
@@ -133,8 +131,8 @@ const AuthorsList = () => {
             <Users className="h-4 w-4" />
             Team & Contributors
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Author Management</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-balance">Author Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage your content creators, their profiles, and featured status.
           </p>
         </div>
@@ -242,7 +240,7 @@ const AuthorsList = () => {
                               className="data-[state=checked]:bg-emerald-500"
                             />
                             {author.isOnline ? (
-                              <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none text-[10px] font-bold uppercase">Live</Badge>
+                              <Badge variant="secondary" className="bg-success/10 text-success border-none text-[10px] font-bold uppercase">Live</Badge>
                             ) : (
                               <Badge variant="secondary" className="bg-muted text-muted-foreground border-none text-[10px] font-bold uppercase">Hidden</Badge>
                             )}
@@ -251,7 +249,7 @@ const AuthorsList = () => {
                         <td className="px-6 py-5 whitespace-nowrap text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -289,11 +287,14 @@ const AuthorsList = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="5" className="px-6 py-20 text-center">
-                        <div className="flex flex-col items-center gap-2 opacity-50">
-                          <Users className="h-10 w-10 text-muted-foreground" />
-                          <p className="font-medium text-sm">No authors found matching your criteria</p>
-                        </div>
+                      <td colSpan="5" className="px-6 py-8">
+                        <EmptyState
+                          icon="authors"
+                          title="No authors found"
+                          description={authors.length === 0 ? 'Add your first content creator.' : 'Try adjusting your search terms.'}
+                          actionLabel={authors.length === 0 ? 'Add Author' : undefined}
+                          actionHref={authors.length === 0 ? '/authors/new' : undefined}
+                        />
                       </td>
                     </tr>
                   )}

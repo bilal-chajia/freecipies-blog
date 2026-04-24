@@ -422,7 +422,7 @@ let stepCounter = 0;
         position: fixed;
         inset: 0;
         z-index: 10000;
-        background: #f5f5f5;
+        background: var(--neutral-50);
         overflow-y: auto;
         display: flex;
         flex-direction: column;
@@ -440,8 +440,8 @@ let stepCounter = 0;
         align-items: center;
         justify-content: space-between;
         padding: 12px 24px;
-        background: #111;
-        color: #fff;
+        background: var(--text);
+        color: var(--bg);
         flex-shrink: 0;
     }
     .print-toolbar-title {
@@ -466,25 +466,25 @@ let stepCounter = 0;
         transition: background 0.2s;
     }
     .print-now {
-        background: #6b8f71;
-        color: #fff;
+        background: var(--accent-sage);
+        color: var(--bg);
     }
     .print-now:hover {
-        background: #ea580c;
+        background: var(--brand-secondary);
     }
     .print-close {
-        background: #374151;
-        color: #fff;
+        background: var(--text-secondary);
+        color: var(--bg);
     }
     .print-close:hover {
-        background: #4b5563;
+        background: var(--text-secondary);
     }
     .print-print {
-        background: #2563eb;
-        color: #fff;
+        background: var(--info);
+        color: var(--bg);
     }
     .print-print:hover {
-        background: #1d4ed8;
+        background: var(--info);
     }
     .print-action-btn:disabled {
         opacity: 0.7;
@@ -512,7 +512,7 @@ let stepCounter = 0;
     .print-page {
         width: 100%;
         max-width: 800px;
-        background: #fff;
+        background: var(--bg);
         box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
         border-radius: 8px;
         overflow: hidden;
@@ -539,7 +539,7 @@ let stepCounter = 0;
     /* ── Header ── */
     .print-header {
         margin-bottom: 24px;
-        border-bottom: 2px solid #111;
+        border-bottom: 2px solid var(--text);
         padding-bottom: 20px;
     }
     .print-title {
@@ -547,16 +547,16 @@ let stepCounter = 0;
         font-weight: 800;
         line-height: 1.2;
         margin: 0 0 6px;
-        color: #111;
+        color: var(--text);
     }
     .print-author {
         font-size: 0.875rem;
-        color: #6b7280;
+        color: var(--text-tertiary);
         margin: 0 0 8px;
     }
     .print-description {
         font-size: 0.9rem;
-        color: #374151;
+        color: var(--text-secondary);
         line-height: 1.5;
         margin: 0;
     }
@@ -566,7 +566,7 @@ let stepCounter = 0;
         display: flex;
         gap: 0;
         margin-bottom: 28px;
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         border-radius: 8px;
         overflow: hidden;
     }
@@ -576,7 +576,7 @@ let stepCounter = 0;
         flex-direction: column;
         align-items: center;
         padding: 12px 8px;
-        border-right: 1px solid #e5e7eb;
+        border-right: 1px solid var(--border);
     }
     .print-stat:last-child {
         border-right: none;
@@ -585,13 +585,13 @@ let stepCounter = 0;
         font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #9ca3af;
+        color: var(--text-tertiary);
         font-weight: 600;
     }
     .print-stat-value {
         font-size: 0.95rem;
         font-weight: 700;
-        color: #111;
+        color: var(--text);
         margin-top: 2px;
     }
 
@@ -614,17 +614,17 @@ let stepCounter = 0;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: #111;
+        color: var(--text);
         margin: 0 0 16px;
         padding-bottom: 8px;
-        border-bottom: 2px solid #6b8f71;
+        border-bottom: 2px solid var(--accent-sage);
     }
     .print-group-title {
         font-size: 0.85rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #6b7280;
+        color: var(--text-tertiary);
         margin: 16px 0 8px;
     }
     .print-group-title:first-child {
@@ -639,7 +639,7 @@ let stepCounter = 0;
     }
     .print-ingredient-item {
         padding: 5px 0;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid var(--bg-hover);
         font-size: 0.85rem;
         line-height: 1.4;
         display: flex;
@@ -650,19 +650,19 @@ let stepCounter = 0;
     }
     .print-ing-amount {
         font-weight: 700;
-        color: #111;
+        color: var(--text);
         white-space: nowrap;
         min-width: 55px;
     }
     .print-ing-name {
-        color: #374151;
+        color: var(--text-secondary);
     }
     .print-ing-name em {
-        color: #9ca3af;
+        color: var(--text-tertiary);
     }
     .print-optional {
         font-size: 0.75rem;
-        color: #9ca3af;
+        color: var(--text-tertiary);
         font-style: italic;
     }
 
@@ -677,7 +677,7 @@ let stepCounter = 0;
         display: flex;
         gap: 12px;
         padding: 10px 0;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid var(--bg-hover);
     }
     .print-step:last-child {
         border-bottom: none;
@@ -686,8 +686,8 @@ let stepCounter = 0;
         flex-shrink: 0;
         width: 26px;
         height: 26px;
-        background: #111;
-        color: #fff;
+        background: var(--text);
+        color: var(--bg);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -700,11 +700,11 @@ let stepCounter = 0;
         flex: 1;
         font-size: 0.85rem;
         line-height: 1.55;
-        color: #374151;
+        color: var(--text-secondary);
     }
     .print-step-body strong {
         display: block;
-        color: #111;
+        color: var(--text);
         margin-bottom: 2px;
     }
     .print-step-body p {
@@ -713,7 +713,7 @@ let stepCounter = 0;
     .print-step-tip {
         margin-top: 6px !important;
         font-size: 0.8rem;
-        color: #6b7280;
+        color: var(--text-tertiary);
         font-style: italic;
     }
 
@@ -725,7 +725,7 @@ let stepCounter = 0;
         display: grid;
         grid-template-columns: repeat(6, 1fr);
         gap: 0;
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         border-radius: 8px;
         overflow: hidden;
     }
@@ -734,7 +734,7 @@ let stepCounter = 0;
         flex-direction: column;
         align-items: center;
         padding: 14px 8px;
-        border-right: 1px solid #e5e7eb;
+        border-right: 1px solid var(--border);
     }
     .print-nut-item:last-child {
         border-right: none;
@@ -742,13 +742,13 @@ let stepCounter = 0;
     .print-nut-val {
         font-size: 1rem;
         font-weight: 800;
-        color: #111;
+        color: var(--text);
     }
     .print-nut-label {
         font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: #9ca3af;
+        color: var(--text-tertiary);
         margin-top: 2px;
     }
 
@@ -764,8 +764,8 @@ let stepCounter = 0;
     .print-notes-list li {
         padding: 6px 0;
         font-size: 0.85rem;
-        color: #374151;
-        border-bottom: 1px solid #f3f4f6;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--bg-hover);
     }
     .print-notes-list li:last-child {
         border-bottom: none;
@@ -773,10 +773,10 @@ let stepCounter = 0;
 
     /* ── Footer ── */
     .print-footer {
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid var(--border);
         padding-top: 12px;
         font-size: 0.75rem;
-        color: #9ca3af;
+        color: var(--text-tertiary);
     }
     .print-footer p {
         margin: 0;
@@ -813,7 +813,7 @@ let stepCounter = 0;
         /* Reset overlay to flow */
         .print-overlay {
             position: static;
-            background: #fff;
+            background: var(--bg);
             overflow: visible;
         }
         .print-content {

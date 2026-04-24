@@ -36,7 +36,7 @@ const enabled = settings?.enabled ?? true;
 const numbering = settings?.numbering ?? true;
 const collapsible = settings?.collapsible ?? true;
 const showJumpButton = settings?.showJumpButton ?? true;
-const accentColor = settings?.accentColor || "#3b82f6";
+const accentColor = settings?.accentColor || "var(--info)";
 const maxDepth = settings?.maxDepth ?? 4;
 
 if (!enabled) return null;
@@ -102,6 +102,7 @@ numberedToc.forEach((item) => {
 
 <div
     class:list={["blog-toc", className]}
+    data-toc
     style={`--toc-accent: ${accentColor};`}
 >
     <!-- Header -->
@@ -146,7 +147,7 @@ numberedToc.forEach((item) => {
                             height="18"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke="#111827"
+                            stroke="var(--text)"
                             stroke-width="2.5"
                             stroke-linecap="round"
                             stroke-linejoin="round"
@@ -236,7 +237,7 @@ numberedToc.forEach((item) => {
 <style>
     /* ── Container ─────────────────────────────────────────────────────────── */
     .blog-toc {
-        background: #ffffff;
+        background: var(--bg);
         border: 1px solid rgba(0, 0, 0, 0.08);
         border-radius: 8px;
         margin: 2rem 0 3rem; /* extra bottom margin for the floating button */
@@ -267,7 +268,7 @@ numberedToc.forEach((item) => {
     }
 
     .toc-book-icon {
-        color: var(--toc-accent, #f59e0b);
+        color: var(--toc-accent, var(--warning));
     }
 
     /* Bottom floating toggle */
@@ -282,7 +283,7 @@ numberedToc.forEach((item) => {
     .toc-label {
         font-weight: 800;
         font-size: 1.25rem;
-        color: #1a1a1a;
+        color: var(--text);
         letter-spacing: -0.01em;
     }
 
@@ -293,7 +294,7 @@ numberedToc.forEach((item) => {
     }
 
     .toc-jump-btn {
-        background-color: var(--toc-accent, #f59e0b);
+        background-color: var(--toc-accent, var(--warning));
         color: white;
         font-size: 0.75rem;
         font-weight: 700;
@@ -310,9 +311,9 @@ numberedToc.forEach((item) => {
 
     /* Header chevron toggle button */
     .toc-toggle-btn {
-        background: #ffffff;
+        background: var(--bg);
         border: 1px solid rgba(0, 0, 0, 0.1);
-        color: #111827;
+        color: var(--text);
         width: 32px;
         height: 32px;
         border-radius: 50%;
@@ -325,7 +326,7 @@ numberedToc.forEach((item) => {
     }
     .toc-toggle-btn:hover {
         transform: scale(1.05);
-        background: #f9fafb;
+        background: var(--bg-alt);
     }
 
     /* Show all / Show less button container */
@@ -352,8 +353,8 @@ numberedToc.forEach((item) => {
         gap: 0.2rem;
         font-size: 0.65rem;
         font-weight: 700;
-        color: #ffffff;
-        background: #111827;
+        color: var(--bg);
+        background: var(--text);
         border: none;
         border-radius: 100px;
         padding: 0.2rem 0.6rem;
@@ -370,7 +371,7 @@ numberedToc.forEach((item) => {
     .toc-show-more-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        background: #000000;
+        background: var(--neutral-950);
     }
 
     .toc-show-more-btn:active {
@@ -453,7 +454,7 @@ numberedToc.forEach((item) => {
         font-size: 0.9375rem;
         font-weight: 700;
         line-height: 1.3;
-        color: #1a1a1a;
+        color: var(--text);
         border-left: 2px solid transparent;
         transition: color 0.15s ease;
     }
@@ -465,7 +466,7 @@ numberedToc.forEach((item) => {
         right: 0;
         bottom: 0;
         height: 1px;
-        background: #e5e7eb;
+        background: var(--border);
     }
 
     .toc-list > .toc-group:last-child .toc-link::after {
@@ -483,19 +484,19 @@ numberedToc.forEach((item) => {
     }
 
     .toc-link:hover {
-        color: var(--toc-accent, #f59e0b);
+        color: var(--toc-accent, var(--warning));
     }
 
     .toc-link.active {
-        color: var(--toc-accent, #f59e0b);
+        color: var(--toc-accent, var(--warning));
     }
 
     .toc-num {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: #1a1a1a;
-        color: #ffffff;
+        background: var(--text);
+        color: var(--bg);
         font-weight: 800;
         min-width: 1.5rem;
         height: 1.5rem;
@@ -516,8 +517,8 @@ numberedToc.forEach((item) => {
     /* ── Print ───────────────────────────────────────────────────────────────── */
     @media print {
         .blog-toc {
-            border: 1px solid #e5e7eb;
-            background: #fff;
+            border: 1px solid var(--border);
+            background: var(--bg);
             box-shadow: none;
         }
         .toc-body {
@@ -543,7 +544,7 @@ numberedToc.forEach((item) => {
             padding: 0;
         }
         .toc-link::after {
-            background: #f3f4f6;
+            background: var(--bg-hover);
         }
         .toc-group > .toc-link {
             padding: 0.625rem 0;

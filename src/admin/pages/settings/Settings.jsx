@@ -20,6 +20,7 @@ import AppearanceSettings from './tabs/AppearanceSettings.jsx';
 import AdvancedSettings, { advancedSettingsTabs } from './tabs/AdvancedSettings.jsx';
 import ImageUploadSettings from './tabs/ImageUploadSettings.jsx';
 import AISettings, { aiSettingsTabs } from './tabs/AISettings.jsx';
+import { toast } from 'sonner';
 
 // Map main tabs to their sub-tabs config
 const subTabsConfig = {
@@ -313,7 +314,7 @@ const Settings = () => {
           }));
         }
       })
-      .catch(err => console.error('Failed to load menus:', err));
+      .catch(err => toast.error('Failed to load menus'));
 
     // Load appearance settings from API (TOC settings)
     fetch('/api/settings/appearance')
@@ -332,7 +333,7 @@ const Settings = () => {
           }));
         }
       })
-      .catch(err => console.error('Failed to load appearance settings:', err));
+      .catch(err => toast.error('Failed to load appearance settings'));
   }, [setSettings]);
 
 
@@ -391,7 +392,7 @@ const Settings = () => {
 
       setTimeout(() => setSaveStatus(null), 3000);
     } catch (err) {
-      console.error('Failed to save settings:', err);
+      toast.error('Failed to save settings');
       setSaveStatus('error');
     } finally {
       setSaving(false);

@@ -47,6 +47,9 @@ const { items, currentPath } = Astro.props;
                             { active: currentPath.startsWith(item.url || "") },
                             { highlight: item.highlight },
                         ]}
+                        aria-current={
+                            currentPath === item.url ? "page" : undefined
+                        }
                         target={item.openInNewTab ? "_blank" : undefined}
                         rel={
                             item.openInNewTab

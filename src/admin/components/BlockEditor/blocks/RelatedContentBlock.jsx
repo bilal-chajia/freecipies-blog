@@ -316,7 +316,7 @@ export const RelatedContentBlock = createReactBlockSpec(
                                 {savedTitleValue && (
                                     <div>
                                         <div className="text-base font-bold text-foreground">{savedTitleValue}</div>
-                                        <div className="mt-1.5 w-12 h-1 rounded-full" style={{ background: '#ff6600' }} />
+                                        <div className="mt-1.5 w-12 h-1 rounded-full bg-brand-secondary" />
                                     </div>
                                 )}
                                 {renderPreviewCards(savedGroups, savedLayout)}

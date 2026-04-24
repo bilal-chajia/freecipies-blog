@@ -1,199 +1,288 @@
-@import "tailwindcss";
+/* ========================================
+ * Admin App Styles
+ * Uses design tokens from src/shared/design-tokens.css
+ * ======================================== */
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-}
-
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+/* Block Editor Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
-  body {
-    @apply bg-background text-foreground;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.5);
-  border-radius: 4px;
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-primary) 40%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(107, 114, 128, 0.8);
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-/* Toggle Switch */
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 24px;
+/* Slide In Animation */
+.slide-in {
+  animation: slideIn var(--transition-base) var(--ease-out);
 }
 
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+/* Fade In Animation */
+.fade-in {
+  animation: fadeIn var(--transition-base) var(--ease-out);
 }
 
-.toggle-slider {
-  position: absolute;
+/* Scale In Animation */
+.scale-in {
+  animation: scaleIn var(--transition-spring) var(--ease-spring);
+}
+
+/* Pulse ring for focus/active states */
+.pulse-ring {
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* Spin animation */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Block Editor Specific Styles */
+.block-editor {
+  min-height: 200px;
+  padding: var(--space-4);
+}
+
+.block-editor:focus-within {
+  outline: none;
+}
+
+/* Empty block placeholder */
+.block-placeholder {
+  color: var(--text-tertiary);
+  font-style: italic;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Drag and drop styles */
+.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.drop-target {
+  border: 2px dashed var(--brand-primary);
+  background: var(--brand-primary-light);
+  border-radius: var(--radius-md);
+}
+
+/* Slash menu */
+.slash-menu {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-2);
+  min-width: 240px;
+  z-index: var(--z-popover);
+}
+
+.slash-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #d1d5db;
-  border-radius: 24px;
-  transition: 0.3s;
+  transition: background var(--transition-fast);
 }
 
-.toggle-slider:before {
+.slash-menu-item:hover,
+.slash-menu-item.selected {
+  background: var(--bg-hover);
+}
+
+.slash-menu-item-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-alt);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+}
+
+/* Image upload overlay */
+.image-upload-overlay {
   position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  border-radius: 50%;
-  transition: 0.3s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  inset: 0;
+  background: var(--bg-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  transition: opacity var(--transition-base);
 }
 
-.toggle-switch input:checked + .toggle-slider {
-  background-color: #111111;
+.image-upload-overlay:hover {
+  opacity: 1;
 }
 
-.toggle-switch input:checked + .toggle-slider:before {
-  transform: translateX(24px);
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--neutral-100) 25%,
+    var(--neutral-200) 50%,
+    var(--neutral-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
 }
 
-/* Dark mode toggle adjustments */
-.dark .toggle-slider {
-  background-color: #374151;
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--neutral-800) 25%,
+    var(--neutral-700) 50%,
+    var(--neutral-800) 75%
+  );
+  background-size: 200% 100%;
 }
 
-.dark .toggle-switch input:checked + .toggle-slider {
-  background-color: #ffffff;
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-.dark .toggle-switch input:checked + .toggle-slider:before {
-  background-color: #111111;
+/* Recipe builder styles */
+.recipe-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+  background: var(--bg-elevated);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+.recipe-section:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.recipe-section:focus-within {
+  border-color: var(--brand-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Ingredient row */
+.ingredient-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg-alt);
+  margin-bottom: var(--space-2);
+  transition: background var(--transition-fast);
+}
+
+.ingredient-row:hover {
+  background: var(--bg-hover);
+}
+
+/* Equipment chip */
+.equipment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.equipment-chip:hover {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+}
+
+/* Nutrition grid */
+.nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-4);
+}
+
+.nutrition-item {
+  text-align: center;
+  padding: var(--space-4);
+  background: var(--bg-alt);
+  border-radius: var(--radius-lg);
+}
+
+.nutrition-value {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--brand-primary);
+}
+
+.nutrition-label {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: var(--space-1);
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .recipe-section {
+    padding: var(--space-4);
+  }
+
+  .nutrition-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Print styles */
+@media print {
+  .slash-menu,
+  .image-upload-overlay,
+  .block-editor-toolbar {
+    display: none !important;
+  }
+}

@@ -35,6 +35,7 @@ import {
 import { statsAPI, articlesAPI } from '../../services/api';
 import { formatNumber, formatRelativeTime, formatDate } from '../../utils/helpers';
 import { useAuthStore } from '../../store/useStore';
+import { toast } from 'sonner';
 
 // Mock data for the chart
 const chartData = [
@@ -114,7 +115,7 @@ const Dashboard = () => {
         console.log('Popular articles API not available yet');
       }
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -184,7 +185,7 @@ const Dashboard = () => {
               <Calendar className="size-4" />
               <span>{formatDate(new Date(), 'EEEE, MMMM do')}</span>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight text-balance">
               Welcome back, <span className="text-primary">{user?.name || 'Admin'}</span>!
             </h1>
             <p className="text-muted-foreground text-lg max-w-xl">

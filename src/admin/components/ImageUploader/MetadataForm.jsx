@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/ui/radio-group';
 import { ArrowLeft, Upload, Sparkles, Loader2 } from 'lucide-react';
 import { authorsAPI } from '@admin/services/api';
+import { toast } from 'sonner';
 
 export default function MetadataForm({
   metadata,
@@ -32,7 +33,7 @@ export default function MetadataForm({
         const response = await authorsAPI.getAll();
         setAuthors(response.data?.data || response.data || []);
       } catch (err) {
-        console.error('Failed to load authors:', err);
+        toast.error('Failed to load authors');
       } finally {
         setLoadingAuthors(false);
       }
@@ -66,7 +67,7 @@ export default function MetadataForm({
         }));
       }
     } catch (err) {
-      console.error('AI generation failed:', err);
+      toast.error('AI generation failed');
       // Fallback: Generate basic placeholder
       onMetadataChange(prev => ({
         ...prev,

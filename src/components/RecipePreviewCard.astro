@@ -178,12 +178,12 @@ const author = article.cachedAuthorJson
 
 <style>
   .recipe-preview-card {
-    background: white;
+    background: var(--bg-elevated);
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--border-subtle);
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -192,9 +192,8 @@ const author = article.cachedAuthorJson
   .recipe-preview-card:hover {
     transform: translateY(-6px);
     box-shadow:
-      0 12px 32px rgba(255, 107, 53, 0.15),
-      0 4px 12px rgba(0, 0, 0, 0.08);
-    border-color: rgba(255, 107, 53, 0.2);
+      var(--shadow-hover);
+    border-color: var(--brand-secondary-hover);
   }
 
   .card-link {
@@ -209,7 +208,7 @@ const author = article.cachedAuthorJson
     position: relative;
     aspect-ratio: 4/3;
     overflow: hidden;
-    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+    background: var(--warning-bg);
   }
 
   .card-image img {
@@ -229,7 +228,7 @@ const author = article.cachedAuthorJson
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #ff6b35;
+    color: var(--brand-secondary);
     opacity: 0.4;
   }
 
@@ -243,7 +242,7 @@ const author = article.cachedAuthorJson
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: white;
+    color: var(--text-inverse);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
@@ -260,7 +259,7 @@ const author = article.cachedAuthorJson
     font-weight: 700;
     line-height: 1.3;
     margin: 0;
-    color: #1a1a1a;
+    color: var(--text);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -269,7 +268,7 @@ const author = article.cachedAuthorJson
   }
 
   .recipe-preview-card:hover .card-title {
-    color: #ff6b35;
+    color: var(--brand-secondary);
   }
 
   .card-meta {
@@ -284,7 +283,7 @@ const author = article.cachedAuthorJson
     align-items: center;
     gap: 0.375rem;
     font-size: 0.8125rem;
-    color: #6b7280;
+    color: var(--text-tertiary);
     font-weight: 500;
   }
 
@@ -293,9 +292,9 @@ const author = article.cachedAuthorJson
     align-items: center;
     gap: 0.5rem;
     font-size: 0.8125rem;
-    color: #6b7280;
+    color: var(--text-tertiary);
     padding-top: 0.75rem;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--border);
   }
 
   .author-avatar {

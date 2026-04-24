@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { Button } from '@/ui/button.jsx';
+import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { toast } from 'sonner';
 import { Label } from '@/ui/label.jsx';
 import { Upload, X, Image as ImageIcon, Moon, Sun, Smartphone } from 'lucide-react';
 import { brandingAPI } from '../services/api';
@@ -29,7 +31,8 @@ const LOGO_TYPES = [
 const ACCEPTED_TYPES = '.svg,.png,.jpg,.jpeg,.webp,.gif';
 
 const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
-    const [uploading, setUploading] = useState({});
+const [uploading, setUploading] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [dragOver, setDragOver] = useState({});
     const fileInputRefs = useRef({});
 
@@ -39,13 +42,13 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
         // Validate file type
         const validTypes = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp', 'image/gif'];
         if (!validTypes.includes(file.type)) {
-            alert('Invalid file type. Please upload SVG, PNG, JPG, WebP, or GIF.');
+            toast.error('Invalid file type. Please upload SVG, PNG, JPG, WebP, or GIF.');
             return;
         }
 
         // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
-            alert('File too large. Maximum size is 5MB.');
+            toast.error('File too large. Maximum size is 5MB.');
             return;
         }
 
@@ -57,30 +60,33 @@ const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
             if (response.data?.success) {
                 onLogoChange(type, response.data.data.url);
             } else {
-                alert(response.data?.error || 'Failed to upload logo');
+                toast.error(response.data?.error || 'Failed to upload logo');
             }
         } catch (error) {
             console.error('Upload failed:', error);
-            alert(error.response?.data?.error || 'Failed to upload logo');
+            toast.error(error.response?.data?.error || 'Failed to upload logo');
         } finally {
             setUploading(prev => ({ ...prev, [type]: false }));
         }
     };
 
-    const handleDelete = async (type) => {
-        if (!confirm('Are you sure you want to delete this logo?')) return;
+const handleDelete = () => {
+        setDeleteModalOpen(true);
+    };
 
+    const handleDeleteConfirm = async () => {
+        setDeleteModalOpen(false);
         try {
             const response = await brandingAPI.deleteLogo(type);
 
             if (response.data?.success) {
                 onLogoDelete(type);
             } else {
-                alert(response.data?.error || 'Failed to delete logo');
+                toast.error(response.data?.error || 'Failed to delete logo');
             }
         } catch (error) {
             console.error('Delete failed:', error);
-            alert(error.response?.data?.error || 'Failed to delete logo');
+            toast.error(error.response?.data?.error || 'Failed to delete logo');
         }
     };
 

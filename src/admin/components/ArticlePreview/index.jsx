@@ -172,7 +172,7 @@ export default function ArticlePreview({
                         className="mx-auto h-full transition-all duration-300 bg-white"
                         style={{
                             maxWidth: DEVICE_WIDTHS[device],
-                            boxShadow: device !== 'desktop' ? '0 0 40px rgba(0,0,0,0.1)' : 'none',
+                            boxShadow: device !== 'desktop' ? 'var(--shadow-hover)' : 'none',
                         }}
                     >
                         {error ? (

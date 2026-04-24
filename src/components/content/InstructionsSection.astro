@@ -120,7 +120,7 @@ let globalStep = 0;
   .tl-section-title {
     font-size: 18px;
     font-weight: 700;
-    color: #374151;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -151,7 +151,7 @@ let globalStep = 0;
     top: 40px; /* Bottom of 40px step number */
     bottom: -24px;
     width: 2px;
-    background: #e5e7eb;
+    background: var(--border);
     z-index: 0;
   }
 
@@ -166,13 +166,13 @@ let globalStep = 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #ffffff;
-    color: #374151;
+    background: var(--bg);
+    color: var(--text-secondary);
     font-weight: 700;
     font-size: 1.125rem;
     border-radius: 50%;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border);
     flex-shrink: 0;
     margin-top: 0;
     transition:
@@ -181,17 +181,17 @@ let globalStep = 0;
   }
 
   .tl-step:hover .tl-step-number {
-    background: #6b8f71;
+    background: var(--accent-sage);
     color: white;
-    border-color: #6b8f71;
+    border-color: var(--accent-sage);
   }
 
   /* ── Step Card ── */
   .tl-step-card {
     flex: 1;
     padding: clamp(16px, 3vw, 24px);
-    background: #ffffff;
-    border: 1px solid #f3f4f6;
+    background: var(--bg);
+    border: 1px solid var(--bg-hover);
     border-radius: 14px;
     transition:
       border-color 0.25s ease,
@@ -200,7 +200,7 @@ let globalStep = 0;
   }
 
   .tl-step:hover .tl-step-card {
-    border-color: #6b8f71;
+    border-color: var(--accent-sage);
     box-shadow: 0 4px 12px rgba(249, 115, 22, 0.06);
   }
 
@@ -215,14 +215,14 @@ let globalStep = 0;
   .tl-step-name {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #111827;
+    color: var(--text);
     margin: 0;
   }
 
   .tl-step-text {
     font-size: 1.125rem;
     line-height: 1.7;
-    color: #4b5563;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -232,11 +232,11 @@ let globalStep = 0;
     gap: 8px;
     margin-top: 12px;
     padding: 12px 16px;
-    background: #fffbeb;
+    background: var(--warning-bg);
     border-radius: 12px;
     font-size: 14px;
-    color: #92400e;
-    border: 1px solid #fef3c7;
+    color: var(--warning-text);
+    border: 1px solid var(--warning-bg);
   }
 
   /* ── Timer Badge (inline) ── */
@@ -254,8 +254,8 @@ let globalStep = 0;
     inset: 0;
     border-radius: 8px; /* match parent */
     background: conic-gradient(
-      var(--progress-color, #6b8f71) var(--progress, 0%),
-      #e5e7eb var(--progress, 0%)
+      var(--progress-color, var(--accent-sage)) var(--progress, 0%),
+      var(--border) var(--progress, 0%)
     );
     z-index: -2;
     transition: background 0.3s;
@@ -267,7 +267,7 @@ let globalStep = 0;
     position: absolute;
     inset: 2px; /* border width 2px */
     border-radius: 6px; /* 8px - 2px */
-    background: #f9fafb; /* default bg */
+    background: var(--bg-alt); /* default bg */
     z-index: -1;
     transition: background 0.2s ease;
   }
@@ -284,7 +284,7 @@ let globalStep = 0;
     font-size: 13px;
     font-weight: 600;
     font-family: "SF Mono", "Cascadia Code", "Consolas", monospace;
-    color: #374151;
+    color: var(--text-secondary);
     cursor: pointer;
     transition: color 0.2s ease;
     white-space: nowrap;
@@ -293,13 +293,13 @@ let globalStep = 0;
 
   /* Hover State */
   .step-timer-widget:hover::before {
-    background: #6b8f71; /* border becomes orange */
+    background: var(--accent-sage); /* border becomes orange */
   }
   .step-timer-widget:hover::after {
-    background: #fff7ed; /* inner bg becomes light orange */
+    background: var(--warning-bg); /* inner bg becomes light orange */
   }
   .step-timer-widget:hover .tl-timer-badge {
-    color: #6b8f71;
+    color: var(--accent-sage);
   }
 
   .tl-timer-inner {
@@ -312,7 +312,7 @@ let globalStep = 0;
 
   .tl-timer-icon {
     font-size: 10px;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     transition: color 0.2s;
     position: relative;
     z-index: 1;
@@ -322,7 +322,7 @@ let globalStep = 0;
   }
 
   .step-timer-widget:hover .tl-timer-icon {
-    color: #6b8f71;
+    color: var(--accent-sage);
   }
 
   /* Running state */
@@ -330,39 +330,39 @@ let globalStep = 0;
     /* Uses conic-gradient from inline style --progress */
   }
   .step-timer-widget.running::after {
-    background: #fff7ed;
+    background: var(--warning-bg);
   }
   .step-timer-widget.running .tl-timer-badge {
-    color: #6b8f71;
+    color: var(--accent-sage);
   }
   .step-timer-widget.running .tl-timer-icon {
-    color: #6b8f71;
+    color: var(--accent-sage);
   }
 
   /* Paused state */
   .step-timer-widget.paused::before {
-    background: #e5e7eb;
+    background: var(--border);
   }
   .step-timer-widget.paused::after {
-    background: #f9fafb;
+    background: var(--bg-alt);
   }
   .step-timer-widget.paused .tl-timer-badge {
-    color: #9ca3af;
+    color: var(--text-tertiary);
   }
   .step-timer-widget.paused:hover::before {
-    background: #6b8f71;
+    background: var(--accent-sage);
   }
 
   /* Finished state */
   .step-timer-widget.finished {
-    --progress-color: #ef4444;
+    --progress-color: var(--error);
     --progress: 100%;
   }
   .step-timer-widget.finished::after {
-    background: #fef2f2;
+    background: var(--error-bg);
   }
   .step-timer-widget.finished .tl-timer-badge {
-    color: #ef4444;
+    color: var(--error-text);
     animation: badgePulse 2s infinite ease-in-out;
   }
 
@@ -415,7 +415,7 @@ let globalStep = 0;
         widget.style.setProperty("--progress", pct + "%");
         widget.style.setProperty(
           "--progress-color",
-          seconds <= 0 ? "#ef4444" : "#6B8F71",
+          seconds <= 0 ? "var(--error)" : "var(--accent-sage)",
         );
       }
 

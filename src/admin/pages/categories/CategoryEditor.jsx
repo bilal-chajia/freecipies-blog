@@ -23,6 +23,7 @@ import ColorPicker from '@/components/ColorPicker';
 import { extractImage, getImageSrcSet } from '@shared/utils';
 import { buildImageStyle, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
 import ImageUploader from '@/components/ImageUploader';
+import { toast } from 'sonner';
 
 
 const CategoryEditor = () => {
@@ -94,7 +95,7 @@ const CategoryEditor = () => {
     isOnline: false,
     isFeatured: false,
     displayOrder: 0,
-    color: '#ff6600ff',
+    color: '#ff6b35ff',
     parentId: null,
     iconSvg: '',
   });
@@ -163,7 +164,7 @@ const CategoryEditor = () => {
           setFeaturedSearchResults(items);
         }
       } catch (err) {
-        console.error('Failed to search recipes:', err);
+        toast.error('Failed to search recipes');
         if (isActive) {
           setFeaturedSearchResults([]);
           setFeaturedSearchError('Search failed');
@@ -189,7 +190,7 @@ const CategoryEditor = () => {
       const options = Array.isArray(data) ? data : [];
       setParentOptions(options);
     } catch (err) {
-      console.error('Failed to load categories list for parent selection:', err);
+      toast.error('Failed to load categories');
     } finally {
       setParentLoading(false);
     }
@@ -209,7 +210,7 @@ const CategoryEditor = () => {
       skipFeaturedSearchRef.current = true;
       setFeaturedSearchQuery(article.label || article.slug || '');
     } catch (err) {
-      console.error('Failed to load featured article:', err);
+      toast.error('Failed to load featured article');
       setFeaturedLookup({ loading: false, error: 'Featured recipe not found', article: null });
     }
   };
@@ -283,7 +284,7 @@ const CategoryEditor = () => {
           isOnline: category.isOnline || false,
           isFeatured: category.isFeatured || category.isFavorite || false,
           displayOrder: Number.isFinite(Number(category.sortOrder)) ? Number(category.sortOrder) : 0,
-          color: category.color || '#ff6600ff',
+          color: category.color || '#ff6b35ff',
           parentId: category.parentId ?? null,
           iconSvg: category.iconSvg || '',
         });
@@ -296,7 +297,7 @@ const CategoryEditor = () => {
         }
       }
     } catch (err) {
-      console.error('Failed to load category:', err);
+      toast.error('Failed to load category');
       setError('Failed to load category');
     } finally {
       setLoading(false);
@@ -355,7 +356,7 @@ const CategoryEditor = () => {
       setFeaturedSearchQuery(article.label || article.slug || '');
       setFeaturedSearchResults([]);
     } catch (err) {
-      console.error('Failed to lookup featured recipe:', err);
+      toast.error('Failed to lookup featured recipe');
       setFeaturedLookup({ loading: false, error: 'Recipe not found', article: null });
     }
   };
@@ -393,16 +394,6 @@ const CategoryEditor = () => {
         collectionTitle: formData.collectionTitle || formData.label,
       };
 
-      // DEBUG: Log payload before sending
-      console.log('[CategoryEditor] Save payload:', JSON.stringify({
-        layout: categoryData.layout,
-        layoutMode: categoryData.layoutMode,
-        cardStyle: categoryData.cardStyle,
-        showSidebar: categoryData.showSidebar,
-        headerStyle: categoryData.headerStyle,
-        showPagination: categoryData.showPagination,
-      }));
-
       let response;
       if (isEditMode) {
         response = await categoriesAPI.update(slug, categoryData);
@@ -410,13 +401,11 @@ const CategoryEditor = () => {
         response = await categoriesAPI.create(categoryData);
       }
 
-      // DEBUG: Log API response
-      console.log('[CategoryEditor] Save response:', response?.status, response?.data);
 
       navigate('/categories', { state: { refresh: Date.now() } });
     } catch (err) {
-      console.error('[CategoryEditor] Save error:', err);
-      console.error('[CategoryEditor] Error response:', err.response?.status, err.response?.data);
+      toast.error('Failed to save category');
+      // Error details shown in banner above
       const errorMsg = err.response?.data?.error?.message
         || err.response?.data?.error
         || err.message
@@ -1294,23 +1283,23 @@ const CategoryEditor = () => {
                   <div className="flex items-center gap-3 relative">
                     <div
                       className="w-10 h-8 rounded border cursor-pointer hover:ring-2 hover:ring-primary/50"
-                      style={{ backgroundColor: formData.color || '#ff6600ff' }}
+                      style={{ backgroundColor: formData.color || '#ff6b35ff' }}
                       onClick={() => setShowColorPicker(!showColorPicker)}
                       title="Click to change color"
                     />
                     <Input
-                      value={formData.color || '#ff6600ff'}
+                      value={formData.color || '#ff6b35ff'}
                       onChange={(e) => handleChange('color', e.target.value)}
-                      placeholder="#ff6600ff"
+                      placeholder="#ff6b35ff"
                       className="h-8 font-mono text-sm flex-1"
                     />
                     <div
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex-shrink-0"
-                      style={{ backgroundColor: formData.color || '#ff6600ff' }}
+                      style={{ backgroundColor: formData.color || '#ff6b35ff' }}
                     />
                     {showColorPicker && (
                       <ColorPicker
-                        color={formData.color || '#ff6600ff'}
+                        color={formData.color || '#ff6b35ff'}
                         onChange={(color) => handleChange('color', color)}
                         onClose={() => setShowColorPicker(false)}
                         className="top-12 left-0"

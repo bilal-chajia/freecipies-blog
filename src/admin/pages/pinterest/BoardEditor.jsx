@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Image as ImageIcon, X } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
@@ -55,7 +56,7 @@ const BoardEditor = () => {
         });
       }
     } catch {
-      alert('Failed to load board');
+      toast.error('Failed to load board');
       navigate('/pinterest/boards');
     } finally {
       setLoading(false);
@@ -114,7 +115,7 @@ const BoardEditor = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h2 className="text-3xl font-bold">
+            <h2 className="text-3xl font-bold tracking-tight text-balance">
               {isEditMode ? 'Edit Pinterest Board' : 'New Pinterest Board'}
             </h2>
             <p className="text-muted-foreground mt-1">
@@ -141,7 +142,7 @@ const BoardEditor = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Board Name *</Label>
               <Input

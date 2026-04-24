@@ -13,6 +13,7 @@ import { Textarea } from '@/ui/textarea.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select.jsx';
 import { equipmentAPI } from '../../services/api';
 import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { generateSlug } from '../../utils/helpers';
 import { toast } from 'sonner';
 
@@ -79,7 +80,6 @@ const EquipmentList = () => {
             const data = Array.isArray(apiResponse) ? apiResponse : (apiResponse?.data || []);
             setItems(data);
         } catch (err) {
-            console.error('Failed to fetch equipment:', err);
             toast.error('Failed to load equipment');
         } finally {
             setLoading(false);
@@ -176,7 +176,6 @@ const EquipmentList = () => {
 
             handleCancel();
         } catch (err) {
-            console.error('Failed to save equipment:', err);
             toast.error('Failed to save equipment');
         } finally {
             setSaving(false);
@@ -191,7 +190,6 @@ const EquipmentList = () => {
             setDeleteModal({ isOpen: false, item: null });
             toast.success('Equipment deleted');
         } catch (err) {
-            console.error('Failed to delete equipment:', err);
             toast.error('Failed to delete equipment');
         }
     };
@@ -356,8 +354,8 @@ const EquipmentList = () => {
                         <Wrench className="size-4" />
                         Affiliate Catalog
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tight">Equipment</h1>
-                    <p className="text-muted-foreground mt-1">
+                    <h1 className="text-3xl font-bold tracking-tight text-balance">Equipment</h1>
+                    <p className="text-sm text-muted-foreground mt-1">
                         Kitchen tools & equipment with affiliate links. Auto-detected in recipe instructions.
                     </p>
                 </div>
@@ -412,9 +410,14 @@ const EquipmentList = () => {
                     key={searchTerm + filterCategory}
                 >
                     {filteredItems.length === 0 && !isCreatingNew ? (
-                        <div className="col-span-full py-20 flex flex-col items-center justify-center opacity-40">
-                            <Wrench className="size-10 mb-2" />
-                            <p className="text-sm font-medium">No equipment found</p>
+                        <div className="col-span-full">
+                            <EmptyState
+                                icon="settings"
+                                title="No equipment found"
+                                description={items.length === 0 ? 'Add your first kitchen tool or equipment item.' : 'Try adjusting your search or filter.'}
+                                actionLabel={items.length === 0 ? 'Add Equipment' : undefined}
+                                onAction={items.length === 0 ? handleStartCreate : undefined}
+                            />
                         </div>
                     ) : (
                         filteredItems.map((item) => (

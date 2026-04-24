@@ -1,0 +1,42 @@
+{
+  "name": "recipes-saas",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-03-17",
+  "compatibility_flags": ["nodejs_compat_v2", "no_handle_cross_request_promise_resolution"],
+
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "freecipies-db",
+      "database_id": "8c953b64-1d9c-4b61-a949-75008940914d",
+      "preview_database_id": "local-dev"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "saas-blog-images",
+      "preview_bucket_name": "saas-blog-images"
+    }
+  ],
+
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "b16e75cac6c64f029a8f173ad8083124",
+      "preview_id": "local-session-kv"
+    }
+  ],
+
+  "vars": {
+    "ENVIRONMENT": "production",
+    "R2_PUBLIC_URL": "https://pub-8c953b641d9c4b61a94975008940914d.r2.dev",
+    "SITE_URL": "https://recipes-saas.chajia-bilal23.workers.dev"
+  }
+}

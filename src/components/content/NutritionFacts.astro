@@ -203,7 +203,7 @@ const hasVitamins =
                 cy="50"
                 r={ringR}
                 fill="none"
-                stroke="#f3f4f6"
+                stroke="var(--bg-hover)"
                 stroke-width="8"
               />
               <circle
@@ -211,7 +211,7 @@ const hasVitamins =
                 cy="50"
                 r={ringR}
                 fill="none"
-                stroke="#6B8F71"
+                stroke="var(--accent-sage)"
                 stroke-width="8"
                 stroke-linecap="round"
                 stroke-dasharray={ringC}
@@ -688,8 +688,8 @@ const hasVitamins =
     margin-left: calc(-1 * clamp(16px, 4cqw, 24px));
     margin-right: calc(-1 * clamp(16px, 4cqw, 24px));
     padding: 14px clamp(16px, 4cqw, 24px);
-    background: linear-gradient(135deg, #f0f7f1 0%, #f8faf8 100%);
-    border-left: 4px solid var(--accent, #6b8f71);
+    background: linear-gradient(135deg, var(--success-bg) 0%, var(--neutral-25) 100%);
+    border-left: 4px solid var(--accent, var(--accent-sage));
     border-radius: 0;
     position: relative;
   }
@@ -706,7 +706,7 @@ const hasVitamins =
   .section-heading-group .section-heading {
     font-size: clamp(20px, 4cqi, 24px);
     font-weight: 700;
-    color: #111827;
+    color: var(--text);
     margin: 0;
     position: relative;
     letter-spacing: -0.025em;
@@ -717,7 +717,7 @@ const hasVitamins =
     display: block;
     width: 32px;
     height: 3px;
-    background: var(--accent, #6b8f71);
+    background: var(--accent, var(--accent-sage));
     border-radius: 2px;
     margin-top: 6px;
   }
@@ -728,7 +728,7 @@ const hasVitamins =
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--accent, #6b8f71);
+    background: var(--accent, var(--accent-sage));
     border-radius: 10px;
     color: white;
     flex-shrink: 0;
@@ -736,7 +736,7 @@ const hasVitamins =
 
   .nf-subtitle {
     font-size: 1.125rem;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     margin: 0;
     line-height: 1.4;
   }
@@ -746,8 +746,8 @@ const hasVitamins =
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: var(--bg-subtle, #f5f5f4);
-    border: 1px solid #e5e7eb;
+    background: var(--bg-subtle, var(--neutral-25));
+    border: 1px solid var(--border);
     border-radius: 999px;
     flex-shrink: 0;
     margin-left: auto;
@@ -755,13 +755,13 @@ const hasVitamins =
 
   .nf-serving-prefix {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     font-weight: 500;
   }
 
   .nf-serving-value {
     font-size: 1rem;
-    color: #374151;
+    color: var(--text-secondary);
     font-weight: 700;
   }
 
@@ -771,7 +771,7 @@ const hasVitamins =
     align-items: center;
     gap: 24px;
     padding: 24px;
-    background: #f9fafb;
+    background: var(--bg-alt);
     border-radius: 16px;
     margin-bottom: 24px;
   }
@@ -802,14 +802,14 @@ const hasVitamins =
   .nf-ring-value {
     font-size: 1.5rem;
     font-weight: 800;
-    color: #111827;
+    color: var(--text);
     line-height: 1;
   }
 
   .nf-ring-label {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #6b8f71;
+    color: var(--accent-sage);
     text-transform: uppercase;
     letter-spacing: 0.1em;
   }
@@ -822,21 +822,21 @@ const hasVitamins =
   .nf-energy-title {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #111827;
+    color: var(--text);
     margin: 0 0 6px 0;
   }
 
   .nf-energy-desc {
     font-size: 1.125rem;
-    color: #6b7280;
+    color: var(--text-tertiary);
     line-height: 1.6;
     margin: 0;
   }
 
   .nf-energy-desc strong {
-    color: #111827;
+    color: var(--text);
     text-decoration: underline;
-    text-decoration-color: #6b8f71;
+    text-decoration-color: var(--accent-sage);
     text-underline-offset: 2px;
   }
 
@@ -854,14 +854,14 @@ const hasVitamins =
     align-items: center;
     gap: 6px 10px;
     padding: 16px 14px;
-    background: #f9fafb;
+    background: var(--bg-alt);
     border-radius: 14px;
     text-align: center;
     transition: all 0.2s ease;
   }
 
   .nf-macro-card:hover {
-    background: #f3f4f6;
+    background: var(--bg-hover);
     transform: translateY(-1px);
   }
 
@@ -876,33 +876,33 @@ const hasVitamins =
   }
 
   .nf-icon-protein {
-    background: #ecfdf5;
-    color: #10b981;
+    background: var(--success-bg);
+    color: var(--success-text);
   }
   .nf-icon-fat {
-    background: #fff7ed;
-    color: #6b8f71;
+    background: var(--warning-bg);
+    color: var(--accent-sage);
   }
   .nf-icon-carbs {
-    background: #eff6ff;
-    color: #3b82f6;
+    background: var(--info-bg);
+    color: var(--info-text);
   }
   .nf-icon-fiber {
-    background: #f0fdf4;
-    color: #22c55e;
+    background: var(--success-bg);
+    color: var(--success-text);
   }
 
   .nf-macro-val {
     font-size: 1.125rem;
     font-weight: 800;
-    color: #111827;
+    color: var(--text);
     line-height: 1;
   }
 
   .nf-macro-name {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
@@ -910,7 +910,7 @@ const hasVitamins =
   .nf-mini-bar {
     width: 100%;
     height: 5px;
-    background: #e5e7eb;
+    background: var(--border);
     border-radius: 2px;
     overflow: hidden;
     margin-top: 4px;
@@ -925,21 +925,21 @@ const hasVitamins =
   }
 
   .nf-fill-protein {
-    background: #10b981;
+    background: var(--success);
   }
   .nf-fill-fat {
-    background: #6b8f71;
+    background: var(--accent-sage);
   }
   .nf-fill-carbs {
-    background: #3b82f6;
+    background: var(--info);
   }
   .nf-fill-fiber {
-    background: #22c55e;
+    background: var(--success);
   }
 
   .nf-macro-dv {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     font-weight: 500;
   }
 
@@ -950,8 +950,8 @@ const hasVitamins =
     gap: 0 40px;
     padding: 24px 0;
     margin-bottom: 24px;
-    border-top: 1px solid #f3f4f6;
-    border-bottom: 1px solid #f3f4f6;
+    border-top: 1px solid var(--bg-hover);
+    border-bottom: 1px solid var(--bg-hover);
   }
 
   .nf-detail-col {
@@ -964,7 +964,7 @@ const hasVitamins =
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     margin: 0 0 14px 0;
   }
 
@@ -973,7 +973,7 @@ const hasVitamins =
     justify-content: space-between;
     align-items: center;
     padding: 10px 0;
-    border-bottom: 1px solid #f9fafb;
+    border-bottom: 1px solid var(--bg-alt);
   }
 
   .nf-detail-row:last-child {
@@ -982,13 +982,13 @@ const hasVitamins =
 
   .nf-detail-name {
     font-size: 1.125rem;
-    color: #6b7280;
+    color: var(--text-tertiary);
   }
 
   .nf-detail-val {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #111827;
+    color: var(--text);
   }
 
   /* ── Footer ── */
@@ -1002,7 +1002,7 @@ const hasVitamins =
 
   .nf-disclaimer {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     line-height: 1.5;
     flex: 1;
   }
@@ -1011,20 +1011,20 @@ const hasVitamins =
     flex-shrink: 0;
     padding: 8px 16px;
     background: transparent;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--text-tertiary);
     cursor: pointer;
     transition: all 0.15s ease;
     white-space: nowrap;
   }
 
   .nf-toggle-btn:hover {
-    background: #f3f4f6;
-    border-color: #d1d5db;
-    color: #374151;
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
   }
 
   .full-nutrition {
@@ -1035,7 +1035,7 @@ const hasVitamins =
   }
   .nutrition-divider {
     border: none;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--bg-inset);
     margin: 1rem 0;
   }
 
@@ -1068,18 +1068,18 @@ const hasVitamins =
      USDA Label Style (shared by label + full detail)
      ================================================ */
   .nutrition-facts-label {
-    border: 3px solid #111;
+    border: 3px solid var(--text);
     padding: 1rem 1.25rem;
     max-width: 420px;
     font-family:
       system-ui,
       -apple-system,
       sans-serif;
-    background: #fff;
+    background: var(--bg);
     border-radius: 6px;
   }
   .label-header {
-    border-bottom: 8px solid #111;
+    border-bottom: 8px solid var(--text);
     padding-bottom: 0.5rem;
     margin-bottom: 0.25rem;
   }
@@ -1092,7 +1092,7 @@ const hasVitamins =
     line-height: 1;
   }
   .serving-row-label {
-    border-bottom: 4px solid #111 !important;
+    border-bottom: 4px solid var(--text) !important;
     padding: 0.5rem 0 !important;
     font-size: 0.95rem !important;
   }
@@ -1100,7 +1100,7 @@ const hasVitamins =
     text-align: right;
     font-size: 0.75rem;
     font-weight: 700;
-    border-bottom: 1px solid #111;
+    border-bottom: 1px solid var(--text);
     padding: 0.25rem 0;
   }
   .nutrient-row {
@@ -1108,7 +1108,7 @@ const hasVitamins =
     justify-content: space-between;
     align-items: baseline;
     padding: 0.4rem 0;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border);
     font-size: 0.9rem;
   }
   .nutrient-row.sub {
@@ -1121,7 +1121,7 @@ const hasVitamins =
   .nutrient-val {
     text-align: right;
     font-weight: 600;
-    color: #111;
+    color: var(--text);
     white-space: nowrap;
   }
   .footnote {
@@ -1140,10 +1140,10 @@ const hasVitamins =
   }
   .nutrition-pill {
     padding: 0.25rem 0.5rem;
-    background: #f3f4f6;
+    background: var(--bg-hover);
     border-radius: 4px;
     font-size: 0.75rem;
-    color: #444;
+    color: var(--neutral-700);
   }
 
   /* ================================================

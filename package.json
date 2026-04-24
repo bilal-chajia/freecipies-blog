@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "node scripts/build.mjs",
-    "preview": "astro preview",
+    "preview": "astro build && wrangler dev",
     "deploy": "wrangler deploy",
     "deploy:local": "deploy.bat",
     "astro": "astro",
@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
-    "@astrojs/check": "0.9.8",
     "@astrojs/cloudflare": "^13.1.7",
     "@astrojs/rss": "^4.0.18",
     "@astrojs/sitemap": "^3.7.2",
@@ -91,17 +90,17 @@
     "tailwindcss": "^4.2.2",
     "vaul": "^1.1.2",
     "zod": "^4.3.6",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.8",
-    "@astrojs/react": "5.0.3",
+    "@astrojs/react": "^5.0.3",
     "@cloudflare/workers-types": "^4.20260408.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
     "shadcn": "^4.1.0",
     "sql.js": "^1.14.1",
     "sqlite3": "^6.0.1",
@@ -114,13 +113,6 @@
       "msw",
       "sharp",
       "workerd"
-    ],
-    "overrides": {
-      "vite": "^7.3.1",
-      "@tailwindcss/vite>vite": "^7.3.1",
-      "@vitejs/plugin-react>vite": "^7.3.1",
-      "@astrojs/cloudflare>vite": "^7.3.1",
-      "@astrojs/react>vite": "^7.3.1"
-    }
+    ]
   }
 }

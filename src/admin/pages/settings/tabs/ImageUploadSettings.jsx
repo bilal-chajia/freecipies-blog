@@ -9,6 +9,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/ui/alert.jsx';
 import { AlertCircle, CheckCircle2, Image as ImageIcon, Zap, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { ASPECT_RATIO_OPTIONS } from '../../../../shared/constants/image-upload';
+import { Button } from '@/ui/button.jsx';
+import ConfirmationModal from '@/ui/confirmation-modal.jsx';
 import { Input } from '@/ui/input.jsx';
 
 const ImageUploadSettings = ({ onRegisterActions }) => {
@@ -19,6 +21,7 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // 'success' | 'error' | null
   const [saveMessage, setSaveMessage] = useState('');
+  const [resetModalOpen, setResetModalOpen] = useState(false);
   const statusTimeoutRef = useRef(null);
 
   // Sync with loaded settings (only when not dirty/editing)
@@ -117,9 +120,12 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
     }
   }, [getErrorMessage, localSettings, setStatus, updateSettings]);
 
-  const handleReset = useCallback(async () => {
-    if (!confirm('Are you sure you want to reset all image upload settings to defaults?')) return;
+  const handleReset = useCallback(() => {
+    setResetModalOpen(true);
+  }, []);
 
+  const handleResetConfirm = useCallback(async () => {
+    setResetModalOpen(false);
     setIsSaving(true);
     try {
       const newSettings = await resetSettings();
@@ -372,6 +378,16 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
           </CardContent>
         </Card>
       </div>
+
+      <ConfirmationModal
+        isOpen={resetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        onConfirm={handleResetConfirm}
+        title="Reset Settings"
+        description="Are you sure you want to reset all image upload settings to defaults?"
+        confirmText="Reset"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

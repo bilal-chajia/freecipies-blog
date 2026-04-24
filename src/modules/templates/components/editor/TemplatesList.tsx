@@ -167,7 +167,7 @@ const TemplatesList = () => {
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Pin Templates</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-balance">Pin Templates</h1>
                     <p className="text-muted-foreground mt-1">
                         Design and manage professional Pinterest templates for your recipes
                     </p>

@@ -66,14 +66,14 @@ const HeroSection = ({ formData, handleNestedInputChange }) => {
                         <div
                             ref={colorTriggerRef}
                             className="w-6 h-6 rounded border border-border/40 cursor-pointer hover:scale-105 transition-transform"
-                            style={{ backgroundColor: formData.hero.backgroundColor || '#f8fafc' }}
+                            style={{ backgroundColor: formData.hero.backgroundColor || 'var(--bg-alt)' }}
                             onClick={() => setShowColorPicker(!showColorPicker)}
                         />
                         <Input
                             value={formData.hero.backgroundColor}
                             onChange={(e) => handleNestedInputChange('hero', 'backgroundColor', e.target.value)}
                             className="flex-1 border-none shadow-none focus-visible:ring-0 h-7 px-1 font-mono text-xs uppercase"
-                            placeholder="#f8fafc"
+                            placeholder="#f8f9fa"
                         />
                     </div>
                     {showColorPicker && (

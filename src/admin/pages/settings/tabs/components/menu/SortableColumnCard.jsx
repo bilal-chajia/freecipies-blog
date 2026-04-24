@@ -73,7 +73,7 @@ const SortableColumnCard = ({
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-destructive/80 hover:text-destructive"
+                    className="h-9 w-9 text-destructive/80 hover:text-destructive"
                     onClick={() => onDeleteColumn(colIndex)}
                 >
                     <Trash2 className="size-3.5" />

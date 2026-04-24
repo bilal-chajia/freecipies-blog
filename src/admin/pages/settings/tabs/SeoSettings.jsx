@@ -41,7 +41,7 @@ const SeoSettings = ({ formData, handleInputChange, activeSection = 'meta' }) =>
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                             <Label htmlFor="defaultMetaTitle" className="text-xs font-medium">Meta Title</Label>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${titleLength > 60 ? 'bg-amber-500/10 text-amber-600' : 'text-muted-foreground'}`}>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${titleLength > 60 ? 'bg-warning/10 text-warning' : 'text-muted-foreground'}`}>
                                 {titleLength}/60
                             </span>
                         </div>
@@ -57,7 +57,7 @@ const SeoSettings = ({ formData, handleInputChange, activeSection = 'meta' }) =>
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                             <Label htmlFor="defaultMetaDescription" className="text-xs font-medium">Meta Description</Label>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${descLength > 160 ? 'bg-amber-500/10 text-amber-600' : 'text-muted-foreground'}`}>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${descLength > 160 ? 'bg-warning/10 text-warning' : 'text-muted-foreground'}`}>
                                 {descLength}/160
                             </span>
                         </div>

@@ -6,7 +6,7 @@ const DEFAULT_SINGLETON_BLOCK_TYPES = ['roundupList'];
 const CUSTOM_BLOCK_TYPES = new Set([
     'title', 'headline', 'customImage', 'alert', 'divider',
     'faqSection', 'beforeAfter', 'simpleTable', 'video',
-    'recipeEmbed', 'relatedContent', 'featuredImage', 'mainRecipe', 'roundupList',
+    'relatedContent', 'featuredImage', 'mainRecipe', 'roundupList',
 ]);
 
 export function useGutenbergCanvasHandlers(editorInstance, options = {}) {

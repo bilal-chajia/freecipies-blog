@@ -99,10 +99,10 @@ const currentYear = new Date().getFullYear();
 <style>
   /* Container Query Setup */
   .site-footer {
-    background: #1a1a1a;
-    color: #e0e0e0;
-    padding: 3rem 0 1.5rem;
-    margin-top: 4rem;
+    background: var(--neutral-900);
+    color: var(--neutral-300);
+    padding: var(--space-12) 0 var(--space-6);
+    margin-top: var(--space-16);
     container-type: inline-size;
     container-name: site-footer;
   }
@@ -117,7 +117,7 @@ const currentYear = new Date().getFullYear();
     display: grid;
     grid-template-columns: 1fr;
     gap: clamp(1.5rem, 3vw, 2.5rem);
-    margin-bottom: 2.5rem;
+    margin-bottom: var(--space-10);
   }
 
   /* Container query for responsive grid */
@@ -139,10 +139,10 @@ const currentYear = new Date().getFullYear();
   }
 
   .footer-column h3 {
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
+    color: var(--text-inverse);
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    margin-bottom: var(--space-4);
   }
 
   .footer-column ul {
@@ -152,57 +152,55 @@ const currentYear = new Date().getFullYear();
   }
 
   .footer-column li {
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-3);
   }
 
   .footer-column a {
-    color: #b0b0b0;
+    color: var(--neutral-400);
     text-decoration: none;
-    transition:
-      color var(--transition-fast, 150ms) var(--ease-default, ease),
-      outline-offset var(--transition-fast, 150ms) var(--ease-default, ease);
+    transition: color var(--transition-fast);
     font-size: 0.95rem;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     outline: 2px solid transparent;
     outline-offset: 2px;
   }
 
   /* Enhanced focus-visible for keyboard navigation */
   .footer-column a:focus-visible {
-    outline: 2px solid var(--focus-ring-color, #3b82f6);
+    outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
-    color: #ff6b35;
+    color: var(--brand-secondary);
   }
 
   .footer-column a:hover {
-    color: #ff6b35;
+    color: var(--brand-secondary);
   }
 
   /* :has() selector - Highlight column when it contains a hovered link */
   .footer-column:has(a:hover) h3 {
-    color: #ff6b35;
+    color: var(--brand-secondary);
   }
 
   .footer-social {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 1.5rem;
-    padding: 2rem 0;
-    border-top: 1px solid #333;
-    border-bottom: 1px solid #333;
+    gap: var(--space-6);
+    padding: var(--space-8) 0;
+    border-top: 1px solid var(--neutral-800);
+    border-bottom: 1px solid var(--neutral-800);
   }
 
   .footer-social a {
-    color: #b0b0b0;
-    transition: all var(--transition-fast, 150ms) var(--ease-default, ease);
+    color: var(--neutral-400);
+    transition: all var(--transition-fast);
     display: flex;
     align-items: center;
     justify-content: center;
     width: 44px;
     height: 44px;
-    border-radius: 50%;
-    background: #2a2a2a;
+    border-radius: var(--radius-full);
+    background: var(--neutral-800);
     border: 2px solid transparent;
     outline: 2px solid transparent;
     outline-offset: 2px;
@@ -210,15 +208,15 @@ const currentYear = new Date().getFullYear();
 
   /* Enhanced focus-visible for social icons */
   .footer-social a:focus-visible {
-    outline: 2px solid var(--focus-ring-color, #3b82f6);
+    outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
-    border-color: #ff6b35;
-    color: #ff6b35;
+    border-color: var(--brand-secondary);
+    color: var(--brand-secondary);
   }
 
   .footer-social a:hover {
-    color: #ff6b35;
-    background: #333;
+    color: var(--brand-secondary);
+    background: var(--neutral-700);
     transform: translateY(-2px);
   }
 
@@ -230,24 +228,24 @@ const currentYear = new Date().getFullYear();
 
   .footer-bottom {
     text-align: center;
-    padding-top: 2rem;
+    padding-top: var(--space-8);
   }
 
   .footer-bottom p {
-    color: #c7c7c7;
+    color: var(--neutral-300);
     font-size: 0.9rem;
     margin: 0;
   }
 
   .version {
-    color: #a9a9a9;
+    color: var(--neutral-500);
     font-size: 0.85rem;
   }
 
   /* prefers-contrast: high adjustments */
   @media (prefers-contrast: high) {
     .site-footer {
-      border-top: 2px solid #fff;
+      border-top: 2px solid var(--text-inverse);
     }
 
     .footer-column a,
@@ -261,7 +259,7 @@ const currentYear = new Date().getFullYear();
 
     .footer-column a:focus-visible,
     .footer-social a:focus-visible {
-      outline: 3px solid #fff;
+      outline: 3px solid var(--text-inverse);
     }
   }
 

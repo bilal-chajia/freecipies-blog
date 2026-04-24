@@ -7,6 +7,7 @@ import { Label } from '@/ui/label.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { authAPI } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
+import { toast } from 'sonner';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const Login = () => {
         setError('Invalid credentials');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      toast.error('Login failed. Please try again.');
       setError(error.response?.data?.error || 'Login failed');
     } finally {
       // Loading complete

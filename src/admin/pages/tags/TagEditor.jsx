@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { tagsAPI } from '../../services/api';
 import { generateSlug } from '../../utils/helpers';
 import ColorPicker from '@/components/ColorPicker';
+import { toast } from 'sonner';
 
 const TagEditor = () => {
   const { slug } = useParams();
@@ -39,7 +40,7 @@ const TagEditor = () => {
             color: tag.color || 'hsl(var(--primary))',
           });
         } catch (err) {
-          console.error('Failed to fetch tag:', err);
+          toast.error('Failed to load tag');
           setError('Failed to load tag: ' + (err.response?.data?.error || err.message));
         } finally {
           setLoading(false);
@@ -79,7 +80,7 @@ const TagEditor = () => {
 
       navigate('/tags');
     } catch (err) {
-      console.error('Failed to save tag:', err);
+      toast.error('Failed to save tag');
       setError('Failed to save tag: ' + (err.response?.data?.error || err.message));
     } finally {
       setSaving(false);

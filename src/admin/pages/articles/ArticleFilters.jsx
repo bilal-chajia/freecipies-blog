@@ -193,7 +193,7 @@ const ArticleFilters = ({
                             })}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] font-bold uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-colors">
+                                    <Button variant="ghost" size="sm" className="h-9 px-3 text-[10px] font-bold uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-colors">
                                         + Tag
                                     </Button>
                                 </DropdownMenuTrigger>

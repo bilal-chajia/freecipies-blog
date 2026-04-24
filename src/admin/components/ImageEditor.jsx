@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Cropper from 'react-easy-crop';
-import { Button } from '@/ui/button';
+import { Button } from '@/ui/button.jsx';
+import { toast } from 'sonner';
 import { Separator } from '@/ui/separator';
 import {
     Dialog,
@@ -293,7 +294,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
 
         } catch (e) {
             console.error('Apply crop failed:', e);
-            alert('Failed to apply crop');
+            toast.error('Failed to apply crop');
         } finally {
             setProcessing(false);
         }
@@ -377,7 +378,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
             onSave(file);
         } catch (e) {
             console.error(e);
-            alert('Failed to save image edit');
+            toast.error('Failed to save image edit');
         } finally {
             setProcessing(false);
         }

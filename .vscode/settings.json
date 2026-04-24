@@ -1,9 +1,12 @@
 {
-    "Codegeex.RepoIndex": true,
-    "Codegeex.Chat.LanguagePreference": "English",
-    "Codegeex.CompletionDelay": 2,
-    "css.lint.unknownAtRules": "ignore",
-    "Codegeex.GenerationPreference": "block",
-    "Codegeex.CommitMessageStyle": "Default",
-    "Codegeex.Chat.fontSize": 13
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.associations": {
+    "*.astro": "astro"
+  },
+  "[astro]": {
+    "editor.defaultFormatter": "astro-build.astro-vscode",
+    "typescript.validate.enable": false,
+    "javascript.validate.enable": false
+  },
+  "typescript.validate.enable": true
 }
