@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import { getArticleBySlug } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateParams, SlugOrIdParam } from '@shared/validation';
 
 export const prerender = false;
 
@@ -12,14 +13,7 @@ export const prerender = false;
  * For mutations (PUT/DELETE), use /api/articles/:id instead
  */
 export const GET: APIRoute = async ({ params, locals }) => {
-    const { slug } = params;
-
-    if (!slug) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { slug } = validateParams(params, SlugOrIdParam);
 
     try {
         const db = env.DB;

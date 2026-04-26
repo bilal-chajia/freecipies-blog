@@ -28,6 +28,7 @@ import { AwsClient } from 'aws4fetch';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateQuery, UploadUrlsQuery } from '@shared/validation';
 
 // Variant sizes for reference
 const VARIANT_EXTENSIONS: Record<string, string> = {
@@ -58,15 +59,8 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    // Parse query params
-    const baseName = url.searchParams.get('baseName');
-    const variantsParam = url.searchParams.get('variants') || 'lg,md,sm,xs';
-    const mimeType = url.searchParams.get('mimeType') || 'image/webp';
-    const originalExt = url.searchParams.get('originalExt') || 'jpg';
-
-    if (!baseName) {
-      throw new AppError(ErrorCodes.VALIDATION_ERROR, 'baseName is required', 400);
-    }
+    // Validate query params via Zod
+    const { baseName, variants: variantsParam, mimeType, originalExt } = validateQuery(url.searchParams, UploadUrlsQuery);
 
     const variants = variantsParam.split(',').filter(v => v.trim());
     const timestamp = Date.now();

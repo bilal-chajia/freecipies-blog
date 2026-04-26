@@ -4,6 +4,7 @@ import type { Env } from '@shared/types';
 import { AppError, ErrorCodes, formatErrorResponse, formatSuccessResponse } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { getTemplates, createTemplate } from '@modules/templates';
+import { validateBody, CreateTemplateSchema } from '@shared/validation';
 
 export const prerender = false;
 
@@ -46,7 +47,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const data = await request.json();
+        const data = await validateBody(request, CreateTemplateSchema);
         const result = await createTemplate(env.DB, data);
         
         const { body, status, headers } = formatSuccessResponse(result);

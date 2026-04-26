@@ -3,6 +3,8 @@ import { env } from 'cloudflare:workers';
 import { getRedirects, createRedirect, transformRedirectRequest, transformRedirectResponse } from '@modules/redirects';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateBody } from '@shared/validation';
+import { CreateRedirectSchema } from '@shared/validation';
 
 export const prerender = false;
 
@@ -59,7 +61,7 @@ export const POST: APIRoute = async ({ request }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
 
-    const body = await request.json();
+    const body = await validateBody(request, CreateRedirectSchema);
     const transformedBody = transformRedirectRequest(body);
     
     const newRedirect = await createRedirect(env.DB, transformedBody);

@@ -2,12 +2,22 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
+import { validate, z } from '@shared/validation';
 
 export const prerender = false;
 
+/** Schema for image path param — must be non-empty and not contain path traversal */
+const ImagePathSchema = z.string().min(1, 'Image path is required').refine(
+  (p) => !p.includes('..'),
+  'Invalid image path',
+);
+
 export const GET: APIRoute = async ({ params, locals, request }) => {
-  const pathParam = params.path;
-  const key = Array.isArray(pathParam) ? pathParam.join('/') : pathParam;
+  const rawPath = params.path;
+  const rawKey = Array.isArray(rawPath) ? rawPath.join('/') : rawPath;
+
+  // Validate path param
+  const key = validate(ImagePathSchema, rawKey);
 
   // In dev mode (pnpm dev), the R2 bucket binding is not available via
   // Vite's server — only pnpm preview provides real Cloudflare bindings.
@@ -40,12 +50,7 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
     return new Response(body, { status, headers });
   }
 
-  if (!key || key.includes('..')) {
-    const { body, status, headers } = formatErrorResponse(
-      new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid image path', 400)
-    );
-    return new Response(body, { status, headers });
-  }
+  // Path already validated by Zod schema above (non-empty, no '..')
 
   const ifNoneMatch = request.headers.get('If-None-Match');
   let object = await env.IMAGES.get(key);

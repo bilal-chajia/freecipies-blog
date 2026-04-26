@@ -4,8 +4,14 @@ import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { getPopularArticles } from '@modules/articles';
 import { resolveVariantUrl } from '@shared/types/images';
+import { validateQuery, z } from '@shared/validation';
 
 export const prerender = false;
+
+/** GET /api/stats/popular query schema */
+const PopularQuery = z.object({
+    limit: z.coerce.number().int().min(1).max(50).default(10),
+});
 
 // GET /api/stats/popular - Get popular articles by view count
 export const GET: APIRoute = async ({ request, locals }) => {
@@ -16,7 +22,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         }
 
         const url = new URL(request.url);
-        const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 50);
+        const { limit } = validateQuery(url.searchParams, PopularQuery);
 
         const result = await getPopularArticles(env.DB, limit);
 

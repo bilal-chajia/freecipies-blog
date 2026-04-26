@@ -247,8 +247,6 @@ const TemplateEditor = () => {
 
     // Generate and upload thumbnail with stable URL (overwrites existing)
     const uploadThumbnail = async (slugName: string) => {
-        console.log('[Thumbnail] Starting upload for:', slugName);
-        console.log('[Thumbnail] exportFnRef.current:', exportFnRef.current);
 
         if (!exportFnRef.current) {
             console.warn('[Thumbnail] FAILED: exportFnRef.current is NULL');
@@ -256,10 +254,8 @@ const TemplateEditor = () => {
         }
 
         try {
-            console.log('[Thumbnail] Exporting canvas as WebP...');
             // Export canvas as WebP for best compression
             const blob = await exportFnRef.current('webp', 0.7);
-            console.log('[Thumbnail] Export result:', blob);
             if (!blob) {
                 console.warn('[Thumbnail] FAILED: blob is null');
                 return null;

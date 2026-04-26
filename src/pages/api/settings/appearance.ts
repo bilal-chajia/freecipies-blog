@@ -8,6 +8,8 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getTocSettings, updateTocSettings, type TocSettings } from '@modules/settings/services/settings.service';
+import { validateBody } from '@shared/validation';
+import { AppearanceSchema } from '@shared/validation/schemas/settings';
 
 /**
  * GET /api/settings/appearance
@@ -57,7 +59,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
             });
         }
 
-        const body = await request.json();
+        const body = await validateBody(request, AppearanceSchema);
         let updatedToc: TocSettings | null = null;
 
         // Update TOC settings if provided

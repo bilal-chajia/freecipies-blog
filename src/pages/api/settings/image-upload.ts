@@ -4,6 +4,8 @@ import { getImageUploadSettings, updateImageUploadSettings, resetImageUploadSett
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateBody } from '@shared/validation';
+import { ImageUploadSettingsSchema } from '@shared/validation/schemas/settings';
 
 export const prerender = false;
 
@@ -53,32 +55,10 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       return createAuthError('Editor role required to modify settings', 403);
     }
 
-    // Parse body
-    let updates: Record<string, any>;
-    try {
-      updates = await request.json();
-    } catch {
-      const { body, status, headers } = formatErrorResponse(
-        new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid JSON body', 400)
-      );
-      return new Response(body, { status, headers });
-    }
+    // Validate and parse body via Zod
+    const updates = await validateBody(request, ImageUploadSettingsSchema);
 
-    // Validate and sanitize updates
-    const validKeys = Object.keys(IMAGE_UPLOAD_DEFAULTS);
-    const sanitized: Record<string, any> = {};
-    
-    for (const [key, value] of Object.entries(updates)) {
-      if (validKeys.includes(key)) {
-        // Type validation
-        const defaultValue = IMAGE_UPLOAD_DEFAULTS[key as keyof typeof IMAGE_UPLOAD_DEFAULTS];
-        if (typeof value === typeof defaultValue) {
-          sanitized[key] = value;
-        }
-      }
-    }
-
-    const newSettings = await updateImageUploadSettings(env.DB, sanitized);
+    const newSettings = await updateImageUploadSettings(env.DB, updates);
 
     const { body, status, headers } = formatSuccessResponse({
       success: true,

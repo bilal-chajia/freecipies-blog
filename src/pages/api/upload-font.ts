@@ -4,6 +4,7 @@ import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@module
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { validate, validateQuery, z } from '@shared/validation';
 
 export const prerender = false;
 
@@ -40,22 +41,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return new Response(body, { status, headers });
         }
 
-        // Validate file type
+        // Validate file metadata with Zod
         const ext = path.extname(file.name).toLowerCase();
-        if (!ALLOWED_EXTENSIONS.includes(ext)) {
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.VALIDATION_ERROR, `Invalid font type. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`, 400)
-            );
-            return new Response(body, { status, headers });
-        }
-
-        // Validate file size (5MB max for fonts)
-        if (file.size > 5 * 1024 * 1024) {
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.VALIDATION_ERROR, 'Font file too large (max 5MB)', 400)
-            );
-            return new Response(body, { status, headers });
-        }
+        validate(
+          z.object({
+            ext: z.string().refine(
+              (e) => ALLOWED_EXTENSIONS.includes(e),
+              { message: `Invalid font type. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}` }
+            ),
+            size: z.number().max(5 * 1024 * 1024, 'Font file too large (max 5MB)'),
+          }),
+          { ext, size: file.size }
+        );
 
         // Create safe filename (remove special chars, preserve extension)
         const baseName = file.name.replace(ext, '').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -136,25 +133,22 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
             return createAuthError('Insufficient permissions to delete fonts', 403);
         }
 
-        // Get filename from query params
+        // Validate filename query param with Zod
         const url = new URL(request.url);
-        const filename = url.searchParams.get('filename');
-
-        if (!filename) {
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.VALIDATION_ERROR, 'Filename is required', 400)
-            );
-            return new Response(body, { status, headers });
-        }
+        const { filename } = validateQuery(
+          url.searchParams,
+          z.object({ filename: z.string().min(1, 'Filename is required') })
+        );
 
         // Validate extension
         const ext = path.extname(filename).toLowerCase();
-        if (!ALLOWED_EXTENSIONS.includes(ext)) {
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid file type', 400)
-            );
-            return new Response(body, { status, headers });
-        }
+        validate(
+          z.string().refine(
+            (e) => ALLOWED_EXTENSIONS.includes(e),
+            { message: 'Invalid file type' }
+          ),
+          ext
+        );
 
         const fontsDir = path.join(process.cwd(), 'public', 'fonts');
         const filePath = path.join(fontsDir, filename);

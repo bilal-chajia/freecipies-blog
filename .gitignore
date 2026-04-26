@@ -36,3 +36,4 @@ history/
 
 # TypeScript build info
 *.tsbuildinfo
+content.json

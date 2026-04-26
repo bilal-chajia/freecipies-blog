@@ -27,7 +27,6 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
   // Sync with loaded settings (only when not dirty/editing)
   useEffect(() => {
     if (settings && !hasChanges) {
-      console.log('[ImageUploadSettings] Syncing localSettings with settings:', settings);
       setLocalSettings(settings);
     }
   }, [settings, hasChanges]);
@@ -97,10 +96,8 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
     setIsSaving(true);
     setSaveStatus(null);
     setSaveMessage('');
-    console.log('[ImageUploadSettings] handleSave called with localSettings:', localSettings);
     try {
       const result = await updateSettings(localSettings);
-      console.log('[ImageUploadSettings] updateSettings returned:', result);
 
       // Explicitly update localSettings with the saved result
       if (result) {

@@ -27,7 +27,6 @@ export const useCustomFontLoader = () => {
                     const font = new FontFace(fontData.name, `url("${fontData.url}")`);
                     await font.load();
                     document.fonts.add(font);
-                    console.log(`Loaded custom font: ${fontData.name}`);
                     anyNewLoaded = true;
                 } catch (error) {
                     console.error(`Failed to load custom font ${fontData.name}:`, error);

@@ -4,18 +4,14 @@ import { getTagBySlug, updateTag, deleteTag, transformTagRequestBody, transformT
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateParams, validateBody } from '@shared/validation';
+import { SlugOrIdParam } from '@shared/validation/schemas/common';
+import { UpdateTagSchema } from '@shared/validation/schemas/tags';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request, params, locals }) => {
-    const { slug } = params;
-
-    if (!slug) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { slug } = validateParams(params, SlugOrIdParam);
 
     try {
 
@@ -55,14 +51,7 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
 };
 
 export const PUT: APIRoute = async ({ request, params, locals }) => {
-    const { slug } = params;
-
-    if (!slug) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { slug } = validateParams(params, SlugOrIdParam);
 
     try {
 
@@ -73,7 +62,7 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        const body = await request.json();
+        const body = await validateBody(request, UpdateTagSchema);
         const transformedBody = transformTagRequestBody(body);
         const tag = await updateTag(env.DB, slug, transformedBody);
         const responseTag = transformTagResponse(tag);
@@ -99,14 +88,7 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
 };
 
 export const DELETE: APIRoute = async ({ request, params, locals }) => {
-    const { slug } = params;
-
-    if (!slug) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { slug } = validateParams(params, SlugOrIdParam);
 
     try {
 

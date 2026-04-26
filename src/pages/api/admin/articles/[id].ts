@@ -11,34 +11,18 @@ import {
 } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateParams, validateBody, validateQuery, IdParam, UpdateArticleSchema, ArticleActionQuery } from '@shared/validation';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { transformArticleRequestBody } from '../../../../modules/articles/api/helpers';
 
 export const prerender = false;
 
 /**
- * Helper to parse and validate numeric ID from URL params
- */
-function parseArticleId(idParam: string | undefined): number | null {
-    if (!idParam) return null;
-    const id = parseInt(idParam, 10);
-    if (isNaN(id) || id <= 0) return null;
-    return id;
-}
-
-/**
  * GET /api/admin/articles/:id
  * Get article by ID (admin use)
  */
 export const GET: APIRoute = async ({ params, locals }) => {
-    const id = parseArticleId(params.id);
-
-    if (!id) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Valid numeric ID is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { id } = validateParams(params, IdParam);
 
     try {
         if (!env?.DB) {
@@ -72,14 +56,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
  * Update article by ID (requires Editor role)
  */
 export const PUT: APIRoute = async ({ request, params, locals }) => {
-    const id = parseArticleId(params.id);
-
-    if (!id) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Valid numeric ID is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { id } = validateParams(params, IdParam);
 
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
@@ -89,7 +66,7 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        const requestBody = await request.json();
+        const requestBody = await validateBody(request, UpdateArticleSchema);
         const { selectedTags, ...rest } = requestBody ?? {};
 
         // Standardized normalization using helper
@@ -138,14 +115,7 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
  * Soft delete article by ID (requires Editor role)
  */
 export const DELETE: APIRoute = async ({ request, params, locals }) => {
-    const id = parseArticleId(params.id);
-
-    if (!id) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Valid numeric ID is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { id } = validateParams(params, IdParam);
 
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
@@ -187,23 +157,9 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
  * Query param: action=toggle-online | toggle-favorite
  */
 export const PATCH: APIRoute = async ({ request, params, locals }) => {
-    const id = parseArticleId(params.id);
+    const { id } = validateParams(params, IdParam);
     const url = new URL(request.url);
-    const action = url.searchParams.get('action');
-
-    if (!id) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Valid numeric ID is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
-
-    if (!action || !['toggle-online', 'toggle-favorite'].includes(action)) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Valid action query param required: toggle-online or toggle-favorite', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { action } = validateQuery(url.searchParams, ArticleActionQuery);
 
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;

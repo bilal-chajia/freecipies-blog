@@ -7,6 +7,13 @@ import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@module
 import { getImageUploadSettings } from '@modules/settings';
 import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
 import { calculateAspectRatio, getImageDimensions } from '@shared/utils/imageMeta';
+import { validate } from '@shared/validation';
+import { z } from '@shared/validation';
+
+/** Schema for validating the pin image upload form data */
+const PinUploadImageForm = z.object({
+  file: z.instanceof(File, { message: 'No file uploaded' }),
+});
 
 /**
  * PinCreator upload endpoint
@@ -30,11 +37,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const formData = await request.formData();
-    const file = formData.get('file') as File;
-
-    if (!file) {
-      throw new AppError(ErrorCodes.VALIDATION_ERROR, 'No file uploaded', 400);
-    }
+    const { file } = validate(PinUploadImageForm, { file: formData.get('file') });
 
     // Settings and validation
     const settings = await getImageUploadSettings(env.DB);

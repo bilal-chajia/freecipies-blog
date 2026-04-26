@@ -22,6 +22,7 @@ import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { getImageUploadSettings } from '@modules/settings';
 import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
+import { validate, VariantUploadFields } from '@shared/validation';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
@@ -49,11 +50,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Parse form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const variantName = formData.get('variantName') as string;
-    const baseName = formData.get('baseName') as string;
-    const uploadId = formData.get('uploadId') as string;
-    const width = parseInt(formData.get('width') as string) || 0;
-    const height = parseInt(formData.get('height') as string) || 0;
+
+    // Validate variant fields via Zod
+    const { variantName, baseName, uploadId, width, height } = validate(VariantUploadFields, {
+      variantName: formData.get('variantName'),
+      baseName: formData.get('baseName'),
+      uploadId: formData.get('uploadId') || undefined,
+      width: formData.get('width') || '0',
+      height: formData.get('height') || '0',
+    });
 
     if (!file || !variantName || !baseName) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Missing required fields: file, variantName, baseName', 400);

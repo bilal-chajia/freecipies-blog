@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validate, z } from '@shared/validation';
 
 export const prerender = false;
 
@@ -36,7 +37,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // Get form data
         const formData = await request.formData();
         const file = formData.get('file') as File;
-        const templateSlug = formData.get('templateSlug') as string || 'untitled';
+
+        // Validate text fields with Zod
+        const { templateSlug } = validate(
+          z.object({
+            templateSlug: z.string().min(1).default('untitled'),
+          }),
+          { templateSlug: formData.get('templateSlug') || undefined }
+        );
 
         if (!file) {
             const { body, status, headers } = formatErrorResponse(

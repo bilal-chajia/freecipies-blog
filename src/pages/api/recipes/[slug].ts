@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import { getArticleBySlug } from '@modules/articles';
 import { generateJsonLd } from '@modules/articles/utils/jsonld';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateParams, SlugOrIdParam } from '@shared/validation';
 
 export const prerender = false;
 
@@ -11,16 +12,8 @@ export const prerender = false;
  * Public endpoint to get recipe by slug with JSON-LD
  */
 export const GET: APIRoute = async ({ params, locals, url }) => {
-    const { slug } = params;
-
-    if (!slug) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
-
     try {
+        const { slug } = validateParams(params, SlugOrIdParam);
         const db = env.DB;
         if (!db) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);

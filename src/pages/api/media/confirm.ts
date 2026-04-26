@@ -33,6 +33,7 @@ import { createMedia, type NewMedia } from '@modules/media';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateBody, ConfirmUploadSchema } from '@shared/validation';
 
 interface VariantInfo {
   r2Key: string;
@@ -76,21 +77,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    // Parse body
-    const body = await request.json() as ConfirmBody;
-
-    // Validate required fields
-    if (!body.name || !body.altText || !body.variants) {
-      throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Missing required fields: name, altText, variants', 400);
-    }
-
-    // Validate all required variants are present
-    const requiredVariants = ['lg', 'md', 'sm', 'xs'];
-    for (const v of requiredVariants) {
-      if (!body.variants[v as keyof typeof body.variants]) {
-        throw new AppError(ErrorCodes.VALIDATION_ERROR, `Missing required variant: ${v}`, 400);
-      }
-    }
+    // Parse & validate body via Zod
+    const body = await validateBody(request, ConfirmUploadSchema);
 
     // Build variants JSON for storage (r2_key only, no url)
     const variantsJson = {

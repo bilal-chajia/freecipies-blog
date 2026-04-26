@@ -362,7 +362,6 @@ const useEditorStore = create((set, get) => ({
         const { customFonts } = get();
         // Prevent duplicates by checking if font with same name exists
         if (customFonts.some(f => f.name === font.name)) {
-            console.log(`Font "${font.name}" already exists, skipping duplicate.`);
             return;
         }
         const newFonts = [...customFonts, font];

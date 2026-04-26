@@ -4,6 +4,7 @@ import { hardDeleteMedia, getMediaById } from '@modules/media';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateBody, BulkDeleteSchema } from '@shared/validation';
 
 export const prerender = false;
 
@@ -45,23 +46,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return createAuthError('Editor role required to delete media files', 403);
         }
 
-        // Parse IDs from body
-        let ids: number[] = [];
-        try {
-            const body = await request.json() as any;
-            if (Array.isArray(body.ids)) {
-                ids = body.ids.map((id: any) => parseInt(id)).filter((id: number) => !isNaN(id));
-            }
-        } catch {
-            return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 });
-        }
-
-        if (ids.length === 0) {
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.VALIDATION_ERROR, 'No valid IDs provided', 400)
-            );
-            return new Response(body, { status, headers });
-        }
+        // Validate IDs from body via Zod
+        const { ids } = await validateBody(request, BulkDeleteSchema);
 
         const stats = {
             processed: 0,

@@ -126,31 +126,6 @@ export function formatSuccessResponse<T>(
 }
 
 /**
- * Validate pagination parameters
- */
-export function validatePaginationParams(
-  limitParam: string | null | undefined,
-  pageParam: string | null | undefined
-): {
-  valid: boolean;
-  limit: number;
-  page: number;
-  offset: number;
-  error?: string;
-} {
-  const limit = Math.min(Math.max(parseInt(limitParam || '12'), 1), 100);
-  const page = Math.max(parseInt(pageParam || '1'), 1);
-  const offset = (page - 1) * limit;
-
-  return {
-    valid: true,
-    limit,
-    page,
-    offset,
-  };
-}
-
-/**
  * Create error response for API endpoints
  */
 export function handleError(message: string, statusCode: number = 500): Response {

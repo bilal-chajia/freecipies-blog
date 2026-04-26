@@ -7,7 +7,7 @@
  * POST   /api/admin/ai/models/:provider - Add new model
  * PUT    /api/admin/ai/models/:provider/:modelId - Update model
  * DELETE /api/admin/ai/models/:provider/:modelId - Delete model
- * PATCH  /api/admin/ai/models/:provider/:modelId/toggle - Toggle enabled
+ * PATCH  /api/admin/ai/models/:provider/:modelId - Toggle enabled
  */
 
 import type { APIRoute } from 'astro';
@@ -15,42 +15,33 @@ import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
-import { getAISettings, saveAISettings, ALL_PROVIDERS } from '@modules/ai';
-import type { AIProvider, AIModel } from '@modules/ai';
+import { getAISettings, saveAISettings } from '@modules/ai';
+import { validateParams, validateBody } from '@shared/validation';
+import { ProviderParam, ProviderModelParam, AddModelSchema, UpdateModelSchema } from '@shared/validation/schemas/ai';
+import type { AIModel } from '@modules/ai';
 
 export const prerender = false;
 
 /**
  * GET - List all models for a provider
  */
-export const GET: APIRoute = async ({ params, request, locals }) => {
+export const GET: APIRoute = async ({ params, request }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
-
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
             return createAuthError('Admin permissions required', 403);
         }
-
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const provider = params.provider as AIProvider;
-        if (!ALL_PROVIDERS.includes(provider)) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid provider', 400);
-        }
-
+        const { provider } = validateParams(params, ProviderParam);
         const settings = await getAISettings(env.DB);
         const providerConfig = settings.providers?.[provider];
         const models = providerConfig?.availableModels || [];
 
-        const { body, status, headers } = formatSuccessResponse({
-            provider,
-            models
-        });
-
+        const { body, status, headers } = formatSuccessResponse({ provider, models });
         return new Response(body, { status, headers });
 
     } catch (error) {
@@ -67,46 +58,28 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
 /**
  * POST - Add a new model to provider
  */
-export const POST: APIRoute = async ({ params, request, locals }) => {
+export const POST: APIRoute = async ({ params, request }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
-
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
             return createAuthError('Admin permissions required', 403);
         }
-
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const provider = params.provider as AIProvider;
-        if (!ALL_PROVIDERS.includes(provider)) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid provider', 400);
-        }
-
-        const body = await request.json();
-        const { id, name, description, contextWindow, maxTokens } = body;
-
-        // Validation
-        if (!id || typeof id !== 'string') {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Model ID required', 400);
-        }
-        if (!name || typeof name !== 'string') {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Model name required', 400);
-        }
+        const { provider } = validateParams(params, ProviderParam);
+        const { id, name, description, contextWindow, maxTokens } = await validateBody(request, AddModelSchema);
 
         const settings = await getAISettings(env.DB);
         const providerConfig = settings.providers?.[provider] || { enabled: false, apiKey: '' };
         const models = providerConfig.availableModels || [];
 
-        // Check if model already exists
         if (models.some(m => m.id === id)) {
             throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Model ID already exists', 400);
         }
 
-        // Add new model
         const newModel: AIModel = {
             id,
             name,
@@ -128,10 +101,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
             throw new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to save model', 500);
         }
 
-        const { body: responseBody, status, headers } = formatSuccessResponse({
-            model: newModel
-        });
-
+        const { body: responseBody, status, headers } = formatSuccessResponse({ model: newModel });
         return new Response(responseBody, { status, headers });
 
     } catch (error) {
@@ -148,32 +118,19 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 /**
  * PUT - Update an existing model
  */
-export const PUT: APIRoute = async ({ params, request, locals }) => {
+export const PUT: APIRoute = async ({ params, request }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
-
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
             return createAuthError('Admin permissions required', 403);
         }
-
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const provider = params.provider as AIProvider;
-        const modelId = params.modelId;
-
-        if (!ALL_PROVIDERS.includes(provider)) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid provider', 400);
-        }
-        if (!modelId) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Model ID required', 400);
-        }
-
-        const body = await request.json();
-        const { name, description, contextWindow, maxTokens, deprecated } = body;
+        const { provider, modelId } = validateParams(params, ProviderModelParam);
+        const updates = await validateBody(request, UpdateModelSchema);
 
         const settings = await getAISettings(env.DB);
         const providerConfig = settings.providers?.[provider];
@@ -184,7 +141,8 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
             throw new AppError(ErrorCodes.NOT_FOUND, 'Model not found', 404);
         }
 
-        // Update model
+        // Apply updates
+        const { name, description, contextWindow, maxTokens, deprecated } = updates;
         if (name) models[modelIndex].name = name;
         if (description !== undefined) models[modelIndex].description = description;
         if (contextWindow !== undefined) models[modelIndex].contextWindow = contextWindow;
@@ -196,16 +154,12 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
             settings.providers[provider] = providerConfig;
         }
 
-
         const success = await saveAISettings(env.DB, settings);
         if (!success) {
             throw new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to update model', 500);
         }
 
-        const { body: responseBody, status, headers } = formatSuccessResponse({
-            model: models[modelIndex]
-        });
-
+        const { body: responseBody, status, headers } = formatSuccessResponse({ model: models[modelIndex] });
         return new Response(responseBody, { status, headers });
 
     } catch (error) {
@@ -222,29 +176,18 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 /**
  * DELETE - Remove a model
  */
-export const DELETE: APIRoute = async ({ params, request, locals }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
-
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
             return createAuthError('Admin permissions required', 403);
         }
-
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const provider = params.provider as AIProvider;
-        const modelId = params.modelId;
-
-        if (!ALL_PROVIDERS.includes(provider)) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid provider', 400);
-        }
-        if (!modelId) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Model ID required', 400);
-        }
+        const { provider, modelId } = validateParams(params, ProviderModelParam);
 
         const settings = await getAISettings(env.DB);
         const providerConfig = settings.providers?.[provider];
@@ -260,17 +203,12 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
             settings.providers[provider] = providerConfig;
         }
 
-
         const success = await saveAISettings(env.DB, settings);
         if (!success) {
             throw new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to delete model', 500);
         }
 
-        const { body, status, headers } = formatSuccessResponse({
-            success: true,
-            deletedModelId: modelId
-        });
-
+        const { body, status, headers } = formatSuccessResponse({ success: true, deletedModelId: modelId });
         return new Response(body, { status, headers });
 
     } catch (error) {
@@ -287,29 +225,18 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
 /**
  * PATCH - Toggle model enabled/disabled
  */
-export const PATCH: APIRoute = async ({ params, request, locals }) => {
+export const PATCH: APIRoute = async ({ params, request }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
-
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
             return createAuthError('Admin permissions required', 403);
         }
-
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const provider = params.provider as AIProvider;
-        const modelId = params.modelId;
-
-        if (!ALL_PROVIDERS.includes(provider)) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid provider', 400);
-        }
-        if (!modelId) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Model ID required', 400);
-        }
+        const { provider, modelId } = validateParams(params, ProviderModelParam);
 
         const settings = await getAISettings(env.DB);
         const providerConfig = settings.providers?.[provider];
@@ -328,16 +255,12 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
             settings.providers[provider] = providerConfig;
         }
 
-
         const success = await saveAISettings(env.DB, settings);
         if (!success) {
             throw new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to toggle model', 500);
         }
 
-        const { body, status, headers } = formatSuccessResponse({
-            model: models[modelIndex]
-        });
-
+        const { body, status, headers } = formatSuccessResponse({ model: models[modelIndex] });
         return new Response(body, { status, headers });
 
     } catch (error) {

@@ -5,6 +5,7 @@ import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
 import { resolveVariantUrl } from '@shared/types/images';
+import { validateQuery, MediaListQuery } from '@shared/validation';
 
 export const prerender = false;
 
@@ -28,10 +29,11 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         const search = url.searchParams.get('search') || undefined;
         const sortBy = url.searchParams.get('sortBy') || undefined;
         const order = (url.searchParams.get('order') as 'asc' | 'desc') || 'desc';
-        const limit = parseInt(url.searchParams.get('limit') || '100');
-        const offset = parseInt(url.searchParams.get('offset') || '0');
         const dateFrom = url.searchParams.get('dateFrom') || undefined;
         const dateTo = url.searchParams.get('dateTo') || undefined;
+
+        // Validate limit/offset/search/mimeType via Zod
+        const { limit, offset } = validateQuery(url.searchParams, MediaListQuery);
 
 
         const mediaFiles = await getMedia(env.DB, {

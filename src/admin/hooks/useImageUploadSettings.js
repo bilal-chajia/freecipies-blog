@@ -9,7 +9,6 @@ import {
 const DEBUG = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV;
 const debugLog = (...args) => {
   if (DEBUG) {
-    console.log(...args);
   }
 };
 const debugWarn = (...args) => {

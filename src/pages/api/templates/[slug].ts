@@ -4,6 +4,7 @@ import type { Env } from '@shared/types';
 import { AppError, ErrorCodes, formatErrorResponse, formatSuccessResponse } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { getTemplateBySlug, updateTemplate, deleteTemplate } from '@modules/templates';
+import { validateParams, validateBody, SlugOrIdParam, UpdateTemplateSchema } from '@shared/validation';
 
 export const prerender = false;
 
@@ -15,8 +16,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const { slug } = params;
-        const template = await getTemplateBySlug(env.DB, slug || '');
+        const { slug } = validateParams(params, SlugOrIdParam);
+        const template = await getTemplateBySlug(env.DB, slug);
         
         if (!template) {
             const { body, status, headers } = formatErrorResponse(
@@ -53,9 +54,9 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const { slug } = params;
-        const payload = await request.json();
-        const updated = await updateTemplate(env.DB, slug || '', payload);
+        const { slug } = validateParams(params, SlugOrIdParam);
+        const payload = await validateBody(request, UpdateTemplateSchema);
+        const updated = await updateTemplate(env.DB, slug, payload);
         
         if (!updated) {
             const { body, status, headers } = formatErrorResponse(
@@ -100,8 +101,8 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const { slug } = params;
-        const deleted = await deleteTemplate(env.DB, slug || '');
+        const { slug } = validateParams(params, SlugOrIdParam);
+        const deleted = await deleteTemplate(env.DB, slug);
         
         if (!deleted) {
             const { body, status, headers } = formatErrorResponse(

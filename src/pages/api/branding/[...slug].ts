@@ -3,12 +3,19 @@ import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validate, z } from '@shared/validation';
 
 export const prerender = false;
 
 // Valid logo types
 const VALID_LOGO_TYPES = ['main', 'dark', 'mobile'];
 const VALID_IMAGE_TYPES = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/x-icon'];
+
+/** Schema for POST /api/branding action path parts */
+const BrandingActionSchema = z.object({
+    action: z.enum(['logo', 'favicon'], { message: 'Invalid action. Use: logo or favicon' }),
+    type: z.enum(['main', 'dark', 'mobile']).optional(),
+});
 
 // Favicon sizes to generate
 const FAVICON_SIZES = [
@@ -87,8 +94,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         const url = new URL(request.url);
         const pathParts = url.pathname.split('/').filter(Boolean);
-        const action = pathParts[2]; // 'logo' or 'favicon'
-        const type = pathParts[3]; // 'main', 'dark', 'mobile' for logo
+        const { action, type } = validate(BrandingActionSchema, {
+            action: pathParts[2], // 'logo' or 'favicon'
+            type: pathParts[3],   // 'main', 'dark', 'mobile' for logo
+        });
 
         const formData = await request.formData();
         const file = formData.get('file') as File;
@@ -108,8 +117,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const BRANDING_PREFIX = 'branding/';
 
         if (action === 'logo') {
-            if (!type || !VALID_LOGO_TYPES.includes(type)) {
-                throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid logo type. Use: main, dark, or mobile', 400);
+            if (!type) {
+                throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Logo type is required. Use: main, dark, or mobile', 400);
             }
 
             const key = `${BRANDING_PREFIX}logo-${type}.${extension}`;
@@ -140,6 +149,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return new Response(body, { status, headers });
         }
 
+        // Zod schema already ensures action is 'logo' or 'favicon'
+        // Unreachable, but kept for type safety
         throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid action', 400);
 
     } catch (error) {

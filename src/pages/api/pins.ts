@@ -9,22 +9,22 @@ import {
   updatePinterestPin, 
   deletePinterestPin 
 } from '@modules/pinterest';
+import {
+  validateBody,
+  validateQuery,
+  PinListQuery,
+  PinDeleteQuery,
+  CreatePinSchema,
+  UpdatePinSchema,
+} from '@shared/validation';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
-    const url = new URL(request.url);
-    const articleId = url.searchParams.get('article_id');
+    const { article_id } = validateQuery(new URL(request.url).searchParams, PinListQuery);
 
-    if (!articleId) {
-      const { body, status, headers } = formatErrorResponse(
-        new AppError(ErrorCodes.VALIDATION_ERROR, 'article_id is required', 400)
-      );
-      return new Response(body, { status, headers });
-    }
-
-    const pins = await getPinterestPins(env.DB, { articleId: parseInt(articleId, 10) });
+    const pins = await getPinterestPins(env.DB, { articleId: article_id });
 
     const { body, status, headers } = formatSuccessResponse({ pins });
     return new Response(body, { status, headers });
@@ -53,26 +53,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
 
-    const body = await request.json();
-    // Frontend still sends legacy fields like image_alt, image_width, is_primary, etc.
-    const { 
-      article_id, board_id, title, description, image_url, pin_url
-    } = body;
-
-    if (!article_id || !title || !description || !image_url) {
-      const { body: errBody, status, headers } = formatErrorResponse(
-        new AppError(ErrorCodes.VALIDATION_ERROR, 'Missing required fields: article_id, title, description, image_url', 400)
-      );
-      return new Response(errBody, { status, headers });
-    }
+    const body = await validateBody(request, CreatePinSchema);
 
     const inserted = await createPinterestPin(env.DB, {
-      articleId: article_id,
-      boardId: board_id || null,
-      title,
-      description,
-      imageUrl: image_url,
-      destinationUrl: pin_url || '',
+      articleId: body.article_id,
+      boardId: body.board_id ?? null,
+      title: body.title,
+      description: body.description,
+      imageUrl: body.image_url,
+      destinationUrl: body.pin_url || '',
       status: 'draft',
       tagsJson: '[]'
     });
@@ -106,24 +95,14 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
 
-    const body = await request.json();
-    const { 
-      id, board_id, title, description, image_url, pin_url 
-    } = body;
+    const body = await validateBody(request, UpdatePinSchema);
 
-    if (!id) {
-      const { body: errBody, status, headers } = formatErrorResponse(
-        new AppError(ErrorCodes.VALIDATION_ERROR, 'Pin ID is required', 400)
-      );
-      return new Response(errBody, { status, headers });
-    }
-
-    await updatePinterestPin(env.DB, id, {
-      boardId: board_id || null,
-      title,
-      description,
-      imageUrl: image_url,
-      destinationUrl: pin_url || ''
+    await updatePinterestPin(env.DB, body.id, {
+      boardId: body.board_id ?? null,
+      title: body.title,
+      description: body.description,
+      imageUrl: body.image_url,
+      destinationUrl: body.pin_url || ''
     });
 
     const { body: respBody, status, headers } = formatSuccessResponse({ updated: true });
@@ -153,17 +132,9 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
 
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
+    const { id } = validateQuery(new URL(request.url).searchParams, PinDeleteQuery);
 
-    if (!id) {
-      const { body: errBody, status, headers } = formatErrorResponse(
-        new AppError(ErrorCodes.VALIDATION_ERROR, 'Pin ID is required', 400)
-      );
-      return new Response(errBody, { status, headers });
-    }
-
-    await deletePinterestPin(env.DB, parseInt(id, 10));
+    await deletePinterestPin(env.DB, id);
 
     const { body, status, headers } = formatSuccessResponse({ deleted: true });
     return new Response(body, { status, headers });

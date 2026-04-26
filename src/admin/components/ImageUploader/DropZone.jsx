@@ -83,9 +83,6 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
     setIsDragging(false);
     setDragCounter(0);
 
-    console.log('[DropZone] handleDrop called');
-    console.log('[DropZone] dataTransfer.files:', e.dataTransfer.files);
-    console.log('[DropZone] dataTransfer.types:', e.dataTransfer.types);
 
     // Create particles at drop location
     if (dropZoneRef.current) {
@@ -95,13 +92,10 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
 
     // 1. Check for dropped files FIRST (Priority)
     const files = e.dataTransfer.files;
-    console.log('[DropZone] files.length:', files?.length);
 
     if (files && files.length > 0) {
       // Filter only image files
       const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-      console.log('[DropZone] imageFiles:', imageFiles.length);
-      console.log('[DropZone] allowMultiple:', allowMultiple);
 
       if (imageFiles.length > 0) {
         if (allowMultiple && onFilesSelect) {
@@ -117,11 +111,9 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
 
     // 2. If no files, check for dropped URL
     const droppedUrl = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
-    console.log('[DropZone] droppedUrl:', droppedUrl);
 
     if (droppedUrl && (droppedUrl.startsWith('http://') || droppedUrl.startsWith('https://'))) {
       if (/\.(jpg|jpeg|png|gif|webp|avif)(\?|$)/i.test(droppedUrl)) {
-        console.log('[DropZone] Calling onUrlImport with URL');
         if (allowMultiple && onUrlsImport) {
           onUrlsImport([droppedUrl]);
         } else {
@@ -182,7 +174,6 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
 
     if (allowMultiple && onUrlsImport && validUrls.length > 0) {
       // Add all URLs to queue
-      console.log('[DropZone] Importing', validUrls.length, 'URLs to queue');
       onUrlsImport(validUrls);
     } else {
       // Single URL mode
@@ -213,11 +204,9 @@ export default function DropZone({ onFileSelect, onFilesSelect, onUrlImport, onU
       e.preventDefault();
       if (allowMultiple && onUrlsImport && imageUrls.length > 1) {
         // Multiple URLs - send all to queue
-        console.log('[DropZone] Calling onUrlsImport with', imageUrls.length, 'URLs');
         onUrlsImport(imageUrls);
       } else {
         // Single URL
-        console.log('[DropZone] Calling onUrlImport with single URL');
         onUrlImport(imageUrls[0]);
       }
     }

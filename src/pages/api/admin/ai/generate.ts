@@ -13,13 +13,14 @@ import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { generateContent } from '@modules/ai';
 import type { GenerateContentRequest } from '@modules/ai';
+import { validateBody } from '@shared/validation';
+import { GenerateSchema } from '@shared/validation/schemas/ai';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
 
         // Auth check
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -31,17 +32,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        // Parse request body
-        const body = await request.json();
-        const { prompt, contentType, provider, model, temperature } = body;
-
-        if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 3) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'A valid prompt is required (min 3 characters)', 400);
-        }
-
-        if (!contentType || !['recipe', 'article', 'roundup'].includes(contentType)) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Valid contentType required: recipe, article, or roundup', 400);
-        }
+        // Validate & parse body
+        const { prompt, contentType, provider, model, temperature } = await validateBody(request, GenerateSchema);
 
         // Generate content
         const generateRequest: GenerateContentRequest = {
@@ -49,7 +41,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             contentType,
             provider: provider || 'gemini',
             model: model || undefined,
-            temperature: typeof temperature === 'number' ? temperature : undefined,
+            temperature: temperature ?? undefined,
         };
 
         const result = await generateContent(env.DB, generateRequest);

@@ -14,6 +14,7 @@ import {
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateParams, validateBody, SlugOrIdParam, UpdateCategorySchema } from '@shared/validation';
 
 export const prerender = false;
 
@@ -39,14 +40,7 @@ const getThumbnailUrlFromImagesJson = (value: any): string | null => {
 };
 
 export const GET: APIRoute = async ({ request, params, locals }) => {
-    const { slug } = params;
-
-    if (!slug) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug or ID is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { slug } = validateParams(params, SlugOrIdParam);
 
     try {
 
@@ -90,14 +84,7 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
 };
 
 export const PUT: APIRoute = async ({ request, params, locals }) => {
-    const { slug } = params;
-
-    if (!slug) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug or ID is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { slug } = validateParams(params, SlugOrIdParam);
 
     try {
 
@@ -108,7 +95,7 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        const body = await request.json();
+        const body = await validateBody(request, UpdateCategorySchema);
         const transformedBody = transformCategoryRequestBody(body);
 
         // DEBUG: Check if iconSvg is in the transformed body
@@ -144,14 +131,7 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
 };
 
 export const DELETE: APIRoute = async ({ request, params, locals }) => {
-    const { slug } = params;
-
-    if (!slug) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug or ID is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { slug } = validateParams(params, SlugOrIdParam);
 
     try {
 

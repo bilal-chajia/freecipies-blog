@@ -88,7 +88,6 @@ const Dashboard = () => {
           setStats(statsRes.data);
         }
       } catch (error) {
-        console.log('Stats API not available yet');
       }
 
       // Load recent articles
@@ -102,7 +101,6 @@ const Dashboard = () => {
           setRecentArticles(Array.isArray(articlesRes.data) ? articlesRes.data : articlesRes.data.data || []);
         }
       } catch (error) {
-        console.log('Articles API not available yet');
       }
 
       // Load popular articles
@@ -112,7 +110,6 @@ const Dashboard = () => {
           setPopularArticles(Array.isArray(popularRes.data) ? popularRes.data : popularRes.data.data || []);
         }
       } catch (error) {
-        console.log('Popular articles API not available yet');
       }
     } catch (error) {
       toast.error('Failed to load dashboard data');

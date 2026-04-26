@@ -4,6 +4,7 @@ import { deleteMedia, hardDeleteMedia, getMediaById, updateMedia } from '@module
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateParams, IdParam } from '@shared/validation';
 
 export const prerender = false;
 
@@ -39,21 +40,7 @@ function getAllR2Keys(variantsJson: string | null): string[] {
 
 // PUT - Replace image file (in-place)
 export const PUT: APIRoute = async ({ request, locals, params }) => {
-    const idStr = params.id;
-    if (!idStr) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Media ID is required in URL path', 400)
-        );
-        return new Response(body, { status, headers });
-    }
-
-    const id = parseInt(idStr);
-    if (isNaN(id)) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, `Invalid media ID format: '${idStr}' must be a number`, 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { id } = validateParams(params as Record<string, string | undefined>, IdParam);
 
     try {
 
@@ -157,21 +144,7 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
 };
 
 export const DELETE: APIRoute = async ({ request, locals, params }) => {
-    const idStr = params.id;
-    if (!idStr) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Media ID is required in URL path', 400)
-        );
-        return new Response(body, { status, headers });
-    }
-
-    const id = parseInt(idStr);
-    if (isNaN(id)) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, `Invalid media ID format: '${idStr}' must be a number`, 400)
-        );
-        return new Response(body, { status, headers });
-    }
+    const { id } = validateParams(params as Record<string, string | undefined>, IdParam);
 
     try {
 

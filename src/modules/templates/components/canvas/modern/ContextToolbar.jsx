@@ -149,11 +149,9 @@ const ContextToolbar = () => {
                     className="hidden"
                     onChange={async (e) => {
                         const file = e.target.files?.[0];
-                        console.log('[FontUpload] File selected:', file?.name);
                         if (!file) return;
 
                         try {
-                            console.log('[FontUpload] Uploading to local fonts folder...');
 
                             // Upload to local fonts folder
                             const formData = new FormData();
@@ -168,32 +166,25 @@ const ContextToolbar = () => {
                             });
 
                             const result = await response.json();
-                            console.log('[FontUpload] Upload response:', result);
 
                             if (!response.ok) throw new Error(result.error || 'Upload failed');
 
                             const url = result.data?.url;
                             if (!url) throw new Error('No URL returned');
-                            console.log('[FontUpload] Font URL:', url);
 
                             const fontName = result.data?.filename?.replace(/\.[^.]+$/, '') || file.name.split('.')[0];
-                            console.log('[FontUpload] Font name:', fontName);
 
                             // Add to store (persisted to localStorage)
                             const { addCustomFont } = useEditorStore.getState();
                             addCustomFont({ name: fontName, url });
-                            console.log('[FontUpload] Added to store. Current fonts:', useEditorStore.getState().customFonts);
 
                             // Load the font immediately
-                            console.log('[FontUpload] Loading font face...');
                             const fontFace = new FontFace(fontName, `url(${url})`);
                             await fontFace.load();
                             document.fonts.add(fontFace);
-                            console.log('[FontUpload] Font loaded into document.fonts');
 
                             // Select the new font
                             updateProp('fontFamily', fontName);
-                            console.log('[FontUpload] Applied font to element');
                         } catch (error) {
                             console.error('[FontUpload] Failed:', error);
                         }
@@ -215,7 +206,6 @@ const ContextToolbar = () => {
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    console.log('[FontUpload] Button clicked');
                                     fontInputRef.current?.click();
                                 }}
                             >
