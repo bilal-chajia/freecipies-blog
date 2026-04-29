@@ -7,6 +7,8 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Power, PowerOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/ui/button';
+import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { toast } from 'sonner';
 import { Input } from '@/ui/input';
 import { Label } from '@/ui/label';
 import { Switch } from '@/ui/switch';
@@ -37,6 +39,7 @@ export function ModelManager({
     const [internalIsAddDialogOpen, setInternalIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(null);
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, modelToDelete: null });
 
     const isAddDialogOpen = externalIsAddOpen !== undefined ? externalIsAddOpen : internalIsAddDialogOpen;
     const setIsAddDialogOpen = externalSetIsAddOpen || setInternalIsAddDialogOpen;
@@ -65,7 +68,7 @@ export function ModelManager({
                 onUpdate?.();
             }
         } catch (error) {
-            console.error('Failed to add model:', error);
+            toast.error('Failed to add model');
         }
     };
 
@@ -85,7 +88,7 @@ export function ModelManager({
                 onUpdate?.();
             }
         } catch (error) {
-            console.error('Failed to update model:', error);
+            toast.error('Failed to update model');
         }
     };
 
@@ -96,12 +99,17 @@ export function ModelManager({
                 onUpdate?.();
             }
         } catch (error) {
-            console.error('Failed to toggle model:', error);
+            toast.error('Failed to toggle model');
         }
     };
 
-    const handleDeleteModel = async (modelId) => {
-        if (!confirm('Are you sure you want to delete this model?')) return;
+    const handleDeleteModel = (modelId) => {
+        setDeleteModal({ isOpen: true, modelToDelete: modelId });
+    };
+
+    const handleDeleteConfirm = async () => {
+        const modelId = deleteModal.modelToDelete;
+        if (!modelId) return;
 
         setIsDeleting(modelId);
         try {
@@ -110,9 +118,10 @@ export function ModelManager({
                 onUpdate?.();
             }
         } catch (error) {
-            console.error('Failed to delete model:', error);
+            toast.error('Failed to delete model');
         } finally {
             setIsDeleting(null);
+            setDeleteModal({ isOpen: false, modelToDelete: null });
         }
     };
 
@@ -195,7 +204,7 @@ export function ModelManager({
                                     size="sm"
                                     onClick={() => handleToggleModel(model.id)}
                                     title={model.enabled ? 'Disable' : 'Enable'}
-                                    className="h-7 w-7 p-0"
+                                    className="h-9 w-9 p-0"
                                 >
                                     {model.enabled ? (
                                         <Power className="h-3.5 w-3.5 text-green-600" />
@@ -207,7 +216,7 @@ export function ModelManager({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => openEditDialog(model)}
-                                    className="h-7 w-7 p-0"
+                                    className="h-9 w-9 p-0"
                                 >
                                     <Edit2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -216,7 +225,7 @@ export function ModelManager({
                                     size="sm"
                                     onClick={() => handleDeleteModel(model.id)}
                                     disabled={isDeleting === model.id}
-                                    className="h-7 w-7 p-0"
+                                    className="h-9 w-9 p-0"
                                 >
                                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                 </Button>
@@ -354,6 +363,16 @@ export function ModelManager({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmationModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, modelToDelete: null })}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Model"
+                description="Are you sure you want to delete this model?"
+                confirmText="Delete"
+                cancelText="Cancel"
+            />
         </div>
     );
-}
+};

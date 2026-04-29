@@ -1,7 +1,7 @@
 ---
 import { env } from 'cloudflare:workers';
-import Layout from "../../layouts/Layout.astro";
-import AuthorCard from "../../components/AuthorCard.astro";
+import Layout from "@layouts/Layout.astro";
+import AuthorCard from "@components/AuthorCard.astro";
 import { getAuthors } from "@modules/authors";
 import { getArticles } from "@modules/articles";
 import { hydrateAuthor } from "@shared/utils";

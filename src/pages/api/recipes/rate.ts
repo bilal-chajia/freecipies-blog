@@ -2,8 +2,15 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { addRecipeVote } from '@modules/articles';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateBody, z } from '@shared/validation';
 
 export const prerender = false;
+
+/** POST /api/recipes/rate body schema */
+const RateRecipeSchema = z.object({
+  id: z.number().int().positive('Valid recipe ID is required'),
+  rating: z.number().min(0.5, 'Rating must be at least 0.5').max(5, 'Rating must be at most 5'),
+});
 
 /**
  * POST /api/recipes/rate
@@ -11,16 +18,11 @@ export const prerender = false;
  * 
  * Body:
  * - id: number (article ID)
- * - rating: number (1-5)
+ * - rating: number (0.5-5)
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const body = await request.json();
-    const { id, rating } = body;
-
-    if (!id || !rating || rating < 0.5 || rating > 5) {
-      throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Valid recipe ID and rating (0.5-5) are required', 400);
-    }
+    const { id, rating } = await validateBody(request, RateRecipeSchema);
 
 
     const db = env.DB;

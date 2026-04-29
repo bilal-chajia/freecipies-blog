@@ -22,7 +22,6 @@ const blockTypeMap: Record<string, () => BlockSpec> = {
     relatedContent: () => ({ type: 'relatedContent' }),
     divider: () => ({ type: 'divider' }),
     mainRecipe: () => ({ type: 'mainRecipe' }),
-    recipeEmbed: () => ({ type: 'recipeEmbed' }),
     roundupList: () => ({ type: 'roundupList' }),
 };
 

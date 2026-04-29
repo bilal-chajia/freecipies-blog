@@ -1,0 +1,492 @@
+---
+/**
+ * EquipmentSection — Premium equipment display for recipes.
+ * Uses CachedEquipmentItem[] from cachedEquipmentJson for rich data:
+ * brand, description, category, image, price, affiliate links.
+ */
+import type { CachedEquipmentItem } from "@modules/articles/types/cache.types";
+
+interface Props {
+  equipment: CachedEquipmentItem[];
+}
+
+const { equipment = [] } = Astro.props;
+if (equipment.length === 0) return;
+
+// Category icon mapping
+const categoryIcons: Record<string, string> = {
+  appliances: "M13 2v2M6 8h12l-1 10H7L6 8z M10 12v4 M14 12v4",
+  cookware:
+    "M3 13h18v2a4 4 0 01-4 4H7a4 4 0 01-4-4v-2zM5 13V8a2 2 0 012-2h10a2 2 0 012 2v5M21 13h1",
+  bakeware:
+    "M4 15s1-1 4-1 4 2 8 1 4-1 4-1v4H4v-4zM4 7h16a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z",
+  tools:
+    "M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z",
+  other: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
+};
+---
+
+<section class="equipment-section" aria-label="Equipment needed">
+  <div class="section-heading-group">
+    <span class="section-heading-icon">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+        ></path>
+      </svg>
+    </span>
+    <h2 class="section-heading">Equipment You'll Need</h2>
+    <span class="equipment-count"
+      >{equipment.length} {equipment.length === 1 ? "item" : "items"}</span
+    >
+  </div>
+
+  <div class="equipment-grid">
+    {
+      equipment.map((item) => {
+        const iconPath =
+          categoryIcons[item.category || "other"] || categoryIcons.other;
+        return (
+          <div
+            class:list={[
+              "equipment-card",
+              { "has-image": !!item.image_url, "is-optional": !item.required },
+            ]}
+          >
+            {/* Product Image */}
+            {item.image_url ? (
+              <div class="card-image">
+                <img
+                  src={item.image_url}
+                  alt={item.name}
+                  loading="lazy"
+                  decoding="async"
+                />
+                {item.category && (
+                  <span class="category-badge" data-category={item.category}>
+                    {item.category}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div class="card-icon-placeholder">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d={iconPath} />
+                </svg>
+                {item.category && (
+                  <span class="category-badge" data-category={item.category}>
+                    {item.category}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Card Content */}
+            <div class="card-body">
+              <div class="card-title-row">
+                <h4 class="item-name">{item.name}</h4>
+                {!item.required && <span class="optional-pill">optional</span>}
+              </div>
+
+              {item.brand && <span class="brand-name">by {item.brand}</span>}
+
+              {item.description && (
+                <p class="item-description">{item.description}</p>
+              )}
+
+              {/* Price + Affiliate CTA */}
+              {item.affiliate_url && (
+                <div class="card-footer">
+                  {item.price_display && (
+                    <span class="price-tag">{item.price_display}</span>
+                  )}
+                  <a
+                    href={item.affiliate_url}
+                    target="_blank"
+                    rel="noopener noreferrer sponsored"
+                    class="affiliate-cta"
+                  >
+                    {item.affiliate_provider
+                      ? `View on ${item.affiliate_provider}`
+                      : "Check Price"}
+                    <svg
+                      class="cta-arrow"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })
+    }
+  </div>
+
+  {/* Affiliate Disclaimer */}
+  {
+    equipment.some((e) => e.affiliate_url) && (
+      <p class="affiliate-disclaimer">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <>
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+          </>
+        </svg>
+        Some links may be affiliate links. We may earn a small commission at no
+        extra cost to you.
+      </p>
+    )
+  }
+</section>
+
+<style>
+  /* ===== Container ===== */
+  .equipment-section {
+    margin: 2.5rem 0;
+    padding: 0;
+  }
+
+  /* ===== Header (Premium Style) ===== */
+  .section-heading-group {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    margin-left: calc(-1 * clamp(16px, 4cqw, 24px));
+    margin-right: calc(-1 * clamp(16px, 4cqw, 24px));
+    padding: 14px clamp(16px, 4cqw, 24px);
+    background: linear-gradient(135deg, var(--success-bg) 0%, var(--neutral-25) 100%);
+    border-left: 4px solid var(--accent, var(--accent-sage));
+    border-radius: 0;
+    position: relative;
+  }
+
+  @container (min-width: 0px) {
+  } /* fallback if no container query */
+
+  .section-heading-group .section-heading {
+    font-size: clamp(20px, 4cqi, 24px);
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    position: relative;
+  }
+
+  .section-heading-group .section-heading::after {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 3px;
+    background: var(--accent, var(--accent-sage));
+    border-radius: 2px;
+    margin-top: 6px;
+  }
+
+  .section-heading-icon {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent, var(--accent-sage));
+    border-radius: 10px;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .section-heading-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .equipment-count {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted, var(--neutral-500));
+    background: var(--bg-subtle, var(--neutral-25));
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    margin-left: auto;
+  }
+
+  /* ===== Grid ===== */
+  .equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
+    gap: clamp(0.5rem, 1.5vw, 0.75rem);
+  }
+
+  /* ===== Card ===== */
+  .equipment-card {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border: 1px solid var(--border-light, var(--border));
+    font-size: 0.85rem;
+    border-radius: 0.875rem;
+    overflow: hidden;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .equipment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+  .equipment-card.is-optional {
+    opacity: 0.85;
+  }
+
+  /* ===== Image / Icon Placeholder ===== */
+  .card-image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3/2;
+    overflow: hidden;
+    background: var(--bg-subtle, var(--neutral-25));
+  }
+  .card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  .equipment-card:hover .card-image img {
+    transform: scale(1.04);
+  }
+
+  .card-icon-placeholder {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 2/1;
+    background: linear-gradient(
+      135deg,
+      var(--bg-subtle, var(--neutral-25)) 0%,
+      var(--bg-muted, var(--neutral-25)) 100%
+    );
+  }
+  .card-icon-placeholder svg {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--text-muted, var(--neutral-400));
+    opacity: 0.5;
+  }
+
+  /* ===== Category Badge ===== */
+  .category-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-body, var(--text-secondary));
+    backdrop-filter: blur(4px);
+  }
+  .category-badge[data-category="appliances"] {
+    color: var(--info-text);
+  }
+  .category-badge[data-category="cookware"] {
+    color: var(--error-text);
+  }
+  .category-badge[data-category="bakeware"] {
+    color: var(--warning-text);
+  }
+  .category-badge[data-category="tools"] {
+    color: var(--success-text);
+  }
+
+  /* ===== Card Body ===== */
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.5rem 0.65rem 0.6rem;
+    flex: 1;
+  }
+
+  .card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .item-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-heading, var(--text));
+    line-height: 1.25;
+  }
+  .optional-pill {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    background: var(--bg-muted, var(--bg-inset));
+    color: var(--text-muted, var(--neutral-400));
+    flex-shrink: 0;
+  }
+
+  .brand-name {
+    font-size: 0.68rem;
+    color: var(--text-muted, var(--neutral-400));
+    font-weight: 500;
+  }
+
+  .item-description {
+    font-size: 0.7rem;
+    color: var(--text-body, var(--neutral-500));
+    line-height: 1.45;
+    margin: 0.15rem 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ===== Footer: Price + CTA ===== */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.6rem;
+  }
+  .price-tag {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--accent, var(--accent-sage));
+    white-space: nowrap;
+  }
+  .affiliate-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--accent, var(--accent-sage));
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+    border: 1px solid var(--accent, var(--accent-sage));
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .affiliate-cta:hover {
+    background: var(--accent, var(--accent-sage));
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+  }
+  .cta-arrow {
+    width: 0.8rem;
+    height: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  /* ===== Disclaimer ===== */
+  .affiliate-disclaimer {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin-top: 1rem;
+    font-size: 0.72rem;
+    color: var(--text-muted, var(--neutral-400));
+    line-height: 1.4;
+  }
+  .affiliate-disclaimer svg {
+    width: 0.85rem;
+    height: 0.85rem;
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+  }
+
+  /* Fluid card body padding */
+  .card-body {
+    padding: clamp(0.4rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.65rem)
+      clamp(0.5rem, 1vw, 0.6rem);
+  }
+
+  /* ===== Dark Mode ===== */
+  :global(.dark) .section-heading-group {
+    background: linear-gradient(
+      135deg,
+      rgba(107, 143, 113, 0.1) 0%,
+      rgba(107, 143, 113, 0.05) 100%
+    );
+  }
+  :global(.dark) .section-heading {
+    color: var(--text-heading-dark, var(--neutral-50)) !important;
+  }
+  :global(.dark) .equipment-count {
+    background: var(--bg-card-dark, var(--text));
+    color: var(--text-muted-dark, var(--neutral-400));
+  }
+  :global(.dark) .equipment-card {
+    background: var(--bg-card-dark, var(--text));
+    border-color: var(--border-dark, var(--text));
+  }
+  :global(.dark) .equipment-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  :global(.dark) .card-icon-placeholder {
+    background: linear-gradient(135deg, var(--text) 0%, var(--text) 100%);
+  }
+  :global(.dark) .item-name {
+    color: var(--text-heading-dark, var(--neutral-50));
+  }
+  :global(.dark) .brand-name,
+  :global(.dark) .item-description {
+    color: var(--text-muted-dark, var(--neutral-400));
+  }
+  :global(.dark) .optional-pill {
+    background: var(--bg-muted-dark, var(--text));
+    color: var(--text-muted-dark, var(--neutral-500));
+  }
+  :global(.dark) .category-badge {
+    background: rgba(30, 30, 30, 0.9);
+  }
+  :global(.dark) .affiliate-disclaimer {
+    color: var(--text-muted-dark, var(--text-tertiary));
+  }
+</style>

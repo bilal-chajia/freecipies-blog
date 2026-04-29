@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Card, CardContent } from '@/ui/card.jsx';
 import { Button } from '@/ui/button.jsx';
+import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { toast } from 'sonner';
 import { Badge } from '@/ui/badge.jsx';
 import { Upload, Trash2, RefreshCw, Image as ImageIcon, Moon, Sun, Smartphone, Globe, Check } from 'lucide-react';
 import { brandingAPI } from '../services/api';
@@ -73,13 +75,13 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
             : ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 
         if (!validTypes.includes(file.type)) {
-            alert('Invalid file type.');
+            toast.error('Invalid file type.');
             return;
         }
 
         const maxSize = item.type === 'favicon' ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
         if (file.size > maxSize) {
-            alert(`File too large. Maximum size is ${item.type === 'favicon' ? '2MB' : '5MB'}.`);
+            toast.error(`File too large. Maximum size is ${item.type === 'favicon' ? '2MB' : '5MB'}.`);
             return;
         }
 
@@ -92,19 +94,19 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                     onFaviconChange(response.data.data.url);
                     await generateFaviconVariants(response.data.data.url);
                 } else {
-                    alert(response.data?.error || 'Failed to upload favicon');
+                    toast.error(response.data?.error || 'Failed to upload favicon');
                 }
             } else {
                 const response = await brandingAPI.uploadLogo(item.id, file);
                 if (response.data?.success) {
                     onLogoChange(item.id, response.data.data.url);
                 } else {
-                    alert(response.data?.error || 'Failed to upload logo');
+                    toast.error(response.data?.error || 'Failed to upload logo');
                 }
             }
         } catch (error) {
             console.error('Upload failed:', error);
-            alert(error.response?.data?.error || 'Failed to upload');
+            toast.error(error.response?.data?.error || 'Failed to upload');
         } finally {
             setUploading(prev => ({ ...prev, [item.id]: false }));
         }
@@ -147,9 +149,13 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
         }
     };
 
-    const handleDelete = async (item) => {
-        if (!confirm(`Delete this ${item.type}?`)) return;
+    const handleDelete = (item) => {
+        setDeleteModal({ isOpen: true, itemToDelete: item });
+    };
 
+    const handleDeleteConfirm = async () => {
+        const item = deleteModal.itemToDelete;
+        if (!item) return;
         try {
             if (item.type === 'favicon') {
                 const response = await brandingAPI.deleteFavicon();
@@ -160,6 +166,9 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
             }
         } catch (error) {
             console.error('Delete failed:', error);
+            toast.error('Failed to delete asset');
+        } finally {
+            setDeleteModal({ isOpen: false, itemToDelete: null });
         }
     };
 
@@ -339,9 +348,19 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                         </Card>
                     );
                 })}
-            </div>
-        </div>
-    );
+      </div>
+
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, itemToDelete: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Branding Asset"
+        description={deleteModal.itemToDelete ? `Delete this ${deleteModal.itemToDelete.type}?` : ''}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+    </div>
+  );
 };
 
 export default BrandingCards;

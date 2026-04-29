@@ -31,8 +31,48 @@ pnpm-debug.log*
 history/
 
 # IDE and Agent configurations
+.mcp.json
 .kilocode/
 .qwen/
 
 # TypeScript build info
 *.tsbuildinfo
+content.json
+.zencoder/
+.claude/
+
+# AI coding tools
+.agents/
+.adal/
+.augment/
+.bob/
+.claude/
+.codebuddy/
+.commandcode/
+.continue/
+.cortex/
+.crush/
+.factory/
+.goose/
+.hermes/
+.iflow/
+.junie/
+.kilo/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+db/DATABASE_SCHEMA.md
+.gitignore

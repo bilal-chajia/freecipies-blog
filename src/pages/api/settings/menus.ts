@@ -17,6 +17,8 @@ import {
 } from '@modules/menus/services/menus.service';
 import { transformMenuResponse } from '@modules/menus/api/helpers';
 import type { MenuItem } from '@modules/menus/types/menus.types';
+import { validateBody, validateQuery } from '@shared/validation';
+import { SaveMenusSchema, CreateMenuSchema, DeleteMenuQuery } from '@shared/validation/schemas/settings';
 
 /**
  * GET /api/settings/menus
@@ -90,7 +92,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
             });
         }
 
-        const body = await request.json();
+        const body = await validateBody(request, SaveMenusSchema);
 
         // Update header menu if provided
         if (body.headerMenu !== undefined) {
@@ -157,21 +159,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             });
         }
 
-        const body = await request.json();
-
-        if (!body.key || typeof body.key !== 'string') {
-            return new Response(JSON.stringify({ error: 'key is required' }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
-
-        if (!body.label || typeof body.label !== 'string') {
-            return new Response(JSON.stringify({ error: 'label is required' }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
+        const body = await validateBody(request, CreateMenuSchema);
 
         const menu = await createMenu(db, {
             key: body.key,
@@ -225,13 +213,7 @@ export const DELETE: APIRoute = async ({ url, locals }) => {
             });
         }
 
-        const key = url.searchParams.get('key');
-        if (!key) {
-            return new Response(JSON.stringify({ error: 'key parameter is required' }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
+        const { key } = validateQuery(url.searchParams, DeleteMenuQuery);
 
         const deleted = await deleteMenuByKey(db, key);
 

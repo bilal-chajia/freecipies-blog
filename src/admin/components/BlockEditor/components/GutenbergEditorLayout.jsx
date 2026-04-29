@@ -164,7 +164,7 @@ export default function GutenbergEditorLayout({
             {/* Center: Content Canvas */}
             <div className={cn(
                 'wp-content-canvas',
-                'flex-1 min-w-0 overflow-y-auto overflow-x-hidden',
+                'flex-1 min-w-0 overflow-y-auto overflow-x-hidden overscroll-y-contain',
                 'transition-all duration-200'
             )}>
                 <div className={cn(

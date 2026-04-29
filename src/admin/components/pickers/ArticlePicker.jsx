@@ -11,6 +11,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
+import { toast } from 'sonner';
 
 const ArticlePicker = ({ value, onChange }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -47,7 +48,7 @@ const ArticlePicker = ({ value, onChange }) => {
             const items = Array.isArray(data) ? data : (data.data || []);
             setSearchResults(items);
         } catch (error) {
-            console.error('Search failed:', error);
+            toast.error('Search failed');
             setSearchResults([]);
         }
         setIsSearching(false);
@@ -101,7 +102,7 @@ const ArticlePicker = ({ value, onChange }) => {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                        className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-destructive"
                         onClick={handleClear}
                     >
                         <X className="size-4" />

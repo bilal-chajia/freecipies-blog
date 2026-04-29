@@ -4,7 +4,7 @@
  * Database operations for the media table.
  */
 
-import { eq, and, or, like, desc, asc, isNull, gte, lte } from 'drizzle-orm';
+import { eq, and, or, like, desc, asc, isNull, gte, lte, count } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { media, type Media, type NewMedia } from '../schema/media.schema';
 import type { MediaQueryOptions, MediaRecord } from '../types/media.types';
@@ -13,18 +13,13 @@ import type { MediaQueryOptions, MediaRecord } from '../types/media.types';
 import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
- * Get all media files with filtering options
+ * Build conditions for media queries
  */
-export async function getMedia(
-  db: D1Database | DrizzleDb,
-  options?: MediaQueryOptions
-): Promise<Media[]> {
-  const drizzle = getDb(db);
-
+function buildMediaConditions(options?: MediaQueryOptions) {
   const conditions = [isNull(media.deletedAt)];
 
   // Type filter (image, video, document)
-  if (options?.type) {
+  if (options?.type && options.type !== 'all') {
     const mimePatterns: Record<string, string> = {
       image: 'image/%',
       video: 'video/%',
@@ -49,7 +44,6 @@ export async function getMedia(
 
   // Convert full JS ISO strings to SQLite format: "YYYY-MM-DD HH:MM:SS"
   const formatSqliteDate = (isoString: string) => {
-    // If it's just a YYYY-MM-DD date or missing 'T', format it safely
     if (!isoString.includes('T')) {
       return isoString + ' 00:00:00';
     }
@@ -64,6 +58,19 @@ export async function getMedia(
     const toDateStr = options.dateTo.includes('T') ? options.dateTo : `${options.dateTo}T23:59:59.999Z`;
     conditions.push(lte(media.createdAt, formatSqliteDate(toDateStr)));
   }
+
+  return conditions;
+}
+
+/**
+ * Get all media files with filtering options
+ */
+export async function getMedia(
+  db: D1Database | DrizzleDb,
+  options?: MediaQueryOptions
+): Promise<Media[]> {
+  const drizzle = getDb(db);
+  const conditions = buildMediaConditions(options);
 
   // Sort logic
   const sortColumn = options?.sortBy === 'name' ? media.name : media.createdAt;
@@ -83,6 +90,24 @@ export async function getMedia(
   }
 
   return await query;
+}
+
+/**
+ * Count total media files matching filters
+ */
+export async function countMedia(
+  db: D1Database | DrizzleDb,
+  options?: MediaQueryOptions
+): Promise<number> {
+  const drizzle = getDb(db);
+  const conditions = buildMediaConditions(options);
+
+  const [result] = await drizzle
+    .select({ total: count() })
+    .from(media)
+    .where(and(...conditions));
+
+  return result?.total || 0;
 }
 
 /**

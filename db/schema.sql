@@ -89,7 +89,7 @@ END;
 --
 -- DELETION SAFETY:
 --   When deleting a media row, the backend MUST:
---   1. Read variants_json to extract r2_key for ALL variants (xs, sm, md, lg).
+--   1. Read variants_json to extract r2_key for ALL variants (original, xs, sm, md, lg).
 --   2. Send DeleteObject commands to R2 for each variant.
 --   3. Only then delete (or soft-delete) the SQL row.
 --   This prevents "orphaned files" (ghost files) on R2 storage.
@@ -116,9 +116,12 @@ CREATE TABLE IF NOT EXISTS media (
     -- Example: "Fresh apple pie cooling on a rustic wooden table"
     caption TEXT, 
 
-    -- Legal / Copyright info. 
-    -- Example: "© Photography by Marie Dupont" or "Source: Unsplash".
-    -- Displayed in image overlays or footers when attribution is required.
+    -- Legal / copyright author attribution snapshot.
+    -- Stored as JSON text for new writes, not a loose display string.
+    -- Author example:
+    --   {"type":"author","id":7,"name":"Jane Doe","slug":"jane-doe",
+    --    "avatar":{"media_id":22,"alt":"Jane Doe","variants":{"xs":{"r2_key":"media/jane-xs.webp","width":50,"height":50}}}}
+    -- Legacy plain text may be shown in admin, but new writes should use author snapshots.
     credit TEXT,  
     
     -- Filter helper (e.g., 'image/webp', 'image/gif', 'video/mp4').
@@ -148,22 +151,22 @@ CREATE TABLE IF NOT EXISTS media (
     -- SCHEMA:
     -- {
     --   "variants": {
-    --     "original": { "r2_key": "2025/03/image-original.jpg", "width": 4000, "height": 3000, "sizeBytes": 412345 },  -- OPTIONAL
-    --     "xs": { "r2_key": "2025/03/image-xs.webp", "width": 360,  "height": 240, "sizeBytes": 23123 },
-    --     "sm": { "r2_key": "2025/03/image-sm.webp", "width": 720,  "height": 480, "sizeBytes": 54321 },
-    --     "md": { "r2_key": "2025/03/image-md.webp", "width": 1200, "height": 800, "sizeBytes": 102345 },
-    --     "lg": { "r2_key": "2025/03/image-lg.webp", "width": 2048, "height": 1365, "sizeBytes": 198765 }
+    --     "original": { "r2_key": "2025/03/image-original.jpg", "width": 4000, "height": 3000, "size_bytes": 412345 },
+    --     "xs": { "r2_key": "2025/03/image-xs.webp", "width": 360,  "height": 240, "size_bytes": 23123 },
+    --     "sm": { "r2_key": "2025/03/image-sm.webp", "width": 720,  "height": 480, "size_bytes": 54321 },
+    --     "md": { "r2_key": "2025/03/image-md.webp", "width": 1200, "height": 800, "size_bytes": 102345 },
+    --     "lg": { "r2_key": "2025/03/image-lg.webp", "width": 2048, "height": 1365, "size_bytes": 198765 }
     --   },
     --   "placeholder": "data:image/jpeg;base64,/9j/4AAQ..." (Blurhash/LQIP, <1KB)
     -- }
     --
     -- VARIANT RULES:
-    --   - xs, sm, md, lg: REQUIRED. All 4 must be present.
-    --   - original: OPTIONAL. Only stored when source image > 2048px.
-    --               Used for Pin Creator templates and future re-processing.
-    --               Preserves full quality for high-res outputs.
+    --   - original, xs, sm, md, lg: REQUIRED for image media.
+    --   - original: REQUIRED for image media. Used for Pinterest pin generation
+    --               and future high-quality re-processing. It may have the same
+    --               dimensions as lg if the uploaded/cropped source is not larger.
     --
-    -- AGENT RULE: When source < 2048px, use source as "lg" and skip "original".
+    -- AGENT RULE: Do not skip "original" for image media; Pinterest generation depends on it.
     -- TYPESCRIPT: Import from @shared/types/images
     --   - StorageVariant (r2_key only, no url) for internal processing
     --   - ImageVariant (with url, built dynamically at API boundary) for API responses
@@ -313,8 +316,9 @@ CREATE TABLE IF NOT EXISTS categories (
     -- =========================================================================
     -- Contains "Display-Ready" data mapped from the 'media' table.
     -- STORAGE: Contains r2_key (not url). URLs are built dynamically via buildImageUrl().
-    -- AGENT RULE: When selecting an image from Media Library, copy the full
-    --             variant set here for zero-join rendering.
+    -- AGENT RULE: When selecting an image from Media Library, copy only the
+    --             variants needed by this slot's render context. The full set
+    --             remains in media.variants_json.
     --
     -- SCHEMA (images_json):
     -- {
@@ -322,16 +326,14 @@ CREATE TABLE IF NOT EXISTS categories (
     --     "media_id": 105,                 <-- Reference to source Media ID
     --     "alt": "Healthy breakfast bowl", <-- Copied from Media (or overridden)
     --     "caption": "...",                <-- Optional visible caption
-    --     "credit": "© Photographer",      <-- Optional attribution
+    --     "credit": {"type":"author","id":7,"name":"Jane Doe","slug":"jane-doe",
+    --                "avatar":{"media_id":22,"alt":"Jane Doe","variants":{"xs":{"r2_key":"media/jane-xs.webp","width":50,"height":50}}}},
     --     "placeholder": "data:image/...", <-- Blurhash/LQIP string (<1KB)
     --     "focal_point": { "x": 50, "y": 30 },  <-- Optional override for cropping
-    --     "aspectRatio": "16:9",           <-- Layout hint for space reservation
-    --     "variants": {                    <-- FULL SET copied from Media
-    --        "original": { "r2_key": "media/image-original.jpg", "width": 4000, "height": 3000, "sizeBytes": 50000 },  <-- OPTIONAL
-    --        "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1365, "sizeBytes": 50000 },
-    --        "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 800, "sizeBytes": 102345 },
-    --        "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 480, "sizeBytes": 54321 },
-    --        "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 240, "sizeBytes": 23123 }
+    --     "aspect_ratio": "16:9",          <-- Layout hint for space reservation
+    --     "variants": {                    <-- Slot-specific snapshot copied from Media
+    --        "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 240, "size_bytes": 23123 },
+    --        "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 480, "size_bytes": 54321 }
     --     }
     --   },
     --   "cover": {                         <-- Slot 2: Hero Background Image
@@ -339,13 +341,10 @@ CREATE TABLE IF NOT EXISTS categories (
     --     "alt": "...",
     --     "placeholder": "...",
     --     "focal_point": { "x": 50, "y": 50 },
-    --     "aspectRatio": "16:9",
+    --     "aspect_ratio": "16:9",
     --     "variants": {
-    --        "original": { "r2_key": "media/image-original.jpg", "width": 4000, "height": 2250, "sizeBytes": 50000 },
-    --        "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1152, "sizeBytes": 198765 },
-    --        "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 675, "sizeBytes": 102345 },
-    --        "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 405, "sizeBytes": 54321 },
-    --        "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 203, "sizeBytes": 23123 }
+    --        "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1152, "size_bytes": 198765 },
+    --        "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 675, "size_bytes": 102345 }
     --     }
     --   }
     -- }
@@ -357,9 +356,11 @@ CREATE TABLE IF NOT EXISTS categories (
     --   - height (integer, REQUIRED): Height in pixels (for CLS prevention)
     --
     -- VARIANT RULES:
-    --   - xs, sm, md, lg: Always present (copied from Media).
-    --   - original: Only present if source image was > 2048px.
-    --               Used for Pin Creator templates and high-quality exports.
+    --   - Slot snapshots store the variants needed by their render context.
+    --   - thumbnail stores xs + sm.
+    --   - cover stores md + lg.
+    --   - original is required in media.variants_json for image media, but do not
+    --     copy it into normal category snapshots unless a Pinterest/export workflow needs it.
     --
     -- FUTURE FIELDS (Reserved for later):
         -- TYPESCRIPT: Import CategoryImagesJson, ImageSlot from @shared/types/images
@@ -597,31 +598,33 @@ CREATE TABLE IF NOT EXISTS authors (
     --     "media_id": 105,                 <-- Reference to source Media ID
     --     "alt": "Jane Doe headshot",      <-- SEO / Accessibility text
     --     "caption": "Chef Jane Doe",      <-- Optional visible caption
-    --     "credit": "� Photo Studio",      <-- Optional attribution
+    --     "credit": {"type":"author","id":7,"name":"Jane Doe","slug":"jane-doe",
+    --                "avatar":{"media_id":22,"alt":"Jane Doe","variants":{"xs":{"r2_key":"media/jane-xs.webp","width":50,"height":50}}}},
     --     "placeholder": "data:image/...", <-- Blurhash/LQIP (<1KB)
     --     "focal_point": { "x": 50, "y": 30 },  <-- Cropping hint (0-100)
-    --     "aspectRatio": "1:1",            <-- Square for avatars
+    --     "aspect_ratio": "1:1",           <-- Square for avatars
     --     "variants": {                    <-- SPECIAL SIZES for avatars!
-    --        "original": { "r2_key": "media/avatar-original.jpg", "width": 800, "height": 800, "sizeBytes": 50000 },
-    --        "lg": { "r2_key": "media/avatar-lg.webp", "width": 400, "height": 400, "sizeBytes": 50000 },
-    --        "md": { "r2_key": "media/avatar-md.webp", "width": 200, "height": 200, "sizeBytes": 50000 },
-    --        "sm": { "r2_key": "media/avatar-sm.webp", "width": 100, "height": 100, "sizeBytes": 50000 },
-    --        "xs": { "r2_key": "media/avatar-xs.webp", "width": 50, "height": 50, "sizeBytes": 50000 }
+    --        "original": { "r2_key": "media/avatar-original.jpg", "width": 800, "height": 800, "size_bytes": 50000 },
+    --        "lg": { "r2_key": "media/avatar-lg.webp", "width": 400, "height": 400, "size_bytes": 50000 },
+    --        "md": { "r2_key": "media/avatar-md.webp", "width": 200, "height": 200, "size_bytes": 50000 },
+    --        "sm": { "r2_key": "media/avatar-sm.webp", "width": 100, "height": 100, "size_bytes": 50000 },
+    --        "xs": { "r2_key": "media/avatar-xs.webp", "width": 50, "height": 50, "size_bytes": 50000 }
     --     }
     --   },
     --   "cover": {                         <-- Slot 2: Profile page hero
     --     "media_id": 202,
     --     "alt": "Jane in her kitchen",
     --     "caption": "...",
-    --     "credit": "...",
+    --     "credit": {"type":"author","id":7,"name":"Jane Doe","slug":"jane-doe",
+    --                "avatar":{"media_id":22,"alt":"Jane Doe","variants":{"xs":{"r2_key":"media/jane-xs.webp","width":50,"height":50}}}},
     --     "placeholder": "...",
     --     "focal_point": { "x": 50, "y": 50 },
-    --     "aspectRatio": "16:9",
+    --     "aspect_ratio": "16:9",
     --     "variants": {                    <-- Standard breakpoints
-    --        "lg": { "r2_key": "media/cover-lg.webp", "width": 2048, "height": 1152, "sizeBytes": 198765 },
-    --        "md": { "r2_key": "media/cover-md.webp", "width": 1200, "height": 675, "sizeBytes": 102345 },
-    --        "sm": { "r2_key": "media/cover-sm.webp", "width": 720, "height": 405, "sizeBytes": 54321 },
-    --        "xs": { "r2_key": "media/cover-xs.webp", "width": 360, "height": 203, "sizeBytes": 23123 }
+    --        "lg": { "r2_key": "media/cover-lg.webp", "width": 2048, "height": 1152, "size_bytes": 198765 },
+    --        "md": { "r2_key": "media/cover-md.webp", "width": 1200, "height": 675, "size_bytes": 102345 },
+    --        "sm": { "r2_key": "media/cover-sm.webp", "width": 720, "height": 405, "size_bytes": 54321 },
+    --        "xs": { "r2_key": "media/cover-xs.webp", "width": 360, "height": 203, "size_bytes": 23123 }
     --     }
     --   }
     -- }
@@ -639,7 +642,7 @@ CREATE TABLE IF NOT EXISTS authors (
     
     --
     -- TYPESCRIPT: Import AuthorImagesJson from @shared/types/images
-    --             Use ImageSlot for avatar/cover slots (no r2_key in variants)
+    --             Stored avatar/cover slots keep r2_key; public props convert to url.
     
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
@@ -650,6 +653,13 @@ CREATE TABLE IF NOT EXISTS authors (
     -- {
     --   "short": "Jane writes about healthy Mediterranean recipes...",
     --   "long": "## About Jane\n\nJane has been cooking since...",  <-- Markdown
+    --   "persona": {
+    --     "voice": "Warm, practical, precise, and encouraging.",
+    --     "expertise": ["weeknight dinners", "Mediterranean cooking"],
+    --     "audience": "Busy home cooks who want reliable recipes.",
+    --     "point_of_view": "Food should be simple, seasonal, and realistic.",
+    --     "avoid": ["unverified health promises", "overly technical language"]
+    --   },
     --   "socials": [
     --     { "network": "twitter", "url": "https://x.com/jane", "label": "@janedoe" },
     --     { "network": "instagram", "url": "https://instagram.com/jane" },
@@ -664,6 +674,8 @@ CREATE TABLE IF NOT EXISTS authors (
     -- =========================================================================
     -- 5. SEO CONFIGURATION
     -- =========================================================================
+    -- Publish-required for public author profiles. The SQL default allows drafts,
+    -- but app validation must require a complete payload before is_online = 1.
     -- SCHEMA (seo_json):
     -- {
     --   "metaTitle": "Jane Doe - Senior Food Editor | Freecipies",
@@ -1025,14 +1037,14 @@ CREATE INDEX IF NOT EXISTS idx_equipment_active ON equipment(is_active);
 -- │ content_json        │ ❌ NO    │ But required for publishing                │
 -- │ recipe_json         │ ❌ NO    │ Required if type='recipe'                  │
 -- │ roundup_json        │ ❌ NO    │ Required if type='roundup'                 │
--- │ faqs_json           │ ❌ NO    │ For FAQ rich results                       │
+-- │ faqs_json           │ ❌ NO    │ Intermediate FAQ extraction for jsonld_json│
 -- │ seo_json            │ ❌ NO    │ Overrides only                             │
 -- │ config_json         │ ❌ NO    │ Feature toggles                            │
 -- └─────────────────────┴──────────┴────────────────────────────────────────────┘
 --
 -- AGENT RULES:
 --   1. RELATIONSHIPS: Always use IDs (category_id, author_id), never slugs.
---   2. CONTENT: Use the Flattened Block JSON structure (No 'data' wrapper).
+--   2. CONTENT: Use the versioned ContentDocument JSON structure.
 --   3. ADS: Never insert 'ad_slot' blocks automatically. Only if explicitly requested.
 -- ==================================================================================
 
@@ -1105,245 +1117,17 @@ CREATE TABLE IF NOT EXISTS articles (
     -- Good for storytelling/context before the main content.
 
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
-    -- Primary imagery definition for the article.
-    -- Standardized format matching categories/authors tables.
-    --
-    -- SCHEMA (images_json):
-    -- {
-    --   "cover": {                          <-- Hero/featured image
-    --     "media_id": 105,                  <-- Reference to source Media ID
-    --     "alt": "Lemon blueberry biscuits on cooling rack",
-    --     "caption": "Fresh out of the oven",  <-- Optional visible caption
-    --     "credit": "© Jane Doe",           <-- Optional attribution
-    --     "placeholder": "data:image/...",  <-- Blurhash/LQIP string
-    --     "focal_point": { "x": 50, "y": 50 },  <-- Cropping hint
-    --     "aspectRatio": "16:9",            <-- Layout hint
-    --     "variants": {
-    --        "original": { "r2_key": "media/image-original.jpg", "width": 4000, "height": 2250, "sizeBytes": 50000 },  <-- Optional
-    --        "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1152, "sizeBytes": 198765 },
-    --        "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 675, "sizeBytes": 102345 },
-    --        "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 405, "sizeBytes": 54321 },
-    --        "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 203, "sizeBytes": 23123 }
-    --     }
-    --   },
-    --   "thumbnail": {                      <-- Optional: For cards if different from cover
-    --     "media_id": 202,
-    --     "alt": "...",
-    --     "placeholder": "...",
-    --     "aspectRatio": "4:3",
-    --     "variants": { ... }
-    --   },
-    --   "contentImages": [                  <-- Images referenced in content_json
-    --     {
-    --       "media_id": 301,
-    --       "alt": "Step 1: Mixing the dough",
-    --       "caption": "Combine flour and sugar",
-    --       "credit": "...",
-    --       "placeholder": "...",
-    --       "variants": { "lg": {...}, "md": {...}, "sm": {...}, "xs": {...} }
-    --     }
-    --   ]
-    -- }
-    --
-    -- VARIANT RULES:
-    --   - Use "r2_key" for storage. URLs are built dynamically via buildImageUrl().
-    --   - Standard breakpoints: 360, 720, 1200, 2048 (xs, sm, md, lg).
-    --   - Include height for CLS prevention.
-    --   - "original" only if source > 2048px (for Pin Creator).
-    --
-        -- TYPESCRIPT: Import ArticleImagesJson, ImageSlot from @shared/types/images
-    --
-    -- NOTE: cover.variants is used by related_content block in content_json
-    --       and cached_card_json for zero-join card rendering.
+    -- Article image slots: cover, thumbnail, pinterest, contentImages.
+    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md and docs/MEDIA_IMAGE_CONTRACT.md.
 
     -- --------------------------------------------------------------------
     -- 4. RICH CONTENT (BLOCK-BASED BODY)
     -- --------------------------------------------------------------------
 
-    content_json TEXT DEFAULT '[]' CHECK (json_valid(content_json)),
-    -- Flattened block array representing the article body.
-    -- Frontend/editor interprets "type" to render React/Astro components.
-    -- Avoids schema migrations when adding new block types.
-    --
-    -- ┌────────────────────────────────────────────────────────────────────┐
-    -- │ BLOCK TYPES REFERENCE                                              │
-    -- ├────────────────────────────────────────────────────────────────────┤
-    -- │ ALL "text" FIELDS: Support Markdown (bold, italic, links, lists).  │
-    -- │ Render with: react-markdown, marked, or remark.                    │
-    -- │                                                                    │
-    -- │ TEXT BLOCKS:                                                       │
-    -- │ ─────────────────────────────────────────────────────────────────  │
-    -- │ { "type": "paragraph", "text": "Rich text with **markdown**..." }  │
-    -- │                                                                    │
-    -- │ { "type": "heading", "level": 2, "text": "Section Title" }         │
-    -- │   level: 2 | 3 | 4 | 5 | 6 (H1 reserved for headline)              │
-    -- │                                                                    │
-    -- │ { "type": "blockquote", "text": "Quote...", "cite": "Author" }     │
-    -- │                                                                    │
-    -- │ { "type": "list", "style": "unordered", "items": ["A", "B", "C"] } │
-    -- │   style: "unordered" | "ordered" | "checklist"                     │
-    -- │                                                                    │
-    -- │ MEDIA BLOCKS:                                                      │
-    -- │ ─────────────────────────────────────────────────────────────────  │
-    -- │ { "type": "image",                                                 │
-    -- │   "media_id": 123,                                                 │
-    -- │   "alt": "...",                                                    │
-    -- │   "caption": "...",                                                │
-    -- │   "credit": "(c) Photographer",                                    │
-    -- │   "variants": {                                                    │
-    -- │     "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1365 }, │
-    -- │     "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 800 },  │
-    -- │     "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 480 },   │
-    -- │     "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 240 }    │
-    -- │   }                                                                │
-    -- │ }                                                                  │
-    -- │                                                                    │
-    -- │ { "type": "video",                                                 │
-    -- │   "provider": "youtube",    -- "youtube" | "vimeo" | "self"        │
-    -- │   "videoId": "dQw4w9WgXcQ",                                        │
-    -- │   "aspectRatio": "16:9"                                            │
-    -- │ }                                                                  │
-    -- │                                                                    │
-    -- │ CALLOUT BLOCKS:                                                    │
-    -- │ ─────────────────────────────────────────────────────────────────  │
-    -- │ { "type": "tip_box",                                               │
-    -- │   "variant": "tip",         -- "tip" | "warning" | "info" | "note" │
-    -- │   "title": "Pro Tip",                                              │
-    -- │   "text": "**Bold** and lists:\n1. Item\n2. Item"                  │
-    -- │ }                                                                  │
-    -- │   TEXT FIELD: Supports full Markdown (bold, lists, links).         │
-    -- │   Use \n for line breaks. Render with react-markdown or marked.   │
-    -- │                                                                    │
-    -- │ EMBED BLOCKS:                                                      │
-    -- │ ─────────────────────────────────────────────────────────────────  │
-    -- │ { "type": "embed",                                                 │
-    -- │   "provider": "instagram",  -- "instagram" | "pinterest" | "tiktok"│
-    -- │   "url": "https://...",                                            │
-    -- │   "html": "<blockquote>..."                                        │
-    -- │ }                                                                  │
-    -- │                                                                    │
-    -- │ { "type": "recipe_card",                                           │
-    -- │   "article_id": 456,        -- Internal recipe reference           │
-    -- │   "headline": "...",                                               │
-    -- │   "cover": { "variants": {...} }                                   │
-    -- │ }                                                                  │
-    -- │                                                                    │
-    -- │ { "type": "product_card",                                          │
-    -- │   "name": "KitchenAid Mixer",                                      │
-    -- │   "url": "https://amazon.com/...",                                 │
-    -- │   "price": "$299",                                                 │
-    -- │   "image": { "variants": {...} },                                  │
-    -- │   "affiliate": true                                                │
-    -- │ }                                                                  │
-    -- │                                                                    │
-    -- │ LAYOUT BLOCKS:                                                     │
-    -- │ ─────────────────────────────────────────────────────────────────  │
-    -- │ { "type": "divider" }                                              │
-    -- │                                                                    │
-    -- │ { "type": "spacer", "size": "md" }  -- "sm" | "md" | "lg" | "xl"   │
-    -- │                                                                    │
-    -- │ { "type": "ad_slot", "variant": "in-content" }                     │
-    -- │   variant: "in-content" | "newsletter" | "sidebar"                 │
-    -- │   AGENT RULE: Never insert ad_slot blocks automatically!           │
-    -- │                                                                    │
-    -- │ { "type": "table",                                                 │
-    -- │   "headers": ["Ingredient", "Amount"],                             │
-    -- │   "rows": [["Flour", "2 cups"], ["Sugar", "1 cup"]]                │
-    -- │ }                                                                  │
-    -- │                                                                    │
-    -- │ FOOD BLOG BLOCKS:                                                  │
-    -- │ ─────────────────────────────────────────────────────────────────  │
-    -- │                                                                    │
-    -- │ { "type": "before_after",                                          │
-    -- │   "layout": "slider",       -- "slider" | "side_by_side"           │
-    -- │   "before": {                                                      │
-    -- │     "media_id": 101, "alt": "Raw dough", "label": "Before",        │
-    -- │     "variants": { "lg": {...}, ... }                               │
-    -- │   },                                                               │
-    -- │   "after": {                                                       │
-    -- │     "media_id": 102, "alt": "Baked", "label": "After 12 min",      │
-    -- │     "variants": { "lg": {...}, ... }                               │
-    -- │   }                                                                │
-    -- │ }                                                                  │
-    -- │   USE CASES: Bread proofing, meat searing, caramel stages.         │
-    -- │                                                                    │
-    -- │ { "type": "ingredient_spotlight",                                  │
-    -- │   "name": "Tahini",                                                │
-    -- │   "description": "Sesame seed paste used in hummus...",            │
-    -- │   "image": { "media_id": 201, "variants": {...} },                 │
-    -- │   "tips": "Store in fridge after opening",                         │
-    -- │   "substitutes": ["Sunflower seed butter", "Cashew butter"],       │
-    -- │   "link": "/ingredients/tahini"    -- Optional internal link       │
-    -- │ }                                                                  │
-    -- │   USE CASES: Explain exotic ingredients, boost SEO for long-tail.  │
-    -- │                                                                    │
-    -- │ { "type": "faq_section",                                           │
-    -- │   "title": "Common Questions",    -- Optional section heading      │
-    -- │   "items": [                                                       │
-    -- │     { "q": "Can I freeze the dough?", "a": "Yes, up to 3 months" },│
-    -- │     { "q": "Can I use almond milk?", "a": "Yes, same ratio" }      │
-    -- │   ]                                                                │
-    -- │ }                                                                  │
-    -- │   NOTE: All faq_section blocks are aggregated into faqs_json       │
-    -- │         for easy JSON-LD FAQPage schema generation.                │
-    -- │                                                                    │
-    -- │ { "type": "roundup_list",                                          │
-    -- │   "title": "Summer Salads",       -- Group heading                 │
-    -- │   "description": "Refreshing...", -- Group introduction            │
-    -- │   "show_stats": true,             -- Show rating/time badges       │
-    -- │   "items": [                                                       │
-    -- │     {                                                              │
-    -- │       "article_id": 123,          -- Internal recipe ID            │
-    -- │       "title": "Greek Salad",     -- Override title                │
-    -- │       "note": "Our favorite!",    -- Editorial note                │
-    -- │       "cover": { "variants": {...} }                               │
-    -- │     }                                                              │
-    -- │   ]                                                                │
-    -- │ }                                                                  │
-    -- │   USE CASES: Curated recipe groups with editorial notes.           │
-    -- │   NOTE: Automatically flattened into ItemList JSON-LD on save.     │
-    -- │                                                                    │
-    -- │ { "type": "roundup_item", [DEPRECATED]                             │
-    -- │   "article_id": 456, "title": "...", "note": "..."                 │
-    -- │ }                                                                  │
-    -- │   NOTE: Legacy block. Use 'roundup_list' for all new content.      │
-    -- │                                                                    │
-    -- │ { "type": "related_content",                                       │
-    -- │   "title": "You Might Also Like",  -- Optional heading             │
-    -- │   "layout": "grid",                -- "grid", "carousel", "list"   │
-    -- │   "mode": "manual",                -- "manual" | "auto"            │
-    -- │   "limit": 4,                      -- Max items per type           │
-    -- │   "recipes": [                     -- Related recipes              │
-    -- │     { "id": 42, "slug": "...", "headline": "...",                  │
-    -- │       "thumbnail": {...}, "total_time": 35, "difficulty": "Easy" } │
-    -- │   ],                                                               │
-    -- │   "articles": [                    -- Related articles             │
-    -- │     { "id": 87, "slug": "...", "headline": "...",                  │
-    -- │       "thumbnail": {...}, "reading_time": 8 }                      │
-    -- │   ],                                                               │
-    -- │   "roundups": [                    -- Related roundups             │
-    -- │     { "id": 123, "slug": "...", "headline": "...",                 │
-    -- │       "thumbnail": {...}, "item_count": 15 }                       │
-    -- │   ]                                                                │
-    -- │ }                                                                  │
-    -- │   USE CASES: Inline "related recipes" section, mid-article         │
-    -- │              recommendations, "See Also" callouts.                 │
-    -- │   NOTE: This is the primary way to add related content in articles.│
-    -- │                                                                    │
-    -- └────────────────────────────────────────────────────────────────────┘
-    --
-    -- RENDERING EXAMPLE (Astro/React):
-    --   import ReactMarkdown from 'react-markdown'; // For "text" fields
-    --
-    --   content_json.map(block => {
-    --     switch(block.type) {
-    --       case 'paragraph': return <ReactMarkdown>{block.text}</ReactMarkdown>;
-    --       case 'heading':   return <Heading level={block.level}>{block.text}</Heading>;
-    --       case 'image':     return <ResponsiveImage {...block} />;
-    --       case 'step_by_step': return <ProcessVis steps={block.steps} />;
-    --       ...
-    --     }
-    --   })
+    content_json TEXT DEFAULT '{"version":1,"kind":"content_document","blocks":[]}' CHECK (json_valid(content_json)),
+    -- Versioned ContentDocument object representing the article body.
+    -- Block contract: docs/CONTENT_JSON_CONTRACT.md.
+    -- Related article JSON/caches: docs/ARTICLE_JSON_CONTRACTS.md.
 
     -- --------------------------------------------------------------------
     -- 5. RECIPE DATA ("GOLD KEY") for type='recipe'
@@ -1351,175 +1135,35 @@ CREATE TABLE IF NOT EXISTS articles (
     --   NOTE:
     --     - headline & short_description are the truth for name/description.
     --     - recipe_json focuses on timings, servings, structure, and extras.
-    --
-    -- ┌────────────────────────────────────────────────────────────────────┐
-    -- │ INTERACTIVE RECIPE CARD FEATURES (Supported by this schema)        │
-    -- ├────────────────────────────────────────────────────────────────────┤
-    -- │ Feature              │ Data Source              │ Interaction      │
-    -- │──────────────────────│──────────────────────────│──────────────────│
-    -- │ Servings Adjuster    │ servings (numeric)       │ Scale recipe     │
-    -- │ Ingredient Scaling   │ ingredients[].amount     │ Auto-recalculate │
-    -- │ Ingredient Checkbox  │ ingredients[].items[]    │ Mark gathered    │
-    -- │ Step Timers          │ instructions[].timer     │ Start/pause      │
-    -- │ Star Rating          │ aggregateRating          │ Submit/display   │
-    -- │ Print Recipe         │ All fields               │ Print view       │
-    -- │ Jump to Section      │ Section structure        │ Anchor links     │
-    -- │ Equipment Links      │ equipment[] + cache      │ Affiliate clicks │
-    -- │ Share Buttons        │ headline + images_json   │ Social sharing   │
-    -- │ Tips Display         │ tips[]                   │ Expandable notes │
-    -- │ Substitutions        │ ingredients[].substitutes│ Alt ingredients  │
-    -- │ Nutrition Facts      │ nutrition{}              │ Collapsible panel│
-    -- │ Diet Badges          │ suitableForDiet[]        │ Filter/display   │
-    -- │ Video Player         │ video{}                  │ Embedded player  │
-    -- │ Shopping List Export │ ingredients[]            │ App-level        │
-    -- │ Step-by-Step Mode    │ instructions[]           │ App-level        │
-    -- └────────────────────────────────────────────────────────────────────┘
-    -- --------------------------------------------------------------------
+    --   Contract: docs/RECIPE_JSON_CONTRACT.md.
 
     recipe_json TEXT DEFAULT '{
       "prep": null,
       "cook": null,
       "total": null,
       "servings": null,
-      "recipeYield": null,
+      "recipe_yield": null,
 
-      "recipeCategory": null,
-      "recipeCuisine": null,
+      "recipe_category": null,
+      "recipe_cuisine": null,
       "keywords": [],
-      "suitableForDiet": [],
+      "suitable_for_diet": [],
 
       "difficulty": null,
-      "cookingMethod": null,
-      "estimatedCost": null,
-
-      "prepTime": null,
-      "cookTime": null,
-      "totalTime": null,
+      "cooking_method": null,
+      "estimated_cost": null,
 
       "ingredients": [],
       "instructions": [],
       "tips": [],
 
-      "nutrition": {},
-      "aggregateRating": { "ratingValue": null, "ratingCount": 0 },
+      "nutrition": null,
+      "aggregate_rating": null,
       "equipment": [],
       "video": null
     }' CHECK (json_valid(recipe_json)),
-    -- TIME FIELDS:
-    --   prep / cook / total : numeric minutes for internal UX (timers, filters).
-    --   prepTime / cookTime / totalTime :
-    --     ISO-8601 duration strings (e.g. "PT15M", "PT1H15M") for schema.org.
-    --
-    -- SERVINGS & YIELD:
-    --   servings    : Numeric value for scaling UI (e.g., 4).
-    --   recipeYield : Display string for JSON-LD (e.g., "Makes 12 cookies", "4 servings").
-    --                 REQUIRED for Google Rich Results.
-    --
-    -- CATEGORY / CUISINE / KEYWORDS:
-    --   recipeCategory : e.g. "Dessert", "Breakfast".
-    --   recipeCuisine  : e.g. "Italian", "Mexican".
-    --   keywords       : ["lemon","blueberry","biscuits"] for exports/search.
-    --
-    -- DIET SUITABILITY (schema.org RestrictedDiet):
-    --   suitableForDiet : Array of diet types for JSON-LD and filter badges.
-    --   VALUES: "VeganDiet", "VegetarianDiet", "GlutenFreeDiet", "DiabeticDiet",
-    --           "HalalDiet", "HinduDiet", "KosherDiet", "LowCalorieDiet",
-    --           "LowFatDiet", "LowLactoseDiet", "LowSaltDiet"
-    --   EXAMPLE: ["VeganDiet", "GlutenFreeDiet"]
-    --
-    -- DIFFICULTY & METHOD:
-    --   difficulty    : e.g. "Easy", "Medium", "Hard".
-    --   cookingMethod : e.g. "baking", "grilling".
-    --   estimatedCost : optional cost label.
-    --
-    -- TIPS (Chef's Notes for Recipe Card):
-    --   tips : Array of markdown strings shown in recipe card.
-    --   EXAMPLE: ["Let dough rest 10 min for fluffier results", "Don't overmix!"]
-    --
-    -- INGREDIENTS (GROUPED, SCALABLE):
-    --   [
-    --     {
-    --       "group_title": "Dough",
-    --       "items": [
-    --         {
-    --           "id": "dough-flour",    -- optional stable ID for UI/shopping lists
-    --           "amount": 315.0,       -- FLOAT; REQUIRED for scaling logic
-    --           "unit": "grams",
-    --           "name": "all-purpose flour",
-    --           "notes": "sifted",
-    --           "isOptional": false,
-    --           "substitutes": [       -- OPTIONAL: Ingredient swaps
-    --             { "name": "whole wheat flour", "ratio": "1:1", "notes": "denser result" }
-    --           ]
-    --         }
-    --       ]
-    --     },
-    --     {
-    --       "group_title": "Glaze",
-    --       "items": [ ... ]
-    --     }
-    --   ]
-    -- AGENT RULE:
-    --   - Ingredients must be grouped.
-    --   - Each item must include "amount" as FLOAT + "unit" + "name".
-    --
-    -- INSTRUCTIONS (GROUPED, WITH TIMERS):
-    --   [
-    --     {
-    --       "section_title": "Make the dough",
-    --       "steps": [
-    --         {
-    --           "name": "Mix dry ingredients",  -- optional step title
-    --           "text": "Whisk flour and sugar together.",
-    --           "image": null,                  -- optional step image URL
-    --           "timer": null                   -- INTEGER seconds or null
-    --         },
-    --         {
-    --           "name": "Bake",
-    --           "text": "Bake until golden.",
-    --           "image": null,
-    --           "timer": 1200                   -- e.g. 20 minutes
-    --         }
-    --       ]
-    --     }
-    --   ]
-    -- AGENT RULE:
-    --   - Instructions must be grouped into sections.
-    --   - Each step has "text" and optional "timer" as INTEGER seconds.
-    --
-    -- NUTRITION:
-    --   {
-    --     "calories": 320,
-    --     "fatContent": "15g",
-    --     "carbohydrateContent": "40g",
-    --     "proteinContent": "4g",
-    --     "sugarContent": "12g",
-    --     "sodiumContent": "220mg",
-    --     "servingSize": "1 biscuit (80g)"
-    --   }
-    --
-    -- AGGREGATE RATING (truth for rating values):
-    --   {
-    --     "ratingValue": 4.8,
-    --     "ratingCount": 55
-    --   }
-    --
-    -- EQUIPMENT (References centralized equipment table):
-    --   [
-    --     { "equipment_id": 1, "required": true },
-    --     { "equipment_id": 5, "required": false, "notes": "or use hand mixer" }
-    --   ]
-    --   NOTE: Admin manages equipment names/affiliate links in `equipment` table.
-    --         Frontend joins to get name, image, affiliate_url for display.
-    --
-    -- VIDEO:
-    --   {
-    --     "url": "https://...",
-    --     "name": "How to Make Lemon Biscuits",
-    --     "description": "Step-by-step video tutorial.",
-    --     "thumbnailUrl": "https://...",
-    --     "duration": "PT2M30S"    -- ISO-8601 duration
-    --   }
+    -- Recipe-specific source data for type='recipe'.
+    -- Contract: docs/RECIPE_JSON_CONTRACT.md.
 
     -- --------------------------------------------------------------------
     -- 6. ROUNDUP / LIST DATA for type='roundup'
@@ -1529,42 +1173,17 @@ CREATE TABLE IF NOT EXISTS articles (
       "items": [],
       "listType": "ItemList"
     }' CHECK (json_valid(roundup_json)),
-    -- [DEPRECATED] Source of truth is now content_json (roundupList blocks).
-    -- This field may be kept for legacy data but is no longer used for rendering.
-    -- {
-    --   "listType": "ItemList",
-    --   "items": [
-    --     {
-    --       "position": 1,
-    --       "article_id": 123,         -- internal reference (optional)
-    --       "external_url": null,      -- external link if not internal
-    --       "title": "Best Lemon Biscuits",
-    --       "subtitle": "Crisp edges, fluffy center",
-    --       "note": "Great for brunch.",
-    --       "cover": {
-    --         "variants": { ... }      -- same shape as images_json.cover.variants
-    --       }
-    --     }
-    --   ]
-    -- }
-    -- Supports:
-    --   - Reordering via "position".
-    --   - Mixed internal/external items.
-    --   - Pre-baked covers for fast card rendering.
+    -- Compatibility field for roundup data.
+    -- Direction and deprecation rules: docs/ARTICLE_JSON_CONTRACTS.md.
 
     -- --------------------------------------------------------------------
     -- 7. STRUCTURED FAQ (SEO CACHE)
     -- --------------------------------------------------------------------
 
     faqs_json TEXT DEFAULT '[]' CHECK (json_valid(faqs_json)),
-    -- CACHE: Aggregated FAQs from all faq_section content blocks.
-    -- Used for JSON-LD FAQPage schema generation (no content scanning needed).
-    -- [
-    --   { "q": "Can I freeze the dough?", "a": "Yes, up to 3 months..." },
-    --   { "q": "Can I use almond milk?", "a": "Yes, but texture changes..." }
-    -- ]
-    -- UPDATE STRATEGY: Rebuild on article save by scanning content_json
-    --                  for all blocks where type = 'faq_section'.
+    -- Intermediate FAQ extraction cache generated from content_json faq_section blocks.
+    -- Used to generate jsonld_json; not the final structured-data payload.
+    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md.
 
     -- --------------------------------------------------------------------
     -- 8. SNAPSHOTS & CACHES (ZERO-JOIN RENDERING)
@@ -1572,177 +1191,51 @@ CREATE TABLE IF NOT EXISTS articles (
 
 
     cached_tags_json TEXT DEFAULT '[]' CHECK (json_valid(cached_tags_json)),
-    -- Flattened label set for fast tag filters & card badges.
-    -- Example: ["Vegan", "Gluten-Free", "Under 30 Minutes"].
+    -- Minimal tag snapshots; source of truth is articles_to_tags + tags.
+    -- Shape: [{ "id": 12, "label": "Quick", "slug": "quick" }]
 
     cached_category_json TEXT DEFAULT '{}' CHECK (json_valid(cached_category_json)),
-    -- Category snapshot for zero-join card rendering.
-    -- {
-    --   "id": 3,
-    --   "slug": "desserts",
-    --   "name": "Desserts",
-    --   "icon_svg": "<svg>..."    -- Optional category icon
-    -- }
-    -- UPDATE STRATEGY: Refresh when category updates or article changes category.
+    -- Category snapshot for zero-join card/list rendering.
 
     cached_author_json TEXT DEFAULT '{}' CHECK (json_valid(cached_author_json)),
-    -- Author snapshot for zero-join card rendering.
-    -- {
-    --   "id": 5,
-    --   "slug": "jane-doe",
-    --   "name": "Jane Doe",
-    --   "job_title": "Recipe Developer",
-    --   "avatar": "/api/images/media/avatar-lg.webp",  <-- Built dynamically from r2_key
-    --   "avatar_alt": "Jane Doe",
-    -- }
-    -- UPDATE STRATEGY: Refresh when author updates profile or avatar.
+    -- Author snapshot for zero-join card/byline rendering.
 
     cached_equipment_json TEXT DEFAULT '[]' CHECK (json_valid(cached_equipment_json)),
-    -- Equipment snapshot with affiliate links for zero-join rendering.
-    -- [
-    --   {
-    --     "id": 1,
-    --     "name": "Stand Mixer",
-    --     "slug": "stand-mixer",
-    --     "affiliate_url": "https://amazon.com/...",
-    --     "image_url": "...",
-    --     "required": true
-    --   }
-    -- ]
-    -- UPDATE STRATEGY: Refresh when equipment table updates or recipe saves.
-
-    cached_comment_count INTEGER DEFAULT 0,
-    -- Denormalized comment count for card display (refreshed on new comment).
+    -- Rich equipment card snapshots derived by application logic from
+    -- recipe_json.equipment[*].equipment_id + active equipment table rows.
+    -- Does not need to contain every plain checklist item from recipe_json.equipment.
 
     cached_rating_json TEXT DEFAULT '{}' CHECK (json_valid(cached_rating_json)),
-    -- Optional denormalized rating snapshot for cards/lists:
-    -- {
-    --   "ratingValue": 4.8,
-    --   "ratingCount": 55
-    -- }
-    -- Source of truth should be recipe_json.aggregateRating.
+    -- Optional denormalized rating snapshot; source is recipe_json.aggregate_rating.
 
     reading_time_minutes INTEGER DEFAULT 0,
     -- Approximate reading time (whole minutes) for long-form articles.
 
     cached_toc_json TEXT DEFAULT '[]' CHECK (json_valid(cached_toc_json)),
-    -- Table of Contents generated from content_json headings at save time.
-    -- [
-    --   { "id": "ingredients", "text": "Ingredients", "level": 2 },
-    --   { "id": "dry-ingredients", "text": "Dry Ingredients", "level": 3 },
-    --   { "id": "instructions", "text": "Instructions", "level": 2 }
-    -- ]
-    --
-    -- IMPLEMENTATION LOGIC (run on article save):
-    -- ─────────────────────────────────────────────────────────────────────
-    -- function generateTOC(content_json) {
-    --   return content_json
-    --     .filter(block => block.type === 'heading' && block.level >= 2)
-    --     .map(heading => ({
-    --       id: slugify(heading.text),           // "dry-ingredients"
-    --       text: heading.text,                  // "Dry Ingredients"
-    --       level: heading.level                 // 2-6
-    --     }));
-    -- }
-    --
-    -- function slugify(text) {
-    --   return text
-    --     .toLowerCase()
-    --     .replace(/[^a-z0-9]+/g, '-')
-    --     .replace(/^-|-$/g, '');
-    -- }
-    -- ─────────────────────────────────────────────────────────────────────
-    --
-    -- RENDERING (frontend):
-    -- cached_toc_json.map(item => (
-    --   <a href={`#${item.id}`} style={{ marginLeft: (item.level - 2) * 16 }}>
-    --     {item.text}
-    --   </a>
-    -- ))
-    --
-    -- UPDATE STRATEGY: Rebuild on article save when content_json changes.
+    -- Table of contents cache generated from content_json heading blocks.
 
     cached_recipe_json TEXT DEFAULT '{
-      "isRecipe": false,
-      "totalTimeMinutes": null,
+      "is_recipe": false,
+      "total_time_minutes": null,
       "difficulty": null,
       "servings": null,
-      "caloriesPerServing": null,
-      "primaryDietLabels": [],
-      "primaryOccasionLabels": [],
-      "mainIngredients": [],
-      "isQuick": false,
-      "isHealthy": false,
-      "isBudget": false
+      "calories_per_serving": null,
+      "primary_diet_labels": [],
+      "primary_occasion_labels": [],
+      "main_ingredients": [],
+      "is_quick": false,
+      "is_healthy": false,
+      "is_budget": false
     }' CHECK (json_valid(cached_recipe_json)),
-    -- Trimmed recipe snapshot optimized for listing cards & filters:
-    --   isRecipe             : quick flag to choose recipe vs article card.
-    --   totalTimeMinutes     : for "30 min" badges & "Under X minutes" filters.
-    --   difficulty           : "Easy","Medium","Hard".
-    --   servings             : show "Serves 4".
-    --   caloriesPerServing   : show "320 cal".
-    --   primaryDietLabels    : ["Vegan","Gluten-Free"].
-    --   primaryOccasionLabels: ["Christmas","Weeknight"].
-    --   mainIngredients      : ["Chicken","Lemon"].
-    --   isQuick              : boolean for quick recipes lane.
-    --   isHealthy            : boolean based on nutrition rules.
-    --   isBudget             : boolean based on cost rules.
+    -- Lightweight recipe snapshot for lists, cards, roundup items,
+    -- related content, and recipe filters. Full recipe rendering reads recipe_json.
 
     cached_card_json TEXT DEFAULT '{}' CHECK (json_valid(cached_card_json)),
-    -- Pre-computed card data for related article pickers and listing cards.
-    -- This eliminates need to query/process fields when selecting related content.
-    -- Structure varies by article type:
-    --
-    -- FOR type="recipe":
-    -- {
-    --   "id": 42,
-    --   "type": "recipe",
-    --   "slug": "lemon-blueberry-biscuits",
-    --   "headline": "Lemon Blueberry Biscuits",
-    --   "short_description": "Flaky buttery biscuits...",
-    --   "thumbnail": {
-    --     "alt": "Lemon Blueberry Biscuits",
-    --     "variants": {
-    --       "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 0, "sizeBytes": 0 },
-    --       "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 0, "sizeBytes": 0 },
-    --       "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 0, "sizeBytes": 0 },
-    --       "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 0, "sizeBytes": 0 }
-    --     }
-    --   },
-    --   "total_time": 35,
-    --   "difficulty": "Easy",
-    --   "servings": 12,
-    --   "rating": { "value": 4.8, "count": 55 }
-    -- }
-    --
-    -- FOR type="article":
-    -- {
-    --   "id": 87,
-    --   "type": "article",
-    --   "slug": "how-to-bake-better",
-    --   "headline": "How to Bake Better Bread",
-    --   "short_description": "Tips for perfect loaves...",
-    --   "thumbnail": { "alt": "...", "variants": {...} },
-    --   "reading_time": 8,
-    --   "category": "Baking Tips"
-    -- }
-    --
-    -- FOR type="roundup":
-    -- {
-    --   "id": 123,
-    --   "type": "roundup",
-    --   "slug": "best-breakfast-ideas",
-    --   "headline": "15 Best Breakfast Ideas",
-    --   "short_description": "Start your day right...",
-    --   "thumbnail": { "alt": "...", "variants": {...} },
-    --   "item_count": 15
-    -- }
-    --
-    -- UPDATE STRATEGY: Rebuild on every article save.
-    -- USAGE: Used by related_content blocks in content_json for inline recommendations.
+    -- Zero-join card snapshot for listings, pickers, and related content.
+    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md.
 
     total_time_minutes INTEGER,
-    -- Scalar helper for D1 indexing & fast filters (mirrors totalTimeMinutes).
+    -- Scalar helper for D1 indexing & fast filters (mirrors cached_recipe_json.total_time_minutes).
 
     difficulty_label   TEXT,
     -- Scalar helper for indexing/filters (mirrors recipe_json.difficulty
@@ -1762,52 +1255,11 @@ CREATE TABLE IF NOT EXISTS articles (
       "ogDescription": null,
       "twitterCard": "summary_large_image"
     }' CHECK (json_valid(seo_json)),
-    -- Per-article SEO overrides (standardized with categories/authors):
-    --   metaTitle       : Custom <title>; fallback is headline.
-    --   metaDescription : SEO meta description; fallback is short_description.
-    --   noIndex         : true to exclude from search engines.
-    --   canonical       : Canonical URL to avoid duplicate content issues.
-    --   ogImage         : Social share image URL override.
-    --   ogTitle         : Override Open Graph title (falls back to metaTitle).
-    --   ogDescription   : Override OG description (falls back to metaDescription).
-    --   twitterCard     : "summary" | "summary_large_image" (default).
+    -- Per-article SEO overrides. Contract: docs/ARTICLE_JSON_CONTRACTS.md.
 
     jsonld_json TEXT DEFAULT '[]' CHECK (json_valid(jsonld_json)),
-    -- Pre-generated JSON-LD structured data for SEO rich results.
-    -- Generated once at save time to avoid expensive runtime computation.
-    --
-    -- SCHEMA TYPES STORED:
-    --   - Recipe         : type='recipe' articles (Google Recipe cards)
-    --   - HowTo          : Step-by-step tutorials
-    --   - ItemList       : type='roundup' articles (listicles, generated from roundupList blocks)
-    --   - FAQPage        : Built from faqs_json cache
-    --   - Article        : Standard article schema
-    --   - BreadcrumbList : Navigation path
-    --
-    -- EXAMPLE:
-    -- [
-    --   {
-    --     "@context": "https://schema.org",
-    --     "@type": "Recipe",
-    --     "name": "Lemon Blueberry Biscuits",
-    --     "image": ["https://..."],
-    --     "author": { "@type": "Person", "name": "Jane Doe" },
-    --     "prepTime": "PT15M",
-    --     "cookTime": "PT20M",
-    --     "recipeYield": "12 biscuits",
-    --     "recipeIngredient": ["2 cups flour", "1/2 cup sugar"],
-    --     "recipeInstructions": [{ "@type": "HowToStep", "text": "..." }],
-    --     "nutrition": { "@type": "NutritionInformation", "calories": "320" }
-    --   },
-    --   {
-    --     "@context": "https://schema.org",
-    --     "@type": "FAQPage",
-    --     "mainEntity": [{ "@type": "Question", "name": "...", "acceptedAnswer": {...} }]
-    --   }
-    -- ]
-    --
-    -- UPDATE STRATEGY: Rebuild on article save using recipe_json, faqs_json,
-    --                  cached_author_json, and images_json as sources.
+    -- Final generated Schema.org JSON-LD cache for SEO rich results.
+    -- Built from article source fields, recipe_json, faqs_json, images_json, and snapshots.
 
     -- --------------------------------------------------------------------
     -- 10. CONFIG, WORKFLOW, EXPERIMENTS
@@ -1820,12 +1272,8 @@ CREATE TABLE IF NOT EXISTS articles (
       "experimentKey": null,
       "experimentVariant": null
     }' CHECK (json_valid(config_json)),
-    -- Per-article feature toggles and A/B test hooks:
-    --   allowComments       : Enable/disable comments for this article.
-    --   showTableOfContents : Show/hide TOC (uses cached_toc_json).
-    --   manualRelatedIds    : Hard-coded related article IDs (override auto).
-    --   experimentKey       : Identifier for experiments ("headline-test-2025-01").
-    --   experimentVariant   : "A","B","control", etc.
+    -- Per-article feature toggles and experiment hooks.
+    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md.
 
     workflow_status TEXT DEFAULT 'draft' CHECK (workflow_status IN ('draft', 'in_review', 'scheduled', 'published', 'archived')),
     -- Editorial workflow:
@@ -1987,7 +1435,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS idx_articles_search USING fts5(
     subtitle,
     short_description,
     body_content,    -- Flattened text from content_json + recipe_json
-    tag_labels,      -- Flattened from cached_tags_json (e.g., "Vegan Gluten-Free Quick")
+    tag_labels,      -- Flattened tag labels from cached_tags_json
     author_name,     -- From cached_author_json for "recipes by Jane" search
     category_name,   -- From cached_category_json for category search
     content='articles',
@@ -2020,14 +1468,14 @@ BEGIN
       SELECT GROUP_CONCAT(txt, ' ') FROM (
         -- 1. Extract plain text from content_json blocks (paragraphs)
         SELECT json_extract(value, '$.text') as txt 
-        FROM json_each(NEW.content_json) 
+        FROM json_each(NEW.content_json, '$.blocks')
         WHERE json_extract(value, '$.text') IS NOT NULL
         
         UNION ALL
         
         -- 2. Extract heading text from content_json
         SELECT json_extract(value, '$.text')
-        FROM json_each(NEW.content_json)
+        FROM json_each(NEW.content_json, '$.blocks')
         WHERE json_extract(value, '$.type') = 'heading'
         
         UNION ALL
@@ -2039,12 +1487,12 @@ BEGIN
         WHERE NEW.type = 'recipe'
       )
     ),
-    -- 4. Flatten tag labels
-    (SELECT GROUP_CONCAT(value, ' ') FROM json_each(NEW.cached_tags_json)),
+    -- 4. Flatten tag labels from cached_tags_json snapshots
+    (SELECT GROUP_CONCAT(json_extract(value, '$.label'), ' ') FROM json_each(NEW.cached_tags_json)),
     -- 5. Author name
     json_extract(NEW.cached_author_json, '$.name'),
-    -- 6. Category name
-    json_extract(NEW.cached_category_json, '$.name')
+    -- 6. Category label
+    json_extract(NEW.cached_category_json, '$.label')
   );
 END;
 
@@ -2072,14 +1520,14 @@ BEGIN
       SELECT GROUP_CONCAT(txt, ' ') FROM (
         -- 1. Extract plain text from content_json blocks (paragraphs)
         SELECT json_extract(value, '$.text') as txt 
-        FROM json_each(NEW.content_json) 
+        FROM json_each(NEW.content_json, '$.blocks')
         WHERE json_extract(value, '$.text') IS NOT NULL
         
         UNION ALL
         
         -- 2. Extract heading text from content_json
         SELECT json_extract(value, '$.text')
-        FROM json_each(NEW.content_json)
+        FROM json_each(NEW.content_json, '$.blocks')
         WHERE json_extract(value, '$.type') = 'heading'
         
         UNION ALL
@@ -2091,12 +1539,12 @@ BEGIN
         WHERE NEW.type = 'recipe'
       )
     ),
-    -- 4. Flatten tag labels
-    (SELECT GROUP_CONCAT(value, ' ') FROM json_each(NEW.cached_tags_json)),
+    -- 4. Flatten tag labels from cached_tags_json snapshots
+    (SELECT GROUP_CONCAT(json_extract(value, '$.label'), ' ') FROM json_each(NEW.cached_tags_json)),
     -- 5. Author name
     json_extract(NEW.cached_author_json, '$.name'),
-    -- 6. Category name
-    json_extract(NEW.cached_category_json, '$.name')
+    -- 6. Category label
+    json_extract(NEW.cached_category_json, '$.label')
   WHERE NEW.deleted_at IS NULL;  -- Only index if NOT soft-deleted
 END;
 
@@ -2330,21 +1778,21 @@ CREATE TABLE IF NOT EXISTS redirects (
     -- The new/destination path (e.g., "/recipes/new-recipe-slug").
     -- Can be relative path or full URL for external redirects.
 
-    status_code INTEGER DEFAULT 301,
+    status_code INTEGER NOT NULL DEFAULT 301,
     -- HTTP status code:
     --   301 = Permanent Redirect (SEO-friendly, passes link equity)
     --   302 = Temporary Redirect (for A/B tests, maintenance)
     --   307 = Temporary (preserves request method)
     --   308 = Permanent (preserves request method)
 
-    is_active BOOLEAN DEFAULT 1,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
     -- Toggle to enable/disable without deleting.
     -- 1 = Active, 0 = Disabled.
 
     notes TEXT,
     -- Optional admin notes (e.g., "Renamed after rebrand").
 
-    hit_count INTEGER DEFAULT 0,
+    hit_count INTEGER NOT NULL DEFAULT 0,
     -- Track how many times this redirect was triggered.
     -- Useful for identifying if old links are still being used.
 
@@ -2423,23 +1871,3 @@ BEGIN
   )
   WHERE id = OLD.category_id;
 END;
-
--- ============================================================
--- TABLE: redirects
--- ============================================================
--- Manages 301/302/307/308 redirects for SEO and content moves.
-CREATE TABLE IF NOT EXISTS redirects (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  from_path   TEXT    UNIQUE NOT NULL,          -- Source path, e.g. /old-recipe
-  to_path     TEXT    NOT NULL,                 -- Destination path or URL
-  status_code INTEGER NOT NULL DEFAULT 301,     -- 301, 302, 307, 308
-  is_active   INTEGER NOT NULL DEFAULT 1,       -- 1 = active, 0 = paused
-  notes       TEXT,                             -- Internal notes for editors
-  hit_count   INTEGER NOT NULL DEFAULT 0,       -- Number of times triggered
-  last_hit_at TEXT,                             -- ISO-8601 timestamp of last hit
-  created_at  TEXT DEFAULT CURRENT_TIMESTAMP,
-  updated_at  TEXT DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_redirects_from_path ON redirects (from_path);
-CREATE INDEX IF NOT EXISTS idx_redirects_active    ON redirects (is_active);

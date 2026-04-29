@@ -30,8 +30,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button.jsx';
 import { parseVariantsJson, getVariantMap, resolveVariantUrl, stripStorageKeys } from '@shared/types/images';
-import ImageUploader from '../../ImageUploader';
-import MediaDialog from '../../MediaDialog';
+import { ImageUploader, MediaDialog } from '@admin/features/media/components';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
@@ -425,7 +424,6 @@ export const ImageBlock = createReactBlockSpec(
 );
 
 export default ImageBlock;
-
 
 
 

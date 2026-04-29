@@ -1,0 +1,8 @@
+---
+import { renderInlineMarkdown } from '../../utils/markdown';
+const { block } = Astro.props as { block: { type: 'list'; style?: string; items: string[] } };
+const ListTag = block.style === 'ordered' ? 'ol' : 'ul';
+---
+<ListTag>
+  {Array.isArray(block.items) && block.items.map((item: string) => <li set:html={renderInlineMarkdown(item)} />)}
+</ListTag>

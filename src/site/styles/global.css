@@ -1,0 +1,653 @@
+@import "tailwindcss";
+@import "../shared/design-tokens.css";
+@import "./site-theme.css";
+
+/* ========================================
+ * CSS Cascade Layers
+ * Organizes styles by specificity and purpose
+ * ======================================== */
+@layer reset, base, tokens, accessibility, components, utilities, overrides;
+
+/* ========================================
+ * Tailwind v4 Theme Configuration - Public Site
+ * ======================================== */
+@theme {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--bg-elevated);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--bg-elevated);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--brand-primary);
+  --color-primary-foreground: var(--text-inverse);
+  --color-secondary: var(--bg-alt);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--bg-alt);
+  --color-muted-foreground: var(--text-tertiary);
+  --color-accent: var(--brand-accent);
+  --color-accent-foreground: var(--text-inverse);
+  --color-destructive: var(--error);
+  --color-destructive-foreground: var(--text-inverse);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--brand-primary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: calc(var(--radius-sm) - 2px);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+}
+
+/* ========================================
+ * LAYER: BASE
+ * Base HTML element styles
+ * ======================================== */
+@layer base {
+
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    box-sizing: border-box;
+    font-family: var(--font-sans);
+    font-size: clamp(14px, 0.875rem + 0.2vw, 16px);
+    line-height: var(--leading-normal);
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background: var(--bg);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
+  }
+
+  /* Fluid typography — Playfair Display for headings */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    color: var(--text);
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 1.5rem + 1.5vw, 2.75rem);
+    font-weight: var(--font-extrabold);
+    line-height: var(--leading-tight);
+  }
+
+  h2 {
+    font-size: clamp(1.375rem, 1.15rem + 1.1vw, 2rem);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-snug);
+  }
+
+  h3 {
+    font-size: clamp(1.125rem, 1rem + 0.6vw, 1.5rem);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-snug);
+  }
+
+  h4 {
+    font-size: clamp(1rem, 0.95rem + 0.3vw, 1.25rem);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-snug);
+  }
+
+  p {
+    color: var(--text-secondary);
+  }
+
+  a {
+    color: var(--brand-primary);
+    transition: color var(--transition-fast);
+  }
+
+  a:hover {
+    color: var(--brand-primary-hover);
+  }
+
+  /* Responsive images & tables */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow-x: auto;
+    display: block;
+  }
+}
+
+[data-surface="site"] body {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-alt) 55%, transparent), transparent 28rem),
+    var(--bg);
+  color: var(--text);
+}
+
+[data-surface="site"] main {
+  isolation: isolate;
+}
+
+[data-surface="site"] .site-header {
+  backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+}
+
+[data-surface="site"] .recipe-card,
+[data-surface="site"] .card,
+[data-surface="site"] .recipe-list-card,
+[data-surface="site"] .popular-recipes-widget,
+[data-surface="site"] .newsletter-widget {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-surface="site"] .recipe-card:hover,
+[data-surface="site"] .card:hover,
+[data-surface="site"] .recipe-list-card:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+[data-surface="site"] article img,
+[data-surface="site"] .recipe-hero-image,
+[data-surface="site"] .card-image img {
+  background: var(--bg-alt);
+}
+
+[data-surface="site"] .recipe-hero {
+  background: var(--bg-alt);
+}
+
+[data-surface="site"] .recipe-hero-image {
+  object-fit: cover;
+}
+
+[data-surface="site"] .logo-text,
+[data-surface="site"] .section-title,
+[data-surface="site"] .recipe-title {
+  text-wrap: balance;
+}
+
+[data-surface="site"] ::selection {
+  background-color: var(--brand-primary);
+  color: var(--text-inverse);
+}
+
+/* Fluid container padding */
+.container {
+  padding-left: clamp(1rem, 3vw, 2rem);
+  padding-right: clamp(1rem, 3vw, 2rem);
+}
+
+/* ========================================
+ * LAYER: ACCESSIBILITY
+ * Focus indicators, reduced motion, contrast modes
+ * ======================================== */
+@layer accessibility {
+
+  /* Standardized Focus Indicators */
+  :focus {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Ensure focus is visible on all interactive elements */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* Skip Link */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--neutral-900);
+    color: var(--text-inverse);
+    padding: var(--space-2) var(--space-4);
+    text-decoration: none;
+    z-index: var(--z-devtools);
+    transition: top var(--transition-base);
+    border-radius: var(--radius-md);
+    font-weight: var(--font-medium);
+  }
+
+  .skip-link:focus {
+    top: 0;
+  }
+
+  /* prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* prefers-contrast: high */
+  @media (prefers-contrast: high) {
+    :root {
+      --focus-ring-color: #000000;
+      --focus-ring-width: 4px;
+      --border: #000000;
+    }
+
+    /* High contrast borders on interactive elements */
+    a,
+    button,
+    input,
+    textarea,
+    select {
+      border: 2px solid currentColor;
+    }
+
+    /* Stronger focus indicators */
+    :focus,
+    :focus-visible {
+      outline: 4px solid #000;
+      outline-offset: 2px;
+    }
+
+    /* Ensure text is readable */
+    p,
+    li,
+    span,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      color: #000;
+    }
+
+    /* Remove subtle shadows that reduce contrast */
+    .card,
+    .recipe-list-card,
+    .bookmark-chip,
+    .popular-recipes-widget {
+      box-shadow: none !important;
+      border: 2px solid #000;
+    }
+
+    /* Ensure links are underlined */
+    a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* Remove opacity reductions */
+    .disabled,
+    [disabled] {
+      opacity: 1;
+      color: #666;
+    }
+  }
+
+  /* prefers-contrast: less (optional, for low contrast preference) */
+  @media (prefers-contrast: less) {
+    :root {
+      --focus-ring-width: 2px;
+    }
+
+    /* Reduce border intensity */
+    .card,
+    .recipe-list-card {
+      border-color: var(--neutral-100);
+    }
+
+    /* Softer focus indicator */
+    :focus-visible {
+      outline-color: var(--neutral-400);
+    }
+  }
+}
+
+/* ========================================
+ * LAYER: UTILITIES
+ * Container queries and :has() utilities
+ * ======================================== */
+@layer utilities {
+
+  /* Container Type Utilities */
+  .container-inline {
+    container-type: inline-size;
+  }
+
+  .container-size {
+    container-type: size;
+  }
+
+  /* Named Container Utilities */
+  .container-card {
+    container-type: inline-size;
+    container-name: card;
+  }
+
+  .container-grid {
+    container-type: inline-size;
+    container-name: grid;
+  }
+
+  .container-list {
+    container-type: inline-size;
+    container-name: list;
+  }
+
+  /* Container Query Breakpoint Classes */
+  @container (min-width: 40rem) {
+    .cq\:block {
+      display: block;
+    }
+
+    .cq\:flex {
+      display: flex;
+    }
+
+    .cq\:grid {
+      display: grid;
+    }
+
+    .cq\:hidden {
+      display: none;
+    }
+  }
+
+  @container (min-width: 48rem) {
+    .cq-md\:block {
+      display: block;
+    }
+
+    .cq-md\:flex {
+      display: flex;
+    }
+
+    .cq-md\:grid {
+      display: grid;
+    }
+
+    .cq-md\:hidden {
+      display: none;
+    }
+  }
+
+  @container (min-width: 64rem) {
+    .cq-lg\:block {
+      display: block;
+    }
+
+    .cq-lg\:flex {
+      display: flex;
+    }
+
+    .cq-lg\:grid {
+      display: grid;
+    }
+
+    .cq-lg\:hidden {
+      display: none;
+    }
+  }
+
+  /* ========================================
+   * :has() Selector Utilities
+   * Parent-based state styling
+   * ======================================== */
+
+  /* Card with badge - adds padding for absolute positioned badges */
+  .has-badge:has(.badge) {
+    padding-top: 2.5rem;
+  }
+
+  /* Card with image - ensure consistent aspect ratio handling */
+  .has-image:has(.card-image) {
+    --card-min-height: 300px;
+  }
+
+  /* Form field states */
+  .field:has(.error-message) {
+    --field-border-color: var(--error);
+    --field-bg-color: var(--error-bg);
+  }
+
+  .field:has(input:focus) {
+    --field-ring-color: var(--brand-primary);
+  }
+
+  .field:has(input:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* List item with actions */
+  .list-item:has(.item-actions) {
+    padding-inline-end: 3rem;
+  }
+
+  /* ========================================
+   * High Contrast Mode Support
+   * ======================================== */
+
+  @media (prefers-contrast: high) {
+    :root {
+      --border: #000000;
+      --shadow-opacity: 0;
+    }
+
+    .card,
+    .button,
+    .recipe-list-card {
+      border: 2px solid currentColor;
+    }
+
+    .bookmark-chip {
+      border: 2px solid currentColor;
+    }
+  }
+
+  /* ========================================
+   * @supports Feature Detection
+   * ======================================== */
+
+  @supports not (container-type: inline-size) {
+
+    /* Fallback: Use CSS Grid with auto-fit for older browsers */
+    .recipe-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+  }
+
+  @supports (container-type: inline-size) {
+
+    /* Modern browsers: Enable container query based layouts */
+    .cq-grid {
+      container-type: inline-size;
+      container-name: grid;
+    }
+  }
+}
+
+/* ========================================
+ * Skeleton shimmer animation
+ * ======================================== */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ========================================
+ * Selection color
+ * ======================================== */
+::selection {
+  background-color: var(--brand-primary);
+  color: var(--text-inverse);
+}
+
+/* ========================================
+ * Fade-up scroll animations
+ * ======================================== */
+/* Elements are visible by default; JS adds .js-fade-enabled to body to activate */
+.js-fade-enabled [data-fade-up] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+}
+
+.js-fade-enabled [data-fade-up].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children within fade-up containers */
+.js-fade-enabled [data-fade-up] > *:nth-child(1) { transition-delay: 0ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(2) { transition-delay: 50ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(3) { transition-delay: 100ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(4) { transition-delay: 150ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(5) { transition-delay: 200ms; }
+.js-fade-enabled [data-fade-up] > *:nth-child(6) { transition-delay: 250ms; }
+
+/* TOC active link highlight */
+.toc-active {
+  color: var(--brand-primary) !important;
+  font-weight: var(--font-semibold);
+  border-left-color: var(--brand-primary) !important;
+}
+
+/* Back-to-top hover */
+#back-to-top:hover {
+  background: var(--bg-hover);
+  transform: translateY(-2px);
+}
+
+/* ========================================
+ * Motion & Micro-interactions
+ * ======================================== */
+
+/* Hover lift for cards */
+.hover-lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Button press feedback */
+.btn-press {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+/* Link underline animation */
+.link-underline {
+  position: relative;
+  text-decoration: none;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: width var(--transition-base);
+}
+.link-underline:hover::after {
+  width: 100%;
+}
+
+/* Image zoom on hover */
+.img-zoom {
+  overflow: hidden;
+}
+.img-zoom img {
+  transition: transform var(--transition-slow);
+}
+.img-zoom:hover img {
+  transform: scale(1.04);
+}
+
+/* Badge soft pulse */
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.badge-pulse {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeUp 0.4s var(--ease-out) forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.08s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.12s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.16s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.20s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.24s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.28s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.32s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Standalone fade-up animation class */
+.animate-fade-up {
+  animation: fadeUp 0.5s var(--ease-out) forwards;
+}

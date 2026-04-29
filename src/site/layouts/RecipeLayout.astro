@@ -1,0 +1,786 @@
+---
+import { env } from "cloudflare:workers";
+import Layout from "./Layout.astro";
+import type { Category } from "@modules/categories/schema/categories.schema";
+import SocialShareBar from "../components/SocialShareBar.astro";
+import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
+import PopularRecipes from "../components/PopularRecipes.astro";
+import NewsletterWidget from "../components/NewsletterWidget.astro";
+import ContentRenderer from "../components/ContentRenderer.astro";
+import { normalizeContentDocument } from "@modules/content-blocks";
+import HeroImage from "../components/content/HeroImage.astro";
+import RecipeMetaPills from "../components/content/RecipeMetaPills.astro";
+import IngredientsSection from "../components/content/IngredientsSection.astro";
+import InstructionsSection from "../components/content/InstructionsSection.astro";
+import EquipmentSection from "../components/content/EquipmentSection.astro";
+import NutritionFacts from "../components/content/NutritionFacts.astro";
+import FAQSection from "../components/content/FAQSection.astro";
+import TableOfContents from "../components/content/TableOfContents.astro";
+import RatingSystem from "../components/content/RatingSystem";
+
+import { extractImage, getImageSrcSet } from "@shared/utils";
+import {
+  getTocSettings,
+  TOC_DEFAULTS,
+  type TocSettings,
+} from "@modules/settings/services/settings.service";
+
+/**
+ * Props use Record<string, any> because recipe & author arrive fully hydrated
+ * with computed fields (label, metaTitle, imageUrl, authorName, categoryLabel,
+ * job, etc.) that don't exist on the raw DB schema types.
+ */
+interface Props {
+  recipe: Record<string, any>;
+  author?: Record<string, any> | null;
+  category?: Category | null;
+}
+
+const { recipe, author, category } = Astro.props;
+const categoryColor = category?.color || "#ff6600";
+
+// Load TOC settings from database
+let tocSettings: TocSettings = TOC_DEFAULTS;
+try {
+  const db = env?.DB;
+  if (db) {
+    tocSettings = await getTocSettings(db);
+  }
+} catch (error) {
+  console.error("Failed to load TOC settings:", error);
+}
+
+// Parse recipeJson if it's a string
+const recipeJson = recipe.recipeJson
+  ? typeof recipe.recipeJson === "string"
+    ? JSON.parse(recipe.recipeJson)
+    : recipe.recipeJson
+  : null;
+
+// Calculate estimated reading time (approx 200 words per minute)
+const wordCount = [
+  recipe.shortDescription,
+  recipe.tldr,
+  recipe.introduction,
+  JSON.stringify(recipeJson?.ingredients || []),
+  JSON.stringify(recipeJson?.instructions || []),
+]
+  .filter(Boolean)
+  .join(" ")
+  .split(/\s+/).length;
+
+const readingTime = Math.max(5, Math.ceil(wordCount / 200));
+
+const heroCover = extractImage(recipe.imagesJson, "cover", 1200);
+const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);
+const coverSrcSet = getImageSrcSet(recipe.imagesJson, "cover");
+const thumbSrcSet = getImageSrcSet(recipe.imagesJson, "thumbnail");
+const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
+const heroImage = useCover ? heroCover : heroThumb;
+const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
+const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
+
+const authorAvatar = author?.imagesJson
+  ? extractImage(author.imagesJson, "avatar", 96)
+  : {
+      imageUrl: author?.avatar,
+      imageAlt: undefined,
+      imageWidth: 96,
+      imageHeight: 96,
+      imageAspectRatio: undefined,
+      imageObjectPosition: undefined,
+      imageStyle: undefined,
+    };
+
+const authorAvatarSrcSet = author?.imagesJson
+  ? getImageSrcSet(author.imagesJson, "avatar")
+  : "";
+const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
+const authorImage = authorAvatar.imageUrl || author?.imageUrl;
+const authorImageWidth = authorAvatar.imageWidth || 48;
+const authorImageHeight = authorAvatar.imageHeight || 48;
+const authorImageStyle = authorAvatar.imageStyle;
+const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
+---
+
+<Layout
+  title={recipe.metaTitle || recipe.label}
+  description={recipe.metaDescription || recipe.shortDescription}
+  image={heroImage.imageUrl || recipe.imageUrl || undefined}
+>
+  <slot name="head" slot="head" />
+  {
+    (heroImage.imageUrl || recipe.imageUrl) && (
+      <link
+        slot="head"
+        rel="preload"
+        as="image"
+        href={heroImage.imageUrl || recipe.imageUrl}
+        imagesrcset={heroSrcSet || undefined}
+        imagesizes={heroSrcSet ? heroSizes : undefined}
+        fetchpriority="high"
+      />
+    )
+  }
+
+  <article
+    class="recipe-page"
+    style={`--toc-accent: ${tocSettings.accentColor};`}
+  >
+    <div class="recipe-container">
+      <!-- Main Content Column -->
+      <div class="main-content">
+        <!-- Category Badge -->
+        {
+          recipe.categoryLabel && (
+            <a
+              href={`/categories/${recipe.categorySlug}`}
+              class="category-badge"
+              style={`--badge-color: ${categoryColor};`}
+            >
+              {recipe.categoryLabel}
+            </a>
+          )
+        }
+
+        <!-- Recipe Title -->
+        <h1 class="recipe-title">{recipe.label}</h1>
+
+        <!-- Rating -->
+        <div class="recipe-rating-header">
+          <RatingSystem
+            client:load
+            articleId={recipe.id}
+            initialValue={recipeJson?.aggregateRating?.ratingValue || 0}
+            initialCount={recipeJson?.aggregateRating?.ratingCount || 0}
+            size="lg"
+          />
+        </div>
+
+        <!-- Short Description -->
+        {
+          recipe.shortDescription && (
+            <p class="recipe-description">{recipe.shortDescription}</p>
+          )
+        }
+
+        <!-- Social Share Bar -->
+        <SocialShareBar
+          title={recipe.label}
+          readingTime={`${readingTime} Min Read`}
+        />
+
+        <!-- Author Card -->
+        <RecipeAuthorCard
+          authorName={author?.name || recipe.authorName}
+          authorImage={authorImage || undefined}
+          authorImageSrcSet={authorAvatarSrcSet || undefined}
+          authorImageSizes={authorAvatarSizes}
+          authorImageWidth={authorImageWidth}
+          authorImageHeight={authorImageHeight}
+          authorImageStyle={authorImageStyle}
+          authorRole={author?.job || "Blogger"}
+          lastUpdated={recipe.publishedAt || undefined}
+          viewCount={recipe.viewCount}
+        />
+
+        <!-- Disclosure Notice -->
+        <div class="disclosure-notice">
+          <strong>Disclosure:</strong> This website may contain affiliate links, which
+          means I may earn a commission if you click on the link and make a purchase.
+          I only recommend products or services that I personally use and believe
+          will add value to my readers. Your support is appreciated!
+        </div>
+
+        <!-- Table of Contents -->
+        <TableOfContents toc={recipe.cachedTocJson} settings={tocSettings} />
+
+        <!-- Hero Image -->
+        <HeroImage
+          src={heroImage.imageUrl || recipe.imageUrl}
+          alt={heroImage.imageAlt || recipe.imageAlt || recipe.label}
+          width={heroImage.imageWidth || recipe.imageWidth}
+          height={heroImage.imageHeight || recipe.imageHeight}
+          srcset={heroSrcSet}
+          sizes={heroSizes}
+          style={heroImage.imageStyle}
+        />
+
+        <!-- TLDR / Quick Overview -->
+        {
+          recipe.tldr && (
+            <section class="content-section tldr-section">
+              <h2>Quick Overview</h2>
+              <div class="prose" set:html={recipe.tldr} />
+            </section>
+          )
+        }
+
+        {
+          contentBlocks.length > 0 && (
+            <section class="content-section content-json-section">
+              <ContentRenderer
+                article={recipe}
+                settings={tocSettings}
+              />
+            </section>
+          )
+        }
+
+        {
+          /* Fallback: if no main_recipe block in content, show recipe sections after content */
+        }
+        {
+          !contentBlocks.some(
+            (b: any) => b.type === "main_recipe",
+          ) &&
+            recipeJson && (
+              <>
+                <IngredientsSection ingredients={recipeJson.ingredients} />
+                <InstructionsSection instructions={recipeJson.instructions} />
+                <EquipmentSection
+                  equipment={
+                    (typeof recipe.cachedEquipmentJson === "string"
+                      ? JSON.parse(recipe.cachedEquipmentJson || "[]")
+                      : recipe.cachedEquipmentJson) ||
+                    recipeJson?.equipment ||
+                    []
+                  }
+                />
+                <div class="mobile-only">
+                  <NutritionFacts
+                    nutrition={recipeJson.nutrition}
+                    variant="label"
+                  />
+                </div>
+              </>
+            )
+        }
+
+        <!-- FAQs - Modern Accordion -->
+        <FAQSection faqs={recipe.faqsJson} />
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-sticky">
+          <!-- Nutrition Facts (desktop) -->
+          <div class="desktop-only">
+            <NutritionFacts nutrition={recipeJson?.nutrition} variant="grid" />
+          </div>
+
+          <!-- Popular Recipes -->
+          <PopularRecipes currentSlug={recipe.slug} limit={5} />
+
+          <!-- Newsletter Widget -->
+          <NewsletterWidget />
+        </div>
+      </aside>
+    </div>
+  </article>
+</Layout>
+
+<script define:vars={{ slug: recipe.slug }}>
+  // Simple view tracking
+  const trackView = async () => {
+    try {
+      await fetch(`/api/views/${slug}`, { method: "POST" });
+    } catch (e) {
+      // Ignore errors silently (e.g. ad blockers)
+    }
+  };
+
+  // Run when the page is ready
+  if (document.readyState === "complete") {
+    trackView();
+  } else {
+    window.addEventListener("load", trackView);
+  }
+</script>
+
+<style>
+  .recipe-page {
+    background: #fff;
+    min-height: 100vh;
+    padding-bottom: 4rem;
+  }
+
+  .recipe-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(0px, 2vw, 2rem) clamp(1rem, 3vw, 2rem);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(1.5rem, 3vw, 2rem);
+  }
+
+  @media (min-width: 1024px) {
+    .recipe-container {
+      grid-template-columns: 1fr 360px;
+    }
+  }
+
+  /* Main Content */
+  .main-content {
+    background: #fff;
+    padding: clamp(1rem, 2vw, 1rem) 0;
+    min-width: 0; /* prevent grid blowout */
+  }
+
+  /* Category Badge */
+  .category-badge {
+    display: inline-block;
+    background: var(--badge-color, #ff6600);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.375rem 0.875rem;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-bottom: 1rem;
+    transition: filter 0.2s;
+  }
+
+  .category-badge:hover {
+    filter: brightness(0.9);
+  }
+
+  /* Jump to Recipe & Print Buttons */
+  .jump-to-recipe {
+    display: flex;
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+
+  .jump-btn,
+  .print-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .jump-btn {
+    background: #10b981;
+    color: #fff;
+    border: none;
+  }
+
+  .jump-btn:hover {
+    background: #059669;
+  }
+
+  .print-btn {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+  }
+
+  .print-btn:hover {
+    background: #e5e5e5;
+  }
+
+  .jump-btn .icon,
+  .print-btn .icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  @media print {
+    .jump-to-recipe,
+    .sidebar,
+    .disclosure-notice,
+    .social-share-bar,
+    .newsletter-widget {
+      display: none !important;
+    }
+  }
+
+  /* Title */
+  .recipe-title {
+    font-size: clamp(1.375rem, 3vw + 0.5rem, 2.5rem);
+    font-weight: 800;
+    color: #111;
+    line-height: 1.2;
+    margin: 0 0 clamp(0.75rem, 2vw, 1rem);
+  }
+
+  .recipe-rating-header {
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Description */
+  .recipe-description {
+    font-family: "Source Sans 3", "Segoe UI", Roboto, sans-serif;
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    color: #444;
+    line-height: 1.6;
+    margin: 0 0 clamp(1rem, 2vw, 1.5rem);
+  }
+
+  /* Disclosure Notice */
+  .disclosure-notice {
+    background: #f8f8f8;
+    border-left: 3px solid #ddd;
+    padding: clamp(0.75rem, 2vw, 1rem) clamp(0.875rem, 2vw, 1.25rem);
+    font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.8125rem);
+    color: #666;
+    line-height: 1.6;
+    margin: clamp(1rem, 2vw, 1.5rem) 0;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .disclosure-notice strong {
+    color: #333;
+  }
+
+  /* Hero Image */
+  .hero-image {
+    margin: 1.5rem 0;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  .hero-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+  }
+
+  /* Recipe Meta Pills */
+  .recipe-meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 2rem;
+  }
+
+  .meta-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f5f5f5;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .meta-pill .icon {
+    width: 20px;
+    height: 20px;
+    color: #ff3366;
+    flex-shrink: 0;
+  }
+
+  .meta-pill .label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+  }
+
+  .meta-pill .value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  /* Content Sections */
+  .content-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .content-section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #111;
+  }
+
+  .content-section h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #333;
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  /* Numbered Headings - Size Hierarchy (global for child components) */
+  :global(.numbered-heading .heading-number) {
+    color: var(--toc-accent, #f97316);
+    font-weight: 700;
+    margin-right: 0.4rem;
+  }
+
+  :global(h2.numbered-heading) {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.6rem, 1.4rem + 1vw, 2rem);
+    font-weight: 800;
+    color: #111;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid #e5e7eb;
+    letter-spacing: -0.01em;
+  }
+
+  :global(h3.numbered-heading) {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+    font-weight: 700;
+    color: #222;
+    margin: 2rem 0 0.75rem;
+  }
+
+  :global(h4.numbered-heading) {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
+    font-weight: 600;
+    color: #444;
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  /* TLDR */
+  .tldr-section {
+    background: #fff8e6;
+    margin: 0 calc(-1 * clamp(1rem, 3vw, 2rem)) clamp(1.5rem, 3vw, 2.5rem);
+    padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem);
+    border-left: 4px solid #f59e0b;
+  }
+
+  .tldr-section h2 {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  .prose {
+    color: #444;
+    line-height: 1.7;
+  }
+
+  /* Ingredients */
+  .ingredient-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .ingredient-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+  }
+
+  .checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #10b981;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ingredient-list li:hover .checkbox {
+    background: #10b981;
+  }
+
+  /* Instructions */
+  .instruction-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: step;
+  }
+
+  .instruction-list li {
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #ff3366;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.875rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .instruction-list p {
+    margin: 0;
+    color: #333;
+    line-height: 1.7;
+  }
+
+  /* Nutrition Grid (Mobile) */
+  .mobile-only {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .mobile-only {
+      display: none;
+    }
+
+    .desktop-only {
+      display: block;
+    }
+  }
+
+  .nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+  }
+
+  .nutrition-item {
+    background: #f5f5f5;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .nutrition-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111;
+  }
+
+  .nutrition-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: capitalize;
+    margin-top: 0.25rem;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sidebar-sticky {
+    position: sticky;
+    top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sidebar-widget {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 1px solid #f0f0f0;
+  }
+
+  .sidebar-widget h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0 0 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid #111;
+  }
+
+  .nutrition-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nutrition-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9375rem;
+  }
+
+  .nutrition-key {
+    color: #333;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .nutrition-val {
+    color: #666;
+  }
+
+  /* Fluid responsive — no max-width media queries needed */
+  .recipe-meta-pills {
+    gap: clamp(0.5rem, 1.5vw, 1rem);
+    padding: clamp(1rem, 2vw, 1.5rem) 0;
+  }
+
+  .meta-pill {
+    padding: clamp(0.5rem, 1vw, 0.75rem) clamp(0.625rem, 1.5vw, 1rem);
+    min-width: auto;
+    flex: 1 1 auto;
+  }
+
+  .content-section h2 {
+    font-size: clamp(1.25rem, 1rem + 0.6vw, 1.5rem);
+  }
+
+  .content-section h3 {
+    font-size: clamp(1rem, 0.9rem + 0.4vw, 1.125rem);
+  }
+
+  .ingredient-list li {
+    padding: clamp(0.5rem, 1vw, 0.625rem) 0;
+    font-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+  }
+
+  /* Sidebar becomes full-width below 1024px (handled by grid-template-columns: 1fr) */
+</style>
+
+<script>
+  document.querySelectorAll("[data-ingredient-check]").forEach((input) => {
+    const el = input as HTMLInputElement;
+    const handler = () => {
+      const item = el.closest(".ingredient-item") as HTMLElement | null;
+      if (!item) return;
+      if (el.checked) {
+        item.style.opacity = "0.6";
+        item.style.textDecoration = "line-through";
+      } else {
+        item.style.opacity = "1";
+        item.style.textDecoration = "none";
+      }
+    };
+    el.addEventListener("change", handler);
+  });
+</script>

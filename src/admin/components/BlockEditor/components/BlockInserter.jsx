@@ -229,7 +229,6 @@ const blockCategories = [
         label: 'Recipe',
         blocks: [
             { type: 'mainRecipe', icon: Utensils, label: 'Recipe Details', description: 'The main recipe editor for this post' },
-            { type: 'recipeEmbed', icon: FileText, label: 'Embed Recipe', description: 'Link to another recipe' },
         ],
     },
 ];

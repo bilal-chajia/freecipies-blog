@@ -1,6 +1,6 @@
 # Template Module
 
-> Core module for Pinterest pin template management - types, services, and UI components.
+> Core module for Pinterest pin template management - types, schema, services, and utilities.
 
 ## Overview
 
@@ -9,8 +9,6 @@ This module provides comprehensive template management functionality:
 - **Schema** - Drizzle ORM table definition
 - **Types** - TypeScript interfaces for templates and elements
 - **Services** - CRUD operations with Drizzle
-- **Components** - Canvas editor, template list, pin creator
-- **Store** - Zustand state management (canvas, UI)
 - **Utils** - Placeholder substitution, font loading
 
 ## Usage
@@ -24,18 +22,14 @@ import {
   type ImageElement,
   type ArticleData,
 
-  // Components
-  TemplateEditor,
-  PinCanvas,
-
-  // Store
-  useEditorStore,
-
   // Utils
   substitutePlaceholders,
   hasBinding,
   SUPPORTED_PLACEHOLDERS,
 } from "@modules/templates";
+
+import { TemplateEditor, PinCanvas } from "@admin/features/templates/components";
+import { useEditorStore } from "@admin/features/templates/store";
 ```
 
 ## API Endpoints
@@ -90,20 +84,6 @@ src/modules/templates/
 │   └── index.ts
 ├── services/
 │   └── templates.service.ts    # Drizzle CRUD
-├── store/
-│   ├── useEditorStore.ts       # Canvas state management
-│   └── useUIStore.ts           # UI state management
-├── components/
-│   ├── canvas/                 # Konva canvas components
-│   │   ├── PinCanvas.tsx       # Main canvas renderer
-│   │   ├── ElementPanel.tsx    # Element controls
-│   │   ├── hooks/              # Canvas hooks
-│   │   └── modern/             # Modern UI components
-│   ├── editor/                 # Editor pages
-│   │   ├── TemplateEditor.tsx  # Main editor
-│   │   └── TemplatesList.tsx   # Template list view
-│   └── pins/                   # Pin components
-│       └── TemplateSelector.tsx
 ├── utils/
 │   ├── placeholders.ts         # Variable substitution
 │   ├── fontLoader.ts           # Google Fonts loader
@@ -114,17 +94,14 @@ src/modules/templates/
 
 ## Admin Integration
 
-Import from module in admin pages:
+Template editor UI lives in `src/admin/features/templates/` so the domain module stays server-safe.
 
 ```typescript
-// src/admin/pages/TemplatesPage.tsx
-import { TemplateEditor, useEditorStore } from "@modules/templates";
+import { TemplateEditor } from "@admin/features/templates/components";
+import { useEditorStore } from "@admin/features/templates/store";
 ```
 
 ## Key Features
 
-- **Canvas-based editing** - Konva renderer with draggable, resizable elements
 - **Data binding** - Template placeholders bind to article data
 - **Font loading** - Dynamic Google Fonts loading with opentype.js
-- **Responsive design** - Works with various canvas sizes
-- **State management** - Zustand stores for canvas and UI state

@@ -6,7 +6,7 @@ import WebStoryViewer from "@components/WebStoryViewer.astro";
 import { getArticles } from "@modules/articles";
 import { getCategories } from "@modules/categories";
 import { getAuthors } from "@modules/authors";
-import { hydrateArticles, hydrateCategory } from "@shared/utils/hydration";
+import { hydrateCategory } from "@shared/utils/hydration";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import type { HydratedArticle } from "@modules/articles/types";
 import type { HydratedCategory } from "@modules/categories/types/categories.types";
@@ -43,7 +43,7 @@ const popularRecipes = allRecipes.slice(0, 4);   // Popular section (can overlap
 const moreRecipes = allRecipes.slice(4, 8);      // More recipes
 
 // Create a map for category colors by slug
-const categoryColorMap = new Map(categories.map(c => [c.slug, c.color || '#ff6600']));
+const categoryColorMap = new Map(categories.map(c => [c.slug, c.color || 'var(--brand-primary)']));
 
 // Helper function for recipe URL
 const getRecipeUrl = (recipe: HydratedArticle) =>
@@ -51,7 +51,7 @@ const getRecipeUrl = (recipe: HydratedArticle) =>
 
 // Helper function for category color
 const getCategoryColor = (categorySlug?: string) =>
-  categoryColorMap.get(categorySlug || '') || '#ff6600';
+  categoryColorMap.get(categorySlug || '') || 'var(--brand-primary)';
 
 const getRecipeImage = (recipe: HydratedArticle, targetWidth: number, prefer: 'cover' | 'thumbnail' = 'cover') => {
   const cover = extractImage(recipe.imagesJson, 'cover', targetWidth);
@@ -427,18 +427,12 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 <style>
   /* === Foxiz Design System === */
   :root {
-    --primary: #e74c3c;
-    --primary-hover: #c0392b;
-    --dark: #1a1a1a;
-    --text: #333;
-    --text-light: #777;
-    --bg: #fff;
-    --bg-alt: #f8f9fa;
-    --border: #eee;
-    --radius: 8px;
-    --radius-lg: 12px;
-    --shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
-    --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+    --primary: var(--brand-primary);
+    --primary-hover: var(--brand-primary-hover);
+    --dark: var(--text);
+    --text-light: var(--text-tertiary);
+    --radius: var(--radius-md);
+    --shadow: var(--shadow-md);
     --transition: all 0.3s ease;
   }
 
@@ -453,7 +447,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   }
 
   .section {
-    padding: 50px 0;
+    padding: clamp(3rem, 7vw, 5.5rem) 0;
   }
 
   .section-header {
@@ -464,10 +458,12 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   }
 
   .section-title {
-    font-size: 24px;
+    font-family: var(--font-serif);
+    font-size: clamp(1.65rem, 1.25rem + 1.2vw, 2.35rem);
     font-weight: 700;
-    color: var(--dark);
+    color: var(--text);
     margin: 0;
+    letter-spacing: 0;
   }
 
   .view-all {
@@ -484,8 +480,10 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   /* === Hero Grid (Foxiz style) === */
   .hero-grid-section {
-    padding: 20px;
-    background: var(--bg);
+    padding: clamp(1rem, 3vw, 2rem);
+    background:
+      radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--brand-primary-light) 72%, transparent), transparent 28rem),
+      var(--bg);
   }
 
   .hero-grid {
@@ -493,7 +491,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1.3fr 1fr;
-    gap: 20px;
+    gap: clamp(1rem, 2vw, 1.5rem);
   }
 
   @media (max-width: 900px) {
@@ -510,9 +508,11 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   /* === Hero Slider === */
   .hero-slider {
     position: relative;
-    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-2xl);
     overflow: hidden;
     min-height: 500px;
+    box-shadow: var(--shadow-lg);
   }
 
   @media (max-width: 900px) {
@@ -591,7 +591,8 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   }
 
   .slide .card-title {
-    font-size: 28px;
+    font-family: var(--font-serif);
+    font-size: clamp(1.75rem, 1.25rem + 1.6vw, 3rem);
     font-weight: 700;
     color: white;
     margin: 0;
@@ -651,10 +652,12 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .recipe-card {
     position: relative;
     display: block;
-    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
     overflow: hidden;
     text-decoration: none;
     color: white;
+    box-shadow: var(--shadow-md);
   }
 
   .recipe-card-large {
@@ -777,7 +780,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     display: inline-block;
     width: 10px;
     height: 10px;
-    background: #ff3366;
+    background: var(--brand-primary);
     border-radius: 50%;
     margin-right: 8px;
     vertical-align: middle;
@@ -793,12 +796,23 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .foxiz-card {
     display: flex;
     flex-direction: column;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+  }
+
+  .foxiz-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
   }
 
   .foxiz-card-image {
     position: relative;
     display: block;
-    border-radius: 10px;
+    border-radius: 0;
     overflow: hidden;
     aspect-ratio: 4/3;
   }
@@ -822,7 +836,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
         rgba(0, 0, 0, 0.35),
         rgba(0, 0, 0, 0.35)
       ),
-      var(--badge-color, #ff6600);
+      var(--badge-color, var(--brand-primary));
     color: white;
     padding: 6px 14px;
     border-radius: 4px;
@@ -833,7 +847,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   }
 
   .foxiz-card-body {
-    padding: 15px 0;
+    padding: 1rem;
   }
 
   .foxiz-card-title {
@@ -841,7 +855,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     font-weight: 700;
     line-height: 1.4;
     margin: 0 0 10px;
-    color: var(--dark);
+    color: var(--text);
   }
 
   .foxiz-card-title a {
@@ -865,7 +879,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     align-items: center;
     gap: 5px;
     font-size: 12px;
-    color: #666;
+    color: var(--text-tertiary);
     text-decoration: none;
     transition: color 0.2s ease;
   }
@@ -892,7 +906,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     padding: 10px 24px;
     border: 1px solid var(--border);
     border-radius: 50px;
-    background: var(--bg);
+    background: var(--bg-elevated);
     color: var(--text);
     text-decoration: none;
     font-size: 14px;
@@ -902,9 +916,9 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   .category-filter-btn:hover,
   .category-filter-btn.active {
-    background: var(--dark);
+    background: var(--brand-primary);
     color: white;
-    border-color: var(--dark);
+    border-color: var(--brand-primary);
   }
 
   /* Category Chips with Images */
@@ -938,7 +952,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   }
 
   .category-chip:hover .chip-image-wrapper {
-    border-color: #ff3366;
+    border-color: var(--brand-primary);
   }
 
   .chip-image-wrapper img {
@@ -950,7 +964,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .chip-placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #ff3366, #ff6b35);
+    background: var(--brand-gradient);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -962,18 +976,19 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .chip-label {
     font-size: 14px;
     font-weight: 600;
-    color: var(--dark);
+    color: var(--text);
   }
 
   .chip-type {
     font-size: 12px;
-    color: #8a1c35;
+    color: var(--text-brand);
     text-transform: uppercase;
   }
 
   /* === Popular Recipes Section === */
   .popular-recipes-section {
-    background: var(--bg);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
   }
 
   .more-recipes-section {
@@ -991,7 +1006,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .recipe-card-vertical {
     display: block;
     background: var(--bg);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     overflow: hidden;
     text-decoration: none;
     color: inherit;
@@ -1046,7 +1061,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .recipe-card-vertical .card-title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--dark);
+    color: var(--text);
     margin: 0 0 10px;
     line-height: 1.4;
     display: -webkit-box;
@@ -1077,7 +1092,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   /* === About the Author Section === */
   .about-author-section {
-    background: linear-gradient(180deg, #fdf2f4 0%, #fef7f8 100%);
+    background: linear-gradient(180deg, var(--brand-primary-light) 0%, var(--bg) 100%);
     padding: 70px 0;
   }
 
@@ -1094,7 +1109,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     border-radius: var(--radius-lg);
     overflow: hidden;
     aspect-ratio: 4/5;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-xl);
   }
 
   .about-author-image img {
@@ -1111,7 +1126,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .about-author-placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #ff3366, #ff6b35);
+    background: var(--brand-gradient);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1126,7 +1141,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   .about-author-eyebrow {
     display: block;
-    font-family: 'Georgia', serif;
+    font-family: var(--font-serif);
     font-style: italic;
     font-size: 18px;
     color: var(--primary);
@@ -1137,9 +1152,8 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .about-author-title {
     font-size: clamp(28px, 4vw, 36px);
     font-weight: 800;
-    color: var(--dark);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
+    color: var(--text);
+    letter-spacing: 0;
     margin: 0 0 20px;
     line-height: 1.2;
   }
@@ -1155,7 +1169,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   .about-author-link {
     display: inline-block;
-    background: var(--dark);
+    background: var(--text);
     color: white;
     padding: 14px 32px;
     text-decoration: none;
@@ -1198,7 +1212,9 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
   /* === Newsletter Banner === */
   .newsletter-banner {
-    background: var(--dark);
+    background:
+      radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--brand-accent) 28%, transparent), transparent 20rem),
+      var(--text);
     padding: 60px 0;
   }
 
@@ -1210,6 +1226,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   }
 
   .newsletter-content h2 {
+    font-family: var(--font-serif);
     font-size: 28px;
     font-weight: 700;
     margin: 0 0 10px;
@@ -1230,10 +1247,14 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   .newsletter-form input {
     flex: 1 1 200px;
     padding: 14px 18px;
-    border: none;
-    border-radius: var(--radius);
+    border: 1px solid color-mix(in srgb, white 24%, transparent);
+    border-radius: var(--radius-full);
     font-size: 14px;
-    outline: none;
+  }
+
+  .newsletter-form input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }
 
   .newsletter-form button {
@@ -1241,7 +1262,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
     background: var(--primary-hover);
     color: white;
     border: none;
-    border-radius: var(--radius);
+    border-radius: var(--radius-full);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -1249,7 +1270,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
   }
 
   .newsletter-form button:hover {
-    background: #992d22;
+    background: var(--brand-primary);
   }
 </style>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '../store/useStore';
 import { authAPI } from '../services/api';
 import {
@@ -15,6 +15,12 @@ export default function SessionMonitor() {
     const { token, setAuth, clearAuth } = useAuthStore();
     const [showWarning, setShowWarning] = useState(false);
     const [timeLeft, setTimeLeft] = useState(null);
+    const showWarningRef = useRef(showWarning);
+
+    // Keep ref in sync with state
+    useEffect(() => {
+        showWarningRef.current = showWarning;
+    }, [showWarning]);
 
     useEffect(() => {
         // If no token, nothing to monitor
@@ -40,8 +46,8 @@ export default function SessionMonitor() {
                     handleLogout();
                 } else {
                     // Can dismiss warning if time was extended in another tab (via localStorage sync if implemented)
-                    // But strict check:
-                    if (showWarning) setShowWarning(false);
+                    // Use ref to avoid dependency cycle
+                    if (showWarningRef.current) setShowWarning(false);
                 }
             } catch (e) {
                 console.error("SessionMonitor: Invalid token format", e);
@@ -53,7 +59,7 @@ export default function SessionMonitor() {
         const interval = setInterval(checkToken, 10000);
 
         return () => clearInterval(interval);
-    }, [token, showWarning]);
+    }, [token]); // Only token in deps - no infinite loop
 
     const handleRefresh = async () => {
         try {

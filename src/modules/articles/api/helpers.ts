@@ -5,6 +5,7 @@
  */
 
 import { safeParseJson } from '../../../shared/utils/hydration';
+import { normalizeContentDocument } from '../../content-blocks';
 
 const extractR2KeyFromUrl = (url: string): string | null => {
     if (!url) return null;
@@ -26,7 +27,7 @@ export function transformArticleRequestBody(body: any): any {
 
     // JSON fields that should be objects
     const jsonFields = [
-        'imagesJson', 'contentJson', 'recipeJson', 'roundupJson',
+        'imagesJson', 'recipeJson', 'roundupJson',
         'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
         'cachedTagsJson', 'cachedCategoryJson',
         'cachedAuthorJson', 'cachedEquipmentJson', 'cachedRecipeJson',
@@ -38,6 +39,10 @@ export function transformArticleRequestBody(body: any): any {
         if (body[field] !== undefined) {
             transformed[field] = safeParseJson(body[field]);
         }
+    }
+
+    if (body.contentJson !== undefined) {
+        transformed.contentJson = normalizeContentDocument(body.contentJson);
     }
 
     // Handle legacy flat image fields if imagesJson is not provided

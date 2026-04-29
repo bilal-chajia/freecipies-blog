@@ -11,7 +11,6 @@ import {
   Image,
   Settings,
   LogOut,
-  ChefHat,
   Pin,
   Home,
   LayoutTemplate,
@@ -22,12 +21,6 @@ import {
   Sun,
   Menu,
   PanelLeftClose,
-  Globe,
-  Search,
-  Mail,
-  Monitor,
-  Laptop,
-  ShieldCheck,
   Utensils,
   Layers,
   Wrench,
@@ -49,7 +42,6 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
-  SidebarTrigger,
   useSidebar,
 } from "@/ui/sidebar";
 import {
@@ -67,6 +59,24 @@ import {
 } from "@/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/ui/avatar";
 import { useUIStore, useAuthStore } from "../store/useStore";
+
+const itemStyles = {
+  Dashboard: "text-blue-600",
+  Homepage: "text-teal-600",
+  Content: "text-slate-600",
+  "Blog Posts": "text-sky-600",
+  Recipes: "text-emerald-600",
+  Roundups: "text-violet-600",
+  Categories: "text-amber-600",
+  Authors: "text-indigo-600",
+  Tags: "text-cyan-600",
+  Equipment: "text-orange-600",
+  Boards: "text-rose-600",
+  Templates: "text-fuchsia-600",
+  Settings: "text-slate-600",
+  Media: "text-blue-600",
+  Redirects: "text-zinc-600",
+};
 
 // Navigation data structure
 const navGroups = [
@@ -155,8 +165,8 @@ export function AppSidebar({ ...props }) {
                   <Menu className="size-4" />
                 ) : (
                   <>
-                    <ChefHat className="size-4" />
-                    <span className="font-semibold">Freecipies</span>
+                    <LayoutDashboard className="size-4 text-primary" />
+                    <span className="font-semibold">Freecipies CMS</span>
                     <PanelLeftClose className="ml-auto size-4" />
                   </>
                 )}
@@ -184,7 +194,7 @@ export function AppSidebar({ ...props }) {
                           tooltip={item.title}
                         >
                           <Link to={item.url}>
-                            <item.icon />
+                            <item.icon className={itemStyles[item.title]} />
                             <span>{item.title}</span>
                           </Link>
                         </SidebarMenuButton>
@@ -203,7 +213,7 @@ export function AppSidebar({ ...props }) {
                     tooltip={group.title}
                   >
                     <Link to={group.url}>
-                      <group.icon />
+                      <group.icon className={itemStyles[group.title]} />
                       <span>{group.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -219,7 +229,7 @@ export function AppSidebar({ ...props }) {
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton tooltip={group.title}>
-                        <group.icon />
+                        <group.icon className={itemStyles[group.title]} />
                         <span>{group.title}</span>
                         <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                       </SidebarMenuButton>
@@ -233,7 +243,7 @@ export function AppSidebar({ ...props }) {
                               <SidebarMenuSubItem>
                                 <CollapsibleTrigger asChild>
                                   <SidebarMenuSubButton className="cursor-pointer">
-                                    <item.icon />
+                                    <item.icon className={itemStyles[item.title]} />
                                     <span>{item.title}</span>
                                     <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/submenu:rotate-90" />
                                   </SidebarMenuSubButton>
@@ -244,7 +254,7 @@ export function AppSidebar({ ...props }) {
                                       <SidebarMenuSubItem key={subItem.title}>
                                         <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                                           <Link to={subItem.url}>
-                                            <subItem.icon className="h-3.5 w-3.5" />
+                                            <subItem.icon className={`h-3.5 w-3.5 ${itemStyles[subItem.title] || ""}`} />
                                             <span>{subItem.title}</span>
                                           </Link>
                                         </SidebarMenuSubButton>
@@ -262,7 +272,7 @@ export function AppSidebar({ ...props }) {
                                 isActive={isActive(item.url)}
                               >
                                 <Link to={item.url}>
-                                  <item.icon />
+                                <item.icon className={itemStyles[item.title]} />
                                   <span>{item.title}</span>
                                 </Link>
                               </SidebarMenuSubButton>

@@ -97,7 +97,7 @@ export function toSchemaOrgItemList(
             name: item.title,
             ...(item.article_id && { url: `${baseUrl}/recipes/${item.article_id}` }),
             ...(item.external_url && { url: item.external_url }),
-            ...(item.cover?.variants?.lg && { image: resolveVariantUrl(item.cover.variants.lg) }),
+            ...(item.cover?.variants?.lg && { image: resolveVariantUrl(item.cover.variants.lg) || undefined }),
             ...(item.subtitle && { description: item.subtitle }),
         })),
     };

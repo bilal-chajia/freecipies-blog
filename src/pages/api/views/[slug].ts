@@ -3,20 +3,13 @@ import { env } from 'cloudflare:workers';
 import { getArticleBySlug, incrementViewCount } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateParams, SlugOrIdParam } from '@shared/validation';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ params, locals }) => {
-  const { slug } = params;
-
-  if (!slug) {
-    const { body, status, headers } = formatErrorResponse(
-      new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
-    );
-    return new Response(body, { status, headers });
-  }
-
   try {
+    const { slug } = validateParams(params, SlugOrIdParam);
 
     if (!env?.DB) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
@@ -39,16 +32,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
 };
 
 export const POST: APIRoute = async ({ params, locals }) => {
-  const { slug } = params;
-
-  if (!slug) {
-    const { body, status, headers } = formatErrorResponse(
-      new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
-    );
-    return new Response(body, { status, headers });
-  }
-
   try {
+    const { slug } = validateParams(params, SlugOrIdParam);
 
     if (!env?.DB) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);

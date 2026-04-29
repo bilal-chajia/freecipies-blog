@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { generateJWT } from '@modules/auth';
+import { validateBody, LoginSchema } from '@shared/validation';
 
 export const prerender = false;
 
@@ -9,7 +10,7 @@ export const prerender = false;
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { username, password } = await request.json();
+    const { username, password } = await validateBody(request, LoginSchema);
 
     // Get secrets from Cloudflare env or local import.meta.env
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;

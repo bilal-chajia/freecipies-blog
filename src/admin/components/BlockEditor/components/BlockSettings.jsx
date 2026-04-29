@@ -100,7 +100,6 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
         'beforeAfter',
         'simpleTable',
         'video',
-        'recipeEmbed',
         'relatedContent',
         'featuredImage',
         'title',
@@ -330,7 +329,7 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                                 className="h-8 text-sm w-full"
                                 value={selectedBlock.props.textColor || ''}
                                 onChange={(e) => updateProps({ textColor: e.target.value })}
-                                placeholder="#111827"
+                                placeholder="#e74c3c"
                             />
                         </div>
                     </div>
@@ -460,36 +459,6 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <span>Video ID</span>
                             <span>{selectedBlock.props.videoId || '-'}</span>
-                        </div>
-                    </div>
-                </SettingsSection>
-            )}
-
-            {selectedBlock.type === 'recipeEmbed' && (
-                <SettingsSection title="Recipe Card" icon={Settings} defaultOpen>
-                    <div className="space-y-3 text-xs text-muted-foreground">
-                        <div className="flex items-center justify-between">
-                            <span>Headline</span>
-                            <span className="truncate max-w-[160px]" title={selectedBlock.props.headline || ''}>
-                                {selectedBlock.props.headline || '-'}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span>Slug</span>
-                            <span className="truncate max-w-[160px]" title={selectedBlock.props.slug || ''}>
-                                {selectedBlock.props.slug || '-'}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span>Total Time</span>
-                            <span>{selectedBlock.props.totalTime || '-'}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span>Difficulty</span>
-                            <span>{selectedBlock.props.difficulty || '-'}</span>
-                        </div>
-                        <div className="text-[11px] text-muted-foreground">
-                            Use the toolbar to change the recipe.
                         </div>
                     </div>
                 </SettingsSection>

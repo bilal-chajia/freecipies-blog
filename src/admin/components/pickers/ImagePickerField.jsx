@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import { Image, X } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
-import MediaDialog from '@/components/MediaDialog';
+import { MediaDialog } from '@admin/features/media/components';
 
 const ImagePickerField = ({ value, onChange, placeholder = 'Enter image URL' }) => {
     const [isMediaOpen, setIsMediaOpen] = useState(false);

@@ -1,10 +1,11 @@
 ---
 // src/pages/api/preview/render.astro
 import { env } from 'cloudflare:workers';
-import RecipeLayout from "../../../layouts/RecipeLayout.astro";
+import RecipeLayout from "@layouts/RecipeLayout.astro";
 import { getAuthorById } from "@modules/authors/services/authors.service";
 import { getCategoryById } from "@modules/categories/services/categories.service";
 import { getArticleBySlug } from "@modules/articles/services/articles.service";
+import { normalizeContentDocument } from "@modules/content-blocks";
 
 if (Astro.request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
@@ -59,16 +60,7 @@ const recipeJson = JSON.stringify({
     ...parsedRecipe,
 });
 
-// --- Parse contentJson safely ---
-let contentJson = [];
-try {
-    contentJson =
-        typeof formData.contentJson === "string"
-            ? JSON.parse(formData.contentJson || "[]")
-            : formData.contentJson || [];
-} catch (e) {
-    console.warn("[preview/render] Failed to parse contentJson:", e);
-}
+const contentJson = normalizeContentDocument(formData.contentJson);
 
 // --- Parse imagesJson safely ---
 const imagesJson =

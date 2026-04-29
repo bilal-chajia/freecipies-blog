@@ -7,6 +7,7 @@ import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@module
 import { calculateAspectRatio, getImageDimensions } from '@shared/utils/imageMeta';
 import { getImageUploadSettings } from '@modules/settings';
 import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
+import { validate, z } from '@shared/validation';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
@@ -23,9 +24,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const alt = formData.get('alt') as string;
-    const attribution = formData.get('attribution') as string;
-    const caption = formData.get('caption') as string;
+
+    // Validate text fields with Zod
+    const { alt, attribution, caption } = validate(
+      z.object({
+        alt: z.string().optional(),
+        attribution: z.string().optional(),
+        caption: z.string().optional(),
+      }),
+      {
+        alt: formData.get('alt') ?? undefined,
+        attribution: formData.get('attribution') ?? undefined,
+        caption: formData.get('caption') ?? undefined,
+      }
+    );
 
     // 1. Load settings (defaults + overrides)
     const settings = await getImageUploadSettings(env.DB);

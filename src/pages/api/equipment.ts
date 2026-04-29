@@ -13,6 +13,7 @@ import { transformEquipmentRequestBody, transformEquipmentResponse } from '@modu
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateBody, validateQuery, CreateEquipmentSchema, UpdateEquipmentSchema, z } from '@shared/validation';
 
 export const prerender = false;
 
@@ -85,7 +86,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        const reqBody = await request.json();
+        const reqBody = await validateBody(request, CreateEquipmentSchema);
         const transformedBody = transformEquipmentRequestBody(reqBody);
         const item = await createEquipment(env.DB, transformedBody);
         const responseItem = transformEquipmentResponse(item);
@@ -117,12 +118,9 @@ export const PUT: APIRoute = async ({ request, locals }) => {
         }
 
         const url = new URL(request.url);
-        const slug = url.searchParams.get('slug');
-        if (!slug) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'slug query parameter required', 400);
-        }
+        const { slug } = validateQuery(url.searchParams, z.object({ slug: z.string().min(1, 'slug query parameter required') }));
 
-        const reqBody = await request.json();
+        const reqBody = await validateBody(request, UpdateEquipmentSchema);
         const transformedBody = transformEquipmentRequestBody(reqBody);
         const item = await updateEquipment(env.DB, slug, transformedBody);
         const responseItem = transformEquipmentResponse(item);
@@ -161,10 +159,7 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
         }
 
         const url = new URL(request.url);
-        const slug = url.searchParams.get('slug');
-        if (!slug) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'slug query parameter required', 400);
-        }
+        const { slug } = validateQuery(url.searchParams, z.object({ slug: z.string().min(1, 'slug query parameter required') }));
 
         await deleteEquipment(env.DB, slug);
 

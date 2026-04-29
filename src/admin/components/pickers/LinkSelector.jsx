@@ -11,6 +11,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Link2, FolderOpen, LayoutGrid, Star } from 'lucide-react';
 import { Input } from '@/ui/input.jsx';
+import { toast } from 'sonner';
 import {
     Select,
     SelectContent,
@@ -79,7 +80,7 @@ const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
             const items = Array.isArray(data) ? data : (data.data || data.items || []);
             setSearchResults(items.slice(0, 8));
         } catch (error) {
-            console.error('Search failed:', error);
+            toast.error('Search failed');
             setSearchResults([]);
         }
         setIsSearching(false);

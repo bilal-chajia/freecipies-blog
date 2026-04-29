@@ -1,22 +1,21 @@
 /**
- * SEO Helpers for Article Content
- */
-
-/**
  * Generates an ItemList Schema.org object from roundup blocks.
- * 
- * @param {Array} blocks - Array of content blocks from content_json
- * @param {Object} articleMetadata - Metadata for the main article (url, headline)
+ *
+ * @param {Array} blocks - Canonical ContentDocument blocks
+ * @param {Object} articleMetadata - Metadata for the main article
  * @returns {Object|null} Valid ItemList JSON-LD or null
  */
 export function generateRoundupItemList(blocks, articleMetadata = {}) {
     if (!Array.isArray(blocks)) return null;
 
-    // Filter and flatten items from all roundup_list blocks
+    // Stored content_json uses one canonical roundup_item block per item.
     const items = [];
-    
+
     blocks.forEach((block) => {
-        if (block.type === 'roundup_list' && Array.isArray(block.items)) {
+        if (!block || typeof block !== 'object') return;
+        if (block.type === 'roundup_item') {
+            items.push(block);
+        } else if (block.type === 'roundupList' && Array.isArray(block.items)) {
             block.items.forEach((item) => {
                 items.push(item);
             });
@@ -33,8 +32,6 @@ export function generateRoundupItemList(blocks, articleMetadata = {}) {
         };
 
         if (item.slug) {
-            // Internal link logic - ideally we'd have the full base URL here
-            // For now, we use a relative path or placeholder
             itemLd.url = `/recipes/${item.slug}`;
         }
 

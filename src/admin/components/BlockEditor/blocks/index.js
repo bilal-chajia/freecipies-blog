@@ -2,13 +2,19 @@
  * Custom Blocks Barrel Export
  */
 
+// Adapter contract + registry
+export {
+    blockAdapters,
+    registerBlockAdapter,
+    getBlockAdapter,
+} from './BlockAdapter';
+
 // Existing blocks (refactored)
 export { Alert } from './TipBoxBlock';
 export { VideoBlock } from './VideoBlock';
 export { ImageBlock } from './ImageBlock';
 export { FAQSectionBlock } from './FAQSectionBlock';
 export { DividerBlock } from './DividerBlock';
-export { RecipeEmbedBlock } from './RecipeEmbedBlock';
 export { MainRecipeBlock } from './MainRecipeBlock';
 export { RoundupListBlock } from './RoundupListBlock';
 export { RelatedContentBlock } from './RelatedContentBlock';

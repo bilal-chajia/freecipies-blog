@@ -3,8 +3,29 @@ import { env } from 'cloudflare:workers';
 import { getArticles } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateQuery, z } from '@shared/validation';
 
 export const prerender = false;
+
+/** GET /api/content query schema */
+const ContentListQuery = z.object({
+    type: z.enum(['article', 'recipe', 'roundup']).optional(),
+    category: z.string().optional(),
+    author: z.string().optional(),
+    search: z.string().optional(),
+    online: z.enum(['true', 'false']).optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(12),
+}).transform(({ page, limit, type, category, author, search, online }) => ({
+    page,
+    limit,
+    offset: (page - 1) * limit,
+    type,
+    category,
+    author,
+    search,
+    online,
+}));
 
 /**
  * GET /api/content
@@ -22,15 +43,8 @@ export const prerender = false;
 export const GET: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
 
-    // Parse query parameters
-    const type = url.searchParams.get('type') as 'article' | 'recipe' | 'roundup' | null;
-    const category = url.searchParams.get('category');
-    const author = url.searchParams.get('author');
-    const search = url.searchParams.get('search');
-    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
-    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '12')));
-    const onlineParam = url.searchParams.get('online');
-    const offset = (page - 1) * limit;
+    // Validate all query parameters
+    const { page, limit, offset, type, category, author, search, online: onlineParam } = validateQuery(url.searchParams, ContentListQuery);
 
     try {
         const db = env.DB;
@@ -44,8 +58,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
             offset,
         };
 
-        // Type filter
-        if (type && ['article', 'recipe', 'roundup'].includes(type)) {
+        // Type filter (already validated by Zod)
+        if (type) {
             options.type = type;
         }
 

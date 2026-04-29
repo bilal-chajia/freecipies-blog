@@ -315,8 +315,8 @@ function RelatedContentSettings({
                             type="button"
                             onClick={() => setActiveType(type)}
                             className={`px-2.5 py-1 text-xs rounded-full border ${activeType === type
-                                ? 'bg-gray-900 text-white border-gray-900'
-                                : 'bg-white text-gray-600 border-gray-200'
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-background text-muted-foreground border-border'
                                 }`}
                         >
                             {RELATED_TYPE_LABELS[type]}

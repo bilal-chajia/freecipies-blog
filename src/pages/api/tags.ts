@@ -4,6 +4,8 @@ import { getTags, createTag, transformTagRequestBody, transformTagResponse } fro
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateBody } from '@shared/validation';
+import { CreateTagSchema } from '@shared/validation/schemas/tags';
 
 export const prerender = false;
 
@@ -46,7 +48,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const reqBody = await request.json();
+    const reqBody = await validateBody(request, CreateTagSchema);
     const transformedBody = transformTagRequestBody(reqBody);
     const tag = await createTag(env.DB, transformedBody);
     const responseTag = transformTagResponse(tag);

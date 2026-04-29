@@ -1,4 +1,5 @@
 {
-  "recommendations": ["astro-build.astro-vscode", "unifiedjs.vscode-mdx"],
-  "unwantedRecommendations": []
+  "recommendations": [
+    "astro-build.astro-vscode"
+  ]
 }

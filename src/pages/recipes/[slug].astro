@@ -2,13 +2,8 @@
 import { env } from 'cloudflare:workers';
 import RecipeLayout from "@layouts/RecipeLayout.astro";
 import SEO from "@components/SEO.astro";
-import { getArticleBySlug } from "@modules/articles";
-import { getAuthorById } from "@modules/authors/services/authors.service";
-import { getCategoryById } from "@modules/categories/services/categories.service";
+import { getArticleBySlug, getArticleById } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
-import type { RecipeDetails, RecipeContent, IngredientGroup, IngredientItem, InstructionSection, InstructionStep } from "@modules/articles/types";
-import type { Author } from "@modules/authors/schema/authors.schema";
-import type { Category } from "@modules/categories/schema/categories.schema";
 
 /**
  * In SSR mode, Astro doesn't require getStaticPaths.
@@ -25,7 +20,17 @@ let recipe: any = null;
 
 try {
   if (env.DB) {
-    recipe = await getArticleBySlug(env.DB, slug, "recipe");
+    // Smart routing: support both numeric ID and slug
+    const isNumeric = /^\d+$/.test(slug);
+    if (isNumeric) {
+      recipe = await getArticleById(env.DB, parseInt(slug));
+      // Ensure it's a recipe
+      if (recipe && recipe.type !== 'recipe') {
+        recipe = null;
+      }
+    } else {
+      recipe = await getArticleBySlug(env.DB, slug, "recipe");
+    }
   }
 } catch (error) {
   console.error(`Error fetching recipe (${slug}):`, error);
@@ -39,7 +44,9 @@ if (!recipe) {
 const author = recipe.author;
 const category = recipe.category;
 
-const recipeDetails = (recipe as RecipeContent | null)?.recipeJson || undefined;
+const jsonldSchemas = typeof recipe.jsonldJson === 'string'
+  ? JSON.parse(recipe.jsonldJson || '[]')
+  : (recipe.jsonldJson || []);
 
 const heroCover = extractImage(recipe.imagesJson, "cover", 1200);
 const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);
@@ -47,9 +54,6 @@ const coverSrcSet = getImageSrcSet(recipe.imagesJson, "cover");
 const thumbSrcSet = getImageSrcSet(recipe.imagesJson, "thumbnail");
 const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
 const heroImage = useCover ? heroCover : heroThumb;
-
-const recipeDetailsObj = typeof recipeDetails === 'string' ? JSON.parse(recipeDetails) : recipeDetails;
-const faqs = typeof recipe.faqsJson === 'string' ? JSON.parse(recipe.faqsJson || '[]') : (recipe.faqsJson || []);
 
 const pageTitle = recipe.metaTitle || recipe.headline;
 const pageDescription = recipe.metaDescription || recipe.shortDescription;
@@ -60,45 +64,8 @@ const pageDescription = recipe.metaDescription || recipe.shortDescription;
     slot="head"
     title={pageTitle}
     description={pageDescription}
-    type="recipe"
-    publishedTime={recipe.publishedAt || undefined}
-    modifiedTime={recipe.updatedAt || recipe.publishedAt || undefined}
-    author={{ 
-      name: author?.name || "Freecipies Team",
-      url: author?.slug ? `${Astro.url.origin}/authors/${author.slug}` : undefined
-    }}
     image={heroImage.imageUrl || recipe.imageUrl || ""}
     imageAlt={heroImage.imageAlt || recipe.imageAlt || undefined}
-    faqs={faqs}
-    recipe={{
-      name: recipe.headline || recipe.label,
-      description: recipe.shortDescription,
-      image: heroImage.imageUrl || recipe.imageUrl || "",
-      prepTime: recipeDetailsObj?.prep ? `PT${recipeDetailsObj.prep}M` : undefined,
-      cookTime: recipeDetailsObj?.cook ? `PT${recipeDetailsObj.cook}M` : undefined,
-      totalTime: recipeDetailsObj?.total 
-        ? `PT${recipeDetailsObj.total}M` 
-        : (recipeDetailsObj?.prep || recipeDetailsObj?.cook)
-          ? `PT${(recipeDetailsObj?.prep || 0) + (recipeDetailsObj?.cook || 0)}M`
-          : undefined,
-      recipeYield: recipeDetailsObj?.recipeYield,
-      recipeCategory: recipeDetailsObj?.recipeCategory || category?.label,
-      recipeCuisine: recipeDetailsObj?.recipeCuisine,
-      keywords: recipeDetailsObj?.keywords,
-      recipeIngredient: recipeDetailsObj?.ingredients?.flatMap((g: any) =>
-        (g.items || []).map((item: any) =>
-          typeof item === "string"
-            ? item
-            : [item.amount, item.unit, item.name].filter(Boolean).join(" ")
-        )
-      ),
-      recipeInstructions: recipeDetailsObj?.instructions?.flatMap((section: any) =>
-        (section.steps || []).map((step: any) => ({
-          text: typeof step === "string" ? step : step.text
-        }))
-      ),
-      nutrition: recipeDetailsObj?.nutrition,
-      aggregateRating: recipeDetailsObj?.aggregateRating
-    }}
+    schemas={jsonldSchemas}
   />
 </RecipeLayout>

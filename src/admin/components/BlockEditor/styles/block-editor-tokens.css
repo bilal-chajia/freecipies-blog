@@ -10,12 +10,12 @@
    * ======================================== */
 
     /* Selected block - WordPress blue */
-    --wp-block-border-selected: rgba(56, 88, 233, 0.759);
+    --wp-block-border-selected: color-mix(in srgb, var(--brand-primary) 60%, transparent);
     --wp-block-border-selected-width: 2px;
     --wp-block-selected-shadow: none;
 
     /* Hover state - subtle gray */
-    --wp-block-border-hover: #dcdcde;
+    --wp-block-border-hover: var(--border);
     --wp-block-border-hover-width: 1px;
 
     /* Outline geometry */
@@ -26,42 +26,42 @@
     --wp-block-border-unselected: transparent;
 
     /* Focus ring for accessibility */
-    --wp-block-focus-ring: rgba(0, 124, 186, 0.605);
+    --wp-block-focus-ring: color-mix(in srgb, var(--brand-primary) 40%, transparent);
 
     /* ========================================
    * Placeholder / Setup States
    * ======================================== */
-    --wp-placeholder-bg: #f0f0f0;
-    --wp-placeholder-border: #ddd;
-    --wp-placeholder-text: #757575;
-    --wp-placeholder-icon: #949494;
+    --wp-placeholder-bg: var(--bg-alt);
+    --wp-placeholder-border: var(--border);
+    --wp-placeholder-text: var(--text-tertiary);
+    --wp-placeholder-icon: var(--text-secondary);
 
     /* ========================================
    * Block Toolbar
    * ======================================== */
-    --wp-toolbar-bg: #fff;
-    --wp-toolbar-border: #e0e0e0;
-    --wp-toolbar-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    --wp-toolbar-bg: var(--bg-elevated);
+    --wp-toolbar-border: var(--border);
+    --wp-toolbar-shadow: var(--shadow-sm);
     --wp-toolbar-border-radius: 2px;
     --wp-toolbar-height: 48px;
     --wp-toolbar-button-size: 36px;
-    --wp-toolbar-separator-color: #e0e0e0;
+    --wp-toolbar-separator-color: var(--border);
     --wp-toolbar-gap: 8px;
 
     /* Toolbar button states */
-    --wp-toolbar-button-hover-bg: #f0f0f0;
-    --wp-toolbar-button-active-bg: #e0e0e0;
-    --wp-toolbar-button-active-color: #1e1e1e;
+    --wp-toolbar-button-hover-bg: var(--bg-hover);
+    --wp-toolbar-button-active-bg: var(--bg-active);
+    --wp-toolbar-button-active-color: var(--text);
 
     /* ========================================
    * Block Inserter Panel
    * ======================================== */
     --wp-inserter-width: 200px;
-    --wp-inserter-bg: #fff;
-    --wp-inserter-border: #e0e0e0;
-    --wp-inserter-item-hover-bg: #f0f0f0;
-    --wp-inserter-item-hover: #f0f0f0;
-    --wp-inserter-category-color: #757575;
+    --wp-inserter-bg: var(--bg-elevated);
+    --wp-inserter-border: var(--border);
+    --wp-inserter-item-hover-bg: var(--bg-hover);
+    --wp-inserter-item-hover: var(--bg-hover);
+    --wp-inserter-category-color: var(--text-tertiary);
 
     /* ========================================
    * Content Canvas
@@ -69,7 +69,7 @@
     --wp-canvas-max-width: 840px;
     --wp-canvas-padding-x: 48px;
     --wp-canvas-padding-y: 32px;
-    --wp-canvas-bg: #fff;
+    --wp-canvas-bg: var(--bg);
 
     /* Spacing between blocks */
     --wp-block-spacing: 1.25rem;
@@ -78,16 +78,16 @@
    * Settings Sidebar
    * ======================================== */
     --wp-sidebar-width: 320px;
-    --wp-sidebar-bg: #fff;
-    --wp-sidebar-border: #e0e0e0;
+    --wp-sidebar-bg: var(--bg-elevated);
+    --wp-sidebar-border: var(--border);
     --wp-sidebar-section-spacing: 16px;
 
     /* ========================================
    * Block Mover Controls
    * ======================================== */
     --wp-mover-button-size: 24px;
-    --wp-mover-color: #757575;
-    --wp-mover-hover-color: #1e1e1e;
+    --wp-mover-color: var(--text-tertiary);
+    --wp-mover-hover-color: var(--text);
 
     /* ========================================
    * Typography
@@ -104,7 +104,7 @@
     /* Headline block */
     --wp-headline-font-size: 1.25rem;
     --wp-headline-font-weight: 400;
-    --wp-headline-color: #757575;
+    --wp-headline-color: var(--text-tertiary);
 
     /* ========================================
    * Animations
@@ -119,45 +119,6 @@
     --wp-z-inserter: 90;
     --wp-z-sidebar: 80;
     --wp-z-popover: 110;
-}
-
-/* ========================================
- * Dark Mode Support
- * ======================================== */
-.dark,
-[data-theme="dark"] {
-    --wp-block-border-selected: rgb(140 180 255 / 0.55);
-    --wp-block-border-hover: #3c3c3c;
-    --wp-block-focus-ring: rgba(77, 171, 245, 0.25);
-    --wp-block-selected-shadow: none;
-
-    --wp-placeholder-bg: #2c2c2c;
-    --wp-placeholder-border: #3c3c3c;
-    --wp-placeholder-text: #a0a0a0;
-    --wp-placeholder-icon: #808080;
-
-    --wp-toolbar-bg: #1e1e1e;
-    --wp-toolbar-border: #3c3c3c;
-    --wp-toolbar-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    --wp-toolbar-separator-color: #3c3c3c;
-    --wp-toolbar-button-hover-bg: #2c2c2c;
-    --wp-toolbar-button-active-bg: #3c3c3c;
-    --wp-toolbar-button-active-color: #fff;
-
-    --wp-inserter-bg: #1e1e1e;
-    --wp-inserter-border: #3c3c3c;
-    --wp-inserter-item-hover-bg: #2c2c2c;
-    --wp-inserter-category-color: #a0a0a0;
-
-    --wp-canvas-bg: #1e1e1e;
-
-    --wp-sidebar-bg: #1e1e1e;
-    --wp-sidebar-border: #3c3c3c;
-
-    --wp-mover-color: #a0a0a0;
-    --wp-mover-hover-color: #fff;
-
-    --wp-headline-color: #a0a0a0;
 }
 
 /* ========================================
@@ -507,7 +468,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border);
     padding: 8px 10px;
     gap: 8px;
 }
@@ -515,7 +476,7 @@
 .structure-tabs {
     display: flex;
     gap: 4px;
-    background: #f3f4f6;
+    background: var(--bg-alt);
     border-radius: 0;
     padding: 3px;
 }
@@ -527,16 +488,16 @@
     border-radius: 0;
     padding: 4px 10px;
     font-size: 12px;
-    color: #4b5563;
+    color: var(--text-secondary);
     background: transparent;
 }
 
 .structure-tab.is-active {
-    background: #ffffff;
-    color: #111827;
+    background: var(--bg-elevated);
+    color: var(--text);
     font-weight: 600;
-    border-bottom: 2px solid #3b82f6;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    border-bottom: 2px solid var(--brand-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .structure-close {
@@ -546,12 +507,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #6b7280;
+    color: var(--text-secondary);
 }
 
 .structure-close:hover {
-    background: #f3f4f6;
-    color: #111827;
+    background: var(--bg-alt);
+    color: var(--text);
 }
 
 .structure-panel-list {
@@ -561,7 +522,7 @@
 .structure-empty {
     padding: 16px;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     text-align: center;
 }
 
@@ -573,7 +534,7 @@
     padding: 6px 8px;
     border-radius: 6px;
     font-size: 12px;
-    color: #374151;
+    color: var(--text);
     text-align: left;
     min-width: 0;
     cursor: pointer !important;
@@ -586,23 +547,23 @@
 }
 
 .structure-item:hover {
-    background: #f3f4f6;
+    background: var(--bg-alt);
 }
 
 .structure-item.is-active {
-    background: #e0e7ff;
-    color: #1f2937;
+    background: var(--primary-muted);
+    color: var(--text);
 }
 
 .structure-item-icon {
     width: 14px;
     height: 14px;
-    color: #6b7280;
+    color: var(--text-secondary);
     flex-shrink: 0;
 }
 
 .structure-item-grip {
-    color: #9ca3af;
+    color: var(--text-tertiary);
     opacity: 0.8;
     cursor: grab !important;
     flex-shrink: 0;
@@ -642,7 +603,7 @@
 
 .structure-item-meta {
     font-size: 10px;
-    color: #9ca3af;
+    color: var(--text-tertiary);
 }
 
 /* ========================================
@@ -854,4 +815,38 @@
 .wp-settings-sidebar [data-slot="scroll-area-viewport"]::-webkit-scrollbar {
     width: 0;
     height: 0;
+}
+
+/* ========================================
+ * Mobile-First Editor Responsive Styles
+ * ======================================== */
+@media (max-width: 768px) {
+    :root {
+        --wp-canvas-padding-x: 16px;
+        --wp-canvas-padding-y: 16px;
+        --wp-toolbar-height: 40px;
+        --wp-toolbar-button-size: 32px;
+        --wp-sidebar-width: 100%;
+    }
+    .wp-block-editor-canvas {
+        padding: var(--wp-canvas-padding-y) var(--wp-canvas-padding-x);
+    }
+    .wp-block-toolbar-wrap {
+        left: 0;
+        transform: none;
+    }
+    .wp-block-toolbar {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: var(--wp-toolbar-height);
+        padding: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --wp-canvas-padding-x: 12px;
+        --wp-canvas-padding-y: 12px;
+        --wp-title-font-size: 1.75rem;
+    }
 }

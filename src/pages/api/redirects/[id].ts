@@ -3,6 +3,8 @@ import { env } from 'cloudflare:workers';
 import { getRedirectById, updateRedirect, deleteRedirect, transformRedirectRequest, transformRedirectResponse } from '@modules/redirects';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateParams, validateBody } from '@shared/validation';
+import { IdParam, UpdateRedirectSchema } from '@shared/validation';
 
 export const prerender = false;
 
@@ -18,12 +20,9 @@ export const GET: APIRoute = async ({ params, request }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const { id } = params;
-    if (!id || isNaN(Number(id))) {
-      throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid ID', 400);
-    }
+    const { id } = validateParams(params, IdParam);
 
-    const redirect = await getRedirectById(env.DB, Number(id));
+    const redirect = await getRedirectById(env.DB, id);
     if (!redirect) {
       throw new AppError(ErrorCodes.NOT_FOUND, 'Redirect not found', 404);
     }
@@ -50,15 +49,12 @@ export const PUT: APIRoute = async ({ params, request }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const { id } = params;
-    if (!id || isNaN(Number(id))) {
-      throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid ID', 400);
-    }
+    const { id } = validateParams(params, IdParam);
 
-    const body = await request.json();
+    const body = await validateBody(request, UpdateRedirectSchema);
     const transformedBody = transformRedirectRequest(body);
     
-    const updated = await updateRedirect(env.DB, Number(id), transformedBody);
+    const updated = await updateRedirect(env.DB, id, transformedBody);
     if (!updated) {
       throw new AppError(ErrorCodes.NOT_FOUND, 'Redirect not found', 404);
     }
@@ -85,12 +81,9 @@ export const DELETE: APIRoute = async ({ params, request }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const { id } = params;
-    if (!id || isNaN(Number(id))) {
-      throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid ID', 400);
-    }
+    const { id } = validateParams(params, IdParam);
 
-    await deleteRedirect(env.DB, Number(id));
+    await deleteRedirect(env.DB, id);
     
     const { body, status, headers } = formatSuccessResponse({ success: true });
     return new Response(body, { status, headers });

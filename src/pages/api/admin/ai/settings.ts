@@ -21,23 +21,37 @@ import {
     ALL_PROVIDERS,
 } from '@modules/ai';
 import type { AIProvider, AISettings } from '@modules/ai';
+import { validateBody } from '@shared/validation';
+import { UpdateSettingsSchema, ValidateApiKeySchema } from '@shared/validation/schemas/ai';
 
 export const prerender = false;
+
+/** Mask API keys — only show last 4 chars */
+function maskApiKeys(settings: AISettings) {
+    return {
+        ...settings,
+        providers: Object.fromEntries(
+            Object.entries(settings.providers || {}).map(([key, value]) => [
+                key,
+                {
+                    ...value,
+                    apiKey: value?.apiKey ? `****${value.apiKey.slice(-4)}` : '',
+                },
+            ])
+        ),
+    };
+}
 
 /**
  * GET - Retrieve current AI settings
  */
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
-
-        // Auth check - require admin for settings
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
             return createAuthError('Admin permissions required', 403);
         }
-
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
@@ -45,22 +59,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
         const settings = await getAISettings(env.DB);
         const configuredProviders = await getConfiguredProviders(env.DB);
 
-        // Mask API keys for security (only show last 4 chars)
-        const maskedSettings = {
-            ...settings,
-            providers: Object.fromEntries(
-                Object.entries(settings.providers || {}).map(([key, value]) => [
-                    key,
-                    {
-                        ...value,
-                        apiKey: value?.apiKey ? `****${value.apiKey.slice(-4)}` : '',
-                    },
-                ])
-            ),
-        };
-
         const { body, status, headers } = formatSuccessResponse({
-            settings: maskedSettings,
+            settings: maskApiKeys(settings),
             configuredProviders,
             availableModels: AVAILABLE_MODELS,
             providerInfo: PROVIDER_INFO,
@@ -81,67 +81,43 @@ export const GET: APIRoute = async ({ request, locals }) => {
 /**
  * PUT - Update AI settings
  */
-export const PUT: APIRoute = async ({ request, locals }) => {
+export const PUT: APIRoute = async ({ request }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
-
-        // Auth check - require admin for settings
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
             return createAuthError('Admin permissions required', 403);
         }
-
         if (!env?.DB) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const body = await request.json();
-        const {
-            defaultProvider,
-            defaultModel,
-            temperature,
-            systemPrompt,
-            providers,
-        } = body;
+        const body = await validateBody(request, UpdateSettingsSchema);
+        const { defaultProvider, defaultModel, temperature, systemPrompt, providers } = body;
 
-        // Build update object
+        // Build update object — Zod already validated types/ranges
         const updates: Partial<AISettings> = {};
-
-        if (defaultProvider && ALL_PROVIDERS.includes(defaultProvider as AIProvider)) {
-            updates.defaultProvider = defaultProvider as AIProvider;
-        }
-
-        if (defaultModel && typeof defaultModel === 'string') {
-            updates.defaultModel = defaultModel;
-        }
-
-        if (typeof temperature === 'number' && temperature >= 0 && temperature <= 1) {
-            updates.temperature = temperature;
-        }
-
-        if (typeof systemPrompt === 'string') {
-            updates.systemPrompt = systemPrompt;
-        }
+        if (defaultProvider) updates.defaultProvider = defaultProvider;
+        if (defaultModel) updates.defaultModel = defaultModel;
+        if (temperature !== undefined) updates.temperature = temperature;
+        if (systemPrompt !== undefined) updates.systemPrompt = systemPrompt;
 
         // Handle provider updates (API keys)
-        if (providers && typeof providers === 'object') {
+        if (providers) {
             const currentSettings = await getAISettings(env.DB);
             const updatedProviders = { ...currentSettings.providers };
 
             for (const [providerKey, config] of Object.entries(providers)) {
                 if (!ALL_PROVIDERS.includes(providerKey as AIProvider)) continue;
 
-                const providerConfig = config as { apiKey?: string; enabled?: boolean };
                 const current = updatedProviders[providerKey as AIProvider] || { apiKey: '', enabled: false };
 
                 // Only update API key if a new one is provided (not masked)
-                if (providerConfig.apiKey && !providerConfig.apiKey.startsWith('****')) {
-                    current.apiKey = providerConfig.apiKey;
+                if (config.apiKey && !config.apiKey.startsWith('****')) {
+                    current.apiKey = config.apiKey;
                 }
-
-                if (typeof providerConfig.enabled === 'boolean') {
-                    current.enabled = providerConfig.enabled;
+                if (typeof config.enabled === 'boolean') {
+                    current.enabled = config.enabled;
                 }
 
                 updatedProviders[providerKey as AIProvider] = current;
@@ -151,7 +127,6 @@ export const PUT: APIRoute = async ({ request, locals }) => {
         }
 
         const success = await saveAISettings(env.DB, updates);
-
         if (!success) {
             throw new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to save settings', 500);
         }
@@ -160,22 +135,8 @@ export const PUT: APIRoute = async ({ request, locals }) => {
         const newSettings = await getAISettings(env.DB);
         const configuredProviders = await getConfiguredProviders(env.DB);
 
-        // Mask API keys
-        const maskedSettings = {
-            ...newSettings,
-            providers: Object.fromEntries(
-                Object.entries(newSettings.providers || {}).map(([key, value]) => [
-                    key,
-                    {
-                        ...value,
-                        apiKey: value?.apiKey ? `****${value.apiKey.slice(-4)}` : '',
-                    },
-                ])
-            ),
-        };
-
         const { body: responseBody, status, headers } = formatSuccessResponse({
-            settings: maskedSettings,
+            settings: maskApiKeys(newSettings),
             configuredProviders,
         });
         return new Response(responseBody, { status, headers });
@@ -194,27 +155,15 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 /**
  * POST - Validate API key for a provider
  */
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
-
-
-        // Auth check
         const authContext = await extractAuthContext(request, jwtSecret);
         if (!hasRole(authContext, AuthRoles.ADMIN)) {
             return createAuthError('Admin permissions required', 403);
         }
 
-        const body = await request.json();
-        const { provider, apiKey } = body;
-
-        if (!provider || !ALL_PROVIDERS.includes(provider as AIProvider)) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Valid provider required', 400);
-        }
-
-        if (!apiKey || typeof apiKey !== 'string') {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'API key required', 400);
-        }
+        const { provider, apiKey } = await validateBody(request, ValidateApiKeySchema);
 
         const isValid = await validateProviderApiKey(provider, apiKey);
 

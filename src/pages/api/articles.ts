@@ -2,7 +2,8 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getArticles, getArticleBySlug, createArticle, setArticleTagsById, syncCachedFields } from '@modules/articles';
 import type { Env } from '@shared/types';
-import { formatErrorResponse, formatSuccessResponse, validatePaginationParams, ErrorCodes, AppError } from '@shared/utils';
+import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateBody, validateQuery, ArticleListQuery, CreateArticleSchema } from '@shared/validation';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { transformArticleRequestBody } from '../../modules/articles/api/helpers';
 
@@ -10,23 +11,9 @@ export const prerender = false;
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
-  const slug = url.searchParams.get('slug');
-  const category = url.searchParams.get('category');
-  const author = url.searchParams.get('author');
-  const tag = url.searchParams.get('tag');
-  const type = url.searchParams.get('type') as 'recipe' | 'article' | 'roundup' | null;
-  const statusFilter = url.searchParams.get('status'); // 'online', 'offline', or 'all'
-  const search = url.searchParams.get('search');
-  const dateFrom = url.searchParams.get('dateFrom');
-  const dateTo = url.searchParams.get('dateTo');
 
-  // Validate pagination parameters
-  const paginationValidation = validatePaginationParams(
-    url.searchParams.get('limit'),
-    url.searchParams.get('page')
-  );
-
-  const { limit, page, offset } = paginationValidation;
+  // Validate all query params (pagination + filters) via Zod
+  const { page, limit, offset, slug, category, author, tag, type, status, search, dateFrom, dateTo } = validateQuery(url.searchParams, ArticleListQuery);
 
   try {
     const db = env.DB;
@@ -51,13 +38,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
 
     // Determine isOnline filter based on status param
-    // 'online' = only online (isOnline: true)
-    // 'offline' = only offline (isOnline: false)
-    // 'all' or undefined = show all articles (isOnline: undefined)
     let isOnlineFilter: boolean | undefined;
-    if (statusFilter === 'online') {
+    if (status === 'online') {
       isOnlineFilter = true;
-    } else if (statusFilter === 'offline') {
+    } else if (status === 'offline') {
       isOnlineFilter = false;
     } else {
       // 'all' or not specified - show all articles
@@ -112,7 +96,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const reqBody = await request.json();
+    const reqBody = await validateBody(request, CreateArticleSchema);
     const { selectedTags, ...rest } = reqBody ?? {};
 
     // Normalization
@@ -131,7 +115,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
 
       // Sync cached fields immediately after creation
-      await syncCachedFields(env.DB, article.id);
+      await syncCachedFields(env.DB, article.id, env.SITE_URL);
     }
 
     const { body, status, headers } = formatSuccessResponse(article);

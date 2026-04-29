@@ -7,10 +7,10 @@ export default function CustomSideMenu(props) {
 
     return (
         <SideMenu {...props} dragHandleMenu={DragHandleMenu}>
-            <div className="flex items-center -mr-2 bg-white/50 backdrop-blur-sm rounded-lg border border-border/40 shadow-sm p-0.5 animate-in fade-in slide-in-from-left-2">
+            <div className="flex items-center -mr-2 bg-background/50 backdrop-blur-sm rounded-lg border border-border/40 shadow-sm p-0.5 animate-in fade-in slide-in-from-left-2">
                 <button
                     type="button"
-                    className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-500 hover:text-primary"
+                    className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-primary"
                     onClick={() => {
                         editor.setTextCursorPosition(block, 'start');
                         editor.focus();
@@ -25,7 +25,7 @@ export default function CustomSideMenu(props) {
                 </button>
                 <DragHandleButton {...props}>
                     <div
-                        className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-400 cursor-grab active:cursor-grabbing"
+                        className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground/70 cursor-grab active:cursor-grabbing"
                         title="Drag to move"
                     >
                         <GripVertical className="size-4" />

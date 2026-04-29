@@ -1,45 +1,56 @@
-[
-  {
-    "type": "heading",
-    "level": 2,
-    "text": "What Is Batch Cooking?"
-  },
-  {
-    "type": "paragraph",
-    "text": "Batch cooking is preparing multiple meals in one session."
-  },
-  {
-    "type": "image",
-    "media_id": 101,
-    "alt": "Meal prep containers",
-    "caption": "Prep once, eat all week.",
-    "variants": {
-      "sm": { "url": "/images/mealprep-sm.webp", "width": 720, "height": 405 },
-      "md": { "url": "/images/mealprep-md.webp", "width": 1200, "height": 675 },
-      "lg": { "url": "/images/mealprep-lg.webp", "width": 2048, "height": 1152 }
-    }
-  },
-  {
-    "type": "related_content",
-    "title": "You Might Also Like",
-    "layout": "grid",
-    "mode": "manual",
-    "limit": 4,
-    "recipes": [],
-    "articles": [
-      {
-        "id": 301,
-        "slug": "meal-prep-beginners-guide",
-        "headline": "Meal Prep Beginner Guide"
+{
+  "version": 1,
+  "kind": "content_document",
+  "blocks": [
+    {
+      "id": "heading-batch-cooking",
+      "type": "heading",
+      "level": 2,
+      "text": "What Is Batch Cooking?"
+    },
+    {
+      "id": "intro",
+      "type": "paragraph",
+      "text": "Batch cooking is preparing multiple meals in one session."
+    },
+    {
+      "id": "meal-prep-image",
+      "type": "image",
+      "media_id": 101,
+      "alt": "Meal prep containers",
+      "caption": "Prep once, eat all week.",
+      "variants": {
+        "sm": { "url": "/images/mealprep-sm.webp", "width": 720, "height": 405 },
+        "md": { "url": "/images/mealprep-md.webp", "width": 1200, "height": 675 },
+        "lg": { "url": "/images/mealprep-lg.webp", "width": 2048, "height": 1152 }
       }
-    ],
-    "roundups": []
-  },
-  {
-    "type": "faq_section",
-    "title": "FAQs",
-    "items": [
-      { "q": "How long does batch-cooked food last?", "a": "Usually 3 to 4 days refrigerated." }
-    ]
-  }
-]
+    },
+    {
+      "id": "related-meal-prep",
+      "type": "related_content",
+      "title": "You Might Also Like",
+      "layout": "grid",
+      "mode": "manual",
+      "limit": 4,
+      "items": [
+        {
+          "content_type": "article",
+          "article_id": 301,
+          "slug": "meal-prep-beginners-guide",
+          "title": "Meal Prep Beginner Guide"
+        }
+      ]
+    },
+    {
+      "id": "batch-faq",
+      "type": "faq_section",
+      "title": "FAQs",
+      "items": [
+        {
+          "question": "How long does batch-cooked food last?",
+          "answer": "Usually 3 to 4 days refrigerated."
+        }
+      ]
+    }
+  ]
+}

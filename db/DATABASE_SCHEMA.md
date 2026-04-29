@@ -291,6 +291,8 @@ All tables support soft deletes via `deleted_at` column. The articles table has 
 
 **Purpose:** Key-value store for global site configuration.
 
+**Canonical contract:** `docs/SITE_SETTINGS_TABLE_CONTRACT.md`
+
 | Column        | Type     | Required | Default           | Description                                         |
 | ------------- | -------- | -------- | ----------------- | --------------------------------------------------- |
 | `key`         | TEXT     | ✅ PK    | -                 | Setting identifier (snake_case)                     |
@@ -415,6 +417,8 @@ contact_info    → Contact details
 
 **Purpose:** Article/recipe categorization with hierarchical navigation support.
 
+**Canonical contract:** `docs/CATEGORIES_TABLE_CONTRACT.md`
+
 | Column              | Type     | Required  | Default           | Description                             |
 | ------------------- | -------- | --------- | ----------------- | --------------------------------------- |
 | `id`                | INTEGER  | ✅ PK     | AUTO              | Auto-increment ID                       |
@@ -447,6 +451,8 @@ contact_info    → Contact details
 
 **Purpose:** Content creator profiles with social links and bios.
 
+**Canonical contract:** `docs/AUTHORS_TABLE_CONTRACT.md`
+
 | Column              | Type     | Required  | Default           | Description                             |
 | ------------------- | -------- | --------- | ----------------- | --------------------------------------- |
 | `id`                | INTEGER  | ✅ PK     | AUTO              | Auto-increment ID                       |
@@ -477,6 +483,8 @@ contact_info    → Contact details
 
 **Purpose:** Flexible labeling system for filtering and discovery.
 
+**Canonical contract:** `docs/TAGS_TABLE_CONTRACT.md`
+
 | Column               | Type     | Required  | Default           | Description                             |
 | -------------------- | -------- | --------- | ----------------- | --------------------------------------- |
 | `id`                 | INTEGER  | ✅ PK     | AUTO              | Auto-increment ID                       |
@@ -495,6 +503,8 @@ contact_info    → Contact details
 ### equipment
 
 **Purpose:** Kitchen equipment catalog with affiliate links.
+
+**Canonical contract:** `docs/EQUIPMENT_TABLE_CONTRACT.md`
 
 | Column               | Type     | Required  | Default           | Description                                                          |
 | -------------------- | -------- | --------- | ----------------- | -------------------------------------------------------------------- |
@@ -523,8 +533,8 @@ contact_info    → Contact details
 > **AGENT RULES:**
 >
 > 1. Always use `category_id` and `author_id` (IDs), never slugs.
-> 2. Use block-based `content_json` with flattened structure (no `data` wrapper).
-> 3. Never auto-insert `ad_slot` blocks unless explicitly requested.
+> 2. Use versioned `content_json` as a `ContentDocument` object with `blocks`.
+> 3. `ad_slot` is reserved and not accepted by strict `content_json` v1 save validation.
 > 4. Cached fields are rebuilt on save - don't manually update them.
 > 5. **Soft Delete Protection:** Articles cannot be hard-deleted due to database triggers. Use `deleted_at` for logical deletion.
 
@@ -555,7 +565,7 @@ contact_info    → Contact details
 | Column         | Type | Required | Default   | Description                                     |
 | -------------- | ---- | -------- | --------- | ----------------------------------------------- |
 | `images_json`  | TEXT | ❌       | `'{}'`    | **See images_json schema**                      |
-| `content_json` | TEXT | ❌       | `'[]'`    | **See content_json schema** (block-based body)  |
+| `content_json` | TEXT | ❌       | `ContentDocument v1` | **See content_json schema** (block-based body) |
 | `recipe_json`  | TEXT | ❌       | `'{...}'` | **See recipe_json schema** (type='recipe' only) |
 | `roundup_json` | TEXT | ❌       | `'{...}'` | **See roundup_json schema** (type='roundup')    |
 | `faqs_json`    | TEXT | ❌       | `'[]'`    | **See faqs_json schema**                        |
@@ -566,13 +576,13 @@ contact_info    → Contact details
 
 | Column                  | Type    | Description                               |
 | ----------------------- | ------- | ----------------------------------------- |
-| `cached_tags_json`      | TEXT    | Flattened tag labels `["Vegan", "Quick"]` |
+| `cached_tags_json`      | TEXT    | Minimal tag snapshots `[{ "id": 1, "label": "Vegan", "slug": "vegan" }]` |
 | `cached_category_json`  | TEXT    | Category snapshot                         |
 | `cached_author_json`    | TEXT    | Author snapshot with avatar               |
-| `cached_equipment_json` | TEXT    | Equipment with affiliate links            |
+| `cached_equipment_json` | TEXT    | Rich equipment card snapshots             |
 | `cached_rating_json`    | TEXT    | Star rating snapshot                      |
 | `cached_toc_json`       | TEXT    | Table of contents from headings           |
-| `cached_recipe_json`    | TEXT    | Recipe card summary for listings          |
+| `cached_recipe_json`    | TEXT    | Lightweight recipe summary for listings   |
 | `cached_card_json`      | TEXT    | Pre-computed card for pickers/listings    |
 | `reading_time_minutes`  | INTEGER | Estimated reading time                    |
 
@@ -711,6 +721,8 @@ ecipe, listicle, quote, general |
 
 **Purpose:** 301/302 redirects for SEO and broken link handling.
 
+**Canonical contract:** `docs/REDIRECTS_TABLE_CONTRACT.md`
+
 | Column        | Type     | Required  | Default           | Description                |
 | ------------- | -------- | --------- | ----------------- | -------------------------- |
 | `id`          | INTEGER  | ✅ PK     | AUTO              | Auto-increment ID          |
@@ -800,6 +812,8 @@ Note: `contentImages` holds images referenced in `content_json`.
 ---
 
 ### seo_json (Universal - Categories, Authors, Articles)
+
+Author SEO is publish-required. The database keeps a default `{}` so drafts can exist, but public author profiles must have a complete SEO payload before `is_online = 1`.
 
 ```json
 {
@@ -916,6 +930,13 @@ Note: `contentImages` holds images referenced in `content_json`.
 {
   "short": "Jane writes about healthy Mediterranean recipes...",
   "long": "## About Jane\n\nJane has been cooking since childhood...",
+  "persona": {
+    "voice": "Warm, practical, precise, and encouraging.",
+    "expertise": ["weeknight dinners", "Mediterranean cooking"],
+    "audience": "Busy home cooks who want reliable recipes.",
+    "point_of_view": "Food should be simple, seasonal, and realistic.",
+    "avoid": ["unverified health promises", "overly technical language"]
+  },
   "socials": [
     { "network": "twitter", "url": "https://x.com/jane", "label": "@janedoe" },
     { "network": "instagram", "url": "https://instagram.com/jane" },
@@ -924,6 +945,8 @@ Note: `contentImages` holds images referenced in `content_json`.
   ]
 }
 ```
+
+`persona` is used by AI generation tools as author guidance. It is not public biography copy by default.
 
 **Valid network values:** `twitter`, `instagram`, `facebook`, `youtube`, `pinterest`, `tiktok`, `linkedin`, `website`, `email`, `custom`
 
@@ -963,9 +986,15 @@ Note: `contentImages` holds images referenced in `content_json`.
 
 ---
 
-### recipe_json (Complete Schema)
+### recipe_json (Complete Recipe Source)
 
-> **AGENT RULE:** `headline` and `short_description` from articles table are the source of truth for name/description. This JSON focuses on recipe-specific data.
+Canonical contract: `docs/RECIPE_JSON_CONTRACT.md`.
+
+> **AGENT RULE:** Do not confuse `recipe_json` with `cached_recipe_json`.
+> `recipe_json` is the complete recipe payload used by the full recipe card renderer and save-time JSON-LD generation.
+> `cached_recipe_json` is only a lightweight derived snapshot for lists, cards, roundup items, related content, and filters.
+
+Short target shape:
 
 ```json
 {
@@ -973,182 +1002,54 @@ Note: `contentImages` holds images referenced in `content_json`.
   "cook": 25,
   "total": 40,
   "servings": 4,
-  "recipeYield": "Makes 12 cookies",
-
-  "recipeCategory": "Dessert",
-  "recipeCuisine": "American",
-  "keywords": ["chocolate", "cookies", "easy"],
-  "suitableForDiet": ["VeganDiet", "GlutenFreeDiet"],
-
+  "recipe_yield": "4 servings",
+  "recipe_category": "Dinner",
+  "recipe_cuisine": "Italian",
+  "keywords": ["pasta", "weeknight"],
+  "suitable_for_diet": ["VegetarianDiet"],
   "difficulty": "Easy",
-  "cookingMethod": "Baking",
-  "estimatedCost": "$",
-
-  "prepTime": "PT15M",
-  "cookTime": "PT25M",
-  "totalTime": "PT40M",
-
-  "ingredients": [
-    {
-      "group_title": "Dry Ingredients",
-      "items": [
-        {
-          "id": "dry-flour",
-          "name": "all-purpose flour",
-          "amount": 315.0,
-          "unit": "grams",
-          "notes": "sifted",
-          "isOptional": false,
-          "substitutes": [
-            { "name": "whole wheat flour", "ratio": "1:1", "notes": "denser result" }
-          ]
-        }
-      ]
-    },
-    {
-      "group_title": "Wet Ingredients",
-      "items": [ ... ]
-    }
-  ],
-
-  "instructions": [
-    {
-      "section_title": "Preparation",
-      "steps": [
-        {
-          "name": "Preheat Oven",
-          "text": "Preheat oven to 350°F (175°C).",
-          "timer": null,
-          "image": null
-        },
-        {
-          "name": "Bake",
-          "text": "Bake until golden brown.",
-          "timer": 1200,
-          "image": "https://cdn.example.com/step2.jpg"
-        }
-      ]
-    }
-  ],
-
-  "tips": [
-    "Let cookies cool for 5 minutes before transferring",
-    "Don't overmix the batter"
-  ],
-
-  "nutrition": {
-    "calories": 320,
-    "fatContent": "15g",
-    "carbohydrateContent": "40g",
-    "proteinContent": "4g",
-    "sugarContent": "12g",
-    "sodiumContent": "220mg",
-    "servingSize": "1 cookie (80g)"
-  },
-
-  "aggregateRating": {
-    "ratingValue": 4.8,
-    "ratingCount": 55
-  },
-
-  "equipment": [
-    { "equipment_id": 1, "required": true },
-    { "equipment_id": 5, "required": false, "notes": "or use hand mixer" }
-  ],
-
-  "video": {
-    "url": "https://youtube.com/watch?v=...",
-    "name": "How to Make Chocolate Cookies",
-    "description": "Step-by-step video tutorial",
-    "thumbnailUrl": "https://cdn.example.com/video-thumb.jpg",
-    "duration": "PT2M30S"
-  }
+  "cooking_method": "Stovetop",
+  "estimated_cost": "Budget",
+  "ingredients": [],
+  "instructions": [],
+  "tips": [],
+  "nutrition": null,
+  "aggregate_rating": null,
+  "equipment": [],
+  "video": null
 }
 ```
 
-#### Important Field Notes
+Important rules:
 
-| Field                               | Type     | Description                         |
-| ----------------------------------- | -------- | ----------------------------------- |
-| `prep`, `cook`, `total`             | number   | Minutes (for UI timers and filters) |
-| `prepTime`, `cookTime`, `totalTime` | string   | ISO-8601 duration (for JSON-LD)     |
-| `servings`                          | number   | Numeric for scaling UI              |
-| `recipeYield`                       | string   | Display string for JSON-LD          |
-| `suitableForDiet`                   | string[] | schema.org RestrictedDiet values    |
-| `ingredients[].amount`              | number   | **FLOAT** - required for scaling    |
-| `instructions[].timer`              | number   | **INTEGER** seconds or null         |
-
-#### suitableForDiet Valid Values
-
-```
-VeganDiet, VegetarianDiet, GlutenFreeDiet, DiabeticDiet,
-HalalDiet, HinduDiet, KosherDiet, LowCalorieDiet,
-LowFatDiet, LowLactoseDiet, LowSaltDiet
-```
+- `headline` and `short_description` from `articles` are the source of truth for recipe name and description.
+- `content_json.blocks[]` may contain a `main_recipe` marker, but recipe data stays in `recipe_json`.
+- `prep`, `cook`, and `total` are numeric minutes.
+- Do not store `prepTime`, `cookTime`, or `totalTime` as canonical recipe fields. Generate Schema.org ISO durations for `jsonld_json` at save time.
+- Ingredients and instructions are grouped.
+- `instructions[].steps[].timer` is stored in minutes.
+- `instructions[].steps[].id` should be stable; `image_ref` resolves to `images_json.recipe_steps`.
+- Storage, make-ahead, substitution, troubleshooting, and serving-suggestion sections belong in visible `content_json` blocks.
+- `recipe_json.equipment` is the complete equipment checklist; matching active `equipment` table rows generate `cached_equipment_json` cards.
+- Nutrition values are stored as numbers; JSON-LD generation adds units.
+- `cached_recipe_json`, `cached_rating_json`, and `cached_equipment_json` are derived from this source.
 
 ---
 
-### content_json (Block-Based Article Body)
+### content_json (Versioned Block-Based Article Body)
 
-> **AGENT RULE:** All `text` fields support Markdown. Use `react-markdown` or similar to render.
+> **AGENT RULE:** Store a `ContentDocument`, never a raw block array. All `text` fields support Markdown.
 
 ```json
-[
-  { "type": "paragraph", "text": "Rich text with **markdown** support..." },
-
-  { "type": "heading", "level": 2, "text": "Section Title" },
-
-  { "type": "blockquote", "text": "Quote text...", "cite": "Author Name" },
-
-  { "type": "list", "style": "unordered", "items": ["Item 1", "Item 2", "Item 3"] },
-
-  {
-    "type": "image",
-    "media_id": 123,
-    "alt": "Description",
-    "caption": "Photo caption",
-    "credit": "(c) Photographer",
-    "variants": { ... }
-  },
-
-  {
-    "type": "video",
-    "provider": "youtube",
-    "videoId": "dQw4w9WgXcQ",
-    "aspectRatio": "16:9"
-  },
-
-  {
-    "type": "tip_box",
-    "variant": "tip",
-    "title": "Pro Tip",
-    "text": "**Bold** and lists:\n1. Item\n2. Item"
-  },
-
-
-  { "type": "divider" },
-
-  { "type": "spacer", "size": "md" },
-
-  {
-    "type": "faq_section",
-    "title": "Common Questions",
-    "items": [
-      { "q": "Can I freeze the dough?", "a": "Yes, up to 3 months." },
-      { "q": "Can I use almond milk?", "a": "Yes, same ratio." }
-    ]
-  },
-
-  {
-    "type": "ingredient_spotlight",
-    "name": "Tahini",
-    "description": "Sesame seed paste...",
-    "image": { "media_id": 201, "variants": {...} },
-    "tips": "Store in fridge after opening",
-    "substitutes": ["Sunflower seed butter", "Cashew butter"],
-    "link": "/ingredients/tahini"
-  }
-]
+{
+  "version": 1,
+  "kind": "content_document",
+  "blocks": [
+    { "id": "intro", "type": "paragraph", "text": "Rich text with **markdown** support..." },
+    { "id": "section-1", "type": "heading", "level": 2, "text": "Section Title" },
+    { "id": "recipe", "type": "main_recipe" }
+  ]
+}
 ```
 
 #### Block Type Reference
@@ -1160,12 +1061,13 @@ LowFatDiet, LowLactoseDiet, LowSaltDiet
 | `blockquote`  | text                    | cite                |
 | `list`        | style, items            | -                   |
 | `image`       | media_id, alt, variants | caption, credit     |
-| `video`       | provider, videoId       | aspectRatio         |
+| `video`       | provider, video_id, aspect_ratio | -          |
 | `tip_box`     | variant, text           | title               |
 | `divider`     | -                       | -                   |
-| `spacer`      | size                    | -                   |
 | `faq_section` | items                   | title               |
 | `table`       | headers, rows           | -                   |
+
+> `spacer` and `ad_slot` are reserved system/layout block names. They are not accepted by strict `content_json` v1 save validation.
 
 ---
 
@@ -1209,12 +1111,12 @@ LowFatDiet, LowLactoseDiet, LowSaltDiet
 ```json
 [
   {
-    "q": "Can I freeze the dough?",
-    "a": "Yes, up to 3 months in an airtight container."
+    "question": "Can I freeze the dough?",
+    "answer": "Yes, up to 3 months in an airtight container."
   },
   {
-    "q": "Can I use almond milk?",
-    "a": "Yes, the texture may be slightly different."
+    "question": "Can I use almond milk?",
+    "answer": "Yes, the texture may be slightly different."
   }
 ]
 ```
@@ -1288,7 +1190,7 @@ Full-text search index for articles and recipes.
 | `body_content`      | Flattened content_json + recipe_json |
 | `tag_labels`        | Flattened cached_tags_json           |
 | `author_name`       | cached_author_json.name              |
-| `category_name`     | cached_category_json.name            |
+| `category_name`     | cached_category_json.label           |
 
 **Search Query Example:**
 
@@ -1354,8 +1256,8 @@ articles (1) ←──── (N) articles (pillar/cluster via parent_article_id)
 | `cached_tags_json`      | articles_to_tags changes                                 |
 | `cached_category_json`  | category_id changes OR categories table updates          |
 | `cached_author_json`    | author_id changes OR authors table updates               |
-| `cached_equipment_json` | recipe_json.equipment changes OR equipment table updates |
-| `cached_rating_json`    | recipe_json.aggregateRating changes                      |
+| `cached_equipment_json` | recipe_json.equipment changes OR linked equipment updates |
+| `cached_rating_json`    | recipe_json.aggregate_rating changes                     |
 | `cached_recipe_json`    | recipe_json changes                                      |
 | `cached_card_json`      | Any visible field changes (headline, thumbnail, etc.)    |
 | `reading_time_minutes`  | content_json changes                                     |
@@ -1570,7 +1472,7 @@ export function hydrateArticle(raw: RawArticle): HydratedArticle {
     ...raw,
     images: safeJsonParse(raw.images_json, {}),
     recipe: safeJsonParse(raw.recipe_json, null),
-    content: safeJsonParse(raw.content_json, []),
+    content: safeJsonParse(raw.content_json, { version: 1, kind: "content_document", blocks: [] }),
     seo: safeJsonParse(raw.seo_json, {}),
     config: safeJsonParse(raw.config_json, {}),
     route: raw.type === "recipe" ? `/recipes/${raw.slug}` : `/blog/${raw.slug}`,
@@ -1582,5 +1484,3 @@ export function hydrateArticles(rawList: RawArticle[]): HydratedArticle[] {
   return rawList.map(hydrateArticle);
 }
 ```
-
-

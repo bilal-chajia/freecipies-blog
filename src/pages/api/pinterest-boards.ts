@@ -9,17 +9,24 @@ import {
   updatePinterestBoard,
   deletePinterestBoard
 } from '@modules/pinterest';
+import {
+  validateBody,
+  validateQuery,
+  BoardGetQuery,
+  BoardDeleteQuery,
+  CreatePinterestBoardSchema,
+  UpdatePinterestBoardSchema,
+} from '@shared/validation';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
-    const url = new URL(request.url);
-    const slug = url.searchParams.get('slug');
-
     if (!env?.DB) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
+
+    const { slug } = validateQuery(new URL(request.url).searchParams, BoardGetQuery);
 
     if (slug) {
       // Get single board
@@ -67,23 +74,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
 
-    const body = await request.json();
-    const { slug, name, description, board_url, is_active, cover_image_url } = body;
-
-    if (!slug || !name) {
-      const { body: errBody, status, headers } = formatErrorResponse(
-        new AppError(ErrorCodes.VALIDATION_ERROR, 'Missing required fields: slug, name', 400)
-      );
-      return new Response(errBody, { status, headers });
-    }
+    const body = await validateBody(request, CreatePinterestBoardSchema);
 
     const inserted = await createPinterestBoard(env.DB, {
-      slug,
-      name,
-      description: description || '',
-      board_url: board_url || '',
-      cover_image_url: cover_image_url || '',
-      is_active
+      slug: body.slug,
+      name: body.name,
+      description: body.description || '',
+      board_url: body.board_url || '',
+      cover_image_url: body.cover_image_url || '',
+      is_active: body.is_active
     });
 
     const { body: respBody, status, headers } = formatSuccessResponse({
@@ -115,18 +114,10 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
 
-    const body = await request.json();
-    const { id, slug, name, description, board_url, is_active, cover_image_url } = body;
+    const body = await validateBody(request, UpdatePinterestBoardSchema);
 
-    if (!id) {
-      const { body: errBody, status, headers } = formatErrorResponse(
-        new AppError(ErrorCodes.VALIDATION_ERROR, 'Board ID is required', 400)
-      );
-      return new Response(errBody, { status, headers });
-    }
-
-    await updatePinterestBoard(env.DB, typeof id === 'string' ? parseInt(id, 10) : id, {
-      slug, name, description, board_url, is_active, cover_image_url
+    await updatePinterestBoard(env.DB, body.id, {
+      slug: body.slug, name: body.name, description: body.description, board_url: body.board_url, is_active: body.is_active, cover_image_url: body.cover_image_url
     });
 
     const { body: respBody, status, headers } = formatSuccessResponse({ updated: true });
@@ -156,17 +147,9 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
     }
 
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
+    const { id } = validateQuery(new URL(request.url).searchParams, BoardDeleteQuery);
 
-    if (!id) {
-      const { body: errBody, status, headers } = formatErrorResponse(
-        new AppError(ErrorCodes.VALIDATION_ERROR, 'Board ID is required', 400)
-      );
-      return new Response(errBody, { status, headers });
-    }
-
-    await deletePinterestBoard(env.DB, parseInt(id, 10));
+    await deletePinterestBoard(env.DB, id);
 
     const { body, status, headers } = formatSuccessResponse({ deleted: true });
     return new Response(body, { status, headers });

@@ -92,8 +92,18 @@ export const useMediaStore = create((set) => ({
   loading: false,
   error: null,
   uploadProgress: 0,
+  pagination: {
+    page: 1,
+    limit: 24, // Use 24 for good grid multiples
+    total: 0,
+    totalPages: 0,
+    hasMore: false
+  },
   
   setMedia: (media) => set({ media }),
+  appendMedia: (newMedia) => set((state) => ({ 
+    media: [...state.media, ...newMedia] 
+  })),
   setSelectedMedia: (selected) => set({ selectedMedia: selected }),
   toggleMediaSelection: (id) => set((state) => ({
     selectedMedia: state.selectedMedia.includes(id)
@@ -104,6 +114,9 @@ export const useMediaStore = create((set) => ({
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
   setUploadProgress: (progress) => set({ uploadProgress: progress }),
+  setPagination: (pagination) => set((state) => ({
+    pagination: { ...state.pagination, ...pagination }
+  })),
 }));
 
 // Categories Store

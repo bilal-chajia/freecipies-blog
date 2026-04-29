@@ -65,7 +65,7 @@
           border-radius: 999px;
           background: hsl(var(--background));
           border: 1px solid hsl(var(--border));
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+          box-shadow: var(--shadow-lg);
         }
 
         .inline-link-button {
@@ -169,7 +169,7 @@
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+          box-shadow: var(--shadow-md);
           color: hsl(var(--muted-foreground));
           pointer-events: auto;
           animation: blockInsertPop 640ms cubic-bezier(0.2, 0, 0, 1);
@@ -234,7 +234,7 @@
           background: hsl(var(--background));
           border: 1px solid hsl(var(--border));
           border-radius: 999px;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+          box-shadow: var(--shadow-md);
           display: inline-flex;
           height: 28px;
           justify-content: center;
@@ -258,7 +258,7 @@
           background: hsl(var(--background));
           border: 1px solid hsl(var(--border));
           border-radius: 999px;
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+          box-shadow: var(--shadow-lg);
           padding: 4px 6px;
           z-index: 40;
         }
@@ -270,7 +270,7 @@
         .block-editor-wrapper .bn-suggestion-menu,
         .block-editor-wrapper .bn-menu-dropdown {
           border-radius: var(--radius);
-          box-shadow: 0 16px 30px rgba(0, 0, 0, 0.12);
+          box-shadow: var(--shadow-xl);
         }
 
         .block-editor-wrapper .bn-suggestion-menu-item {
@@ -287,7 +287,7 @@
           background-color: var(--bn-colors-menu-background, hsl(var(--background)));
           border: var(--bn-border, 1px solid hsl(var(--border)));
           border-radius: var(--bn-border-radius-medium, 8px);
-          box-shadow: var(--bn-shadow-medium, 0 10px 25px rgba(0, 0, 0, 0.12));
+          box-shadow: var(--bn-shadow-medium, var(--shadow-lg));
           color: var(--bn-colors-menu-text, hsl(var(--foreground)));
           display: flex;
           flex-direction: column;
@@ -351,3 +351,54 @@
           width: 12px;
         }
       
+
+        /* ── BlockNote / Mantine shadcn theme overrides ── */
+        .bn-mantine {
+          --mantine-color-body: hsl(var(--background));
+          --mantine-color-text: hsl(var(--foreground));
+          --mantine-color-dimmed: hsl(var(--muted-foreground));
+          --mantine-color-default: hsl(var(--background));
+          --mantine-color-default-hover: hsl(var(--muted));
+          --mantine-color-default-color: hsl(var(--foreground));
+          --mantine-color-default-border: hsl(var(--border));
+        }
+
+        .bn-mantine .mantine-Menu-dropdown,
+        .bn-mantine [role="menu"] {
+          background-color: hsl(var(--popover));
+          border: 1px solid hsl(var(--border));
+          border-radius: var(--radius);
+          box-shadow: var(--shadow-lg);
+        }
+
+        .bn-mantine .mantine-Menu-item,
+        .bn-mantine [role="menuitem"] {
+          color: hsl(var(--popover-foreground));
+          border-radius: calc(var(--radius) - 4px);
+        }
+
+        .bn-mantine .mantine-Menu-item:hover,
+        .bn-mantine [role="menuitem"]:hover {
+          background-color: hsl(var(--accent));
+          color: hsl(var(--accent-foreground));
+        }
+
+        .bn-mantine .mantine-Popover-dropdown {
+          background-color: hsl(var(--popover));
+          border: 1px solid hsl(var(--border));
+          border-radius: var(--radius);
+          box-shadow: var(--shadow-lg);
+          color: hsl(var(--popover-foreground));
+        }
+
+        .bn-mantine .mantine-ColorSwatch-root {
+          border-radius: var(--radius);
+          box-shadow: inset 0 0 0 1px hsl(var(--border));
+        }
+
+        .bn-mantine .mantine-ColorInput-wrapper input {
+          background-color: hsl(var(--background));
+          border: 1px solid hsl(var(--border));
+          color: hsl(var(--foreground));
+          border-radius: var(--radius);
+        }

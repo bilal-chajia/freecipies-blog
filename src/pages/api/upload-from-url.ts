@@ -7,6 +7,7 @@ import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@module
 import { getImageUploadSettings } from '@modules/settings';
 import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
 import { calculateAspectRatio, getImageDimensions } from '@shared/utils/imageMeta';
+import { validateBody, UploadFromUrlSchema } from '@shared/validation';
 
 function isPrivateHost(url: URL): boolean {
   const host = url.hostname.toLowerCase();
@@ -46,14 +47,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const MAX_SIZE_BYTES = settings.maxFileSizeMB * 1024 * 1024;
     const allowedTypes = IMAGE_SUPPORTED_TYPES;
 
-    const body = await request.json() as {
-      imageUrl?: string;
-      url?: string;
-      alt?: string;
-      attribution?: string;
-      caption?: string;
-    };
-
+    // Validate body with Zod
+    const body = await validateBody(request, UploadFromUrlSchema);
     const imageUrl = body.imageUrl || body.url;
     const { alt, attribution, caption } = body;
 

@@ -16,7 +16,9 @@ import { equipment as equipmentTable } from '../../equipment/schema/equipment.sc
 import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedTag } from '../../../shared/utils/hydration';
 import { resolveVariantUrl } from '../../../shared/types/images';
+import { generateJsonLd } from '../utils/jsonld';
 import type { HydratedArticle } from '../types/articles.types';
+import { extractFAQsFromContentDocument, extractTocFromContentDocument } from '../../content-blocks';
 
 async function getTagsForArticleId(drizzle: any, articleId: number): Promise<HydratedTag[]> {
   const rows = await drizzle
@@ -436,91 +438,13 @@ export async function toggleFavoriteById(db: D1Database | DrizzleDb, id: number)
 }
 
 /**
- * Strip inline markdown formatting from text → plain text for TOC display.
- * Handles: **bold**, *italic*, [links](url), `code`, ***bolditalic***
- */
-function stripInlineMarkdown(text: string): string {
-  return text
-    // Links [label](url) → label
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    // Bold + italic ***text*** → text
-    .replace(/\*{3}(.+?)\*{3}/g, '$1')
-    // Bold **text** → text
-    .replace(/\*{2}(.+?)\*{2}/g, '$1')
-    // Italic *text* → text
-    .replace(/\*(.+?)\*/g, '$1')
-    // Inline code `text` → text
-    .replace(/`([^`]+)`/g, '$1')
-    .trim();
-}
-
-/**
- * Generate a slug ID from text (must match ContentRenderer heading ID logic).
- */
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 50);
-}
-
-/**
- * Extract Table of Contents from contentJson.
- * - Strips markdown from heading text for clean display
- * - Includes recipe_card / main_recipe blocks as "Recipe" entry
- * - Includes faq_section blocks as "FAQ" entry
- */
-function extractTocFromContent(contentJson: string | null, headline?: string): { id: string; text: string; level: number }[] {
-  if (!contentJson) return [];
-
-  try {
-    const blocks = JSON.parse(contentJson);
-    if (!Array.isArray(blocks)) return [];
-
-    const toc: { id: string; text: string; level: number }[] = [];
-
-    for (const block of blocks) {
-      // ── Heading blocks (h2, h3, h4) ─────────────────────
-      if (block.type === 'heading' && block.text) {
-        const level = block.level || 2;
-        if (level > 4) continue;
-
-        const rawText = String(block.text || '').trim();
-        if (!rawText) continue;
-
-        const text = stripInlineMarkdown(rawText);
-        // ID uses the raw (pre-stripped) text to match ContentRenderer
-        const id = slugify(rawText);
-
-        toc.push({ id, text, level });
-      }
-
-      // ── Recipe block → "Recipe" TOC entry ───────────────
-      if (block.type === 'recipe_card' || block.type === 'main_recipe') {
-        toc.push({ id: 'recipe-card', text: headline || 'Recipe', level: 2 });
-      }
-
-      // ── FAQ block → "FAQ" TOC entry ─────────────────────
-      if (block.type === 'faq_section') {
-        toc.push({ id: 'faq-section', text: 'Frequently Asked Questions', level: 2 });
-      }
-    }
-
-    return toc;
-  } catch {
-    return [];
-  }
-}
-
-/**
  * Synchronize cached JSON fields for an article
  * Populates optimized fields like cachedAuthorJson, cachedCategoryJson, and cachedTocJson
  */
 export async function syncCachedFields(
   db: D1Database | DrizzleDb,
-  id: number
+  id: number,
+  siteUrl?: string
 ): Promise<boolean> {
   const drizzle = getDb(db);
 
@@ -564,19 +488,29 @@ export async function syncCachedFields(
   }
 
   // Extract TOC from contentJson
-  const toc = extractTocFromContent(article.contentJson, article.headline);
+  const toc = extractTocFromContentDocument(article.contentJson, article.headline);
   if (toc.length > 0) {
     updateData.cachedTocJson = JSON.stringify(toc);
+  }
+
+  // ── Extract FAQs from content_json faq_section blocks ──
+  if (article.contentJson) {
+    const faqs = extractFAQsFromContentDocument(article.contentJson);
+    (updateData as any).faqsJson = faqs.length > 0
+      ? JSON.stringify(faqs)
+      : '[]';
   }
 
   // ── Sync recipe scalar indexes & cached recipe summary ──
   // These populate articles.totalTimeMinutes, articles.difficultyLabel,
   // and articles.cachedRecipeJson for optimized SQL filtering/listing.
+  let recipe: any = null;
+  let totalTimeMinutes: number | null = null;
   if (article.type === 'recipe' && article.recipeJson) {
-    const recipe = safeParseJson<any>(article.recipeJson);
+    recipe = safeParseJson<any>(article.recipeJson);
     if (recipe) {
       // Derive total time: explicit total, or prep + cook
-      const totalTimeMinutes = recipe.total
+      totalTimeMinutes = recipe.total
         ?? (((recipe.prep ?? 0) + (recipe.cook ?? 0)) || null);
 
       // Scalar index columns for SQL WHERE/ORDER BY
@@ -657,6 +591,55 @@ export async function syncCachedFields(
         (updateData as any).cachedEquipmentJson = '[]';
       }
     }
+  }
+
+  // ── Generate cached_card_json for zero-join card rendering ──
+  {
+    const images = safeParseJson<any>(article.imagesJson) || {};
+    const coverVariants = images?.cover?.variants;
+
+    const thumbnail = coverVariants ? {
+      alt: images?.cover?.alt || article.headline,
+      variants: {
+        xs: coverVariants.xs ? { url: resolveVariantUrl(coverVariants.xs), width: coverVariants.xs.width } : undefined,
+        sm: coverVariants.sm ? { url: resolveVariantUrl(coverVariants.sm), width: coverVariants.sm.width } : undefined,
+        md: coverVariants.md ? { url: resolveVariantUrl(coverVariants.md), width: coverVariants.md.width } : undefined,
+        lg: coverVariants.lg ? { url: resolveVariantUrl(coverVariants.lg), width: coverVariants.lg.width } : undefined,
+      }
+    } : null;
+
+    const card: Record<string, any> = {
+      id: article.id,
+      type: article.type,
+      slug: article.slug,
+      headline: article.headline,
+      short_description: article.shortDescription,
+      thumbnail,
+    };
+
+    if (article.type === 'recipe' && recipe) {
+      card.total_time = totalTimeMinutes;
+      card.difficulty = recipe.difficulty ?? null;
+      card.servings = recipe.servings ?? null;
+      card.rating = safeParseJson<any>(article.cachedRatingJson) || null;
+    } else if (article.type === 'article') {
+      card.reading_time = article.readingTimeMinutes || null;
+      card.category = safeParseJson<any>(article.cachedCategoryJson)?.label || null;
+    } else if (article.type === 'roundup') {
+      const roundupData = safeParseJson<any>(article.roundupJson);
+      card.item_count = roundupData?.items?.length ?? 0;
+    }
+
+    (updateData as any).cachedCardJson = JSON.stringify(card);
+  }
+
+  // ── Generate JSON-LD schemas for SEO ──
+  // Stores all Schema.org structured data at save time.
+  // Frontend reads jsonldJson directly via SEO.astro — no per-page reconstruction.
+  {
+    const resolvedSiteUrl = siteUrl || (article as any).siteUrl || 'https://freecipies.com';
+    const schemas = generateJsonLd(article as any, resolvedSiteUrl);
+    (updateData as any).jsonldJson = JSON.stringify(schemas);
   }
 
   await drizzle.update(articles)
@@ -744,4 +727,3 @@ export async function addRecipeVote(
 
   return newRating;
 }
-

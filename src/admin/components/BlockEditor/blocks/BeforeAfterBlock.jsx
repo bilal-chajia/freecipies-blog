@@ -25,7 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import { parseVariantsJson, getVariantMap, getBestVariantUrl } from '@shared/types/images';
 import { Button } from '@/ui/button';
-import MediaDialog from '../../MediaDialog';
+import { MediaDialog } from '@admin/features/media/components';
 import BlockToolbar, { ToolbarButton } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
@@ -285,7 +285,6 @@ export const BeforeAfterBlock = createReactBlockSpec(
 );
 
 export default BeforeAfterBlock;
-
 
 
 

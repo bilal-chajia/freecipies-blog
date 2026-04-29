@@ -7,26 +7,17 @@ import react from '@astrojs/react';
 
 import tailwindcss from '@tailwindcss/vite';
 
-const messageChannelPolyfill = `if (typeof MessageChannel === 'undefined') {
-  function MessagePort() {
-    this.onmessage = null;
-    this._target = null;
-  }
-  MessagePort.prototype.postMessage = function (data) {
-    var handler = this._target && this._target.onmessage;
-    if (typeof handler === 'function') {
-      handler({ data: data });
+// Fix FSWatcher memory leak warning from Cloudflare adapter
+const fixWatcherPlugin = () => ({
+  name: 'fix-watcher',
+  /** @param {any} server */
+  configureServer(server) {
+    // Increase max listeners for the file watcher
+    if (server.watcher) {
+      server.watcher.setMaxListeners(50);
     }
-  };
-  function MessageChannelPolyfill() {
-    this.port1 = new MessagePort();
-    this.port2 = new MessagePort();
-    this.port1._target = this.port2;
-    this.port2._target = this.port1;
-  }
-  globalThis.MessageChannel = MessageChannelPolyfill;
-}
-`;
+  },
+});
 
 // https://astro.build/config
 export default defineConfig({
@@ -41,69 +32,64 @@ export default defineConfig({
   }),
   output: 'server',
   build: {
-    inlineStylesheets: 'always'
+    inlineStylesheets: 'always',
   },
   vite: {
-    plugins: [...tailwindcss()],
+    plugins: [fixWatcherPlugin(), ...tailwindcss()],
     resolve: {
       dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
     },
     ssr: {
-      external: ['node:fs/promises', 'node:path', 'node:worker_threads'],
+      external: [
+        'node:fs/promises',
+        'node:path',
+        'node:worker_threads',
+        // Server-only — no browser bundle needed
+        '@anthropic-ai/sdk',
+        'openai',
+        '@google/generative-ai',
+        'aws4fetch',
+      ],
     },
     server: {
-      allowedHosts: true, // Prevent host validation errors in dev mode
+      allowedHosts: true,
       watch: {
-        // Ignore .wrangler directory to prevent SQLite WAL changes from triggering reloads
-        ignored: ['**/.wrangler/**', '**/node_modules/**'],
+        // Reduce memory usage by ignoring large directories
+        // Note: Don't set ignored to [] or false, use null instead
+        ignored: ['**/.wrangler/**', '**/node_modules/**', '**/.git/**'],
       },
+      // DISABLED: warmup can cause FSWatcher memory leaks with Cloudflare adapter
+      // warmup: { clientFiles: [...] },
     },
     // WASM support for jSquash (WebP/AVIF encoding)
     optimizeDeps: {
+      // Exclude WASM modules - they cannot be pre-bundled
       exclude: ['@jsquash/avif', '@jsquash/webp'],
-      // Pre-bundle heavy Admin SPA dependencies to avoid dev mode "waterfall"
+
+      // Only pre-bundle React core — everything else is discovered on-demand.
+      // Heavy admin deps (BlockNote, Konva, Recharts) load lazily when the
+      // admin panel is first visited, saving 10-30s on every cold start.
       include: [
-        'konva',
-        'react-konva',
-        'recharts',
-        '@blocknote/react',
-        '@blocknote/core',
-        '@blocknote/mantine',
-        'motion/react',
-        'zustand',
-        'lucide-react',
-        '@radix-ui/react-dialog',
-        '@radix-ui/react-dropdown-menu',
-        '@radix-ui/react-popover',
-        '@radix-ui/react-select',
-        '@radix-ui/react-tabs',
-        '@radix-ui/react-tooltip',
-        '@radix-ui/react-accordion',
-        '@radix-ui/react-checkbox',
-        '@radix-ui/react-switch',
-        '@radix-ui/react-slider',
-        '@radix-ui/react-scroll-area',
-        'react-router-dom',
-        'react-hook-form',
-        '@hookform/resolvers',
-        'zod',
-        'date-fns',
-        'clsx',
-        'tailwind-merge',
-        'class-variance-authority',
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
       ],
     },
     build: {
       target: 'esnext',
-      chunkSizeWarningLimit: 1800,
-      rollupOptions: {
-        output: {
-          banner: messageChannelPolyfill,
-        },
-      },
+      minify: false,
+      sourcemap: false,
+      chunkSizeWarningLimit: 2000,
+      // Note: manualChunks cannot be used here — the Cloudflare adapter
+      // resolves heavy UI packages (BlockNote, Konva, Recharts) as externals
+      // in the Workers bundle, which is incompatible with manualChunks.
     },
+
     worker: {
       format: 'es',
     },
+    // Disable source maps in dev for speed
+    // Enable only when debugging
   },
 });

@@ -4,6 +4,7 @@ import { getAuthors, createAuthor, transformAuthorRequestBody, transformAuthorRe
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateBody, CreateAuthorSchema } from '@shared/validation';
 
 export const prerender = false;
 
@@ -53,16 +54,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        const body = await request.json();
+        const body = await validateBody(request, CreateAuthorSchema);
         const transformedBody = transformAuthorRequestBody(body);
-
-        // Validate required fields
-        if (!body.name || !body.slug || !body.email) {
-            const { body: errBody, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.VALIDATION_ERROR, 'Missing required fields: name, slug, email', 400)
-            );
-            return new Response(errBody, { status, headers });
-        }
 
         const author = await createAuthor(env.DB, transformedBody);
         const responseAuthor = transformAuthorResponse(author);

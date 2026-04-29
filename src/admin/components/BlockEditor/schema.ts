@@ -1,11 +1,11 @@
 import { BlockNoteSchema, defaultBlockSpecs } from '@blocknote/core';
+import type { BlockNoteEditor } from '@blocknote/core';
 import {
     Alert,
     VideoBlock,
     ImageBlock,
     FAQSectionBlock,
     DividerBlock,
-    RecipeEmbedBlock,
     MainRecipeBlock,
     RoundupListBlock,
     RelatedContentBlock,
@@ -15,7 +15,7 @@ import {
 
 /**
  * BlockNote Schema Definition
- * 
+ *
  * Centralized schema with both default and custom blocks.
  */
 export const schema = BlockNoteSchema.create({
@@ -28,7 +28,6 @@ export const schema = BlockNoteSchema.create({
             customImage: ImageBlock(),
             faqSection: FAQSectionBlock(),
             divider: DividerBlock(),
-            recipeEmbed: RecipeEmbedBlock(),
             mainRecipe: MainRecipeBlock(),
             roundupList: RoundupListBlock(),
             relatedContent: RelatedContentBlock(),
@@ -39,3 +38,4 @@ export const schema = BlockNoteSchema.create({
 });
 
 export type AppSchema = typeof schema;
+export type AppEditor = BlockNoteEditor<AppSchema>;

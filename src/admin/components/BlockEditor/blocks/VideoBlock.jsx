@@ -271,6 +271,7 @@ export const VideoBlock = createReactBlockSpec(
                             className="absolute inset-0 w-full h-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
+                            loading="lazy"
                             title="Video embed"
                         />
                     </div>

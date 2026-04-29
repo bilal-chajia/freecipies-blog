@@ -1,0 +1,11 @@
+---
+import { env } from 'cloudflare:workers';
+import RoundupItemList from '../../RoundupItemList.astro';
+const { block, roundupJson, startNumber } = Astro.props as {
+  block: any;
+  roundupJson?: any;
+  startNumber?: number;
+};
+const items = typeof block.itemsJson === 'string' ? JSON.parse(block.itemsJson) : block.items || [];
+---
+<RoundupItemList block={block} db={env.DB} startNumber={startNumber || 1} />

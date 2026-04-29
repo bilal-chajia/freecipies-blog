@@ -1,0 +1,498 @@
+---
+/**
+ * InstructionsSection - Clean step-by-step instructions with Minimalist Circular Timer
+ */
+
+import type { InstructionSection } from "@modules/articles/types/recipes.types";
+
+interface Props {
+  instructions: InstructionSection[];
+}
+
+const { instructions } = Astro.props;
+
+function formatTime(minutes: number): string {
+  if (!minutes) return "";
+  if (minutes < 60) return minutes + "m";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? hrs + "h " + mins + "m" : hrs + "h";
+}
+
+let globalStep = 0;
+---
+
+<div class="instructions-timeline">
+  {
+    instructions.map((section, sectionIdx) => (
+      <div class="tl-section" data-section={sectionIdx}>
+        {section.section_title && (
+          <div class="tl-section-header">
+            <span class="tl-dot" />
+            <h3 class="tl-section-title">{section.section_title}</h3>
+          </div>
+        )}
+        <ol class="tl-steps group-items" start={globalStep + 1}>
+          {section.steps.map((step) => {
+            const stepNumber = ++globalStep;
+            return (
+              <li
+                class="tl-step"
+                id={`step-${stepNumber}`}
+                data-step={stepNumber}
+              >
+                <div class="tl-step-number">{stepNumber}</div>
+                <div class="tl-step-card">
+                  <div class="tl-step-header">
+                    {step.name && <h4 class="tl-step-name">{step.name}</h4>}
+                    {step.timer && step.timer > 0 && (
+                      <div
+                        class="step-timer-widget"
+                        data-timer={step.timer}
+                        data-total={step.timer * 60}
+                      >
+                        <button
+                          type="button"
+                          class="tl-timer-badge"
+                          data-timer-toggle
+                          title="Start/Pause Timer"
+                        >
+                          <span class="tl-timer-inner" data-timer-label>
+                            {formatTime(step.timer)}
+                          </span>
+                          <span class="tl-timer-icon" data-timer-icon>
+                            ▶
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <p class="tl-step-text">{step.text}</p>
+                  {step.tip && (
+                    <div class="step-tip">
+                      <span class="tip-icon">💡</span>
+                      <span>{step.tip}</span>
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  /* ── Timeline Container ── */
+  .instructions-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(24px, 4vw, 32px);
+    position: relative;
+    padding-left: 0;
+  }
+
+  /* Vertical timeline line – one per section */
+  .tl-section::before {
+    display: none;
+  }
+
+  /* ── Section Header (dot + title) ── */
+  .tl-section {
+    position: relative;
+  }
+
+  .tl-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    position: relative;
+    padding-top: 8px;
+  }
+
+  .tl-dot {
+    display: none;
+  }
+
+  .tl-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  /* ── Steps List ── */
+  .tl-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px; /* Space between steps */
+  }
+
+  /* ── Single Step ── */
+  .tl-step {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    scroll-margin-top: 100px;
+    position: relative;
+  }
+
+  /* Vertical line connecting steps */
+  .tl-step::before {
+    content: "";
+    position: absolute;
+    left: 19px; /* Half of 40px step number minus half line width */
+    top: 40px; /* Bottom of 40px step number */
+    bottom: -24px;
+    width: 2px;
+    background: var(--border);
+    z-index: 0;
+  }
+
+  /* Don't extend the line below the very last step in a section */
+  .tl-step:last-child::before {
+    bottom: 0;
+  }
+
+  .tl-step-number {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text-secondary);
+    font-weight: 700;
+    font-size: 1.125rem;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 0;
+    transition:
+      background 0.25s ease,
+      color 0.25s ease;
+  }
+
+  .tl-step:hover .tl-step-number {
+    background: var(--accent-sage);
+    color: white;
+    border-color: var(--accent-sage);
+  }
+
+  /* ── Step Card ── */
+  .tl-step-card {
+    flex: 1;
+    padding: clamp(16px, 3vw, 24px);
+    background: var(--bg);
+    border: 1px solid var(--bg-hover);
+    border-radius: 14px;
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
+    min-width: 0; /* prevent flex blowout */
+  }
+
+  .tl-step:hover .tl-step-card {
+    border-color: var(--accent-sage);
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.06);
+  }
+
+  .tl-step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .tl-step-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
+
+  .tl-step-text {
+    font-size: 1.125rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  /* ── Tip ── */
+  .step-tip {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: var(--warning-bg);
+    border-radius: 12px;
+    font-size: 14px;
+    color: var(--warning-text);
+    border: 1px solid var(--warning-bg);
+  }
+
+  /* ── Timer Badge (inline) ── */
+  .step-timer-widget {
+    position: relative;
+    display: inline-block;
+    border-radius: 8px; /* shape for pseudo-elements */
+    z-index: 1;
+  }
+
+  /* Progress ring / Border (behind) */
+  .step-timer-widget::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 8px; /* match parent */
+    background: conic-gradient(
+      var(--progress-color, var(--accent-sage)) var(--progress, 0%),
+      var(--border) var(--progress, 0%)
+    );
+    z-index: -2;
+    transition: background 0.3s;
+  }
+
+  /* Inner fill (on top of border, below text) */
+  .step-timer-widget::after {
+    content: "";
+    position: absolute;
+    inset: 2px; /* border width 2px */
+    border-radius: 6px; /* 8px - 2px */
+    background: var(--bg-alt); /* default bg */
+    z-index: -1;
+    transition: background 0.2s ease;
+  }
+
+  .tl-timer-badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: transparent; /* allow pseudo-elements to show */
+    border: 2px solid transparent; /* invisible border for spacing if needed, or rely on padding */
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: "SF Mono", "Cascadia Code", "Consolas", monospace;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+    z-index: 1;
+  }
+
+  /* Hover State */
+  .step-timer-widget:hover::before {
+    background: var(--accent-sage); /* border becomes orange */
+  }
+  .step-timer-widget:hover::after {
+    background: var(--warning-bg); /* inner bg becomes light orange */
+  }
+  .step-timer-widget:hover .tl-timer-badge {
+    color: var(--accent-sage);
+  }
+
+  .tl-timer-inner {
+    position: relative;
+    z-index: 1;
+    min-width: 30px; /* Prevent layout shift on play/pause */
+    text-align: center;
+    display: inline-block;
+  }
+
+  .tl-timer-icon {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    transition: color 0.2s;
+    position: relative;
+    z-index: 1;
+    width: 12px;
+    text-align: center;
+    display: inline-block;
+  }
+
+  .step-timer-widget:hover .tl-timer-icon {
+    color: var(--accent-sage);
+  }
+
+  /* Running state */
+  .step-timer-widget.running::before {
+    /* Uses conic-gradient from inline style --progress */
+  }
+  .step-timer-widget.running::after {
+    background: var(--warning-bg);
+  }
+  .step-timer-widget.running .tl-timer-badge {
+    color: var(--accent-sage);
+  }
+  .step-timer-widget.running .tl-timer-icon {
+    color: var(--accent-sage);
+  }
+
+  /* Paused state */
+  .step-timer-widget.paused::before {
+    background: var(--border);
+  }
+  .step-timer-widget.paused::after {
+    background: var(--bg-alt);
+  }
+  .step-timer-widget.paused .tl-timer-badge {
+    color: var(--text-tertiary);
+  }
+  .step-timer-widget.paused:hover::before {
+    background: var(--accent-sage);
+  }
+
+  /* Finished state */
+  .step-timer-widget.finished {
+    --progress-color: var(--error);
+    --progress: 100%;
+  }
+  .step-timer-widget.finished::after {
+    background: var(--error-bg);
+  }
+  .step-timer-widget.finished .tl-timer-badge {
+    color: var(--error-text);
+    animation: badgePulse 2s infinite ease-in-out;
+  }
+
+  @keyframes badgePulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+
+  /* Fluid sizing replaces max-width media query */
+  .tl-step-number {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const widgets = document.querySelectorAll(".step-timer-widget");
+
+    widgets.forEach((el) => {
+      const widget = el as HTMLElement;
+      const totalSec = parseInt(widget.getAttribute("data-total") || "0");
+      const toggleBtn = widget.querySelector(
+        "[data-timer-toggle]",
+      ) as HTMLButtonElement;
+      const label = widget.querySelector("[data-timer-label]") as HTMLElement;
+      const icon = widget.querySelector("[data-timer-icon]") as HTMLElement;
+      const badge = widget.querySelector(".tl-timer-badge") as HTMLElement;
+
+      let interval: number | null = null;
+      let seconds = totalSec;
+      let running = false;
+
+      function formatTime(s: number) {
+        if (s <= 0) return "Done";
+        const m = Math.floor(s / 60);
+        const rem = s % 60;
+        return String(m).padStart(2, "0") + ":" + String(rem).padStart(2, "0");
+      }
+
+      function updateProgress() {
+        const progress = (totalSec - seconds) / totalSec;
+        const pct = Math.round(progress * 100);
+        widget.style.setProperty("--progress", pct + "%");
+        widget.style.setProperty(
+          "--progress-color",
+          seconds <= 0 ? "var(--error)" : "var(--accent-sage)",
+        );
+      }
+
+      function updateUI() {
+        label.textContent = formatTime(seconds);
+        updateProgress();
+
+        // Icon: play or pause
+        icon.textContent = running ? "⏸" : "▶";
+
+        // States
+        widget.classList.toggle("finished", seconds <= 0);
+        if (seconds <= 0) {
+          icon.textContent = "↻";
+        }
+      }
+
+      function start() {
+        if (seconds <= 0) {
+          seconds = totalSec;
+          widget.classList.remove("finished");
+          widget.style.setProperty("--progress", "0%");
+        }
+        running = true;
+        widget.classList.remove("paused", "finished");
+        widget.classList.add("running");
+        icon.textContent = "⏸";
+
+        interval = window.setInterval(() => {
+          seconds--;
+          updateUI();
+          if (seconds <= 0) {
+            pause();
+            beep();
+          }
+        }, 1000);
+      }
+
+      function pause() {
+        running = false;
+        if (interval !== null) {
+          clearInterval(interval);
+          interval = null;
+        }
+        widget.classList.remove("running");
+        icon.textContent = seconds <= 0 ? "↻" : "▶";
+        if (seconds > 0) widget.classList.add("paused");
+      }
+
+      function beep() {
+        try {
+          const AudioContextClass =
+            window.AudioContext || (window as any).webkitAudioContext;
+          if (!AudioContextClass) return;
+          const ctx = new AudioContextClass();
+          [0, 0.35, 0.7].forEach((d) => {
+            const o = ctx.createOscillator(),
+              g = ctx.createGain();
+            o.connect(g);
+            g.connect(ctx.destination);
+            o.frequency.value = 880;
+            o.type = "sine";
+            g.gain.setValueAtTime(0.3, ctx.currentTime + d);
+            g.gain.exponentialRampToValueAtTime(
+              0.01,
+              ctx.currentTime + d + 0.25,
+            );
+            o.start(ctx.currentTime + d);
+            o.stop(ctx.currentTime + d + 0.25);
+          });
+        } catch (e) {}
+      }
+
+      toggleBtn.addEventListener("click", () => {
+        if (running) pause();
+        else start();
+      });
+    });
+  });
+</script>

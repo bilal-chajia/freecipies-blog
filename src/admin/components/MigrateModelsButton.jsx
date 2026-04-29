@@ -7,7 +7,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Database, Loader2, CheckCircle } from 'lucide-react';
-import { Button } from '@/ui/button';
+import { Button } from '@/ui/button.jsx';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/ui/alert';
 import api from '@/services/api';
 
@@ -33,9 +34,7 @@ export function MigrateModelsButton({ onSuccess, settings }) {
     }, [settings]);
 
     const handleMigrate = async () => {
-        if (!confirm('This will populate the database with all available AI models from types.ts. Continue?')) {
-            return;
-        }
+        toast.info('Starting migration...');
 
         try {
             setMigrating(true);

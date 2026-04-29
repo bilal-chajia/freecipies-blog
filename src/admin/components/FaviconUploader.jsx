@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card.jsx';
 import { Button } from '@/ui/button.jsx';
+import ConfirmationModal from '@/ui/confirmation-modal.jsx';
+import { toast } from 'sonner';
 import { Label } from '@/ui/label.jsx';
 import { Badge } from '@/ui/badge.jsx';
 import { Upload, X, Globe, Check, Loader2 } from 'lucide-react';
@@ -18,6 +20,7 @@ const ACCEPTED_TYPES = '.svg,.png,.jpg,.jpeg,.webp,.gif,.ico';
 
 const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconDelete }) => {
     const [uploading, setUploading] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [generationProgress, setGenerationProgress] = useState({});
     const [dragOver, setDragOver] = useState(false);
@@ -65,13 +68,13 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
         // Validate file type
         const validTypes = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/x-icon', 'image/vnd.microsoft.icon'];
         if (!validTypes.includes(file.type)) {
-            alert('Invalid file type. Please upload SVG, PNG, JPG, WebP, GIF, or ICO.');
+            toast.error('Invalid file type. Please upload SVG, PNG, JPG, WebP, GIF, or ICO.');
             return;
         }
 
         // Validate file size (max 2MB for favicon)
         if (file.size > 2 * 1024 * 1024) {
-            alert('File too large. Maximum size is 2MB for favicons.');
+            toast.error('File too large. Maximum size is 2MB for favicons.');
             return;
         }
 
@@ -82,7 +85,7 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
             const response = await brandingAPI.uploadFavicon(file);
 
             if (!response.data?.success) {
-                alert(response.data?.error || 'Failed to upload favicon');
+                toast.error(response.data?.error || 'Failed to upload favicon');
                 return;
             }
 
@@ -122,16 +125,19 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
 
         } catch (error) {
             console.error('Upload failed:', error);
-            alert('Failed to upload favicon');
+            toast.error('Failed to upload favicon');
         } finally {
             setUploading(false);
             setGenerating(false);
         }
     };
 
-    const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete the favicon and all generated variants?')) return;
+    const handleDelete = () => {
+        setDeleteModalOpen(true);
+    };
 
+    const handleDeleteConfirm = async () => {
+        setDeleteModalOpen(false);
         try {
             const response = await brandingAPI.deleteFavicon();
 
@@ -139,11 +145,11 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
                 onFaviconDelete();
                 setGenerationProgress({});
             } else {
-                alert(response.data?.error || 'Failed to delete favicon');
+                toast.error(response.data?.error || 'Failed to delete favicon');
             }
         } catch (error) {
             console.error('Delete failed:', error);
-            alert(error.response?.data?.error || 'Failed to delete favicon');
+            toast.error(error.response?.data?.error || 'Failed to delete favicon');
         }
     };
 

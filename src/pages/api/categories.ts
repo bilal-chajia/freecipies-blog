@@ -4,6 +4,7 @@ import { getCategories, createCategory, transformCategoryRequestBody, transformC
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateBody, CreateCategorySchema } from '@shared/validation';
 
 export const prerender = false;
 
@@ -47,7 +48,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return createAuthError('Insufficient permissions', 403);
     }
 
-    const reqBody = await request.json();
+    const reqBody = await validateBody(request, CreateCategorySchema);
     const transformedBody = transformCategoryRequestBody(reqBody);
     const category = await createCategory(env.DB, transformedBody);
     const responseCategory = transformCategoryResponse(category);

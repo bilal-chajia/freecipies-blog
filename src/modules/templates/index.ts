@@ -12,8 +12,8 @@
  * import { getTemplates, type Template } from '@modules/templates';
  * 
  * // Client-only imports (use in React components only)
- * import { TemplateEditor, TemplatesList } from '@modules/templates/components';
- * import { useEditorStore } from '@modules/templates/store';
+ * import { TemplateEditor, TemplatesList } from '@admin/features/templates/components';
+ * import { useEditorStore } from '@admin/features/templates/store';
  * ```
  */
 
@@ -31,5 +31,5 @@ export * from './utils';
 
 // NOTE: Store and Components are NOT exported here to prevent SSR issues
 // with react-router-dom. Import them directly:
-// - '@modules/templates/components'
-// - '@modules/templates/store'
+// - '@admin/features/templates/components'
+// - '@admin/features/templates/store'

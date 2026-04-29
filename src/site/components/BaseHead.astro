@@ -1,0 +1,145 @@
+---
+import type { ImageMetadata } from "astro";
+import { SITE_TITLE } from "../../consts";
+
+// Default fallback image URL (used when no image is provided)
+const FALLBACK_IMAGE_URL =
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200&h=630&fit=crop";
+
+interface Props {
+  title: string;
+  description: string;
+  image?: ImageMetadata | string;
+  noindex?: boolean;
+}
+
+const siteUrl = Astro.site?.toString() || Astro.url.origin;
+const canonicalURL = new URL(Astro.url.pathname, siteUrl);
+
+const { title, description, image, noindex } = Astro.props;
+const imageSrc = image
+  ? typeof image === "string"
+    ? image
+    : image.src
+  : FALLBACK_IMAGE_URL;
+const imageUrl = new URL(imageSrc, siteUrl);
+
+// Static asset configuration (assumes existence based on project standard)
+const hasFaviconSvg = true;
+const hasFavicon32 = true;
+const hasFavicon16 = true;
+const hasAppleTouch = true;
+const hasManifest = true;
+const hasRootFavicon = false; // We prefer logos/* structure
+---
+
+<!-- Global Metadata -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<!-- Favicons - use uploaded if available, otherwise fallback -->
+{
+  hasFaviconSvg ? (
+    <link rel="icon" type="image/svg+xml" href="/logos/favicon.svg" />
+  ) : hasRootFavicon ? (
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  ) : null
+}
+
+{
+  hasFavicon32 && (
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/logos/favicon-32x32.png"
+    />
+  )
+}
+{
+  hasFavicon16 && (
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/logos/favicon-16x16.png"
+    />
+  )
+}
+{
+  hasAppleTouch && (
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/logos/apple-touch-icon.png"
+    />
+  )
+}
+{hasManifest && <link rel="manifest" href="/logos/site.webmanifest" />}
+
+<link rel="sitemap" href={new URL("sitemap-index.xml", siteUrl)} />
+<link
+  rel="alternate"
+  type="application/rss+xml"
+  title={SITE_TITLE}
+  href={new URL("rss.xml", siteUrl)}
+/>
+<meta name="generator" content={Astro.generator} />
+
+<!-- Font preloads - Non-blocking Google Fonts loading -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+<!-- Image CDN preconnect - Speeds up LCP by resolving DNS early -->
+<link rel="preconnect" href="/api" />
+<link rel="dns-prefetch" href="/api" />
+
+<link
+  rel="preload"
+  as="style"
+  href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap"
+/>
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap"
+  media="print"
+  onload="this.media='all'"
+/>
+<noscript>
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap"
+  />
+</noscript>
+<!-- Enable smooth scroll only AFTER the page has settled (avoids hash-anchor vibration) -->
+<script>
+  window.addEventListener("load", function () {
+    // Small delay to ensure the browser has finished any initial hash scroll
+    setTimeout(function () {
+      document.documentElement.style.scrollBehavior = "smooth";
+    }, 100);
+  });
+</script>
+
+<!-- Canonical URL -->
+<link rel="canonical" href={canonicalURL} />
+
+<!-- Primary Meta Tags -->
+<title>{title}</title>
+<meta name="title" content={title} />
+<meta name="description" content={description} />
+<meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={imageUrl} />
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image" />
+<meta property="twitter:url" content={canonicalURL} />
+<meta property="twitter:title" content={title} />
+<meta property="twitter:description" content={description} />
+<meta property="twitter:image" content={imageUrl} />

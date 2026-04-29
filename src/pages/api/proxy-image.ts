@@ -7,6 +7,7 @@ import { env } from 'cloudflare:workers';
 import { formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateQuery, ProxyImageQuery } from '@shared/validation';
 
 const ALLOWED_CONTENT_TYPES = [
     'image/jpeg',
@@ -42,13 +43,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        // Get URL from query params
-        const url = new URL(request.url);
-        const imageUrl = url.searchParams.get('url');
-
-        if (!imageUrl) {
-            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'No URL provided', 400);
-        }
+        // Validate query params with Zod
+        const urlObj = new URL(request.url);
+        const { url: imageUrl } = validateQuery(urlObj.searchParams, ProxyImageQuery);
 
         let parsed: URL;
         try {

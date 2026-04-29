@@ -1,117 +1,19 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getArticleBySlug } from '@modules/articles';
-import type { Env } from '@shared/types';
+import { generateJsonLd } from '@modules/articles/utils/jsonld';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
-import type { RecipeJson } from '@modules/articles/types';
-import {
-    toSchemaOrgNutrition,
-    minutesToIsoDuration,
-    flattenIngredients,
-    toSchemaOrgInstructions
-} from '@modules/articles/types/recipes.types';
+import { validateParams, SlugOrIdParam } from '@shared/validation';
 
 export const prerender = false;
-
-/**
- * Generate Schema.org Recipe JSON-LD
- */
-function generateRecipeJsonLd(article: any, baseUrl: string): object {
-    const recipeData: RecipeJson = typeof article.recipeJson === 'string'
-        ? JSON.parse(article.recipeJson || '{}')
-        : article.recipeJson || {};
-
-    const imagesData = typeof article.imagesJson === 'string'
-        ? JSON.parse(article.imagesJson || '{}')
-        : article.imagesJson || {};
-
-    // Build image array from variants
-    const images: string[] = [];
-    if (imagesData.cover?.variants) {
-        const v = imagesData.cover.variants;
-        if (v.lg?.url) images.push(v.lg.url);
-        if (v.md?.url) images.push(v.md.url);
-        if (v.sm?.url) images.push(v.sm.url);
-    }
-
-    // Use shared utilities for consistent JSON-LD formatting
-    const recipeIngredient = flattenIngredients(recipeData.ingredients || []);
-    const recipeInstructions = toSchemaOrgInstructions(recipeData.instructions || []);
-
-    // Build nutrition if present
-    let nutrition: object | undefined;
-    if (recipeData.nutrition && Object.keys(recipeData.nutrition).length > 0) {
-        nutrition = toSchemaOrgNutrition(recipeData.nutrition);
-    }
-
-    // Build aggregate rating if present
-    let aggregateRating: object | undefined;
-    if (recipeData.aggregateRating?.ratingValue) {
-        aggregateRating = {
-            '@type': 'AggregateRating',
-            ratingValue: recipeData.aggregateRating.ratingValue,
-            ratingCount: recipeData.aggregateRating.ratingCount || 0,
-        };
-    }
-
-    // Build video if present
-    let video: object | undefined;
-    if (recipeData.video?.url) {
-        video = {
-            '@type': 'VideoObject',
-            name: recipeData.video.name,
-            description: recipeData.video.description,
-            thumbnailUrl: recipeData.video.thumbnailUrl,
-            contentUrl: recipeData.video.url,
-            duration: recipeData.video.duration,
-        };
-    }
-
-    return {
-        '@context': 'https://schema.org',
-        '@type': 'Recipe',
-        name: article.headline,
-        description: article.shortDescription,
-        image: images,
-        author: {
-            '@type': 'Person',
-            name: article.authorName || article.cachedAuthorJson?.name,
-        },
-        datePublished: article.publishedAt,
-        dateModified: article.updatedAt,
-        prepTime: minutesToIsoDuration(recipeData.prep) || undefined,
-        cookTime: minutesToIsoDuration(recipeData.cook) || undefined,
-        totalTime: minutesToIsoDuration(
-            recipeData.total ?? (((recipeData.prep ?? 0) + (recipeData.cook ?? 0)) || null)
-        ) || undefined,
-        recipeYield: recipeData.recipeYield || (recipeData.servings ? `${recipeData.servings} servings` : undefined),
-        recipeCategory: recipeData.recipeCategory,
-        recipeCuisine: recipeData.recipeCuisine,
-        keywords: recipeData.keywords?.join(', '),
-        recipeIngredient,
-        recipeInstructions,
-        nutrition,
-        aggregateRating,
-        video,
-        suitableForDiet: recipeData.suitableForDiet?.map(d => `https://schema.org/${d}`),
-    };
-}
 
 /**
  * GET /api/recipes/:slug
  * Public endpoint to get recipe by slug with JSON-LD
  */
 export const GET: APIRoute = async ({ params, locals, url }) => {
-    const { slug } = params;
-
-    if (!slug) {
-        const { body, status, headers } = formatErrorResponse(
-            new AppError(ErrorCodes.VALIDATION_ERROR, 'Slug is required', 400)
-        );
-        return new Response(body, { status, headers });
-    }
-
     try {
+        const { slug } = validateParams(params, SlugOrIdParam);
         const db = env.DB;
         if (!db) {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
@@ -127,9 +29,11 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
             return new Response(body, { status, headers });
         }
 
-        // Generate JSON-LD
+        // Generate JSON-LD (prefer pre-generated, fallback to on-the-fly)
         const baseUrl = `${url.protocol}//${url.host}`;
-        const jsonLd = generateRecipeJsonLd(article, baseUrl);
+        const jsonLd = article.jsonldJson
+            ? (typeof article.jsonldJson === 'string' ? JSON.parse(article.jsonldJson) : article.jsonldJson)
+            : generateJsonLd(article, baseUrl);
 
         // Include JSON-LD in response
         const responseData = {

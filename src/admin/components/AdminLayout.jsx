@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { AnimatedOutlet } from "./AnimatedOutlet";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -80,7 +81,7 @@ const AdminLayout = () => {
     ? "flex-1 overflow-hidden min-h-0 flex flex-col"
     : isEditorPage
       ? "flex-1 overflow-hidden px-3 py-4 min-h-0 flex flex-col"
-      : "flex-1 overflow-auto p-6";
+      : "flex-1 overflow-auto overscroll-y-contain p-6";
   const contentClassName = isPanelLayout
     ? "w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col"
     : isEditorPage
@@ -129,7 +130,7 @@ const AdminLayout = () => {
         {/* Main Content */}
         <main className={mainClassName}>
           <div className={contentClassName}>
-            <Outlet />
+            <AnimatedOutlet />
           </div>
         </main>
       </SidebarInset>

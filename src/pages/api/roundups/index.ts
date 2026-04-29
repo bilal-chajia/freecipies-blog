@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import { getArticles } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { validateQuery, PaginationQuery } from '@shared/validation';
 
 export const prerender = false;
 
@@ -20,13 +21,13 @@ export const prerender = false;
 export const GET: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
 
-    // Parse query parameters
+    // Validate pagination query params
+    const { page, limit, offset } = validateQuery(url.searchParams, PaginationQuery);
+
+    // Parse filter query parameters
     const category = url.searchParams.get('category');
     const author = url.searchParams.get('author');
     const search = url.searchParams.get('search');
-    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
-    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '12')));
-    const offset = (page - 1) * limit;
 
     try {
         const db = env.DB;

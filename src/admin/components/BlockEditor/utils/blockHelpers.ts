@@ -110,8 +110,6 @@ export const getBlockLabel = (block: AnyBlock, itemCount: number = 1): string =>
             return 'Divider';
         case 'simpleTable':
             return 'Table';
-        case 'recipeEmbed':
-            return truncateLabel((block.props as any)?.headline || 'Embedded recipe');
         case 'relatedContent':
             return truncateLabel((block.props as any)?.title || 'Related content');
         case 'beforeAfter':

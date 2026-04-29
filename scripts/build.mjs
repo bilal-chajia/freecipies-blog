@@ -12,7 +12,7 @@ console.log('🔨 Starting build...');
 
 // Run Astro build with increased memory
 try {
-  execSync('npx astro build', {
+  execSync('pnpm exec astro build', {
     stdio: 'inherit',
     env: {
       ...process.env,

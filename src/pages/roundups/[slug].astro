@@ -2,9 +2,7 @@
 import { env } from 'cloudflare:workers';
 import RoundupLayout from "@layouts/RoundupLayout.astro";
 import SEO from "@components/SEO.astro";
-import { getArticleBySlug } from "@modules/articles";
-import { getAuthorById } from "@modules/authors/services/authors.service";
-import { getCategoryById } from "@modules/categories/services/categories.service";
+import { getArticleBySlug, getArticleById } from "@modules/articles";
 import { extractImage } from "@shared/utils";
 
 export const prerender = false;
@@ -16,25 +14,28 @@ if (!slug) {
 }
 
 let roundup: any = null;
-let author: any = null;
-let category: any = null;
 
 try {
   if (env.DB) {
-    roundup = await getArticleBySlug(env.DB, slug, "roundup");
-    
-    if (roundup) {
-      if (roundup.authorId) {
-        author = await getAuthorById(env.DB, roundup.authorId);
+    // Smart routing: support both numeric ID and slug
+    const isNumeric = /^\d+$/.test(slug);
+    if (isNumeric) {
+      roundup = await getArticleById(env.DB, parseInt(slug));
+      // Ensure it's a roundup
+      if (roundup && roundup.type !== 'roundup') {
+        roundup = null;
       }
-      if (roundup.categoryId) {
-        category = await getCategoryById(env.DB, roundup.categoryId);
-      }
+    } else {
+      roundup = await getArticleBySlug(env.DB, slug, "roundup");
     }
   }
 } catch (error) {
   console.error(`Error fetching roundup (${slug}):`, error);
 }
+
+// Author and category are already hydrated via hydrateArticle() from cached JSON columns
+const author = (roundup as any).author || null;
+const category = (roundup as any).category || null;
 
 if (!roundup) {
   return Astro.redirect("/404");
@@ -46,7 +47,9 @@ const heroImage = heroCover.imageUrl ? heroCover : heroThumb;
 
 const pageTitle = roundup.metaTitle || roundup.headline;
 const pageDescription = roundup.metaDescription || roundup.shortDescription;
-const faqs = typeof roundup.faqsJson === 'string' ? JSON.parse(roundup.faqsJson || '[]') : (roundup.faqsJson || []);
+const jsonldSchemas = typeof roundup.jsonldJson === 'string'
+  ? JSON.parse(roundup.jsonldJson || '[]')
+  : (roundup.jsonldJson || []);
 ---
 
 <RoundupLayout article={roundup} author={author} category={category}>
@@ -54,19 +57,9 @@ const faqs = typeof roundup.faqsJson === 'string' ? JSON.parse(roundup.faqsJson 
     slot="head"
     title={pageTitle}
     description={pageDescription}
-    type="article"
-    publishedTime={roundup.publishedAt || undefined}
-    modifiedTime={roundup.updatedAt || roundup.publishedAt || undefined}
-    author={{ 
-      name: author?.name || "Freecipies Team",
-      url: author?.slug ? `${Astro.url.origin}/authors/${author.slug}` : undefined
-    }}
     image={heroImage.imageUrl || roundup.imageUrl || ""}
     imageAlt={heroImage.imageAlt || roundup.imageAlt || undefined}
-    faqs={faqs}
-    roundup={{
-      itemList: roundup.jsonldJson
-    }}
+    schemas={jsonldSchemas}
   />
 </RoundupLayout>
 
