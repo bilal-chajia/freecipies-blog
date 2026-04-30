@@ -1,5 +1,7 @@
 # Content JSON Contract
 
+> **Last Updated:** 2026-04-29
+
 This is the canonical contract for `articles.content_json`.
 
 For the full `articles` table contract, use `docs/ARTICLE_TABLE_CONTRACT.md`.
@@ -26,7 +28,7 @@ For the full `articles` table contract, use `docs/ARTICLE_TABLE_CONTRACT.md`.
 | Database/API | `ContentDocument` | Official persisted contract |
 | Site renderer | normalized `ContentDocument.blocks` | Renderer reads canonical block names only |
 
-The normalizer may read legacy arrays or editor names during local development, but save paths must persist `ContentDocument v1`.
+Compatibility behavior for old drafts or editor names is documented in `docs/IMPLEMENTATION_GAPS.md`, not in this contract.
 
 ## Naming Rules
 
@@ -41,25 +43,9 @@ Use exactly these names by layer:
 
 Never use misspelled, hybrid, or alternate block type names such as `contentjson`, `content_JSON`, `roundepitem`, `roundupItem`, `roundupList`, `mainRecipe`, `faqSection`, or `roundup_list` in new code.
 
-## Source File Rules
-
-- New TypeScript logic must use `.ts`.
-- React components must use `.tsx`.
-- Avoid adding new `.js` or `.jsx` files.
-- Existing `.js`/`.jsx` files can be migrated gradually when touched, but do not mix a contract refactor with a full admin-wide extension migration.
-
 ## Canonical Block Names
 
 The official `block.type` convention is `snake_case` across every surface: BlockEditor, API, DB, and renderer.
-
-| Legacy/editor-only name | Canonical name |
-| --- | --- |
-| `alert` | `tip_box` |
-| `customImage` | `image` |
-| `faqSection` | `faq_section` |
-| `relatedContent` | `related_content` |
-| `roundupList` | `roundup_item` |
-| `mainRecipe` | `main_recipe` |
 
 `main_recipe` is a position marker only. Recipe data remains in `recipe_json`.
 
@@ -70,8 +56,6 @@ This section is the working agreement between admin BlockEditor, APIs, DB, and t
 There is one official block vocabulary:
 
 - **Canonical vocabulary**: `snake_case` `block.type` names used by BlockEditor, APIs, DB, and Astro renderer.
-
-The current admin may still contain legacy camelCase/custom BlockNote names while the refactor is in progress. Those names are temporary compatibility details and must be converted before saving.
 
 Only canonical `snake_case` block types are allowed in `articles.content_json`.
 
@@ -85,7 +69,7 @@ Only canonical `snake_case` block types are allowed in `articles.content_json`.
 | `list` | Ordered, unordered, or checklist list | `id`, `style`, `items` | none | `style` is `ordered`, `unordered`, or `checklist`. |
 | `image` | Media image block | `id`, `media_id`, `alt` | `caption`, `credit`, `variants` | `credit` is an author snapshot object, not a bare string. Frontend must render with `width`, `height`, and lazy loading where applicable. |
 | `video` | Video embed | `id`, `provider`, `video_id`, `aspect_ratio` | none | `provider` is `youtube`, `vimeo`, or `self`. |
-| `tip_box` | Tip, warning, info, or note box | `id`, `variant`, `text` | `title` | Editor `alert` maps here. |
+| `tip_box` | Tip, warning, info, or note box | `id`, `variant`, `text` | `title` | Use for editorial tips, warnings, info, or notes. |
 | `divider` | Visual divider | `id` | none | No content payload. |
 | `table` | Simple table | `id`, `headers`, `rows` | none | `headers` is `string[]`, `rows` is `string[][]`. |
 | `roundup_item` | One item inside a roundup article | `id` plus `article_id` or `external_url` + `title` | `subtitle`, `note`, `cover` | One stored block per roundup item. Do not store `roundup_list`. |
@@ -94,7 +78,7 @@ Only canonical `snake_case` block types are allowed in `articles.content_json`.
 | `related_content` | Related article/recipe/roundup block | `id`, `layout`, `items` | `title`, `mode`, `limit` | Stores compact snapshots so renderer does not read D1. |
 | `main_recipe` | Position marker for the recipe card | `id` | none | Recipe data stays in `recipe_json`. |
 
-Every official v1 block stored in `content_json.blocks` must include `id`. The normalizer may generate IDs for legacy/local input, but strict save validation rejects missing IDs.
+Every official v1 block stored in `content_json.blocks` must include `id`. Strict save validation rejects missing IDs.
 
 ### Reserved Future Blocks
 
@@ -110,19 +94,6 @@ These names are reserved but not accepted by strict v1 save validation until the
 
 `spacer` and `ad_slot` are reserved for a future system/layout strategy. They are not editorial content blocks in v1 and strict save validation must reject them.
 
-### Legacy Editor Mapping
-
-This table exists only for current compatibility while the admin editor is being refactored. New BlockEditor code should use the canonical `snake_case` names directly.
-
-| Legacy editor block | Canonical block | Compatibility rule |
-| --- | --- | --- |
-| `alert` | `tip_box` | Convert `props.type` to `variant`; content becomes `text`. |
-| `customImage` | `image` | Convert selected media to `media_id`, `alt`, and image metadata. |
-| `faqSection` | `faq_section` | Convert editor FAQ items to `{ question, answer }[]`. |
-| `relatedContent` | `related_content` | Convert editor selection/settings to canonical related content payload. |
-| `roundupList` | `roundup_item` | Flatten each editor item into one stored `roundup_item` block. |
-| `mainRecipe` | `main_recipe` | Save only the marker block; never duplicate `recipe_json`. |
-
 ### Roundup Decision
 
 `roundup_item` is the only stored roundup block name.
@@ -130,7 +101,7 @@ This table exists only for current compatibility while the admin editor is being
 Do not introduce:
 
 - `roundupList` in new BlockEditor code or stored JSON.
-- `roundup_list` anywhere except inside the legacy normalizer.
+- `roundup_list` in new BlockEditor code or stored JSON.
 - `roundupItem` or misspelled variants such as `roundepitem`.
 
 If the editor needs one visual "roundup list" UI, that grouping is a component concern, not a `block.type`. The DB still stores one `roundup_item` block per item so search, rendering, and APIs can reason about each item consistently.

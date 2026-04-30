@@ -326,10 +326,10 @@ const Settings = () => {
             tocEnabled: data.toc.enabled ?? true,
             tocNumbering: data.toc.numbering ?? true,
             tocCollapsible: data.toc.collapsible ?? true,
-            tocDefaultOpen: data.toc.defaultOpen ?? true,
-            tocShowJumpButton: data.toc.showJumpButton ?? true,
-            tocAccentColor: data.toc.accentColor || 'hsl(var(--primary))',
-            tocMaxDepth: data.toc.maxDepth ?? 4,
+            tocDefaultOpen: data.toc.default_open ?? data.toc.defaultOpen ?? true,
+            tocShowJumpButton: data.toc.show_jump_button ?? data.toc.showJumpButton ?? true,
+            tocAccentColor: data.toc.accent_color ?? data.toc.accentColor ?? 'hsl(var(--primary))',
+            tocMaxDepth: data.toc.max_depth ?? data.toc.maxDepth ?? 4,
           }));
         }
       })
@@ -373,10 +373,10 @@ const Settings = () => {
               enabled: formData.tocEnabled,
               numbering: formData.tocNumbering,
               collapsible: formData.tocCollapsible,
-              defaultOpen: formData.tocDefaultOpen,
-              showJumpButton: formData.tocShowJumpButton,
-              accentColor: formData.tocAccentColor,
-              maxDepth: formData.tocMaxDepth,
+              default_open: formData.tocDefaultOpen,
+              show_jump_button: formData.tocShowJumpButton,
+              accent_color: formData.tocAccentColor,
+              max_depth: formData.tocMaxDepth,
             },
           }),
         });

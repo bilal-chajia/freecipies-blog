@@ -1,5 +1,7 @@
 # Recipe JSON Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the canonical contract for `articles.recipe_json`.
 
 `recipe_json` is the complete recipe payload. It is not a cache and it is not a card/listing snapshot.
@@ -171,8 +173,6 @@ Google image guidance for Recipe rich results prefers multiple crawlable high-re
   "video": null
 }
 ```
-
-Current code still contains camelCase fields such as `recipeYield`, `recipeCategory`, `suitableForDiet`, `aggregateRating`, and `cookingMethod`. The target stored contract should use `snake_case` for new writes, with temporary normalization for existing local drafts.
 
 ## Timing
 
@@ -412,12 +412,6 @@ Rules:
 - If an equipment item is inactive or missing, it should not appear in `cached_equipment_json`, but the recipe can still render the plain checklist item from `recipe_json.equipment`.
 - Regeneration is handled by application/service logic, not by SQL triggers that rebuild JSON.
 
-Legacy/current implementation note:
-
-- Current code still accepts/matches equipment by `name`.
-- The normalizer may support legacy `name` values during development.
-- Save paths should move toward `equipment_id` + `label` for mapped equipment to avoid broken affiliate snapshots when names change.
-
 ## Video
 
 ```json
@@ -447,7 +441,7 @@ Rules:
 - Prefer `content_url` for self-hosted videos when Googlebot can fetch the actual video file.
 - Use `embed_url` for YouTube/Vimeo/player embeds.
 - `thumbnail` follows the image snapshot rules: stored data keeps `r2_key`, public rendering converts to URLs.
-- Recipe timing still uses numeric minutes; do not copy this ISO rule to `prep`, `cook`, or `total`.
+- Recipe timing fields use numeric minutes; do not copy this ISO rule to `prep`, `cook`, or `total`.
 
 ## Editorial Quality Signals
 
@@ -498,16 +492,3 @@ When a recipe article is saved, the app should derive:
 - `articles.cached_rating_json` from `recipe_json.aggregate_rating`
 - `articles.jsonld_json` from `recipe_json` plus article source fields and snapshots
 - `HowToStep.image` and step URLs from `recipe_json.instructions` plus `images_json.recipe_steps`
-
-## Current Implementation Gaps
-
-These are known mismatches between current code and the target contract:
-
-- Current code still uses camelCase names in several places.
-- `db/schema.sql` defaults are expected to stay aligned with this contract.
-- Current frontend pages still read legacy timing fields in some card/list contexts.
-- Current `cached_recipe_json` code writes camelCase keys; the documented target is snake_case.
-- Current code may still use direct step image URLs; the target contract resolves step images via `images_json.recipe_steps`.
-- Current equipment cache generation still matches by `name`; the target contract uses `equipment_id` when available and falls back to plain checklist rendering for uncached items.
-
-These gaps should be handled with a normalizer before strict save validation is enforced.

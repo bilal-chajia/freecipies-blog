@@ -1,5 +1,7 @@
 # Article Cached Fields Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the canonical contract for regenerable cached fields on the `articles` table.
 
 For the full `articles` table contract, use `docs/ARTICLE_TABLE_CONTRACT.md`.
@@ -88,7 +90,6 @@ Shape:
 Rules:
 
 - New writes use `question` and `answer`.
-- Legacy `q`/`a` values may be normalized when read.
 - When `faqs_json` changes, `jsonld_json` must be regenerated.
 
 ## `cached_tags_json`
@@ -208,7 +209,6 @@ Shape:
 Rules:
 
 - Stored cache JSON uses `snake_case`.
-- Legacy camelCase cache values may be normalized when read.
 - The full recipe card renderer must not depend on this cache.
 - This cache must be fully regenerable from `recipe_json`.
 - `total_time_minutes` should also sync to the scalar `articles.total_time_minutes`.
@@ -297,7 +297,7 @@ Shape:
 ```json
 [
   {
-    "id": 1,
+    "equipment_id": 1,
     "name": "Stand Mixer",
     "slug": "stand-mixer",
     "required": true,
@@ -336,7 +336,6 @@ Shape:
 Rules:
 
 - Stored cache JSON uses `snake_case`.
-- Legacy `ratingValue` / `ratingCount` may be normalized when read.
 
 ## `jsonld_json`
 

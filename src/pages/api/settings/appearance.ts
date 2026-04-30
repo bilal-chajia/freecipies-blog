@@ -7,7 +7,8 @@
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { getTocSettings, updateTocSettings, type TocSettings } from '@modules/settings/services/settings.service';
+import { getTocSettings, updateTocSettings } from '@modules/settings/services/settings.service';
+import type { TocSettings } from '@modules/settings/types/settings.types';
 import { validateBody } from '@shared/validation';
 import { AppearanceSchema } from '@shared/validation/schemas/settings';
 

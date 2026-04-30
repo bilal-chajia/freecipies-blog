@@ -6,6 +6,10 @@ dist/
 # dependencies
 node_modules/
 
+# local project toolchain (Node/pnpm portable for sandboxed agents)
+.tools/
+.toolchain/
+
 # logs
 npm-debug.log*
 yarn-debug.log*

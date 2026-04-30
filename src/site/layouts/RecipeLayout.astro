@@ -21,9 +21,8 @@ import RatingSystem from "../components/content/RatingSystem";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import {
   getTocSettings,
-  TOC_DEFAULTS,
-  type TocSettings,
 } from "@modules/settings/services/settings.service";
+import { TOC_DEFAULTS, type TocSettings } from "@modules/settings/types/settings.types";
 
 /**
  * Props use Record<string, any> because recipe & author arrive fully hydrated
@@ -125,7 +124,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
 
   <article
     class="recipe-page"
-    style={`--toc-accent: ${tocSettings.accentColor};`}
+    style={`--toc-accent: ${tocSettings.accent_color};`}
   >
     <div class="recipe-container">
       <!-- Main Content Column -->

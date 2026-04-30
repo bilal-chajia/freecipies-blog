@@ -1,5 +1,7 @@
 # Tags Table Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the product/data contract for the `tags` table and the `articles_to_tags` join table. The executable SQL source remains `db/schema.sql`.
 
 ## Scope
@@ -107,7 +109,7 @@ Public Astro:
 - `filter_groups_json`: valid JSON array of strings.
 - `style_json`: valid JSON object.
 - Public queries: `deleted_at IS NULL`.
-- Public tag filters should ignore deleted tags even if a stale article snapshot still contains one.
+- Public tag filters should ignore deleted tags even if an old article snapshot contains one.
 
 ## Cache Rules
 
@@ -129,8 +131,3 @@ Rules:
 - Do not use `name` for tags.
 - Search indexing flattens `label`.
 - Regenerate from `articles_to_tags` joined with active `tags`.
-
-## Known Implementation Notes
-
-- `tags.cached_post_count` is documented in SQL, but no equivalent tag-count trigger is currently visible in `db/schema.sql`.
-- Until a trigger/job is implemented, treat `cached_post_count` as app-managed.

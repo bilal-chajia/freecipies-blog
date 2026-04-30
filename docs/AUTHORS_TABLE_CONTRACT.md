@@ -1,5 +1,7 @@
 # Authors Table Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the product/data contract for the `authors` table. The executable SQL source remains `db/schema.sql`.
 
 ## Scope
@@ -205,8 +207,3 @@ Rules:
 - Use snapshots for bylines/cards to avoid avoidable joins.
 - Author profile data remains in `authors`.
 - Public props convert avatar `r2_key` values to URLs.
-
-## Known Implementation Notes
-
-- `cached_post_count` is documented as denormalized. Its refresh should be handled by app logic or SQL automation.
-- Existing service comments mention automatic author cache refresh, but this contract treats cache refresh as a required behavior, not proof that the implementation is complete.

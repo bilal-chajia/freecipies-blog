@@ -14,9 +14,8 @@ import TableOfContents from "../components/content/TableOfContents.astro";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import {
   getTocSettings,
-  TOC_DEFAULTS,
-  type TocSettings,
 } from "@modules/settings/services/settings.service";
+import { TOC_DEFAULTS, type TocSettings } from "@modules/settings/types/settings.types";
 interface Props {
   article: Record<string, any>;
   author?: Record<string, any> | null;
@@ -86,7 +85,7 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
 
   <article
     class="article-page"
-    style={`--toc-accent: ${tocSettings.accentColor};`}
+    style={`--toc-accent: ${tocSettings.accent_color};`}
   >
     <div class="article-container">
       <div class="main-content">

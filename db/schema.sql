@@ -9,19 +9,7 @@
 -- 2. Developer Experience: Unified query interface (Drizzle ORM) for all data.
 -- 3. Typing: Allows structured JSON storage for complex settings (e.g., Social Links).
 --
--- COMMON KEYS (Pre-defined for reference):
--- ┌─────────────────┬──────────────────────────────────────────────────────────────┐
--- │ Key             │ Example Value Structure                                      │
--- ├─────────────────┼──────────────────────────────────────────────────────────────┤
--- │ site_info       │ {"name": "Freecipies", "tagline": "...", "logo": {...}}      │
--- │ social_links    │ {"facebook": "...", "instagram": "...", "pinterest": "..."}  │
--- │ seo_defaults    │ {"titleSuffix": " | Freecipies", "defaultOgImage": "..."}    │
--- │ theme_config    │ {"primaryColor": "#ff6600", "darkMode": false}               │
--- │ scripts         │ {"googleAnalytics": "G-XXX", "headerScripts": "..."}         │
--- │ footer_config   │ {"copyright": "© 2025", "links": [...]}                      │
--- │ newsletter      │ {"provider": "mailchimp", "listId": "...", "enabled": true}  │
--- │ contact_info    │ {"email": "...", "address": "...", "phone": "..."}           │
--- └─────────────────┴──────────────────────────────────────────────────────────────┘
+-- Contract: docs/SITE_SETTINGS_TABLE_CONTRACT.md
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS site_settings (
@@ -33,9 +21,8 @@ CREATE TABLE IF NOT EXISTS site_settings (
     -- The configuration payload.
     -- IMPORTANT: This column stores JSON strings, not simple text.
     -- This allows nesting complex data without creating multiple columns.
-    -- Example: '{"facebook": "https://facebook.com/...", "twitter": "..."}'
     -- VALIDATION: App layer should validate against expected schema per key.
-    value TEXT NOT NULL, 
+    value TEXT NOT NULL,
 
     -- Helper text for the Admin Panel UI.
     -- Displayed to the user to explain what this setting controls.
@@ -70,7 +57,7 @@ CREATE TABLE IF NOT EXISTS site_settings (
 );
 
 -- INDEX: Fast lookup by category for Admin Settings page sections.
-CREATE INDEX IF NOT EXISTS idx_site_settings_category 
+CREATE INDEX IF NOT EXISTS idx_site_settings_category
     ON site_settings(category, sort_order);
 
 -- TRIGGER: Auto-update timestamp on any change.
@@ -93,6 +80,8 @@ END;
 --   2. Send DeleteObject commands to R2 for each variant.
 --   3. Only then delete (or soft-delete) the SQL row.
 --   This prevents "orphaned files" (ghost files) on R2 storage.
+--
+-- Contract: docs/MEDIA_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS media (
@@ -101,29 +90,24 @@ CREATE TABLE IF NOT EXISTS media (
     -- 1. SEARCHABLE METADATA (Standard SQL Columns)
     -- ------------------------------------------------------------------
     -- Extracted from JSON to allow fast SQL filtering (WHERE name LIKE '%...%').
-    
+
     -- Internal name for the editor (e.g., "Apple Pie Shoot 01").
     -- Used in the Media Library search and file browser.
-    name TEXT NOT NULL, 
-    
-    -- SEO / Accessibility Text. 
+    name TEXT NOT NULL,
+
+    -- SEO / Accessibility Text.
     -- Kept as a separate column to allow efficient full-text search.
     -- REQUIRED: Every image must have alt text for accessibility (WCAG).
-    alt_text TEXT NOT NULL, 
-    
-    -- Visible Caption. 
+    alt_text TEXT NOT NULL,
+
+    -- Visible Caption.
     -- Can be displayed below the image in articles.
     -- Example: "Fresh apple pie cooling on a rustic wooden table"
-    caption TEXT, 
+    caption TEXT,
 
-    -- Legal / copyright author attribution snapshot.
-    -- Stored as JSON text for new writes, not a loose display string.
-    -- Author example:
-    --   {"type":"author","id":7,"name":"Jane Doe","slug":"jane-doe",
-    --    "avatar":{"media_id":22,"alt":"Jane Doe","variants":{"xs":{"r2_key":"media/jane-xs.webp","width":50,"height":50}}}}
-    -- Legacy plain text may be shown in admin, but new writes should use author snapshots.
-    credit TEXT,  
-    
+    -- Legal / copyright attribution. Contract: docs/MEDIA_TABLE_CONTRACT.md.
+    credit TEXT,
+
     -- Filter helper (e.g., 'image/webp', 'image/gif', 'video/mp4').
     -- REQUIRED: Used to filter Media Library by type.
     mime_type TEXT NOT NULL DEFAULT 'image/webp',
@@ -148,30 +132,8 @@ CREATE TABLE IF NOT EXISTS media (
     -- │ lg      │ 2048px │ 4K displays, MacBook Retina, iPad Pro          │
     -- └─────────┴────────┴─────────────────────────────────────────────────┘
     --
-    -- SCHEMA:
-    -- {
-    --   "variants": {
-    --     "original": { "r2_key": "2025/03/image-original.jpg", "width": 4000, "height": 3000, "size_bytes": 412345 },
-    --     "xs": { "r2_key": "2025/03/image-xs.webp", "width": 360,  "height": 240, "size_bytes": 23123 },
-    --     "sm": { "r2_key": "2025/03/image-sm.webp", "width": 720,  "height": 480, "size_bytes": 54321 },
-    --     "md": { "r2_key": "2025/03/image-md.webp", "width": 1200, "height": 800, "size_bytes": 102345 },
-    --     "lg": { "r2_key": "2025/03/image-lg.webp", "width": 2048, "height": 1365, "size_bytes": 198765 }
-    --   },
-    --   "placeholder": "data:image/jpeg;base64,/9j/4AAQ..." (Blurhash/LQIP, <1KB)
-    -- }
-    --
-    -- VARIANT RULES:
-    --   - original, xs, sm, md, lg: REQUIRED for image media.
-    --   - original: REQUIRED for image media. Used for Pinterest pin generation
-    --               and future high-quality re-processing. It may have the same
-    --               dimensions as lg if the uploaded/cropped source is not larger.
-    --
-    -- AGENT RULE: Do not skip "original" for image media; Pinterest generation depends on it.
-    -- TYPESCRIPT: Import from @shared/types/images
-    --   - StorageVariant (r2_key only, no url) for internal processing
-    --   - ImageVariant (with url, built dynamically at API boundary) for API responses
-    --   - MediaVariantsJson for full { variants, placeholder } structure
-    
+    -- Contract: docs/MEDIA_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md.
+
     variants_json TEXT NOT NULL,
 
     -- 3. SMART DISPLAY (Design Control)
@@ -249,6 +211,8 @@ END;
 -- │ config_json         │ ❌ NO    │ Defaults applied at app layer              │
 -- │ i18n_json           │ ❌ NO    │ Only for multilingual sites                │
 -- └─────────────────────┴──────────┴────────────────────────────────────────────┘
+--
+-- Contract: docs/CATEGORIES_TABLE_CONTRACT.md
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -314,59 +278,7 @@ CREATE TABLE IF NOT EXISTS categories (
     -- =========================================================================
     -- 3. VISUALS (Display-Ready Image Data)
     -- =========================================================================
-    -- Contains "Display-Ready" data mapped from the 'media' table.
-    -- STORAGE: Contains r2_key (not url). URLs are built dynamically via buildImageUrl().
-    -- AGENT RULE: When selecting an image from Media Library, copy only the
-    --             variants needed by this slot's render context. The full set
-    --             remains in media.variants_json.
-    --
-    -- SCHEMA (images_json):
-    -- {
-    --   "thumbnail": {                     <-- Slot 1: Menu Icons / Category Cards
-    --     "media_id": 105,                 <-- Reference to source Media ID
-    --     "alt": "Healthy breakfast bowl", <-- Copied from Media (or overridden)
-    --     "caption": "...",                <-- Optional visible caption
-    --     "credit": {"type":"author","id":7,"name":"Jane Doe","slug":"jane-doe",
-    --                "avatar":{"media_id":22,"alt":"Jane Doe","variants":{"xs":{"r2_key":"media/jane-xs.webp","width":50,"height":50}}}},
-    --     "placeholder": "data:image/...", <-- Blurhash/LQIP string (<1KB)
-    --     "focal_point": { "x": 50, "y": 30 },  <-- Optional override for cropping
-    --     "aspect_ratio": "16:9",          <-- Layout hint for space reservation
-    --     "variants": {                    <-- Slot-specific snapshot copied from Media
-    --        "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 240, "size_bytes": 23123 },
-    --        "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 480, "size_bytes": 54321 }
-    --     }
-    --   },
-    --   "cover": {                         <-- Slot 2: Hero Background Image
-    --     "media_id": 202,
-    --     "alt": "...",
-    --     "placeholder": "...",
-    --     "focal_point": { "x": 50, "y": 50 },
-    --     "aspect_ratio": "16:9",
-    --     "variants": {
-    --        "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1152, "size_bytes": 198765 },
-    --        "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 675, "size_bytes": 102345 }
-    --     }
-    --   }
-    -- }
-    --
-    -- VARIANT STRUCTURE:
-    --   Each variant contains:
-    --   - r2_key (string, REQUIRED): R2 object key. URL is built dynamically via buildImageUrl().
-    --   - width (integer, REQUIRED): Width in pixels
-    --   - height (integer, REQUIRED): Height in pixels (for CLS prevention)
-    --
-    -- VARIANT RULES:
-    --   - Slot snapshots store the variants needed by their render context.
-    --   - thumbnail stores xs + sm.
-    --   - cover stores md + lg.
-    --   - original is required in media.variants_json for image media, but do not
-    --     copy it into normal category snapshots unless a Pinterest/export workflow needs it.
-    --
-    -- FUTURE FIELDS (Reserved for later):
-        -- TYPESCRIPT: Import CategoryImagesJson, ImageSlot from @shared/types/images
-    --
-    --   - format: "webp" | "avif" | "jpeg" (for multi-format serving)
-    --   - avif: { "r2_key": "...", ... } (alternative AVIF variants)
+    -- Category image slots. Contract: docs/CATEGORIES_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md.
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
     -- =========================================================================
@@ -397,53 +309,13 @@ CREATE TABLE IF NOT EXISTS categories (
     -- 5. JSON CONFIG CONTAINERS
     -- =========================================================================
 
-    -- SEO overrides for the category landing page.
-    -- FALLBACK: If fields are NULL, app layer uses headline/short_description.
-    -- SCHEMA (seo_json):
-    -- {
-    --   "metaTitle": "Best Breakfast Recipes | Freecipies",  <-- <title> tag
-    --   "metaDescription": "Discover 100+ easy breakfast...", <-- <meta name="description">
-    --   "noIndex": false,                  <-- true = hide from search engines
-    --   "canonical": null,                 <-- Override canonical URL if needed
-    --   "ogImage": "https://...",          <-- Social share image (Facebook/Twitter)
-    --   "ogTitle": null,                   <-- Override OG title (falls back to metaTitle)
-    --   "ogDescription": null,             <-- Override OG description
-    --   "twitterCard": "summary_large_image",  <-- "summary" | "summary_large_image"
-    --   "robots": null                     <-- Custom robots: "nofollow,noarchive"
-    -- }
+    -- SEO overrides for the category landing page. Contract: docs/CATEGORIES_TABLE_CONTRACT.md.
     seo_json TEXT DEFAULT '{}' CHECK (json_valid(seo_json)),
 
-    -- Layout and behavior configuration for the category page.
-    -- SCHEMA (config_json):
-    -- {
-    --   "postsPerPage": 12,                <-- Pagination limit
-    --   "layoutMode": "grid",              <-- "grid" | "list" | "masonry"
-    --   "cardStyle": "full",               <-- "compact" | "full" | "minimal"
-    --   "showSidebar": true,               <-- Show/hide sidebar on landing
-    --   "showFilters": true,               <-- Show tag filter toggles
-    --   "showBreadcrumb": true,            <-- Show breadcrumb navigation
-    --   "showPagination": true,            <-- Show pagination controls
-    --   "sortBy": "publishedAt",           <-- Default sort: "publishedAt" | "title" | "viewCount"
-    --   "sortOrder": "desc",               <-- "asc" | "desc"
-    --   "headerStyle": "hero",             <-- "hero" | "minimal" | "none"
-    --   "tldr": "Quick summary text",      <-- Optional summary under the headline
-    --   "showInNav": true,                 <-- Category appears in navigation menu
-    --   "showInFooter": false,             <-- Category appears in footer
-    --   "featuredArticleId": 123,          <-- Featured recipe ID for hero
-    --   "showFeaturedRecipe": true,        <-- Show featured recipe card in hero
-    --   "showHeroCta": true,               <-- Show CTA button in hero
-    --   "heroCtaText": "Join My Mailing List", <-- CTA button label
-    --   "heroCtaLink": "#newsletter"       <-- CTA anchor or URL
-    -- }
+    -- Layout and behavior configuration. Contract: docs/CATEGORIES_TABLE_CONTRACT.md.
     config_json TEXT DEFAULT '{}' CHECK (json_valid(config_json)),
 
-    -- Internationalization overrides for multilingual sites.
-    -- SCHEMA (i18n_json):
-    -- {
-    --   "fr": { "label": "Petit-déjeuner", "headline": "Recettes du matin" },
-    --   "es": { "label": "Desayuno", "headline": "Recetas de desayuno" }
-    -- }
-    -- USAGE: App layer checks user locale, falls back to base fields.
+    -- Locale-specific overrides. Contract: docs/CATEGORIES_TABLE_CONTRACT.md.
     i18n_json TEXT DEFAULT '{}' CHECK (json_valid(i18n_json)),
 
     -- =========================================================================
@@ -471,11 +343,11 @@ CREATE TABLE IF NOT EXISTS categories (
     -- Last modification timestamp (UTC).
     -- Auto-updated by trigger on any column change.
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     -- Soft delete marker.
     -- NULL = Active record.
     -- NOT NULL = Logically deleted (hidden from queries, kept for recovery).
-    -- AGENT RULE: All queries should include WHERE deleted_at IS NULL.
+    -- Active queries should include WHERE deleted_at IS NULL.
     deleted_at DATETIME DEFAULT NULL
 );
 
@@ -526,6 +398,8 @@ CREATE INDEX IF NOT EXISTS idx_categories_active ON categories(deleted_at);     
 -- │ bio_json            │ ❌ NO    │ Bio text + social links                    │
 -- │ seo_json            │ ❌ NO    │ Overrides only                             │
 -- └─────────────────────┴──────────┴────────────────────────────────────────────┘
+--
+-- Contract: docs/AUTHORS_TABLE_CONTRACT.md
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS authors (
@@ -590,103 +464,19 @@ CREATE TABLE IF NOT EXISTS authors (
     -- =========================================================================
     -- 3. VISUALS (Display-Ready Image Data)
     -- =========================================================================
-    -- Standardized format matching categories table.
-    --
-    -- SCHEMA (images_json) - Matches ImageSlot from @shared/types/images:
-    -- {
-    --   "avatar": {                        <-- Slot 1: Profile photos, byline
-    --     "media_id": 105,                 <-- Reference to source Media ID
-    --     "alt": "Jane Doe headshot",      <-- SEO / Accessibility text
-    --     "caption": "Chef Jane Doe",      <-- Optional visible caption
-    --     "credit": {"type":"author","id":7,"name":"Jane Doe","slug":"jane-doe",
-    --                "avatar":{"media_id":22,"alt":"Jane Doe","variants":{"xs":{"r2_key":"media/jane-xs.webp","width":50,"height":50}}}},
-    --     "placeholder": "data:image/...", <-- Blurhash/LQIP (<1KB)
-    --     "focal_point": { "x": 50, "y": 30 },  <-- Cropping hint (0-100)
-    --     "aspect_ratio": "1:1",           <-- Square for avatars
-    --     "variants": {                    <-- SPECIAL SIZES for avatars!
-    --        "original": { "r2_key": "media/avatar-original.jpg", "width": 800, "height": 800, "size_bytes": 50000 },
-    --        "lg": { "r2_key": "media/avatar-lg.webp", "width": 400, "height": 400, "size_bytes": 50000 },
-    --        "md": { "r2_key": "media/avatar-md.webp", "width": 200, "height": 200, "size_bytes": 50000 },
-    --        "sm": { "r2_key": "media/avatar-sm.webp", "width": 100, "height": 100, "size_bytes": 50000 },
-    --        "xs": { "r2_key": "media/avatar-xs.webp", "width": 50, "height": 50, "size_bytes": 50000 }
-    --     }
-    --   },
-    --   "cover": {                         <-- Slot 2: Profile page hero
-    --     "media_id": 202,
-    --     "alt": "Jane in her kitchen",
-    --     "caption": "...",
-    --     "credit": {"type":"author","id":7,"name":"Jane Doe","slug":"jane-doe",
-    --                "avatar":{"media_id":22,"alt":"Jane Doe","variants":{"xs":{"r2_key":"media/jane-xs.webp","width":50,"height":50}}}},
-    --     "placeholder": "...",
-    --     "focal_point": { "x": 50, "y": 50 },
-    --     "aspect_ratio": "16:9",
-    --     "variants": {                    <-- Standard breakpoints
-    --        "lg": { "r2_key": "media/cover-lg.webp", "width": 2048, "height": 1152, "size_bytes": 198765 },
-    --        "md": { "r2_key": "media/cover-md.webp", "width": 1200, "height": 675, "size_bytes": 102345 },
-    --        "sm": { "r2_key": "media/cover-sm.webp", "width": 720, "height": 405, "size_bytes": 54321 },
-    --        "xs": { "r2_key": "media/cover-xs.webp", "width": 360, "height": 203, "size_bytes": 23123 }
-    --     }
-    --   }
-    -- }
-    --
-    -- BREAKPOINT NOTES:
-    --   AVATAR: Uses smaller widths (50, 100, 200, 400) instead of standard
-    --           because avatars display at 32-120px typically (bylines, comments).
-    --           Saves R2 storage. Original (800px) kept for profile page.
-    --   COVER:  Uses standard breakpoints (360, 720, 1200, 2048) for hero sections.
-    --
-    --  AGENT WARNING: Avatar variants use DIFFERENT sizes than standard images!
-    -- Standard: xs=360, sm=720, md=1200, lg=2048
-    -- Avatar:   xs=50,  sm=100, md=200,  lg=400 (smaller for profile photos)
-    -- Use AuthorImagesJson type which documents these special sizes.
-    
-    --
-    -- TYPESCRIPT: Import AuthorImagesJson from @shared/types/images
-    --             Stored avatar/cover slots keep r2_key; public props convert to url.
-    
+    -- Author image slots. Contract: docs/AUTHORS_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md.
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
     -- =========================================================================
     -- 4. BIOGRAPHY & SOCIALS
     -- =========================================================================
-    -- SCHEMA (bio_json):
-    -- {
-    --   "short": "Jane writes about healthy Mediterranean recipes...",
-    --   "long": "## About Jane\n\nJane has been cooking since...",  <-- Markdown
-    --   "persona": {
-    --     "voice": "Warm, practical, precise, and encouraging.",
-    --     "expertise": ["weeknight dinners", "Mediterranean cooking"],
-    --     "audience": "Busy home cooks who want reliable recipes.",
-    --     "point_of_view": "Food should be simple, seasonal, and realistic.",
-    --     "avoid": ["unverified health promises", "overly technical language"]
-    --   },
-    --   "socials": [
-    --     { "network": "twitter", "url": "https://x.com/jane", "label": "@janedoe" },
-    --     { "network": "instagram", "url": "https://instagram.com/jane" },
-    --     { "network": "youtube", "url": "https://youtube.com/@jane" },
-    --     { "network": "website", "url": "https://jane.blog", "label": "My Blog" }
-    --   ]
-    -- }
-    -- NETWORK OPTIONS: twitter, instagram, facebook, youtube, pinterest, 
-    --                  tiktok, linkedin, website, email, custom
+    -- Biography, persona, and socials. Contract: docs/AUTHORS_TABLE_CONTRACT.md.
     bio_json TEXT DEFAULT '{}' CHECK (json_valid(bio_json)),
 
     -- =========================================================================
     -- 5. SEO CONFIGURATION
     -- =========================================================================
-    -- Publish-required for public author profiles. The SQL default allows drafts,
-    -- but app validation must require a complete payload before is_online = 1.
-    -- SCHEMA (seo_json):
-    -- {
-    --   "metaTitle": "Jane Doe - Senior Food Editor | Freecipies",
-    --   "metaDescription": "Meet Jane Doe, our senior editor specializing in...",
-    --   "noIndex": false,
-    --   "canonical": null,
-    --   "ogImage": "https://...",          <-- Social share image
-    --   "ogTitle": null,                   <-- Override OG title
-    --   "ogDescription": null,             <-- Override OG description
-    --   "twitterCard": "summary_large_image"
-    -- }
+    -- Publish-required for public author profiles. Contract: docs/AUTHORS_TABLE_CONTRACT.md.
     seo_json TEXT DEFAULT '{}' CHECK (json_valid(seo_json)),
 
     -- =========================================================================
@@ -752,7 +542,7 @@ CREATE INDEX IF NOT EXISTS idx_authors_active ON authors(deleted_at);  -- Soft d
 -- ==================================================================================
 -- TABLE: TAGS (Utility & Filtering)
 -- ==================================================================================
--- PURPOSE: 
+-- PURPOSE:
 --   Lightweight descriptors used primarily for filtering content (Sidebar Facets).
 --   Designed for high-performance "Tag Clouds" and "Multi-Select" UI logic.
 --
@@ -770,6 +560,8 @@ CREATE INDEX IF NOT EXISTS idx_authors_active ON authors(deleted_at);  -- Soft d
 -- │ filter_groups_json  │ ❌ NO    │ Defaults to empty array []                 │
 -- │ style_json          │ ❌ NO    │ SVG icon, color, variant                   │
 -- └─────────────────────┴──────────┴────────────────────────────────────────────┘
+--
+-- Contract: docs/TAGS_TABLE_CONTRACT.md
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS tags (
@@ -800,38 +592,13 @@ CREATE TABLE IF NOT EXISTS tags (
     -- =========================================================================
     -- 2. FILTER LOGIC (Multi-Grouping)
     -- =========================================================================
-    -- Defines which "Sections" this tag appears in within the UI filter menu.
-    -- Allows a single tag to belong to multiple filter contexts.
-    --
-    -- SCHEMA (filter_groups_json):
-    -- ["Diet", "Lifestyle", "Popular"]
-    --
-    -- COMMON GROUPS:
-    --   - "Diet": Gluten Free, Vegan, Keto, Dairy Free
-    --   - "Meal": Breakfast, Lunch, Dinner, Snack
-    --   - "Time": Under 15 Min, Under 30 Min, Under 1 Hour
-    --   - "Difficulty": Easy, Medium, Advanced
-    --   - "Occasion": Holiday, Party, Weeknight
-    --
-    -- AGENT RULE: Always initialize as '[]' (Empty Array). Never NULL.
+    -- Filter grouping metadata. Contract: docs/TAGS_TABLE_CONTRACT.md.
     filter_groups_json TEXT DEFAULT '[]' CHECK (json_valid(filter_groups_json)),
 
     -- =========================================================================
     -- 3. VISUAL STYLING (Design System)
     -- =========================================================================
-    -- Stores visual properties including RAW SVG code for instant rendering.
-    --
-    -- SCHEMA (style_json):
-    -- {
-    --   "svg_code": "<svg viewBox='0 0 24 24'><path d='...'/></svg>",
-    --   "color": "#10b981",       <-- Hex color for badge background/text
-    --   "variant": "outline"      <-- UI variant: 'solid' | 'outline' | 'ghost'
-    -- }
-    --
-    -- SVG RULES:
-    --   - Must be sanitized (no <script> tags, no event handlers)
-    --   - Must have viewBox attribute
-    --   - Keep under 2KB for performance
+    -- Visual styling metadata. Contract: docs/TAGS_TABLE_CONTRACT.md.
     style_json TEXT DEFAULT '{}' CHECK (json_valid(style_json)),
 
     -- =========================================================================
@@ -853,7 +620,7 @@ CREATE TABLE IF NOT EXISTS tags (
     -- Soft delete marker.
     -- NULL = Active tag.
     -- NOT NULL = Logically deleted (hidden from filters, kept for history).
-    -- AGENT RULE: All queries should include WHERE deleted_at IS NULL.
+    -- Active queries should include WHERE deleted_at IS NULL.
     deleted_at DATETIME DEFAULT NULL
 );
 
@@ -909,6 +676,8 @@ CREATE INDEX IF NOT EXISTS idx_tags_active ON tags(deleted_at);
 -- │ affiliate_url       │ ❌ NO    │ Primary affiliate link                     │
 -- │ affiliate_provider  │ ❌ NO    │ "amazon", "williams-sonoma", etc.          │
 -- └─────────────────────┴──────────┴────────────────────────────────────────────┘
+--
+-- Contract: docs/EQUIPMENT_TABLE_CONTRACT.md
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS equipment (
@@ -934,11 +703,7 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- EXAMPLE: "Essential for whipping egg whites and kneading dough."
     description TEXT,
 
-    -- Synonyms/keywords for auto-detection in recipe instructions.
-    -- Used to match equipment when scanning instruction text.
-    -- FORMAT: JSON array of lowercase strings.
-    -- EXAMPLE: ["mixer", "batteur", "robot pâtissier", "kitchenaid"]
-    -- AGENT RULE: Always include the name itself (lowercase) in this array.
+    -- Synonyms/keywords for equipment matching. Contract: docs/EQUIPMENT_TABLE_CONTRACT.md.
     keywords TEXT DEFAULT '[]' CHECK (json_valid(keywords)),
 
     -- Equipment category for filtering in admin.
@@ -948,13 +713,7 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- =========================================================================
     -- 2. VISUALS
     -- =========================================================================
-    -- Product image (standardized format).
-    -- SCHEMA: Same as other images_json fields.
-    -- {
-    --   "media_id": 301,
-    --   "alt": "KitchenAid Stand Mixer",
-    --   "variants": { "lg": {...}, "md": {...}, "sm": {...}, "xs": {...} }
-    -- }
+    -- Product image snapshot. Contract: docs/EQUIPMENT_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md.
     image_json TEXT DEFAULT '{}' CHECK (json_valid(image_json)),
 
     -- =========================================================================
@@ -1042,10 +801,9 @@ CREATE INDEX IF NOT EXISTS idx_equipment_active ON equipment(is_active);
 -- │ config_json         │ ❌ NO    │ Feature toggles                            │
 -- └─────────────────────┴──────────┴────────────────────────────────────────────┘
 --
--- AGENT RULES:
---   1. RELATIONSHIPS: Always use IDs (category_id, author_id), never slugs.
---   2. CONTENT: Use the versioned ContentDocument JSON structure.
---   3. ADS: Never insert 'ad_slot' blocks automatically. Only if explicitly requested.
+-- Contract: docs/ARTICLE_TABLE_CONTRACT.md
+-- JSON contracts: docs/CONTENT_JSON_CONTRACT.md, docs/ARTICLE_JSON_CONTRACTS.md,
+-- docs/RECIPE_JSON_CONTRACT.md, and docs/ARTICLE_CACHED_FIELDS_CONTRACT.md.
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS articles (
@@ -1117,7 +875,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- Good for storytelling/context before the main content.
 
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
-    -- Article image slots: cover, thumbnail, pinterest, contentImages.
+    -- Article image slots: cover, thumbnail, pinterest, content_images.
     -- Contract: docs/ARTICLE_JSON_CONTRACTS.md and docs/MEDIA_IMAGE_CONTRACT.md.
 
     -- --------------------------------------------------------------------
@@ -1171,7 +929,7 @@ CREATE TABLE IF NOT EXISTS articles (
 
     roundup_json TEXT DEFAULT '{
       "items": [],
-      "listType": "ItemList"
+      "list_type": "ItemList"
     }' CHECK (json_valid(roundup_json)),
     -- Compatibility field for roundup data.
     -- Direction and deprecation rules: docs/ARTICLE_JSON_CONTRACTS.md.
@@ -1192,7 +950,6 @@ CREATE TABLE IF NOT EXISTS articles (
 
     cached_tags_json TEXT DEFAULT '[]' CHECK (json_valid(cached_tags_json)),
     -- Minimal tag snapshots; source of truth is articles_to_tags + tags.
-    -- Shape: [{ "id": 12, "label": "Quick", "slug": "quick" }]
 
     cached_category_json TEXT DEFAULT '{}' CHECK (json_valid(cached_category_json)),
     -- Category snapshot for zero-join card/list rendering.
@@ -1246,14 +1003,14 @@ CREATE TABLE IF NOT EXISTS articles (
     -- --------------------------------------------------------------------
 
     seo_json TEXT DEFAULT '{
-      "metaTitle": null,
-      "metaDescription": null,
-      "noIndex": false,
+      "meta_title": null,
+      "meta_description": null,
+      "no_index": false,
       "canonical": null,
-      "ogImage": null,
-      "ogTitle": null,
-      "ogDescription": null,
-      "twitterCard": "summary_large_image"
+      "og_image": null,
+      "og_title": null,
+      "og_description": null,
+      "twitter_card": "summary_large_image"
     }' CHECK (json_valid(seo_json)),
     -- Per-article SEO overrides. Contract: docs/ARTICLE_JSON_CONTRACTS.md.
 
@@ -1266,11 +1023,11 @@ CREATE TABLE IF NOT EXISTS articles (
     -- --------------------------------------------------------------------
 
     config_json TEXT DEFAULT '{
-      "allowComments": true,
-      "showTableOfContents": true,
-      "manualRelatedIds": [],
-      "experimentKey": null,
-      "experimentVariant": null
+      "allow_comments": true,
+      "show_table_of_contents": true,
+      "manual_related_ids": [],
+      "experiment_key": null,
+      "experiment_variant": null
     }' CHECK (json_valid(config_json)),
     -- Per-article feature toggles and experiment hooks.
     -- Contract: docs/ARTICLE_JSON_CONTRACTS.md.
@@ -1416,6 +1173,7 @@ END;
 
 
 -- Table de liaison (Many-to-Many)
+-- Contract: docs/ARTICLE_TABLE_CONTRACT.md and docs/TAGS_TABLE_CONTRACT.md
 CREATE TABLE IF NOT EXISTS articles_to_tags (
     article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
     tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
@@ -1453,37 +1211,184 @@ CREATE VIRTUAL TABLE IF NOT EXISTS idx_media_search_fts USING fts5(
 );
 
 -- Trigger: Sync Articles on INSERT
-CREATE TRIGGER IF NOT EXISTS trg_articles_search_ai AFTER INSERT ON articles 
+CREATE TRIGGER IF NOT EXISTS trg_articles_search_ai AFTER INSERT ON articles
 BEGIN
   INSERT INTO idx_articles_search(
     rowid, headline, subtitle, short_description, body_content,
     tag_labels, author_name, category_name
   )
   VALUES (
-    NEW.id, 
-    NEW.headline, 
-    NEW.subtitle, 
-    NEW.short_description, 
+    NEW.id,
+    NEW.headline,
+    NEW.subtitle,
+    NEW.short_description,
     (
       SELECT GROUP_CONCAT(txt, ' ') FROM (
-        -- 1. Extract plain text from content_json blocks (paragraphs)
-        SELECT json_extract(value, '$.text') as txt 
+        -- Content blocks: direct text fields used by paragraph, heading, quote, tip, etc.
+        SELECT json_extract(value, '$.text') as txt
         FROM json_each(NEW.content_json, '$.blocks')
         WHERE json_extract(value, '$.text') IS NOT NULL
-        
+
         UNION ALL
-        
-        -- 2. Extract heading text from content_json
-        SELECT json_extract(value, '$.text')
+
+        -- Content blocks: titles, captions, notes, subtitles.
+        SELECT json_extract(value, '$.title')
         FROM json_each(NEW.content_json, '$.blocks')
-        WHERE json_extract(value, '$.type') = 'heading'
-        
+        WHERE json_extract(value, '$.title') IS NOT NULL
+
         UNION ALL
-        
-        -- 3. Extract ingredient names from recipe_json
-        SELECT json_extract(i.value, '$.name') 
-        FROM json_each(NEW.recipe_json, '$.ingredients') as g, 
+
+        SELECT json_extract(value, '$.caption')
+        FROM json_each(NEW.content_json, '$.blocks')
+        WHERE json_extract(value, '$.caption') IS NOT NULL
+
+        UNION ALL
+
+        SELECT json_extract(value, '$.note')
+        FROM json_each(NEW.content_json, '$.blocks')
+        WHERE json_extract(value, '$.note') IS NOT NULL
+
+        UNION ALL
+
+        SELECT json_extract(value, '$.subtitle')
+        FROM json_each(NEW.content_json, '$.blocks')
+        WHERE json_extract(value, '$.subtitle') IS NOT NULL
+
+        UNION ALL
+
+        -- List blocks: string items or object items with text/label/title.
+        SELECT CASE
+          WHEN item.type = 'object' THEN COALESCE(
+            json_extract(item.value, '$.text'),
+            json_extract(item.value, '$.label'),
+            json_extract(item.value, '$.title')
+          )
+          ELSE item.value
+        END
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'list'
+
+        UNION ALL
+
+        -- FAQ blocks.
+        SELECT json_extract(item.value, '$.question')
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'faq_section'
+
+        UNION ALL
+
+        SELECT json_extract(item.value, '$.answer')
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'faq_section'
+
+        UNION ALL
+
+        -- Table blocks.
+        SELECT header.value
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.headers') AS header
+        WHERE json_extract(block.value, '$.type') = 'table'
+
+        UNION ALL
+
+        SELECT cell.value
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.rows') AS row,
+             json_each(row.value) AS cell
+        WHERE json_extract(block.value, '$.type') = 'table'
+
+        UNION ALL
+
+        -- Related content snapshots.
+        SELECT json_extract(item.value, '$.title')
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'related_content'
+
+        UNION ALL
+
+        SELECT json_extract(item.value, '$.description')
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'related_content'
+
+        UNION ALL
+
+        -- Recipe ingredients.
+        SELECT json_extract(g.value, '$.section_title')
+        FROM json_each(NEW.recipe_json, '$.ingredients') AS g
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(i.value, '$.name')
+        FROM json_each(NEW.recipe_json, '$.ingredients') as g,
              json_each(g.value, '$.items') as i
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(i.value, '$.note')
+        FROM json_each(NEW.recipe_json, '$.ingredients') as g,
+             json_each(g.value, '$.items') as i
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        -- Recipe instructions.
+        SELECT json_extract(s.value, '$.section_title')
+        FROM json_each(NEW.recipe_json, '$.instructions') AS s
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(step.value, '$.text')
+        FROM json_each(NEW.recipe_json, '$.instructions') AS s,
+             json_each(s.value, '$.steps') AS step
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(step.value, '$.tip')
+        FROM json_each(NEW.recipe_json, '$.instructions') AS s,
+             json_each(s.value, '$.steps') AS step
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        -- Recipe metadata useful for search.
+        SELECT json_extract(NEW.recipe_json, '$.recipe_category')
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(NEW.recipe_json, '$.recipe_cuisine')
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(NEW.recipe_json, '$.difficulty')
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT keyword.value
+        FROM json_each(NEW.recipe_json, '$.keywords') AS keyword
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT equipment.value
+        FROM json_each(NEW.recipe_json, '$.equipment') AS equipment
+        WHERE NEW.type = 'recipe' AND equipment.type = 'text'
+
+        UNION ALL
+
+        SELECT json_extract(equipment.value, '$.label')
+        FROM json_each(NEW.recipe_json, '$.equipment') AS equipment
         WHERE NEW.type = 'recipe'
       )
     ),
@@ -1497,45 +1402,192 @@ BEGIN
 END;
 
 -- Trigger: Sync Articles on UPDATE (including soft-delete handling)
-CREATE TRIGGER IF NOT EXISTS trg_articles_search_au AFTER UPDATE ON articles 
+CREATE TRIGGER IF NOT EXISTS trg_articles_search_au AFTER UPDATE ON articles
 BEGIN
   -- Clean up old index entry (include all columns for proper deletion)
   INSERT INTO idx_articles_search(
-    idx_articles_search, rowid, headline, subtitle, short_description, 
+    idx_articles_search, rowid, headline, subtitle, short_description,
     body_content, tag_labels, author_name, category_name
   )
   VALUES('delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description, '', '', '', '');
-  
+
   -- Only insert fresh entry if NOT soft-deleted
   INSERT INTO idx_articles_search(
     rowid, headline, subtitle, short_description, body_content,
     tag_labels, author_name, category_name
   )
   SELECT
-    NEW.id, 
-    NEW.headline, 
-    NEW.subtitle, 
-    NEW.short_description, 
+    NEW.id,
+    NEW.headline,
+    NEW.subtitle,
+    NEW.short_description,
     (
       SELECT GROUP_CONCAT(txt, ' ') FROM (
-        -- 1. Extract plain text from content_json blocks (paragraphs)
-        SELECT json_extract(value, '$.text') as txt 
+        -- Content blocks: direct text fields used by paragraph, heading, quote, tip, etc.
+        SELECT json_extract(value, '$.text') as txt
         FROM json_each(NEW.content_json, '$.blocks')
         WHERE json_extract(value, '$.text') IS NOT NULL
-        
+
         UNION ALL
-        
-        -- 2. Extract heading text from content_json
-        SELECT json_extract(value, '$.text')
+
+        -- Content blocks: titles, captions, notes, subtitles.
+        SELECT json_extract(value, '$.title')
         FROM json_each(NEW.content_json, '$.blocks')
-        WHERE json_extract(value, '$.type') = 'heading'
-        
+        WHERE json_extract(value, '$.title') IS NOT NULL
+
         UNION ALL
-        
-        -- 3. Extract ingredient names from recipe_json
-        SELECT json_extract(i.value, '$.name') 
-        FROM json_each(NEW.recipe_json, '$.ingredients') as g, 
+
+        SELECT json_extract(value, '$.caption')
+        FROM json_each(NEW.content_json, '$.blocks')
+        WHERE json_extract(value, '$.caption') IS NOT NULL
+
+        UNION ALL
+
+        SELECT json_extract(value, '$.note')
+        FROM json_each(NEW.content_json, '$.blocks')
+        WHERE json_extract(value, '$.note') IS NOT NULL
+
+        UNION ALL
+
+        SELECT json_extract(value, '$.subtitle')
+        FROM json_each(NEW.content_json, '$.blocks')
+        WHERE json_extract(value, '$.subtitle') IS NOT NULL
+
+        UNION ALL
+
+        -- List blocks: string items or object items with text/label/title.
+        SELECT CASE
+          WHEN item.type = 'object' THEN COALESCE(
+            json_extract(item.value, '$.text'),
+            json_extract(item.value, '$.label'),
+            json_extract(item.value, '$.title')
+          )
+          ELSE item.value
+        END
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'list'
+
+        UNION ALL
+
+        -- FAQ blocks.
+        SELECT json_extract(item.value, '$.question')
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'faq_section'
+
+        UNION ALL
+
+        SELECT json_extract(item.value, '$.answer')
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'faq_section'
+
+        UNION ALL
+
+        -- Table blocks.
+        SELECT header.value
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.headers') AS header
+        WHERE json_extract(block.value, '$.type') = 'table'
+
+        UNION ALL
+
+        SELECT cell.value
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.rows') AS row,
+             json_each(row.value) AS cell
+        WHERE json_extract(block.value, '$.type') = 'table'
+
+        UNION ALL
+
+        -- Related content snapshots.
+        SELECT json_extract(item.value, '$.title')
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'related_content'
+
+        UNION ALL
+
+        SELECT json_extract(item.value, '$.description')
+        FROM json_each(NEW.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'related_content'
+
+        UNION ALL
+
+        -- Recipe ingredients.
+        SELECT json_extract(g.value, '$.section_title')
+        FROM json_each(NEW.recipe_json, '$.ingredients') AS g
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(i.value, '$.name')
+        FROM json_each(NEW.recipe_json, '$.ingredients') as g,
              json_each(g.value, '$.items') as i
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(i.value, '$.note')
+        FROM json_each(NEW.recipe_json, '$.ingredients') as g,
+             json_each(g.value, '$.items') as i
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        -- Recipe instructions.
+        SELECT json_extract(s.value, '$.section_title')
+        FROM json_each(NEW.recipe_json, '$.instructions') AS s
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(step.value, '$.text')
+        FROM json_each(NEW.recipe_json, '$.instructions') AS s,
+             json_each(s.value, '$.steps') AS step
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(step.value, '$.tip')
+        FROM json_each(NEW.recipe_json, '$.instructions') AS s,
+             json_each(s.value, '$.steps') AS step
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        -- Recipe metadata useful for search.
+        SELECT json_extract(NEW.recipe_json, '$.recipe_category')
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(NEW.recipe_json, '$.recipe_cuisine')
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT json_extract(NEW.recipe_json, '$.difficulty')
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT keyword.value
+        FROM json_each(NEW.recipe_json, '$.keywords') AS keyword
+        WHERE NEW.type = 'recipe'
+
+        UNION ALL
+
+        SELECT equipment.value
+        FROM json_each(NEW.recipe_json, '$.equipment') AS equipment
+        WHERE NEW.type = 'recipe' AND equipment.type = 'text'
+
+        UNION ALL
+
+        SELECT json_extract(equipment.value, '$.label')
+        FROM json_each(NEW.recipe_json, '$.equipment') AS equipment
         WHERE NEW.type = 'recipe'
       )
     ),
@@ -1549,10 +1601,10 @@ BEGIN
 END;
 
 -- Trigger: Sync Articles on DELETE (hard delete)
-CREATE TRIGGER IF NOT EXISTS trg_articles_search_ad AFTER DELETE ON articles 
+CREATE TRIGGER IF NOT EXISTS trg_articles_search_ad AFTER DELETE ON articles
 BEGIN
   INSERT INTO idx_articles_search(
-    idx_articles_search, rowid, headline, subtitle, short_description, 
+    idx_articles_search, rowid, headline, subtitle, short_description,
     body_content, tag_labels, author_name, category_name
   )
   VALUES('delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description, '', '', '', '');
@@ -1706,7 +1758,7 @@ END;
 
 CREATE TABLE IF NOT EXISTS pin_templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    
+
     slug TEXT UNIQUE NOT NULL,
     -- URL-safe identifier for routing (e.g., "recipe-card-bold").
     -- Used in admin URLs: /templates/recipe-card-bold
@@ -1765,6 +1817,8 @@ END;
 -- PURPOSE:
 --   - Manage 301/302 redirects for SEO and broken link handling.
 --   - Essential for preserving link equity when URLs change.
+--
+-- Contract: docs/REDIRECTS_TABLE_CONTRACT.md
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS redirects (
@@ -1814,20 +1868,119 @@ END;
 
 
 -- ==================================================================================
--- CATEGORY POST COUNT TRIGGERS
+-- ARTICLE CACHED FIELD TRIGGERS
 -- ==================================================================================
--- Purpose: Automatically maintain cached_post_count in categories table.
--- conditions: is_online = 1 AND deleted_at IS NULL
+-- Purpose: Keep article-side author/category snapshots fresh when source rows change.
+-- Detailed cache contracts live in docs/ARTICLE_CACHED_FIELDS_CONTRACT.md.
+
+-- Trigger: Refresh cached_author_json when author display fields change
+CREATE TRIGGER IF NOT EXISTS update_cached_author_on_author_change
+AFTER UPDATE OF name, slug, job_title, images_json ON authors
+WHEN (
+  OLD.name != NEW.name
+  OR OLD.slug != NEW.slug
+  OR OLD.job_title IS NOT NEW.job_title
+  OR OLD.images_json IS NOT NEW.images_json
+)
+BEGIN
+  UPDATE articles
+  SET cached_author_json = json_object(
+    'id', NEW.id,
+    'slug', NEW.slug,
+    'name', NEW.name,
+    'job_title', NEW.job_title,
+    'avatar', json(COALESCE(json_extract(NEW.images_json, '$.avatar'), 'null'))
+  )
+  WHERE author_id = NEW.id;
+END;
+
+-- Trigger: Refresh cached_category_json when category display fields change
+CREATE TRIGGER IF NOT EXISTS update_cached_category_on_category_change
+AFTER UPDATE OF slug, label, color ON categories
+WHEN (
+  OLD.slug != NEW.slug
+  OR OLD.label != NEW.label
+  OR OLD.color IS NOT NEW.color
+)
+BEGIN
+  UPDATE articles
+  SET cached_category_json = json_object(
+    'id', NEW.id,
+    'slug', NEW.slug,
+    'label', NEW.label,
+    'color', NEW.color
+  )
+  WHERE category_id = NEW.id;
+END;
+
+-- ==================================================================================
+-- AUTHOR AND CATEGORY POST COUNT TRIGGERS
+-- ==================================================================================
+-- Purpose: Automatically maintain cached_post_count in authors and categories tables.
+-- Conditions: is_online = 1 AND deleted_at IS NULL.
+
+-- Trigger: Update author post count after INSERT
+CREATE TRIGGER IF NOT EXISTS update_author_count_on_insert
+AFTER INSERT ON articles
+BEGIN
+  UPDATE authors
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles
+    WHERE author_id = NEW.author_id
+    AND is_online = 1
+    AND deleted_at IS NULL
+  )
+  WHERE id = NEW.author_id;
+END;
+
+-- Trigger: Update author post count after UPDATE
+CREATE TRIGGER IF NOT EXISTS update_author_count_on_update
+AFTER UPDATE OF author_id, is_online, deleted_at ON articles
+BEGIN
+  -- Update old author
+  UPDATE authors
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles
+    WHERE author_id = OLD.author_id
+    AND is_online = 1
+    AND deleted_at IS NULL
+  )
+  WHERE id = OLD.author_id;
+
+  -- Update new author
+  UPDATE authors
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles
+    WHERE author_id = NEW.author_id
+    AND is_online = 1
+    AND deleted_at IS NULL
+  )
+  WHERE id = NEW.author_id;
+END;
+
+-- Trigger: Update author post count after DELETE
+CREATE TRIGGER IF NOT EXISTS update_author_count_on_delete
+AFTER DELETE ON articles
+BEGIN
+  UPDATE authors
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles
+    WHERE author_id = OLD.author_id
+    AND is_online = 1
+    AND deleted_at IS NULL
+  )
+  WHERE id = OLD.author_id;
+END;
 
 -- Trigger: Update category post count after INSERT
 CREATE TRIGGER IF NOT EXISTS update_category_count_on_insert
 AFTER INSERT ON articles
 BEGIN
-  UPDATE categories 
+  UPDATE categories
   SET cached_post_count = (
-    SELECT COUNT(*) FROM articles 
-    WHERE category_id = NEW.category_id 
-    AND is_online = 1 
+    SELECT COUNT(*) FROM articles
+    WHERE category_id = NEW.category_id
+    AND is_online = 1
     AND deleted_at IS NULL
   )
   WHERE id = NEW.category_id;
@@ -1838,21 +1991,21 @@ CREATE TRIGGER IF NOT EXISTS update_category_count_on_update
 AFTER UPDATE OF category_id, is_online, deleted_at ON articles
 BEGIN
   -- Update old category
-  UPDATE categories 
+  UPDATE categories
   SET cached_post_count = (
-    SELECT COUNT(*) FROM articles 
-    WHERE category_id = OLD.category_id 
-    AND is_online = 1 
+    SELECT COUNT(*) FROM articles
+    WHERE category_id = OLD.category_id
+    AND is_online = 1
     AND deleted_at IS NULL
   )
   WHERE id = OLD.category_id;
-  
+
   -- Update new category (if changed)
-  UPDATE categories 
+  UPDATE categories
   SET cached_post_count = (
-    SELECT COUNT(*) FROM articles 
-    WHERE category_id = NEW.category_id 
-    AND is_online = 1 
+    SELECT COUNT(*) FROM articles
+    WHERE category_id = NEW.category_id
+    AND is_online = 1
     AND deleted_at IS NULL
   )
   WHERE id = NEW.category_id;
@@ -1862,11 +2015,11 @@ END;
 CREATE TRIGGER IF NOT EXISTS update_category_count_on_delete
 AFTER DELETE ON articles
 BEGIN
-  UPDATE categories 
+  UPDATE categories
   SET cached_post_count = (
-    SELECT COUNT(*) FROM articles 
-    WHERE category_id = OLD.category_id 
-    AND is_online = 1 
+    SELECT COUNT(*) FROM articles
+    WHERE category_id = OLD.category_id
+    AND is_online = 1
     AND deleted_at IS NULL
   )
   WHERE id = OLD.category_id;

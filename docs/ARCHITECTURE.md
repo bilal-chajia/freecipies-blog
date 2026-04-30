@@ -1,6 +1,6 @@
 # Project Architecture
 
-> **Last Updated:** 2026-04-27
+> **Last Updated:** 2026-04-29
 > **Framework:** Astro 6 + React 19
 > **Deployment:** Cloudflare Pages + D1 + R2 + KV
 
@@ -478,7 +478,7 @@ Database and JSON documentation is split by responsibility:
 }
 ```
 
-Naming rule: use `content_json` only for SQL/DB, `contentJson` for JS/API/React, and snake_case for all `block.type` values across BlockEditor, API, DB, and renderer. Legacy BlockNote names like `roundupList` must be treated as temporary compatibility details and converted by adapters before storage.
+Naming rule: use `content_json` only for SQL/DB, `contentJson` for JS/API/React, and snake_case for all stored `block.type` values across BlockEditor, API, DB, and renderer. Compatibility mappings for older editor names live in `docs/IMPLEMENTATION_GAPS.md`.
 
 Source file rule: new logic uses `.ts`, React components use `.tsx`, and new `.js`/`.jsx` files should not be introduced.
 
@@ -524,7 +524,7 @@ import type {
   ImageVariant,      // public/runtime shape; storage JSON uses size_bytes
   ImageVariants,     // { xs, sm, md, lg, original }
   ImageSlot,         // Full slot with media_id, alt, caption, variants
-  ArticleImagesJson, // { cover?, thumbnail?, pinterest?, contentImages? }
+  ArticleImagesJson, // { cover?, thumbnail?, pinterest?, content_images? }
 } from '@shared/types/images';
 
 // Storage types (media module ONLY)

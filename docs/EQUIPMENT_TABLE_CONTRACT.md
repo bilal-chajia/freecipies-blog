@@ -1,5 +1,7 @@
 # Equipment Table Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the product/data contract for the `equipment` table. The executable SQL source remains `db/schema.sql`.
 
 ## Scope
@@ -173,8 +175,4 @@ Public Astro:
 - `affiliate_url`: valid URL when present.
 - `affiliate_provider`: controlled provider string when present.
 - Public/rich-card source rows require `deleted_at IS NULL` and `is_active = 1`.
-
-## Known Implementation Notes
-
-- Current recipe/equipment cache code may still match by name in some paths. The target contract uses `equipment_id` when available.
 - `is_active = 0` does not remove the tool from `recipe_json.equipment`; it only prevents rich affiliate/product-card rendering.

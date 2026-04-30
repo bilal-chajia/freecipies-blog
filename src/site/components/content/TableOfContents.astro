@@ -13,7 +13,7 @@
  * - Zero layout shifts on page load
  */
 
-import type { TocSettings } from "@modules/settings/services/settings.service";
+import type { TocSettings } from "@modules/settings/types/settings.types";
 
 interface TocItem {
     id: string;
@@ -35,9 +35,9 @@ const { toc: tocInput, class: className = "", settings } = Astro.props;
 const enabled = settings?.enabled ?? true;
 const numbering = settings?.numbering ?? true;
 const collapsible = settings?.collapsible ?? true;
-const showJumpButton = settings?.showJumpButton ?? true;
-const accentColor = settings?.accentColor || "var(--info)";
-const maxDepth = settings?.maxDepth ?? 4;
+const showJumpButton = settings?.show_jump_button ?? true;
+const accentColor = settings?.accent_color || "var(--info)";
+const maxDepth = settings?.max_depth ?? 4;
 
 if (!enabled) return null;
 

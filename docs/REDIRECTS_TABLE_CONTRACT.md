@@ -1,5 +1,7 @@
 # Redirects Table Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the product/data contract for the `redirects` table. The executable SQL source remains `db/schema.sql`.
 
 ## Scope
@@ -121,8 +123,3 @@ Admin:
 - Deleting a redirect is a hard delete in the current schema.
 - Prefer `is_active = 0` when preserving history is useful.
 - Runtime hit tracking updates `hit_count` and `last_hit_at`.
-
-## Known Implementation Notes
-
-- `db/schema.sql` previously had two `CREATE TABLE IF NOT EXISTS redirects` declarations. The canonical schema is one declaration aligned with `src/modules/redirects/schema/redirects.schema.ts`.
-- The canonical schema includes `status_code NOT NULL`, `is_active NOT NULL`, `hit_count NOT NULL`, and `last_hit_at`.

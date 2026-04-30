@@ -1,5 +1,7 @@
 # Article JSON Contracts
 
+> **Last Updated:** 2026-04-29
+
 This document covers JSON fields stored on `articles`, except `content_json`.
 
 For the complete `articles` table contract, use `docs/ARTICLE_TABLE_CONTRACT.md`.
@@ -12,7 +14,7 @@ For media/image variant rules, use `docs/MEDIA_IMAGE_CONTRACT.md`.
 
 - SQL column names use `snake_case`: `recipe_json`, `cached_card_json`.
 - JS/API property names use `camelCase`: `recipeJson`, `cachedCardJson`.
-- JSON payloads may use existing project conventions per field; do not mix spellings inside one contract.
+- Stored JSON payload keys use `snake_case` unless a contract explicitly documents a stable exception.
 
 ## `images_json`
 
@@ -25,7 +27,7 @@ Common slots:
 - `cover`: hero/featured image.
 - `thumbnail`: card/list thumbnail, if different from cover.
 - `pinterest`: Pinterest-optimized image.
-- `contentImages`: images referenced from body content.
+- `content_images`: images referenced from body content.
 - `recipe_steps`: step images referenced by `recipe_json.instructions[].steps[].image_ref`.
 
 Shape:
@@ -79,7 +81,7 @@ Rules:
 - `credit.avatar` should include only `xs` for a simple lightweight avatar.
 - `width` and `height` are required for rendered variants.
 - `media_id` is the stable reference back to the media library.
-- Stored image slots use `aspect_ratio`. Legacy `aspectRatio` may be normalized when read, but new writes should use `aspect_ratio`.
+- Stored image slots use `aspect_ratio`.
 - Variant selection follows `docs/MEDIA_IMAGE_CONTRACT.md`: source media keeps the full set; article slots keep the variants needed by their render contexts and `srcset`.
 - Cover/hero slots should include `sm`, `md`, and `lg` when rendered responsively.
 - Thumbnail/card slots usually need `sm` + `md`.
@@ -137,28 +139,27 @@ Rules:
 - Full recipe rendering reads `recipe_json`, not `cached_recipe_json`.
 - `jsonld_json` is generated from `recipe_json` at save time.
 - `cached_recipe_json` is a lightweight derived snapshot for lists, cards, filters, roundup items, and related content.
-- Do not store Schema.org-only timing fields (`prepTime`, `cookTime`, `totalTime`) in the target canonical contract. Generate them for JSON-LD from numeric minutes.
-- Current code still has camelCase fields and legacy defaults; normalize those during refactor instead of treating them as the long-term contract.
+- Do not store Schema.org-only timing fields (`prepTime`, `cookTime`, `totalTime`) in the canonical stored contract. Generate them for JSON-LD from numeric minutes.
+Compatibility gaps for old local drafts are tracked in `docs/IMPLEMENTATION_GAPS.md`.
 
 ## `roundup_json`
 
-Purpose: legacy listicle data for `articles.type = "roundup"`.
+Purpose: compatibility listicle data for `articles.type = "roundup"`.
 
-Current status: compatibility field.
+Status: compatibility field.
 
 Default:
 
 ```json
 {
   "items": [],
-  "listType": "ItemList"
+  "list_type": "ItemList"
 }
 ```
 
 Direction:
 
 - New editorial list items should move toward `content_json.blocks[]` using `roundup_item`.
-- Existing code may still read `roundup_json` as fallback for old drafts, standalone roundup rendering, and item counts.
 - Do not add new features to `roundup_json` unless explicitly keeping it as a source of truth.
 
 ## `faqs_json`
@@ -180,166 +181,15 @@ Cache shape:
 Rule:
 
 - The canonical source block uses `question` and `answer`.
-- Legacy cache values using `q` and `a` may be normalized when read, but new cache writes should use `question` and `answer`.
+- New cache writes use `question` and `answer`.
 - This is not the final JSON-LD payload. Final Schema.org output is stored in `jsonld_json`.
 - Regenerate `jsonld_json` whenever `faqs_json` changes.
 
 ## Article Cache Fields
 
-The canonical cached-fields contract is `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md`. This section only keeps a short index for discoverability.
+The canonical cached-fields contract is `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md`.
 
-### `cached_tags_json`
-
-Display/search cache of minimal tag snapshots.
-
-Source of truth:
-
-- `articles_to_tags`
-- `tags`
-
-Minimum shape:
-
-```json
-[
-  { "id": 12, "label": "Quick", "slug": "quick" }
-]
-```
-
-### `cached_category_json`
-
-Category snapshot for cards and listings.
-
-Minimum shape:
-
-```json
-{
-  "id": 3,
-  "slug": "desserts",
-  "label": "Desserts",
-  "color": "#ff6600ff"
-}
-```
-
-### `cached_author_json`
-
-Author snapshot for cards and bylines.
-
-Minimum shape:
-
-```json
-{
-  "id": 5,
-  "slug": "jane-doe",
-  "name": "Jane Doe",
-  "job_title": "Recipe Developer",
-  "avatar": "/api/images/media/avatar-lg.webp",
-  "avatar_alt": "Jane Doe"
-}
-```
-
-### `cached_recipe_json`
-
-Lightweight recipe summary for listing filters, recipe cards in lists, roundup items, and related content.
-
-This is not the full recipe. The complete recipe remains in `recipe_json`.
-
-Owns:
-
-- `is_recipe`
-- `total_time_minutes`
-- `difficulty`
-- `servings`
-- `calories_per_serving`
-- `primary_diet_labels`
-- `primary_occasion_labels`
-- `main_ingredients`
-- `is_quick`
-- `is_healthy`
-- `is_budget`
-
-Source:
-
-- `recipe_json`
-
-Rules:
-
-- Regenerable from `recipe_json`.
-- Used for compact listing/filter UI.
-- Must not become the source of truth for full recipe rendering.
-
-### `cached_card_json`
-
-Zero-join article card snapshot for related content, pickers, and listings.
-
-This is a render cache, not a media source of truth. It should be regenerable from `articles` plus the linked `media` row.
-
-Default mobile-first shape:
-
-```json
-{
-  "id": 42,
-  "type": "recipe",
-  "slug": "easy-pasta",
-  "headline": "Easy Pasta",
-  "short_description": "A quick weeknight pasta.",
-  "thumbnail": {
-    "media_id": 55,
-    "alt": "Bowl of pasta",
-    "variants": {
-      "sm": { "r2_key": "media/easy-pasta-sm.webp", "width": 720, "height": 480 },
-      "md": { "r2_key": "media/easy-pasta-md.webp", "width": 1200, "height": 800 }
-    }
-  }
-}
-```
-
-Rules:
-
-- Stored card snapshots should keep `r2_key`, not absolute URLs.
-- Public/API/rendered card payloads must convert `r2_key` to URLs and must not expose `r2_key`.
-- `related_content` blocks should copy a compact snapshot from this field.
-- This field exists to reduce D1 reads in public rendering.
-- It should not contain every variant from `media.variants_json`.
-- Use `sm` + `md` by default for normal cards.
-- Use `xs` + `sm` only for tiny UI.
-- Add `lg` only for components that render wide cards or hero-like visuals.
-- Do not store `original` in card snapshots.
-
-### `cached_toc_json`
-
-Generated from `content_json.blocks[]` headings.
-
-Shape:
-
-```json
-[
-  { "id": "ingredients", "text": "Ingredients", "level": 2 }
-]
-```
-
-### `cached_equipment_json`
-
-Snapshot of equipment used by a recipe.
-
-Source:
-
-- `recipe_json.equipment[*].equipment_id`
-- `equipment` table
-
-Rules:
-
-- `recipe_json.equipment` is the complete checklist of tools needed for the recipe.
-- Items that map to the `equipment` table should store `equipment_id`.
-- Items that do not map to the table still remain in `recipe_json.equipment` and render as simple bullet/checklist items.
-- Affiliate and product display fields live in the `equipment` table and derived `cached_equipment_json`, not in `recipe_json`.
-
-### `cached_rating_json`
-
-Optional rating snapshot.
-
-Source:
-
-- `recipe_json.aggregate_rating`
+This document intentionally does not define cache shapes. `cached_*`, `faqs_json`, and `jsonld_json` are derived fields, and keeping their shapes in one document prevents drift.
 
 ## SEO and Config JSON
 
@@ -349,14 +199,14 @@ SEO overrides. Fallbacks come from article source fields.
 
 ```json
 {
-  "metaTitle": null,
-  "metaDescription": null,
-  "noIndex": false,
+  "meta_title": null,
+  "meta_description": null,
+  "no_index": false,
   "canonical": null,
-  "ogImage": null,
-  "ogTitle": null,
-  "ogDescription": null,
-  "twitterCard": "summary_large_image"
+  "og_image": null,
+  "og_title": null,
+  "og_description": null,
+  "twitter_card": "summary_large_image"
 }
 ```
 
@@ -382,10 +232,10 @@ Per-article behavior toggles.
 
 ```json
 {
-  "allowComments": true,
-  "showTableOfContents": true,
-  "manualRelatedIds": [],
-  "experimentKey": null,
-  "experimentVariant": null
+  "allow_comments": true,
+  "show_table_of_contents": true,
+  "manual_related_ids": [],
+  "experiment_key": null,
+  "experiment_variant": null
 }
 ```

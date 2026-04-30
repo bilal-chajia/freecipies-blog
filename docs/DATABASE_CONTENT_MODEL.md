@@ -1,5 +1,7 @@
 # Database Content Model
 
+> **Last Updated:** 2026-04-29
+
 This document describes the CMS/blog database model at a product and architecture level. The SQL source of truth remains `db/schema.sql`.
 
 ## Responsibility Split
@@ -135,7 +137,7 @@ Important fields:
 - `type`
 - `updated_at`
 
-Current code uses this table for image upload settings, TOC settings, menus, and AI/provider configuration paths. It does not currently have `is_public`, `created_at`, or `deleted_at` columns.
+Known setting domains include image upload settings, TOC settings, menus, and AI/provider configuration paths. The table does not have `is_public`, `created_at`, or `deleted_at` columns.
 
 ### `equipment`
 

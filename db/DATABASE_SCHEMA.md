@@ -1,10 +1,12 @@
 # Database Schema Reference
 
-> **Last Updated:** 2026-01-10  
+> **Last Updated:** 2026-04-29
 > **Database:** Cloudflare D1 (SQLite)  
 > **ORM:** Drizzle ORM
 
-This document provides a comprehensive reference for all database tables, fields, relationships, and usage patterns.
+This document provides a compact database reference for tables, fields, indexes, triggers, and relationships.
+
+Detailed JSON payload rules live in the dedicated contract documents. When this file and a contract disagree, the contract wins.
 
 ---
 
@@ -23,17 +25,18 @@ This document provides a comprehensive reference for all database tables, fields
 
 ### JSON Field Rules
 
-1. **Never store `null` for empty JSON** - use `{}` for objects, `[]` for arrays.
-2. **Validate JSON structure** before inserting - match schemas below exactly.
-3. **Image variants must include ALL breakpoints** - xs, sm, md, lg (original is optional).
-4. **All URLs must be absolute** - no relative paths in JSON fields.
+1. **Never store invalid JSON** - validate before inserting.
+2. **Use dedicated contracts for JSON shapes** - do not infer JSON contracts from examples in this file.
+3. **Stored JSON uses storage-safe values** - image snapshots store `r2_key`, not public URLs.
+4. **Public APIs/render props transform storage JSON** - public payloads must not expose storage-only fields such as `r2_key`.
 
 ### Naming Conventions
 
 | Type            | Convention            | Example                    |
 | --------------- | --------------------- | -------------------------- |
 | Slugs           | lowercase, kebab-case | `chocolate-chip-cookies`   |
-| JSON keys       | camelCase             | `mediaId`, `focalPoint`    |
+| Stored JSON keys | snake_case           | `media_id`, `focal_point`  |
+| API/React props | camelCase             | `mediaId`, `focalPoint`    |
 | SQL columns     | snake_case            | `created_at`, `is_online`  |
 | Boolean columns | `is_` prefix          | `is_online`, `is_featured` |
 
@@ -333,64 +336,20 @@ contact_info    → Contact details
 | `credit`           | TEXT     | ❌       | NULL                | Attribution/copyright                |
 | `mime_type`        | TEXT     | ✅       | `'image/webp'`      | MIME type                            |
 | `aspect_ratio`     | TEXT     | ❌       | NULL                | Display ratio (`16:9`, `4:5`, `1:1`) |
-| `variants_json`    | TEXT     | ✅       | -                   | **See schema below**                 |
+| `variants_json`    | TEXT     | ✅       | -                   | See `docs/MEDIA_TABLE_CONTRACT.md`   |
 | `focal_point_json` | TEXT     | ❌       | `'{"x":50,"y":50}'` | Cropping focal point                 |
 | `created_at`       | DATETIME | ❌       | CURRENT_TIMESTAMP   | Upload timestamp                     |
 | `updated_at`       | DATETIME | ❌       | CURRENT_TIMESTAMP   | Last modification                    |
 | `deleted_at`       | DATETIME | ❌       | NULL                | Soft delete marker                   |
 
-#### variants_json Schema
+#### variants_json Contract
 
-```json
-{
-  "variants": {
-    "original": {
-      "url": "https://cdn.example.com/2025/01/image.webp",
-      "r2_key": "2025/01/image.webp",
-      "width": 4000,
-      "height": 3000,
-      "sizeBytes": 412345
-    },
-    "lg": {
-      "url": "https://cdn.example.com/2025/01/image-lg.webp",
-      "r2_key": "2025/01/image-lg.webp",
-      "width": 2048,
-      "height": 1536,
-      "sizeBytes": 198765
-    },
-    "md": {
-      "url": "https://cdn.example.com/2025/01/image-md.webp",
-      "r2_key": "2025/01/image-md.webp",
-      "width": 1200,
-      "height": 900,
-      "sizeBytes": 102345
-    },
-    "sm": {
-      "url": "https://cdn.example.com/2025/01/image-sm.webp",
-      "r2_key": "2025/01/image-sm.webp",
-      "width": 720,
-      "height": 540,
-      "sizeBytes": 54321
-    },
-    "xs": {
-      "url": "https://cdn.example.com/2025/01/image-xs.webp",
-      "r2_key": "2025/01/image-xs.webp",
-      "width": 360,
-      "height": 270,
-      "sizeBytes": 23123
-    }
-  },
-  "placeholder": "data:image/jpeg;base64,/9j/4AAQ..."
-}
-```
+Canonical shape and variant rules are defined in:
 
-> **AGENT RULES:**
->
-> - `xs`, `sm`, `md`, `lg` are **REQUIRED**. `original` is optional (only if source > 2048px).
-> - `r2_key` is the path in R2 bucket - needed for deletion.
-> - `sizeBytes` (optional) is the encoded file size for each variant, used by Media Library display.
-> - `placeholder` is a base64 blur hash < 1KB.
-> - Heights are auto-calculated from aspect ratio.
+- `docs/MEDIA_TABLE_CONTRACT.md`
+- `docs/MEDIA_IMAGE_CONTRACT.md`
+
+This file must not duplicate media JSON examples because image slot rules differ by context.
 
 > **TYPESCRIPT TYPES:**
 >
@@ -738,441 +697,21 @@ ecipe, listicle, quote, general |
 
 ---
 
-## Complete JSON Schemas
+## JSON Payload Contracts
 
-### images_json (Standard - Categories, Articles)
+Detailed JSON payload rules live in dedicated contract documents. This database reference lists SQL columns and DB-level automation only.
 
-> **AGENT RULE:** When selecting from Media Library, copy the full variant set here for zero-join rendering.
+Use these documents as the source of truth for JSON shapes:
 
-```json
-{
-  "cover": {
-    "media_id": 123,
-    "alt": "Chocolate brownies on cooling rack",
-    "caption": "Fresh out of the oven",
-    "credit": "© Jane Doe Photography",
-    "placeholder": "data:image/jpeg;base64,/9j/4AAQ...",
-    "focal_point": { "x": 50, "y": 30 },
-    "aspectRatio": "16:9",
-    "variants": {
-      "original": { "url": "https://cdn.example.com/img.webp", "width": 4000, "height": 2250 },
-      "lg": { "url": "https://cdn.example.com/img-lg.webp", "width": 2048, "height": 1152 },
-      "md": { "url": "https://cdn.example.com/img-md.webp", "width": 1200, "height": 675 },
-      "sm": { "url": "https://cdn.example.com/img-sm.webp", "width": 720, "height": 405 },
-      "xs": { "url": "https://cdn.example.com/img-xs.webp", "width": 360, "height": 203 }
-    }
-  },
-  "thumbnail": {
-    "media_id": 124,
-    "alt": "...",
-    "aspectRatio": "4:3",
-    "variants": { ... }
-  },
-  "contentImages": [
-    {
-      "media_id": 125,
-      "alt": "Step 1: Mixing ingredients",
-      "caption": "Combine dry ingredients",
-      "variants": { ... }
-    }
-  ]
-}
-```
+- `articles.images_json`, `articles.seo_json`, `articles.config_json`, and `articles.roundup_json`: `docs/ARTICLE_JSON_CONTRACTS.md`
+- `articles.content_json`: `docs/CONTENT_JSON_CONTRACT.md`
+- `articles.recipe_json`: `docs/RECIPE_JSON_CONTRACT.md`
+- `articles.cached_*`, `articles.faqs_json`, and `articles.jsonld_json`: `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md`
+- media source records and variants: `docs/MEDIA_TABLE_CONTRACT.md`
+- reusable image slots and variant selection rules: `docs/MEDIA_IMAGE_CONTRACT.md`
+- author, category, tag, equipment, redirect, and settings payloads: their matching `docs/*_TABLE_CONTRACT.md` files
 
-Note: `contentImages` holds images referenced in `content_json`.
-
-### images_json (Authors - Different breakpoints for avatars)
-
-```json
-{
-  "avatar": {
-    "media_id": 105,
-    "alt": "Jane Doe headshot",
-    "placeholder": "data:image/...",
-    "aspectRatio": "1:1",
-    "variants": {
-      "original": { "url": "...", "width": 800, "height": 800 },
-      "lg": { "url": "...", "width": 400, "height": 400 },
-      "md": { "url": "...", "width": 200, "height": 200 },
-      "sm": { "url": "...", "width": 100, "height": 100 },
-      "xs": { "url": "...", "width": 50, "height": 50 }
-    }
-  },
-  "cover": {
-    "media_id": 202,
-    "alt": "Jane in her kitchen",
-    "aspectRatio": "16:9",
-    "variants": { ... }
-  }
-}
-```
-
-> **AGENT NOTE:** Avatar uses smaller sizes (50-400px) because avatars display at 32-120px typically.
-
----
-
-### seo_json (Universal - Categories, Authors, Articles)
-
-Author SEO is publish-required. The database keeps a default `{}` so drafts can exist, but public author profiles must have a complete SEO payload before `is_online = 1`.
-
-```json
-{
-  "metaTitle": "Best Chocolate Brownies Recipe | Freecipies",
-  "metaDescription": "Learn how to make the fudgiest chocolate brownies with this easy recipe. Ready in 35 minutes!",
-  "noIndex": false,
-  "canonical": null,
-  "ogImage": "https://cdn.example.com/og-image.jpg",
-  "ogTitle": null,
-  "ogDescription": null,
-  "twitterCard": "summary_large_image",
-  "robots": null
-}
-```
-
-| Field           | Type    | Default                                | Description              |
-| --------------- | ------- | -------------------------------------- | ------------------------ |
-| metaTitle       | string  | null (falls back to headline)          | `<title>` tag            |
-| metaDescription | string  | null (falls back to short_description) | Meta description         |
-| noIndex         | boolean | false                                  | Hide from search engines |
-| canonical       | string  | null                                   | Override canonical URL   |
-| ogImage         | string  | null                                   | Social share image URL   |
-| ogTitle         | string  | null (falls back to metaTitle)         | Open Graph title         |
-| ogDescription   | string  | null                                   | Open Graph description   |
-| twitterCard     | string  | "summary_large_image"                  | Twitter card type        |
-| robots          | string  | null                                   | Custom robots directive  |
-
----
-
-### config_json (Categories)
-
-```json
-{
-  "postsPerPage": 12,
-  "layoutMode": "grid",
-  "cardStyle": "full",
-  "showSidebar": true,
-  "showFilters": true,
-  "showBreadcrumb": true,
-  "showPagination": true,
-  "sortBy": "publishedAt",
-  "sortOrder": "desc",
-  "headerStyle": "hero",
-  "tldr": "Quick summary text",
-  "showInNav": true,
-  "showInFooter": false,
-  "featuredArticleId": 123,
-  "showFeaturedRecipe": true,
-  "showHeroCta": true,
-  "heroCtaText": "Join My Mailing List",
-  "heroCtaLink": "#newsletter"
-}
-```
-
-| Field            | Type    | Options                             | Default       |
-| ---------------- | ------- | ----------------------------------- | ------------- |
-| postsPerPage     | number  | -                                   | 12            |
-| layoutMode       | string  | `grid`, `list`, `masonry`           | `grid`        |
-| cardStyle        | string  | `compact`, `full`, `minimal`        | `full`        |
-| showSidebar      | boolean | -                                   | true          |
-| showFilters      | boolean | -                                   | true          |
-| showBreadcrumb   | boolean | -                                   | true          |
-| showPagination   | boolean | -                                   | true          |
-| sortBy           | string  | `publishedAt`, `title`, `viewCount` | `publishedAt` |
-| sortOrder        | string  | `asc`, `desc`                       | `desc`        |
-| headerStyle      | string  | `hero`, `minimal`, `none`           | `hero`        |
-| tldr             | string  | -                                   | null          |
-| showInNav        | boolean | -                                   | null          |
-| showInFooter     | boolean | -                                   | null          |
-| featuredArticleId | number  | -                                   | null          |
-| showFeaturedRecipe | boolean | -                                   | true          |
-| showHeroCta      | boolean | -                                   | true          |
-| heroCtaText      | string  | -                                   | null          |
-| heroCtaLink      | string  | -                                   | null          |
-
----
-
-### i18n_json (Categories - locale overrides)
-
-```json
-{
-  "fr": { "label": "Petit-déjeuner", "headline": "Recettes du matin" },
-  "es": { "label": "Desayuno", "headline": "Recetas de desayuno" }
-}
-```
-
----
-
-### config_json (Articles)
-
-```json
-{
-  "allowComments": true,
-  "showTableOfContents": true,
-  "manualRelatedIds": [],
-  "experimentKey": null,
-  "experimentVariant": null
-}
-```
-
-| Field               | Type     | Description                    |
-| ------------------- | -------- | ------------------------------ |
-| allowComments       | boolean  | Enable/disable comments        |
-| showTableOfContents | boolean  | Show/hide TOC                  |
-| manualRelatedIds    | number[] | Hard-coded related article IDs |
-| experimentKey       | string   | A/B test identifier            |
-| experimentVariant   | string   | `A`, `B`, `control`, etc.      |
-
----
-
-### bio_json (Authors)
-
-```json
-{
-  "short": "Jane writes about healthy Mediterranean recipes...",
-  "long": "## About Jane\n\nJane has been cooking since childhood...",
-  "persona": {
-    "voice": "Warm, practical, precise, and encouraging.",
-    "expertise": ["weeknight dinners", "Mediterranean cooking"],
-    "audience": "Busy home cooks who want reliable recipes.",
-    "point_of_view": "Food should be simple, seasonal, and realistic.",
-    "avoid": ["unverified health promises", "overly technical language"]
-  },
-  "socials": [
-    { "network": "twitter", "url": "https://x.com/jane", "label": "@janedoe" },
-    { "network": "instagram", "url": "https://instagram.com/jane" },
-    { "network": "youtube", "url": "https://youtube.com/@jane" },
-    { "network": "website", "url": "https://jane.blog", "label": "My Blog" }
-  ]
-}
-```
-
-`persona` is used by AI generation tools as author guidance. It is not public biography copy by default.
-
-**Valid network values:** `twitter`, `instagram`, `facebook`, `youtube`, `pinterest`, `tiktok`, `linkedin`, `website`, `email`, `custom`
-
----
-
-### filter_groups_json (Tags)
-
-```json
-["Diet", "Meal", "Time", "Difficulty"]
-```
-
-**Common groups:**
-
-- `Diet`: Gluten Free, Vegan, Keto, Dairy Free
-- `Meal`: Breakfast, Lunch, Dinner, Snack
-- `Time`: Under 15 Min, Under 30 Min, Under 1 Hour
-- `Difficulty`: Easy, Medium, Advanced
-- `Occasion`: Holiday, Party, Weeknight
-
----
-
-### style_json (Tags)
-
-```json
-{
-  "svg_code": "<svg viewBox='0 0 24 24'><path d='M12 2L...'/></svg>",
-  "color": "#10b981",
-  "variant": "outline"
-}
-```
-
-| Field    | Type   | Options                     | Description                       |
-| -------- | ------ | --------------------------- | --------------------------------- |
-| svg_code | string | -                           | Sanitized SVG (< 2KB, no scripts) |
-| color    | string | -                           | Hex color for badge               |
-| variant  | string | `solid`, `outline`, `ghost` | UI variant                        |
-
----
-
-### recipe_json (Complete Recipe Source)
-
-Canonical contract: `docs/RECIPE_JSON_CONTRACT.md`.
-
-> **AGENT RULE:** Do not confuse `recipe_json` with `cached_recipe_json`.
-> `recipe_json` is the complete recipe payload used by the full recipe card renderer and save-time JSON-LD generation.
-> `cached_recipe_json` is only a lightweight derived snapshot for lists, cards, roundup items, related content, and filters.
-
-Short target shape:
-
-```json
-{
-  "prep": 15,
-  "cook": 25,
-  "total": 40,
-  "servings": 4,
-  "recipe_yield": "4 servings",
-  "recipe_category": "Dinner",
-  "recipe_cuisine": "Italian",
-  "keywords": ["pasta", "weeknight"],
-  "suitable_for_diet": ["VegetarianDiet"],
-  "difficulty": "Easy",
-  "cooking_method": "Stovetop",
-  "estimated_cost": "Budget",
-  "ingredients": [],
-  "instructions": [],
-  "tips": [],
-  "nutrition": null,
-  "aggregate_rating": null,
-  "equipment": [],
-  "video": null
-}
-```
-
-Important rules:
-
-- `headline` and `short_description` from `articles` are the source of truth for recipe name and description.
-- `content_json.blocks[]` may contain a `main_recipe` marker, but recipe data stays in `recipe_json`.
-- `prep`, `cook`, and `total` are numeric minutes.
-- Do not store `prepTime`, `cookTime`, or `totalTime` as canonical recipe fields. Generate Schema.org ISO durations for `jsonld_json` at save time.
-- Ingredients and instructions are grouped.
-- `instructions[].steps[].timer` is stored in minutes.
-- `instructions[].steps[].id` should be stable; `image_ref` resolves to `images_json.recipe_steps`.
-- Storage, make-ahead, substitution, troubleshooting, and serving-suggestion sections belong in visible `content_json` blocks.
-- `recipe_json.equipment` is the complete equipment checklist; matching active `equipment` table rows generate `cached_equipment_json` cards.
-- Nutrition values are stored as numbers; JSON-LD generation adds units.
-- `cached_recipe_json`, `cached_rating_json`, and `cached_equipment_json` are derived from this source.
-
----
-
-### content_json (Versioned Block-Based Article Body)
-
-> **AGENT RULE:** Store a `ContentDocument`, never a raw block array. All `text` fields support Markdown.
-
-```json
-{
-  "version": 1,
-  "kind": "content_document",
-  "blocks": [
-    { "id": "intro", "type": "paragraph", "text": "Rich text with **markdown** support..." },
-    { "id": "section-1", "type": "heading", "level": 2, "text": "Section Title" },
-    { "id": "recipe", "type": "main_recipe" }
-  ]
-}
-```
-
-#### Block Type Reference
-
-| Type          | Required Fields         | Optional Fields     |
-| ------------- | ----------------------- | ------------------- |
-| `paragraph`   | text                    | -                   |
-| `heading`     | level (2-6), text       | -                   |
-| `blockquote`  | text                    | cite                |
-| `list`        | style, items            | -                   |
-| `image`       | media_id, alt, variants | caption, credit     |
-| `video`       | provider, video_id, aspect_ratio | -          |
-| `tip_box`     | variant, text           | title               |
-| `divider`     | -                       | -                   |
-| `faq_section` | items                   | title               |
-| `table`       | headers, rows           | -                   |
-
-> `spacer` and `ad_slot` are reserved system/layout block names. They are not accepted by strict `content_json` v1 save validation.
-
----
-
-### roundup_json (Listicle/Collection)
-
-```json
-{
-  "listType": "ItemList",
-  "items": [
-    {
-      "position": 1,
-      "article_id": 123,
-      "external_url": null,
-      "title": "Best Lemon Biscuits",
-      "subtitle": "Crisp edges, fluffy center",
-      "note": "Great for brunch.",
-      "cover": {
-        "alt": "Lemon biscuits",
-        "variants": { ... }
-      }
-    },
-    {
-      "position": 2,
-      "article_id": null,
-      "external_url": "https://example.com/recipe",
-      "title": "External Recipe",
-      "subtitle": "From another site",
-      "note": "Affiliate link",
-      "cover": { ... }
-    }
-  ]
-}
-```
-
----
-
-### faqs_json (SEO Cache)
-
-> **AGENT NOTE:** Auto-rebuilt by scanning content_json for `faq_section` blocks.
-
-```json
-[
-  {
-    "question": "Can I freeze the dough?",
-    "answer": "Yes, up to 3 months in an airtight container."
-  },
-  {
-    "question": "Can I use almond milk?",
-    "answer": "Yes, the texture may be slightly different."
-  }
-]
-```
-
----
-
-### cached_card_json (Pre-computed Card Data)
-
-**For type="recipe":**
-
-```json
-{
-  "id": 42,
-  "type": "recipe",
-  "slug": "chocolate-brownies",
-  "headline": "Best Chocolate Brownies",
-  "short_description": "Fudgy, rich brownies...",
-  "thumbnail": {
-    "alt": "Chocolate Brownies",
-    "variants": { "xs": {...}, "sm": {...}, "md": {...}, "lg": {...} }
-  },
-  "total_time": 35,
-  "difficulty": "Easy",
-  "servings": 12,
-  "rating": { "value": 4.8, "count": 55 }
-}
-```
-
-**For type="article":**
-
-```json
-{
-  "id": 87,
-  "type": "article",
-  "slug": "baking-tips",
-  "headline": "10 Baking Tips",
-  "short_description": "Master these techniques...",
-  "thumbnail": { ... },
-  "reading_time": 8,
-  "category": "Baking Tips"
-}
-```
-
-**For type="roundup":**
-
-```json
-{
-  "id": 123,
-  "type": "roundup",
-  "slug": "best-desserts",
-  "headline": "15 Best Desserts",
-  "short_description": "Our top picks...",
-  "thumbnail": { ... },
-  "item_count": 15
-}
-```
+This section intentionally does not duplicate examples. Duplicated JSON examples drift quickly and can confuse future refactors.
 
 ---
 
@@ -1406,23 +945,7 @@ const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 ### JSON Field Validation
 
-```typescript
-// Before insert/update, validate JSON structure
-function validateImagesJson(json: unknown): boolean {
-  if (typeof json !== "object" || json === null) return false;
-
-  // If has cover, validate variant structure
-  if (json.cover) {
-    const requiredVariants = ["xs", "sm", "md", "lg"];
-    const hasAllVariants = requiredVariants.every(
-      (v) => json.cover.variants?.[v]?.url
-    );
-    if (!hasAllVariants) return false;
-  }
-
-  return true;
-}
-```
+Validate JSON fields with the dedicated validation schemas and contract modules. Do not enforce one global image variant list here; snapshot variant sets are context-specific.
 
 ---
 

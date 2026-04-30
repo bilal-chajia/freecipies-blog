@@ -1,12 +1,14 @@
 # Site Settings Table Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the product/data contract for the `site_settings` table. The executable SQL source remains `db/schema.sql`.
 
 ## Scope
 
 `site_settings` is a key-value registry for global CMS/site configuration. It is used for settings that do not justify a dedicated relational table.
 
-Current code uses it for:
+Known setting domains include:
 
 - image upload settings
 - table-of-contents appearance settings
@@ -65,6 +67,13 @@ Parsing rules:
 - `type = color`: `value` should be a validated CSS color token or hex value.
 - `type = code`: only for trusted admin-managed snippets; never execute unsanitized code in admin or public rendering.
 
+Stored JSON naming rules:
+
+- New `type = json` setting payloads must use lowercase `snake_case` keys.
+- Existing camelCase setting payloads are legacy implementation gaps, not the target contract.
+- Services may temporarily normalize legacy camelCase reads, but save paths should persist canonical `snake_case` after the settings refactor.
+- API/React props may remain camelCase at the boundary; `site_settings.value` is the stored contract.
+
 ## Key Naming
 
 Rules:
@@ -102,21 +111,21 @@ Rules:
 
 ### TOC Settings
 
-Current key: `toc_settings`.
+Key: `toc_settings`.
 
 ```json
 {
   "enabled": true,
   "numbering": true,
   "collapsible": true,
-  "defaultOpen": true,
-  "showJumpButton": true,
-  "accentColor": "#f97316",
-  "maxDepth": 4
+  "default_open": true,
+  "show_jump_button": true,
+  "accent_color": "#f97316",
+  "max_depth": 4
 }
 ```
 
-Current code uses camelCase keys here. Do not silently rename this stored shape during the contract phase. If a future refactor standardizes settings JSON to `snake_case`, migrate this key intentionally.
+This is the canonical stored shape for new writes. Current code may still read or write the older camelCase keys; that is tracked in `docs/IMPLEMENTATION_GAPS.md` and should be fixed during the settings refactor.
 
 ### Menu Settings
 
@@ -144,7 +153,7 @@ Rules:
 
 - Menus are configuration, not article content.
 - Missing/empty menu settings fall back to service defaults.
-- Deleting a menu currently stores an empty array rather than deleting the setting row.
+- Empty menu settings store an empty array.
 
 ## Runtime Usage
 
@@ -181,8 +190,4 @@ Public Astro/API:
 - No `deleted_at` soft delete exists for this table.
 - Removing a setting is a hard delete, except feature services may choose to reset to defaults or store an empty value.
 - `updated_at` is maintained by SQL trigger.
-
-## Known Implementation Notes
-
-- `src/modules/settings/schema/settings.schema.ts` currently matches the active SQL columns: `key`, `value`, `description`, `category`, `sort_order`, `type`, and `updated_at`.
-- There is no current SQL `is_public` flag. If public/private settings become necessary, add it deliberately to SQL, Drizzle, docs, and APIs together.
+- There is no `is_public` flag. If public/private settings become necessary, add it deliberately to SQL, Drizzle, docs, and APIs together.

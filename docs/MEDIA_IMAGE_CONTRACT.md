@@ -1,5 +1,7 @@
 # Media and Image Contract
 
+> **Last Updated:** 2026-04-29
+
 This document defines image-related JSON across media storage, article/category/author image slots, article snapshots, and public rendering.
 
 For the full `media` table contract, use `docs/MEDIA_TABLE_CONTRACT.md`.
@@ -129,10 +131,9 @@ Optional in both:
 
 - `size_bytes`
 
-Compatibility:
+Rule:
 
-- Stored legacy payloads may still contain `sizeBytes`; readers may normalize it to `size_bytes`.
-- New stored JSON should use `size_bytes`.
+- Stored JSON uses `size_bytes`.
 
 ## Image Slot
 
@@ -178,7 +179,6 @@ Rules:
 - `width` and `height` are required for CLS-safe rendering.
 - `focal_point` is optional and used for `object-position`.
 - Stored image slots use `aspect_ratio`.
-- Legacy stored values using `aspectRatio` may be normalized when read, but new writes should use `aspect_ratio`.
 
 ## Containers
 
@@ -189,7 +189,7 @@ Rules:
 - `cover`
 - `thumbnail`
 - `pinterest`
-- `contentImages`
+- `content_images`
 
 ### Author Images
 

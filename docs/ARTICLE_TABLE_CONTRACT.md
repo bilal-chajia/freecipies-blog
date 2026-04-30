@@ -1,5 +1,7 @@
 # Article Table Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the canonical contract for the `articles` table.
 
 For JSON payload details, use:
@@ -84,7 +86,7 @@ Rules:
 | `images_json` | Article image slots: cover, thumbnail, pinterest, content images. | `docs/ARTICLE_JSON_CONTRACTS.md` |
 | `content_json` | Versioned block document for article body. | `docs/CONTENT_JSON_CONTRACT.md` |
 | `recipe_json` | Complete recipe source data for `type = "recipe"`. | `docs/RECIPE_JSON_CONTRACT.md` |
-| `roundup_json` | Legacy compatibility list data for `type = "roundup"`. | `docs/ARTICLE_JSON_CONTRACTS.md` |
+| `roundup_json` | Compatibility list data for `type = "roundup"`. | `docs/ARTICLE_JSON_CONTRACTS.md` |
 | `seo_json` | Per-article SEO overrides. | `docs/ARTICLE_JSON_CONTRACTS.md` |
 | `config_json` | Article feature toggles and experiments. | `docs/ARTICLE_JSON_CONTRACTS.md` |
 

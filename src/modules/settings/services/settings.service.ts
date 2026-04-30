@@ -6,8 +6,8 @@
 
 import { eq } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
-import { siteSettings, type SiteSetting, type NewSiteSetting } from '../schema/settings.schema';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { siteSettings, type SiteSetting } from '../schema/settings.schema';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
  * Get all settings
@@ -30,7 +30,7 @@ export async function getSetting(db: D1Database | DrizzleDb, key: string): Promi
 /**
  * Get a setting value (parsed if JSON)
  */
-export async function getSettingValue<T = any>(db: D1Database, key: string): Promise<T | null> {
+export async function getSettingValue<T = any>(db: D1Database | DrizzleDb, key: string): Promise<T | null> {
   const setting = await getSetting(db, key);
   if (!setting) return null;
 
@@ -138,6 +138,11 @@ export async function getDashboardStats(db: D1Database | DrizzleDb): Promise<{
 
 import { IMAGE_UPLOAD_DEFAULTS, IMAGE_SETTINGS_DB_KEY } from '../../../shared/constants/image-upload';
 import type { ImageUploadSettings } from '../../../shared/constants/image-upload';
+import {
+  normalizeTocSettings,
+  type TocSettings,
+  type TocSettingsInput,
+} from '../types/settings.types';
 
 // Re-export for backwards compatibility
 export { IMAGE_UPLOAD_DEFAULTS, type ImageUploadSettings };
@@ -191,34 +196,14 @@ export async function resetImageUploadSettings(db: D1Database | DrizzleDb): Prom
 // TOC (TABLE OF CONTENTS) SETTINGS
 // ============================================
 
-export interface TocSettings {
-  enabled: boolean;
-  numbering: boolean;
-  collapsible: boolean;
-  defaultOpen: boolean;
-  showJumpButton: boolean;
-  accentColor: string;
-  maxDepth: number;
-}
-
-export const TOC_DEFAULTS: TocSettings = {
-  enabled: true,
-  numbering: true,
-  collapsible: true,
-  defaultOpen: true,
-  showJumpButton: true,
-  accentColor: '#f97316',
-  maxDepth: 4,
-};
-
 const TOC_SETTINGS_KEY = 'toc_settings';
 
 /**
  * Get TOC settings (merged with defaults)
  */
 export async function getTocSettings(db: D1Database | DrizzleDb): Promise<TocSettings> {
-  const stored = await getSettingValue<Partial<TocSettings>>(db, TOC_SETTINGS_KEY);
-  return { ...TOC_DEFAULTS, ...stored };
+  const stored = await getSettingValue<TocSettingsInput>(db, TOC_SETTINGS_KEY);
+  return normalizeTocSettings(stored);
 }
 
 /**
@@ -226,10 +211,10 @@ export async function getTocSettings(db: D1Database | DrizzleDb): Promise<TocSet
  */
 export async function updateTocSettings(
   db: D1Database | DrizzleDb,
-  updates: Partial<TocSettings>
+  updates: TocSettingsInput
 ): Promise<TocSettings> {
   const current = await getTocSettings(db);
-  const newSettings = { ...current, ...updates };
+  const newSettings = normalizeTocSettings({ ...current, ...normalizeTocSettings(updates) });
 
   await upsertSetting(db, TOC_SETTINGS_KEY, newSettings, {
     description: 'Table of Contents display settings',

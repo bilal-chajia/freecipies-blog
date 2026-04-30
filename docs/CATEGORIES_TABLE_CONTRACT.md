@@ -1,5 +1,7 @@
 # Categories Table Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the product/data contract for the `categories` table. The executable SQL source remains `db/schema.sql`.
 
 ## Scope
@@ -196,8 +198,3 @@ Public Astro:
   "color": "#ff6600ff"
 }
 ```
-
-## Known Implementation Notes
-
-- SQL triggers currently maintain `categories.cached_post_count`.
-- Rich article snapshots are application-managed and should be refreshed when category display fields change.

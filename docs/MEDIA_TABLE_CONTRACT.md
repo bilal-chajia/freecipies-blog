@@ -1,5 +1,7 @@
 # Media Table Contract
 
+> **Last Updated:** 2026-04-29
+
 This document is the canonical contract for the `media` table.
 
 For reusable image variant and rendering rules, use `docs/MEDIA_IMAGE_CONTRACT.md`.
@@ -146,8 +148,7 @@ Rules:
 - `avatar` is optional, but when present it should include only the `xs` variant for a simple lightweight avatar.
 - Credit avatar snapshots follow the same stored image-slot rules: `r2_key`, not public `url`.
 - Public API/rendering may convert credit avatar variants to URLs.
-- Legacy `credit` plain text may be displayed as legacy text in admin, but new writes should replace it with an author snapshot.
-- New writes should not store a bare credit string.
+- Stored credits should not use a bare display string.
 
 ## Media vs Article Snapshots
 
@@ -232,4 +233,3 @@ Delete flow:
 - Public JSON responses should also prefer `snake_case` for serialized payloads.
 - Internal JS/TS variables may use `camelCase`.
 - Upload API payloads may use `r2Key` or `sizeBytes` at the request boundary, but must convert to `r2_key` and `size_bytes` before storage.
-- Legacy stored values using `sizeBytes` may be normalized when read, but new writes should use `size_bytes`.
