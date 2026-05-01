@@ -169,18 +169,18 @@ const categoryJsonLd = {
   "@type": "CollectionPage",
   "name": pageTitle,
   "description": pageDescription,
-  "url": `${Astro.site?.origin || "https://freecipies.com"}/categories/${slug}`,
+  "url": `${Astro.site?.origin || "https://saas-blog.com"}/categories/${slug}`,
   "isPartOf": {
     "@type": "WebSite",
-    "name": "Freecipies",
-    "url": Astro.site?.origin || "https://freecipies.com"
+    "name": "SaaS Blog",
+    "url": Astro.site?.origin || "https://saas-blog.com"
   },
   "mainEntity": {
     "@type": "ItemList",
     "itemListElement": gridArticles.slice(0, 10).map((article: any, index: number) => ({
       "@type": "ListItem",
       "position": index + 1,
-      "url": `${Astro.site?.origin || "https://freecipies.com"}/recipes/${article.slug}`,
+      "url": `${Astro.site?.origin || "https://saas-blog.com"}/recipes/${article.slug}`,
       "name": article.headline || article.title
     }))
   },

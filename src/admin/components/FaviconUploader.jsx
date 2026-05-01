@@ -331,7 +331,7 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
                                     className="size-4 object-contain"
                                 />
                                 <span className="text-sm text-zinc-600 truncate">
-                                    Freecipies - Delicious Recipes
+                                    SaaS Blog - Delicious Recipes
                                 </span>
                                 <X className="size-3 text-zinc-400 ml-auto" />
                             </div>

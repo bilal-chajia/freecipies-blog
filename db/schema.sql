@@ -411,7 +411,7 @@ CREATE TABLE IF NOT EXISTS authors (
     slug TEXT UNIQUE NOT NULL,
 
     -- Public display name shown on article bylines and profile page.
-    -- EXAMPLES: "Jane Doe", "Chef John", "The Freecipies Team"
+    -- EXAMPLES: "Jane Doe", "Chef John", "The SaaS Blog Team"
     name TEXT NOT NULL,
 
     -- Internal contact email (unique per author).

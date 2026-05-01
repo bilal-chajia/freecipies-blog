@@ -91,7 +91,7 @@ Purpose: optional SEO overrides for the category page.
 
 ```json
 {
-  "meta_title": "Easy Breakfast Recipes | Freecipies",
+  "meta_title": "Easy Breakfast Recipes | SaaS Blog",
   "meta_description": "Discover quick and healthy breakfast recipes.",
   "no_index": false,
   "canonical": null,

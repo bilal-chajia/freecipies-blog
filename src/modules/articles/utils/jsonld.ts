@@ -64,7 +64,7 @@ export type JsonLdOutput = Record<string, unknown>[];
 function makePublisher(siteUrl: string) {
     return {
         '@type': 'Organization',
-        name: 'Freecipies',
+        name: 'SaaS Blog',
         logo: {
             '@type': 'ImageObject',
             url: `${siteUrl}/logo.png`,
@@ -124,7 +124,7 @@ function generateArticleJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
         dateModified: article.updatedAt || article.publishedAt || undefined,
         author: {
             '@type': 'Person',
-            name: (author?.name as string) || 'Freecipies Team',
+            name: (author?.name as string) || 'SaaS Blog Team',
             ...(author?.slug && { url: `${siteUrl}/authors/${author.slug}` }),
         },
         publisher,
@@ -217,7 +217,7 @@ function generateRecipeJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutpu
         image: images.length > 0 ? images : undefined,
         author: {
             '@type': 'Person',
-            name: (author?.name as string) || 'Freecipies Team',
+            name: (author?.name as string) || 'SaaS Blog Team',
             ...(author?.slug && { url: `${siteUrl}/authors/${author.slug}` }),
         },
         datePublished: article.publishedAt || undefined,
@@ -289,7 +289,7 @@ function generateRoundupJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
         itemListElement: itemList.itemListElement,
         author: {
             '@type': 'Person',
-            name: (author?.name as string) || 'Freecipies Team',
+            name: (author?.name as string) || 'SaaS Blog Team',
             ...(author?.slug && { url: `${siteUrl}/authors/${author.slug}` }),
         },
         datePublished: article.publishedAt || undefined,
@@ -324,11 +324,11 @@ function generateRoundupJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
  * Result is stored in `articles.jsonld_json` as a JSON string.
  *
  * @param article - Raw article row from DB
- * @param siteUrl - Base URL of the site (e.g. "https://freecipies.com")
+ * @param siteUrl - Base URL of the site (e.g. "https://saas-blog.com")
  * @returns Array of Schema.org JSON-LD objects
  *
  * @example
- * const schemas = generateJsonLd(article, 'https://freecipies.com');
+ * const schemas = generateJsonLd(article, 'https://saas-blog.com');
  * // Store as JSON string in DB
  * updateData.jsonldJson = JSON.stringify(schemas);
  */

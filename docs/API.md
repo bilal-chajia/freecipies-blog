@@ -745,7 +745,7 @@ Get specific setting.
   "data": {
     "key": "site_info",
     "value": {
-      "name": "Freecipies",
+      "name": "SaaS Blog",
       "tagline": "Delicious recipes..."
     }
   }

@@ -131,7 +131,7 @@ Purpose: required SEO payload for public author profile pages.
 
 ```json
 {
-  "meta_title": "Jane Doe - Recipe Developer | Freecipies",
+  "meta_title": "Jane Doe - Recipe Developer | SaaS Blog",
   "meta_description": "Meet Jane Doe, a recipe developer focused on easy dinners.",
   "no_index": false,
   "canonical": null,

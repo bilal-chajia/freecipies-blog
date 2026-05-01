@@ -43,7 +43,7 @@ const TextPanel = ({
         onTextOverlayChange(prev => ({
             ...prev,
             enabled: true,
-            text: '© Freecipies',
+            text: '© SaaS Blog',
             font: 'sans-serif',
             size: 24,
             color: '#ffffff',

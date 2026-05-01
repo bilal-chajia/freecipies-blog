@@ -306,7 +306,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }) => {
 
             const watermarkConfig = watermarkType !== 'none' ? {
                 type: watermarkType === 'custom' ? 'image' : 'text',
-                content: watermarkType === 'text' ? 'Freecipies' : null,
+                content: watermarkType === 'text' ? 'SaaS Blog' : null,
                 imageObj: watermarkType === 'custom' ? customWatermark : null,
                 opacity: watermarkOpacity,
                 position: watermarkPosition,

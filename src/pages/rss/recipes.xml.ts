@@ -36,7 +36,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
      xmlns:content="http://purl.org/rss/1.0/modules/content/"
      xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
-    <title>Freecipies - Easy and Quick Recipes</title>
+    <title>SaaS Blog - Easy and Quick Recipes</title>
     <description>Discover delicious, easy-to-follow recipes with everyday ingredients. From quick weeknight dinners to impressive desserts.</description>
     <link>${siteUrl}</link>
     <atom:link href="${siteUrl}/rss.xml" rel="self" type="application/rss+xml"/>
@@ -44,7 +44,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <image>
       <url>${siteUrl}/logo.png</url>
-      <title>Freecipies</title>
+      <title>SaaS Blog</title>
       <link>${siteUrl}</link>
     </image>
     ${articles.map(article => {
@@ -78,7 +78,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
     const fallbackRss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>Freecipies</title>
+    <title>SaaS Blog</title>
     <description>Easy and Quick Recipes</description>
     <link>${siteUrl}</link>
   </channel>

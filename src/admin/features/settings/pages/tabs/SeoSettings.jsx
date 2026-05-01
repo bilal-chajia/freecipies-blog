@@ -29,7 +29,7 @@ const SeoSettings = ({ formData, handleInputChange, activeSection = 'meta' }) =>
                                     {formData.siteUrl || 'https://recipes-saas.com'}
                                 </div>
                                 <h3 className="text-sm text-blue-600 dark:text-blue-400 truncate">
-                                    {formData.defaultMetaTitle || 'Freecipies - Delicious Recipes'}
+                                    {formData.defaultMetaTitle || 'SaaS Blog - Delicious Recipes'}
                                 </h3>
                                 <p className="text-xs text-muted-foreground line-clamp-2">
                                     {formData.defaultMetaDescription || 'Discover amazing recipes...'}

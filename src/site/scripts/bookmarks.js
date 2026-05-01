@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'freecipies.bookmarks';
+const STORAGE_KEY = 'saas-blog.bookmarks';
 
 const normalizeSlug = (slug) => {
   if (!slug || typeof slug !== 'string') return '';

@@ -52,8 +52,8 @@ export const GET: APIRoute = async ({ locals, site }) => {
      xmlns:media="http://search.yahoo.com/mrss/"
      xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
-    <title>Freecipies Pinterest - Latest Pins (24h)</title>
-    <description>All new Pinterest pins from Freecipies created in the last 24 hours</description>
+    <title>SaaS Blog Pinterest - Latest Pins (24h)</title>
+    <description>All new Pinterest pins from SaaS Blog created in the last 24 hours</description>
     <link>${siteUrl}/rss/pinterest.xml</link>
     <atom:link href="${siteUrl}/rss/pinterest.xml" rel="self" type="application/rss+xml"/>
     <language>en-us</language>
@@ -61,7 +61,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
     <ttl>60</ttl>
     <image>
       <url>${siteUrl}/logo.png</url>
-      <title>Freecipies Pinterest</title>
+      <title>SaaS Blog Pinterest</title>
       <link>${siteUrl}</link>
     </image>
     ${pins.map(pin => {

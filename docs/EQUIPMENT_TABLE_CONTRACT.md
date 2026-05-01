@@ -133,7 +133,7 @@ Example:
         "sm": { "r2_key": "media/mixer-sm.webp", "width": 720, "height": 720 }
       }
     },
-    "affiliate_url": "https://example.com/product?tag=freecipies",
+    "affiliate_url": "https://example.com/product?tag=saas-blog",
     "affiliate_provider": "amazon",
     "affiliate_note": null,
     "price_display": "$299.99",

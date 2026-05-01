@@ -54,7 +54,7 @@ const Login = () => {
               <ChefHat className="w-10 h-10 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold">Freecipies Admin</CardTitle>
+          <CardTitle className="text-3xl font-bold">SaaS Blog Admin</CardTitle>
           <CardDescription>Sign in to manage your content</CardDescription>
         </CardHeader>
         <CardContent>

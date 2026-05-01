@@ -1,4 +1,4 @@
-# Plan d'Amélioration du Design Frontend — Freecipies CMS
+# Plan d'Amélioration du Design Frontend — SaaS Blog CMS
 
 > **But:** Moderniser le site public et l'admin sans mélanger leurs identités visuelles. Le site public reste un food blog éditorial; l'admin devient un dashboard CMS sobre et productif.
 
@@ -198,7 +198,7 @@ Remplacer le thème food/brand par un thème dashboard neutre :
 ### 3.3 Sidebar & Navigation
 **Fichier:** `src/admin/components/AppSidebar.jsx`
 
-1. **Logo custom** — Remplacer l'icône générique par le logo Freecipies
+1. **Logo custom** — Remplacer l'icône générique par le logo SaaS Blog
 2. **Icônes colorées** — Chaque section a une couleur d'accent subtile
 3. **Badges de compteur** — Nombre d'articles/drafts visibles sur les liens
 4. **Section utilisateur** — Avatar + nom en bas de la sidebar

@@ -342,7 +342,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
       }
 
       const attribution = selectedAuthor && selectedAuthor !== 'none'
-        ? `${authors.find(a => a.slug === selectedAuthor)?.name || selectedAuthor} / Freecipies`
+        ? `${authors.find(a => a.slug === selectedAuthor)?.name || selectedAuthor} / SaaS Blog`
         : '';
 
       setUploadProgress(60);

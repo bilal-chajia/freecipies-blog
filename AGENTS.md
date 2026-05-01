@@ -1,4 +1,4 @@
-# Freecipies Agent Rules (Ultra-Light)
+# SaaS Blog Agent Rules (Ultra-Light)
 
 ## 🛠 Core Stack & Workflow
 - **Stack**: Astro 6, React 19, Tailwind 4, Drizzle, Cloudflare (D1, R2, KV).

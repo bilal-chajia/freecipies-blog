@@ -57,7 +57,7 @@ const WatermarkOverlay = ({
                                 textShadow: '0 2px 4px rgba(0,0,0,0.3)'
                             }}
                         >
-                            Freecipies
+                            SaaS Blog
                         </span>
                     ) : customWatermark ? (
                         <img
@@ -113,7 +113,7 @@ const WatermarkOverlay = ({
                                                 textShadow: '0 2px 4px rgba(0,0,0,0.3)'
                                             }}
                                         >
-                                            Freecipies
+                                            SaaS Blog
                                         </span>
                                     ) : customWatermark ? (
                                         <img

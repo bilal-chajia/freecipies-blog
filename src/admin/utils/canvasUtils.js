@@ -181,7 +181,7 @@ export default async function getCroppedImg(
         const scale = watermark.scale || 0.2;
 
         if (watermark.type === 'text') {
-            const text = watermark.content || 'Freecipies';
+            const text = watermark.content || 'SaaS Blog';
             const fontSize = canvas.width * scale * 0.5; // Scale based on watermark scale
             ctx.font = `bold ${fontSize}px sans-serif`;
 

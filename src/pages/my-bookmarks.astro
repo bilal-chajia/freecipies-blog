@@ -2,7 +2,7 @@
 import Layout from "@layouts/Layout.astro";
 
 const title = "My Bookmarks";
-const description = "Saved recipes from Freecipies.";
+const description = "Saved recipes from SaaS Blog.";
 ---
 
 <Layout title={title} description={description}>
@@ -22,7 +22,7 @@ const description = "Saved recipes from Freecipies.";
   </section>
 
   <script type="module">
-    const STORAGE_KEY = 'freecipies.bookmarks';
+    const STORAGE_KEY = 'saas-blog.bookmarks';
     const grid = document.getElementById('bookmarks-grid');
     const empty = document.getElementById('bookmarks-empty');
     const loading = document.getElementById('bookmarks-loading');

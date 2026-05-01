@@ -637,7 +637,7 @@ export async function syncCachedFields(
   // Stores all Schema.org structured data at save time.
   // Frontend reads jsonldJson directly via SEO.astro — no per-page reconstruction.
   {
-    const resolvedSiteUrl = siteUrl || (article as any).siteUrl || 'https://freecipies.com';
+    const resolvedSiteUrl = siteUrl || (article as any).siteUrl || 'https://saas-blog.com';
     const schemas = generateJsonLd(article as any, resolvedSiteUrl);
     (updateData as any).jsonldJson = JSON.stringify(schemas);
   }

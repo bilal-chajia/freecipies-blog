@@ -166,7 +166,7 @@ export function AppSidebar({ ...props }) {
                 ) : (
                   <>
                     <LayoutDashboard className="size-4 text-primary" />
-                    <span className="font-semibold">Freecipies CMS</span>
+                    <span className="font-semibold">SaaS Blog CMS</span>
                     <PanelLeftClose className="ml-auto size-4" />
                   </>
                 )}

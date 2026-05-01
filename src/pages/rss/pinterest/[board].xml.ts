@@ -45,7 +45,7 @@ export const GET: APIRoute = async ({ params, locals, site }) => {
      xmlns:media="http://search.yahoo.com/mrss/"
      xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
-    <title>${escapeXml(board.name)} - Freecipies Pinterest</title>
+    <title>${escapeXml(board.name)} - SaaS Blog Pinterest</title>
     <description>${escapeXml(board.description || `Latest pins for ${board.name}`)}</description>
     <link>${siteUrl}/rss/pinterest/${boardSlug}.xml</link>
     <atom:link href="${siteUrl}/rss/pinterest/${boardSlug}.xml" rel="self" type="application/rss+xml"/>

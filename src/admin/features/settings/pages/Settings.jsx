@@ -53,7 +53,7 @@ const Settings = () => {
 
   const [formData, setFormData] = useState({
     // General Settings
-    siteName: 'Freecipies',
+    siteName: 'SaaS Blog',
     siteDescription: 'Delicious recipes and cooking tips',
     siteUrl: 'https://recipes-saas.com',
     adminEmail: 'admin@recipes-saas.com',
@@ -73,7 +73,7 @@ const Settings = () => {
     tocMaxDepth: 4,
 
     // SEO Settings
-    defaultMetaTitle: 'Freecipies - Delicious Recipes & Cooking Tips',
+    defaultMetaTitle: 'SaaS Blog - Delicious Recipes & Cooking Tips',
     defaultMetaDescription: 'Discover amazing recipes, cooking techniques, and kitchen tips from professional chefs and home cooks.',
     googleAnalyticsId: '',
     robotsTxt: 'User-agent: *\nAllow: /\n\nSitemap: https://recipes-saas.com/sitemap.xml',
@@ -267,7 +267,7 @@ const Settings = () => {
   // Load settings on mount
   useEffect(() => {
     const mockSettings = {
-      siteName: 'Freecipies',
+      siteName: 'SaaS Blog',
       siteDescription: 'Delicious recipes and cooking tips',
       siteUrl: 'https://recipes-saas.com',
       adminEmail: 'admin@recipes-saas.com',

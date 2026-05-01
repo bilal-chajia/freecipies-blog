@@ -27,7 +27,7 @@ const GeneralSettings = ({ formData, handleInputChange, activeSection = 'site' }
                             required
                             value={formData.siteName}
                             onChange={(e) => handleInputChange('siteName', e.target.value)}
-                            placeholder="e.g. Freecipies"
+                            placeholder="e.g. SaaS Blog"
                             description="The primary title of your web application."
                         />
                         <FormField
