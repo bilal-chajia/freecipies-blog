@@ -12,7 +12,7 @@ Related contracts:
 
 - `docs/ARTICLE_TABLE_CONTRACT.md` for `articles.category_id` and `cached_category_json`
 - `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md` for article-side category snapshots
-- `docs/MEDIA_IMAGE_CONTRACT.md` for `images_json`
+- `docs/IMAGE_JSON_CONTRACT.md` for `images_json`
 - `docs/MEDIA_TABLE_CONTRACT.md` for source media records
 
 ## Source Of Truth
@@ -33,7 +33,7 @@ The `categories` row is the source of truth for category identity, hierarchy, di
 | `headline` | no | Admin/editorial | Category landing page H1. Falls back to `label`. |
 | `collection_title` | no | Admin/editorial | Heading above the article grid/list. Falls back to `headline` or `label`. |
 | `short_description` | yes | Admin/editorial | Short public intro and SEO fallback. |
-| `images_json` | no | Admin/media | Category image slots. See `docs/MEDIA_IMAGE_CONTRACT.md`. |
+| `images_json` | no | Admin/media | Category image slots. See `docs/IMAGE_JSON_CONTRACT.md`. |
 | `color` | no | Admin/design | Category accent color. Stored as hex, default `#ff6600ff`. |
 | `icon_svg` | no | Admin/design | Small sanitized SVG for menus/badges. No scripts or event handlers. |
 | `is_featured` | no | Admin/editorial | Homepage/sidebar feature flag. |
@@ -65,12 +65,12 @@ Expected slots:
       "sm": { "r2_key": "media/breakfast-sm.webp", "width": 720, "height": 480 }
     }
   },
-  "cover": {
+  "hero": {
     "media_id": 202,
     "alt": "Breakfast table",
     "variants": {
-      "md": { "r2_key": "media/breakfast-cover-md.webp", "width": 1200, "height": 675 },
-      "lg": { "r2_key": "media/breakfast-cover-lg.webp", "width": 2048, "height": 1152 }
+      "md": { "r2_key": "media/breakfast-hero-md.webp", "width": 1200, "height": 675 },
+      "lg": { "r2_key": "media/breakfast-hero-lg.webp", "width": 2048, "height": 1152 }
     }
   }
 }
@@ -81,7 +81,7 @@ Rules:
 - `media.variants_json` keeps the complete source set.
 - Category snapshots keep only variants useful for the render context.
 - `thumbnail` stores `xs` and `sm`.
-- `cover` stores `md` and `lg`.
+- `hero` stores `md` and `lg`.
 - Stored internal snapshots may contain `r2_key`; public API/frontend props must convert to URLs.
 - Every rendered `<img>` must have `width`, `height`, and lazy loading unless it is the LCP hero image.
 

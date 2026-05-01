@@ -1,4 +1,4 @@
-# Media and Image Contract
+# Image JSON Contract
 
 > **Last Updated:** 2026-04-29
 
@@ -14,7 +14,12 @@ This document defines image JSON shapes and rendering rules. It does not replace
 
 Do not mix the `media` table with article/editorial snapshots.
 
-`media.variants_json` is the complete image asset source of truth. For image media, it should contain every generated image variant:
+`media.variants_json` is the complete image asset source of truth. For image media, it must contain:
+
+- `variants`
+- `placeholder`
+
+The `variants` object must contain every generated image variant:
 
 - `xs`
 - `sm`
@@ -28,7 +33,7 @@ Use these mental names:
 
 | Storage area | Meaning | Source of truth? |
 | --- | --- | --- |
-| `media.variants_json` | Complete image variants | Yes, for generated files, R2 cleanup, regeneration, and Pinterest |
+| `media.variants_json` | Complete image variants plus placeholder | Yes, for generated files, placeholder reuse, R2 cleanup, regeneration, and Pinterest |
 | `articles.images_json` | Article image slots | No, editorial usage snapshot |
 | `articles.content_json` image payloads | Embedded render snapshots | No, block-level render copy |
 | `articles.cached_card_json` | Listing/card cache | No, zero-join render cache |
@@ -57,6 +62,13 @@ There are two stored shapes:
 - `media.variants_json`: the complete media row payload, shaped as `{ "variants": { ... }, "placeholder": "..." }`.
 - Image slots/snapshots: contextual copies inside article/category/author/block JSON, shaped as `{ "media_id": 55, "variants": { ... } }`.
 
+Rules:
+
+- `variants` is required.
+- `placeholder` is required for image media and should be a compact blur/data URL placeholder generated from the source image.
+- `placeholder` belongs beside `variants` in `media.variants_json`, not inside an individual variant.
+- Image slots/snapshots may copy `placeholder` when the rendering context needs progressive loading or blur-up behavior.
+
 Example complete `media.variants_json` shape:
 
 ```json
@@ -71,6 +83,18 @@ Example complete `media.variants_json` shape:
   "placeholder": "data:image/jpeg;base64,..."
 }
 ```
+
+## SQL Storage Implementation
+
+In the physical database (**Cloudflare D1 / SQLite**), the JSON structures defined above are stored and validated as follows:
+
+- **Table**: `media`
+- **Column**: `variants_json`
+- **Type**: `JSON` (D1 uses SQLite JSON1 semantics; data is physically stored as `TEXT` but fully supports native JSON operators like `->` and `->>`).
+- **Integrity**: Enforced by a schema constraint: `CHECK (json_valid(variants_json))`.
+- **Strategy**: The `placeholder` and `variants` objects are bundled into a single JSON blob to ensure atomicity and minimize database reads.
+
+When an image is used in an article or category, this entire JSON payload (or a subset of it) is **denormalized** (copied) into the relevant `_json` columns (e.g., `articles.images_json.hero`) to achieve the **Zero-Join** architecture.
 
 ### Public/API/Rendered
 
@@ -155,7 +179,8 @@ Stored image slots should keep `r2_key`; public/rendered image slots should expo
       "media_id": 22,
       "alt": "Jane Doe",
       "variants": {
-        "xs": { "r2_key": "media/jane-avatar-xs.webp", "width": 50, "height": 50 }
+        "xs": { "r2_key": "media/jane-avatar-xs.webp", "width": 50, "height": 50 },
+        "sm": { "r2_key": "media/jane-avatar-sm.webp", "width": 100, "height": 100 }
       }
     }
   },
@@ -175,7 +200,7 @@ Rules:
 - The complete variant set remains in `media.variants_json`.
 - `alt` should be present for public images.
 - `credit` should be an author credit snapshot copied from `media.credit`, not a bare display string.
-- `credit.avatar` should include only `xs` for a simple lightweight avatar.
+- `credit.avatar.variants` should include `xs` and `sm` for lightweight inline avatar rendering and retina/small-card contexts.
 - `width` and `height` are required for CLS-safe rendering.
 - `focal_point` is optional and used for `object-position`.
 - Stored image slots use `aspect_ratio`.
@@ -186,25 +211,27 @@ Rules:
 
 `articles.images_json`:
 
-- `cover`
+- `hero`
 - `thumbnail`
-- `pinterest`
-- `content_images`
+- `recipe_steps`
+
+Normal body images are stored directly in `content_json` image blocks. `articles.images_json` should not maintain a separate `content_images` registry by default.
+
+Pinterest is not an article image slot. Pinterest generation uses `media.variants_json.original` as source input and stores the generated output on `pinterest_pins`.
 
 ### Author Images
 
 `authors.images_json`:
 
 - `avatar`
-- `cover`
-- `banner`
+- `hero`
 
 ### Category Images
 
 `categories.images_json`:
 
 - `thumbnail`
-- `cover`
+- `hero`
 
 ## Breakpoints
 
@@ -224,27 +251,47 @@ The public site is mobile-first and uses responsive `srcset`/`sizes`. Snapshots 
 
 | Context | Stored variants | Why |
 | --- | --- | --- |
-| `media.variants_json` | `xs`, `sm`, `md`, `lg`, `original` | Complete image source of truth for generated files, R2 cleanup, snapshot regeneration, and Pinterest pin generation. |
-| Article/category/author main image slots | Full available set where practical | These images may render as heroes, cards, feeds, and social images. |
+| `media.variants_json` | `placeholder` plus `xs`, `sm`, `md`, `lg`, `original` | Complete image source of truth for generated files, placeholder reuse, R2 cleanup, snapshot regeneration, and Pinterest pin generation. |
+| Article/category/author `hero` slots | Full available set where practical | These images render as the primary page/header visual. |
 | Category thumbnail snapshots | `xs`, `sm` | Category thumbnails are small navigation/card assets and should not carry larger variants. |
-| Category cover snapshots | `md`, `lg` | Category covers are larger page/header assets, so they keep tablet/desktop and wide cover sources without copying every intermediate variant. |
-| Mobile-first card snapshots | `sm`, `md` by default | Covers mobile, retina mobile, tablet, and normal desktop cards without bloating JSON. |
+| Category hero snapshots | `md`, `lg` | Category hero images are larger page/header assets, so they keep tablet/desktop and wide sources without copying every intermediate variant. |
+| Mobile-first card snapshots | `sm`, `md` by default | Supports mobile, retina mobile, tablet, and normal desktop cards without bloating JSON. |
 | Tiny UI, avatars, small inline thumbnails | `xs`, `sm` | Avoids over-fetching when display size is very small. |
 | Large visual cards or wide carousels | `md`, `lg` | Use only when the component can actually render the image large. |
 | Related-content cards | `sm`, `md` by default | Avoids D1/media reads and keeps inline snapshots compact. |
 | Hero/featured snapshots | `sm`, `md`, `lg` | Preserves mobile-first `srcset` while supporting above-the-fold large display surfaces. |
 | Inline content image snapshots | `sm`, `md`, `lg` | Preserves responsive content rendering without copying `original`. |
-| Pinterest pin generation | `original` | Only place where `original` should be consumed. |
+| Pinterest pin generation | `media.variants_json.original` | Only place where `original` should be consumed. The generated pin output belongs to `pinterest_pins`. |
 
 Rules:
 
 - `original` is required in `media.variants_json` for image media and is only for Pinterest pin generation or high-quality regeneration.
+- `placeholder` is required in `media.variants_json` for image media.
 - Do not store `original` in public/card/related-content snapshots.
 - Do not use `original` for normal public rendering, hero images, cards, or related content.
 - Do not include every media variant in `related_content` by default; keep the complete set in `media.variants_json`.
 - Do include `width` and `height` for every stored snapshot variant.
 - Prefer `sm` + `md` for normal food-blog cards because the frontend is mobile-first.
 - Add `lg` when a specific component displays the image wider than a normal card or needs a wider `srcset`.
+
+## Pinterest and Template Generated Assets
+
+`media` owns reusable editorial/source assets. It should not become the owner of generated Pinterest pin images or generated template preview thumbnails.
+
+Generated assets belong to the table that owns their lifecycle:
+
+| Generated asset | Owning table | Purpose |
+| --- | --- | --- |
+| Template preview thumbnail | `pin_templates` | Admin/template picker preview generated from `elements_json` with sample data. |
+| Final Pinterest pin image | `pinterest_pins` | Exportable/publishable pin image generated from an article source image plus a template. |
+
+Rules:
+
+- Use `media.variants_json.original` only as high-quality source input for generation.
+- Store generated template thumbnails on `pin_templates`, preferably as `thumbnail_json` or `thumbnail_r2_key`, not as a new `media` row.
+- Store generated Pinterest pin images on `pinterest_pins`, preferably as `image_json` or `image_r2_key`, not as a new `media` row.
+- Generated assets should store R2 keys internally and expose public URLs only at API/export/render boundaries.
+- Current `thumbnail_url` or `image_url` fields should be treated as legacy/current implementation names when they point to internally generated assets.
 
 ## Responsive Rendering and `srcset`
 

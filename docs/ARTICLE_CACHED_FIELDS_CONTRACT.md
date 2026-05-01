@@ -53,7 +53,7 @@ Scalar mirrors:
 
 ## Image Snapshot Rules
 
-Image-bearing caches must follow `docs/MEDIA_IMAGE_CONTRACT.md`.
+Image-bearing caches must follow `docs/IMAGE_JSON_CONTRACT.md`.
 
 Rules:
 
@@ -219,7 +219,7 @@ Rules:
 Source:
 
 - article source fields
-- `images_json.thumbnail` or `images_json.cover`
+- `images_json.thumbnail` or `images_json.hero`
 - `cached_category_json`
 - `cached_author_json`
 - `cached_recipe_json` when relevant

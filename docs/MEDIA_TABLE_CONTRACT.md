@@ -4,7 +4,7 @@
 
 This document is the canonical contract for the `media` table.
 
-For reusable image variant and rendering rules, use `docs/MEDIA_IMAGE_CONTRACT.md`.
+For reusable image variant and rendering rules, use `docs/IMAGE_JSON_CONTRACT.md`.
 
 This document defines the database/storage contract. It does not define article image-slot placement or public rendering props.
 
@@ -135,7 +135,8 @@ Official shape:
     "media_id": 22,
     "alt": "Jane Doe",
     "variants": {
-      "xs": { "r2_key": "media/jane-avatar-xs.webp", "width": 50, "height": 50 }
+      "xs": { "r2_key": "media/jane-avatar-xs.webp", "width": 50, "height": 50 },
+      "sm": { "r2_key": "media/jane-avatar-sm.webp", "width": 100, "height": 100 }
     }
   }
 }
@@ -145,7 +146,7 @@ Rules:
 
 - `type` is required and must be `author`.
 - Author credits must include `id`, `name`, and `slug`.
-- `avatar` is optional, but when present it should include only the `xs` variant for a simple lightweight avatar.
+- `avatar` is optional, but when present `avatar.variants` should include `xs` and `sm` for lightweight inline avatar rendering and retina/small-card contexts.
 - Credit avatar snapshots follow the same stored image-slot rules: `r2_key`, not public `url`.
 - Public API/rendering may convert credit avatar variants to URLs.
 - Stored credits should not use a bare display string.
@@ -158,7 +159,7 @@ Article JSON fields are usage snapshots:
 
 | Field | Role |
 | --- | --- |
-| `articles.images_json` | Article-level image slots such as cover, thumbnail, pinterest. |
+| `articles.images_json` | Article-level image slots such as hero, thumbnail, content images, and recipe step images. |
 | `articles.content_json` | Block-level image payloads and related-content snapshots. |
 | `articles.cached_card_json` | Zero-join listing/card render cache. |
 
@@ -228,8 +229,8 @@ Delete flow:
 ## Naming Rules
 
 - SQL columns use `snake_case`: `alt_text`, `mime_type`, `variants_json`.
-- Drizzle/JS properties use `camelCase`: `altText`, `mimeType`, `variantsJson`.
+- Drizzle/TS/TSX properties use `camelCase`: `altText`, `mimeType`, `variantsJson`.
 - Stored JSON keys use `snake_case`: `r2_key`, `size_bytes`.
 - Public JSON responses should also prefer `snake_case` for serialized payloads.
-- Internal JS/TS variables may use `camelCase`.
+- Internal TS/TSX variables may use `camelCase`.
 - Upload API payloads may use `r2Key` or `sizeBytes` at the request boundary, but must convert to `r2_key` and `size_bytes` before storage.

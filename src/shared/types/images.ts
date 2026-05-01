@@ -69,7 +69,7 @@ export interface FocalPoint {
 
 /**
  * Single image slot with metadata
- * Used in images_json for cover, thumbnail, avatar, etc.
+ * Used in images_json for hero, thumbnail, avatar, etc.
  */
 export interface ImageSlot {
     /** Reference to source Media ID */
@@ -101,17 +101,20 @@ export interface ImageSlot {
  * Images JSON container for articles
  */
 export interface ArticleImagesJson {
-    /** Hero/featured image */
+    /** Primary article page/header image */
+    hero?: ImageSlot;
+
+    /** Legacy name for hero while older code/data is migrated */
     cover?: ImageSlot;
 
-    /** Card thumbnail (if different from cover) */
+    /** Card thumbnail (if different from hero) */
     thumbnail?: ImageSlot;
 
-    /** Pinterest-optimized image */
-    pinterest?: ImageSlot;
+    /** Recipe step images keyed by recipe_json step image_ref */
+    recipe_steps?: Record<string, ImageSlot>;
 
-    /** Images referenced in content_json */
-    contentImages?: ImageSlot[];
+    /** Legacy field; Pinterest generation now uses media.variants_json.original and stores output on pinterest_pins */
+    pinterest?: ImageSlot;
 }
 
 /**
@@ -480,5 +483,3 @@ export function getVariantUrlForContainer(
     const variant = getVariantForContainer(slot, containerType, size);
     return resolveVariantUrl(variant);
 }
-
-

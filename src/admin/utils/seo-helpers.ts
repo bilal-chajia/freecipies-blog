@@ -1,22 +1,59 @@
-/**
- * Generates an ItemList Schema.org object from roundup blocks.
- *
- * @param {Array} blocks - Canonical ContentDocument blocks
- * @param {Object} articleMetadata - Metadata for the main article
- * @returns {Object|null} Valid ItemList JSON-LD or null
- */
-export function generateRoundupItemList(blocks, articleMetadata = {}) {
+type RoundupBlock = {
+    type?: string;
+    title?: string;
+    slug?: string;
+    note?: string;
+    image?: {
+        url?: string;
+        variants?: {
+            sm?: {
+                url?: string;
+            };
+        };
+    };
+    items?: RoundupBlock[];
+};
+
+type ArticleMetadata = {
+    headline?: string;
+    shortDescription?: string;
+};
+
+type RoundupListItem = {
+    "@type": "ListItem";
+    position: number;
+    name: string;
+    url?: string;
+    image?: string;
+    description?: string;
+};
+
+type RoundupItemListSchema = {
+    "@context": "https://schema.org";
+    "@type": "ItemList";
+    name: string;
+    description: string;
+    numberOfItems: number;
+    itemListElement: RoundupListItem[];
+};
+
+export function generateRoundupItemList(
+    blocks: unknown,
+    articleMetadata: ArticleMetadata = {}
+): RoundupItemListSchema | null {
     if (!Array.isArray(blocks)) return null;
 
     // Stored content_json uses one canonical roundup_item block per item.
-    const items = [];
+    const items: RoundupBlock[] = [];
 
-    blocks.forEach((block) => {
+    const contentBlocks = blocks as RoundupBlock[];
+
+    contentBlocks.forEach((block) => {
         if (!block || typeof block !== 'object') return;
         if (block.type === 'roundup_item') {
             items.push(block);
         } else if (block.type === 'roundupList' && Array.isArray(block.items)) {
-            block.items.forEach((item) => {
+            block.items.forEach((item: RoundupBlock) => {
                 items.push(item);
             });
         }
@@ -25,7 +62,7 @@ export function generateRoundupItemList(blocks, articleMetadata = {}) {
     if (items.length === 0) return null;
 
     const itemListElement = items.map((item, index) => {
-        const itemLd = {
+        const itemLd: RoundupListItem = {
             "@type": "ListItem",
             "position": index + 1,
             "name": item.title || "Untitled Recipe",

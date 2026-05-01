@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export function useEditorViewportLock() {
+export function useEditorViewportLock(): void {
     useEffect(() => {
         const html = document.documentElement;
         const body = document.body;

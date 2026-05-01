@@ -69,7 +69,7 @@ import { mediaAPI, authorsAPI } from '../../../services/api';
 import { formatFileSize, isImageFile, formatDate } from '../../../utils/helpers';
 import { useMediaStore } from '../../../store/useStore';
 import ConfirmationModal from '@/ui/confirmation-modal';
-import { compressImage, QUALITY_PRESETS, formatBytes } from '../../../../utils/imageCompression.js';
+import { compressImage, QUALITY_PRESETS, formatBytes } from '../../../utils/imageCompression.js';
 import { toast } from 'sonner';
 
 // Helper to check if item is image (by mime or name)

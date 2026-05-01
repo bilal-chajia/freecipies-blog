@@ -1,31 +1,17 @@
 ---
-import { env } from 'cloudflare:workers';
-import { getArticles } from "@modules/articles";
+import type { HydratedArticle } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 
 interface Props {
   currentSlug?: string;
   limit?: number;
+  recipes?: HydratedArticle[];
 }
 
-const { currentSlug = "", limit = 5 } = Astro.props;
-
-// Fetch popular recipes (using isFavorite or just recent ones for now)
-let recipes: any[] = [];
-try {
-  if (env?.DB) {
-    const result = await getArticles(env.DB, {
-      type: "recipe",
-      limit: limit + 1, // Get one extra in case we need to filter out current
-    });
-    // Filter out current recipe - result returns { items, total }
-    recipes = (result.items || [])
-      .filter((r: any) => r.slug !== currentSlug)
-      .slice(0, limit);
-  }
-} catch (e) {
-  console.error("Error loading popular recipes:", e);
-}
+const { currentSlug = "", limit = 5, recipes = [] } = Astro.props as Props;
+const visibleRecipes = recipes
+  .filter((recipe) => recipe.slug !== currentSlug)
+  .slice(0, limit);
 ---
 
 <div class="popular-recipes-widget">
@@ -35,9 +21,9 @@ try {
   </div>
 
   {
-    recipes.length > 0 ? (
+    visibleRecipes.length > 0 ? (
       <div class="recipe-list">
-        {recipes.map((recipe: any) => {
+        {visibleRecipes.map((recipe) => {
           const thumbnail = extractImage(recipe.imagesJson, "thumbnail", 120);
           const cover = extractImage(recipe.imagesJson, "cover", 120);
           const slotName = thumbnail.imageUrl ? "thumbnail" : "cover";

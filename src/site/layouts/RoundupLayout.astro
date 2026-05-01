@@ -1,5 +1,4 @@
 ---
-import { env } from "cloudflare:workers";
 import Layout from "./Layout.astro";
 import type { Category } from "@modules/categories/schema/categories.schema";
 import SocialShareBar from "../components/SocialShareBar.astro";
@@ -13,9 +12,10 @@ import FAQSection from "../components/content/FAQSection.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import {
-  getTocSettings,
-} from "@modules/settings/services/settings.service";
-import { TOC_DEFAULTS, type TocSettings } from "@modules/settings/types/settings.types";
+  getPopularRecipes,
+  getRoundupArticleMap,
+  getSiteTocSettings,
+} from "@server/site-data";
 interface Props {
   article: Record<string, any>;
   author?: Record<string, any> | null;
@@ -29,15 +29,9 @@ const parsedRoundupJson = typeof article.roundupJson === 'string'
   : (article.roundupJson || { items: [] });
 const categoryColor = category?.color || "#ff6600";
 
-let tocSettings: TocSettings = TOC_DEFAULTS;
-try {
-  const db = env?.DB;
-  if (db) {
-    tocSettings = await getTocSettings(db);
-  }
-} catch (error) {
-  console.error("Failed to load TOC settings:", error);
-}
+const tocSettings = await getSiteTocSettings();
+const popularRecipes = await getPopularRecipes(article.slug, 5);
+const roundupArticles = await getRoundupArticleMap(article);
 
 const wordCount = [
   article.shortDescription,
@@ -155,6 +149,7 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
               <ContentRenderer
                 article={article}
                 settings={tocSettings}
+                roundupArticles={roundupArticles}
               />
             </section>
           )
@@ -165,7 +160,11 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
 
       <aside class="sidebar">
         <div class="sidebar-sticky">
-          <PopularRecipes currentSlug={article.slug} limit={5} />
+          <PopularRecipes
+            currentSlug={article.slug}
+            limit={5}
+            recipes={popularRecipes}
+          />
           <NewsletterWidget />
         </div>
       </aside>

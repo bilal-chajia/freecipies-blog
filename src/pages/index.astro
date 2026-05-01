@@ -8,6 +8,7 @@ import { getCategories } from "@modules/categories";
 import { getAuthors } from "@modules/authors";
 import { hydrateCategory } from "@shared/utils/hydration";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import { getStories } from "@server/site-data";
 import type { HydratedArticle } from "@modules/articles/types";
 import type { HydratedCategory } from "@modules/categories/types/categories.types";
 import type { Author } from "@modules/authors/schema/authors.schema";
@@ -20,6 +21,7 @@ const siteDescription =
 let allRecipes: HydratedArticle[] = [];
 let categories: HydratedCategory[] = [];
 let featuredAuthor: Author | null = null;
+const stories = await getStories();
 
 try {
   // Get all recipes for various sections
@@ -78,7 +80,7 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 
 <Layout title={siteTitle} description={siteDescription}>
   <main class="homepage">
-    <StoriesBar />
+    <StoriesBar stories={stories} />
     {
       featuredRecipes.length > 0 && (
         <section class="hero-grid-section">

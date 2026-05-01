@@ -12,12 +12,12 @@ Related contracts:
 
 - `docs/ARTICLE_TABLE_CONTRACT.md` for `articles.author_id` and `cached_author_json`
 - `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md` for article-side author snapshots
-- `docs/MEDIA_IMAGE_CONTRACT.md` for avatar and cover slots
+- `docs/IMAGE_JSON_CONTRACT.md` for avatar and hero slots
 - `docs/MEDIA_TABLE_CONTRACT.md` for source media records
 
 ## Source Of Truth
 
-The `authors` row is the source of truth for public author identity, profile content, avatar/cover snapshots, biography, and SEO overrides.
+The `authors` row is the source of truth for public author identity, profile content, avatar/hero snapshots, biography, and SEO overrides.
 
 `articles.author_id` is the source of truth for article attribution. `articles.cached_author_json` is only a regenerable display/search snapshot.
 
@@ -36,7 +36,7 @@ The `authors` row is the source of truth for public author identity, profile con
 | `short_description` | yes | Admin/editorial | Short public bio for cards and SEO fallback. |
 | `excerpt` | no | Admin/editorial | Longer teaser for listings/newsletter contexts. |
 | `introduction` | no | Admin/editorial | Profile hero copy. May support markdown. |
-| `images_json` | no | Admin/media | Avatar, cover, and optional banner slots. See `docs/MEDIA_IMAGE_CONTRACT.md`. |
+| `images_json` | no | Admin/media | Avatar and hero slots. See `docs/IMAGE_JSON_CONTRACT.md`. |
 | `bio_json` | no | Admin/editorial/AI | Long biography, AI persona, and social links. |
 | `seo_json` | publish-required | Admin/SEO | Author profile SEO payload. SQL default is `{}`, but public authors must have complete SEO before publish. |
 | `is_online` | no | Admin/workflow | Public profile visibility. |
@@ -66,13 +66,13 @@ Expected slots:
       "sm": { "r2_key": "media/jane-sm.webp", "width": 100, "height": 100 }
     }
   },
-  "cover": {
+  "hero": {
     "media_id": 23,
     "alt": "Jane Doe cooking",
     "aspect_ratio": "16:9",
     "variants": {
-      "md": { "r2_key": "media/jane-cover-md.webp", "width": 1200, "height": 675 },
-      "lg": { "r2_key": "media/jane-cover-lg.webp", "width": 2048, "height": 1152 }
+      "md": { "r2_key": "media/jane-hero-md.webp", "width": 1200, "height": 675 },
+      "lg": { "r2_key": "media/jane-hero-lg.webp", "width": 2048, "height": 1152 }
     }
   }
 }
@@ -81,7 +81,7 @@ Expected slots:
 Rules:
 
 - Avatar render contexts usually need `xs` and `sm`; full profile pages may use larger variants.
-- Cover render contexts usually need `md` and `lg`.
+- Hero render contexts usually need `md` and `lg`.
 - Internal snapshots may contain `r2_key`; public API/frontend props must convert to URLs.
 - The source media row remains the full asset source of truth.
 
@@ -159,7 +159,7 @@ Rules:
 
 Admin:
 
-- Author editor creates profile content and avatar/cover snapshots.
+- Author editor creates profile content and avatar/hero snapshots.
 - Article editor reads author lookup data.
 
 Public Astro:

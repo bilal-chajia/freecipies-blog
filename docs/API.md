@@ -186,7 +186,7 @@ Get article by slug with full details.
     "excerpt": "These brownies are...",
     "introduction": "Nothing beats homemade brownies...",
     "images": {
-      "cover": {
+      "hero": {
         "alt": "Chocolate brownies",
         "variants": {
           "xs": { "url": "...", "width": 360, "height": 240 },
@@ -297,7 +297,7 @@ Create new article. **Requires Auth.**
   "shortDescription": "A delicious new recipe...",
   "categoryId": 5,
   "authorId": 1,
-  "imagesJson": { "cover": {...} },
+  "imagesJson": { "hero": {...} },
   "contentJson": {
     "version": 1,
     "kind": "content_document",

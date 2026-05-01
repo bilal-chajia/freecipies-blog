@@ -3,8 +3,9 @@ import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import "../styles/global.css";
-import bookmarksScript from "../scripts/bookmarks.js?url";
-import enhancementsScript from "../scripts/global-enhancements.js?url";
+import bookmarksScript from "@site/scripts/bookmarks.js?url";
+import enhancementsScript from "@site/scripts/global-enhancements.js?url";
+import { getHeaderMenu } from "@server/site-data";
 
 interface Props {
   title: string;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 const { title, description, image, noindex } = Astro.props;
+const headerMenu = await getHeaderMenu();
 ---
 
 <!doctype html>
@@ -44,7 +46,7 @@ const { title, description, image, noindex } = Astro.props;
     <slot name="head" />
   </head>
   <body class="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)]">
-    <Header />
+    <Header headerMenu={headerMenu} />
     <main id="main-content" class="flex-1">
       <slot />
     </main>

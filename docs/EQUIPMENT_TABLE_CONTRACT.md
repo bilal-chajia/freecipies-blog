@@ -13,7 +13,7 @@ Related contracts:
 - `docs/RECIPE_JSON_CONTRACT.md` for `recipe_json.equipment`
 - `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md` for `cached_equipment_json`
 - `docs/ARTICLE_JSON_CONTRACTS.md` for article JSON field ownership
-- `docs/MEDIA_IMAGE_CONTRACT.md` for `image_json`
+- `docs/IMAGE_JSON_CONTRACT.md` for `image_json`
 
 ## Source Of Truth
 
@@ -34,7 +34,7 @@ The `equipment` row is the source of truth for product/affiliate metadata.
 | `description` | no | Admin/editorial | Short product/tool description for cards or tooltips. |
 | `keywords` | no | Admin/AI/search | JSON array of lowercase aliases for matching and search. |
 | `category` | no | Admin/filtering | Controlled category: `appliances`, `bakeware`, `cookware`, `utensils`, `gadgets`, `other`. |
-| `image_json` | no | Admin/media | Product image slot. See `docs/MEDIA_IMAGE_CONTRACT.md`. |
+| `image_json` | no | Admin/media | Product image slot. See `docs/IMAGE_JSON_CONTRACT.md`. |
 | `affiliate_url` | no | Admin/affiliate | Primary affiliate URL. |
 | `affiliate_provider` | no | Admin/affiliate | Provider name such as `amazon`, `williams-sonoma`, `target`, `walmart`, `custom`. |
 | `affiliate_note` | no | Admin/legal | Optional disclosure override. Defaults to global disclosure when empty. |

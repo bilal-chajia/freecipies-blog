@@ -43,9 +43,6 @@
       ],
       "@styles/*": [
         "src/site/styles/*"
-      ],
-      "@lib/*": [
-        "src/lib/*"
       ]
     }
   }

@@ -8,7 +8,7 @@ For the complete `articles` table contract, use `docs/ARTICLE_TABLE_CONTRACT.md`
 For cached fields on `articles`, use `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md`.
 For `articles.content_json`, use `docs/CONTENT_JSON_CONTRACT.md`.
 For the complete `media` table contract, use `docs/MEDIA_TABLE_CONTRACT.md`.
-For media/image variant rules, use `docs/MEDIA_IMAGE_CONTRACT.md`.
+For media/image variant rules, use `docs/IMAGE_JSON_CONTRACT.md`.
 
 ## Naming
 
@@ -24,17 +24,17 @@ Purpose: article-level image slots.
 
 Common slots:
 
-- `cover`: hero/featured image.
-- `thumbnail`: card/list thumbnail, if different from cover.
-- `pinterest`: Pinterest-optimized image.
-- `content_images`: images referenced from body content.
+- `hero`: primary article page/header image.
+- `thumbnail`: card/list thumbnail, if different from hero.
 - `recipe_steps`: step images referenced by `recipe_json.instructions[].steps[].image_ref`.
+
+Normal body images are stored directly in `content_json` image blocks. Do not maintain a separate `images_json.content_images` registry unless a future migration explicitly introduces one.
 
 Shape:
 
 ```json
 {
-  "cover": {
+  "hero": {
     "media_id": 105,
     "alt": "Lemon blueberry biscuits on cooling rack",
     "caption": "Fresh out of the oven",
@@ -47,7 +47,8 @@ Shape:
         "media_id": 22,
         "alt": "Jane Doe",
         "variants": {
-          "xs": { "r2_key": "media/jane-avatar-xs.webp", "width": 50, "height": 50 }
+          "xs": { "r2_key": "media/jane-avatar-xs.webp", "width": 50, "height": 50 },
+          "sm": { "r2_key": "media/jane-avatar-sm.webp", "width": 100, "height": 100 }
         }
       }
     },
@@ -78,16 +79,18 @@ Rules:
 - Stored image slots should use `r2_key`, not absolute URLs.
 - Public/API/rendered image props must convert `r2_key` to URLs and must not expose `r2_key`.
 - `credit` should be an author credit snapshot copied from `media.credit`, not a bare display string.
-- `credit.avatar` should include only `xs` for a simple lightweight avatar.
+- `credit.avatar.variants` should include `xs` and `sm` for lightweight inline avatar rendering and retina/small-card contexts.
 - `width` and `height` are required for rendered variants.
 - `media_id` is the stable reference back to the media library.
 - Stored image slots use `aspect_ratio`.
-- Variant selection follows `docs/MEDIA_IMAGE_CONTRACT.md`: source media keeps the full set; article slots keep the variants needed by their render contexts and `srcset`.
-- Cover/hero slots should include `sm`, `md`, and `lg` when rendered responsively.
+- Variant selection follows `docs/IMAGE_JSON_CONTRACT.md`: source media keeps the full set; article slots keep the variants needed by their render contexts and `srcset`.
+- Hero slots should include `sm`, `md`, and `lg` when rendered responsively.
 - Thumbnail/card slots usually need `sm` + `md`.
 - Recipe step image slots usually need `sm` + `md`.
+- Body image blocks own their own image slots inside `content_json`.
 - `recipe_steps` keys must match `recipe_json.instructions[].steps[].image_ref`; `step.id` may be used as fallback when `image_ref` is omitted.
-- `original` is required in `media.variants_json` for image media, but should not be copied into normal article image snapshots unless the `pinterest` slot explicitly needs it.
+- `original` is required in `media.variants_json` for image media and should not be copied into normal article image snapshots.
+- Pinterest generation uses `media.variants_json.original` as source input and stores the generated output on `pinterest_pins`.
 
 ## `recipe_json`
 

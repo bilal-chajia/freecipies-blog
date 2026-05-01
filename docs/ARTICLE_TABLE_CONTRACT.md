@@ -10,7 +10,7 @@ For JSON payload details, use:
 - `docs/ARTICLE_JSON_CONTRACTS.md` for article JSON fields except `content_json`
 - `docs/CONTENT_JSON_CONTRACT.md` for `articles.content_json`
 - `docs/RECIPE_JSON_CONTRACT.md` for `articles.recipe_json`
-- `docs/MEDIA_IMAGE_CONTRACT.md` for image slots and snapshots
+- `docs/IMAGE_JSON_CONTRACT.md` for image slots and snapshots
 
 ## Purpose
 
@@ -83,7 +83,7 @@ Rules:
 
 | Column | Role | Contract |
 | --- | --- | --- |
-| `images_json` | Article image slots: cover, thumbnail, pinterest, content images. | `docs/ARTICLE_JSON_CONTRACTS.md` |
+| `images_json` | Article image slots: hero, thumbnail, content images, recipe step images. | `docs/ARTICLE_JSON_CONTRACTS.md` |
 | `content_json` | Versioned block document for article body. | `docs/CONTENT_JSON_CONTRACT.md` |
 | `recipe_json` | Complete recipe source data for `type = "recipe"`. | `docs/RECIPE_JSON_CONTRACT.md` |
 | `roundup_json` | Compatibility list data for `type = "roundup"`. | `docs/ARTICLE_JSON_CONTRACTS.md` |
@@ -191,6 +191,6 @@ Search indexing is maintained separately through the article search triggers and
 ## Naming Rules
 
 - SQL columns use `snake_case`: `short_description`, `content_json`, `cached_card_json`.
-- Drizzle/JS properties use `camelCase`: `shortDescription`, `contentJson`, `cachedCardJson`.
+- Drizzle/TS/TSX properties use `camelCase`: `shortDescription`, `contentJson`, `cachedCardJson`.
 - API payloads may use `camelCase`, but stored JSON contracts use their documented field names.
 - Do not invent hybrid names such as `contentjson`, `content_JSON`, or `cachedcard_json`.

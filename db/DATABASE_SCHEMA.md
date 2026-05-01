@@ -127,7 +127,7 @@ interface HydratedArticle {
   recipe: RecipeJson; // Parsed object
   categoryId: number;
   route: string; // Computed: `/recipes/${slug}`
-  imageUrl: string; // Convenience: images.cover.variants.md.url
+  imageUrl: string; // Convenience: images.hero.variants.md.url
   // ...
 }
 ```
@@ -347,7 +347,7 @@ contact_info    → Contact details
 Canonical shape and variant rules are defined in:
 
 - `docs/MEDIA_TABLE_CONTRACT.md`
-- `docs/MEDIA_IMAGE_CONTRACT.md`
+- `docs/IMAGE_JSON_CONTRACT.md`
 
 This file must not duplicate media JSON examples because image slot rules differ by context.
 
@@ -708,7 +708,7 @@ Use these documents as the source of truth for JSON shapes:
 - `articles.recipe_json`: `docs/RECIPE_JSON_CONTRACT.md`
 - `articles.cached_*`, `articles.faqs_json`, and `articles.jsonld_json`: `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md`
 - media source records and variants: `docs/MEDIA_TABLE_CONTRACT.md`
-- reusable image slots and variant selection rules: `docs/MEDIA_IMAGE_CONTRACT.md`
+- reusable image slots and variant selection rules: `docs/IMAGE_JSON_CONTRACT.md`
 - author, category, tag, equipment, redirect, and settings payloads: their matching `docs/*_TABLE_CONTRACT.md` files
 
 This section intentionally does not duplicate examples. Duplicated JSON examples drift quickly and can confuse future refactors.

@@ -10,7 +10,8 @@
     "deploy:local": "deploy.bat",
     "astro": "astro",
     "migrate": "node scripts/migrate-csv-to-d1.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:boundaries": "node scripts/check-boundaries.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

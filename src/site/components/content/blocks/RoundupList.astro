@@ -1,11 +1,17 @@
 ---
-import { env } from 'cloudflare:workers';
 import RoundupItemList from '../../RoundupItemList.astro';
+import type { RoundupArticleMap } from '@server/site-data';
 const { block, roundupJson, startNumber } = Astro.props as {
   block: any;
   roundupJson?: any;
+  roundupArticles?: RoundupArticleMap;
   startNumber?: number;
 };
-const items = typeof block.itemsJson === 'string' ? JSON.parse(block.itemsJson) : block.items || [];
+const { roundupArticles = {} } = Astro.props as { roundupArticles?: RoundupArticleMap };
 ---
-<RoundupItemList block={block} db={env.DB} startNumber={startNumber || 1} />
+<RoundupItemList
+  roundup={Astro.props.roundup}
+  block={block}
+  roundupArticles={roundupArticles}
+  startNumber={startNumber || 1}
+/>

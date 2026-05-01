@@ -29,7 +29,7 @@ Mapping for compatibility-only normalizers:
 - `roundup_json` remains a legacy compatibility field while new roundup item content moves toward `content_json.blocks[]` with `roundup_item`.
 - Legacy FAQ cache items using `q`/`a` may be normalized to `question`/`answer`.
 - Legacy rating cache items using `ratingValue`/`ratingCount` may be normalized to `rating_value`/`rating_count`.
-- Legacy article image containers may use `contentImages`; the target stored key is `content_images`.
+- Legacy article image containers may use `contentImages`; the target contract removes this registry and stores normal body images directly in `content_json` image blocks.
 - Legacy roundup/config article JSON may use `listType`, `allowComments`, `showTableOfContents`, `manualRelatedIds`, `experimentKey`, and `experimentVariant`; the target stored keys are snake_case.
 
 ## Recipe JSON

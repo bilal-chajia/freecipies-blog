@@ -110,8 +110,7 @@ export const parseVariantsJson = (value) => {
 const normalizeVariantEntry = (variant) => {
   if (!variant || typeof variant !== 'object') return null;
   const hasUrl = !!variant.url;
-  const hasR2Key = !!variant.r2_key;
-  if (!hasUrl && !hasR2Key) return null;
+  if (!hasUrl) return null;
 
   const result = {
     width: variant.width ?? 0,
@@ -119,12 +118,7 @@ const normalizeVariantEntry = (variant) => {
     sizeBytes: variant.sizeBytes ?? variant.size_bytes,
   };
 
-  if (hasR2Key) {
-    result.r2_key = variant.r2_key;
-  }
-  if (hasUrl) {
-    result.url = variant.url;
-  }
+  result.url = variant.url;
 
   return result;
 };
@@ -145,7 +139,7 @@ export const buildImageSlotFromMedia = (item, overrides = {}) => {
   if (variantMap && typeof variantMap === 'object') {
     Object.entries(variantMap).forEach(([key, variant]) => {
       const normalized = normalizeVariantEntry(variant);
-      if (normalized?.url || normalized?.r2_key) {
+      if (normalized?.url) {
         variants[key] = normalized;
       }
     });

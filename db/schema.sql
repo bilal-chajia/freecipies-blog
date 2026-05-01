@@ -3,12 +3,6 @@
 -- ==================================================================================
 -- Purpose: Centralized storage for site-wide configurations.
 -- Strategy: "Key-Value Store" within SQL.
---
--- Why D1 instead of Cloudflare KV?
--- 1. Data Integrity: Settings are backed up alongside content (Articles/Media).
--- 2. Developer Experience: Unified query interface (Drizzle ORM) for all data.
--- 3. Typing: Allows structured JSON storage for complex settings (e.g., Social Links).
---
 -- Contract: docs/SITE_SETTINGS_TABLE_CONTRACT.md
 -- ==================================================================================
 
@@ -81,7 +75,7 @@ END;
 --   3. Only then delete (or soft-delete) the SQL row.
 --   This prevents "orphaned files" (ghost files) on R2 storage.
 --
--- Contract: docs/MEDIA_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md
+-- Contract: docs/MEDIA_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS media (
@@ -132,7 +126,7 @@ CREATE TABLE IF NOT EXISTS media (
     -- │ lg      │ 2048px │ 4K displays, MacBook Retina, iPad Pro          │
     -- └─────────┴────────┴─────────────────────────────────────────────────┘
     --
-    -- Contract: docs/MEDIA_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md.
+    -- Contract: docs/MEDIA_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md.
 
     variants_json TEXT NOT NULL,
 
@@ -203,7 +197,7 @@ END;
 -- │ headline            │ ❌ NO    │ Falls back to 'label' if NULL              │
 -- │ collection_title    │ ❌ NO    │ Falls back to 'headline' or 'label'        │
 -- │ short_description   │ ❌ NO    │ Recommended for SEO                        │
--- │ images_json         │ ❌ NO    │ But recommended (thumbnail + cover)        │
+-- │ images_json         │ ❌ NO    │ But recommended (thumbnail + hero)         │
 -- │ color               │ ❌ NO    │ Defaults to #ff6600ff                      │
 -- │ icon_svg            │ ❌ NO    │ Optional menu icon                         │
 -- │ is_featured         │ ❌ NO    │ Defaults to false                          │
@@ -278,7 +272,7 @@ CREATE TABLE IF NOT EXISTS categories (
     -- =========================================================================
     -- 3. VISUALS (Display-Ready Image Data)
     -- =========================================================================
-    -- Category image slots. Contract: docs/CATEGORIES_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md.
+    -- Category image slots. Contract: docs/CATEGORIES_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md.
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
     -- =========================================================================
@@ -394,7 +388,7 @@ CREATE INDEX IF NOT EXISTS idx_categories_active ON categories(deleted_at);     
 -- │ short_description   │ ❌ NO    │ Falls back to bio_json.short               │
 -- │ excerpt             │ ❌ NO    │ Newsletter teaser                          │
 -- │ introduction        │ ❌ NO    │ Hero copy for profile page                 │
--- │ images_json         │ ❌ NO    │ But recommended (avatar + cover)           │
+-- │ images_json         │ ❌ NO    │ But recommended (avatar + hero)            │
 -- │ bio_json            │ ❌ NO    │ Bio text + social links                    │
 -- │ seo_json            │ ❌ NO    │ Overrides only                             │
 -- └─────────────────────┴──────────┴────────────────────────────────────────────┘
@@ -464,7 +458,7 @@ CREATE TABLE IF NOT EXISTS authors (
     -- =========================================================================
     -- 3. VISUALS (Display-Ready Image Data)
     -- =========================================================================
-    -- Author image slots. Contract: docs/AUTHORS_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md.
+    -- Author image slots. Contract: docs/AUTHORS_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md.
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
     -- =========================================================================
@@ -713,7 +707,7 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- =========================================================================
     -- 2. VISUALS
     -- =========================================================================
-    -- Product image snapshot. Contract: docs/EQUIPMENT_TABLE_CONTRACT.md and docs/MEDIA_IMAGE_CONTRACT.md.
+    -- Product image snapshot. Contract: docs/EQUIPMENT_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md.
     image_json TEXT DEFAULT '{}' CHECK (json_valid(image_json)),
 
     -- =========================================================================
@@ -875,8 +869,8 @@ CREATE TABLE IF NOT EXISTS articles (
     -- Good for storytelling/context before the main content.
 
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
-    -- Article image slots: cover, thumbnail, pinterest, content_images.
-    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md and docs/MEDIA_IMAGE_CONTRACT.md.
+    -- Article image slots: hero, thumbnail, recipe_steps.
+    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md and docs/IMAGE_JSON_CONTRACT.md.
 
     -- --------------------------------------------------------------------
     -- 4. RICH CONTENT (BLOCK-BASED BODY)
@@ -1179,7 +1173,7 @@ CREATE TABLE IF NOT EXISTS articles_to_tags (
     tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
     PRIMARY KEY (article_id, tag_id)
 );
-CREATE INDEX idx_tag_to_article ON articles_to_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_tag_to_article ON articles_to_tags(tag_id);
 
 
 -- ==================================================================
@@ -1209,6 +1203,37 @@ CREATE VIRTUAL TABLE IF NOT EXISTS idx_media_search_fts USING fts5(
     content='media',
     content_rowid='id'
 );
+
+-- ==================================================================================
+-- MEDIA FTS5 SYNC TRIGGERS
+-- ==================================================================================
+-- Purpose: Keep idx_media_search_fts in sync with the media table.
+-- The FTS delete command MUST supply the original indexed values.
+
+-- Trigger: Sync Media FTS on INSERT
+CREATE TRIGGER IF NOT EXISTS trg_media_search_ai AFTER INSERT ON media
+BEGIN
+  INSERT INTO idx_media_search_fts(rowid, name, alt_text, caption, credit)
+  VALUES (NEW.id, NEW.name, NEW.alt_text, NEW.caption, NEW.credit);
+END;
+
+-- Trigger: Sync Media FTS on UPDATE (delete old entry, re-insert if not soft-deleted)
+CREATE TRIGGER IF NOT EXISTS trg_media_search_au AFTER UPDATE ON media
+BEGIN
+  INSERT INTO idx_media_search_fts(idx_media_search_fts, rowid, name, alt_text, caption, credit)
+  VALUES('delete', OLD.id, OLD.name, OLD.alt_text, OLD.caption, OLD.credit);
+
+  INSERT INTO idx_media_search_fts(rowid, name, alt_text, caption, credit)
+  SELECT NEW.id, NEW.name, NEW.alt_text, NEW.caption, NEW.credit
+  WHERE NEW.deleted_at IS NULL;
+END;
+
+-- Trigger: Sync Media FTS on DELETE
+CREATE TRIGGER IF NOT EXISTS trg_media_search_ad AFTER DELETE ON media
+BEGIN
+  INSERT INTO idx_media_search_fts(idx_media_search_fts, rowid, name, alt_text, caption, credit)
+  VALUES('delete', OLD.id, OLD.name, OLD.alt_text, OLD.caption, OLD.credit);
+END;
 
 -- Trigger: Sync Articles on INSERT
 CREATE TRIGGER IF NOT EXISTS trg_articles_search_ai AFTER INSERT ON articles
@@ -1404,12 +1429,130 @@ END;
 -- Trigger: Sync Articles on UPDATE (including soft-delete handling)
 CREATE TRIGGER IF NOT EXISTS trg_articles_search_au AFTER UPDATE ON articles
 BEGIN
-  -- Clean up old index entry (include all columns for proper deletion)
+  -- Clean up old index entry (values MUST match original indexed data for FTS5 consistency)
   INSERT INTO idx_articles_search(
     idx_articles_search, rowid, headline, subtitle, short_description,
     body_content, tag_labels, author_name, category_name
   )
-  VALUES('delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description, '', '', '', '');
+  SELECT 'delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description,
+    (
+      SELECT GROUP_CONCAT(txt, ' ') FROM (
+        SELECT json_extract(value, '$.text') as txt
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.text') IS NOT NULL
+        UNION ALL
+        SELECT json_extract(value, '$.title')
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.title') IS NOT NULL
+        UNION ALL
+        SELECT json_extract(value, '$.caption')
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.caption') IS NOT NULL
+        UNION ALL
+        SELECT json_extract(value, '$.note')
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.note') IS NOT NULL
+        UNION ALL
+        SELECT json_extract(value, '$.subtitle')
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.subtitle') IS NOT NULL
+        UNION ALL
+        SELECT CASE
+          WHEN item.type = 'object' THEN COALESCE(
+            json_extract(item.value, '$.text'),
+            json_extract(item.value, '$.label'),
+            json_extract(item.value, '$.title')
+          )
+          ELSE item.value
+        END
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'list'
+        UNION ALL
+        SELECT json_extract(item.value, '$.question')
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        UNION ALL
+        SELECT json_extract(item.value, '$.answer')
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        UNION ALL
+        SELECT header.value
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.headers') AS header
+        WHERE json_extract(block.value, '$.type') = 'table'
+        UNION ALL
+        SELECT cell.value
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.rows') AS row,
+             json_each(row.value) AS cell
+        WHERE json_extract(block.value, '$.type') = 'table'
+        UNION ALL
+        SELECT json_extract(item.value, '$.title')
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'related_content'
+        UNION ALL
+        SELECT json_extract(item.value, '$.description')
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'related_content'
+        UNION ALL
+        SELECT json_extract(g.value, '$.section_title')
+        FROM json_each(OLD.recipe_json, '$.ingredients') AS g
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(i.value, '$.name')
+        FROM json_each(OLD.recipe_json, '$.ingredients') as g,
+             json_each(g.value, '$.items') as i
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(i.value, '$.note')
+        FROM json_each(OLD.recipe_json, '$.ingredients') as g,
+             json_each(g.value, '$.items') as i
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(s.value, '$.section_title')
+        FROM json_each(OLD.recipe_json, '$.instructions') AS s
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(step.value, '$.text')
+        FROM json_each(OLD.recipe_json, '$.instructions') AS s,
+             json_each(s.value, '$.steps') AS step
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(step.value, '$.tip')
+        FROM json_each(OLD.recipe_json, '$.instructions') AS s,
+             json_each(s.value, '$.steps') AS step
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(OLD.recipe_json, '$.recipe_category')
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(OLD.recipe_json, '$.recipe_cuisine')
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(OLD.recipe_json, '$.difficulty')
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT keyword.value
+        FROM json_each(OLD.recipe_json, '$.keywords') AS keyword
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT equipment.value
+        FROM json_each(OLD.recipe_json, '$.equipment') AS equipment
+        WHERE OLD.type = 'recipe' AND equipment.type = 'text'
+        UNION ALL
+        SELECT json_extract(equipment.value, '$.label')
+        FROM json_each(OLD.recipe_json, '$.equipment') AS equipment
+        WHERE OLD.type = 'recipe'
+      )
+    ),
+    (SELECT GROUP_CONCAT(json_extract(value, '$.label'), ' ') FROM json_each(OLD.cached_tags_json)),
+    json_extract(OLD.cached_author_json, '$.name'),
+    json_extract(OLD.cached_category_json, '$.label');
 
   -- Only insert fresh entry if NOT soft-deleted
   INSERT INTO idx_articles_search(
@@ -1607,7 +1750,125 @@ BEGIN
     idx_articles_search, rowid, headline, subtitle, short_description,
     body_content, tag_labels, author_name, category_name
   )
-  VALUES('delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description, '', '', '', '');
+  SELECT 'delete', OLD.id, OLD.headline, OLD.subtitle, OLD.short_description,
+    (
+      SELECT GROUP_CONCAT(txt, ' ') FROM (
+        SELECT json_extract(value, '$.text') as txt
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.text') IS NOT NULL
+        UNION ALL
+        SELECT json_extract(value, '$.title')
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.title') IS NOT NULL
+        UNION ALL
+        SELECT json_extract(value, '$.caption')
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.caption') IS NOT NULL
+        UNION ALL
+        SELECT json_extract(value, '$.note')
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.note') IS NOT NULL
+        UNION ALL
+        SELECT json_extract(value, '$.subtitle')
+        FROM json_each(OLD.content_json, '$.blocks')
+        WHERE json_extract(value, '$.subtitle') IS NOT NULL
+        UNION ALL
+        SELECT CASE
+          WHEN item.type = 'object' THEN COALESCE(
+            json_extract(item.value, '$.text'),
+            json_extract(item.value, '$.label'),
+            json_extract(item.value, '$.title')
+          )
+          ELSE item.value
+        END
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'list'
+        UNION ALL
+        SELECT json_extract(item.value, '$.question')
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        UNION ALL
+        SELECT json_extract(item.value, '$.answer')
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        UNION ALL
+        SELECT header.value
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.headers') AS header
+        WHERE json_extract(block.value, '$.type') = 'table'
+        UNION ALL
+        SELECT cell.value
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.rows') AS row,
+             json_each(row.value) AS cell
+        WHERE json_extract(block.value, '$.type') = 'table'
+        UNION ALL
+        SELECT json_extract(item.value, '$.title')
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'related_content'
+        UNION ALL
+        SELECT json_extract(item.value, '$.description')
+        FROM json_each(OLD.content_json, '$.blocks') AS block,
+             json_each(block.value, '$.items') AS item
+        WHERE json_extract(block.value, '$.type') = 'related_content'
+        UNION ALL
+        SELECT json_extract(g.value, '$.section_title')
+        FROM json_each(OLD.recipe_json, '$.ingredients') AS g
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(i.value, '$.name')
+        FROM json_each(OLD.recipe_json, '$.ingredients') as g,
+             json_each(g.value, '$.items') as i
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(i.value, '$.note')
+        FROM json_each(OLD.recipe_json, '$.ingredients') as g,
+             json_each(g.value, '$.items') as i
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(s.value, '$.section_title')
+        FROM json_each(OLD.recipe_json, '$.instructions') AS s
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(step.value, '$.text')
+        FROM json_each(OLD.recipe_json, '$.instructions') AS s,
+             json_each(s.value, '$.steps') AS step
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(step.value, '$.tip')
+        FROM json_each(OLD.recipe_json, '$.instructions') AS s,
+             json_each(s.value, '$.steps') AS step
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(OLD.recipe_json, '$.recipe_category')
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(OLD.recipe_json, '$.recipe_cuisine')
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT json_extract(OLD.recipe_json, '$.difficulty')
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT keyword.value
+        FROM json_each(OLD.recipe_json, '$.keywords') AS keyword
+        WHERE OLD.type = 'recipe'
+        UNION ALL
+        SELECT equipment.value
+        FROM json_each(OLD.recipe_json, '$.equipment') AS equipment
+        WHERE OLD.type = 'recipe' AND equipment.type = 'text'
+        UNION ALL
+        SELECT json_extract(equipment.value, '$.label')
+        FROM json_each(OLD.recipe_json, '$.equipment') AS equipment
+        WHERE OLD.type = 'recipe'
+      )
+    ),
+    (SELECT GROUP_CONCAT(json_extract(value, '$.label'), ' ') FROM json_each(OLD.cached_tags_json)),
+    json_extract(OLD.cached_author_json, '$.name'),
+    json_extract(OLD.cached_category_json, '$.label');
 END;
 
 
@@ -1668,6 +1929,13 @@ CREATE TABLE IF NOT EXISTS pinterest_boards (
 
 -- INDEX: Filter active boards
 CREATE INDEX IF NOT EXISTS idx_pinterest_boards_active ON pinterest_boards(is_active);
+
+-- TRIGGER: Auto-Update Timestamp
+CREATE TRIGGER IF NOT EXISTS update_pinterest_boards_timestamp
+AFTER UPDATE ON pinterest_boards
+BEGIN
+    UPDATE pinterest_boards SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
 
 
 
@@ -2023,4 +2291,56 @@ BEGIN
     AND deleted_at IS NULL
   )
   WHERE id = OLD.category_id;
+END;
+
+
+-- ==================================================================================
+-- TAG POST COUNT TRIGGERS
+-- ==================================================================================
+-- Purpose: Automatically maintain cached_post_count in tags table.
+-- Source of truth: articles_to_tags junction + articles (is_online=1, deleted_at IS NULL).
+
+-- Trigger: Update tag post counts when a junction row is inserted
+CREATE TRIGGER IF NOT EXISTS update_tag_count_on_link_insert
+AFTER INSERT ON articles_to_tags
+BEGIN
+  UPDATE tags
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles_to_tags att
+    JOIN articles a ON a.id = att.article_id
+    WHERE att.tag_id = NEW.tag_id
+    AND a.is_online = 1
+    AND a.deleted_at IS NULL
+  )
+  WHERE id = NEW.tag_id;
+END;
+
+-- Trigger: Update tag post counts when a junction row is deleted
+CREATE TRIGGER IF NOT EXISTS update_tag_count_on_link_delete
+AFTER DELETE ON articles_to_tags
+BEGIN
+  UPDATE tags
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles_to_tags att
+    JOIN articles a ON a.id = att.article_id
+    WHERE att.tag_id = OLD.tag_id
+    AND a.is_online = 1
+    AND a.deleted_at IS NULL
+  )
+  WHERE id = OLD.tag_id;
+END;
+
+-- Trigger: Refresh ALL linked tag counts when article online/deleted status changes
+CREATE TRIGGER IF NOT EXISTS update_tag_counts_on_article_status
+AFTER UPDATE OF is_online, deleted_at ON articles
+BEGIN
+  UPDATE tags
+  SET cached_post_count = (
+    SELECT COUNT(*) FROM articles_to_tags att
+    JOIN articles a ON a.id = att.article_id
+    WHERE att.tag_id = tags.id
+    AND a.is_online = 1
+    AND a.deleted_at IS NULL
+  )
+  WHERE id IN (SELECT tag_id FROM articles_to_tags WHERE article_id = NEW.id);
 END;

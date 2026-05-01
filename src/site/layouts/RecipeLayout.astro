@@ -1,5 +1,4 @@
 ---
-import { env } from "cloudflare:workers";
 import Layout from "./Layout.astro";
 import type { Category } from "@modules/categories/schema/categories.schema";
 import SocialShareBar from "../components/SocialShareBar.astro";
@@ -20,9 +19,10 @@ import RatingSystem from "../components/content/RatingSystem";
 
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import {
-  getTocSettings,
-} from "@modules/settings/services/settings.service";
-import { TOC_DEFAULTS, type TocSettings } from "@modules/settings/types/settings.types";
+  getPopularRecipes,
+  getRoundupArticleMap,
+  getSiteTocSettings,
+} from "@server/site-data";
 
 /**
  * Props use Record<string, any> because recipe & author arrive fully hydrated
@@ -38,16 +38,9 @@ interface Props {
 const { recipe, author, category } = Astro.props;
 const categoryColor = category?.color || "#ff6600";
 
-// Load TOC settings from database
-let tocSettings: TocSettings = TOC_DEFAULTS;
-try {
-  const db = env?.DB;
-  if (db) {
-    tocSettings = await getTocSettings(db);
-  }
-} catch (error) {
-  console.error("Failed to load TOC settings:", error);
-}
+const tocSettings = await getSiteTocSettings();
+const popularRecipes = await getPopularRecipes(recipe.slug, 5);
+const roundupArticles = await getRoundupArticleMap(recipe);
 
 // Parse recipeJson if it's a string
 const recipeJson = recipe.recipeJson
@@ -221,6 +214,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
               <ContentRenderer
                 article={recipe}
                 settings={tocSettings}
+                roundupArticles={roundupArticles}
               />
             </section>
           )
@@ -269,7 +263,11 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
           </div>
 
           <!-- Popular Recipes -->
-          <PopularRecipes currentSlug={recipe.slug} limit={5} />
+          <PopularRecipes
+            currentSlug={recipe.slug}
+            limit={5}
+            recipes={popularRecipes}
+          />
 
           <!-- Newsletter Widget -->
           <NewsletterWidget />

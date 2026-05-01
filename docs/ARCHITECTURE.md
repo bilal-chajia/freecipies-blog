@@ -64,12 +64,9 @@ recipes-saas/
 │   │   └── styles/         # Public global styles
 │   │
 │   ├── server/             # Request handlers and server-only boundaries
-│   │   └── api/            # API route handlers called by src/pages/api
-│   │
-│   ├── lib/                # Utilities
-│   │   ├── api.ts          # Frontend API client
-│   │   ├── drizzle.ts      # DB client factory
-│   │   └── utils.ts        # Helper functions
+│   │   ├── api/            # API route handlers called by src/pages/api
+│   │   ├── cloudflare/     # Binding/env helpers
+│   │   └── site-data/      # Server loaders for public Astro pages
 │   │
 │   ├── modules/            # Domain modules (DDD)
 │   │   ├── articles/       # Articles domain (recipes, articles, roundups)
@@ -118,6 +115,42 @@ recipes-saas/
 ---
 
 ## Module Structure
+
+## Runtime Boundaries
+
+The app stays as one Astro 6 application and one Cloudflare deployment, but the
+internal runtime boundaries are strict:
+
+- `src/pages` owns Astro file-based routes. Public pages may call server data
+  loaders, and API route files should stay as thin adapters.
+- `src/site` owns public Astro UI only. Components and layouts must not import
+  `cloudflare:workers` or access `env.DB`, `env.IMAGES`, or `env.SESSION`
+  directly.
+- `src/server` owns request handlers, Cloudflare binding helpers, auth guards,
+  R2/D1/KV access, and server-side site data loaders.
+- `src/modules` owns domain logic only: schemas, services, transforms,
+  validation, and domain types. It must not import admin/site UI.
+- `src/admin` owns the React 19 admin SPA. It calls API endpoints and must not
+  import server runtime code or Cloudflare bindings.
+- `src/shared` remains universal and pure: shared types, validation, response
+  helpers, image DTOs, constants, and storage-neutral utilities.
+
+Cloudflare storage note: the project uses a Cloudflare R2 bucket binding named
+`IMAGES` in `wrangler.jsonc`. This is not the Cloudflare Images product. Code
+and docs should refer to it as the R2 bucket binding `IMAGES` unless the infra
+binding is intentionally renamed in a separate migration.
+
+API route convention: new or migrated API logic belongs in
+`src/server/api/**/*.handler.ts`; `src/pages/api/**` keeps the public URL and
+delegates to the handler. Resource collection endpoints with sibling subroutes
+use `src/pages/api/{resource}/index.ts` instead of
+`src/pages/api/{resource}.ts`.
+
+Boundary checks can be run with:
+
+```bash
+pnpm check:boundaries
+```
 
 Each domain module follows this pattern:
 
@@ -311,10 +344,10 @@ Raw database rows → Hydrated objects with parsed JSON and computed fields.
 
 ```typescript
 // Raw DB row
-{ images_json: '{"cover":{...}}', slug: 'recipe' }
+{ images_json: '{"hero":{...}}', slug: 'recipe' }
 
 // Hydrated
-{ images: { cover: {...} }, slug: 'recipe', route: '/recipes/recipe' }
+{ images: { hero: {...} }, slug: 'recipe', route: '/recipes/recipe' }
 ```
 
 ### 2. Zero-Join Rendering
@@ -462,7 +495,7 @@ Database and JSON documentation is split by responsibility:
 - `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md`: cached field contracts for `articles`.
 - `docs/CONTENT_JSON_CONTRACT.md`: only `articles.content_json`.
 - `docs/MEDIA_TABLE_CONTRACT.md`: complete `media` table contract.
-- `docs/MEDIA_IMAGE_CONTRACT.md`: media variants, image slots, and public/private image rules.
+- `docs/IMAGE_JSON_CONTRACT.md`: media variants, image slots, and public/private image rules.
 - `docs/CATEGORIES_TABLE_CONTRACT.md`: complete `categories` table contract.
 - `docs/AUTHORS_TABLE_CONTRACT.md`: complete `authors` table contract.
 - `docs/TAGS_TABLE_CONTRACT.md`: complete `tags` and `articles_to_tags` contract.
@@ -524,7 +557,7 @@ import type {
   ImageVariant,      // public/runtime shape; storage JSON uses size_bytes
   ImageVariants,     // { xs, sm, md, lg, original }
   ImageSlot,         // Full slot with media_id, alt, caption, variants
-  ArticleImagesJson, // { cover?, thumbnail?, pinterest?, content_images? }
+  ArticleImagesJson, // { hero?, thumbnail?, recipe_steps? }
 } from '@shared/types/images';
 
 // Storage types (media module ONLY)

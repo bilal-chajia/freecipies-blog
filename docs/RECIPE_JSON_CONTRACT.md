@@ -134,7 +134,7 @@ Recipe JSON-LD is generated at save time into `articles.jsonld_json`.
 | --- | --- |
 | `Recipe.name` | `articles.headline` |
 | `Recipe.description` | `articles.short_description` |
-| `Recipe.image` | `articles.images_json` cover/thumbnail/SEO image slots |
+| `Recipe.image` | `articles.images_json` hero/thumbnail/SEO image slots |
 | `Recipe.author` | `cached_author_json` |
 | `datePublished` | `articles.published_at` |
 | `dateModified` | `articles.updated_at` |

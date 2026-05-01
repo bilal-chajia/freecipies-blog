@@ -36,18 +36,6 @@ import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
-// Extract r2_key from image URLs (internal proxy URLs or R2 public URLs)
-const extractR2KeyFromUrl = (url) => {
-    if (!url) return null;
-    const proxyMatch = url.match(/^\/api\/images\/(.+)$/);
-    if (proxyMatch) return proxyMatch[1];
-    const r2Match = url.match(/^https:\/\/pub-[a-f0-9]+\.r2\.dev\/(.+)$/i);
-    if (r2Match) return r2Match[1];
-    const localMatch = url.match(/^https?:\/\/[^\/]+\/api\/images\/(.+)$/);
-    if (localMatch) return localMatch[1];
-    return null;
-};
-
 export const ImageBlock = createReactBlockSpec(
     {
         type: 'customImage',
@@ -424,6 +412,5 @@ export const ImageBlock = createReactBlockSpec(
 );
 
 export default ImageBlock;
-
 
 

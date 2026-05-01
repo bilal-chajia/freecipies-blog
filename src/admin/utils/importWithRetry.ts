@@ -1,8 +1,16 @@
-export async function importWithRetry(factory, options = {}) {
-  const retries = Number.isFinite(options.retries) ? options.retries : 2;
+type ImportWithRetryOptions = {
+  retries?: number;
+  delayMs?: number;
+};
+
+export async function importWithRetry<T>(
+  factory: () => Promise<T>,
+  options: ImportWithRetryOptions = {}
+): Promise<T> {
+  const retries = Number.isFinite(options.retries) ? options.retries as number : 2;
   const delayMs = Number.isFinite(options.delayMs) ? options.delayMs : 250;
 
-  let lastError;
+  let lastError: unknown;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       return await factory();
@@ -16,4 +24,3 @@ export async function importWithRetry(factory, options = {}) {
 
   throw lastError;
 }
-

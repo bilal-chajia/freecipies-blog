@@ -1,78 +1,11 @@
 ---
-import { env } from 'cloudflare:workers';
-import {
-  getArticles,
-  type HydratedArticle as Article,
-} from "@modules/articles";
-import { extractImage, getImageSrcSet } from "@shared/utils";
+import type { StoryPageData } from "@server/site-data";
 
-// Calculate 24 hours ago
-const oneDayAgo = new Date();
-oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-
-// Fetch recent articles (strictly last 24h first)
-let stories: Article[] = [];
-try {
-  const result = await getArticles(env.DB, {
-    isOnline: true,
-    publishedAfter: oneDayAgo,
-    limit: 15,
-  });
-  stories = result.items;
-
-  // Fallback: If absolutely empty, fetch latest 12 to show SOMETHING.
-  if (stories.length === 0) {
-    const { items: fallback } = await getArticles(env.DB, { limit: 12 });
-    stories = fallback;
-  }
-} catch (error) {
-  console.error("StoriesBar: Error fetching stories:", error);
+interface Props {
+  stories?: StoryPageData[];
 }
 
-// Sort by view count (most viewed first)
-stories = stories.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
-
-// Generate story pages from article data for demo
-const storiesWithPages = stories.map((story) => {
-  const preview = extractImage(story.imagesJson, "thumbnail", 120);
-  const cover = extractImage(story.imagesJson, "cover", 1200);
-  const fallback = preview.imageUrl ? preview : cover;
-  const storyImage = cover.imageUrl || preview.imageUrl || story.imageUrl;
-
-  return {
-    ...story,
-    storyImage,
-    storyPreview: {
-      imageUrl: preview.imageUrl || story.imageUrl,
-      imageAlt: preview.imageAlt || story.headline,
-      imageWidth: preview.imageWidth || 80,
-      imageHeight: preview.imageHeight || 80,
-      imageStyle: preview.imageStyle,
-      srcSet: getImageSrcSet(story.imagesJson, "thumbnail"),
-    },
-    storyPages: [
-      {
-        imageUrl: storyImage,
-        title: story.headline,
-        text: story.shortDescription || story.tldr || "",
-      },
-      ...(storyImage
-        ? [
-            {
-              imageUrl: storyImage,
-              title: "Swipe to continue",
-              text: "Tap right to see more",
-            },
-          ]
-        : []),
-      {
-        imageUrl: storyImage,
-        title: story.headline,
-        text: "Ready to cook?",
-      },
-    ],
-  };
-});
+const { stories = [] } = Astro.props as Props;
 ---
 
 {
@@ -80,7 +13,7 @@ const storiesWithPages = stories.map((story) => {
     <section class="stories-section">
       <div class="stories-container">
         <div class="stories-scroll">
-          {storiesWithPages.map((story, idx) => (
+          {stories.map((story, idx) => (
             <button
               type="button"
               class="story-item"
@@ -118,7 +51,7 @@ const storiesWithPages = stories.map((story) => {
   )
 }
 
-<script is:inline define:vars={{ storiesData: storiesWithPages }}>
+<script is:inline define:vars={{ storiesData: stories }}>
   // Pass data to client-side safely without bloating DOM
   window.STORIES_DATA = storiesData;
 </script>
