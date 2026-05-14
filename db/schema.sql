@@ -1,11 +1,5 @@
--- ==================================================================================
--- TABLE: SITE_SETTINGS (Global Configuration)
--- ==================================================================================
--- Purpose: Centralized storage for site-wide configurations.
--- Strategy: "Key-Value Store" within SQL.
--- Contract: docs/SITE_SETTINGS_TABLE_CONTRACT.md
--- ==================================================================================
 
+-- Contract: docs/SITE_SETTINGS_TABLE_CONTRACT.md
 CREATE TABLE IF NOT EXISTS site_settings (
     -- The unique identifier for the setting group.
     -- Examples: 'site_info', 'social_links', 'theme_config', 'scripts'
@@ -50,11 +44,9 @@ CREATE TABLE IF NOT EXISTS site_settings (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- INDEX: Fast lookup by category for Admin Settings page sections.
 CREATE INDEX IF NOT EXISTS idx_site_settings_category
     ON site_settings(category, sort_order);
 
--- TRIGGER: Auto-update timestamp on any change.
 CREATE TRIGGER IF NOT EXISTS update_site_settings_timestamp
 AFTER UPDATE ON site_settings
 BEGIN
@@ -62,11 +54,6 @@ BEGIN
 END;
 
 
--- ==================================================================================
--- TABLE: MEDIA (Centralized Asset Library - Long Term Support)
--- ==================================================================================
--- Purpose: Central repository for all uploaded images with responsive variants.
--- Strategy: SQL columns for searchable metadata + JSON for technical payloads.
 --
 -- DELETION SAFETY:
 --   When deleting a media row, the backend MUST:
@@ -75,14 +62,12 @@ END;
 --   3. Only then delete (or soft-delete) the SQL row.
 --   This prevents "orphaned files" (ghost files) on R2 storage.
 --
--- Contract: docs/MEDIA_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md
--- ==================================================================================
 
+-- Contract: docs/MEDIA_TABLE_CONTRACT.md, docs/IMAGE_JSON_CONTRACT.md
 CREATE TABLE IF NOT EXISTS media (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
     -- 1. SEARCHABLE METADATA (Standard SQL Columns)
-    -- ------------------------------------------------------------------
     -- Extracted from JSON to allow fast SQL filtering (WHERE name LIKE '%...%').
 
     -- Internal name for the editor (e.g., "Apple Pie Shoot 01").
@@ -97,10 +82,10 @@ CREATE TABLE IF NOT EXISTS media (
     -- Visible Caption.
     -- Can be displayed below the image in articles.
     -- Example: "Fresh apple pie cooling on a rustic wooden table"
-    caption TEXT,
+    caption TEXT NOT NULL,
 
-    -- Legal / copyright attribution. Contract: docs/MEDIA_TABLE_CONTRACT.md.
-    credit TEXT,
+    -- Legal / copyright attribution.
+    credit TEXT NOT NULL,
 
     -- Filter helper (e.g., 'image/webp', 'image/gif', 'video/mp4').
     -- REQUIRED: Used to filter Media Library by type.
@@ -112,26 +97,15 @@ CREATE TABLE IF NOT EXISTS media (
     aspect_ratio TEXT,
 
     -- 2. TECHNICAL PAYLOAD (The "Plumbing")
-    -- ------------------------------------------------------------------
     -- Stores the references to the physical files on R2.
     -- Read-only for the frontend; managed by the upload pipeline.
     --
     -- BREAKPOINT STRATEGY (Width targets, height auto-calculated from aspect ratio):
-    -- ┌─────────┬────────┬─────────────────────────────────────────────────┐
-    -- │ Variant │ Width  │ Target Devices                                  │
-    -- ├─────────┼────────┼─────────────────────────────────────────────────┤
-    -- │ xs      │ 360px  │ Budget phones, 1x screens (iPhone SE = 375px)  │
-    -- │ sm      │ 720px  │ Phones 2x retina (360 × 2), small tablets      │
-    -- │ md      │ 1200px │ Tablets, laptops, standard desktop content     │
-    -- │ lg      │ 2048px │ 4K displays, MacBook Retina, iPad Pro          │
-    -- └─────────┴────────┴─────────────────────────────────────────────────┘
     --
-    -- Contract: docs/MEDIA_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md.
 
     variants_json TEXT NOT NULL,
 
     -- 3. SMART DISPLAY (Design Control)
-    -- ------------------------------------------------------------------
     -- Focal Point for CSS `object-position`.
     -- Prevents the subject from being cropped out on mobile screens.
     -- SCHEMA: {"x": 50, "y": 50} (Percentages 0-100).
@@ -139,7 +113,6 @@ CREATE TABLE IF NOT EXISTS media (
     focal_point_json TEXT DEFAULT '{"x": 50, "y": 50}',
 
     -- 4. SYSTEM METADATA
-    -- ------------------------------------------------------------------
     -- When this media record was first created.
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
@@ -154,9 +127,8 @@ CREATE TABLE IF NOT EXISTS media (
     deleted_at DATETIME DEFAULT NULL
 );
 
--- INDEXES
 -- Optimized for the Admin Media Library search bar.
-CREATE INDEX IF NOT EXISTS idx_media_search ON media(name, alt_text, credit);
+
 
 -- Optimized for "Most Recent" sorting in Media Library.
 CREATE INDEX IF NOT EXISTS idx_media_date ON media(created_at DESC);
@@ -164,7 +136,6 @@ CREATE INDEX IF NOT EXISTS idx_media_date ON media(created_at DESC);
 -- Filter out soft-deleted items efficiently.
 CREATE INDEX IF NOT EXISTS idx_media_active ON media(deleted_at);
 
--- TRIGGER: Auto-update timestamp on any metadata change.
 CREATE TRIGGER IF NOT EXISTS update_media_timestamp
 AFTER UPDATE ON media
 BEGIN
@@ -175,48 +146,18 @@ END;
 
 
 
--- ==================================================================
 -- 2. TAXONOMIES (Structure du site)
--- ==================================================================
 
--- ==================================================================================
--- TABLE: CATEGORIES
--- ==================================================================================
--- Purpose: Defines the taxonomy, navigation structure, and landing pages.
--- Strategy: Hybrid SQL/JSON.
 --           - SQL: High-frequency filtering (slug, parent, is_online).
 --           - JSON: Rich content payloads (images with variants, config).
 --
--- FIELD REQUIREMENTS:
--- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
--- │ Field               │ Required │ Criteria / Notes                           │
--- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
--- │ slug                │ ✅ YES   │ URL-safe, unique, immutable after creation │
--- │ label               │ ✅ YES   │ Menu display name, <20 chars               │
--- │ parent_id           │ ❌ NO    │ Only for subcategories                     │
--- │ headline            │ ❌ NO    │ Falls back to 'label' if NULL              │
--- │ collection_title    │ ❌ NO    │ Falls back to 'headline' or 'label'        │
--- │ short_description   │ ❌ NO    │ Recommended for SEO                        │
--- │ images_json         │ ❌ NO    │ But recommended (thumbnail + hero)         │
--- │ color               │ ❌ NO    │ Defaults to #ff6600ff                      │
--- │ icon_svg            │ ❌ NO    │ Optional menu icon                         │
--- │ is_featured         │ ❌ NO    │ Defaults to false                          │
--- │ seo_json            │ ❌ NO    │ Overrides only (falls back to label/desc)  │
--- │ config_json         │ ❌ NO    │ Defaults applied at app layer              │
--- │ i18n_json           │ ❌ NO    │ Only for multilingual sites                │
--- └─────────────────────┴──────────┴────────────────────────────────────────────┘
---
 -- Contract: docs/CATEGORIES_TABLE_CONTRACT.md
--- ==================================================================================
-
 CREATE TABLE IF NOT EXISTS categories (
     -- Surrogate primary key.
     -- Used for relations (articles.category_id) and internal references.
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    -- =========================================================================
     -- 1. NAVIGATION & HIERARCHY
-    -- =========================================================================
 
     -- URL identifier for routing.
     -- IMMUTABLE: Should never change after creation (breaks SEO/bookmarks).
@@ -247,9 +188,12 @@ CREATE TABLE IF NOT EXISTS categories (
     -- PERFORMANCE: Avoids expensive recursive CTE queries.
     depth INTEGER DEFAULT 0,
 
-    -- =========================================================================
+    -- Display order for menus and navigation.
+    -- LOGIC: Lower numbers appear first.
+    -- TIP: Use increments of 10 (10, 20, 30) for easy reordering.
+    sort_order INTEGER DEFAULT 0,
+
     -- 2. DISPLAY TEXT (Landing Page Content)
-    -- =========================================================================
 
     -- H1 page title for the category landing page.
     -- FALLBACK: If NULL, use 'label' value.
@@ -269,15 +213,11 @@ CREATE TABLE IF NOT EXISTS categories (
     -- EXAMPLE: "Start your day right with our collection of quick and healthy breakfast recipes. ...."
     short_description TEXT NOT NULL,
 
-    -- =========================================================================
     -- 3. VISUALS (Display-Ready Image Data)
-    -- =========================================================================
-    -- Category image slots. Contract: docs/CATEGORIES_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md.
+    -- Category image slots.
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
-    -- =========================================================================
-    -- 4. LOGIC & THEME
-    -- =========================================================================
+    -- 4. VISUAL STYLE
 
     -- UI theme color for category badges, borders, and accents.
     -- FORMAT: 8-character HEX with alpha (e.g., #ff6600ff).
@@ -285,13 +225,12 @@ CREATE TABLE IF NOT EXISTS categories (
     -- DEFAULT: Orange (#ff6600ff).
     color TEXT DEFAULT '#ff6600ff',
 
-    -- Raw SVG code for menu icons and category badges.
-    -- USAGE: Navigation menus, category cards, breadcrumbs, mobile tabs.
-    -- FORMAT: Valid SVG with viewBox attribute.
-    -- EXAMPLE: '<svg viewBox="0 0 24 24"><path d="M12 2L..."/></svg>'
-    -- SECURITY: Must be sanitized (no <script>, no event handlers like onclick).
-    -- SIZE LIMIT: Keep under 2KB. Use path-only icons, no embedded images.
-    icon_svg TEXT,
+    -- 5. SEO
+
+    -- SEO overrides for the category landing page.
+    seo_json TEXT DEFAULT '{}' CHECK (json_valid(seo_json)),
+
+    -- 6. PROMOTION & VISIBILITY
 
     -- Featured flag for homepage and sidebar widgets.
     -- 1 = Display in "Featured Categories" section.
@@ -299,37 +238,19 @@ CREATE TABLE IF NOT EXISTS categories (
     -- LIMIT: Recommend max 4-6 featured categories for UX.
     is_featured BOOLEAN DEFAULT 0,
 
-    -- =========================================================================
-    -- 5. JSON CONFIG CONTAINERS
-    -- =========================================================================
-
-    -- SEO overrides for the category landing page. Contract: docs/CATEGORIES_TABLE_CONTRACT.md.
-    seo_json TEXT DEFAULT '{}' CHECK (json_valid(seo_json)),
-
-    -- Layout and behavior configuration. Contract: docs/CATEGORIES_TABLE_CONTRACT.md.
-    config_json TEXT DEFAULT '{}' CHECK (json_valid(config_json)),
-
-    -- Locale-specific overrides. Contract: docs/CATEGORIES_TABLE_CONTRACT.md.
-    i18n_json TEXT DEFAULT '{}' CHECK (json_valid(i18n_json)),
-
-    -- =========================================================================
-    -- 6. SYSTEM & METRICS
-    -- =========================================================================
-
-    -- Display order for menus and navigation.
-    -- LOGIC: Lower numbers appear first.
-    -- TIP: Use increments of 10 (10, 20, 30) for easy reordering.
-    sort_order INTEGER DEFAULT 0,
-
     -- Visibility toggle.
     -- 0 = Draft (hidden from public, visible in Admin).
     -- 1 = Published (visible to all users).
     is_online BOOLEAN DEFAULT 0,
 
+    -- 7. DERIVED METRICS
+
     -- Denormalized count of published articles in this category.
     -- UPDATED BY: Background job or trigger when articles change.
     -- USAGE: Display "42 recipes" badge on category cards.
     cached_post_count INTEGER DEFAULT 0 CHECK (cached_post_count >= 0),
+
+    -- 8. LIFECYCLE
 
     -- Record creation timestamp (UTC).
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -345,18 +266,14 @@ CREATE TABLE IF NOT EXISTS categories (
     deleted_at DATETIME DEFAULT NULL
 );
 
--- ==================================================================================
 -- TRIGGERS & INDEXES
--- ==================================================================================
 
--- TRIGGER: Auto-Update Timestamp
 CREATE TRIGGER IF NOT EXISTS update_categories_timestamp
 AFTER UPDATE ON categories
 BEGIN
     UPDATE categories SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
--- INDEXES
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);                 -- Routing
 CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories(parent_id);          -- Hierarchy
 CREATE INDEX IF NOT EXISTS idx_categories_display ON categories(is_online, sort_order); -- Menus
@@ -366,42 +283,14 @@ CREATE INDEX IF NOT EXISTS idx_categories_active ON categories(deleted_at);     
 
 
 
--- ==================================================================================
--- TABLE: AUTHORS
--- ==================================================================================
--- Purpose: Defines public profiles for article bylines, "Meet the Team" pages, and guest contributors.
--- Strategy: Hybrid SQL/JSON.
 --           - SQL: Identity, role-based filtering, and high-level display info.
 --           - JSON: Rich assets (images, bio) mapped from the Media Library.
 --
--- FIELD REQUIREMENTS:
--- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
--- │ Field               │ Required │ Criteria / Notes                           │
--- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
--- │ slug                │ ✅ YES   │ URL-safe, unique, immutable after creation │
--- │ name                │ ✅ YES   │ Public display name                        │
--- │ email               │ ✅ YES   │ Unique, for admin/auth                     │
--- │ job_title           │ ❌ NO    │ Shown on article cards                     │
--- │ role                │ ❌ NO    │ Defaults to 'guest'                        │
--- │ headline            │ ❌ NO    │ Falls back to name                         │
--- │ subtitle            │ ❌ NO    │ Optional tagline                           │
--- │ short_description   │ ❌ NO    │ Falls back to bio_json.short               │
--- │ excerpt             │ ❌ NO    │ Newsletter teaser                          │
--- │ introduction        │ ❌ NO    │ Hero copy for profile page                 │
--- │ images_json         │ ❌ NO    │ But recommended (avatar + hero)            │
--- │ bio_json            │ ❌ NO    │ Bio text + social links                    │
--- │ seo_json            │ ❌ NO    │ Overrides only                             │
--- └─────────────────────┴──────────┴────────────────────────────────────────────┘
---
 -- Contract: docs/AUTHORS_TABLE_CONTRACT.md
--- ==================================================================================
-
 CREATE TABLE IF NOT EXISTS authors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    -- =========================================================================
     -- 1. IDENTITY & ROUTING
-    -- =========================================================================
 
     -- URL identifier for routing.
     -- IMMUTABLE: Should never change after creation (breaks SEO/bookmarks).
@@ -415,23 +304,24 @@ CREATE TABLE IF NOT EXISTS authors (
     name TEXT NOT NULL,
 
     -- Internal contact email (unique per author).
-    -- USAGE: Admin authentication, Gravatar fallback, notifications.
-    -- SECURITY: Not exposed publicly unless bio_json contains it.
+    -- USAGE: Admin authentication and internal notifications.
+    -- SECURITY: Never exposed publicly by default. Public contact email must be
+    -- intentional via bio_json.socials.
     email TEXT UNIQUE NOT NULL,
 
-    -- =========================================================================
-    -- 2. DISPLAY METADATA (Profile & Cards)
-    -- =========================================================================
+    -- 2. INTERNAL ROLE
 
-    -- Job title/role shown on article cards and profile page.
-    -- EXAMPLES: "Senior Editor", "Guest Contributor", "Founder & Chef"
-    job_title TEXT,
-
-    -- Internal role for permissions and filtering.
+    -- Internal role for permissions and workflow.
     -- OPTIONS: 'guest', 'staff', 'editor', 'admin'
     -- DEFAULT: 'guest' (safety precaution for new authors)
-    -- USAGE: Team page filtering, admin permissions.
+    -- USAGE: Admin permissions only. Public title comes from job_title.
     role TEXT DEFAULT 'guest' CHECK (role IN ('guest', 'staff', 'editor', 'admin')),
+
+    -- 3. PUBLIC PROFILE TEXT
+
+    -- Public professional title shown on bylines, article cards, and profile page.
+    -- EXAMPLES: "Senior Editor", "Guest Contributor", "Founder & Chef"
+    job_title TEXT,
 
     -- Main H1 for the author profile page.
     -- FALLBACK: If NULL, use 'name' value.
@@ -442,60 +332,60 @@ CREATE TABLE IF NOT EXISTS authors (
     -- EXAMPLE: "Passionate about healthy Mediterranean cuisine"
     subtitle TEXT,
 
-    -- Primary description for cards and listing pages.
-    -- REQUIRED: Used for author cards and SEO.
+    -- Primary short public bio for cards, listing pages, SEO fallback, and
+    -- articles.cached_author_json.bio.
     -- RECOMMENDED: 100-160 characters.
     short_description TEXT NOT NULL,
 
-    -- Longer teaser for blog index and newsletter intros.
-    -- EXAMPLE: "Jane has been writing about food for over 10 years..."
-    excerpt TEXT,
-
-    -- Hero/chapeau copy for the top of the profile page.
-    -- Can include markdown for rich formatting.
+    -- Visible hero/body introduction for the author profile page.
+    -- Not copied into article caches. Can include markdown if renderer supports it.
     introduction TEXT,
 
-    -- =========================================================================
-    -- 3. VISUALS (Display-Ready Image Data)
-    -- =========================================================================
-    -- Author image slots. Contract: docs/AUTHORS_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md.
+    -- 4. VISUALS (Display-Ready Image Data)
+    -- Author image slots.
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
 
-    -- =========================================================================
-    -- 4. BIOGRAPHY & SOCIALS
-    -- =========================================================================
-    -- Biography, persona, and socials. Contract: docs/AUTHORS_TABLE_CONTRACT.md.
+    -- 5. BIOGRAPHY & SOCIALS
+    -- Public BlockEditor biography content, expertise labels, and intentional
+    -- public socials/contact links.
     bio_json TEXT DEFAULT '{}' CHECK (json_valid(bio_json)),
 
-    -- =========================================================================
-    -- 5. SEO CONFIGURATION
-    -- =========================================================================
-    -- Publish-required for public author profiles. Contract: docs/AUTHORS_TABLE_CONTRACT.md.
+    -- 6. AI PERSONA
+    -- Private AI/editorial persona instructions. Not rendered publicly by default.
+    persona_json TEXT DEFAULT '{}' CHECK (json_valid(persona_json)),
+
+    -- 7. SEO
+    -- Publish-required for public author profiles.
     seo_json TEXT DEFAULT '{}' CHECK (json_valid(seo_json)),
 
-    -- =========================================================================
-    -- 6. SYSTEM & METRICS
-    -- =========================================================================
-
-    -- Visibility toggle.
-    -- 0 = Hidden/Draft (not shown on public pages).
-    -- 1 = Published (visible on team page, bylines).
-    is_online BOOLEAN DEFAULT 0,
+    -- 8. PROMOTION & VISIBILITY
 
     -- Featured flag for homepage "Featured Authors" section.
     -- 1 = Display in featured author widgets.
     -- 0 = Standard author (default).
     is_featured BOOLEAN DEFAULT 0,
 
+    -- Visibility toggle for public author profile/listing surfaces.
+    -- 0 = Hidden/Draft (not shown on author public pages).
+    -- 1 = Published author profile/listing.
+    -- NOTE: Existing article bylines can still render from article caches.
+    is_online BOOLEAN DEFAULT 0,
+
+    -- 9. LIST ORDER
+
     -- Display order for team page.
     -- LOGIC: Lower numbers appear first.
     -- TIP: Use increments of 10 (10, 20, 30) for easy reordering.
     sort_order INTEGER DEFAULT 0,
 
-    -- Denormalized count of published articles by this author.
-    -- UPDATED BY: Background job or trigger when articles change.
+    -- 10. DERIVED METRICS
+
+    -- Denormalized count of online, non-deleted articles by this author.
+    -- UPDATED BY: Trigger when article author/visibility/lifecycle changes.
     -- USAGE: Display "42 articles by Jane" on profile cards.
     cached_post_count INTEGER DEFAULT 0 CHECK (cached_post_count >= 0),
+
+    -- 11. LIFECYCLE
 
     -- Record creation timestamp (UTC).
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -505,24 +395,20 @@ CREATE TABLE IF NOT EXISTS authors (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
     -- Soft delete marker.
-    -- CRITICAL: Never hard delete an author who has published posts.
-    -- If NOT NULL, author is "archived" but posts remain linked.
-    -- LOGIC: Show "Author no longer active" on their posts.
+    -- CRITICAL: Do not hard delete an author referenced by articles.
+    -- If NOT NULL, author is archived and hidden from active author queries.
+    -- Existing article bylines can continue to render from cached_author_json.
     deleted_at DATETIME DEFAULT NULL
 );
 
--- ==================================================================================
 -- TRIGGERS & INDEXES
--- ==================================================================================
 
--- TRIGGER: Auto-Update Timestamp
 CREATE TRIGGER IF NOT EXISTS update_authors_timestamp
 AFTER UPDATE ON authors
 BEGIN
     UPDATE authors SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
--- INDEXES
 CREATE INDEX IF NOT EXISTS idx_authors_slug ON authors(slug);     -- Routing
 CREATE INDEX IF NOT EXISTS idx_authors_role ON authors(role);     -- Team Page Filtering
 CREATE INDEX IF NOT EXISTS idx_authors_email ON authors(email);   -- Admin Lookups
@@ -533,37 +419,11 @@ CREATE INDEX IF NOT EXISTS idx_authors_active ON authors(deleted_at);  -- Soft d
 
 
 
--- ==================================================================================
--- TABLE: TAGS (Utility & Filtering)
--- ==================================================================================
--- PURPOSE:
---   Lightweight descriptors used primarily for filtering content (Sidebar Facets).
---   Designed for high-performance "Tag Clouds" and "Multi-Select" UI logic.
---
--- STRATEGY: "Hybrid SQL/JSON"
---   1. SQL Columns: used for Identity, Sorting (Popularity), and Autocomplete.
---   2. JSON Columns: used for flexible Grouping and visual Customization (SVG).
---
--- FIELD REQUIREMENTS:
--- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
--- │ Field               │ Required │ Criteria / Notes                           │
--- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
--- │ slug                │ ✅ YES   │ URL-safe, unique, kebab-case               │
--- │ label               │ ✅ YES   │ Display text for buttons/badges            │
--- │ description         │ ❌ NO    │ SEO/tooltip text                           │
--- │ filter_groups_json  │ ❌ NO    │ Defaults to empty array []                 │
--- │ style_json          │ ❌ NO    │ SVG icon, color, variant                   │
--- └─────────────────────┴──────────┴────────────────────────────────────────────┘
---
 -- Contract: docs/TAGS_TABLE_CONTRACT.md
--- ==================================================================================
-
 CREATE TABLE IF NOT EXISTS tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    -- =========================================================================
     -- 1. IDENTITY & ROUTING
-    -- =========================================================================
 
     -- URL identifier for routing and query params.
     -- FORMAT: Lowercase, kebab-case only.
@@ -583,21 +443,11 @@ CREATE TABLE IF NOT EXISTS tags (
     -- EXAMPLE: "Recipes free from gluten, perfect for celiac-friendly diets."
     description TEXT,
 
-    -- =========================================================================
-    -- 2. FILTER LOGIC (Multi-Grouping)
-    -- =========================================================================
-    -- Filter grouping metadata. Contract: docs/TAGS_TABLE_CONTRACT.md.
-    filter_groups_json TEXT DEFAULT '[]' CHECK (json_valid(filter_groups_json)),
-
-    -- =========================================================================
-    -- 3. VISUAL STYLING (Design System)
-    -- =========================================================================
-    -- Visual styling metadata. Contract: docs/TAGS_TABLE_CONTRACT.md.
+    -- 2. VISUAL STYLING (Design System)
+    -- Visual styling metadata.
     style_json TEXT DEFAULT '{}' CHECK (json_valid(style_json)),
 
-    -- =========================================================================
-    -- 4. SYSTEM & METRICS
-    -- =========================================================================
+    -- 3. SYSTEM & METRICS
 
     -- Denormalized count of published articles using this tag.
     -- USAGE: Tag cloud sorting (most popular first), badge display.
@@ -618,68 +468,28 @@ CREATE TABLE IF NOT EXISTS tags (
     deleted_at DATETIME DEFAULT NULL
 );
 
--- ==================================================================================
 -- TRIGGERS & INDEXES
--- ==================================================================================
 
--- TRIGGER: Auto-Update Timestamp
 CREATE TRIGGER IF NOT EXISTS update_tags_timestamp
 AFTER UPDATE ON tags
 BEGIN
     UPDATE tags SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
--- INDEX: Routing Lookup
--- PURPOSE: Fast lookups when a user hits a URL like /tags/vue-js
 CREATE INDEX IF NOT EXISTS idx_tags_slug ON tags(slug);
 
--- INDEX: Popularity Sorting (Tag Clouds)
--- PURPOSE: Essential for widgets like "Trending Topics".
 -- LOGIC: Sorts by count DESCENDING (High to Low).
 CREATE INDEX IF NOT EXISTS idx_tags_popular ON tags(cached_post_count DESC);
 
--- INDEX: Admin Autocomplete
--- PURPOSE: Makes the Admin UI snappy when searching for existing tags by name.
 CREATE INDEX IF NOT EXISTS idx_tags_label ON tags(label);
 
--- INDEX: Soft Delete Filter
--- PURPOSE: Efficiently filter out deleted tags from queries.
 CREATE INDEX IF NOT EXISTS idx_tags_active ON tags(deleted_at);
 
--- NOTE ON FILTERING:
--- We do NOT index 'filter_groups_json' because SQLite cannot efficiently index JSON arrays.
--- STRATEGY: Frontend fetches all tags (lightweight) and maps them to groups in memory.
-
-
--- ==================================================================================
--- TABLE: EQUIPMENT (Admin-Managed Kitchen Tools with Affiliate Links)
--- ==================================================================================
--- PURPOSE:
---   Centralized catalog of kitchen equipment referenced by recipes.
---   Admin can manage affiliate links globally (one update affects all recipes).
---
--- FIELD REQUIREMENTS:
--- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
--- │ Field               │ Required │ Criteria / Notes                           │
--- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
--- │ slug                │ ✅ YES   │ URL-safe, unique, kebab-case               │
--- │ name                │ ✅ YES   │ Display name                               │
--- │ description         │ ❌ NO    │ Short description for tooltips             │
--- │ category            │ ❌ NO    │ "bakeware", "appliances", "utensils"       │
--- │ image_json          │ ❌ NO    │ Product image                              │
--- │ affiliate_url       │ ❌ NO    │ Primary affiliate link                     │
--- │ affiliate_provider  │ ❌ NO    │ "amazon", "williams-sonoma", etc.          │
--- └─────────────────────┴──────────┴────────────────────────────────────────────┘
---
 -- Contract: docs/EQUIPMENT_TABLE_CONTRACT.md
--- ==================================================================================
-
 CREATE TABLE IF NOT EXISTS equipment (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    -- =========================================================================
     -- 1. IDENTITY
-    -- =========================================================================
 
     -- URL identifier for routing (e.g., /equipment/stand-mixer).
     -- FORMAT: Lowercase, kebab-case only.
@@ -697,22 +507,18 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- EXAMPLE: "Essential for whipping egg whites and kneading dough."
     description TEXT,
 
-    -- Synonyms/keywords for equipment matching. Contract: docs/EQUIPMENT_TABLE_CONTRACT.md.
+    -- Synonyms/keywords for equipment matching.
     keywords TEXT DEFAULT '[]' CHECK (json_valid(keywords)),
 
     -- Equipment category for filtering in admin.
     -- OPTIONS: "appliances", "bakeware", "cookware", "utensils", "gadgets", "other"
     category TEXT DEFAULT 'other' CHECK (category IN ('appliances', 'bakeware', 'cookware', 'utensils', 'gadgets', 'other')),
 
-    -- =========================================================================
     -- 2. VISUALS
-    -- =========================================================================
-    -- Product image snapshot. Contract: docs/EQUIPMENT_TABLE_CONTRACT.md and docs/IMAGE_JSON_CONTRACT.md.
+    -- Product image snapshot.
     image_json TEXT DEFAULT '{}' CHECK (json_valid(image_json)),
 
-    -- =========================================================================
     -- 3. AFFILIATE LINKS
-    -- =========================================================================
 
     -- Primary affiliate link.
     -- EXAMPLE: "https://www.amazon.com/dp/B00005UP2P?tag=yourtag-20"
@@ -730,9 +536,7 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- EXAMPLE: "$299.99"
     price_display TEXT,
 
-    -- =========================================================================
     -- 4. SYSTEM
-    -- =========================================================================
 
     -- Visibility toggle.
     -- 0 = Hidden (don't show affiliate links).
@@ -747,63 +551,23 @@ CREATE TABLE IF NOT EXISTS equipment (
     deleted_at DATETIME DEFAULT NULL
 );
 
--- TRIGGER: Auto-Update Timestamp
 CREATE TRIGGER IF NOT EXISTS update_equipment_timestamp
 AFTER UPDATE ON equipment
 BEGIN
     UPDATE equipment SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
--- INDEXES
 CREATE INDEX IF NOT EXISTS idx_equipment_slug ON equipment(slug);
 CREATE INDEX IF NOT EXISTS idx_equipment_category ON equipment(category);
 CREATE INDEX IF NOT EXISTS idx_equipment_active ON equipment(is_active);
 
 
--- ==================================================================================
--- TABLE: ARTICLES (The Core Content)
--- ==================================================================================
--- PURPOSE:
---   Stores the main editorial content (Posts, Recipes, Tutorials).
---   Acts as the central node connecting Authors, Categories, and Media.
---
--- STRATEGY: "Hybrid SQL/JSON"
---   1. SQL Columns: Used for Relations (FKs), Sorting, and High-Speed Filtering.
---   2. JSON Columns: Used for flexible Content Blocks and Structured Data.
---
--- FIELD REQUIREMENTS:
--- ┌─────────────────────┬──────────┬────────────────────────────────────────────┐
--- │ Field               │ Required │ Criteria / Notes                           │
--- ├─────────────────────┼──────────┼────────────────────────────────────────────┤
--- │ slug                │ ✅ YES   │ URL-safe, unique, kebab-case               │
--- │ type                │ ✅ YES   │ 'article', 'recipe', or 'roundup'          │
--- │ category_id         │ ✅ YES   │ Must exist in categories table             │
--- │ author_id           │ ✅ YES   │ Must exist in authors table                │
--- │ headline            │ ✅ YES   │ Main H1 / recipe name                      │
--- │ short_description   │ ✅ YES   │ Card text / meta fallback                  │
--- │ locale              │ ❌ NO    │ Defaults to 'en'                           │
--- │ parent_article_id   │ ❌ NO    │ For pillar/cluster pages                   │
--- │ subtitle            │ ❌ NO    │ Optional tagline                           │
--- │ excerpt             │ ❌ NO    │ Newsletter teaser                          │
--- │ introduction        │ ❌ NO    │ Hero copy                                  │
--- │ images_json         │ ❌ NO    │ But required for publishing                │
--- │ content_json        │ ❌ NO    │ But required for publishing                │
--- │ recipe_json         │ ❌ NO    │ Required if type='recipe'                  │
--- │ roundup_json        │ ❌ NO    │ Required if type='roundup'                 │
--- │ faqs_json           │ ❌ NO    │ Intermediate FAQ extraction for jsonld_json│
--- │ seo_json            │ ❌ NO    │ Overrides only                             │
--- │ config_json         │ ❌ NO    │ Feature toggles                            │
--- └─────────────────────┴──────────┴────────────────────────────────────────────┘
---
 -- Contract: docs/ARTICLE_TABLE_CONTRACT.md
--- JSON contracts: docs/CONTENT_JSON_CONTRACT.md, docs/ARTICLE_JSON_CONTRACTS.md,
--- docs/RECIPE_JSON_CONTRACT.md, and docs/ARTICLE_CACHED_FIELDS_CONTRACT.md.
--- ==================================================================================
-
+-- JSON contracts: docs/CONTENT_JSON_CONTRACT.md, docs/CONTENT_BLOCKS_CONTRACT.md,
+-- docs/ARTICLE_JSON_CONTRACTS.md, docs/RECIPE_JSON_CONTRACT.md,
+-- docs/ROUNDUP_JSON_CONTRACT.md, docs/ARTICLE_CACHED_FIELDS_CONTRACT.md
 CREATE TABLE IF NOT EXISTS articles (
-    -- --------------------------------------------------------------------
     -- 1. IDENTITY & ROUTING
-    -- --------------------------------------------------------------------
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     -- Surrogate key for internal use, relations, and snapshots.
@@ -824,9 +588,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- Language/locale code for i18n (e.g. "en", "en-US", "fr").
     -- Enables localized routing, indexing, and search.
 
-    -- --------------------------------------------------------------------
     -- 2. RELATIONSHIPS
-    -- --------------------------------------------------------------------
 
     category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
     -- Main taxonomy bucket (e.g. "Breakfast", "Desserts").
@@ -839,9 +601,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- Optional parent for topic clusters / pillar pages.
     -- Example: pillar guide as parent of multiple child recipes.
 
-    -- --------------------------------------------------------------------
     -- 3. DISPLAY METADATA (SOURCE OF TRUTH FOR TITLE & DESCRIPTION)
-    -- --------------------------------------------------------------------
 
     headline TEXT NOT NULL,
     -- Main H1 for the article page.
@@ -870,24 +630,19 @@ CREATE TABLE IF NOT EXISTS articles (
 
     images_json TEXT DEFAULT '{}' CHECK (json_valid(images_json)),
     -- Article image slots: hero, thumbnail, recipe_steps.
-    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md and docs/IMAGE_JSON_CONTRACT.md.
 
-    -- --------------------------------------------------------------------
     -- 4. RICH CONTENT (BLOCK-BASED BODY)
-    -- --------------------------------------------------------------------
 
     content_json TEXT DEFAULT '{"version":1,"kind":"content_document","blocks":[]}' CHECK (json_valid(content_json)),
     -- Versioned ContentDocument object representing the article body.
-    -- Block contract: docs/CONTENT_JSON_CONTRACT.md.
-    -- Related article JSON/caches: docs/ARTICLE_JSON_CONTRACTS.md.
+    -- Block
+    --
 
-    -- --------------------------------------------------------------------
     -- 5. RECIPE DATA ("GOLD KEY") for type='recipe'
-    -- --------------------------------------------------------------------
     --   NOTE:
     --     - headline & short_description are the truth for name/description.
     --     - recipe_json focuses on timings, servings, structure, and extras.
-    --   Contract: docs/RECIPE_JSON_CONTRACT.md.
+    --
 
     recipe_json TEXT DEFAULT '{
       "prep": null,
@@ -915,31 +670,22 @@ CREATE TABLE IF NOT EXISTS articles (
       "video": null
     }' CHECK (json_valid(recipe_json)),
     -- Recipe-specific source data for type='recipe'.
-    -- Contract: docs/RECIPE_JSON_CONTRACT.md.
 
-    -- --------------------------------------------------------------------
     -- 6. ROUNDUP / LIST DATA for type='roundup'
-    -- --------------------------------------------------------------------
 
     roundup_json TEXT DEFAULT '{
       "items": [],
       "list_type": "ItemList"
     }' CHECK (json_valid(roundup_json)),
     -- Compatibility field for roundup data.
-    -- Direction and deprecation rules: docs/ARTICLE_JSON_CONTRACTS.md.
+    --
 
-    -- --------------------------------------------------------------------
-    -- 7. STRUCTURED FAQ (SEO CACHE)
-    -- --------------------------------------------------------------------
+    -- 7. STRUCTURED FAQ SOURCE
 
     faqs_json TEXT DEFAULT '[]' CHECK (json_valid(faqs_json)),
-    -- Intermediate FAQ extraction cache generated from content_json faq_section blocks.
-    -- Used to generate jsonld_json; not the final structured-data payload.
-    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md.
+    -- Source FAQ items used for visible FAQ display and jsonld_json generation.
 
-    -- --------------------------------------------------------------------
     -- 8. SNAPSHOTS & CACHES (ZERO-JOIN RENDERING)
-    -- --------------------------------------------------------------------
 
 
     cached_tags_json TEXT DEFAULT '[]' CHECK (json_valid(cached_tags_json)),
@@ -951,16 +697,12 @@ CREATE TABLE IF NOT EXISTS articles (
     cached_author_json TEXT DEFAULT '{}' CHECK (json_valid(cached_author_json)),
     -- Author snapshot for zero-join card/byline rendering.
 
-    cached_equipment_json TEXT DEFAULT '[]' CHECK (json_valid(cached_equipment_json)),
-    -- Rich equipment card snapshots derived by application logic from
-    -- recipe_json.equipment[*].equipment_id + active equipment table rows.
-    -- Does not need to contain every plain checklist item from recipe_json.equipment.
-
     cached_rating_json TEXT DEFAULT '{}' CHECK (json_valid(cached_rating_json)),
     -- Optional denormalized rating snapshot; source is recipe_json.aggregate_rating.
 
-    reading_time_minutes INTEGER DEFAULT 0,
-    -- Approximate reading time (whole minutes) for long-form articles.
+    reading_time_minutes INTEGER DEFAULT 0 CHECK (reading_time_minutes >= 0),
+    -- Approximate reading time from visible reader text.
+    -- Includes visible marker payloads such as main_recipe, main_roundup, and main_faq.
 
     cached_toc_json TEXT DEFAULT '[]' CHECK (json_valid(cached_toc_json)),
     -- Table of contents cache generated from content_json heading blocks.
@@ -983,18 +725,8 @@ CREATE TABLE IF NOT EXISTS articles (
 
     cached_card_json TEXT DEFAULT '{}' CHECK (json_valid(cached_card_json)),
     -- Zero-join card snapshot for listings, pickers, and related content.
-    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md.
 
-    total_time_minutes INTEGER,
-    -- Scalar helper for D1 indexing & fast filters (mirrors cached_recipe_json.total_time_minutes).
-
-    difficulty_label   TEXT,
-    -- Scalar helper for indexing/filters (mirrors recipe_json.difficulty
-    -- or cached_recipe_json.difficulty).
-
-    -- --------------------------------------------------------------------
     -- 9. SEO & STRUCTURED DATA
-    -- --------------------------------------------------------------------
 
     seo_json TEXT DEFAULT '{
       "meta_title": null,
@@ -1006,15 +738,14 @@ CREATE TABLE IF NOT EXISTS articles (
       "og_description": null,
       "twitter_card": "summary_large_image"
     }' CHECK (json_valid(seo_json)),
-    -- Per-article SEO overrides. Contract: docs/ARTICLE_JSON_CONTRACTS.md.
+    -- Per-article SEO overrides.
 
     jsonld_json TEXT DEFAULT '[]' CHECK (json_valid(jsonld_json)),
-    -- Final generated Schema.org JSON-LD cache for SEO rich results.
-    -- Built from article source fields, recipe_json, faqs_json, images_json, and snapshots.
+    -- Complete generated Schema.org JSON-LD graph for the page.
+    -- Built from article source fields, recipe_json, roundup_json, faqs_json,
+    -- images_json, relationship caches, and site organization settings.
 
-    -- --------------------------------------------------------------------
     -- 10. CONFIG, WORKFLOW, EXPERIMENTS
-    -- --------------------------------------------------------------------
 
     config_json TEXT DEFAULT '{
       "allow_comments": true,
@@ -1024,7 +755,6 @@ CREATE TABLE IF NOT EXISTS articles (
       "experiment_variant": null
     }' CHECK (json_valid(config_json)),
     -- Per-article feature toggles and experiment hooks.
-    -- Contract: docs/ARTICLE_JSON_CONTRACTS.md.
 
     workflow_status TEXT DEFAULT 'draft' CHECK (workflow_status IN ('draft', 'in_review', 'scheduled', 'published', 'archived')),
     -- Editorial workflow:
@@ -1038,9 +768,7 @@ CREATE TABLE IF NOT EXISTS articles (
     -- Optional scheduled publish date/time (UTC).
     -- Your app can flip is_online + workflow_status when this time is reached.
 
-    -- --------------------------------------------------------------------
     -- 11. SYSTEM & ACCESS CONTROL
-    -- --------------------------------------------------------------------
 
     is_online   BOOLEAN DEFAULT 0,
     -- 0 = not publicly visible; 1 = visible (subject to access_level).
@@ -1071,12 +799,12 @@ CREATE TABLE IF NOT EXISTS articles (
     -- Soft-delete marker (non-null = logically deleted).
 );
 
--- ========================================================================
--- INDEXES
--- ========================================================================
 
 CREATE INDEX IF NOT EXISTS idx_articles_slug
     ON articles(slug);
+
+CREATE INDEX IF NOT EXISTS idx_articles_type
+    ON articles(type);
 -- Fast lookup by slug for routing.
 
 CREATE INDEX IF NOT EXISTS idx_articles_feed
@@ -1101,21 +829,11 @@ CREATE INDEX IF NOT EXISTS idx_articles_workflow
     ON articles(workflow_status);
 -- Admin/editor views filtered by workflow status.
 
-CREATE INDEX IF NOT EXISTS idx_articles_total_time
-    ON articles(total_time_minutes);
--- Fast "Under X minutes" recipe filters.
-
-CREATE INDEX IF NOT EXISTS idx_articles_difficulty
-    ON articles(difficulty_label);
--- Fast "Easy/Medium/Hard" recipe filters.
-
 CREATE INDEX IF NOT EXISTS idx_articles_active
     ON articles(deleted_at);
 -- Soft delete filter: efficiently exclude deleted articles.
 
--- ========================================================================
 -- TRIGGERS
--- ========================================================================
 
 -- 1) Auto-update updated_at on any UPDATE
 CREATE TRIGGER IF NOT EXISTS trg_articles_updated_at
@@ -1167,7 +885,7 @@ END;
 
 
 -- Table de liaison (Many-to-Many)
--- Contract: docs/ARTICLE_TABLE_CONTRACT.md and docs/TAGS_TABLE_CONTRACT.md
+-- Contract: docs/TAGS_TABLE_CONTRACT.md
 CREATE TABLE IF NOT EXISTS articles_to_tags (
     article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
     tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
@@ -1176,9 +894,7 @@ CREATE TABLE IF NOT EXISTS articles_to_tags (
 CREATE INDEX IF NOT EXISTS idx_tag_to_article ON articles_to_tags(tag_id);
 
 
--- ==================================================================
 -- 4. RECHERCHE (FTS5)
--- ==================================================================
 
 -- Search Index for Articles and Recipes
 -- Includes headline, metadata, tags, author, category, and flattened JSON content
@@ -1204,20 +920,15 @@ CREATE VIRTUAL TABLE IF NOT EXISTS idx_media_search_fts USING fts5(
     content_rowid='id'
 );
 
--- ==================================================================================
 -- MEDIA FTS5 SYNC TRIGGERS
--- ==================================================================================
--- Purpose: Keep idx_media_search_fts in sync with the media table.
 -- The FTS delete command MUST supply the original indexed values.
 
--- Trigger: Sync Media FTS on INSERT
 CREATE TRIGGER IF NOT EXISTS trg_media_search_ai AFTER INSERT ON media
 BEGIN
   INSERT INTO idx_media_search_fts(rowid, name, alt_text, caption, credit)
   VALUES (NEW.id, NEW.name, NEW.alt_text, NEW.caption, NEW.credit);
 END;
 
--- Trigger: Sync Media FTS on UPDATE (delete old entry, re-insert if not soft-deleted)
 CREATE TRIGGER IF NOT EXISTS trg_media_search_au AFTER UPDATE ON media
 BEGIN
   INSERT INTO idx_media_search_fts(idx_media_search_fts, rowid, name, alt_text, caption, credit)
@@ -1228,14 +939,12 @@ BEGIN
   WHERE NEW.deleted_at IS NULL;
 END;
 
--- Trigger: Sync Media FTS on DELETE
 CREATE TRIGGER IF NOT EXISTS trg_media_search_ad AFTER DELETE ON media
 BEGIN
   INSERT INTO idx_media_search_fts(idx_media_search_fts, rowid, name, alt_text, caption, credit)
   VALUES('delete', OLD.id, OLD.name, OLD.alt_text, OLD.caption, OLD.credit);
 END;
 
--- Trigger: Sync Articles on INSERT
 CREATE TRIGGER IF NOT EXISTS trg_articles_search_ai AFTER INSERT ON articles
 BEGIN
   INSERT INTO idx_articles_search(
@@ -1296,18 +1005,14 @@ BEGIN
 
         UNION ALL
 
-        -- FAQ blocks.
+        -- FAQ source items.
         SELECT json_extract(item.value, '$.question')
-        FROM json_each(NEW.content_json, '$.blocks') AS block,
-             json_each(block.value, '$.items') AS item
-        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        FROM json_each(NEW.faqs_json) AS item
 
         UNION ALL
 
         SELECT json_extract(item.value, '$.answer')
-        FROM json_each(NEW.content_json, '$.blocks') AS block,
-             json_each(block.value, '$.items') AS item
-        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        FROM json_each(NEW.faqs_json) AS item
 
         UNION ALL
 
@@ -1426,7 +1131,6 @@ BEGIN
   );
 END;
 
--- Trigger: Sync Articles on UPDATE (including soft-delete handling)
 CREATE TRIGGER IF NOT EXISTS trg_articles_search_au AFTER UPDATE ON articles
 BEGIN
   -- Clean up old index entry (values MUST match original indexed data for FTS5 consistency)
@@ -1470,14 +1174,10 @@ BEGIN
         WHERE json_extract(block.value, '$.type') = 'list'
         UNION ALL
         SELECT json_extract(item.value, '$.question')
-        FROM json_each(OLD.content_json, '$.blocks') AS block,
-             json_each(block.value, '$.items') AS item
-        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        FROM json_each(OLD.faqs_json) AS item
         UNION ALL
         SELECT json_extract(item.value, '$.answer')
-        FROM json_each(OLD.content_json, '$.blocks') AS block,
-             json_each(block.value, '$.items') AS item
-        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        FROM json_each(OLD.faqs_json) AS item
         UNION ALL
         SELECT header.value
         FROM json_each(OLD.content_json, '$.blocks') AS block,
@@ -1613,18 +1313,14 @@ BEGIN
 
         UNION ALL
 
-        -- FAQ blocks.
+        -- FAQ source items.
         SELECT json_extract(item.value, '$.question')
-        FROM json_each(NEW.content_json, '$.blocks') AS block,
-             json_each(block.value, '$.items') AS item
-        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        FROM json_each(NEW.faqs_json) AS item
 
         UNION ALL
 
         SELECT json_extract(item.value, '$.answer')
-        FROM json_each(NEW.content_json, '$.blocks') AS block,
-             json_each(block.value, '$.items') AS item
-        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        FROM json_each(NEW.faqs_json) AS item
 
         UNION ALL
 
@@ -1743,7 +1439,6 @@ BEGIN
   WHERE NEW.deleted_at IS NULL;  -- Only index if NOT soft-deleted
 END;
 
--- Trigger: Sync Articles on DELETE (hard delete)
 CREATE TRIGGER IF NOT EXISTS trg_articles_search_ad AFTER DELETE ON articles
 BEGIN
   INSERT INTO idx_articles_search(
@@ -1786,14 +1481,10 @@ BEGIN
         WHERE json_extract(block.value, '$.type') = 'list'
         UNION ALL
         SELECT json_extract(item.value, '$.question')
-        FROM json_each(OLD.content_json, '$.blocks') AS block,
-             json_each(block.value, '$.items') AS item
-        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        FROM json_each(OLD.faqs_json) AS item
         UNION ALL
         SELECT json_extract(item.value, '$.answer')
-        FROM json_each(OLD.content_json, '$.blocks') AS block,
-             json_each(block.value, '$.items') AS item
-        WHERE json_extract(block.value, '$.type') = 'faq_section'
+        FROM json_each(OLD.faqs_json) AS item
         UNION ALL
         SELECT header.value
         FROM json_each(OLD.content_json, '$.blocks') AS block,
@@ -1872,13 +1563,7 @@ BEGIN
 END;
 
 
--- =====================================================================
--- TABLE: pinterest_boards
--- PURPOSE:
---   - Store your Pinterest boards as selectable targets in the admin.
---   - Provide metadata (URL, locale, status) for organizing pins.
--- =====================================================================
-
+-- Contract: Pinterest board storage; see docs/DATABASE_CONTENT_MODEL.md
 CREATE TABLE IF NOT EXISTS pinterest_boards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     -- Surrogate key for internal use and foreign keys from pinterest_pins.
@@ -1927,10 +1612,8 @@ CREATE TABLE IF NOT EXISTS pinterest_boards (
     --   NOT NULL = logically deleted/retired (hide in UI, keep for history).
 );
 
--- INDEX: Filter active boards
 CREATE INDEX IF NOT EXISTS idx_pinterest_boards_active ON pinterest_boards(is_active);
 
--- TRIGGER: Auto-Update Timestamp
 CREATE TRIGGER IF NOT EXISTS update_pinterest_boards_timestamp
 AFTER UPDATE ON pinterest_boards
 BEGIN
@@ -1939,14 +1622,7 @@ END;
 
 
 
--- =====================================================================
--- TABLE: pinterest_pins
--- PURPOSE:
---   - Store everything needed to manually upload pins (via CSV, etc.).
---   - Independent of any social_posts table.
---   - One row = one pin-ready asset + metadata for a given board/section.
--- =====================================================================
-
+-- Contract: Pinterest pin storage; see docs/DATABASE_CONTENT_MODEL.md
 CREATE TABLE IF NOT EXISTS pinterest_pins (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -2017,13 +1693,7 @@ BEGIN
 END;
 
 
--- =====================================================================
--- TABLE: pin_templates
--- PURPOSE:
---   - Store reusable canvas templates for the Pinterest pin generator.
---   - Admin can select templates when creating new pins.
--- =====================================================================
-
+-- Contract: Pinterest template storage; see docs/DATABASE_CONTENT_MODEL.md
 CREATE TABLE IF NOT EXISTS pin_templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -2080,15 +1750,7 @@ BEGIN
 END;
 
 
--- =====================================================================
--- TABLE: redirects
--- PURPOSE:
---   - Manage 301/302 redirects for SEO and broken link handling.
---   - Essential for preserving link equity when URLs change.
---
 -- Contract: docs/REDIRECTS_TABLE_CONTRACT.md
--- =====================================================================
-
 CREATE TABLE IF NOT EXISTS redirects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -2135,20 +1797,18 @@ BEGIN
 END;
 
 
--- ==================================================================================
 -- ARTICLE CACHED FIELD TRIGGERS
--- ==================================================================================
--- Purpose: Keep article-side author/category snapshots fresh when source rows change.
--- Detailed cache contracts live in docs/ARTICLE_CACHED_FIELDS_CONTRACT.md.
 
--- Trigger: Refresh cached_author_json when author display fields change
+
 CREATE TRIGGER IF NOT EXISTS update_cached_author_on_author_change
-AFTER UPDATE OF name, slug, job_title, images_json ON authors
+AFTER UPDATE OF name, slug, job_title, images_json, short_description, bio_json ON authors
 WHEN (
   OLD.name != NEW.name
   OR OLD.slug != NEW.slug
   OR OLD.job_title IS NOT NEW.job_title
   OR OLD.images_json IS NOT NEW.images_json
+  OR OLD.short_description != NEW.short_description
+  OR OLD.bio_json IS NOT NEW.bio_json
 )
 BEGIN
   UPDATE articles
@@ -2157,12 +1817,13 @@ BEGIN
     'slug', NEW.slug,
     'name', NEW.name,
     'job_title', NEW.job_title,
-    'avatar', json(COALESCE(json_extract(NEW.images_json, '$.avatar'), 'null'))
+    'bio', NEW.short_description,
+    'avatar', json(COALESCE(json_extract(NEW.images_json, '$.avatar'), 'null')),
+    'social_links', json(COALESCE(json_extract(NEW.bio_json, '$.socials'), '[]'))
   )
   WHERE author_id = NEW.id;
 END;
 
--- Trigger: Refresh cached_category_json when category display fields change
 CREATE TRIGGER IF NOT EXISTS update_cached_category_on_category_change
 AFTER UPDATE OF slug, label, color ON categories
 WHEN (
@@ -2181,13 +1842,9 @@ BEGIN
   WHERE category_id = NEW.id;
 END;
 
--- ==================================================================================
 -- AUTHOR AND CATEGORY POST COUNT TRIGGERS
--- ==================================================================================
--- Purpose: Automatically maintain cached_post_count in authors and categories tables.
 -- Conditions: is_online = 1 AND deleted_at IS NULL.
 
--- Trigger: Update author post count after INSERT
 CREATE TRIGGER IF NOT EXISTS update_author_count_on_insert
 AFTER INSERT ON articles
 BEGIN
@@ -2201,7 +1858,6 @@ BEGIN
   WHERE id = NEW.author_id;
 END;
 
--- Trigger: Update author post count after UPDATE
 CREATE TRIGGER IF NOT EXISTS update_author_count_on_update
 AFTER UPDATE OF author_id, is_online, deleted_at ON articles
 BEGIN
@@ -2226,7 +1882,6 @@ BEGIN
   WHERE id = NEW.author_id;
 END;
 
--- Trigger: Update author post count after DELETE
 CREATE TRIGGER IF NOT EXISTS update_author_count_on_delete
 AFTER DELETE ON articles
 BEGIN
@@ -2240,7 +1895,6 @@ BEGIN
   WHERE id = OLD.author_id;
 END;
 
--- Trigger: Update category post count after INSERT
 CREATE TRIGGER IF NOT EXISTS update_category_count_on_insert
 AFTER INSERT ON articles
 BEGIN
@@ -2254,7 +1908,6 @@ BEGIN
   WHERE id = NEW.category_id;
 END;
 
--- Trigger: Update category post count after UPDATE
 CREATE TRIGGER IF NOT EXISTS update_category_count_on_update
 AFTER UPDATE OF category_id, is_online, deleted_at ON articles
 BEGIN
@@ -2279,7 +1932,6 @@ BEGIN
   WHERE id = NEW.category_id;
 END;
 
--- Trigger: Update category post count after DELETE
 CREATE TRIGGER IF NOT EXISTS update_category_count_on_delete
 AFTER DELETE ON articles
 BEGIN
@@ -2294,13 +1946,9 @@ BEGIN
 END;
 
 
--- ==================================================================================
 -- TAG POST COUNT TRIGGERS
--- ==================================================================================
--- Purpose: Automatically maintain cached_post_count in tags table.
 -- Source of truth: articles_to_tags junction + articles (is_online=1, deleted_at IS NULL).
 
--- Trigger: Update tag post counts when a junction row is inserted
 CREATE TRIGGER IF NOT EXISTS update_tag_count_on_link_insert
 AFTER INSERT ON articles_to_tags
 BEGIN
@@ -2315,7 +1963,6 @@ BEGIN
   WHERE id = NEW.tag_id;
 END;
 
--- Trigger: Update tag post counts when a junction row is deleted
 CREATE TRIGGER IF NOT EXISTS update_tag_count_on_link_delete
 AFTER DELETE ON articles_to_tags
 BEGIN
@@ -2330,7 +1977,6 @@ BEGIN
   WHERE id = OLD.tag_id;
 END;
 
--- Trigger: Refresh ALL linked tag counts when article online/deleted status changes
 CREATE TRIGGER IF NOT EXISTS update_tag_counts_on_article_status
 AFTER UPDATE OF is_online, deleted_at ON articles
 BEGIN

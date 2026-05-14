@@ -62,7 +62,18 @@ describe('BlockAdapter round-trip: DB → Editor → DB', () => {
         media_id: 42,
         alt: 'Test image',
         caption: 'A test',
-        credit: 'Photographer',
+        credit: {
+          type: 'author',
+          id: 1,
+          name: 'Chef Maria salvador',
+          slug: 'chef-maria',
+          avatar: {
+            alt: 'Chef Maria salvador',
+            variants: {
+              xs: { url: '/api/images/media/chef-xs.webp', width: 50, height: 50 },
+            },
+          },
+        },
         variants: { md: { url: '/test-md.webp', width: 800, height: 600 } },
       },
     },

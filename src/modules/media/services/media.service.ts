@@ -5,12 +5,14 @@
  */
 
 import { eq, and, or, like, desc, asc, isNull, gte, lte, count } from 'drizzle-orm';
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import { media, type Media, type NewMedia } from '../schema/media.schema';
-import type { MediaQueryOptions, MediaRecord } from '../types/media.types';
+import type { MediaQueryOptions } from '../types/media.types';
+import { extractR2KeysFromMediaVariantsJson } from '../../../shared/images/image-contract';
+import { MediaVariantsJsonSchema } from '../../../shared/validation/schemas/media';
 
 // Import shared drizzle client
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
  * Build conditions for media queries
@@ -121,13 +123,33 @@ export async function getMediaById(db: D1Database | DrizzleDb, id: number): Prom
 }
 
 /**
- * Create a new media record
+ * Create a new media record.
+ * Validates `variantsJson` against the storage contract (all 5 variants + placeholder required).
+ * @throws Error if variantsJson is missing, not valid JSON, or violates the storage schema.
  */
 export async function createMedia(
   db: D1Database | DrizzleDb,
   data: NewMedia
 ): Promise<Media | null> {
   const drizzle = getDb(db);
+
+  // F1: Enforce storage contract at the service boundary before every insert.
+  // This catches malformed variantsJson from any caller (confirm.ts, seed scripts, etc.)
+  if (!data.variantsJson) {
+    throw new Error('createMedia: variantsJson is required');
+  }
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(data.variantsJson);
+  } catch {
+    throw new Error('createMedia: variantsJson is not valid JSON');
+  }
+  const result = MediaVariantsJsonSchema.safeParse(parsedJson);
+  if (!result.success) {
+    throw new Error(
+      `createMedia: variantsJson violates storage contract — ${result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ')}`
+    );
+  }
 
   const [inserted] = await drizzle.insert(media).values(data).returning();
   return inserted || null;
@@ -143,8 +165,7 @@ export async function updateMedia(
 ): Promise<boolean> {
   const drizzle = getDb(db);
 
-  const updateData: any = { ...data };
-  updateData.updatedAt = new Date().toISOString();
+  const updateData: Partial<NewMedia> = { ...data, updatedAt: new Date().toISOString() };
 
   await drizzle.update(media)
     .set(updateData)
@@ -165,10 +186,27 @@ export async function deleteMedia(db: D1Database | DrizzleDb, id: number): Promi
 }
 
 /**
- * Hard delete a media record (use with caution)
+ * Hard delete a media record and its R2 objects (use with caution).
+ * Deletes all R2 variant objects first, then removes the DB record.
  */
-export async function hardDeleteMedia(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
+export async function hardDeleteMedia(
+  db: D1Database | DrizzleDb,
+  images: R2Bucket,
+  id: number
+): Promise<boolean> {
   const drizzle = getDb(db);
+
+  // Fetch the record to get its variantsJson before deleting
+  const [record] = await drizzle.select().from(media).where(eq(media.id, id)).limit(1);
+  if (!record) return false;
+
+  // Clean up R2 objects in parallel (best-effort — DB delete proceeds regardless)
+  const r2Keys = extractR2KeysFromMediaVariantsJson(record.variantsJson);
+  if (r2Keys.length > 0) {
+    await Promise.all(r2Keys.map(key => images.delete(key)));
+  }
+
+  // Remove DB record
   await drizzle.delete(media).where(eq(media.id, id));
   return true;
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useUIStore } from '../../../../store/useUIStore';
+import { useUIStore } from '@admin/features/templates/store/useUIStore';
 import TopToolbar from './TopToolbar';
 import SidePanel from './SidePanel';
 import ContextToolbar from './ContextToolbar';

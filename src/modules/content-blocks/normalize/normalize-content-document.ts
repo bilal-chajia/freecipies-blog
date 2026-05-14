@@ -31,6 +31,14 @@ function numberValue(value: unknown): number | undefined {
   return undefined;
 }
 
+function authorCreditValue(value: unknown): unknown {
+  const record = asRecord(value);
+  if (!record) return undefined;
+  if (record.type !== 'author') return undefined;
+  if (!numberValue(record.id) || !stringValue(record.name) || !stringValue(record.slug)) return undefined;
+  return value;
+}
+
 function normalizeFAQItems(items: unknown): unknown[] {
   if (!Array.isArray(items)) return [];
   return items
@@ -136,8 +144,8 @@ function normalizeLegacyType(block: Record<string, unknown>): Record<string, unk
       type: 'image',
       media_id: typeof mediaId === 'number' ? mediaId : Number(mediaId || 0),
       alt: stringValue(props?.alt) ?? stringValue(block.alt) ?? '',
-      caption: stringValue(props?.caption),
-      credit: stringValue(props?.credit),
+      caption: typeof props?.caption === 'string' ? props.caption : typeof props?.placeholder === 'string' ? props.placeholder : undefined,
+      credit: authorCreditValue(props?.credit),
     };
   }
 
@@ -204,6 +212,18 @@ function normalizeLegacyType(block: Record<string, unknown>): Record<string, unk
       provider: stringValue(block.provider),
       video_id: stringValue(block.video_id) ?? stringValue(block.videoId),
       aspect_ratio: stringValue(block.aspect_ratio) ?? stringValue(block.aspectRatio) ?? '16:9',
+    };
+  }
+
+  if (type === 'image') {
+    return {
+      ...block,
+      type: 'image',
+      media_id: numberValue(block.media_id) ?? numberValue(block.mediaId) ?? 0,
+      alt: stringValue(block.alt) ?? '',
+      caption: typeof block.caption === 'string' ? block.caption : typeof block.placeholder === 'string' ? block.placeholder : undefined,
+      credit: authorCreditValue(block.credit),
+      variants: asRecord(block.variants),
     };
   }
 

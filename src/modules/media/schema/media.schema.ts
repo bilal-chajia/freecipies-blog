@@ -14,8 +14,8 @@ export const media = sqliteTable('media', {
   // 1. SEARCHABLE METADATA
   name: text('name').notNull(),
   altText: text('alt_text').notNull(),
-  caption: text('caption'),
-  credit: text('credit'),
+  caption: text('caption').notNull(),
+  credit: text('credit').notNull(),
   mimeType: text('mime_type').notNull().default('image/webp'),
   aspectRatio: text('aspect_ratio'),
   

@@ -1,18 +1,22 @@
 // @ts-check
 
 import { defineConfig } from 'astro/config';
+import { loadEnv } from 'vite';
 
 import cloudflare from '@astrojs/cloudflare';
 import react from '@astrojs/react';
 
 import tailwindcss from '@tailwindcss/vite';
 
+// Load env once — avoids Vite re-optimization triggered by dynamic process.env
+const env = loadEnv(process.env.NODE_ENV ?? 'production', process.cwd(), '');
+
 // Fix FSWatcher memory leak warning from Cloudflare adapter
+// Only applies to dev server, not the temporary server created during build sync
 const fixWatcherPlugin = () => ({
   name: 'fix-watcher',
   /** @param {any} server */
   configureServer(server) {
-    // Increase max listeners for the file watcher
     if (server.watcher) {
       server.watcher.setMaxListeners(50);
     }
@@ -21,7 +25,7 @@ const fixWatcherPlugin = () => ({
 
 // https://astro.build/config
 export default defineConfig({
-  site: process.env.SITE_URL || 'http://localhost:4321',
+  site: env.SITE_URL || 'http://localhost:4321',
   integrations: [react()],
   devToolbar: {
     enabled: false,
@@ -32,7 +36,7 @@ export default defineConfig({
   }),
   output: 'server',
   build: {
-    inlineStylesheets: 'always',
+    inlineStylesheets: 'auto',
   },
   vite: {
     plugins: [fixWatcherPlugin(), ...tailwindcss()],
@@ -78,7 +82,7 @@ export default defineConfig({
     },
     build: {
       target: 'esnext',
-      minify: false,
+      // minify defaults to esbuild — optimal for Workers
       sourcemap: false,
       chunkSizeWarningLimit: 2000,
       // Note: manualChunks cannot be used here — the Cloudflare adapter

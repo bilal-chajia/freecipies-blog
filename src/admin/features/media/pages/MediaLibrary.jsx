@@ -4,21 +4,16 @@ import {
   parseVariantsJson,
   getVariantMap,
   getBestVariant,
-  getLargestVariant,
   getVariantForContainer,
-  pickVariantByWidth,
-  CONTAINER_SIZES,
   resolveVariantUrl
 } from '@shared/types/images';
 import { ImageEditor, ImageUploader } from '@admin/features/media/components';
-import { Calendar } from '@/ui/calendar.jsx';
 import { DateRangePicker } from '@/ui/date-range-picker.jsx';
 import {
   Upload,
   Search,
   Grid,
   List,
-  Edit2,
   Image as ImageIcon,
   File as FileIcon,
   Video,
@@ -27,17 +22,14 @@ import {
   Copy,
   Trash2,
   Eye,
-  MoreVertical,
-  X,
   Check,
   RefreshCw,
   Filter,
-  ArrowUpRight,
   Info,
   Maximize2,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
+  X
 } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
@@ -49,7 +41,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/ui/dialog.jsx';
 import {
   Select,
@@ -58,18 +49,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/ui/select.jsx';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/ui/dropdown-menu.jsx';
-import { Progress } from '@/ui/progress.jsx';
-import { mediaAPI, authorsAPI } from '../../../services/api';
+import { mediaAPI } from '../../../services/api';
 import { formatFileSize, isImageFile, formatDate } from '../../../utils/helpers';
 import { useMediaStore } from '../../../store/useStore';
 import ConfirmationModal from '@/ui/confirmation-modal';
-import { compressImage, QUALITY_PRESETS, formatBytes } from '../../../utils/imageCompression.js';
 import { toast } from 'sonner';
 
 // Helper to check if item is image (by mime or name)
@@ -143,7 +126,6 @@ const OptimizedImage = ({ item, className = "", priority = false }) => {
     if (variants.sm) srcsetParts.push(`${resolveVariantUrl(variants.sm)} ${variants.sm.width}w`);
     if (variants.md) srcsetParts.push(`${resolveVariantUrl(variants.md)} ${variants.md.width}w`);
     if (variants.lg) srcsetParts.push(`${resolveVariantUrl(variants.lg)} ${variants.lg.width}w`);
-    if (variants.original) srcsetParts.push(`${resolveVariantUrl(variants.original)} ${variants.original.width}w`);
     srcset = srcsetParts.join(', ');
 
     const slot = { variants };
@@ -217,38 +199,13 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
   const [filterType, setFilterType] = useState('all');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState('');
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, isBulk: false });
-  const [editingImage, setEditingImage] = useState(null);
-  const [customFileName, setCustomFileName] = useState('');
-  const [altText, setAltText] = useState('');
-  const [selectedAuthor, setSelectedAuthor] = useState('');
-  const [authors, setAuthors] = useState([]);
-  const [compressionQuality, setCompressionQuality] = useState('high');
-  const [compressionStats, setCompressionStats] = useState(null);
   const [dateFrom, setDateFrom] = useState(undefined);
   const [dateTo, setDateTo] = useState(undefined);
+  const [uploading, setUploading] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, isBulk: false });
+  const [editingImage, setEditingImage] = useState(null);
   const fileInputRef = useRef(null);
-
-  useEffect(() => {
-    if (showUploadDialog) {
-      loadAuthors();
-    }
-  }, [showUploadDialog]);
-
-  const loadAuthors = async () => {
-    try {
-      const response = await authorsAPI.getAll();
-      const authorsData = response.data?.data || response.data || [];
-      setAuthors(Array.isArray(authorsData) ? authorsData : []);
-    } catch (error) {
-      toast.error('Failed to load authors');
-    }
-  };
 
   const loadMedia = async (pageNum = 1) => {
     try {
@@ -299,80 +256,6 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
     loadMedia(1);
   }, [filterType, sortBy, sortOrder, dateFrom, dateTo, searchQuery]);
 
-  const handleFileSelect = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-      setCustomFileName(nameWithoutExt);
-      if (isImageFile(file.name)) {
-        const url = URL.createObjectURL(file);
-        setPreviewUrl(url);
-      }
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-
-    try {
-      setUploading(true);
-      setUploadProgress(10);
-
-      let fileToUpload = selectedFile;
-
-      if (isImageFile(selectedFile.name)) {
-        const qualityValue = QUALITY_PRESETS[compressionQuality]?.quality || 0.85;
-        const { file: compressedFile, stats } = await compressImage(selectedFile, {
-          quality: qualityValue,
-          maxWidth: 1920,
-          maxHeight: 1920,
-        });
-        fileToUpload = compressedFile;
-        setCompressionStats(stats);
-        setUploadProgress(40);
-      }
-
-      if (customFileName) {
-        const currentExt = fileToUpload.name.split('.').pop();
-        const newFileName = `${customFileName}.${currentExt}`;
-        if (newFileName !== fileToUpload.name) {
-          fileToUpload = new File([fileToUpload], newFileName, { type: fileToUpload.type });
-        }
-      }
-
-      const attribution = selectedAuthor && selectedAuthor !== 'none'
-        ? `${authors.find(a => a.slug === selectedAuthor)?.name || selectedAuthor} / SaaS Blog`
-        : '';
-
-      setUploadProgress(60);
-
-      const response = await mediaAPI.upload(fileToUpload, {
-        alt: altText,
-        attribution: attribution,
-      });
-
-      if (response.data.success) {
-        setUploadProgress(100);
-        toast.success(`"${fileToUpload.name}" uploaded successfully`);
-        setTimeout(() => {
-          setShowUploadDialog(false);
-          setSelectedFile(null);
-          setPreviewUrl('');
-          setCustomFileName('');
-          setAltText('');
-          setSelectedAuthor('');
-          setCompressionStats(null);
-          loadMedia();
-        }, 500);
-      }
-    } catch (error) {
-      toast.error('Upload failed. Please try again.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleBulkDelete = () => {
     setDeleteModal({ isOpen: true, id: null, isBulk: true });
   };
@@ -408,23 +291,15 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
 
   const handleEditorSave = async (file) => {
     if (editingImage?.context === 'upload') {
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
       setEditingImage(null);
       return;
     }
 
     try {
       setUploading(true);
-      const mediaItem = editingImage?.source;
-      if (mediaItem?.id) {
-        const response = await mediaAPI.replaceImage(mediaItem.id, file);
-        if (response.data.success) {
-          toast.success('Image updated successfully');
-          setEditingImage(null);
-          loadMedia();
-        }
-      }
+      // In-place replacement is no longer supported. Re-upload via ImageUploader.
+      toast.info('To replace an image, please delete it and upload a new one via the Upload Assets button.');
+      setEditingImage(null);
     } catch (error) {
       toast.error('Failed to update image');
     } finally {
@@ -477,7 +352,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
               )}
 
               {/* Modern Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="absolute top-2 right-2 flex gap-0.5 translate-x-2 group-hover:translate-x-0 transition-transform duration-300">
                   <Button
                     variant="secondary"
@@ -509,7 +384,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
                 </div>
 
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                  <span className="text-[10px] text-white/90 font-medium truncate max-w-[100px]">
+                  <span className="text-[10px] text-white/90 font-medium truncate max-w-25">
                     {item.name}
                   </span>
                   <Badge variant="secondary" className="h-4 px-1 text-[8px] bg-white/10 backdrop-blur-md text-white border-white/10 font-bold uppercase truncate">
@@ -672,7 +547,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
 
         <div className="flex flex-wrap items-center gap-3">
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-[140px] h-9 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
+            <SelectTrigger className="w-35 h-9 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
               <Filter className="size-3.5 mr-2 opacity-60" />
               <SelectValue placeholder="Type" />
             </SelectTrigger>
@@ -685,7 +560,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
           </Select>
 
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[150px] h-9 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
+            <SelectTrigger className="w-37.5 h-9 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
               <RefreshCw className="h-3.5 w-3.5 mr-2 opacity-60" />
               <SelectValue placeholder="Sorted By" />
             </SelectTrigger>
@@ -703,7 +578,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
               setDateTo(range.dateTo);
             }}
             placeholder="All Time"
-            className="w-[170px]"
+            className="w-42.5"
           />
 
           <div className="flex p-1 bg-accent/50 rounded-2xl border border-border/30 h-9">
@@ -719,7 +594,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }) => {
 
 
       {/* Main Library Display */}
-      <div className="min-h-[500px] bg-accent/20 rounded-[40px] p-6 border border-border/30">
+      <div className="min-h-125 bg-accent/20 rounded-[40px] p-6 border border-border/30">
         <AnimatePresence mode="wait">
           {viewMode === 'grid' ? renderGridView() : renderListView()}
         </AnimatePresence>

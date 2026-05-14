@@ -121,6 +121,9 @@
     --bp-xl: 1280px;
     --bp-2xl: 1536px;
 
+    /* Layout */
+    --container-max: 1200px;
+
     /* Container query references */
     --cq-sm: 40rem;
     --cq-md: 48rem;

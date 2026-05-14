@@ -22,14 +22,13 @@ const getThumbnailUrlFromImagesJson = (value: any): string | null => {
     if (!value) return null;
     try {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
-        const primarySlot = parsed?.thumbnail ?? parsed?.cover;
+        const primarySlot = parsed?.thumbnail ?? parsed?.hero;
         if (!primarySlot) return null;
         if (primarySlot.variants && typeof primarySlot.variants === 'object') {
             const variant =
                 primarySlot.variants.lg ||
                 primarySlot.variants.md ||
                 primarySlot.variants.sm ||
-                primarySlot.variants.original ||
                 primarySlot.variants.xs;
             return resolveVariantUrl(variant) || null;
         }

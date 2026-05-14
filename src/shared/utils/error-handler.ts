@@ -125,12 +125,3 @@ export function formatSuccessResponse<T>(
   };
 }
 
-/**
- * Create error response for API endpoints
- */
-export function handleError(message: string, statusCode: number = 500): Response {
-  const { body, status, headers } = formatErrorResponse(
-    new AppError(ErrorCodes.INTERNAL_ERROR, message, statusCode)
-  );
-  return new Response(body, { status, headers });
-}

@@ -1,13 +1,12 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getArticleBySlug, incrementViewCount } from '@modules/articles';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateParams, SlugOrIdParam } from '@shared/validation';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ params, locals }) => {
+export const GET: APIRoute = async ({ params }) => {
   try {
     const { slug } = validateParams(params, SlugOrIdParam);
 
@@ -31,7 +30,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
   }
 };
 
-export const POST: APIRoute = async ({ params, locals }) => {
+export const POST: APIRoute = async ({ params }) => {
   try {
     const { slug } = validateParams(params, SlugOrIdParam);
 

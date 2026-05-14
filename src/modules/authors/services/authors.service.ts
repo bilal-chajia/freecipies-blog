@@ -7,7 +7,7 @@
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { authors, type Author, type NewAuthor } from '../schema/authors.schema';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
  * Get all authors

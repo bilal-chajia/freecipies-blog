@@ -38,7 +38,7 @@ export function extractTocFromContentDocument(input: unknown, headline?: string)
       if (!rawText) continue;
 
       toc.push({
-        id: heading.id || slugifyHeading(rawText),
+        id: slugifyHeading(rawText),
         text: stripInlineMarkdown(rawText),
         level,
       });

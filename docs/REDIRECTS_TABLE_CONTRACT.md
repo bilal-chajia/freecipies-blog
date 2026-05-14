@@ -1,6 +1,6 @@
 # Redirects Table Contract
 
-> **Last Updated:** 2026-04-29
+> **Last Updated:** 2026-05-14
 
 This document is the product/data contract for the `redirects` table. The executable SQL source remains `db/schema.sql`.
 

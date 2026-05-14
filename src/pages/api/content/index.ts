@@ -108,7 +108,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
                     const images = typeof article.imagesJson === 'string'
                         ? JSON.parse(article.imagesJson)
                         : article.imagesJson;
-                    thumbnail = images.thumbnail || images.cover;
+                    thumbnail = images.thumbnail || images.hero;
                 } catch {
                     thumbnail = null;
                 }

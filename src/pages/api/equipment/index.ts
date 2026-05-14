@@ -10,7 +10,6 @@ import {
     refreshCachedEquipmentForArticles,
 } from '@modules/equipment';
 import { transformEquipmentRequestBody, transformEquipmentResponse } from '@modules/equipment';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { validateBody, validateQuery, CreateEquipmentSchema, UpdateEquipmentSchema, z } from '@shared/validation';
@@ -23,7 +22,7 @@ export const prerender = false;
  * - ?slug=SLUG → get single by slug
  * - default → list all active
  */
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
     try {
 
         if (!env?.DB) {
@@ -76,7 +75,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 /**
  * POST /api/equipment — Create new equipment
  */
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
     try {
 
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
@@ -107,7 +106,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 /**
  * PUT /api/equipment?slug=SLUG — Update equipment
  */
-export const PUT: APIRoute = async ({ request, locals }) => {
+export const PUT: APIRoute = async ({ request }) => {
     try {
 
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
@@ -148,7 +147,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 /**
  * DELETE /api/equipment?slug=SLUG — Soft-delete equipment
  */
-export const DELETE: APIRoute = async ({ request, locals }) => {
+export const DELETE: APIRoute = async ({ request }) => {
     try {
 
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;

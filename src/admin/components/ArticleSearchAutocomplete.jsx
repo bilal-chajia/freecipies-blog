@@ -103,7 +103,7 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
                         )}
                         <CommandGroup>
                             {results.map((article) => {
-                                const coverInfo = extractImage(article.imagesJson, 'thumbnail');
+                                const thumbnailInfo = extractImage(article.imagesJson, 'thumbnail');
                                 return (
                                     <CommandItem
                                         key={article.id}
@@ -116,9 +116,9 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
                                         className="flex items-center gap-3 p-2 cursor-pointer"
                                     >
                                         <div className="h-10 w-10 shrink-0 rounded bg-muted overflow-hidden">
-                                            {coverInfo?.url ? (
+                                            {thumbnailInfo?.url ? (
                                                 <img 
-                                                    src={coverInfo.url} 
+                                                    src={thumbnailInfo.url} 
                                                     alt="" 
                                                     className="h-full w-full object-cover"
                                                 />

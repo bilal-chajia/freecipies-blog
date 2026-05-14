@@ -21,7 +21,7 @@ import {
     RotateCcw,
 } from 'lucide-react';
 
-import { useUIStore } from '../../../store/useUIStore';
+import { useUIStore } from '@admin/features/templates/store/useUIStore';
 
 /**
  * CanvasToolbar - Floating toolbar for canvas controls
@@ -217,4 +217,3 @@ const CanvasToolbar = ({
 };
 
 export default CanvasToolbar;
-

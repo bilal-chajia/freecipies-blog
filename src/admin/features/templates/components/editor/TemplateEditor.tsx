@@ -6,15 +6,7 @@ import { Button } from '@/ui/button';
 
 import {
     Loader2,
-    Download,
 } from 'lucide-react';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/ui/dialog';
 import { toast } from 'sonner';
 import PinCanvas from '../canvas/PinCanvas';
 import { FONTS } from '../canvas/ElementPanel';
@@ -22,9 +14,9 @@ import { FONTS } from '../canvas/ElementPanel';
 // import DraggableLayersList from '../canvas/DraggableLayersList'; // Deprecated
 import EditorLayout from '../canvas/modern/EditorLayout';
 import { templatesAPI, mediaAPI } from '@admin/services/api';
-import { useFontLoader } from '../../../utils/fontLoader';
-import { useEditorStore, CANVAS_WIDTH, CANVAS_HEIGHT } from '../../../store';
-import { generateSlug } from '../../../utils/slugUtils';
+import { useFontLoader } from '@modules/templates/utils/fontLoader';
+import { useEditorStore, CANVAS_WIDTH, CANVAS_HEIGHT } from '@admin/features/templates/store';
+import { generateSlug } from '@modules/templates/utils/slugUtils';
 
 // Helper to resize images for thumbnails
 const resizeImage = (blob, maxWidth) => {
@@ -559,4 +551,3 @@ const TemplateEditor = () => {
 };
 
 export default TemplateEditor;
-

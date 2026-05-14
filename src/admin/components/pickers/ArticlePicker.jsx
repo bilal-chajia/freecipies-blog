@@ -13,6 +13,16 @@ import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { toast } from 'sonner';
 
+/**
+ * Strip absolute dev URLs to relative paths.
+ * Prevents storing http://localhost:XXXX or http://127.0.0.1:XXXX in the DB.
+ */
+const toRelativeUrl = (url) => {
+    if (!url || typeof url !== 'string') return '';
+    // Strip absolute localhost / 127.0.0.1 origins
+    return url.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, '');
+};
+
 const ArticlePicker = ({ value, onChange }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -67,12 +77,14 @@ const ArticlePicker = ({ value, onChange }) => {
     // Handle article selection
     const handleSelect = (article) => {
         setSelectedArticle(article);
+        // Use imageUrl (current API field) with fallbacks, and ensure relative paths
+        const rawImage = article.imageUrl || article.featured_image || article.image || '';
         onChange({
             articleId: article.id,
             title: article.title,
             url: `/recipes/${article.slug}`,
-            image: article.featured_image || article.image || '',
-            description: article.excerpt || article.meta_description || '',
+            image: toRelativeUrl(rawImage),
+            description: article.excerpt || article.metaDescription || '',
         });
         setShowDropdown(false);
         setSearchQuery('');

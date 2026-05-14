@@ -9,9 +9,9 @@ import type {
   ImageVariant,
   ImageVariants,
   ImageSlot,
-  ImageSlotName,
+  ImagesJson,
 } from '@shared/types/images';
-import { resolveVariantUrl } from '@shared/types/images';
+import { resolveVariantUrl, getSrcSet, pickVariantByWidth } from '@shared/types/images';
 
 // Re-export for backwards compatibility
 export type { ImageVariant, ImageVariants, ImageSlot };
@@ -36,15 +36,8 @@ export function safeParseJson<T>(json: string | null | undefined): T | null {
 // Image Extraction
 // ============================================================================
 
-// ImageVariant and ImageSlot imported from @shared/types/images
-
-interface ImagesJson {
-  thumbnail?: ImageSlot;
-  cover?: ImageSlot;
-  avatar?: ImageSlot;
-  banner?: ImageSlot;
-  pinterest?: ImageSlot;
-}
+// ImagesJson imported from @shared/types/images
+// (union of ArticleImagesJson | AuthorImagesJson | CategoryImagesJson)
 
 export interface ExtractedImage {
   imageUrl?: string;
@@ -56,32 +49,24 @@ export interface ExtractedImage {
   imageStyle?: string;
 }
 
+type HydratableImageSlot = 'hero' | 'thumbnail' | 'avatar';
+
+function resolveImageSlot(images: ImagesJson, slot: HydratableImageSlot): ImageSlot | null {
+  return (images as Partial<Record<HydratableImageSlot, ImageSlot>>)[slot] ?? null;
+}
+
 export function getImageSlot(
   imagesJson: string | null | undefined,
-  slot: 'thumbnail' | 'cover' | 'avatar' | 'banner' | 'pinterest' = 'thumbnail'
+  slot: HydratableImageSlot = 'thumbnail'
 ): ImageSlot | null {
   const images = safeParseJson<ImagesJson>(imagesJson);
   if (!images) return null;
-  return images[slot] || null;
+  return resolveImageSlot(images, slot);
 }
 
 
 
-const buildSrcSet = (variants?: ImageSlot['variants']): string => {
-  if (!variants) return '';
-  const entries: string[] = [];
-  const ordered = ['xs', 'sm', 'md', 'lg', 'original'] as const;
-
-  for (const key of ordered) {
-    const variant = variants[key];
-    const resolvedUrl = resolveVariantUrl(variant);
-    if (resolvedUrl && variant?.width) {
-      entries.push(`${resolvedUrl} ${variant.width}w`);
-    }
-  }
-
-  return entries.join(', ');
-};
+// buildSrcSet removed — use getSrcSet(slot) from @shared/types/images (C1)
 
 const toCssAspectRatio = (value?: string): string | undefined => {
   if (!value) return undefined;
@@ -98,7 +83,7 @@ const buildImageStyle = (imageSlot?: ImageSlot): string | undefined => {
     styles.push(`object-position: ${imageSlot.focal_point.x}% ${imageSlot.focal_point.y}%`);
   }
 
-  const aspectRatio = toCssAspectRatio(imageSlot.aspectRatio);
+  const aspectRatio = toCssAspectRatio(imageSlot.aspect_ratio);
   if (aspectRatio) {
     styles.push(`aspect-ratio: ${aspectRatio}`);
   }
@@ -108,46 +93,15 @@ const buildImageStyle = (imageSlot?: ImageSlot): string | undefined => {
 
 export function getImageSrcSet(
   imagesJson: string | null | undefined,
-  slot: 'thumbnail' | 'cover' | 'avatar' | 'banner' | 'pinterest' = 'thumbnail'
+  slot: HydratableImageSlot = 'thumbnail'
 ): string {
   const imageSlot = getImageSlot(imagesJson, slot);
-  if (!imageSlot?.variants) return '';
-  return buildSrcSet(imageSlot.variants);
+  if (!imageSlot) return '';
+  return getSrcSet(imageSlot);
 }
 
-const FALLBACK_VARIANT_ORDER = ['lg', 'md', 'sm', 'original', 'xs'] as const;
-const FALLBACK_VARIANT_ORDER_FOR_TARGET = ['xs', 'sm', 'md', 'lg', 'original'] as const;
-
-const pickVariantByWidth = (
-  variants: ImageSlot['variants'],
-  targetWidth?: number
-): ImageVariant | null => {
-  if (!variants) return null;
-
-  const entries = Object.entries(variants)
-    .filter(([, variant]) => variant && (resolveVariantUrl(variant) !== null))
-    .map(([key, variant]) => ({ key, ...(variant as ImageVariant) }));
-
-  if (!entries.length) return null;
-
-  const withWidth = entries
-    .filter((variant) => typeof variant.width === 'number' && (variant.width || 0) > 0)
-    .sort((a, b) => (a.width || 0) - (b.width || 0));
-
-  if (targetWidth && withWidth.length > 0) {
-    const match = withWidth.find((variant) => (variant.width || 0) >= targetWidth);
-    return (match || withWidth[withWidth.length - 1]) || null;
-  }
-
-  const fallbackOrder = targetWidth ? FALLBACK_VARIANT_ORDER_FOR_TARGET : FALLBACK_VARIANT_ORDER;
-
-  for (const key of fallbackOrder) {
-    const candidate = variants[key];
-    if (resolveVariantUrl(candidate) !== null) return candidate!;
-  }
-
-  return entries[0] || null;
-};
+// pickVariantByWidth removed — use pickVariantByWidth(variants, targetWidth, 1) from @shared/types/images (C2)
+// retinaMultiplier=1 preserves the previous hydration behavior (no 2× retina scaling)
 
 /**
  * Extract image URL and metadata from imagesJson field
@@ -156,18 +110,18 @@ const pickVariantByWidth = (
  */
 export function extractImage(
   imagesJson: string | null | undefined,
-  slot: 'thumbnail' | 'cover' | 'avatar' | 'banner' | 'pinterest' = 'thumbnail',
+  slot: HydratableImageSlot = 'thumbnail',
   targetWidth?: number
 ): ExtractedImage {
   const images = safeParseJson<ImagesJson>(imagesJson);
   if (!images) return {};
 
-  const imageSlot = images[slot];
+  const imageSlot = resolveImageSlot(images, slot);
   if (!imageSlot) return {};
 
-  const variant = pickVariantByWidth(imageSlot.variants, targetWidth);
+  const variant = pickVariantByWidth(imageSlot.variants, targetWidth, 1);
   const imageStyle = buildImageStyle(imageSlot);
-  const imageAspectRatio = toCssAspectRatio(imageSlot.aspectRatio);
+  const imageAspectRatio = toCssAspectRatio(imageSlot.aspect_ratio);
   const imageObjectPosition = imageSlot.focal_point
     ? `${imageSlot.focal_point.x}% ${imageSlot.focal_point.y}%`
     : undefined;

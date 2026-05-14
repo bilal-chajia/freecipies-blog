@@ -76,7 +76,7 @@ function RoundupListSettings({
 
     const buildItem = (item) => {
         const headline = item.headline || item.label || item.slug || '';
-        const image = getImageSlot(item.imagesJson, 'thumbnail') || getImageSlot(item.imagesJson, 'cover');
+  const image = getImageSlot(item.imagesJson, 'thumbnail') || getImageSlot(item.imagesJson, 'hero');
         
         // Snapshot stats
         const stats = {

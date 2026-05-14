@@ -11,6 +11,9 @@
     "astro": "astro",
     "migrate": "node scripts/migrate-csv-to-d1.js",
     "test": "vitest run",
+    "image:audit:local": "node scripts/local-image-contract.mjs audit",
+    "image:migrate:local:dry-run": "node scripts/local-image-contract.mjs migrate --dry-run",
+    "image:migrate:local:apply": "node scripts/local-image-contract.mjs migrate --apply",
     "check:boundaries": "node scripts/check-boundaries.mjs"
   },
   "dependencies": {
@@ -107,6 +110,7 @@
     "sql.js": "^1.14.1",
     "sqlite3": "^6.0.1",
     "typescript": "^6.0.2",
+    "vite": "^7",
     "vitest": "^4.1.5",
     "wrangler": "^4.81.1"
   },
@@ -116,6 +120,9 @@
       "msw",
       "sharp",
       "workerd"
-    ]
+    ],
+    "overrides": {
+      "vite": "^7"
+    }
   }
 }

@@ -44,12 +44,12 @@ const wordCount = [
 
 const readingTime = Math.max(3, Math.ceil(wordCount / 200));
 
-const heroCover = extractImage(article.imagesJson, "cover", 1200);
+const heroSlot = extractImage(article.imagesJson, "hero", 1200);
 const heroThumb = extractImage(article.imagesJson, "thumbnail", 1200);
-const coverSrcSet = getImageSrcSet(article.imagesJson, "cover");
+const heroSlotSrcSet = getImageSrcSet(article.imagesJson, "hero");
 const thumbSrcSet = getImageSrcSet(article.imagesJson, "thumbnail");
-const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
-const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
+const useHeroSlot = heroSlot.imageUrl && (heroSlotSrcSet || !heroThumb.imageUrl);
+const heroSrcSet = useHeroSlot ? heroSlotSrcSet : thumbSrcSet;
 const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
 const authorAvatar = author?.imagesJson
@@ -68,7 +68,7 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
 <Layout
   title={article.metaTitle || article.label}
   description={article.metaDescription || article.shortDescription}
-  image={heroCover.imageUrl ||
+  image={heroSlot.imageUrl ||
     heroThumb.imageUrl ||
     article.imageUrl ||
     undefined}
@@ -81,13 +81,13 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
     class="article-page"
     style={`--toc-accent: ${tocSettings.accent_color};`}
   >
-    <div class="article-container">
-      <div class="main-content">
+    <div class="article-container l-page-container">
+      <div class="main-content l-main-content">
         {
           article.categoryLabel && (
             <a
               href={`/categories/${article.categorySlug}`}
-              class="category-badge"
+              class="badge category-badge"
               style={`--badge-color: ${categoryColor};`}
             >
               {article.categoryLabel}
@@ -126,13 +126,13 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
         <TableOfContents toc={article.cachedTocJson} settings={tocSettings} />
 
         <HeroImage
-          src={heroCover.imageUrl || heroThumb.imageUrl || article.imageUrl}
-          alt={heroCover.imageAlt || heroThumb.imageAlt || article.label}
-          width={heroCover.imageWidth || heroThumb.imageWidth}
-          height={heroCover.imageHeight || heroThumb.imageHeight}
+          src={heroSlot.imageUrl || heroThumb.imageUrl || article.imageUrl}
+          alt={heroSlot.imageAlt || heroThumb.imageAlt || article.label}
+          width={heroSlot.imageWidth || heroThumb.imageWidth}
+          height={heroSlot.imageHeight || heroThumb.imageHeight}
           srcset={heroSrcSet}
           sizes={heroSizes}
-          style={heroCover.imageStyle || heroThumb.imageStyle}
+          style={heroSlot.imageStyle || heroThumb.imageStyle}
         />
 
         {
@@ -158,8 +158,8 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
         <FAQSection faqs={article.faqsJson} />
       </div>
 
-      <aside class="sidebar">
-        <div class="sidebar-sticky">
+      <aside class="sidebar l-sidebar">
+        <div class="sidebar-sticky l-sidebar-sticky">
           <PopularRecipes
             currentSlug={article.slug}
             limit={5}
@@ -184,43 +184,11 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
 
 <style>
   /* Base styles inherited from ArticleLayout pattern */
-  .article-page {
-    background: #fff;
-    min-height: 100vh;
-    padding-bottom: 4rem;
-  }
-
-  .article-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: clamp(0px, 2vw, 2rem) clamp(1rem, 3vw, 2rem);
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: clamp(1.5rem, 3vw, 2rem);
-  }
-
-  @media (min-width: 1024px) {
-    .article-container {
-      grid-template-columns: 1fr 360px;
-    }
-  }
-
-  .main-content {
-    background: #fff;
-    padding: clamp(1rem, 2vw, 1rem) 0;
-    min-width: 0;
-  }
+  /* Layout classes now handled by global .l-page-container, .l-main-content, etc. */
 
   .category-badge {
-    display: inline-block;
-    background: var(--badge-color, #ff6600);
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0.375rem 0.875rem;
-    border-radius: 4px;
+    background: var(--badge-color, var(--brand-secondary));
+    color: var(--text-inverse);
     text-decoration: none;
     margin-bottom: 1rem;
     transition: filter 0.2s;
@@ -229,65 +197,31 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
   .article-title {
     font-size: clamp(1.375rem, 3vw + 0.5rem, 2.5rem);
     font-weight: 800;
-    color: #111;
+    color: var(--text);
     line-height: 1.2;
     margin: 0 0 clamp(0.75rem, 2vw, 1rem);
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-heading);
   }
 
   .article-description {
-    font-family: "Source Sans 3", sans-serif;
+    font-family: var(--font-body);
     font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
-    color: #444;
+    color: var(--text-secondary);
     line-height: 1.6;
     margin: 0 0 clamp(1rem, 2vw, 1.5rem);
   }
 
-  .disclosure-notice {
-    background: #f8f8f8;
-    border-left: 3px solid #ddd;
-    padding: 1rem;
-    font-size: 0.8125rem;
-    color: #666;
-    border-radius: 0 8px 8px 0;
-    margin: 1.5rem 0;
-  }
+  /* Disclosure notice now handled by global .disclosure-notice utility */
 
   .introduction-section {
-    background: #fff8e6;
+    background: var(--bg-alt);
     margin: 2rem calc(-1 * clamp(1rem, 3vw, 2rem));
     padding: 1.5rem clamp(1rem, 3vw, 2rem);
-    border-left: 4px solid #f59e0b;
+    border-left: 4px solid var(--brand-secondary);
   }
 
   .prose {
-    color: #333;
+    color: var(--text-secondary);
     line-height: 1.75;
-  }
-
-  .sidebar-sticky {
-    position: sticky;
-    top: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  :global(.dark) .article-page {
-    background: #0f172a;
-    color: #f8fafc;
-  }
-  :global(.dark) .main-content {
-    background: transparent;
-  }
-  :global(.dark) .article-title {
-    color: #f3f4f6;
-  }
-  :global(.dark) .article-description {
-    color: #9ca3af;
-  }
-  :global(.dark) .disclosure-notice {
-    background: #1e293b;
-    border-color: #334155;
   }
 </style>

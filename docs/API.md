@@ -1,6 +1,6 @@
 # API Documentation
 
-> **Last Updated:** 2026-04-06
+> **Last Updated:** 2026-05-13
 > **Base URL:** `/api`
 > **Auth:** Bearer Token (Admin endpoints)
 > **Version:** Astro 6 + React 19
@@ -14,14 +14,13 @@
 ### Request/Response Format
 
 - All requests/responses use **JSON**
-- Use **camelCase** for JSON keys
+- Use `docs/NAMING_CONTRACT.md` for serialized JSON and implementation names.
 - Dates are **ISO-8601** format (UTC)
 - Empty arrays: `[]`, empty objects: `{}`
-- API property names may be camelCase, but stored JSON contracts keep their documented internal field names.
 - For stored article JSON contracts, use:
-  - `docs/CONTENT_JSON_CONTRACT.md` for `contentJson`
-  - `docs/RECIPE_JSON_CONTRACT.md` for `recipeJson`
-  - `docs/ARTICLE_JSON_CONTRACTS.md` for `imagesJson`, `roundupJson`, `seoJson`, `configJson`
+  - `docs/CONTENT_JSON_CONTRACT.md` for `content_json`
+  - `docs/RECIPE_JSON_CONTRACT.md` for `recipe_json`
+  - `docs/ARTICLE_JSON_CONTRACTS.md` for `images_json`, `roundup_json`, `seo_json`, `config_json`
   - `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md` for cached fields
 
 ### Authentication
@@ -214,37 +213,38 @@ Get article by slug with full details.
       "instructions": [...],
       "equipment": [
         {
+          "id": "eq-chefs-knife",
           "equipment_id": 1,
           "label": "Chef's knife",
           "required": true,
-          "notes": null
+          "notes": null,
+          "source_type": "catalog",
+          "snapshot": {
+            "slug": "chefs-knife-8",
+            "name": "Chef's Knife 8\"",
+            "affiliate_url": "https://amazon.com/...",
+            "image": {
+              "media_id": 22,
+              "alt": "Chef's knife",
+              "variants": {
+                "xs": { "url": "https://...", "width": 360, "height": 360 },
+                "sm": { "url": "https://...", "width": 720, "height": 720 }
+              }
+            },
+            "price_display": "$89.99"
+          }
         },
         {
+          "id": "eq-large-bowl",
+          "equipment_id": null,
           "label": "Large mixing bowl",
           "required": true,
-          "notes": null
+          "notes": null,
+          "source_type": "manual",
+          "snapshot": null
         }
       ]
     },
-    "cachedEquipment": [
-      {
-        "id": 1,
-        "name": "Chef's Knife 8\"",
-        "slug": "chefs-knife-8",
-        "affiliateUrl": "https://amazon.com/...",
-        "imageUrl": "https://...",
-        "priceDisplay": "$89.99",
-        "required": true,
-        "notes": null
-      }
-    ],
-    "plainEquipment": [
-      {
-        "label": "Large mixing bowl",
-        "required": true,
-        "notes": null
-      }
-    ],
     "category": {
       "id": 5,
       "slug": "desserts",
@@ -277,9 +277,9 @@ Get article by slug with full details.
 Notes:
 
 - `recipe` mirrors the stored `recipe_json` contract.
-- `cachedEquipment` contains only rich equipment cards resolved from active `equipment` rows.
-- Equipment present in `recipe.equipment` but absent from `cachedEquipment` may be returned/rendered as plain checklist items.
-- API response property names may use camelCase, but nested stored JSON contracts keep their documented field names.
+- Recipe equipment renders from `recipe.equipment[]`; catalog items contain a
+  resolved `snapshot`, and manual items use `snapshot: null`.
+- API response naming follows `docs/NAMING_CONTRACT.md`.
 
 ---
 
@@ -294,11 +294,11 @@ Create new article. **Requires Auth.**
   "slug": "new-recipe",
   "type": "recipe",
   "headline": "New Recipe Title",
-  "shortDescription": "A delicious new recipe...",
-  "categoryId": 5,
-  "authorId": 1,
-  "imagesJson": { "hero": {...} },
-  "contentJson": {
+  "short_description": "A delicious new recipe...",
+  "category_id": 5,
+  "author_id": 1,
+  "images_json": { "hero": {...} },
+  "content_json": {
     "version": 1,
     "kind": "content_document",
     "blocks": [
@@ -306,7 +306,7 @@ Create new article. **Requires Auth.**
       { "id": "main-recipe", "type": "main_recipe" }
     ]
   },
-  "recipeJson": {
+  "recipe_json": {
     "prep": 15,
     "cook": 25,
     "total": 40,
@@ -663,7 +663,7 @@ Upload new media. **Requires Auth.**
 }
 ```
 
-> **Note:** Upload/client pipeline payloads may use `sizeBytes` at the request boundary. Stored JSON contracts use `size_bytes`.
+> **Note:** Upload/client pipeline payloads must use `size_bytes` in serialized JSON. TypeScript implementation variables use `sizeBytes` internally.
 
 ---
 

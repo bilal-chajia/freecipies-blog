@@ -3,8 +3,8 @@ import { Upload, Trash2, Search, Loader2, Type } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
 import { ScrollArea } from '@/ui/scroll-area';
-import useEditorStore from '../../../../store/useEditorStore';
-import { useUIStore } from '../../../../store/useUIStore';
+import useEditorStore from '@admin/features/templates/store/useEditorStore';
+import { useUIStore } from '@admin/features/templates/store/useUIStore';
 import ConfirmationModal from '@/ui/confirmation-modal';
 
 /**

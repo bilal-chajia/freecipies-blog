@@ -29,8 +29,8 @@ import {
     DocumentSettings,
     BlockSettings,
 } from '@/components/BlockEditor/components';
-import GutenbergEditorMain, { TitleInput } from '@/components/BlockEditor/components/GutenbergEditorMain';
 import AISettings from '@/components/BlockEditor/components/AISettings';
+import GutenbergEditorMain, { TitleInput } from '@/components/BlockEditor/components/GutenbergEditorMain';
 import { insertBlockFromInserter } from '@/components/BlockEditor/utils/insert-block';
 
 // Existing components

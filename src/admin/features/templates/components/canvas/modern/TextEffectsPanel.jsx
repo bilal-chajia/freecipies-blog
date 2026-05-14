@@ -4,7 +4,7 @@ import { ScrollArea } from '@/ui/scroll-area';
 import { Slider } from '@/ui/slider';
 import { Label } from '@/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
-import { useUIStore } from '../../../../store/useUIStore';
+import { useUIStore } from '@admin/features/templates/store/useUIStore';
 import { ChevronLeft, Settings2 } from 'lucide-react';
 import ColorPicker from '@admin/components/ColorPicker';
 
@@ -236,4 +236,3 @@ const TextEffectsPanel = ({
 };
 
 export default TextEffectsPanel;
-

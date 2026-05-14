@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     Plus, Trash2, X, Check, Search, Edit, Wrench,
-    ExternalLink, DollarSign, Tag as TagIcon, ImageIcon
+    ExternalLink, DollarSign, ImageIcon
 } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';

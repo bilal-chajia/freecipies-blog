@@ -33,8 +33,8 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
-import { useEditorStore } from '../../../store';
-import { useUIStore } from '../../../store/useUIStore';
+import { useEditorStore } from '@admin/features/templates/store';
+import { useUIStore } from '@admin/features/templates/store/useUIStore';
 
 // Default canvas dimensions (fallback)
 const DEFAULT_CANVAS_WIDTH = 1000;
@@ -407,4 +407,3 @@ const FloatingToolbar = ({
 };
 
 export default FloatingToolbar;
-

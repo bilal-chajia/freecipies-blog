@@ -6,7 +6,8 @@ export interface UploadMetadata {
   filename: string;
   altText: string;
   caption: string;
-  credit: string;
+  creditAuthorId: string;
+  credit?: Record<string, unknown>;
 }
 
 export interface CropSettings {

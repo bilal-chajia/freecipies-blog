@@ -411,7 +411,7 @@ export type DietType =
 /**
  * Recipe difficulty level.
  * RecipeMetaPills.astro renders a visual bar indicator (1/2/3 bars).
- * Stored in `articles.difficulty_label` for SQL-level filtering.
+ * Stored in `recipe_json.difficulty` and mirrored to `cached_recipe_json.difficulty`.
  */
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 
@@ -462,7 +462,7 @@ export interface RecipeJson {
     /**
      * Total time in minutes.
      * If null, frontends auto-derive it as `prep + cook`.
-     * Synced to `articles.total_time_minutes` for SQL filtering.
+     * Synced to `cached_recipe_json.total_time_minutes` for list/card rendering.
      * @example 40
      */
     total: number | null;
@@ -515,7 +515,7 @@ export interface RecipeJson {
     /**
      * Recipe difficulty level.
      * Rendered as 1/2/3 bar indicator in RecipeMetaPills.
-     * Synced to `articles.difficulty_label` for SQL filtering.
+     * Synced to `cached_recipe_json.difficulty` for list/card rendering.
      */
     difficulty: DifficultyLevel | null;
 

@@ -71,7 +71,7 @@ const [saving, setSaving] = useState(false);
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
 
-      const uploadResponse = await fetch('/api/upload-image', {
+      const uploadResponse = await fetch('/api/pins/upload-image', {
         method: 'POST',
         body: uploadFormData
       });
@@ -79,22 +79,7 @@ const [saving, setSaving] = useState(false);
       if (!uploadResponse.ok) throw new Error('Upload failed');
       const uploadData = await uploadResponse.json();
 
-      let imageUrl = '';
-      if (uploadData.success) {
-          if (uploadData.data?.variantsJson) {
-              try {
-                  const variants = typeof uploadData.data.variantsJson === 'string' 
-                      ? JSON.parse(uploadData.data.variantsJson) 
-                      : uploadData.data.variantsJson;
-                  imageUrl = variants.original?.url || variants.lg?.url || '';
-              } catch (e) {
-                  // Fallback
-                  imageUrl = uploadData.data?.url || uploadData.url || '';
-              }
-          } else {
-              imageUrl = uploadData.data?.url || uploadData.url || '';
-          }
-      }
+      const imageUrl = uploadData.success ? uploadData.data?.url || uploadData.url || '' : '';
 
       if (imageUrl) {
         const img = new Image();

@@ -45,8 +45,8 @@ export const getStories = async (): Promise<StoryPageData[]> => {
       .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
       .map((story) => {
         const preview = extractImage(story.imagesJson, "thumbnail", 120);
-        const cover = extractImage(story.imagesJson, "cover", 1200);
-        const storyImage = cover.imageUrl || preview.imageUrl || story.imageUrl;
+        const hero = extractImage(story.imagesJson, "hero", 1200);
+        const storyImage = hero.imageUrl || preview.imageUrl || story.imageUrl;
 
         const storyTextSource = story as HydratedArticle & { tldr?: string };
 

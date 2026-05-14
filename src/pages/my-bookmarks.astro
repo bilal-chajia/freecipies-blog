@@ -55,10 +55,10 @@ const description = "Saved recipes from SaaS Blog.";
     const pickImage = (imagesJson) => {
       const images = parseJson(imagesJson);
       if (!images) return null;
-      const slot = images.thumbnail || images.cover;
+      const slot = images.thumbnail || images.hero;
       if (!slot) return null;
       const variants = slot.variants || {};
-      const variant = variants.sm || variants.md || variants.lg || variants.original || variants.xs;
+      const variant = variants.sm || variants.md || variants.lg || variants.xs;
       const resolveUrl = (v) => v?.r2_key ? `/api/images/${v.r2_key}` : v?.url || '';
       return {
         url: resolveUrl(variant) || slot.url || '',

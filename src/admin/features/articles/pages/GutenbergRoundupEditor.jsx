@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
 import { Badge } from '@/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
-import { Label } from '@/ui/label';
 
 // Hooks
 import { useContentEditor, useEditorViewportLock, useGutenbergCanvasHandlers } from './shared';

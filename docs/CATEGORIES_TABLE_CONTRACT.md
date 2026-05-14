@@ -1,6 +1,6 @@
 # Categories Table Contract
 
-> **Last Updated:** 2026-04-29
+> **Last Updated:** 2026-05-14
 
 This document is the product/data contract for the `categories` table. The executable SQL source remains `db/schema.sql`.
 
@@ -14,6 +14,7 @@ Related contracts:
 - `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md` for article-side category snapshots
 - `docs/IMAGE_JSON_CONTRACT.md` for `images_json`
 - `docs/MEDIA_TABLE_CONTRACT.md` for source media records
+- `docs/NAMING_CONTRACT.md` for stored JSON naming rules
 
 ## Source Of Truth
 
@@ -27,25 +28,43 @@ The `categories` row is the source of truth for category identity, hierarchy, di
 | --- | --- | --- | --- |
 | `id` | yes | DB | Internal numeric identity. |
 | `slug` | yes | Admin/API | Unique route identifier. Lowercase kebab-case. Treat as stable after publish. |
-| `label` | yes | Admin/API | Public display label for navigation, cards, breadcrumbs, and snapshots. |
+| `label` | yes | Admin/API | Short public category name for navigation, cards, breadcrumbs, filters, and snapshots. |
 | `parent_id` | no | Admin/API | Optional self-reference to `categories.id`; deleted parents set children to root. |
 | `depth` | no | App | Denormalized hierarchy depth. `0` means root. |
+| `sort_order` | no | Admin/navigation | Navigation ordering. Lower appears first. |
 | `headline` | no | Admin/editorial | Category landing page H1. Falls back to `label`. |
-| `collection_title` | no | Admin/editorial | Heading above the article grid/list. Falls back to `headline` or `label`. |
+| `collection_title` | no | Admin/editorial | Heading above the article grid/list. Falls back to generated collection copy from `label`. |
 | `short_description` | yes | Admin/editorial | Short public intro and SEO fallback. |
 | `images_json` | no | Admin/media | Category image slots. See `docs/IMAGE_JSON_CONTRACT.md`. |
 | `color` | no | Admin/design | Category accent color. Stored as hex, default `#ff6600ff`. |
-| `icon_svg` | no | Admin/design | Small sanitized SVG for menus/badges. No scripts or event handlers. |
-| `is_featured` | no | Admin/editorial | Homepage/sidebar feature flag. |
 | `seo_json` | no | Admin/SEO | Category SEO overrides. Empty object means derive from base fields. |
-| `config_json` | no | Admin/layout | Category page behavior and display configuration. |
-| `i18n_json` | no | Admin/i18n | Locale-specific overrides. Optional until multilingual is active. |
-| `sort_order` | no | Admin/navigation | Navigation ordering. Lower appears first. |
+| `is_featured` | no | Admin/editorial | Homepage/sidebar feature flag. |
 | `is_online` | no | Admin/workflow | Public category visibility. |
 | `cached_post_count` | no | App/DB | Denormalized count of online, non-deleted articles in this category. |
 | `created_at` | no | DB | UTC creation timestamp. |
 | `updated_at` | no | DB | Updated by SQL trigger. |
 | `deleted_at` | no | App | Soft delete marker. Active queries must filter `deleted_at IS NULL`. |
+
+## Display Text Rules
+
+`label`, `headline`, and `collection_title` have distinct rendering roles:
+
+- `label` is the short category identity.
+- `headline` is the page H1 for the category landing page.
+- `collection_title` is the heading above the article collection/grid.
+
+Rules:
+
+- Use `label` for navigation, breadcrumbs, category badges, chips, filters, and
+  `cached_category_json`.
+- Use `headline` as the H1 on `/categories/{slug}`.
+- If `headline` is null, the category page H1 uses `label`.
+- Use `collection_title` only above the article list/grid section.
+- If `collection_title` is null, the renderer derives collection copy from
+  `label`, such as `Latest Breakfast Recipes`.
+- Do not use `collection_title` in badges, breadcrumbs, article cards, or
+  `cached_category_json`.
+- Do not use `headline` as the short category label in compact UI.
 
 ## JSON Fields
 
@@ -53,24 +72,31 @@ The `categories` row is the source of truth for category identity, hierarchy, di
 
 Purpose: category-specific image slots copied from the `media` table.
 
-Expected slots:
+Shape:
 
 ```json
 {
-  "thumbnail": {
-    "media_id": 105,
-    "alt": "Healthy breakfast bowl",
-    "variants": {
-      "xs": { "r2_key": "media/breakfast-xs.webp", "width": 360, "height": 240 },
-      "sm": { "r2_key": "media/breakfast-sm.webp", "width": 720, "height": 480 }
-    }
-  },
   "hero": {
     "media_id": 202,
     "alt": "Breakfast table",
+    "placeholder": "data:image/jpeg;base64,...",
+    "focal_point": { "x": 50, "y": 50 },
+    "aspect_ratio": "16:9",
     "variants": {
+      "sm": { "r2_key": "media/breakfast-hero-sm.webp", "width": 720, "height": 405 },
       "md": { "r2_key": "media/breakfast-hero-md.webp", "width": 1200, "height": 675 },
       "lg": { "r2_key": "media/breakfast-hero-lg.webp", "width": 2048, "height": 1152 }
+    }
+  },
+  "thumbnail": {
+    "media_id": 105,
+    "alt": "Healthy breakfast bowl",
+    "placeholder": "data:image/jpeg;base64,...",
+    "focal_point": { "x": 50, "y": 50 },
+    "aspect_ratio": "1:1",
+    "variants": {
+      "xs": { "r2_key": "media/breakfast-xs.webp", "width": 360, "height": 360 },
+      "sm": { "r2_key": "media/breakfast-sm.webp", "width": 720, "height": 720 }
     }
   }
 }
@@ -79,10 +105,15 @@ Expected slots:
 Rules:
 
 - `media.variants_json` keeps the complete source set.
-- Category snapshots keep only variants useful for the render context.
+- `hero` and `thumbnail` are the only v1 category image slots.
+- `hero` stores `sm`, `md`, and `lg`.
 - `thumbnail` stores `xs` and `sm`.
-- `hero` stores `md` and `lg`.
-- Stored internal snapshots may contain `r2_key`; public API/frontend props must convert to URLs.
+- `placeholder` is required when a slot exists.
+- Category `hero` and `thumbnail` snapshots must not store `caption` or
+  `credit`.
+- Category snapshots must not store `original`.
+- Stored internal snapshots contain `r2_key`; public API/frontend props must convert to URLs.
+- `focal_point` and `aspect_ratio` follow `docs/IMAGE_JSON_CONTRACT.md`.
 - Every rendered `<img>` must have `width`, `height`, and lazy loading unless it is the LCP hero image.
 
 ### `seo_json`
@@ -95,7 +126,7 @@ Purpose: optional SEO overrides for the category page.
   "meta_description": "Discover quick and healthy breakfast recipes.",
   "no_index": false,
   "canonical": null,
-  "og_image": null,
+  "og_image": "https://example.com/images/breakfast-og.webp",
   "og_title": null,
   "og_description": null,
   "twitter_card": "summary_large_image"
@@ -104,55 +135,34 @@ Purpose: optional SEO overrides for the category page.
 
 Rules:
 
-- Prefer `snake_case` in new JSON fields.
-- Missing values derive from `headline`, `label`, and `short_description`.
-- `no_index: true` hides the category page from search.
-
-### `config_json`
-
-Purpose: category page layout and behavior.
-
-```json
-{
-  "posts_per_page": 12,
-  "layout_mode": "grid",
-  "card_style": "full",
-  "show_sidebar": true,
-  "show_filters": true,
-  "show_breadcrumb": true,
-  "sort_by": "published_at",
-  "sort_order": "desc",
-  "header_style": "hero",
-  "show_in_nav": true,
-  "show_in_footer": false,
-  "featured_article_id": null
-}
-```
-
-Rules:
-
-- This is configuration, not article content.
-- Do not store large block content here.
-- App defaults should fill missing keys.
-
-### `i18n_json`
-
-Purpose: locale-specific category copy overrides.
-
-```json
-{
-  "fr": {
-    "label": "Petit-dejeuner",
-    "headline": "Recettes du matin",
-    "short_description": "Des recettes rapides pour commencer la journee."
-  }
-}
-```
-
-Rules:
-
-- Base columns remain the fallback.
-- Locale keys must be valid site locales.
+- `meta_title` is a string or `null`. When `null`, render fallback uses
+  `headline`, then `label`.
+- `meta_description` is a string or `null`. When `null`, render fallback uses
+  `short_description`.
+- `no_index` is a boolean. `true` emits a noindex robots directive for the
+  category page.
+- `canonical` is a string or `null`. `null` means the canonical URL is derived
+  from `/categories/{slug}`.
+- `og_image` must be a non-empty public image URL before publish.
+- `og_image` is derived from the largest suitable category image available in
+  this order:
+  - `images_json.hero.variants.lg`
+  - `images_json.hero.variants.md`
+  - `images_json.thumbnail.variants.sm`
+  - site default OG image
+- When category image snapshots change, regenerate `seo_json.og_image`.
+- Open Graph image fallback must not use `xs` and must not use `original`.
+- Open Graph image output exposes the stored public `og_image` URL, never
+  stored `r2_key`.
+- `og_title` is a string or `null`. When `null`, fallback uses the resolved
+  `meta_title`.
+- `og_description` is a string or `null`. When `null`, fallback uses the
+  resolved `meta_description`.
+- `twitter_card` must be `summary` or `summary_large_image`; default is
+  `summary_large_image`.
+- `seo_json` must not contain Schema.org or JSON-LD payloads.
+- `seo_json` must not contain article-list data, category settings, social
+  handles, or image snapshots.
 
 ## Relationships
 
@@ -171,7 +181,7 @@ Admin:
 Public Astro:
 
 - Category pages route by `slug`.
-- Article cards may use `articles.cached_category_json` instead of joining `categories`.
+- Article cards use `articles.cached_category_json` instead of joining `categories`.
 - Navigation reads online, non-deleted categories ordered by `sort_order`.
 
 ## Validation Rules
@@ -181,9 +191,28 @@ Public Astro:
 - `short_description`: required.
 - `parent_id`: must not create cycles.
 - `depth`: app-maintained and must match the hierarchy.
-- `images_json`, `seo_json`, `config_json`, `i18n_json`: valid JSON.
-- `icon_svg`: sanitized, small, no scripts, no event handlers.
+- `images_json` and `seo_json`: valid JSON.
 - Public queries: `deleted_at IS NULL`; public navigation also requires `is_online = 1`.
+
+## Category Page Settings
+
+Category page behavior is global for all category pages and belongs in
+`site_settings.category_page_settings`, not in individual category rows.
+
+Global settings include:
+
+- `posts_per_page`
+- `layout_mode`
+- `card_style`
+- `show_sidebar`
+- `show_filters`
+- `show_breadcrumb`
+- `article_sort_by`
+- `article_sort_order`
+- `header_style`
+
+`categories.sort_order` remains a per-category navigation/list ordering column.
+It is not the same as `article_sort_order`.
 
 ## Cache Rules
 

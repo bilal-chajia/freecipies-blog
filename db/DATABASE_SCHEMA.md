@@ -228,8 +228,6 @@ The database includes optimized indexes for common query patterns:
 | `articles` | `idx_articles_author` | Author archive filtering |
 | `articles` | `idx_articles_parent` | Pillar/cluster queries |
 | `articles` | `idx_articles_workflow` | Admin workflow filtering |
-| `articles` | `idx_articles_total_time` | Recipe time filtering |
-| `articles` | `idx_articles_difficulty` | Recipe difficulty filtering |
 | `articles` | `idx_articles_active` | Soft delete filtering |
 | `articles_to_tags` | `idx_tag_to_article` | Tag-based article queries |
 | `pinterest_boards` | `idx_pinterest_boards_active` | Active board filtering |
@@ -549,8 +547,7 @@ This file must not duplicate media JSON examples because image slot rules differ
 
 | Column               | Type    | Description                   |
 | -------------------- | ------- | ----------------------------- |
-| `total_time_minutes` | INTEGER | Recipe total time (indexable) |
-| `difficulty_label`   | TEXT    | Difficulty level (indexable)  |
+| `reading_time_minutes` | INTEGER | Generic article reading time helper |
 
 #### SEO & Config
 
@@ -703,9 +700,10 @@ Detailed JSON payload rules live in dedicated contract documents. This database 
 
 Use these documents as the source of truth for JSON shapes:
 
-- `articles.images_json`, `articles.seo_json`, `articles.config_json`, and `articles.roundup_json`: `docs/ARTICLE_JSON_CONTRACTS.md`
+- `articles.images_json`, `articles.seo_json`, and `articles.config_json`: `docs/ARTICLE_JSON_CONTRACTS.md`
 - `articles.content_json`: `docs/CONTENT_JSON_CONTRACT.md`
 - `articles.recipe_json`: `docs/RECIPE_JSON_CONTRACT.md`
+- `articles.roundup_json`: `docs/ROUNDUP_JSON_CONTRACT.md`
 - `articles.cached_*`, `articles.faqs_json`, and `articles.jsonld_json`: `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md`
 - media source records and variants: `docs/MEDIA_TABLE_CONTRACT.md`
 - reusable image slots and variant selection rules: `docs/IMAGE_JSON_CONTRACT.md`

@@ -168,11 +168,11 @@ function generateRecipeJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutpu
 
     // Build image array from variants
     const images: string[] = [];
-    const coverVariants = imagesData?.cover?.variants;
-    if (coverVariants) {
-        if (coverVariants.lg?.url) images.push(coverVariants.lg.url);
-        if (coverVariants.md?.url) images.push(coverVariants.md.url);
-        if (coverVariants.sm?.url) images.push(coverVariants.sm.url);
+    const heroVariants = imagesData?.hero?.variants;
+    if (heroVariants) {
+        if (heroVariants.lg?.url) images.push(heroVariants.lg.url);
+        if (heroVariants.md?.url) images.push(heroVariants.md.url);
+        if (heroVariants.sm?.url) images.push(heroVariants.sm.url);
     }
 
     // Use shared utilities for consistent formatting
@@ -273,8 +273,9 @@ function generateRoundupJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
     const author = safeParseJson<Record<string, unknown>>(article.cachedAuthorJson as string);
 
     // Main image
-    const mainImage = resolveVariantUrl(imagesData?.cover?.variants?.lg) ||
-        resolveVariantUrl(imagesData?.cover?.variants?.md);
+    const hero = imagesData?.hero;
+    const mainImage = resolveVariantUrl(hero?.variants?.lg) ||
+        resolveVariantUrl(hero?.variants?.md);
 
     // Use shared toSchemaOrgItemList
     const itemList = toSchemaOrgItemList(roundupData, siteUrl);

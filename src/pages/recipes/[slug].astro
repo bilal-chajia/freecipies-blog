@@ -48,12 +48,12 @@ const jsonldSchemas = typeof recipe.jsonldJson === 'string'
   ? JSON.parse(recipe.jsonldJson || '[]')
   : (recipe.jsonldJson || []);
 
-const heroCover = extractImage(recipe.imagesJson, "cover", 1200);
+const heroSlot = extractImage(recipe.imagesJson, "hero", 1200);
 const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);
-const coverSrcSet = getImageSrcSet(recipe.imagesJson, "cover");
+const heroSlotSrcSet = getImageSrcSet(recipe.imagesJson, "hero");
 const thumbSrcSet = getImageSrcSet(recipe.imagesJson, "thumbnail");
-const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
-const heroImage = useCover ? heroCover : heroThumb;
+const useHeroSlot = heroSlot.imageUrl && (heroSlotSrcSet || !heroThumb.imageUrl);
+const heroImage = useHeroSlot ? heroSlot : heroThumb;
 
 const pageTitle = recipe.metaTitle || recipe.headline;
 const pageDescription = recipe.metaDescription || recipe.shortDescription;

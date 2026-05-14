@@ -1,0 +1,119 @@
+---
+/**
+ * TocItem - A single item in the Table of Contents, supporting nesting.
+ */
+import type { TocItem as TocItemType } from "@shared/utils/toc-processing";
+
+interface Props {
+    item: TocItemType;
+    isGroup?: boolean;
+}
+
+const { item, isGroup = false } = Astro.props;
+---
+
+<li class:list={[isGroup ? "toc-group" : "toc-item", `toc-lvl-${item.level}`]}>
+    <a
+        href={`#${item.id}`}
+        class="toc-link"
+        data-toc-target={item.id}
+    >
+        {item.num && (
+            <span class="toc-num">{item.num}</span>
+        )}
+        <span>{item.text}</span>
+    </a>
+
+    {item.children && item.children.length > 0 && (
+        <ul class="toc-sublist">
+            {item.children.map((child) => (
+                <Astro.self item={child} />
+            ))}
+        </ul>
+    )}
+</li>
+
+<style>
+    .toc-group {
+        margin: 0;
+        break-inside: avoid;
+        padding: 0;
+    }
+
+    .toc-item {
+        margin: 0;
+        padding: 0;
+        position: relative;
+    }
+
+    .toc-sublist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .toc-link {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3) 0;
+        text-decoration: none;
+        font-size: var(--text-sm);
+        font-weight: var(--font-semibold);
+        line-height: var(--leading-snug);
+        color: var(--text);
+        transition: color var(--transition-fast);
+    }
+
+    .toc-link::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: var(--space-px);
+        background: var(--border-subtle);
+    }
+
+    .toc-link:hover,
+    .toc-link:global(.toc-active) {
+        color: var(--toc-accent, var(--warning));
+    }
+
+    .toc-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--text);
+        color: var(--bg);
+        font-weight: var(--font-bold);
+        min-width: var(--space-8);
+        height: var(--space-6);
+        font-size: var(--text-xs);
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+    }
+
+    .toc-lvl-3 {
+        margin-left: var(--space-6);
+    }
+    .toc-lvl-4 {
+        margin-left: var(--space-12);
+    }
+
+    @media (max-width: 768px) {
+        .toc-link {
+            padding: var(--space-2);
+        }
+        .toc-lvl-3 {
+            margin-left: var(--space-4);
+        }
+        .toc-lvl-4 {
+            margin-left: var(--space-8);
+        }
+        .toc-link::after {
+            background: var(--bg-hover);
+        }
+    }
+</style>

@@ -49,8 +49,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
 import { Slider } from '@/ui/slider';
 import { Label } from '@/ui/label';
-import useEditorStore from '../../../../store/useEditorStore';
-import { useUIStore } from '../../../../store/useUIStore';
+import useEditorStore from '@admin/features/templates/store/useEditorStore';
+import { useUIStore } from '@admin/features/templates/store/useUIStore';
 import ColorPicker from '@admin/components/ColorPicker';
 import { mediaAPI } from '@admin/services/api';
 

@@ -18,11 +18,11 @@ interface Props {
     article: Article;
     recipe: RecipeJson;
     author?: Author | null;
-    coverImageUrl?: string;
-    coverImageAlt?: string;
+    heroImageUrl?: string;
+    heroImageAlt?: string;
 }
 
-const { article, recipe, author, coverImageUrl, coverImageAlt } = Astro.props;
+const { article, recipe, author, heroImageUrl, heroImageAlt } = Astro.props;
 
 const ingredients: IngredientGroup[] = recipe?.ingredients || [];
 const instructions: InstructionSection[] = recipe?.instructions || [];
@@ -154,11 +154,11 @@ let stepCounter = 0;
         <div class="print-page">
             <!-- Header with image -->
             {
-                coverImageUrl && (
+                heroImageUrl && (
                     <div class="print-hero">
                         <img
-                            src={coverImageUrl}
-                            alt={coverImageAlt || article.headline}
+                            src={heroImageUrl}
+                            alt={heroImageAlt || article.headline}
                             class="print-hero-img"
                         />
                     </div>
@@ -864,8 +864,18 @@ let stepCounter = 0;
         // Non-null cast for use inside nested functions (TS can't track early-return guards into closures)
         const safeOverlay = overlay as HTMLElement;
 
+        // Track original position to restore after closing
+        let printOriginalParent: Node | null = null;
+        let printOriginalNext: Node | null = null;
+
         // Open overlay
         function openOverlay() {
+            // Move overlay to body to escape container-type containing block
+            if (safeOverlay.parentNode !== document.body) {
+                printOriginalParent = safeOverlay.parentNode;
+                printOriginalNext = safeOverlay.nextSibling;
+                document.body.appendChild(safeOverlay);
+            }
             safeOverlay.hidden = false;
             document.body.style.overflow = "hidden";
             // Adaptive layout: measure content height after render
@@ -875,6 +885,16 @@ let stepCounter = 0;
         function closeOverlay() {
             safeOverlay.hidden = true;
             document.body.style.overflow = "";
+            // Restore overlay to its original position in the DOM
+            if (printOriginalParent) {
+                if (printOriginalNext) {
+                    printOriginalParent.insertBefore(safeOverlay, printOriginalNext);
+                } else {
+                    printOriginalParent.appendChild(safeOverlay);
+                }
+                printOriginalParent = null;
+                printOriginalNext = null;
+            }
         }
 
         // Adaptive layout based on page count

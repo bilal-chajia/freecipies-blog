@@ -160,8 +160,8 @@
                     progressContainer.innerHTML = pages
                         .map(
                             (_, i) => `
-                            <div class="progress-bar" style="flex:1;height:6px;background:#555;border-radius:3px;overflow:hidden;">
-                                <div class="progress-fill" data-progress="${i}" style="height:100%;width:0%;background:#ff6600;transition:width 5s linear;"></div>
+                            <div class="progress-bar" style="flex:1;height:6px;background:rgba(255,255,255,0.3);border-radius:3px;overflow:hidden;">
+                                <div class="progress-fill" data-progress="${i}" style="height:100%;width:0%;background:var(--brand-secondary);transition:width 5s linear;"></div>
                             </div>
                         `,
                         )
@@ -194,7 +194,7 @@
                             storyData.route || "/recipes/" + storyData.slug;
                         console.log("Adding CTA with href:", href);
                         ctaHtml = `
-                            <a href="${href}" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#ff6600,#ff8800);color:#fff;padding:16px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:17px;box-shadow:0 4px 15px rgba(255,102,0,0.4);margin-top:16px;z-index:99999;position:relative;">
+                            <a href="${href}" style="display:inline-flex;align-items:center;gap:10px;background:var(--brand-gradient);color:var(--text-inverse);padding:16px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:17px;box-shadow:var(--shadow-lg);margin-top:16px;z-index:99999;position:relative;">
                                 Read Full Recipe
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -223,7 +223,7 @@
                     pagesHtml += `
                         <div class="story-page" data-page="${i}" style="position:absolute;inset:0;opacity:0;visibility:hidden;">
                             <div style="position:absolute;inset:0;">
-                                <img src="${imageUrl}" alt="${imageAlt}" style="width:100%;height:100%;object-fit:cover;" />
+                                <img src="${imageUrl}" alt="${imageAlt}" width="720" height="1280" loading="lazy" style="width:100%;height:100%;object-fit:cover;" />
                             </div>
                             <div style="${overlayStyle}">
                                 <h2 style="${titleStyle}">${title}</h2>
@@ -366,7 +366,7 @@
     .progress-bar {
         flex: 1;
         height: 6px;
-        background: rgba(255, 165, 0, 0.5); /* Orange background */
+        background: rgba(255, 255, 255, 0.2);
         border-radius: 3px;
         overflow: hidden;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -374,7 +374,7 @@
 
     .progress-fill {
         height: 100%;
-        background: #ff6600; /* Bright orange fill */
+        background: var(--brand-secondary);
         width: 0%;
         transition: width 5s linear;
     }
@@ -387,7 +387,7 @@
         z-index: 10000;
         background: rgba(0, 0, 0, 0.6);
         border: 2px solid white;
-        color: #fff;
+        color: var(--text-inverse);
         width: 44px;
         height: 44px;
         border-radius: 50%;
@@ -447,7 +447,7 @@
         flex-direction: column;
         justify-content: flex-end;
         padding: 60px 24px 40px;
-        color: #fff;
+        color: var(--text-inverse);
         pointer-events: none;
     }
 
@@ -475,8 +475,8 @@
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        background: linear-gradient(135deg, #ff6600, #ff8800);
-        color: #fff;
+        background: var(--brand-gradient);
+        color: var(--text-inverse);
         padding: 16px 28px;
         border-radius: 50px;
         text-decoration: none;
@@ -486,7 +486,7 @@
             transform 0.2s,
             box-shadow 0.2s;
         align-self: flex-start;
-        box-shadow: 0 4px 15px rgba(255, 102, 0, 0.4);
+        box-shadow: var(--shadow-md);
         border: none;
     }
 
@@ -505,7 +505,7 @@
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.25);
         border: 2px solid rgba(255, 255, 255, 0.5);
-        color: #fff;
+        color: var(--text-inverse);
         display: flex;
         align-items: center;
         justify-content: center;

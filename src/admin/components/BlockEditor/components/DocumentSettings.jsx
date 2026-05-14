@@ -370,11 +370,11 @@ function MediaSectionContent({
     const featuredAlt = formData.imageAlt || featured.imageAlt || 'Featured';
     const featuredStyle = buildImageStyle(featured);
 
-    const cover = extractImage(imagesData, 'cover', 1200);
-    const coverSrcSet = toAdminSrcSet(getImageSrcSet(imagesData, 'cover'));
-    const coverUrl = toAdminImageUrl(cover.imageUrl || formData.coverUrl);
-    const coverAlt = formData.coverAlt || cover.imageAlt || 'Cover';
-    const coverStyle = buildImageStyle(cover);
+    const hero = extractImage(imagesData, 'hero', 1200);
+    const heroSlotSrcSet = toAdminSrcSet(getImageSrcSet(imagesData, 'hero'));
+    const heroUrl = toAdminImageUrl(hero.imageUrl || formData.heroUrl);
+    const heroAlt = formData.heroAlt || hero.imageAlt || 'Hero';
+    const heroStyle = buildImageStyle(hero);
 
     return (
         <div className="space-y-2">
@@ -438,19 +438,19 @@ function MediaSectionContent({
                 </div>
             </div>
 
-            {/* Cover Image */}
+            {/* Hero Image */}
             <div className="structure-item flex-col items-start gap-2">
-                <Label className="text-xs font-medium">Cover Image</Label>
+                <Label className="text-xs font-medium">Hero Image</Label>
                 <div className="w-full space-y-2 max-w-[240px]">
-                    {coverUrl ? (
+                    {heroUrl ? (
                         <div className="relative group">
                             <img
-                                src={coverUrl}
-                                alt={coverAlt}
-                                srcSet={coverSrcSet || undefined}
+                                src={heroUrl}
+                                alt={heroAlt}
+                                srcSet={heroSlotSrcSet || undefined}
                                 sizes="280px"
                                 className="w-full aspect-video object-cover rounded-md border"
-                                style={coverStyle}
+                                style={heroStyle}
                             />
                             <div className={cn(
                                 'absolute inset-0 bg-black/60 rounded-md',
@@ -460,7 +460,7 @@ function MediaSectionContent({
                                 <Button
                                     size="sm"
                                     variant="secondary"
-                                    onClick={() => onMediaDialogOpen('cover')}
+                                    onClick={() => onMediaDialogOpen('hero')}
                                     className="h-7 text-xs"
                                 >
                                     Replace
@@ -468,7 +468,7 @@ function MediaSectionContent({
                                 <Button
                                     size="sm"
                                     variant="secondary"
-                                    onClick={() => onImageRemove?.('cover')}
+                                    onClick={() => onImageRemove?.('hero')}
                                     className="h-7 text-xs"
                                 >
                                     Remove
@@ -478,7 +478,7 @@ function MediaSectionContent({
                     ) : (
                         <button
                             type="button"
-                            onClick={() => onMediaDialogOpen('cover')}
+                            onClick={() => onMediaDialogOpen('hero')}
                             className={cn(
                                 'w-full aspect-video border-2 border-dashed rounded-md',
                                 'flex flex-col items-center justify-center gap-2',
@@ -486,13 +486,13 @@ function MediaSectionContent({
                             )}
                         >
                             <Image className="w-6 h-6 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">Set cover image</span>
+                            <span className="text-xs text-muted-foreground">Set Hero Image</span>
                         </button>
                     )}
                     <Input
                         placeholder="Alt text"
-                        value={formData.coverAlt}
-                        onChange={(e) => onInputChange('coverAlt', e.target.value)}
+                        value={formData.heroAlt}
+                        onChange={(e) => onInputChange('heroAlt', e.target.value)}
                         className="text-sm h-8"
                     />
                 </div>

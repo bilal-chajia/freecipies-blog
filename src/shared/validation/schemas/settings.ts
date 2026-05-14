@@ -112,6 +112,6 @@ export const ImageUploadSettingsSchema = z
     variantXs: z.number().int().positive().optional(),
     defaultFormat: z.string().optional(),
     defaultAspectRatio: z.string().optional(),
-    defaultCredit: z.string().optional(),
+    defaultCreditAuthorId: z.coerce.number().int().positive().optional().or(z.literal('')),
   })
   .passthrough();

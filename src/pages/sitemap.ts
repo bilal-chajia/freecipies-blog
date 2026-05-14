@@ -56,9 +56,9 @@ export const GET: APIRoute = async ({ site }) => {
     };
 
     const getRecipeImageUrl = (recipe: any) => {
-        const cover = extractImage(recipe.imagesJson, 'cover', 1200);
+        const hero = extractImage(recipe.imagesJson, 'hero', 1200);
         const thumbnail = extractImage(recipe.imagesJson, 'thumbnail', 1200);
-        return cover.imageUrl || thumbnail.imageUrl || recipe.imageUrl || '';
+        return hero.imageUrl || thumbnail.imageUrl || recipe.imageUrl || '';
     };
 
     // Generate sitemap XML

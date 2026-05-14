@@ -3,7 +3,6 @@
  * - Reading progress bar
  * - Back-to-top button
  * - Fade-up animations on scroll
- * - TOC highlight (delegated — components opt-in via data attributes)
  */
 
 // ── Reading Progress Bar ──
@@ -93,16 +92,35 @@
 
 // ── Fade-up on scroll (IntersectionObserver) ──
 (function initFadeUp() {
-  // Activate fade animations only after JS loads (progressive enhancement)
+  // Helper: check if an element is currently in the viewport
+  function isInViewport(el) {
+    const rect = el.getBoundingClientRect();
+    return rect.top < window.innerHeight && rect.bottom > 0;
+  }
+
+  // 1. Find all elements that will participate in fade-up
+  const explicitEls = document.querySelectorAll("[data-fade-up]");
+  const autoTargets = document.querySelectorAll("section, article, .recipe-card, .content-blocks");
+
+  // 2. Auto-attach data-fade-up to macro containers NOT already opted-in
+  autoTargets.forEach((el) => {
+    if (!el.hasAttribute("data-fade-up") && !el.closest("[data-fade-up]")) {
+      el.setAttribute("data-fade-up", "");
+    }
+  });
+
+  // 3. Mark ALL elements already in the viewport as immediately visible
+  //    This MUST happen BEFORE we add .js-fade-enabled to prevent the flash
+  document.querySelectorAll("[data-fade-up]").forEach((el) => {
+    if (isInViewport(el)) {
+      el.classList.add("is-visible");
+    }
+  });
+
+  // 4. NOW enable the animation system (elements already marked won't flash)
   document.body.classList.add("js-fade-enabled");
 
-  // Safety: if IO fails, force visible after 2.5s
-  const safetyTimer = setTimeout(function() {
-    document.querySelectorAll('[data-fade-up]:not(.is-visible)').forEach(function(el) {
-      el.classList.add('is-visible');
-    });
-  }, 2500);
-
+  // 5. Set up IntersectionObserver for below-the-fold elements
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -115,68 +133,15 @@
     { threshold: 0.05, rootMargin: "0px 0px -20px 0px" }
   );
 
-  // Observe explicitly opted-in elements only
-  document.querySelectorAll("[data-fade-up]").forEach((el) => observer.observe(el));
-
-  // Auto-observe macro containers only (NOT every paragraph/heading)
-  document.querySelectorAll("section, article, .recipe-card, .content-blocks").forEach((el) => {
-    if (!el.hasAttribute("data-fade-up") && !el.closest("[data-fade-up]")) {
-      el.setAttribute("data-fade-up", "");
-      observer.observe(el);
-    }
+  // Observe only elements NOT yet visible
+  document.querySelectorAll("[data-fade-up]:not(.is-visible)").forEach((el) => {
+    observer.observe(el);
   });
-})();
 
-// ── TOC Highlight on Scroll ──
-(function initTocHighlight() {
-  const toc = document.querySelector("[data-toc]");
-  if (!toc) return;
-
-  const links = toc.querySelectorAll('a[href^="#"]');
-  const headings = Array.from(links)
-    .map((link) => {
-      const id = link.getAttribute("href")?.slice(1);
-      return id ? document.getElementById(id) : null;
-    })
-    .filter(Boolean);
-
-  if (headings.length === 0) return;
-
-  let currentActive = null;
-
-  function highlight() {
-    const scrollPos = window.scrollY + 120;
-    let active = headings[0];
-
-    for (const h of headings) {
-      if (h.offsetTop <= scrollPos) {
-        active = h;
-      } else {
-        break;
-      }
-    }
-
-    if (active === currentActive) return;
-    currentActive = active;
-
-    links.forEach((link) => {
-      const href = link.getAttribute("href")?.slice(1);
-      const isActive = href === active.id;
-      link.classList.toggle("toc-active", isActive);
-      link.setAttribute("aria-current", isActive ? "true" : "false");
+  // 6. Safety: if IO somehow fails, force visible after 2.5s
+  setTimeout(function() {
+    document.querySelectorAll('[data-fade-up]:not(.is-visible)').forEach(function(el) {
+      el.classList.add('is-visible');
     });
-  }
-
-  let ticking = false;
-  window.addEventListener("scroll", () => {
-    if (!ticking) {
-      requestAnimationFrame(() => {
-        highlight();
-        ticking = false;
-      });
-      ticking = true;
-    }
-  }, { passive: true });
-
-  highlight();
+  }, 2500);
 })();

@@ -1,10 +1,45 @@
 ---
-import { resolveVariantUrl } from '@shared/types/images';
-import { renderInlineMarkdown } from '../../utils/markdown';
-const { block } = Astro.props as { block: any };
+import {
+  resolveVariantUrl,
+  type ResolvedAuthorCreditSnapshot,
+  type ResolvedImageVariant,
+  type StoredAuthorCreditSnapshot,
+  type StoredImageVariant,
+} from "@shared/types/images";
+import { renderInlineMarkdown } from "../../utils/markdown";
+
+type RenderableImageVariant = ResolvedImageVariant | StoredImageVariant;
+type RenderableAuthorCredit =
+  | ResolvedAuthorCreditSnapshot
+  | StoredAuthorCreditSnapshot;
+
+interface ImageBlockVariants {
+  xs?: RenderableImageVariant;
+  sm?: RenderableImageVariant;
+  md?: RenderableImageVariant;
+  lg?: RenderableImageVariant;
+  original?: RenderableImageVariant;
+}
+
+interface Props {
+  block: {
+    variants?: ImageBlockVariants;
+    alt?: string;
+    caption?: string;
+    credit?: RenderableAuthorCredit;
+  };
+}
+
+const { block } = Astro.props as Props;
+
 const variants = block.variants || {};
-const imgUrl = resolveVariantUrl(variants.md) || resolveVariantUrl(variants.lg) || resolveVariantUrl(variants.sm) || '';
-const imgVariant = variants.md || variants.lg || variants.sm || {};
+const imgUrl =
+  resolveVariantUrl(variants.md) ||
+  resolveVariantUrl(variants.lg) ||
+  resolveVariantUrl(variants.sm) ||
+  "";
+const imgVariant: RenderableImageVariant | undefined =
+  variants.md ?? variants.lg ?? variants.sm;
 const srcEntries: string[] = [];
 if (variants.xs && variants.xs.width) {
   const u = resolveVariantUrl(variants.xs);
@@ -22,25 +57,135 @@ if (variants.lg && variants.lg.width) {
   const u = resolveVariantUrl(variants.lg);
   if (u) srcEntries.push(`${u} ${variants.lg.width}w`);
 }
-const imgSrcSet = srcEntries.join(', ');
+const imgSrcSet = srcEntries.join(", ");
 if (!imgUrl) return null;
+
+const credit = block.credit;
+const authorCredit =
+  credit && typeof credit === "object" && credit.type === "author"
+    ? credit
+    : null;
+const avatarVariant =
+  authorCredit?.avatar?.variants?.xs ?? authorCredit?.avatar?.variants?.sm;
+const avatarUrl = resolveVariantUrl(avatarVariant);
+const imageCaption = block.caption || "";
+const hasBodyMeta = Boolean(imageCaption || authorCredit);
 ---
+
 <figure class="content-image">
   <img
     src={imgUrl}
-    alt={block.alt || ''}
-    width={imgVariant.width || undefined}
-    height={imgVariant.height || undefined}
+    alt={block.alt || ""}
+    width={imgVariant?.width || undefined}
+    height={imgVariant?.height || undefined}
     srcset={imgSrcSet || undefined}
-    sizes={imgSrcSet ? "(max-width: 768px) calc(100vw - 2rem), min(720px, 100vw - 4rem)" : undefined}
+    sizes={imgSrcSet
+      ? "(max-width: 768px) calc(100vw - 2rem), min(720px, 100vw - 4rem)"
+      : undefined}
     loading="lazy"
     decoding="async"
-    style="width:100%;height:auto;border-radius:8px;"
+    class="content-image__img"
   />
-  {(block.caption || block.credit) && (
-    <figcaption>
-      {block.caption && <span set:html={renderInlineMarkdown(block.caption)} />}
-      {block.credit && <span class="credit"> — {block.credit}</span>}
-    </figcaption>
-  )}
+  {
+    (block.caption || hasBodyMeta) && (
+      <figcaption class="image-caption-row">
+        {hasBodyMeta && (
+          <div class="image-meta">
+            {imageCaption && (
+              <span
+                class="image-caption"
+                set:html={renderInlineMarkdown(imageCaption)}
+              />
+            )}
+            {authorCredit && (
+              <a class="credit-author" href={`/authors/${authorCredit.slug}`}>
+                {avatarUrl && (
+                  <img
+                    src={avatarUrl}
+                    alt={authorCredit.avatar?.alt || authorCredit.name}
+                    width={avatarVariant?.width || 20}
+                    height={avatarVariant?.height || 20}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                <span>{authorCredit.name}</span>
+              </a>
+            )}
+          </div>
+        )}
+      </figcaption>
+    )
+  }
 </figure>
+
+<style>
+  .content-image__img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+  }
+
+  .image-caption-row {
+    display: block;
+    width: 100%;
+    margin-top: var(--space-2);
+    text-align: initial !important;
+  }
+
+  .image-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    max-width: 100%;
+    font-size: var(--text-sm);
+    font-weight: var(--font-normal);
+    line-height: var(--leading-snug);
+    color: var(--text-tertiary);
+  }
+
+  .image-caption {
+    min-width: 0;
+    color: var(--text-tertiary);
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  .credit-author {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-1);
+    min-width: max-content;
+    color: inherit;
+    text-decoration: none;
+    text-align: right;
+  }
+
+  .credit-author:hover {
+    color: var(--brand-primary);
+    text-decoration: underline;
+  }
+
+  .credit-author img {
+    width: var(--space-5);
+    height: var(--space-5);
+    border-radius: var(--radius-full);
+    object-fit: cover;
+  }
+
+  @media (max-width: 520px) {
+    .image-meta {
+      align-items: flex-start;
+      grid-template-columns: 1fr;
+      gap: var(--space-1);
+    }
+
+    .credit-author {
+      justify-content: flex-start;
+      text-align: left;
+    }
+  }
+</style>

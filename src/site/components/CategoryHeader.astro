@@ -32,19 +32,19 @@ const heroCtaLink =
   typeof category.heroCtaLink === "string" && category.heroCtaLink.trim()
     ? category.heroCtaLink.trim()
     : "#newsletter";
-const categoryCover = extractImage(category.imagesJson, "cover", 1600);
+const categoryHero = extractImage(category.imagesJson, "hero", 1600);
 const categoryThumb = extractImage(category.imagesJson, "thumbnail", 1200);
-const categorySlot = categoryCover.imageUrl ? "cover" : "thumbnail";
-const categoryImage = categoryCover.imageUrl ? categoryCover : categoryThumb;
+const categorySlot = categoryHero.imageUrl ? "hero" : "thumbnail";
+const categoryImage = categoryHero.imageUrl ? categoryHero : categoryThumb;
 const categorySrcSet = getImageSrcSet(category.imagesJson, categorySlot);
 const showCategoryImage =
   isHeroHeader && Boolean(categoryImage.imageUrl || category.imageUrl);
 
 const getFeaturedImage = (article: HydratedArticle) => {
-  const cover = extractImage(article.imagesJson, "cover", 1200);
+  const hero = extractImage(article.imagesJson, "hero", 1200);
   const thumbnail = extractImage(article.imagesJson, "thumbnail", 1200);
-  const slotName = cover.imageUrl ? "cover" : "thumbnail";
-  const selected = cover.imageUrl ? cover : thumbnail;
+  const slotName = hero.imageUrl ? "hero" : "thumbnail";
+  const selected = hero.imageUrl ? hero : thumbnail;
   const srcSet = getImageSrcSet(article.imagesJson, slotName);
   return { selected, srcSet };
 };
@@ -261,7 +261,7 @@ const featuredAuthorAvatar =
   }
 
   .hero-container {
-    max-width: 1280px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 2rem);
     display: grid;
@@ -297,7 +297,7 @@ const featuredAuthorAvatar =
   }
 
   .hero-breadcrumb {
-    max-width: 1280px;
+    max-width: var(--container-max);
     margin: 0 auto 1.5rem;
     padding: 0 clamp(1rem, 3vw, 2rem);
     animation: heroFadeUp 0.6s ease both;

@@ -105,7 +105,7 @@ function RelatedContentSettings({
         };
 
         const thumbnail = getImageSlot(item.imagesJson, 'thumbnail')
-            || getImageSlot(item.imagesJson, 'cover');
+                    || getImageSlot(item.imagesJson, 'hero');
         if (thumbnail && thumbnail.variants && Object.keys(thumbnail.variants).length > 0) {
             relatedItem.thumbnail = thumbnail;
         }
@@ -240,7 +240,7 @@ function RelatedContentSettings({
     const getThumbnailUrl = (item) => {
         if (!item) return '';
         const slot = getImageSlot(item.imagesJson, 'thumbnail')
-            || getImageSlot(item.imagesJson, 'cover');
+                    || getImageSlot(item.imagesJson, 'hero');
         return getBestVariantUrl(slot) || slot?.url || '';
     };
 
@@ -429,4 +429,3 @@ function RelatedContentSettings({
 }
 
 export default RelatedContentSettings;
-

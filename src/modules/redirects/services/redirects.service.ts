@@ -7,7 +7,7 @@
 import { eq, and, desc, sql, like, or } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { redirects, type Redirect, type NewRedirect } from '../schema/redirects.schema';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import type { RedirectFilter } from '../types/redirects.types';
 
 /**

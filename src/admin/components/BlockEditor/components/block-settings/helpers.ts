@@ -26,7 +26,8 @@ interface MediaSelectPayload {
     altText?: string;
     alt_text?: string;
     name?: string;
-    credit?: string;
+    caption?: string;
+    credit?: string | Record<string, unknown>;
     credit_text?: string;
     variants?: Record<string, unknown>;
 }
@@ -35,11 +36,24 @@ interface UploadPayload {
     id?: string | number | null;
     url?: string;
     altText?: string;
-    credit?: string;
+    caption?: string;
+    credit?: string | Record<string, unknown>;
     width?: number;
     height?: number;
     variants?: Record<string, unknown>;
 }
+
+const serializeAuthorCredit = (credit: unknown) => {
+    if (!credit || typeof credit !== 'object') return '{}';
+    const record = credit as Record<string, unknown>;
+    return record.type === 'author' ? JSON.stringify(record) : '{}';
+};
+
+const getAuthorCreditName = (credit: unknown, fallback = '') => {
+    if (!credit || typeof credit !== 'object') return fallback;
+    const record = credit as Record<string, unknown>;
+    return record.type === 'author' && typeof record.name === 'string' ? record.name : fallback;
+};
 
 export const buildImageReplaceProps = (item: MediaSelectPayload, currentProps: BlockImageProps) => {
     const parsed = parseVariantsJson(item);
@@ -51,7 +65,9 @@ export const buildImageReplaceProps = (item: MediaSelectPayload, currentProps: B
         url,
         mediaId: item.id?.toString() || '',
         alt: item.altText || item.alt_text || item.name || '',
-        credit: item.credit || item.credit_text || '',
+        caption: item.caption || '',
+        credit: getAuthorCreditName(item.credit, item.credit_text || ''),
+        creditJson: serializeAuthorCredit(item.credit),
         width: bestVariant?.width || Number(currentProps.width) || 512,
         height: bestVariant?.height || Number(currentProps.height) || 0,
         variantsJson: JSON.stringify(variants),
@@ -67,7 +83,9 @@ export const buildImageUploadProps = (data: UploadPayload, currentProps: BlockIm
         url,
         mediaId: data.id?.toString() || '',
         alt: data.altText || '',
-        credit: data.credit || '',
+        caption: data.caption || '',
+        credit: getAuthorCreditName(data.credit),
+        creditJson: serializeAuthorCredit(data.credit),
         width: bestVariant?.width || data.width || Number(currentProps.width) || 512,
         height: bestVariant?.height || data.height || Number(currentProps.height) || 0,
         variantsJson: JSON.stringify(variants),

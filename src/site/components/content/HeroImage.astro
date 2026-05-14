@@ -35,7 +35,10 @@ if (!src) {
 }
 ---
 
-<div class:list={["hero-image", className]}>
+<div
+    class:list={["hero-image", className]}
+    style={width && height ? `aspect-ratio: ${width} / ${height};` : undefined}
+>
     <img
         src={src}
         alt={alt}
@@ -54,8 +57,10 @@ if (!src) {
     .hero-image {
         border-radius: 1rem;
         overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        box-shadow: var(--shadow-md);
         margin: 1.5rem 0;
+        contain: content;
+        background: var(--bg-inset);
     }
 
     .hero-image img {

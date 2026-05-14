@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getArticles } from '@modules/articles';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateQuery, PaginationQuery } from '@shared/validation';
 
@@ -19,7 +18,7 @@ export const prerender = false;
  * - limit: number (default: 12, max: 100)
  * - difficulty: 'Easy' | 'Medium' | 'Hard'
  */
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
     const url = new URL(request.url);
 
     // Validate pagination query params
@@ -71,7 +70,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
                     const images = typeof article.imagesJson === 'string'
                         ? JSON.parse(article.imagesJson)
                         : article.imagesJson;
-                    thumbnail = images.thumbnail || images.cover;
+                    thumbnail = images.thumbnail || images.hero;
                 } catch {
                     thumbnail = null;
                 }

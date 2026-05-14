@@ -31,7 +31,7 @@ import {
     PopoverTrigger,
 } from '@/ui/popover';
 
-import useEditorStore from '../../../../store/useEditorStore';
+import useEditorStore from '@admin/features/templates/store/useEditorStore';
 import { FONTS } from '../ElementPanel';
 import { mediaAPI } from '@admin/services/api';
 import ColorPicker from '@admin/components/ColorPicker';

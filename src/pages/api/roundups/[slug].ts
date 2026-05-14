@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getArticleBySlug } from '@modules/articles';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { generateJsonLd } from '@modules/articles/utils/jsonld';
 import { validateParams, SlugOrIdParam } from '@shared/validation';
@@ -12,7 +11,7 @@ export const prerender = false;
  * GET /api/roundups/:slug
  * Public endpoint to get roundup by slug with JSON-LD ItemList
  */
-export const GET: APIRoute = async ({ params, locals, url }) => {
+export const GET: APIRoute = async ({ params, url }) => {
     try {
         const { slug } = validateParams(params, SlugOrIdParam);
         const db = env.DB;

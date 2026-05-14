@@ -45,10 +45,6 @@ export const articles = sqliteTable('articles', {
   cachedCardJson: text('cached_card_json'),
   readingTimeMinutes: integer('reading_time_minutes'),
 
-  // Scalar Indexes
-  totalTimeMinutes: integer('total_time_minutes'),
-  difficultyLabel: text('difficulty_label'),
-
   // SEO & Config
   seoJson: text('seo_json'),
   jsonldJson: text('jsonld_json'),
@@ -77,8 +73,6 @@ export const articles = sqliteTable('articles', {
   index('idx_articles_published').on(table.publishedAt),
   index('idx_articles_views').on(table.viewCount),
   index('idx_articles_workflow').on(table.workflowStatus),
-  index('idx_articles_time').on(table.totalTimeMinutes),
-  index('idx_articles_difficulty').on(table.difficultyLabel),
   index('idx_articles_active').on(table.deletedAt),
 ]);
 

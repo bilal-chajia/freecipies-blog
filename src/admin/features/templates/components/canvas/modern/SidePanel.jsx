@@ -23,15 +23,15 @@ import { ScrollArea } from '@/ui/scroll-area';
 import { Separator } from '@/ui/separator';
 import { toast } from 'sonner';
 
-import useEditorStore from '../../../../store/useEditorStore';
-import { useUIStore } from '../../../../store/useUIStore';
+import useEditorStore from '@admin/features/templates/store/useEditorStore';
+import { useUIStore } from '@admin/features/templates/store/useUIStore';
 import DraggableLayersList from '../DraggableLayersList';
 import { mediaAPI, templatesAPI } from '@admin/services/api';
 import ColorPicker from '@admin/components/ColorPicker';
 import FontsPanel from './FontsPanel';
 import TextEffectsPanel from './TextEffectsPanel';
 import ConfirmationModal from '@/ui/confirmation-modal';
-import { cleanDuplicateSlug } from '../../../../utils/slugUtils';
+import { cleanDuplicateSlug } from '@modules/templates/utils/slugUtils';
 
 const TABS = [
     { id: 'templates', icon: LayoutTemplate, label: 'Templates' },

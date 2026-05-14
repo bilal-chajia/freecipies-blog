@@ -8,10 +8,10 @@ interface Props {
 
 const { category } = Astro.props;
 
-const cover = extractImage(category.imagesJson, "cover", 1200);
+const hero = extractImage(category.imagesJson, "hero", 1200);
 const thumbnail = extractImage(category.imagesJson, "thumbnail", 720);
-const slotName = cover.imageUrl ? "cover" : "thumbnail";
-const selected = cover.imageUrl ? cover : thumbnail;
+const slotName = hero.imageUrl ? "hero" : "thumbnail";
+const selected = hero.imageUrl ? hero : thumbnail;
 const srcSet = getImageSrcSet(category.imagesJson, slotName);
 const image = {
   url:

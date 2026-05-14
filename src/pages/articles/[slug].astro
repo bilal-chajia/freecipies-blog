@@ -35,12 +35,12 @@ if (!article) {
   return Astro.redirect("/404");
 }
 
-const heroCover = extractImage(article.imagesJson, "cover", 1200);
+const heroSlot = extractImage(article.imagesJson, "hero", 1200);
 const heroThumb = extractImage(article.imagesJson, "thumbnail", 1200);
-const coverSrcSet = getImageSrcSet(article.imagesJson, "cover");
+const heroSlotSrcSet = getImageSrcSet(article.imagesJson, "hero");
 const thumbSrcSet = getImageSrcSet(article.imagesJson, "thumbnail");
-const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
-const heroImage = useCover ? heroCover : heroThumb;
+const useHeroSlot = heroSlot.imageUrl && (heroSlotSrcSet || !heroThumb.imageUrl);
+const heroImage = useHeroSlot ? heroSlot : heroThumb;
 
 // Author and category are already hydrated via hydrateArticle() from cached JSON columns
 const author = (article as any).author || null;

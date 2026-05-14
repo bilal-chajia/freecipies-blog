@@ -4,7 +4,7 @@
  * Handles all R2 bucket operations for image and file storage.
  */
 
-import type { R2Bucket, R2ObjectBody, R2Object, R2HTTPMetadata } from '@cloudflare/workers-types';
+import type { R2Bucket, R2ObjectBody, R2HTTPMetadata } from '@cloudflare/workers-types';
 
 export interface ImageUploadOptions {
   file: File | Blob;
@@ -114,33 +114,6 @@ export async function deleteImage(
   }
 }
 
-/**
- * List images in R2 storage
- */
-export async function listImages(
-  bucket: R2Bucket,
-  options?: {
-    prefix?: string;
-    limit?: number;
-    cursor?: string;
-  }
-): Promise<{
-  objects: R2Object[];
-  truncated: boolean;
-  cursor?: string;
-}> {
-  const result = await bucket.list({
-    prefix: options?.prefix || 'images/',
-    limit: options?.limit || 100,
-    cursor: options?.cursor,
-  });
-
-  return {
-    objects: result.objects,
-    truncated: result.truncated,
-    cursor: (result as any).cursor,
-  };
-}
 
 /**
  * Get image metadata
@@ -166,12 +139,6 @@ export async function getImageMetadata(
   };
 }
 
-/**
- * Generate a signed URL for temporary access (if needed)
- */
-export function getImageUrl(key: string, publicUrl: string): string {
-  return `${publicUrl}/${key}`;
-}
 
 /**
  * Upload multiple images in batch
@@ -188,39 +155,3 @@ export async function uploadImagesBatch(
   return results;
 }
 
-/**
- * Validate image file
- */
-export function validateImage(
-  file: File | Blob,
-  options?: {
-    maxSize?: number; // in bytes
-    allowedTypes?: string[];
-  }
-): { valid: boolean; error?: string } {
-  const maxSize = options?.maxSize || 10 * 1024 * 1024; // 10MB default
-  const allowedTypes = options?.allowedTypes || [
-    'image/jpeg',
-    'image/jpg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-    'image/avif',
-  ];
-
-  if (file.size > maxSize) {
-    return {
-      valid: false,
-      error: `File size exceeds ${maxSize / 1024 / 1024}MB limit`,
-    };
-  }
-
-  if (!allowedTypes.includes(file.type)) {
-    return {
-      valid: false,
-      error: `File type ${file.type} is not allowed`,
-    };
-  }
-
-  return { valid: true };
-}

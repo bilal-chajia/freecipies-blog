@@ -81,7 +81,7 @@ const MegaMenuPreview = ({ items, setHeaderActions }) => {
             if (cat) {
                 let images = {};
                 try { images = JSON.parse(cat.imagesJson || '{}'); } catch (e) { }
-                return { type: 'category', ...cat, color: cat.color || '#ff6b35', thumbnail: images.thumbnail || images.cover };
+                return { type: 'category', ...cat, color: cat.color || '#ff6b35', thumbnail: images.thumbnail || images.hero };
             }
         }
 

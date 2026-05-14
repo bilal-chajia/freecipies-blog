@@ -200,7 +200,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
     {
       hasDiets &&
         diets.slice(0, 2).map((diet) => (
-          <div class="meta-pill diet-pill" data-diet={diet}>
+          <div class="badge meta-pill diet-pill" data-diet={diet}>
             <span class="pill-value">{diet.replace("Diet", "")}</span>
           </div>
         ))
@@ -321,6 +321,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
   .diet-pill {
     background: var(--bg-hover);
     border-color: var(--border);
+    border-radius: 20px; /* Keep pill shape for this specific component */
   }
 
   .diet-pill[data-diet="VeganDiet"],
@@ -338,7 +339,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
 
   .diet-pill[data-diet="KetoDiet"] {
     background: var(--info-bg);
-    border-color: var(--border)6fe;
+    border-color: var(--border);
     color: var(--info-text);
   }
 

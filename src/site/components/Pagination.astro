@@ -107,15 +107,18 @@ const hasNext = currentPage < totalPages;
     justify-content: center;
     width: 2.5rem;
     height: 2.5rem;
-    border-radius: 0.5rem;
-    background: #f3f4f6;
-    color: #374151;
-    transition: all 0.2s ease;
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    transition: all var(--transition-fast) var(--ease-default);
   }
+
   
   .pagination-btn:hover:not(.disabled) {
-    background: #e5e7eb;
-    color: #111;
+    background: var(--text);
+    color: var(--bg-elevated);
+    border-color: var(--text);
   }
   
   .pagination-btn.disabled {
@@ -137,26 +140,29 @@ const hasNext = currentPage < totalPages;
     min-width: 2.5rem;
     height: 2.5rem;
     padding: 0 0.75rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
     font-weight: 500;
     font-size: 0.875rem;
-    color: #374151;
-    transition: all 0.2s ease;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast) var(--ease-default);
   }
   
   .pagination-page:hover:not(.active) {
-    background: #f3f4f6;
+    background: var(--bg-elevated);
+    border-color: var(--text-tertiary);
   }
   
   .pagination-page.active {
-    background: linear-gradient(135deg, #ff3366, #ff6b35);
-    color: white;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+    border-color: var(--brand-primary);
     font-weight: 600;
   }
   
   .pagination-ellipsis {
     padding: 0 0.5rem;
-    color: #9ca3af;
+    color: var(--text-tertiary);
   }
   
   .sr-only {

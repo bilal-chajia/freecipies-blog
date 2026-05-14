@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useLocation } from 'react-router-dom';
-import { Plus, Search, FolderTree, LayoutGrid, Filter, ArrowUpRight } from 'lucide-react';
+import { Plus, Search, FolderTree, LayoutGrid } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Badge } from '@/ui/badge.jsx';

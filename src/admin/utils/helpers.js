@@ -133,7 +133,11 @@ const normalizeMediaVariants = (parsed) => {
 
 export const buildImageSlotFromMedia = (item, overrides = {}) => {
   const parsed = parseVariantsJson(item?.variantsJson || item?.variants_json);
-  const variantMap = normalizeMediaVariants(parsed);
+  const payloadVariants = item?.variants && typeof item.variants === 'object'
+    ? item.variants
+    : null;
+  const variantsSource = payloadVariants || parsed;
+  const variantMap = normalizeMediaVariants(variantsSource);
   const variants = {};
 
   if (variantMap && typeof variantMap === 'object') {
@@ -372,9 +376,6 @@ export const getStatusColor = (status) => {
   return colors[status] || 'gray';
 };
 
-/**
- * Get type color
- */
 /**
  * Get type color
  */

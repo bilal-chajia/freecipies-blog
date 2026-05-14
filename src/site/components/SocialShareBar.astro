@@ -373,7 +373,7 @@ const encodedTitle = encodeURIComponent(title);
 <style>
     .social-share-bar {
         padding: 1rem 0;
-        border-bottom: 1px solid #e5e5e5;
+        border-bottom: 1px solid var(--border);
         margin-bottom: 1.5rem;
     }
 
@@ -395,8 +395,8 @@ const encodedTitle = encodeURIComponent(title);
         height: 38px;
         border-radius: 50%;
         border: none;
-        background: #f3f4f6;
-        color: #6b7280;
+        background: var(--bg-hover);
+        color: var(--text-tertiary);
         cursor: pointer;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         text-decoration: none;
@@ -416,28 +416,28 @@ const encodedTitle = encodeURIComponent(title);
     }
 
     .share-btn.twitter {
-        color: #111;
+        color: var(--text);
     }
     .share-btn.twitter:hover {
-        background: #111;
-        color: #fff;
+        background: var(--text);
+        color: var(--bg-elevated);
     }
 
     .share-btn.copy-link:hover {
-        background: #10b981;
-        color: #fff;
+        background: var(--success);
+        color: var(--text-inverse);
     }
 
     .share-btn.print-btn:hover {
-        background: #374151;
-        color: #fff;
+        background: var(--text-secondary);
+        color: var(--bg-elevated);
     }
 
     .reading-time {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        color: #6b7280;
+        color: var(--text-tertiary);
         font-size: 0.8125rem;
         font-weight: 500;
     }
@@ -451,34 +451,34 @@ const encodedTitle = encodeURIComponent(title);
         font-size: 0.8125rem;
         font-weight: 600;
         border-radius: 100px; /* Full pill */
-        border: 1px solid #e5e7eb;
-        background: #fff;
-        color: #374151;
+        border: 1px solid var(--border);
+        background: var(--bg-elevated);
+        color: var(--text-secondary);
         cursor: pointer;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         text-decoration: none;
         white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        box-shadow: var(--shadow-sm);
     }
 
     .share-btn-labeled:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        border-color: #d1d5db;
-        color: #111827;
+        box-shadow: var(--shadow-md);
+        border-color: var(--border-strong);
+        color: var(--text);
     }
 
     .share-btn-labeled.jump-recipe {
-        background: #10b981;
-        color: #fff;
-        border-color: #10b981;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+        background: var(--brand-secondary);
+        color: var(--text-inverse);
+        border-color: var(--brand-secondary);
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
     }
 
     .share-btn-labeled.jump-recipe:hover {
-        background: #059669;
-        border-color: #059669;
-        box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+        background: var(--brand-secondary-hover);
+        border-color: var(--brand-secondary-hover);
+        box-shadow: 0 4px 14px rgba(255, 107, 53, 0.35);
     }
 
     /* ===== Share Sheet (Bottom Sheet Modal) ===== */
@@ -509,14 +509,14 @@ const encodedTitle = encodeURIComponent(title);
     }
 
     .share-sheet {
-        background: #fff;
+        background: var(--bg-elevated);
         width: 100%;
         max-width: 420px;
         border-radius: 20px 20px 0 0;
         padding: 0 0 env(safe-area-inset-bottom, 16px) 0;
         transform: translateY(100%);
         transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+        box-shadow: var(--shadow-lg);
         will-change: transform;
     }
 
@@ -548,7 +548,7 @@ const encodedTitle = encodeURIComponent(title);
         width: 36px;
         height: 4px;
         border-radius: 2px;
-        background: #d1d5db;
+        background: var(--border-strong);
         margin: 10px auto 0;
     }
 
@@ -568,7 +568,7 @@ const encodedTitle = encodeURIComponent(title);
     .share-sheet-title {
         font-size: 1.1rem;
         font-weight: 700;
-        color: #111827;
+        color: var(--text);
     }
 
     .share-sheet-close {
@@ -579,14 +579,14 @@ const encodedTitle = encodeURIComponent(title);
         height: 32px;
         border-radius: 50%;
         border: none;
-        background: #f3f4f6;
-        color: #6b7280;
+        background: var(--bg-hover);
+        color: var(--text-tertiary);
         cursor: pointer;
         transition: background 0.15s ease;
     }
     .share-sheet-close:hover {
-        background: #e5e7eb;
-        color: #111827;
+        background: var(--border);
+        color: var(--text);
     }
 
     .share-sheet-grid {
@@ -603,7 +603,7 @@ const encodedTitle = encodeURIComponent(title);
         gap: 8px;
         padding: 12px 4px;
         text-decoration: none;
-        color: #374151;
+        color: var(--text-secondary);
         font-size: 0.75rem;
         font-weight: 500;
         border: none;
@@ -614,7 +614,7 @@ const encodedTitle = encodeURIComponent(title);
     }
 
     .share-sheet-item:hover {
-        background: #f9fafb;
+        background: var(--bg-inset);
     }
 
     .share-icon-circle {
@@ -694,8 +694,8 @@ const encodedTitle = encodeURIComponent(title);
             if (url) {
                 try {
                     await copyToClipboard(url);
-                    htmlBtn.style.background = "#10b981";
-                    htmlBtn.style.color = "white";
+                    htmlBtn.style.background = "var(--success)";
+                    htmlBtn.style.color = "var(--text-inverse)";
                     setTimeout(() => {
                         htmlBtn.style.background = "";
                         htmlBtn.style.color = "";
@@ -714,8 +714,18 @@ const encodedTitle = encodeURIComponent(title);
     const closeBtn = document.querySelector(".share-sheet-close");
     const sheetCopyLink = document.getElementById("sheet-copy-link");
 
+    // Track original position to restore after closing (portal pattern)
+    let sheetOriginalParent: Node | null = null;
+    let sheetOriginalNext: Node | null = null;
+
     function openSheet() {
         if (!overlay) return;
+        // Move overlay to body to escape container-type containing block
+        if (overlay.parentNode !== document.body) {
+            sheetOriginalParent = overlay.parentNode;
+            sheetOriginalNext = overlay.nextSibling;
+            document.body.appendChild(overlay);
+        }
         overlay.classList.add("open");
         overlay.setAttribute("aria-hidden", "false");
         document.body.style.overflow = "hidden";
@@ -726,6 +736,16 @@ const encodedTitle = encodeURIComponent(title);
         overlay.classList.remove("open");
         overlay.setAttribute("aria-hidden", "true");
         document.body.style.overflow = "";
+        // Restore overlay to its original position in the DOM
+        if (sheetOriginalParent) {
+            if (sheetOriginalNext) {
+                sheetOriginalParent.insertBefore(overlay, sheetOriginalNext);
+            } else {
+                sheetOriginalParent.appendChild(overlay);
+            }
+            sheetOriginalParent = null;
+            sheetOriginalNext = null;
+        }
     }
 
     if (moreBtn) {
@@ -765,7 +785,7 @@ const encodedTitle = encodeURIComponent(title);
                         ".share-icon-circle",
                     ) as HTMLElement;
                     if (label) label.textContent = "Copied!";
-                    if (circle) circle.style.background = "#10b981";
+                    if (circle) circle.style.background = "var(--success)";
                     setTimeout(() => {
                         if (label) label.textContent = "Copy Link";
                         if (circle) circle.style.background = "";

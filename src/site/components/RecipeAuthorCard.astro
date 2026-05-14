@@ -67,7 +67,7 @@ const initials = authorName
                 height={authorImageHeight}
                 srcset={authorImageSrcSet || undefined}
                 sizes={authorImageSizes || undefined}
-                loading="lazy"
+                loading="eager"
                 decoding="async"
                 style={authorImageStyle || undefined}
                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"

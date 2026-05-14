@@ -51,15 +51,17 @@ Stores responsive image variants for the author.
 
 ---
 
-### 2. `bioJson` - Biography & Social Links
+### 2. `bioJson` - Public Biography Content & Social Links
 
-Stores author biography and social media links.
+Stores public author page content, public expertise labels, and public social links.
 
 **Structure:**
 ```typescript
 {
-  short?: string;           // Short intro paragraph
-  long?: string;            // Markdown or rich text
+  content?: {
+    blocks?: unknown[];
+  };
+  expertise?: string[];
   socials?: [
     { network: string; url: string; label?: string }
   ];
@@ -71,8 +73,22 @@ Stores author biography and social media links.
 **Example:**
 ```json
 {
-  "short": "With over 15 years of culinary experience...",
-  "long": "## About John\n\nJohn specializes in Italian and Mediterranean cuisine.",
+  "content": {
+    "blocks": [
+      {
+        "id": "block-1",
+        "type": "heading",
+        "level": 2,
+        "text": "Cooking Philosophy"
+      },
+      {
+        "id": "block-2",
+        "type": "paragraph",
+        "text": "John specializes in Italian and Mediterranean cuisine."
+      }
+    ]
+  },
+  "expertise": ["Italian cooking", "Mediterranean cuisine"],
   "socials": [
     { "network": "instagram", "url": "https://instagram.com/johndoecooks", "label": "@johndoecooks" },
     { "network": "twitter", "url": "https://x.com/johndoefood", "label": "@johndoefood" },
@@ -83,7 +99,35 @@ Stores author biography and social media links.
 
 ---
 
-### 3. `seoJson` - SEO Metadata
+### 3. `personaJson` - Private AI Persona
+
+Stores private AI/editorial persona guidance. It is not public profile copy and must not be rendered by default.
+
+**Structure:**
+```typescript
+{
+  voice?: string;
+  audience?: string;
+  point_of_view?: string;
+  expertise?: string[];
+  avoid?: string[];
+}
+```
+
+**Example:**
+```json
+{
+  "voice": "Warm, practical, precise, and encouraging.",
+  "audience": "Busy home cooks",
+  "point_of_view": "Food should be simple, seasonal, and realistic.",
+  "expertise": ["weeknight dinners", "Mediterranean cooking"],
+  "avoid": ["unverified health promises"]
+}
+```
+
+---
+
+### 4. `seoJson` - SEO Metadata
 
 Stores SEO-specific metadata.
 
@@ -178,7 +222,7 @@ const author = transformAuthorResponse(dbAuthor);
 ## Frontend Usage Examples
 
 ### Creating Author with JSON Fields
-```javascript
+```typescript
 const authorData = {
   name: "John Doe",
   email: "john@example.com",
@@ -196,11 +240,25 @@ const authorData = {
     }
   }),
   bioJson: JSON.stringify({
-    short: "Award-winning Chef",
+    content: {
+      blocks: [
+        {
+          id: "block-1",
+          type: "paragraph",
+          text: "John specializes in practical Mediterranean recipes."
+        }
+      ]
+    },
+    expertise: ["Mediterranean cooking"],
     socials: [
       { network: "instagram", url: "https://instagram.com/johndoe", label: "@johndoe" },
       { network: "website", url: "https://johndoe.com", label: "Website" }
     ]
+  }),
+  personaJson: JSON.stringify({
+    voice: "Warm and practical",
+    audience: "Busy home cooks",
+    point_of_view: "Recipes should be realistic for everyday kitchens."
   })
 };
 
@@ -208,7 +266,7 @@ await authorsAPI.create(authorData);
 ```
 
 ### Backward Compatible (Legacy Format)
-```javascript
+```typescript
 const authorData = {
   name: "John Doe",
   email: "john@example.com",
@@ -221,4 +279,3 @@ const authorData = {
 // API automatically converts to JSON format
 await authorsAPI.create(authorData);
 ```
-

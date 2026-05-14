@@ -11,7 +11,7 @@ export const prerender = false;
  * GET /api/recipes/:slug
  * Public endpoint to get recipe by slug with JSON-LD
  */
-export const GET: APIRoute = async ({ params, locals, url }) => {
+export const GET: APIRoute = async ({ params, url }) => {
     try {
         const { slug } = validateParams(params, SlugOrIdParam);
         const db = env.DB;

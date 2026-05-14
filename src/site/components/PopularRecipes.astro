@@ -25,9 +25,9 @@ const visibleRecipes = recipes
       <div class="recipe-list">
         {visibleRecipes.map((recipe) => {
           const thumbnail = extractImage(recipe.imagesJson, "thumbnail", 120);
-          const cover = extractImage(recipe.imagesJson, "cover", 120);
-          const slotName = thumbnail.imageUrl ? "thumbnail" : "cover";
-          const selected = thumbnail.imageUrl ? thumbnail : cover;
+          const hero = extractImage(recipe.imagesJson, "hero", 120);
+          const slotName = thumbnail.imageUrl ? "thumbnail" : "hero";
+          const selected = thumbnail.imageUrl ? thumbnail : hero;
           const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
           const sizes = "80px";
           return (
@@ -80,11 +80,11 @@ const visibleRecipes = recipes
 <style>
   /* Container Query Setup */
   .popular-recipes-widget {
-    background: #fff;
+    background: var(--bg-elevated);
     border-radius: 16px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e2e8f0;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
     container-type: inline-size;
     container-name: popular-widget;
   }
@@ -100,14 +100,14 @@ const visibleRecipes = recipes
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #ff3366, #ff6b35);
+    background: var(--brand-gradient);
     box-shadow: 0 1px 4px rgba(255, 51, 102, 0.3);
   }
 
   .widget-header h3 {
     font-size: 1.0625rem;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text);
     margin: 0;
     letter-spacing: -0.01em;
   }
@@ -150,7 +150,7 @@ const visibleRecipes = recipes
   }
 
   .recipe-item:hover {
-    background: #f8fafc;
+    background: var(--bg-hover);
   }
 
   /* :has() selector - Style items with images differently */
@@ -164,7 +164,7 @@ const visibleRecipes = recipes
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #6db24a;
+    background: var(--success);
     margin-left: auto;
     flex-shrink: 0;
   }
@@ -183,7 +183,7 @@ const visibleRecipes = recipes
   .recipe-title {
     font-size: 0.875rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text);
     margin: 0 0 0.3rem;
     line-height: 1.35;
     display: -webkit-box;
@@ -193,7 +193,7 @@ const visibleRecipes = recipes
   }
 
   .recipe-item:hover .recipe-title {
-    color: #ff3366;
+    color: var(--brand-primary);
   }
 
   .recipe-meta {
@@ -202,7 +202,7 @@ const visibleRecipes = recipes
     flex-wrap: wrap;
     gap: 0.35rem;
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--text-tertiary);
   }
 
   .category {
@@ -210,11 +210,11 @@ const visibleRecipes = recipes
   }
 
   .separator {
-    color: #cbd5e1;
+    color: var(--border);
   }
 
   .cook-time {
-    color: #475569;
+    color: var(--text-secondary);
     font-weight: 600;
   }
 
@@ -224,11 +224,11 @@ const visibleRecipes = recipes
     border-radius: 12px;
     object-fit: cover;
     flex-shrink: 0;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
   }
 
   .no-recipes {
-    color: #94a3b8;
+    color: var(--text-tertiary);
     font-size: 0.875rem;
     text-align: center;
     padding: 1rem 0;

@@ -1,4 +1,10 @@
-import type { ImageSlot, ImageVariants } from '@shared/types/images';
+import type {
+  ImageSlot,
+  ResolvedAuthorCreditSnapshot,
+  ResolvedImageVariants,
+  StoredAuthorCreditSnapshot,
+  StoredImageVariants,
+} from '@shared/types/images';
 
 export type BlockId = string;
 
@@ -35,8 +41,8 @@ export interface ImageBlock extends BaseContentBlock {
   media_id: number;
   alt: string;
   caption?: string;
-  credit?: string;
-  variants?: ImageVariants;
+  credit?: ResolvedAuthorCreditSnapshot | StoredAuthorCreditSnapshot;
+  variants?: Pick<ResolvedImageVariants | StoredImageVariants, 'sm' | 'md' | 'lg'>;
 }
 
 export interface VideoBlock extends BaseContentBlock {

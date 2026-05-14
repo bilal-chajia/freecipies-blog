@@ -1,14 +1,13 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getCategories, createCategory, transformCategoryRequestBody, transformCategoryResponse } from '@modules/categories';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { validateBody, CreateCategorySchema } from '@shared/validation';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
   try {
     const db = env.DB;
     if (!db) {
@@ -39,7 +38,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 

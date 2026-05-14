@@ -86,8 +86,7 @@ export const getRoundupArticleMap = async (
         type: articles.type,
         authorId: articles.authorId,
         categoryId: articles.categoryId,
-        totalTimeMinutes: articles.totalTimeMinutes,
-        difficultyLabel: articles.difficultyLabel,
+        cachedRecipeJson: articles.cachedRecipeJson,
         cachedRatingJson: articles.cachedRatingJson,
         cachedAuthorJson: articles.cachedAuthorJson,
         shortDescription: articles.shortDescription,
@@ -96,7 +95,28 @@ export const getRoundupArticleMap = async (
       .where(inArray(articles.id, ids));
 
     return Object.fromEntries(
-      hydrateArticles(results).map((hydrated) => [hydrated.id, hydrated]),
+      hydrateArticles(
+        results.map((result) => {
+          const cachedRecipe = parseJson(result.cachedRecipeJson) as {
+            totalTimeMinutes?: unknown;
+            total_time_minutes?: unknown;
+            difficulty?: unknown;
+          } | null;
+          return {
+            ...result,
+            totalTimeMinutes:
+              typeof cachedRecipe?.totalTimeMinutes === "number"
+                ? cachedRecipe.totalTimeMinutes
+                : typeof cachedRecipe?.total_time_minutes === "number"
+                  ? cachedRecipe.total_time_minutes
+                  : null,
+            difficultyLabel:
+              typeof cachedRecipe?.difficulty === "string"
+                ? cachedRecipe.difficulty
+                : null,
+          };
+        }),
+      ).map((hydrated) => [hydrated.id, hydrated]),
     );
   } catch (error) {
     console.error("Failed to load roundup article data:", error);

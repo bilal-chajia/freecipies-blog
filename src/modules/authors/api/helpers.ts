@@ -4,9 +4,13 @@
  * Helper functions for API endpoints to handle JSON transformations
  */
 
-import type { ImagesJson, BioJson, SeoJson, BioSocialLink } from '../types/authors.types';
+import type { ImagesJson, BioJson, PersonaJson, SeoJson, BioSocialLink } from '../types/authors.types';
 import type { ImageVariants } from '../../articles/types/images.types';
 import { resolveVariantUrl } from '@shared/types/images';
+import {
+    buildAuthorCreditSnapshot,
+    serializeAuthorCreditForAdmin,
+} from '@shared/images/image-contract';
 
 const getBestVariant = (variants?: ImageVariants) => {
     return variants?.lg || variants?.md || variants?.sm || variants?.original || variants?.xs;
@@ -49,10 +53,6 @@ const normalizeSocialLinks = (value: any): BioSocialLink[] | undefined => {
 const normalizeBioJsonObject = (value: any): BioJson => {
     if (!value || typeof value !== 'object') return {};
 
-    const short = value.short ?? value.introduction ?? value.headline ?? undefined;
-    const long = value.long ?? value.fullBio ?? value.subtitle ?? undefined;
-    const introduction = value.introduction ?? (typeof value.short === 'string' ? value.short : undefined);
-    const fullBio = value.fullBio ?? (typeof value.long === 'string' ? value.long : undefined);
     const socials = normalizeSocialLinks(value.socials ?? value.socialLinks);
     const legacySocialLinks =
         value.socialLinks && typeof value.socialLinks === 'object' && !Array.isArray(value.socialLinks)
@@ -66,19 +66,31 @@ const normalizeBioJsonObject = (value: any): BioJson => {
         : undefined;
 
     const normalized: BioJson = {};
+    if (value.content && typeof value.content === 'object') normalized.content = value.content;
     if (value.headline) normalized.headline = value.headline;
     if (value.subtitle) normalized.subtitle = value.subtitle;
-    if (introduction) normalized.introduction = introduction;
-    if (fullBio) normalized.fullBio = fullBio;
+    if (value.introduction) normalized.introduction = value.introduction;
+    if (value.fullBio) normalized.fullBio = value.fullBio;
     if (Array.isArray(value.expertise)) normalized.expertise = value.expertise;
     if (legacySocialLinks && Object.keys(legacySocialLinks).length > 0) {
         normalized.socialLinks = legacySocialLinks;
     } else if (socialLinksFromArray && Object.keys(socialLinksFromArray).length > 0) {
         normalized.socialLinks = socialLinksFromArray;
     }
-    if (short) normalized.short = short;
-    if (long) normalized.long = long;
     if (socials && socials.length > 0) normalized.socials = socials;
+
+    return normalized;
+};
+
+const normalizePersonaJsonObject = (value: any): PersonaJson => {
+    if (!value || typeof value !== 'object') return {};
+
+    const normalized: PersonaJson = {};
+    if (typeof value.voice === 'string') normalized.voice = value.voice;
+    if (typeof value.audience === 'string') normalized.audience = value.audience;
+    if (typeof value.point_of_view === 'string') normalized.point_of_view = value.point_of_view;
+    if (Array.isArray(value.expertise)) normalized.expertise = value.expertise;
+    if (Array.isArray(value.avoid)) normalized.avoid = value.avoid;
 
     return normalized;
 };
@@ -136,8 +148,7 @@ export function parseImagesJson(value: any): string {
             const images = typeof parsed === 'object' && parsed ? parsed : {};
             const normalized: ImagesJson = {
                 avatar: normalizeImageSlot(images.avatar),
-                cover: normalizeImageSlot(images.cover),
-                banner: normalizeImageSlot(images.banner),
+                hero: normalizeImageSlot(images.hero),
             };
             return JSON.stringify(normalized);
         } catch {
@@ -149,8 +160,7 @@ export function parseImagesJson(value: any): string {
     if (typeof value === 'object') {
         const normalized: ImagesJson = {
             avatar: normalizeImageSlot(value.avatar),
-            cover: normalizeImageSlot(value.cover),
-            banner: normalizeImageSlot(value.banner),
+            hero: normalizeImageSlot(value.hero),
         };
         return JSON.stringify(normalized);
     }
@@ -175,6 +185,28 @@ export function parseBioJson(value: any): string {
 
     if (typeof value === 'object') {
         return JSON.stringify(normalizeBioJsonObject(value));
+    }
+
+    return '{}';
+}
+
+/**
+ * Parse and validate PersonaJson from request body
+ */
+export function parsePersonaJson(value: any): string {
+    if (!value) return '{}';
+
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            return JSON.stringify(normalizePersonaJsonObject(parsed));
+        } catch {
+            return '{}';
+        }
+    }
+
+    if (typeof value === 'object') {
+        return JSON.stringify(normalizePersonaJsonObject(value));
     }
 
     return '{}';
@@ -216,7 +248,7 @@ export function transformAuthorRequestBody(body: any): any {
         transformed.imagesJson = parseImagesJson(body.imagesJson);
     } else if (hasLegacyImageFields) {
         // Convert legacy flat fields to imagesJson
-        const images: ImagesJson = {};
+        const images: Partial<Record<'avatar', unknown>> = {};
         if (body.imageUrl) {
             const r2Key = extractR2KeyFromUrl(body.imageUrl);
             images.avatar = {
@@ -251,6 +283,10 @@ export function transformAuthorRequestBody(body: any): any {
         });
     }
 
+    if (body.personaJson !== undefined) {
+        transformed.personaJson = parsePersonaJson(body.personaJson);
+    }
+
     // Handle seoJson - convert flat fields if needed
     if (body.seoJson !== undefined) {
         transformed.seoJson = parseSeoJson(body.seoJson);
@@ -274,6 +310,7 @@ export function transformAuthorResponse(author: any): any {
     if (!author) return author;
 
     const response = { ...author };
+    response.mediaCredit = serializeAuthorCreditForAdmin(buildAuthorCreditSnapshot(author));
 
     // Parse imagesJson and add flat fields
     if (author.imagesJson) {

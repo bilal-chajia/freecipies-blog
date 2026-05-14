@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, X, ChevronDown } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { DateRangePicker } from '@/ui/date-range-picker.jsx';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
@@ -17,11 +17,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu.jsx';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger
-} from '@/ui/popover.jsx';
+
 
 const ArticleFilters = ({
     localFilters,

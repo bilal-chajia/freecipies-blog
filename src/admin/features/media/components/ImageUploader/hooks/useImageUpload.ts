@@ -113,7 +113,7 @@ interface UseImageUploadReturn {
       name: string;
       altText: string;
       caption: string;
-      credit: string;
+      credit: Record<string, unknown>;
       focalPoint: { x: number; y: number };
       aspectRatio: string;
     };
@@ -750,7 +750,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
       name: string;
       altText: string;
       caption: string;
-      credit: string;
+      credit: Record<string, unknown>;
       focalPoint: { x: number; y: number };
       aspectRatio: string;
     };
@@ -880,7 +880,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
           name: metadata.name,
           altText: metadata.altText,
           caption: metadata.caption || '',
-          credit: metadata.credit || '',
+          credit: metadata.credit,
           aspectRatio: metadata.aspectRatio || null,
           focalPoint: metadata.focalPoint || { x: 50, y: 50 },
           mimeType: outputFormat === 'avif' ? 'image/avif' : 'image/webp',

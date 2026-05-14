@@ -49,7 +49,7 @@ import { MediaDialog } from '@admin/features/media/components';
 import { mediaAPI } from '@admin/services/api';
 import ColorPicker from '@admin/components/ColorPicker';
 import { FONTS, COLOR_PRESETS } from './utils/editorConstants';
-import useEditorStore from '../../../store/useEditorStore';
+import useEditorStore from '@admin/features/templates/store/useEditorStore';
 
 /**
  * CollapsibleSection - Accordion section for property panels

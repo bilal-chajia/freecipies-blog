@@ -146,7 +146,7 @@ const primaryPin = pins.find((p) => p.is_primary) || pins[0];
     display: block;
     overflow: hidden;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     transition:
       transform 0.3s ease,
       box-shadow 0.3s ease;
@@ -154,7 +154,7 @@ const primaryPin = pins.find((p) => p.is_primary) || pins[0];
 
   .pin-link:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lg);
   }
 
   .pin-link:hover .pin-overlay {
@@ -197,12 +197,12 @@ const primaryPin = pins.find((p) => p.is_primary) || pins[0];
     font-size: 1.25rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    color: #1a1a1a;
+    color: var(--text);
   }
 
   .pin-description {
     font-size: 0.95rem;
-    color: #666;
+    color: var(--text-tertiary);
     line-height: 1.6;
   }
 
@@ -214,7 +214,7 @@ const primaryPin = pins.find((p) => p.is_primary) || pins[0];
     font-size: 1.5rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
-    color: #1a1a1a;
+    color: var(--text);
   }
 
   .pins-grid {
@@ -232,7 +232,7 @@ const primaryPin = pins.find((p) => p.is_primary) || pins[0];
     display: block;
     overflow: hidden;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
     transition:
       transform 0.3s ease,
       box-shadow 0.3s ease;
@@ -240,7 +240,7 @@ const primaryPin = pins.find((p) => p.is_primary) || pins[0];
 
   .pin-link-small:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
   }
 
   .pin-link-small:hover .pin-overlay-small {
@@ -277,7 +277,7 @@ const primaryPin = pins.find((p) => p.is_primary) || pins[0];
     margin-top: 0.5rem;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--text);
     line-height: 1.4;
   }
 

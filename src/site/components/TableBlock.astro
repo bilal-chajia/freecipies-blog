@@ -58,22 +58,22 @@ const normalizedRows = safeRows.map((row) => {
 
   th,
   td {
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border);
     padding: 0.6rem 0.75rem;
     text-align: left;
     vertical-align: top;
   }
 
   th {
-    background: #f9fafb;
+    background: var(--bg-inset);
     font-weight: 600;
   }
 
   tbody tr:nth-child(even) td {
-    background: #fcfcfd;
+    background: var(--bg-alt);
   }
 
   tbody tr:hover td {
-    background: #f4f5f7;
+    background: var(--bg-hover);
   }
 </style>

@@ -126,7 +126,7 @@ if (!tag) return Astro.redirect("/404");
   }
 
   .section-container {
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 1.5rem);
   }

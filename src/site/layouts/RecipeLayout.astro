@@ -16,6 +16,7 @@ import NutritionFacts from "../components/content/NutritionFacts.astro";
 import FAQSection from "../components/content/FAQSection.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
 import RatingSystem from "../components/content/RatingSystem";
+import Breadcrumb from "../components/Breadcrumb.astro";
 
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import {
@@ -63,13 +64,13 @@ const wordCount = [
 
 const readingTime = Math.max(5, Math.ceil(wordCount / 200));
 
-const heroCover = extractImage(recipe.imagesJson, "cover", 1200);
+const heroSlot = extractImage(recipe.imagesJson, "hero", 1200);
 const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);
-const coverSrcSet = getImageSrcSet(recipe.imagesJson, "cover");
+const heroSlotSrcSet = getImageSrcSet(recipe.imagesJson, "hero");
 const thumbSrcSet = getImageSrcSet(recipe.imagesJson, "thumbnail");
-const useCover = heroCover.imageUrl && (coverSrcSet || !heroThumb.imageUrl);
-const heroImage = useCover ? heroCover : heroThumb;
-const heroSrcSet = useCover ? coverSrcSet : thumbSrcSet;
+const useHeroSlot = heroSlot.imageUrl && (heroSlotSrcSet || !heroThumb.imageUrl);
+const heroImage = useHeroSlot ? heroSlot : heroThumb;
+const heroSrcSet = useHeroSlot ? heroSlotSrcSet : thumbSrcSet;
 const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
 const authorAvatar = author?.imagesJson
@@ -93,6 +94,41 @@ const authorImageWidth = authorAvatar.imageWidth || 48;
 const authorImageHeight = authorAvatar.imageHeight || 48;
 const authorImageStyle = authorAvatar.imageStyle;
 const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
+
+// Breadcrumb items
+const truncate = (str: string, max: number) =>
+  str.length > max ? str.slice(0, max).trimEnd() + "…" : str;
+
+const breadcrumbItems = [
+  { label: "Recipes", href: "/recipes" },
+  ...(category
+    ? [{ label: category.label, href: `/categories/${category.slug}` }]
+    : []),
+  { label: truncate(recipe.label || recipe.headline, 50) },
+];
+
+// JSON-LD BreadcrumbList
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: Astro.site?.origin || "/" },
+    { "@type": "ListItem", position: 2, name: "Recipes", item: `${Astro.site?.origin || ""}/recipes` },
+    ...(category
+      ? [{
+          "@type": "ListItem",
+          position: 3,
+          name: category.label,
+          item: `${Astro.site?.origin || ""}/categories/${category.slug}`,
+        }]
+      : []),
+    {
+      "@type": "ListItem",
+      position: category ? 4 : 3,
+      name: recipe.label || recipe.headline,
+    },
+  ],
+};
 ---
 
 <Layout
@@ -114,20 +150,26 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
       />
     )
   }
+  <script
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(breadcrumbJsonLd)}
+  />
 
   <article
     class="recipe-page"
     style={`--toc-accent: ${tocSettings.accent_color};`}
   >
     <div class="recipe-container">
-      <!-- Main Content Column -->
       <div class="main-content">
+        <!-- Breadcrumb -->
+        <Breadcrumb items={breadcrumbItems} />
         <!-- Category Badge -->
         {
           recipe.categoryLabel && (
             <a
               href={`/categories/${recipe.categorySlug}`}
-              class="category-badge"
+              class="badge category-badge"
               style={`--badge-color: ${categoryColor};`}
             >
               {recipe.categoryLabel}
@@ -141,7 +183,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
         <!-- Rating -->
         <div class="recipe-rating-header">
           <RatingSystem
-            client:load
+            client:idle
             articleId={recipe.id}
             initialValue={recipeJson?.aggregateRating?.ratingValue || 0}
             initialCount={recipeJson?.aggregateRating?.ratingCount || 0}
@@ -297,47 +339,45 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
 
 <style>
   .recipe-page {
-    background: #fff;
+    background: var(--bg-elevated);
     min-height: 100vh;
     padding-bottom: 4rem;
+    contain: style;
   }
 
   .recipe-container {
-    max-width: 1280px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: clamp(0px, 2vw, 2rem) clamp(1rem, 3vw, 2rem);
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: clamp(1.5rem, 3vw, 2rem);
   }
 
   @media (min-width: 1024px) {
     .recipe-container {
-      grid-template-columns: 1fr 360px;
+      grid-template-columns: minmax(0, 1fr) 360px;
     }
   }
 
   /* Main Content */
   .main-content {
-    background: #fff;
+    background: var(--bg-elevated);
     padding: clamp(1rem, 2vw, 1rem) 0;
     min-width: 0; /* prevent grid blowout */
+    overflow-x: hidden; /* prevent child content from expanding the grid track */
   }
 
   /* Category Badge */
   .category-badge {
-    display: inline-block;
-    background: var(--badge-color, #ff6600);
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0.375rem 0.875rem;
-    border-radius: 4px;
+    background: var(--badge-color, var(--brand-secondary));
+    color: var(--text-inverse);
     text-decoration: none;
     margin-bottom: 1rem;
     transition: filter 0.2s;
+    /* Improved accessibility: ensure contrast on bright backgrounds */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .category-badge:hover {
@@ -366,23 +406,23 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
   }
 
   .jump-btn {
-    background: #10b981;
-    color: #fff;
+    background: var(--success-text);
+    color: var(--text-inverse);
     border: none;
   }
 
   .jump-btn:hover {
-    background: #059669;
+    background: var(--success-bg);
   }
 
   .print-btn {
-    background: #f5f5f5;
-    color: #333;
-    border: 1px solid #ddd;
+    background: var(--bg-inset);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-strong);
   }
 
   .print-btn:hover {
-    background: #e5e5e5;
+    background: var(--bg-hover);
   }
 
   .jump-btn .icon,
@@ -405,7 +445,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
   .recipe-title {
     font-size: clamp(1.375rem, 3vw + 0.5rem, 2.5rem);
     font-weight: 800;
-    color: #111;
+    color: var(--text);
     line-height: 1.2;
     margin: 0 0 clamp(0.75rem, 2vw, 1rem);
   }
@@ -420,25 +460,25 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
   .recipe-description {
     font-family: "Source Sans 3", "Segoe UI", Roboto, sans-serif;
     font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
-    color: #444;
+    color: var(--text-secondary);
     line-height: 1.6;
     margin: 0 0 clamp(1rem, 2vw, 1.5rem);
   }
 
   /* Disclosure Notice */
   .disclosure-notice {
-    background: #f8f8f8;
-    border-left: 3px solid #ddd;
+    background: var(--bg-inset);
+    border-left: 3px solid var(--border-strong);
     padding: clamp(0.75rem, 2vw, 1rem) clamp(0.875rem, 2vw, 1.25rem);
     font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.8125rem);
-    color: #666;
+    color: var(--text-tertiary);
     line-height: 1.6;
     margin: clamp(1rem, 2vw, 1.5rem) 0;
     border-radius: 0 8px 8px 0;
   }
 
   .disclosure-notice strong {
-    color: #333;
+    color: var(--text-secondary);
   }
 
   /* Hero Image */
@@ -461,7 +501,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     flex-wrap: wrap;
     gap: 1rem;
     padding: 1.5rem 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-subtle);
     margin-bottom: 2rem;
   }
 
@@ -469,7 +509,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: #f5f5f5;
+    background: var(--bg-inset);
     padding: 0.75rem 1rem;
     border-radius: 8px;
     flex: 1;
@@ -479,40 +519,42 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
   .meta-pill .icon {
     width: 20px;
     height: 20px;
-    color: #ff3366;
+    color: var(--brand-primary);
     flex-shrink: 0;
   }
 
   .meta-pill .label {
     font-size: 0.75rem;
-    color: #888;
+    color: var(--text-tertiary);
     text-transform: uppercase;
   }
 
   .meta-pill .value {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #333;
+    color: var(--text-secondary);
   }
 
   /* Content Sections */
   .content-section {
     margin-bottom: 2.5rem;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 500px;
   }
 
   .content-section h2 {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #111;
+    color: var(--text);
     margin: 0 0 1.25rem;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid #111;
+    border-bottom: 2px solid var(--text);
   }
 
   .content-section h3 {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #333;
+    color: var(--text-secondary);
     margin: 1.5rem 0 0.75rem;
   }
 
@@ -527,10 +569,10 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     font-family: "Playfair Display", Georgia, serif;
     font-size: clamp(1.6rem, 1.4rem + 1vw, 2rem);
     font-weight: 800;
-    color: #111;
+    color: var(--text);
     margin: 2.5rem 0 1rem;
     padding-bottom: 0.6rem;
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 2px solid var(--border-subtle);
     letter-spacing: -0.01em;
   }
 
@@ -538,7 +580,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     font-family: "Playfair Display", Georgia, serif;
     font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
     font-weight: 700;
-    color: #222;
+    color: var(--text);
     margin: 2rem 0 0.75rem;
   }
 
@@ -546,16 +588,16 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     font-family: "Playfair Display", Georgia, serif;
     font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
     font-weight: 600;
-    color: #444;
+    color: var(--text-secondary);
     margin: 1.5rem 0 0.5rem;
   }
 
   /* TLDR */
   .tldr-section {
-    background: #fff8e6;
+    background: var(--bg-alt);
     margin: 0 calc(-1 * clamp(1rem, 3vw, 2rem)) clamp(1.5rem, 3vw, 2.5rem);
     padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem);
-    border-left: 4px solid #f59e0b;
+    border-left: 4px solid var(--warning);
   }
 
   .tldr-section h2 {
@@ -565,7 +607,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
   }
 
   .prose {
-    color: #444;
+    color: var(--text-secondary);
     line-height: 1.7;
   }
 
@@ -581,14 +623,14 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     align-items: flex-start;
     gap: 0.75rem;
     padding: 0.625rem 0;
-    border-bottom: 1px solid #f0f0f0;
-    color: #333;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
   }
 
   .checkbox {
     width: 20px;
     height: 20px;
-    border: 2px solid #10b981;
+    border: 2px solid var(--success);
     border-radius: 50%;
     flex-shrink: 0;
     margin-top: 2px;
@@ -597,7 +639,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
   }
 
   .ingredient-list li:hover .checkbox {
-    background: #10b981;
+    background: var(--success);
   }
 
   /* Instructions */
@@ -612,7 +654,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     display: flex;
     gap: 1rem;
     padding: 1.25rem 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .step-number {
@@ -621,8 +663,8 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     justify-content: center;
     width: 32px;
     height: 32px;
-    background: #ff3366;
-    color: #fff;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
     font-weight: 700;
     font-size: 0.875rem;
     border-radius: 50%;
@@ -631,7 +673,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
 
   .instruction-list p {
     margin: 0;
-    color: #333;
+    color: var(--text-secondary);
     line-height: 1.7;
   }
 
@@ -661,7 +703,7 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
   }
 
   .nutrition-item {
-    background: #f5f5f5;
+    background: var(--bg-inset);
     padding: 1rem;
     border-radius: 8px;
     text-align: center;
@@ -671,13 +713,13 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     display: block;
     font-size: 1.25rem;
     font-weight: 700;
-    color: #111;
+    color: var(--text);
   }
 
   .nutrition-label {
     display: block;
     font-size: 0.75rem;
-    color: #666;
+    color: var(--text-tertiary);
     text-transform: capitalize;
     margin-top: 0.25rem;
   }
@@ -687,6 +729,8 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 800px;
   }
 
   .sidebar-sticky {
@@ -698,19 +742,19 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
   }
 
   .sidebar-widget {
-    background: #fff;
+    background: var(--bg-elevated);
     border-radius: 8px;
     padding: 1.5rem;
-    border: 1px solid #f0f0f0;
+    border: 1px solid var(--border-subtle);
   }
 
   .sidebar-widget h3 {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #111;
+    color: var(--text);
     margin: 0 0 1rem;
     padding-bottom: 0.75rem;
-    border-bottom: 3px solid #111;
+    border-bottom: 3px solid var(--text);
   }
 
   .nutrition-list {
@@ -722,18 +766,18 @@ const contentBlocks = normalizeContentDocument(recipe.contentJson).blocks;
     display: flex;
     justify-content: space-between;
     padding: 0.625rem 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-subtle);
     font-size: 0.9375rem;
   }
 
   .nutrition-key {
-    color: #333;
+    color: var(--text-secondary);
     font-weight: 500;
     text-transform: capitalize;
   }
 
   .nutrition-val {
-    color: #666;
+    color: var(--text-tertiary);
   }
 
   /* Fluid responsive — no max-width media queries needed */

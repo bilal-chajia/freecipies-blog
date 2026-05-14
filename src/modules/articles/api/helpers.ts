@@ -59,13 +59,13 @@ export function transformArticleRequestBody(body: any): any {
             };
         }
 
-        if (body.coverUrl) {
-            const r2Key = extractR2KeyFromUrl(body.coverUrl);
-            images.cover = {
-                ...(r2Key ? { r2_key: r2Key } : { url: body.coverUrl }),
-                alt: body.coverAlt || '',
-                width: body.coverWidth,
-                height: body.coverHeight
+        if (body.heroUrl) {
+            const r2Key = extractR2KeyFromUrl(body.heroUrl);
+            images.hero = {
+                ...(r2Key ? { r2_key: r2Key } : { url: body.heroUrl }),
+                alt: body.heroAlt || '',
+                width: body.heroWidth,
+                height: body.heroHeight
             };
         }
 
@@ -79,10 +79,10 @@ export function transformArticleRequestBody(body: any): any {
     delete transformed.imageAlt;
     delete transformed.imageWidth;
     delete transformed.imageHeight;
-    delete transformed.coverUrl;
-    delete transformed.coverAlt;
-    delete transformed.coverWidth;
-    delete transformed.coverHeight;
+    delete transformed.heroUrl;
+    delete transformed.heroAlt;
+    delete transformed.heroWidth;
+    delete transformed.heroHeight;
 
     return transformed;
 }

@@ -2,7 +2,6 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
-import type { Env } from '@shared/types';
 import { 
   getPinterestPins, 
   createPinterestPin, 
@@ -20,7 +19,7 @@ import {
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
   try {
     const { article_id } = validateQuery(new URL(request.url).searchParams, PinListQuery);
 
@@ -39,7 +38,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
     const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
 
@@ -81,7 +80,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 };
 
-export const PUT: APIRoute = async ({ request, locals }) => {
+export const PUT: APIRoute = async ({ request }) => {
   try {
     const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
 
@@ -118,7 +117,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ request, locals }) => {
+export const DELETE: APIRoute = async ({ request }) => {
   try {
     const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
 

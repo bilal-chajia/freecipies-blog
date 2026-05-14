@@ -44,6 +44,7 @@ export const ImageBlock = createReactBlockSpec(
             caption: { default: '' },
             alt: { default: '' },
             credit: { default: '' },
+            creditJson: { default: '{}' },
             width: { default: 512 },
             height: { default: 0 },
             mediaId: { default: '' },
@@ -150,6 +151,16 @@ export const ImageBlock = createReactBlockSpec(
                 };
             }, [block.id, selectBlock]);
 
+            const getCreditName = useCallback((creditJson, fallback = '') => {
+                if (!creditJson || creditJson === '{}') return fallback || '';
+                try {
+                    const parsed = typeof creditJson === 'string' ? JSON.parse(creditJson) : creditJson;
+                    return parsed?.type === 'author' && parsed?.name ? parsed.name : fallback || '';
+                } catch {
+                    return fallback || '';
+                }
+            }, []);
+
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data) => {
@@ -165,7 +176,9 @@ export const ImageBlock = createReactBlockSpec(
                         url,
                         mediaId: data.id?.toString() || '',
                         alt: data.altText || '',
-                        credit: data.credit || '',
+                        caption: data.caption || '',
+                        credit: getCreditName(JSON.stringify(data.credit || {})),
+                        creditJson: data.credit && typeof data.credit === 'object' ? JSON.stringify(data.credit) : '{}',
                         width: bestVariant?.width || data.width || 512,
                         height: bestVariant?.height || data.height || 300,
                         variantsJson: JSON.stringify(variants),
@@ -179,7 +192,7 @@ export const ImageBlock = createReactBlockSpec(
                     selectBlock();
                     scheduleBlockSelection(currentBlock.id);
                 }, 50);
-            }, [block, editor, scheduleBlockSelection, selectBlock]);
+            }, [block, editor, getCreditName, scheduleBlockSelection, selectBlock]);
 
             // Handle media selection from MediaDialog
             const handleMediaSelect = useCallback((item) => {
@@ -197,7 +210,9 @@ export const ImageBlock = createReactBlockSpec(
                         url,
                         mediaId: item.id?.toString() || '',
                         alt: item.altText || item.alt_text || item.name || '',
-                        credit: item.credit || item.credit_text || '',
+                        caption: item.caption || '',
+                        credit: getCreditName(JSON.stringify(item.credit || {})),
+                        creditJson: item.credit && typeof item.credit === 'object' ? JSON.stringify(item.credit) : '{}',
                         width: bestVariant?.width || item.width || 512,
                         height: bestVariant?.height || item.height || 0,
                         variantsJson: JSON.stringify(variants),
@@ -211,7 +226,7 @@ export const ImageBlock = createReactBlockSpec(
                     selectBlock();
                     scheduleBlockSelection(currentBlock.id);
                 }, 50);
-            }, [block, editor, scheduleBlockSelection, selectBlock]);
+            }, [block, editor, getCreditName, scheduleBlockSelection, selectBlock]);
 
 
 
@@ -366,7 +381,7 @@ export const ImageBlock = createReactBlockSpec(
                         <div className="p-2 space-y-1 bg-muted/20">
                             <input
                                 type="text"
-                                value={block.props.caption}
+                                value={block.props.caption || ''}
                                 onChange={(e) => editor.updateBlock(block, {
                                     type: 'customImage',
                                     props: { ...block.props, caption: e.target.value }
@@ -381,21 +396,11 @@ export const ImageBlock = createReactBlockSpec(
                                 ref={captionRef}
                             />
 
-                            <input
-                                type="text"
-                                value={block.props.credit}
-                                onChange={(e) => editor.updateBlock(block, {
-                                    type: 'customImage',
-                                    props: { ...block.props, credit: e.target.value }
-                                })}
-                                placeholder="Photo credit (optional)"
-                                className={cn(
-                                    'w-full text-center text-xs',
-                                    'bg-transparent border-none',
-                                    'text-muted-foreground/70 placeholder:text-muted-foreground/40',
-                                    'focus:outline-none focus:ring-0'
-                                )}
-                            />
+                            {block.props.credit && (
+                                <div className="w-full text-center text-xs text-muted-foreground/70">
+                                    {block.props.credit}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -412,5 +417,3 @@ export const ImageBlock = createReactBlockSpec(
 );
 
 export default ImageBlock;
-
-

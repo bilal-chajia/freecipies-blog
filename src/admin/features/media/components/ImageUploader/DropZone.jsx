@@ -10,7 +10,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Link, Image as ImageIcon, FileImage, Sparkles, X } from 'lucide-react';
+import { Upload, Link, FileImage, Sparkles, X } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
 import { Textarea } from '@/ui/textarea';

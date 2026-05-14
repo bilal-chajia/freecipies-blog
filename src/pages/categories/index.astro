@@ -20,10 +20,10 @@ const otherCategories = categories.filter((c) => c.id !== featured?.id);
 
 // Get featured image
 const featuredImage = featured
-  ? extractImage(featured.imagesJson, "cover", 1200)
+  ? extractImage(featured.imagesJson, "hero", 1200)
   : null;
 const featuredSrcSet = featured
-  ? getImageSrcSet(featured.imagesJson, "cover")
+  ? getImageSrcSet(featured.imagesJson, "hero")
   : "";
 ---
 
@@ -132,7 +132,7 @@ const featuredSrcSet = featured
     right: 0;
     padding: 2rem;
     color: white;
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
   }
 
@@ -192,7 +192,7 @@ const featuredSrcSet = featured
 
   /* Grid Section */
   .categories-grid-section {
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 3rem 1.5rem 4rem;
   }

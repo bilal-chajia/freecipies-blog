@@ -18,13 +18,12 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { uploadImage } from '@modules/media';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
-import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { getImageUploadSettings } from '@modules/settings';
 import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
 import { validate, VariantUploadFields } from '@shared/validation';
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
 
 

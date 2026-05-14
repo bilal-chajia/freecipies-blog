@@ -1,7 +1,7 @@
 ---
 /**
  * RecipePreviewCard - Simple recipe card for listing/grids
- * Shows: cover image, title, prep/cook time, category badge
+ * Shows: hero image, title, prep/cook time, category badge
  */
 
 import type { Article } from "@modules/articles/schema/articles.schema";
@@ -17,8 +17,8 @@ interface Props {
 
 const { article, recipeJson } = Astro.props;
 
-const coverImage = extractImage(article.imagesJson, "cover", 400);
-const coverSrcSet = getImageSrcSet(article.imagesJson, "cover");
+const heroImage = extractImage(article.imagesJson, "hero", 400);
+const heroSlotSrcSet = getImageSrcSet(article.imagesJson, "hero");
 const sizes = "(max-width: 768px) 100vw, 33vw";
 
 // Parse recipe data
@@ -51,19 +51,19 @@ const author = article.cachedAuthorJson
 
 <article class="recipe-preview-card">
   <a href={`/recipes/${article.slug}`} class="card-link">
-    <!-- Cover Image -->
+          <!-- Hero Image -->
     <div class="card-image">
       {
-        coverImage.imageUrl ? (
+        heroImage.imageUrl ? (
           <img
-            src={coverImage.imageUrl}
-            alt={coverImage.imageAlt || article.headline}
-            width={coverImage.imageWidth || 400}
-            height={coverImage.imageHeight || 300}
-            srcset={coverSrcSet || undefined}
-            sizes={coverSrcSet ? sizes : undefined}
+            src={heroImage.imageUrl}
+            alt={heroImage.imageAlt || article.headline}
+            width={heroImage.imageWidth || 400}
+            height={heroImage.imageHeight || 300}
+            srcset={heroSlotSrcSet || undefined}
+            sizes={heroSlotSrcSet ? sizes : undefined}
             loading="lazy"
-            style={coverImage.imageStyle || undefined}
+            style={heroImage.imageStyle || undefined}
           />
         ) : (
           <div class="image-placeholder">
@@ -89,7 +89,7 @@ const author = article.cachedAuthorJson
       <!-- Category Badge -->
       {
         categoryLabel && (
-          <span class="category-badge" style={`background: ${categoryColor};`}>
+          <span class="badge category-badge" style={`background: ${categoryColor};`}>
             {categoryLabel}
           </span>
         )
@@ -166,6 +166,9 @@ const author = article.cachedAuthorJson
                 src={author.avatar}
                 alt={author.name}
                 class="author-avatar"
+                width="20"
+                height="20"
+                loading="lazy"
               />
             )}
             <span>by {author.name}</span>
@@ -179,9 +182,9 @@ const author = article.cachedAuthorJson
 <style>
   .recipe-preview-card {
     background: var(--bg-elevated);
-    border-radius: 16px;
+    border-radius: var(--radius-xl);
     overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--border-subtle);
     height: 100%;
@@ -236,13 +239,6 @@ const author = article.cachedAuthorJson
     position: absolute;
     bottom: 12px;
     left: 12px;
-    padding: 0.375rem 0.875rem;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-inverse);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 

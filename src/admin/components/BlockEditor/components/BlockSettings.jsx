@@ -272,12 +272,9 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
                         </div>
                         <div className="space-y-2">
                             <Label className="text-xs">Credit</Label>
-                            <Input
-                                className="h-8 text-sm w-full"
-                                value={selectedBlock.props.credit || ''}
-                                onChange={(e) => updateProps({ credit: e.target.value })}
-                                placeholder="Photo credit"
-                            />
+                            <div className="min-h-8 rounded-md border border-input/50 px-2.5 py-1.5 text-xs text-muted-foreground">
+                                {selectedBlock.props.credit || 'Select an uploaded media item to set image credit.'}
+                            </div>
                         </div>
                     </div>
                     {/* MediaDialog and ImageUploader are owned by ImageBlock itself.

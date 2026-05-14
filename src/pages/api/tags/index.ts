@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getTags, createTag, transformTagRequestBody, transformTagResponse } from '@modules/tags';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { validateBody } from '@shared/validation';
@@ -9,7 +8,7 @@ import { CreateTagSchema } from '@shared/validation/schemas/tags';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
   try {
     if (!env?.DB) {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
@@ -39,7 +38,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 

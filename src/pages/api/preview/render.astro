@@ -67,7 +67,7 @@ const imagesJson =
     typeof formData.imagesData === "string"
         ? formData.imagesData
         : JSON.stringify({
-              cover: { url: formData.coverUrl },
+              hero: { url: formData.heroUrl },
               ...formData.imagesData,
           });
 
@@ -106,7 +106,7 @@ const recipe = {
     metaDescription: formData.metaDescription,
 
     // Images
-    imageUrl: formData.coverUrl || undefined,
+    imageUrl: formData.heroUrl || undefined,
     imageAlt: formData.label || "Preview Image",
 
     // Category references (hydrated from DB or formData)

@@ -41,10 +41,10 @@ try {
 const totalPages = Math.ceil(totalRoundups / limit);
 
 const getCardImage = (article: any) => {
-  const cover = extractImage(article.imagesJson, "cover", 600);
+  const hero = extractImage(article.imagesJson, "hero", 600);
   const thumbnail = extractImage(article.imagesJson, "thumbnail", 600);
-  const selected = cover.imageUrl ? cover : thumbnail;
-  const slotName = cover.imageUrl ? "cover" : "thumbnail";
+  const selected = hero.imageUrl ? hero : thumbnail;
+  const slotName = hero.imageUrl ? "hero" : "thumbnail";
   const srcSet = getImageSrcSet(article.imagesJson, slotName);
   return { selected, srcSet };
 };
@@ -142,7 +142,7 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
   }
 
   .container {
-    max-width: 1280px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 1.5rem;
   }

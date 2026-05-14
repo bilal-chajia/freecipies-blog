@@ -1,25 +1,56 @@
 # Image JSON Contract
 
-> **Last Updated:** 2026-04-29
+> **Last Updated:** 2026-05-14
 
-This document defines image-related JSON across media storage, article/category/author image slots, article snapshots, and public rendering.
+This document is the canonical contract for image storage and output shapes across media storage, stored usage snapshots, admin API responses, server render payloads, and public HTML output.
 
-For the full `media` table contract, use `docs/MEDIA_TABLE_CONTRACT.md`.
+For the `media` table columns, lifecycle, cleanup, and source-of-truth rules, use `docs/MEDIA_TABLE_CONTRACT.md`.
+For naming rules, use `docs/NAMING_CONTRACT.md`.
 
-Canonical TypeScript reference: `src/shared/types/images.ts`.
-
-This document defines image JSON shapes and rendering rules. It does not replace the `media` table contract.
+This contract defines the target shape. Current implementation drift is tracked outside this contract.
 
 ## Core Boundary
 
-Do not mix the `media` table with article/editorial snapshots.
+Do not mix the media asset source of truth with editorial/render snapshots.
 
-`media.variants_json` is the complete image asset source of truth. For image media, it must contain:
+| Layer | Role | Source of truth? |
+| --- | --- | --- |
+| `media.variants_json` | Complete image variants plus required placeholder. | Yes |
+| Stored image snapshots | Contextual copies for admin/site rendering. | No |
+| Admin API image payloads | URL-based JSON returned to admin reads. | No |
+| Server render image payloads | URL-based objects passed to server rendering. | No |
+| Public HTML output | Final HTML attributes emitted by SSR pages. | No |
+
+`media.variants_json` owns stored image files, placeholder reuse, R2 cleanup, snapshot regeneration, and high-quality generation inputs.
+
+Stored snapshots exist to avoid runtime joins and to preserve the exact image usage context. They copy selected variants and metadata from `media` when needed by the render context, and they are always regenerable from the media row.
+
+## Naming Rules
+
+Follow `docs/NAMING_CONTRACT.md`. This image contract adds these required
+stored/internal keys:
+
+- `media_id`
+- `r2_key`
+- `size_bytes`
+- `focal_point`
+- `aspect_ratio`
+
+Admin API JSON and server render payload objects expose `url` instead of
+stored `r2_key`.
+
+Public HTML output is not JSON. It uses normal HTML attributes such as `src`, `srcset`, `sizes`, `width`, `height`, `loading`, and `alt`.
+
+## Stored Media Payload
+
+`media.variants_json` is the complete payload stored on the `media` row.
+
+For image media, it must contain:
 
 - `variants`
 - `placeholder`
 
-The `variants` object must contain every generated image variant:
+The `variants` object must contain:
 
 - `xs`
 - `sm`
@@ -27,143 +58,118 @@ The `variants` object must contain every generated image variant:
 - `lg`
 - `original`
 
-Article/category/author JSON fields are usage snapshots. They are not a second media library. They may copy only the variants needed by a specific rendering context, but those copies are always regenerable from the `media` row.
-
-Use these mental names:
-
-| Storage area | Meaning | Source of truth? |
-| --- | --- | --- |
-| `media.variants_json` | Complete image variants plus placeholder | Yes, for generated files, placeholder reuse, R2 cleanup, regeneration, and Pinterest |
-| `articles.images_json` | Article image slots | No, editorial usage snapshot |
-| `articles.content_json` image payloads | Embedded render snapshots | No, block-level render copy |
-| `articles.cached_card_json` | Listing/card cache | No, zero-join render cache |
-
-Snapshot optimization rules never apply to `media.variants_json`. They apply only to article/editorial snapshots.
-
-## Layer Rules
-
-### Stored/Internal
-
-Used by:
-
-- `media.variants_json`
-- `articles.images_json`
-- `authors.images_json`
-- `categories.images_json`
-- `articles.cached_card_json`
-- `content_json` image snapshots when stored in DB
-- R2 deletion/cleanup workflows
-- internal image processing
-
-Stored variants should contain `r2_key`, not absolute URLs. This keeps the database independent from domain/CDN changes.
-
-There are two stored shapes:
-
-- `media.variants_json`: the complete media row payload, shaped as `{ "variants": { ... }, "placeholder": "..." }`.
-- Image slots/snapshots: contextual copies inside article/category/author/block JSON, shaped as `{ "media_id": 55, "variants": { ... } }`.
-
-Rules:
-
-- `variants` is required.
-- `placeholder` is required for image media and should be a compact blur/data URL placeholder generated from the source image.
-- `placeholder` belongs beside `variants` in `media.variants_json`, not inside an individual variant.
-- Image slots/snapshots may copy `placeholder` when the rendering context needs progressive loading or blur-up behavior.
-
-Example complete `media.variants_json` shape:
+Official shape:
 
 ```json
 {
   "variants": {
-    "original": { "r2_key": "media/image-original.jpg", "width": 4000, "height": 2667, "size_bytes": 412345 },
-    "xs": { "r2_key": "media/image-xs.webp", "width": 360, "height": 240, "size_bytes": 18320 },
-    "sm": { "r2_key": "media/image-sm.webp", "width": 720, "height": 480, "size_bytes": 54321 },
-    "md": { "r2_key": "media/image-md.webp", "width": 1200, "height": 800, "size_bytes": 102345 },
-    "lg": { "r2_key": "media/image-lg.webp", "width": 2048, "height": 1365, "size_bytes": 198765 }
+    "original": {
+      "r2_key": "media/lemon-biscuits-original.jpg",
+      "width": 4000,
+      "height": 2250,
+      "size_bytes": 412345
+    },
+    "xs": {
+      "r2_key": "media/lemon-biscuits-xs.webp",
+      "width": 360,
+      "height": 203,
+      "size_bytes": 18320
+    },
+    "sm": {
+      "r2_key": "media/lemon-biscuits-sm.webp",
+      "width": 720,
+      "height": 405,
+      "size_bytes": 54321
+    },
+    "md": {
+      "r2_key": "media/lemon-biscuits-md.webp",
+      "width": 1200,
+      "height": 675,
+      "size_bytes": 102345
+    },
+    "lg": {
+      "r2_key": "media/lemon-biscuits-lg.webp",
+      "width": 2048,
+      "height": 1152,
+      "size_bytes": 198765
+    }
   },
   "placeholder": "data:image/jpeg;base64,..."
 }
 ```
 
-## SQL Storage Implementation
+Rules:
 
-In the physical database (**Cloudflare D1 / SQLite**), the JSON structures defined above are stored and validated as follows:
-
-- **Table**: `media`
-- **Column**: `variants_json`
-- **Type**: `JSON` (D1 uses SQLite JSON1 semantics; data is physically stored as `TEXT` but fully supports native JSON operators like `->` and `->>`).
-- **Integrity**: Enforced by a schema constraint: `CHECK (json_valid(variants_json))`.
-- **Strategy**: The `placeholder` and `variants` objects are bundled into a single JSON blob to ensure atomicity and minimize database reads.
-
-When an image is used in an article or category, this entire JSON payload (or a subset of it) is **denormalized** (copied) into the relevant `_json` columns (e.g., `articles.images_json.hero`) to achieve the **Zero-Join** architecture.
-
-### Public/API/Rendered
-
-Used by:
-
-- public Astro rendering
-- article/category/author cards
-- rendered `content_json` image blocks
-- rendered `related_content` cards
-
-Public/rendered variants are derived from stored variants at the API/service/render boundary. They contain URL data and must not expose `r2_key`. This shape is for final props/responses, not DB storage.
-
-```json
-{
-  "sm": { "url": "/api/images/media/55/sm.webp", "width": 720, "height": 480 },
-  "md": { "url": "/api/images/media/55/md.webp", "width": 1200, "height": 800 }
-}
-```
+- `variants` is required.
+- `placeholder` is required for image media.
+- `placeholder` belongs beside `variants`, not inside an individual variant.
+- Every variant must include `r2_key`, `width`, and `height`.
+- `size_bytes` should be stored when available.
+- Stored variants must not contain `url`.
+- `original` is required as the preserved source asset for high-quality regeneration and Pinterest generation input.
+- `original` is not generated like `xs`, `sm`, `md`, and `lg`; it is the uploaded/cropped source image stored separately, with no required format conversion or compression.
+- `original` must not be copied into normal public/card/related-content snapshots.
+- `original` must not be used for normal public rendering or standard `srcset` output.
 
 ## Variant Shapes
 
-Stored variant:
+Stored/internal variant:
 
 ```json
 {
-  "r2_key": "media/image-md.webp",
+  "r2_key": "media/lemon-biscuits-md.webp",
   "width": 1200,
-  "height": 800,
+  "height": 675,
   "size_bytes": 102345
 }
 ```
 
-Public/rendered variant:
+Resolved variant:
 
 ```json
 {
-  "url": "/api/images/media/55/md.webp",
+  "url": "/api/images/media/lemon-biscuits-md.webp",
   "width": 1200,
-  "height": 800,
+  "height": 675,
   "size_bytes": 102345
 }
 ```
 
-Required in both shapes:
+Required in stored/internal variants:
 
+- `r2_key`
 - `width`
 - `height`
 
-Stored shape requires:
-
-- `r2_key`
-
-Public/rendered shape requires:
+Required in resolved variants:
 
 - `url`
+- `width`
+- `height`
 
 Optional in both:
 
 - `size_bytes`
 
-Rule:
+## Breakpoints
 
-- Stored JSON uses `size_bytes`.
+Standard content image variants:
 
-## Image Slot
+| Variant | Width target | Role |
+| --- | ---: | --- |
+| `xs` | 360px | Tiny UI, small thumbnails, lightweight previews. |
+| `sm` | 720px | Mobile and small-card rendering. |
+| `md` | 1200px | Tablet, normal desktop cards, and content images. |
+| `lg` | 2048px | Wide heroes, large visual cards, and high-density displays. |
+| `original` | source size | Preserved uploaded/cropped source asset for regeneration and Pinterest generation input only. |
 
-Used in article/category/author JSON containers and block snapshots. An image slot describes how a media asset is used in a specific editorial context. It is not the complete media record.
+If the source image is smaller than a target, the variant uses the best available source dimensions. The key still remains required in `media.variants_json`.
 
-Stored image slots should keep `r2_key`; public/rendered image slots should expose generated `url`.
+## Stored Image Snapshot
+
+A stored image snapshot is a contextual copy used inside article/category/author/block JSON.
+
+Official contextual stored snapshot shape:
 
 ```json
 {
@@ -196,118 +202,222 @@ Stored image slots should keep `r2_key`; public/rendered image slots should expo
 
 Rules:
 
-- `media_id` links back to the media library.
-- The complete variant set remains in `media.variants_json`.
-- `alt` should be present for public images.
-- `credit` should be an author credit snapshot copied from `media.credit`, not a bare display string.
-- `credit.avatar.variants` should include `xs` and `sm` for lightweight inline avatar rendering and retina/small-card contexts.
-- `width` and `height` are required for CLS-safe rendering.
-- `focal_point` is optional and used for `object-position`.
-- Stored image slots use `aspect_ratio`.
+- `media_id` links the snapshot back to the media library.
+- `variants` is required and contains only the variants needed by the render context.
+- `alt` is required for public images.
+- `caption` is required only for contextual image snapshots that render visible
+  image context, such as content images and recipe step images.
+- `credit` is required only for contextual image snapshots that render visible
+  credit context, such as content images and recipe step images.
+- Structural image snapshots such as hero, thumbnail, avatar, and card images
+  must omit `caption` and `credit`.
+- When `credit` is present, it is copied from `media.credit` as an internal
+  author credit snapshot.
+- `credit.avatar.variants` must include `xs` and `sm` when an avatar is present.
+- `placeholder` is required for all rendered snapshots to support progressive loading.
+- `focal_point` is optional and uses percentages from 0 to 100.
+- `aspect_ratio` is optional, but recommended when it helps reserve layout space.
+- Stored snapshots use `r2_key`, never public `url`.
 
-## Containers
+## Resolved Image Outputs
 
-### Article Images
+Resolved image outputs are derived from stored snapshots at the API/service/render boundary.
 
-`articles.images_json`:
+### Admin API Image Payload
 
-- `hero`
-- `thumbnail`
-- `recipe_steps`
+Admin screens receive resolved image JSON from admin APIs. This payload uses public `url` values and must not expose R2 keys.
 
-Normal body images are stored directly in `content_json` image blocks. `articles.images_json` should not maintain a separate `content_images` registry by default.
+Official admin API image payload shape:
 
-Pinterest is not an article image slot. Pinterest generation uses `media.variants_json.original` as source input and stores the generated output on `pinterest_pins`.
-
-### Author Images
-
-`authors.images_json`:
-
-- `avatar`
-- `hero`
-
-### Category Images
-
-`categories.images_json`:
-
-- `thumbnail`
-- `hero`
-
-## Breakpoints
-
-Standard content imagery:
-
-- `xs`: 360px
-- `sm`: 720px
-- `md`: 1200px
-- `lg`: 2048px
-- `original`: required for image media; stores the uploaded/cropped source for Pinterest pin generation and future high-quality regeneration
-
-Author avatars may use smaller dimensions. Check `src/shared/types/images.ts` and the media service before assuming standard content breakpoints for avatars.
-
-## Snapshot Variant Policy
-
-The public site is mobile-first and uses responsive `srcset`/`sizes`. Snapshots should store the variants needed to build the `srcset` for their render context, while `media.variants_json` always keeps the full source set.
-
-| Context | Stored variants | Why |
-| --- | --- | --- |
-| `media.variants_json` | `placeholder` plus `xs`, `sm`, `md`, `lg`, `original` | Complete image source of truth for generated files, placeholder reuse, R2 cleanup, snapshot regeneration, and Pinterest pin generation. |
-| Article/category/author `hero` slots | Full available set where practical | These images render as the primary page/header visual. |
-| Category thumbnail snapshots | `xs`, `sm` | Category thumbnails are small navigation/card assets and should not carry larger variants. |
-| Category hero snapshots | `md`, `lg` | Category hero images are larger page/header assets, so they keep tablet/desktop and wide sources without copying every intermediate variant. |
-| Mobile-first card snapshots | `sm`, `md` by default | Supports mobile, retina mobile, tablet, and normal desktop cards without bloating JSON. |
-| Tiny UI, avatars, small inline thumbnails | `xs`, `sm` | Avoids over-fetching when display size is very small. |
-| Large visual cards or wide carousels | `md`, `lg` | Use only when the component can actually render the image large. |
-| Related-content cards | `sm`, `md` by default | Avoids D1/media reads and keeps inline snapshots compact. |
-| Hero/featured snapshots | `sm`, `md`, `lg` | Preserves mobile-first `srcset` while supporting above-the-fold large display surfaces. |
-| Inline content image snapshots | `sm`, `md`, `lg` | Preserves responsive content rendering without copying `original`. |
-| Pinterest pin generation | `media.variants_json.original` | Only place where `original` should be consumed. The generated pin output belongs to `pinterest_pins`. |
+```json
+{
+  "media_id": 55,
+  "alt": "Bowl of pasta",
+  "caption": "Fresh pasta in a ceramic bowl",
+  "credit": {
+    "type": "author",
+    "id": 7,
+    "name": "Jane Doe",
+    "slug": "jane-doe",
+    "avatar": {
+      "media_id": 22,
+      "alt": "Jane Doe",
+      "variants": {
+        "xs": { "url": "/api/images/media/jane-avatar-xs.webp", "width": 50, "height": 50 },
+        "sm": { "url": "/api/images/media/jane-avatar-sm.webp", "width": 100, "height": 100 }
+      }
+    }
+  },
+  "placeholder": "data:image/jpeg;base64,...",
+  "focal_point": { "x": 50, "y": 50 },
+  "aspect_ratio": "16:9",
+  "variants": {
+    "sm": { "url": "/api/images/media/pasta-sm.webp", "width": 720, "height": 480 },
+    "md": { "url": "/api/images/media/pasta-md.webp", "width": 1200, "height": 800 }
+  }
+}
+```
 
 Rules:
 
-- `original` is required in `media.variants_json` for image media and is only for Pinterest pin generation or high-quality regeneration.
-- `placeholder` is required in `media.variants_json` for image media.
-- Do not store `original` in public/card/related-content snapshots.
-- Do not use `original` for normal public rendering, hero images, cards, or related content.
-- Do not include every media variant in `related_content` by default; keep the complete set in `media.variants_json`.
+- Admin API image payloads use `url`, never `r2_key`.
+- Admin API image payloads remain serialized `snake_case`.
+- This payload is safe for the browser because storage keys have already been resolved to public URLs.
+- `width` and `height` are required for CLS-safe rendering.
+
+### Server Render Image Payload
+
+The public site is SSR. Astro server code consumes the same resolved URL-based shape when rendering images, but that object is a server-side render payload, not a public client JSON contract.
+
+Server render payloads:
+
+- use `url`, never `r2_key`;
+- keep serialized-style keys such as `media_id`, `focal_point`, and `aspect_ratio`;
+- generate `src`, `srcset`, and `sizes` on the server from available variants;
+- should not fetch the `media` row at public render time just to complete a missing snapshot unless that component explicitly owns the fallback.
+
+### Public HTML Output
+
+The normal public browser output is SSR HTML, not raw image JSON.
+
+Example public HTML output:
+
+```html
+<img
+  src="/api/images/media/pasta-md.webp"
+  srcset="/api/images/media/pasta-sm.webp 720w, /api/images/media/pasta-md.webp 1200w"
+  sizes="(max-width: 768px) 100vw, 720px"
+  width="1200"
+  height="800"
+  loading="lazy"
+  alt="Bowl of pasta"
+/>
+```
+
+Rules:
+
+- Public HTML output must not expose `r2_key`.
+- Public HTML output uses URL attributes derived from stored R2 keys.
+- Every rendered `<img>` must include `width`, `height`, and an appropriate `loading` value.
+
+## Canonical Containers
+
+Canonical image slots for new writes:
+
+| Container | Slots |
+| --- | --- |
+| `articles.images_json` | `hero`, `thumbnail`, `content_images` (Record/Map), `recipe_steps` (Record/Map) |
+| `authors.images_json` | `avatar`, `hero` |
+| `categories.images_json` | `thumbnail`, `hero` |
+| `articles.content_json` image blocks | `image_ref` placement marker only |
+| `articles.content_json` related content | `related_content.image` snapshot |
+| `articles.cached_card_json` | card image snapshot |
+
+Normal body image snapshots are stored in `articles.images_json.content_images`.
+`content_json` image blocks reference them by `image_ref` and must not store
+the snapshot directly.
+
+Older implementation names are not canonical and should not be used for new writes. They can be handled later as migration drift during implementation alignment.
+
+## Snapshot Variant Matrix
+
+The public site is mobile-first and uses responsive `srcset`/`sizes`. Snapshots should copy the smallest useful variant set for their render context.
+
+| Context | Stored snapshot variants | Notes |
+| --- | --- | --- |
+| `media.variants_json` | `placeholder`, `xs`, `sm`, `md`, `lg`, `original` | Complete source of truth. Snapshot optimization never applies here. |
+| Hero slots | `sm`, `md`, `lg` | Primary above-the-fold or page/header visual. |
+| Thumbnail slots | `xs`, `sm` | Small navigation/card asset. |
+| Avatar slots | `xs`, `sm` | Lightweight inline avatar and retina/small-card contexts. |
+| Card image snapshots | `xs`, `sm` | Default for mobile-first listing/card surfaces. |
+| Related-content snapshots | `xs`, `sm` | Avoids media joins while keeping inline payloads compact. |
+| Content image snapshots | `sm`, `md`, `lg` | Stored as a keyed map in `images_json.content_images`; supports responsive article content without copying `original`. |
+| Recipe step snapshots | `sm`, `md`, `lg` | Stored as a keyed map in `images_json.recipe_steps`; supports full-width recipe instruction imagery. |
+| Generation input | `media.variants_json.original` | Used only as source input; generated outputs belong to their owning tables. |
+
+Rules:
+
+- Do not store `original` in normal snapshots.
+- Do not include every media variant in cards or related content by default.
 - Do include `width` and `height` for every stored snapshot variant.
-- Prefer `sm` + `md` for normal food-blog cards because the frontend is mobile-first.
-- Add `lg` when a specific component displays the image wider than a normal card or needs a wider `srcset`.
+- Include `lg` only when the component can actually render the image large.
+- Snapshot variant policy never changes the required complete set in `media.variants_json`.
 
-## Pinterest and Template Generated Assets
+## Caption and Credit Placement
 
-`media` owns reusable editorial/source assets. It should not become the owner of generated Pinterest pin images or generated template preview thumbnails.
+Caption and credit are stored only where the public UI can render visible image
+context.
 
-Generated assets belong to the table that owns their lifecycle:
+| Snapshot context | Stores `caption` | Stores `credit` |
+| --- | --- | --- |
+| `articles.images_json.hero` | no | no |
+| `articles.images_json.thumbnail` | no | no |
+| `articles.cached_card_json.image` | no | no |
+| `authors.images_json.avatar` | no | no |
+| `authors.images_json.hero` | no | no |
+| `articles.cached_author_json.avatar` | no | no |
+| `categories.images_json.hero` | no | no |
+| `categories.images_json.thumbnail` | no | no |
+| `articles.images_json.content_images` | yes | yes |
+| `articles.images_json.recipe_steps` | yes | yes |
+
+Rules:
+
+- Hero, thumbnail, avatar, and card image snapshots are structural display
+  images and must not store `caption` or `credit`.
+- Content image and recipe step snapshots are contextual images and must store
+  `caption` and `credit`.
+- `credit` follows the author credit snapshot contract when it is present.
+
+## Pinterest and Generated Assets
+
+`media` owns reusable editorial/source assets. Generated assets belong to the table that owns their lifecycle.
 
 | Generated asset | Owning table | Purpose |
 | --- | --- | --- |
-| Template preview thumbnail | `pin_templates` | Admin/template picker preview generated from `elements_json` with sample data. |
-| Final Pinterest pin image | `pinterest_pins` | Exportable/publishable pin image generated from an article source image plus a template. |
+| Template preview thumbnail | `pin_templates` | Admin/template picker preview generated from template data. |
+| Final Pinterest pin image | `pinterest_pins` | Exportable/publishable pin image generated from a source image and template. |
 
 Rules:
 
 - Use `media.variants_json.original` only as high-quality source input for generation.
-- Store generated template thumbnails on `pin_templates`, preferably as `thumbnail_json` or `thumbnail_r2_key`, not as a new `media` row.
-- Store generated Pinterest pin images on `pinterest_pins`, preferably as `image_json` or `image_r2_key`, not as a new `media` row.
-- Generated assets should store R2 keys internally and expose public URLs only at API/export/render boundaries.
-- Current `thumbnail_url` or `image_url` fields should be treated as legacy/current implementation names when they point to internally generated assets.
+- Generated template preview thumbnails should be stored on `pin_templates`, not as new `media` rows.
+- Generated Pinterest pin images should be stored on `pinterest_pins`, not as new `media` rows.
+- Generated asset storage should keep R2 keys internally and expose public URLs only at API/export/render boundaries.
 
-## Responsive Rendering and `srcset`
+## Snapshot Synchronization
 
-Stored snapshots may contain `r2_key`, but rendered markup must use generated public URLs.
+Snapshots are always regenerable from the source media row. When a media record's metadata changes (alt_text, caption, credit, variants_json, focal_point_json, aspect_ratio), all referencing snapshots must be updated.
 
-Example stored snapshot:
+Mechanism: **Application-level batch propagation** (not SQL triggers).
 
-```json
-{
-  "variants": {
-    "sm": { "r2_key": "media/pasta-sm.webp", "width": 720, "height": 480 },
-    "md": { "r2_key": "media/pasta-md.webp", "width": 1200, "height": 800 },
-    "lg": { "r2_key": "media/pasta-lg.webp", "width": 2048, "height": 1365 }
-  }
-}
+Implementation: `src/modules/media/services/snapshot-sync.service.ts`
+
+API: `PATCH /api/media/:id` automatically triggers snapshot propagation after updating the media row.
+
+Flow:
+
+```txt
+PATCH /api/media/:id
+  → updateMedia()           (update the source-of-truth row)
+  → propagateMediaUpdate()  (find & patch all referencing snapshots)
+    → scan articles.images_json + cached_card_json
+    → scan authors.images_json
+    → scan categories.images_json
+    → return SnapshotSyncResult { articlesUpdated, authorsUpdated, categoriesUpdated, errors }
 ```
+
+Rules:
+
+- Do not use SQL triggers for snapshot propagation (D1/Workers CPU time limits).
+- Snapshot sync is best-effort — if it fails, the API still returns success for the media update.
+- The sync response is included in the API response so the caller knows how many rows were affected.
+- Matching is done via `LIKE '%"media_id":N%'` scan on the JSON column.
+- Each slot is patched with only the variant keys it is allowed to contain per the Snapshot Variant Matrix.
+
+## Rendering Rules
+
+Rendered markup must use public URLs derived from stored R2 keys.
 
 Example rendered output:
 
@@ -325,36 +435,8 @@ Example rendered output:
 
 Rules:
 
-- `srcset` is generated from the variants available in the stored snapshot.
-- If a component needs `sm`, `md`, and `lg` for responsive rendering, its snapshot must include those variants.
-- Do not fetch the `media` row at public render time just to complete a missing snapshot unless the component explicitly owns that fallback.
-- Do not include `original` in normal `srcset`.
-
-## Public Rendering Rules
-
 - Every rendered `<img>` must have `width`, `height`, and appropriate `loading`.
-- Stored image JSON should not contain absolute URLs.
+- Stored image JSON must not contain absolute URLs.
 - Public image props/responses must not expose `r2_key`.
-- Build public URLs at the API/service/render boundary using the media helpers.
+- Build public URLs at the API/service/render boundary.
 - Prefer snapshots for cards and related content to avoid runtime media joins.
-
-## Related Content Image Snapshot
-
-`related_content.image` uses a compact stored snapshot with `r2_key`. The default variant set is `sm` + `md` because the front site is mobile-first and related cards should stay lightweight. The public renderer converts the keys to URLs without reading D1.
-
-```json
-{
-  "media_id": 55,
-  "alt": "Bowl of easy pasta",
-  "variants": {
-    "sm": { "r2_key": "media/easy-pasta-sm.webp", "width": 720, "height": 480 },
-    "md": { "r2_key": "media/easy-pasta-md.webp", "width": 1200, "height": 800 }
-  }
-}
-```
-
-Rules:
-
-- Include `sm` or `md`; ideally include both.
-- Do not store absolute URLs.
-- Do not require a D1/media lookup during public rendering.

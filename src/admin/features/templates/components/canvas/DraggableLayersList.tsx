@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useRef } from 'react';
 import { GripVertical, Eye, EyeOff, Lock, Unlock, Type, Image, Square, Layers } from 'lucide-react';
-import { useUIStore } from '../../../store/useUIStore';
+import { useUIStore } from '@admin/features/templates/store/useUIStore';
 
 /**
  * DraggableLayersList - Drag-and-drop reorderable layers panel
@@ -213,4 +213,3 @@ const DraggableLayersList = ({
 };
 
 export default DraggableLayersList;
-

@@ -1,15 +1,14 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getMedia, countMedia } from '@modules/media';
-import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
-import { resolveVariantUrl } from '@shared/types/images';
 import { validateQuery, MediaListQuery } from '@shared/validation';
+import { serializeAdminMediaPayload } from '@shared/images/image-contract';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request, locals, url }) => {
+export const GET: APIRoute = async ({ request, url }) => {
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
@@ -53,28 +52,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
             })
         ]);
 
-        // Transform media files to include 'url' property for frontend compatibility
-        const enhancedMediaFiles = mediaFiles.map((file: any) => {
-            // ... (existing transformation logic)
-            let url = file.url || '';
-            if (!url && file.variantsJson) {
-                try {
-                    const parsed = typeof file.variantsJson === 'string' 
-                        ? JSON.parse(file.variantsJson) 
-                        : file.variantsJson;
-                    const variants = parsed.variants || parsed;
-                    url = resolveVariantUrl(variants.original) ||
-                          resolveVariantUrl(variants.lg) ||
-                          resolveVariantUrl(variants.md) ||
-                          resolveVariantUrl(variants.sm) ||
-                          resolveVariantUrl(variants.public) ||
-                          '';
-                } catch (e) {
-                    console.warn(`Failed to parse variantsJson for media ${file.id}`);
-                }
-            }
-            return { ...file, url };
-        });
+        const enhancedMediaFiles = mediaFiles.map(serializeAdminMediaPayload);
 
         const pagination = {
             total: totalCount,

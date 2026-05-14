@@ -2,10 +2,14 @@ import { z } from 'zod';
 import { normalizeContentDocument } from '../normalize/normalize-content-document';
 
 const publicImageVariantSchema = z.object({
-  url: z.string().min(1),
+  url: z.string().min(1).optional(),
+  r2_key: z.string().min(1).optional(),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
-}).strict();
+  size_bytes: z.number().int().nonnegative().optional(),
+}).strict().refine((variant) => Boolean(variant.url || variant.r2_key), {
+  message: 'image variant requires url or r2_key',
+});
 
 const compactRelatedImageSchema = z.object({
   media_id: z.number().int().positive(),
@@ -19,11 +23,30 @@ const compactRelatedImageSchema = z.object({
 }).strict();
 
 const publicImageVariantsSchema = z.object({
-  xs: publicImageVariantSchema.optional(),
   sm: publicImageVariantSchema.optional(),
   md: publicImageVariantSchema.optional(),
   lg: publicImageVariantSchema.optional(),
-  original: publicImageVariantSchema.optional(),
+}).strict().refine((variants) => Boolean(variants.sm && variants.md && variants.lg), {
+  message: 'image block requires sm, md, and lg variants',
+});
+
+const imageCreditAvatarSchema = z.object({
+  media_id: z.number().int().positive().optional(),
+  alt: z.string().optional(),
+  variants: z.object({
+    xs: publicImageVariantSchema.optional(),
+    sm: publicImageVariantSchema.optional(),
+  }).strict().refine((variants) => Boolean(variants.xs || variants.sm), {
+    message: 'image credit avatar requires xs or sm variant',
+  }),
+}).strict();
+
+const imageCreditSchema = z.object({
+  type: z.literal('author'),
+  id: z.number().int().positive(),
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  avatar: imageCreditAvatarSchema.optional(),
 }).strict();
 
 const baseBlockSchema = z.object({
@@ -58,7 +81,7 @@ const imageBlockSchema = baseBlockSchema.extend({
   media_id: z.number().int().positive(),
   alt: z.string(),
   caption: z.string().optional(),
-  credit: z.string().optional(),
+  credit: imageCreditSchema.optional(),
   variants: publicImageVariantsSchema.optional(),
 }).strict();
 

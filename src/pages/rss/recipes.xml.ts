@@ -24,9 +24,9 @@ export const GET: APIRoute = async ({ locals, site }) => {
     }
 
     const getRecipeImageUrl = (article: any) => {
-      const cover = extractImage(article.images_json, 'cover', 1200);
-      const thumbnail = extractImage(article.images_json, 'thumbnail', 1200);
-      return cover.imageUrl || thumbnail.imageUrl || '';
+    const hero = extractImage(article.images_json, 'hero', 1200);
+    const thumbnail = extractImage(article.images_json, 'thumbnail', 1200);
+    return hero.imageUrl || thumbnail.imageUrl || '';
     };
 
     // Generate RSS feed

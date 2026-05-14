@@ -2,12 +2,12 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Transformer, Line, Circle, Path } from 'react-konva';
 import { AnimatePresence } from 'motion/react';
-import { useEditorStore } from '../../../store';
-import { useUIStore } from '../../../store/useUIStore';
+import { useEditorStore } from '@admin/features/templates/store';
+import { useUIStore } from '@admin/features/templates/store/useUIStore';
 import { GRID_SIZE, SNAP_THRESHOLD } from './utils/canvasConstants';
 import { useKeyboardShortcuts, useSmartGuides, useImageLoader, getProxiedUrl } from './hooks';
 import useCustomFontLoader from './hooks/useCustomFontLoader';
-import { resolveBinding } from '../../../utils/dataBinding';
+import { resolveBinding } from '@modules/templates/utils/dataBinding';
 import FloatingToolbar from './FloatingToolbar';
 
 // Default canvas dimensions (Pinterest 2:3 ratio)
@@ -1471,4 +1471,3 @@ const PinCanvas = ({
 // Export both the component and utility constants
 export { PinCanvas, DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, GRID_SIZE };
 export default PinCanvas;
-

@@ -30,7 +30,6 @@ import {
 import {
     Plus,
     Search,
-    MoreHorizontal,
     Edit3,
     Trash2,
     Copy,
@@ -38,7 +37,6 @@ import {
     LayoutTemplate,
     Clock,
     Palette,
-    ArrowUpRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { templatesAPI } from '@admin/services/api';

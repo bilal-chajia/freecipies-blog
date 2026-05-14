@@ -8,13 +8,16 @@ export { ArticleListQuery, CreateArticleSchema, UpdateArticleSchema, ArticleActi
 export { ContentDocumentInputSchema, ContentDocumentSchema, ContentBlockSchema } from '@modules/content-blocks';
 export { CreateCategorySchema, UpdateCategorySchema } from './schemas/categories';
 export { CreateTagSchema, UpdateTagSchema } from './schemas/tags';
-export { UploadFromUrlSchema, ProxyImageQuery } from './schemas/media';
+export { ProxyImageQuery } from './schemas/media';
 export {
   MediaListQuery,
   BulkDeleteSchema,
   ConfirmUploadSchema,
+  UpdateMediaSchema,
   VariantUploadFields,
-  UploadUrlsQuery,
+  StoredVariantSchema,
+  MediaVariantsJsonSchema,
+  type MediaVariantsJsonInput,
 } from './schemas/media';
 export { CreateAuthorSchema, UpdateAuthorSchema } from './schemas/authors';
 export {

@@ -17,10 +17,90 @@ import { useUploadQueue } from './hooks/useUploadQueue';
 import { ASPECT_RATIOS } from './config';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/ui/dialog';
 import { Button } from '@/ui/button';
-import { X, ArrowLeft, Upload, RefreshCw } from 'lucide-react';
+import { X, ArrowLeft, Upload } from 'lucide-react';
 import { authorsAPI } from '@admin/services/api';
 import { useImageUploadSettings } from '@admin/hooks/useImageUploadSettings';
 import { toast } from 'sonner';
+
+const AUTHORS_CACHE_KEY = 'media_credit_authors';
+const AUTHORS_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function readCachedAuthors() {
+  try {
+    const raw = localStorage.getItem(AUTHORS_CACHE_KEY);
+    if (!raw) return [];
+    const cached = JSON.parse(raw);
+    if (!cached?.timestamp || Date.now() - cached.timestamp > AUTHORS_CACHE_TTL) return [];
+    return Array.isArray(cached.data) ? cached.data : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedAuthors(authors) {
+  try {
+    localStorage.setItem(AUTHORS_CACHE_KEY, JSON.stringify({
+      data: authors,
+      timestamp: Date.now(),
+    }));
+  } catch {
+    // Cache is an optimization only.
+  }
+}
+
+function parseImagesJson(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function buildAuthorCreditSnapshot(author) {
+  if (!author?.id || !author?.name || !author?.slug) return null;
+
+  if (author.mediaCredit?.type === 'author') {
+    return author.mediaCredit;
+  }
+
+  const credit = {
+    type: 'author',
+    id: Number(author.id),
+    name: author.name,
+    slug: author.slug,
+  };
+
+  const images = parseImagesJson(author.imagesJson ?? author.images_json);
+  const avatar = images.avatar;
+  const xs = avatar?.variants?.xs;
+  const sm = avatar?.variants?.sm;
+
+  if (xs?.url && sm?.url) {
+    credit.avatar = {
+      ...(avatar.media_id ? { media_id: Number(avatar.media_id) } : {}),
+      ...(avatar.alt ? { alt: avatar.alt } : {}),
+      variants: {
+        xs: {
+          url: xs.url,
+          width: Number(xs.width),
+          height: Number(xs.height),
+          ...(typeof xs.size_bytes === 'number' ? { size_bytes: xs.size_bytes } : {}),
+        },
+        sm: {
+          url: sm.url,
+          width: Number(sm.width),
+          height: Number(sm.height),
+          ...(typeof sm.size_bytes === 'number' ? { size_bytes: sm.size_bytes } : {}),
+        },
+      },
+    };
+  }
+
+  return credit;
+}
 
 export default function ImageUploader({
   open,
@@ -77,7 +157,7 @@ export default function ImageUploader({
     filename: '',
     altText: '',
     caption: '',
-    credit: '',
+    creditAuthorId: '',
   });
 
   const { settings } = useImageUploadSettings();
@@ -89,6 +169,11 @@ export default function ImageUploader({
   // Authors for credit selection
   const [authors, setAuthors] = useState([]);
   const [loadingAuthors, setLoadingAuthors] = useState(false);
+
+  const selectedCredit = useMemo(() => {
+    const author = authors.find((item) => String(item.id) === String(metadata.creditAuthorId));
+    return buildAuthorCreditSnapshot(author);
+  }, [authors, metadata.creditAuthorId]);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -108,7 +193,9 @@ export default function ImageUploader({
         filename: '',
         altText: '',
         caption: '',
-        credit: settings?.defaultCredit || ''
+        creditAuthorId: settings?.defaultCreditAuthorId
+          ? String(settings.defaultCreditAuthorId)
+          : ''
       });
       // Reset queue state
       clearQueue();
@@ -128,11 +215,17 @@ export default function ImageUploader({
   // Fetch authors when dialog opens
   useEffect(() => {
     if (open && authors.length === 0) {
+      const cachedAuthors = readCachedAuthors();
+      if (cachedAuthors.length) {
+        setAuthors(cachedAuthors);
+      }
       setLoadingAuthors(true);
       authorsAPI.getAll()
         .then(response => {
           const data = response.data?.data || response.data || [];
-          setAuthors(Array.isArray(data) ? data : []);
+          const nextAuthors = Array.isArray(data) ? data : [];
+          setAuthors(nextAuthors);
+          writeCachedAuthors(nextAuthors);
         })
         .catch(err => console.error('Failed to load authors:', err))
         .finally(() => setLoadingAuthors(false));
@@ -197,7 +290,9 @@ export default function ImageUploader({
       filename: nameWithoutExt,
       altText: '',
       caption: '',
-      credit: settings?.defaultCredit || '',
+      creditAuthorId: settings?.defaultCreditAuthorId
+        ? String(settings.defaultCreditAuthorId)
+        : '',
     });
 
     // Reset crop/zoom/rotation for new image
@@ -317,6 +412,10 @@ export default function ImageUploader({
   // Handle upload
   const handleUpload = useCallback(async () => {
     if (!selectedFile) return;
+    if (!selectedCredit) {
+      toast.error('Select an author credit before uploading');
+      return;
+    }
 
     setIsUploading(true);
 
@@ -329,7 +428,7 @@ export default function ImageUploader({
           name: metadata.filename,
           altText: metadata.altText,
           caption: metadata.caption,
-          credit: metadata.credit,
+          credit: selectedCredit,
           focalPoint: focalPoint,
           aspectRatio: aspect,
         },
@@ -348,7 +447,7 @@ export default function ImageUploader({
     } finally {
       setIsUploading(false);
     }
-  }, [selectedFile, croppedAreaPixels, metadata, format, aspect, focalPoint, uploadWithVariants, onUploadComplete, onOpenChange]);
+  }, [selectedFile, croppedAreaPixels, metadata, selectedCredit, format, aspect, focalPoint, uploadWithVariants, onUploadComplete, onOpenChange]);
 
   // Handle upload in background (for queue mode)
   // Data is passed as params to avoid stale state when navigating to next item
@@ -356,6 +455,12 @@ export default function ImageUploader({
     const { file, cropArea, outputFormat, meta, focal, aspectRatio, itemName } = uploadData;
 
     if (!file) return;
+    const queuedCredit = buildAuthorCreditSnapshot(authors.find((item) => String(item.id) === String(meta.creditAuthorId)));
+    if (!queuedCredit) {
+      markItemError(queueIndex, 'Select an author credit before uploading');
+      toast.error(`${itemName} - Select an author credit before uploading`);
+      return;
+    }
 
     // Mark as uploading
     markItemUploading(queueIndex);
@@ -369,7 +474,7 @@ export default function ImageUploader({
           name: meta.filename,
           altText: meta.altText,
           caption: meta.caption,
-          credit: meta.credit,
+          credit: queuedCredit,
           focalPoint: focal,
           aspectRatio,
         },
@@ -397,7 +502,7 @@ export default function ImageUploader({
       markItemError(queueIndex, err.message);
       toast.error(`${itemName} - ${err.message}`);
     }
-  }, [markItemUploading, markItemDone, markItemError, uploadWithVariants, onUploadComplete]);
+  }, [authors, markItemUploading, markItemDone, markItemError, uploadWithVariants, onUploadComplete]);
 
   // Handle cancel/back
   const handleBack = useCallback(() => {
@@ -430,9 +535,9 @@ export default function ImageUploader({
   }, [handleClose, onOpenChange]);
 
   const numericAspect = useMemo(() => ASPECT_RATIOS[aspect], [aspect]);
-  const canUpload = useMemo(() => 
-    selectedFile && metadata.filename.trim() && metadata.altText.trim(),
-    [selectedFile, metadata.filename, metadata.altText]
+  const canUpload = useMemo(() =>
+    selectedFile && metadata.filename.trim() && metadata.altText.trim() && selectedCredit,
+    [selectedFile, metadata.filename, metadata.altText, selectedCredit]
   );
 
   return (

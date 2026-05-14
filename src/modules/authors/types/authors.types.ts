@@ -33,9 +33,18 @@ export interface LegacyBioFields {
 }
 
 export interface BioJson extends LegacyBioFields {
-  short?: string;
-  long?: string;
+  content?: {
+    blocks?: unknown[];
+  };
   socials?: BioSocialLink[];
+}
+
+export interface PersonaJson {
+  voice?: string;
+  audience?: string;
+  point_of_view?: string;
+  expertise?: string[];
+  avoid?: string[];
 }
 
 // ============================================
@@ -179,6 +188,21 @@ export function validateBioJson(bioJson: string | null): BioJson | null {
     const bio = JSON.parse(bioJson);
     if (typeof bio !== 'object') return null;
     return bio as BioJson;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Validate and sanitize PersonaJson
+ */
+export function validatePersonaJson(personaJson: string | null): PersonaJson | null {
+  if (!personaJson) return null;
+
+  try {
+    const persona = JSON.parse(personaJson);
+    if (typeof persona !== 'object') return null;
+    return persona as PersonaJson;
   } catch {
     return null;
   }

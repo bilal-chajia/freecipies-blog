@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import useEditorStore from '../../../../store/useEditorStore';
+import useEditorStore from '@admin/features/templates/store/useEditorStore';
 
 /**
  * Hook to automatically load custom fonts from the store into the document

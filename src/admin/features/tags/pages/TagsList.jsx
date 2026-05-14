@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Trash2, X, Check, Tag, Search, Hash, Filter, Info, Edit } from 'lucide-react';
+import { Plus, Trash2, X, Check, Tag, Search, Hash, Edit } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Card } from '@/ui/card.jsx';

@@ -22,7 +22,6 @@ export const authors = sqliteTable('authors', {
   headline: text('headline'),
   subtitle: text('subtitle'),
   shortDescription: text('short_description').notNull(),
-  excerpt: text('excerpt'),
   introduction: text('introduction'),
   
   // 3. VISUALS
@@ -30,11 +29,14 @@ export const authors = sqliteTable('authors', {
   
   // 4. BIOGRAPHY & SOCIALS
   bioJson: text('bio_json').default('{}'),
+
+  // 5. AI PERSONA
+  personaJson: text('persona_json').default('{}'),
   
-  // 5. SEO CONFIGURATION
+  // 6. SEO CONFIGURATION
   seoJson: text('seo_json').default('{}'),
   
-  // 6. SYSTEM & METRICS
+  // 7. SYSTEM & METRICS
   isOnline: integer('is_online', { mode: 'boolean' }).default(false),
   isFeatured: integer('is_featured', { mode: 'boolean' }).default(false),
   sortOrder: integer('sort_order').default(0),

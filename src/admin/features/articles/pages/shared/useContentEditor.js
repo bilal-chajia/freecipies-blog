@@ -51,8 +51,8 @@ export function useContentEditor({ slug, contentType = 'article' }) {
         summary: '',
         imageUrl: '',
         imageAlt: '',
-        coverUrl: '',
-        coverAlt: '',
+        heroUrl: '',
+        heroAlt: '',
         isOnline: false,
         isFavorite: false,
         publishedAt: '',
@@ -188,8 +188,8 @@ export function useContentEditor({ slug, contentType = 'article' }) {
                     summary: article.summary || '',
                     imageUrl: article.imageUrl || '',
                     imageAlt: parsedImages?.thumbnail?.alt || article.imageAlt || '',
-                    coverUrl: article.coverUrl || '',
-                    coverAlt: parsedImages?.cover?.alt || article.coverAlt || '',
+                    heroUrl: article.heroUrl || '',
+                    heroAlt: parsedImages?.hero?.alt || article.heroAlt || '',
                     isOnline: article.isOnline,
                     isFavorite: article.isFavorite,
                     publishedAt: article.publishedAt || '',
@@ -243,10 +243,10 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             });
         }
 
-        if (field === 'coverAlt') {
+        if (field === 'heroAlt') {
             setImagesData(prev => {
-                if (!prev?.cover) return prev;
-                return { ...prev, cover: { ...prev.cover, alt: value } };
+                if (!prev?.hero) return prev;
+                return { ...prev, hero: { ...prev.hero, alt: value } };
             });
         }
 
@@ -261,13 +261,13 @@ export function useContentEditor({ slug, contentType = 'article' }) {
                 imageUrl: slot?.variants?.sm?.url || slot?.variants?.xs?.url || slot?.url || item.url,
                 imageAlt: slot?.alt || item.altText || prev.imageAlt
             }));
-        } else if (activeMediaField === 'cover') {
-            const slot = buildImageSlotFromMedia(item, { alt: formData.coverAlt || formData.label });
-            setImagesData(prev => ({ ...prev, cover: slot }));
+        } else if (activeMediaField === 'hero') {
+            const slot = buildImageSlotFromMedia(item, { alt: formData.heroAlt || formData.label });
+            setImagesData(prev => ({ ...prev, hero: slot }));
             setFormData(prev => ({
                 ...prev,
-                coverUrl: slot?.variants?.md?.url || slot?.variants?.sm?.url || slot?.url || item.url,
-                coverAlt: slot?.alt || item.altText || prev.coverAlt
+                heroUrl: slot?.variants?.md?.url || slot?.variants?.sm?.url || slot?.url || item.url,
+                heroAlt: slot?.alt || item.altText || prev.heroAlt
             }));
         }
     };
@@ -286,16 +286,16 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             }));
         }
 
-        if (field === 'cover') {
+        if (field === 'hero') {
             setImagesData(prev => {
                 const next = { ...prev };
-                delete next.cover;
+                delete next.hero;
                 return next;
             });
             setFormData(prev => ({
                 ...prev,
-                coverUrl: '',
-                coverAlt: '',
+                heroUrl: '',
+                heroAlt: '',
             }));
         }
     };
@@ -343,7 +343,7 @@ export function useContentEditor({ slug, contentType = 'article' }) {
             return;
         }
 
-        const { imageUrl, coverUrl, imageAlt, coverAlt, label, headline, ...restFormData } = formData;
+        const { imageUrl, heroUrl, imageAlt, heroAlt, label, headline, ...restFormData } = formData;
         const requiredFields = [];
         const trimmedLabel = (label || '').trim();
         const trimmedSlug = (restFormData.slug || '').trim();

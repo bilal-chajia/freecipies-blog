@@ -1,8 +1,10 @@
 # Site Settings Table Contract
 
-> **Last Updated:** 2026-04-29
+> **Last Updated:** 2026-05-11
 
 This document is the product/data contract for the `site_settings` table. The executable SQL source remains `db/schema.sql`.
+
+For naming rules, use `docs/NAMING_CONTRACT.md`.
 
 ## Scope
 
@@ -69,10 +71,9 @@ Parsing rules:
 
 Stored JSON naming rules:
 
-- New `type = json` setting payloads must use lowercase `snake_case` keys.
-- Existing camelCase setting payloads are legacy implementation gaps, not the target contract.
-- Services may temporarily normalize legacy camelCase reads, but save paths should persist canonical `snake_case` after the settings refactor.
-- API/React props may remain camelCase at the boundary; `site_settings.value` is the stored contract.
+- New `type = json` setting payloads follow `docs/NAMING_CONTRACT.md`.
+- Existing non-canonical setting payloads are legacy implementation gaps, not the target contract.
+- Services normalize legacy reads only as a transition path; save paths persist canonical `snake_case` after the settings refactor.
 
 ## Key Naming
 
@@ -125,7 +126,7 @@ Key: `toc_settings`.
 }
 ```
 
-This is the canonical stored shape for new writes. Current code may still read or write the older camelCase keys; that is tracked in `docs/IMPLEMENTATION_GAPS.md` and should be fixed during the settings refactor.
+This is the canonical stored shape for new writes. Current non-canonical read/write drift is tracked in `docs/IMPLEMENTATION_GAPS.md` and must be fixed during the settings refactor.
 
 ### Menu Settings
 
@@ -188,6 +189,6 @@ Public Astro/API:
 
 - No `created_at` column exists in the current SQL schema.
 - No `deleted_at` soft delete exists for this table.
-- Removing a setting is a hard delete, except feature services may choose to reset to defaults or store an empty value.
+- Removing a setting is a hard delete, except feature services either reset to defaults or store an empty value.
 - `updated_at` is maintained by SQL trigger.
 - There is no `is_public` flag. If public/private settings become necessary, add it deliberately to SQL, Drizzle, docs, and APIs together.

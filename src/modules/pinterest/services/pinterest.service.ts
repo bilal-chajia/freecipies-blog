@@ -14,7 +14,7 @@ import {
   type PinterestPin,
   type NewPinterestPin
 } from '../schema/pinterest.schema';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { AppError, ErrorCodes } from '../../../shared/utils/error-handler';
 
 // Helpers mapping Drizzle to old snake_case format for the frontend

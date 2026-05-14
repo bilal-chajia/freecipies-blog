@@ -59,7 +59,7 @@ const { items } = Astro.props;
   }
   
   .breadcrumb-link {
-    color: #6b7280;
+    color: var(--text-tertiary);
     text-decoration: none;
     transition: color 0.2s ease;
     display: flex;
@@ -67,18 +67,18 @@ const { items } = Astro.props;
   }
   
   .breadcrumb-link:hover {
-    color: #ff3366;
+    color: var(--brand-primary);
   }
   
   .breadcrumb-separator {
     width: 1rem;
     height: 1rem;
-    color: #d1d5db;
+    color: var(--border-strong);
     flex-shrink: 0;
   }
   
   .breadcrumb-current {
-    color: #111;
+    color: var(--text);
     font-weight: 500;
   }
   

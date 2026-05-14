@@ -12,7 +12,7 @@ export default function ImagesSection({
     onImageRemove,
     onMediaDialogOpen,
 }) {
-    const { avatar, cover, banner } = imagesData || {};
+    const { avatar, hero } = imagesData || {};
 
     const ImageUploadArea = ({ type, image, label, heightClass = "h-36", targetWidth = 720 }) => {
         const preview = extractImage(image ? { [type]: image } : null, type, targetWidth);
@@ -93,20 +93,13 @@ export default function ImagesSection({
                 />
 
                 <ImageUploadArea
-                    type="cover"
-                    image={cover}
-                    label="Cover Image (Optional)"
+                    type="hero"
+                    image={hero}
+                    label="Hero Image (Optional)"
                     heightClass="h-28"
                     targetWidth={720}
                 />
 
-                <ImageUploadArea
-                    type="banner"
-                    image={banner}
-                    label="Banner (Optional)"
-                    heightClass="h-24"
-                    targetWidth={720}
-                />
             </CardContent>
         </Card>
     );

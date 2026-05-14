@@ -146,10 +146,10 @@ export default function AuthorEditorMain({
                 </CardContent>
             </Card>
 
-            {/* Short Description (Legacy) */}
+            {/* Short Description */}
             <Card className="shadow-sm">
                 <CardHeader>
-                    <CardTitle className="text-lg">Short Description (Legacy)</CardTitle>
+                    <CardTitle className="text-lg">Short Description</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-1.5">
@@ -160,18 +160,6 @@ export default function AuthorEditorMain({
                             onChange={(e) => onInputChange('shortDescription', e.target.value)}
                             placeholder="Brief description for author cards"
                             rows={2}
-                            className="resize-none"
-                        />
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <Label htmlFor="excerpt" className="text-sm font-medium">Excerpt</Label>
-                        <Textarea
-                            id="excerpt"
-                            value={formData.excerpt || ''}
-                            onChange={(e) => onInputChange('excerpt', e.target.value)}
-                            placeholder="Author excerpt for listings"
-                            rows={3}
                             className="resize-none"
                         />
                     </div>

@@ -80,16 +80,15 @@ export default function MetadataPanel({
         <div className="space-y-1">
           <Label htmlFor="credit" className="text-xs font-medium">Credit</Label>
           <Select
-            value={metadata.credit || 'none'}
-            onValueChange={(value) => onMetadataChange({ ...metadata, credit: value === 'none' ? '' : value })}
+            value={metadata.creditAuthorId || ''}
+            onValueChange={(value) => onMetadataChange({ ...metadata, creditAuthorId: value })}
           >
             <SelectTrigger className="h-8 text-sm">
               <SelectValue placeholder={loadingAuthors ? 'Loading...' : 'Select author'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">None</SelectItem>
               {authors.map((author) => (
-                <SelectItem key={author.slug} value={author.name}>
+                <SelectItem key={author.id} value={String(author.id)}>
                   {author.name}
                 </SelectItem>
               ))}

@@ -27,7 +27,7 @@ const AuthorEditor = () => {
 
   // Media Dialog State  
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
-  const [activeImageType, setActiveImageType] = useState(null); // 'avatar' | 'cover' | 'banner'
+  const [activeImageType, setActiveImageType] = useState(null); // 'avatar' | 'hero'
 
   // Basic form data
   const [formData, setFormData] = useState({
@@ -37,7 +37,6 @@ const AuthorEditor = () => {
     email: '',
     jobTitle: '',
     shortDescription: '',
-    excerpt: '',
     isOnline: false,
     isFeatured: false,
     sortOrder: 0,
@@ -46,7 +45,7 @@ const AuthorEditor = () => {
   });
 
   // JSON field states
-  const [imagesData, setImagesData] = useState({ avatar: null, cover: null, banner: null });
+  const [imagesData, setImagesData] = useState({ avatar: null, hero: null });
   const [bioData, setBioData] = useState({
     headline: '',
     subtitle: '',
@@ -88,7 +87,6 @@ const AuthorEditor = () => {
           email: author.email || '',
           jobTitle: author.jobTitle || author.job || '',
           shortDescription: author.shortDescription || '',
-          excerpt: author.excerpt || '',
           isOnline: author.isOnline || false,
           isFeatured: author.isFeatured || false,
           sortOrder: author.sortOrder || 0,
@@ -101,11 +99,10 @@ const AuthorEditor = () => {
           const images = author.imagesJson ? JSON.parse(author.imagesJson) : {};
           setImagesData({
             avatar: images.avatar || null,
-            cover: images.cover || null,
-            banner: images.banner || null,
+            hero: images.hero || null,
           });
         } catch {
-          setImagesData({ avatar: null, cover: null, banner: null });
+          setImagesData({ avatar: null, hero: null });
         }
 
         // Parse bioJson
@@ -169,11 +166,13 @@ const AuthorEditor = () => {
   };
 
   const handleImageChange = (type, imageData) => {
-    setImagesData(prev => ({ ...prev, [type]: imageData }));
+    const slot = type === 'hero' ? 'hero' : type;
+    setImagesData(prev => ({ ...prev, [slot]: imageData }));
   };
 
   const handleImageRemove = (type) => {
-    setImagesData(prev => ({ ...prev, [type]: null }));
+    const slot = type === 'hero' ? 'hero' : type;
+    setImagesData(prev => ({ ...prev, [slot]: null }));
   };
 
   const handleMediaDialogOpen = (type) => {
@@ -211,7 +210,6 @@ const AuthorEditor = () => {
         slug: formData.slug,
         jobTitle: formData.jobTitle,
         shortDescription: formData.shortDescription,
-        excerpt: formData.excerpt,
         isOnline: formData.isOnline,
         isFeatured: formData.isFeatured,
         sortOrder: formData.sortOrder,

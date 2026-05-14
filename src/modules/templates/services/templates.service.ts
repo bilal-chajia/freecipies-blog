@@ -6,9 +6,8 @@
 
 import { eq } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { pinTemplates, type PinTemplate, type NewPinTemplate } from '../schema/templates.schema';
-import type { TemplateElement, UpdateTemplateInput } from '../types';
 
 /**
  * Helper to map Drizzle camelCase properties to snake_case 

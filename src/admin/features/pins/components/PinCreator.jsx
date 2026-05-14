@@ -34,8 +34,8 @@ import { toast } from 'sonner';
 
 import PinCanvas from '@admin/features/templates/components/canvas/PinCanvas';
 import TemplateSelector from './TemplateSelector';
-import { templatesAPI, pinterestBoardsAPI, pinterestPinsAPI } from '../../../../services/api';
-import { useFontLoader } from '../../../../utils/FontLoader';
+import { templatesAPI, pinterestBoardsAPI, pinterestPinsAPI } from '@/services/api';
+import { useFontLoader } from '@/utils/FontLoader';
 import { FONTS } from '@admin/features/templates/components/canvas/ElementPanel';
 
 /**

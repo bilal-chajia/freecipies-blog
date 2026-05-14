@@ -41,9 +41,9 @@ if (!roundup) {
   return Astro.redirect("/404");
 }
 
-const heroCover = extractImage(roundup.imagesJson, "cover", 1200);
+const heroSlot = extractImage(roundup.imagesJson, "hero", 1200);
 const heroThumb = extractImage(roundup.imagesJson, "thumbnail", 1200);
-const heroImage = heroCover.imageUrl ? heroCover : heroThumb;
+const heroImage = heroSlot.imageUrl ? heroSlot : heroThumb;
 
 const pageTitle = roundup.metaTitle || roundup.headline;
 const pageDescription = roundup.metaDescription || roundup.shortDescription;
@@ -62,4 +62,3 @@ const jsonldSchemas = typeof roundup.jsonldJson === 'string'
     schemas={jsonldSchemas}
   />
 </RoundupLayout>
-

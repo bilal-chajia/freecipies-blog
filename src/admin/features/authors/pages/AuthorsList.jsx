@@ -14,8 +14,6 @@ import {
   Trash2,
   Mail,
   Briefcase,
-  Eye,
-  EyeOff,
   LayoutGrid
 } from 'lucide-react';
 import {

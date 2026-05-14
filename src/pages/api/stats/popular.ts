@@ -27,12 +27,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
         const result = await getPopularArticles(env.DB, limit);
 
         const articles = (result || []).map((a: any) => {
-            // Extract cover image URL from images_json
-            let imageUrl = '';
-            try {
-                const images = a.images_json ? JSON.parse(a.images_json) : {};
-                imageUrl = resolveVariantUrl(images?.cover?.variants?.md || images?.cover?.variants?.sm) || '';
-            } catch { }
+                // Extract hero image URL from images_json
+                let imageUrl = '';
+                try {
+                    const images = a.images_json ? JSON.parse(a.images_json) : {};
+                    imageUrl = resolveVariantUrl(images?.hero?.variants?.md || images?.hero?.variants?.sm) || '';
+                } catch { }
             
             return {
                 id: a.id,

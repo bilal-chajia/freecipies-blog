@@ -203,9 +203,9 @@ const BoardsList = () => {
 
                     const imageSlot = typeof board.cover_image_url === 'object' 
                       ? board.cover_image_url 
-                      : { cover: { url: board.cover_image_url } };
+                      : { hero: { url: board.cover_image_url } };
                     
-                    const { imageUrl, alt } = extractImage(imageSlot, 'cover', 1200);
+                    const { imageUrl, alt } = extractImage(imageSlot, 'hero', 1200);
                     const previewUrl = toAdminImageUrl(imageUrl);
 
                     if (!previewUrl) return (

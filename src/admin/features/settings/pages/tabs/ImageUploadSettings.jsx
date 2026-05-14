@@ -268,10 +268,10 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
             </div>
 
             <div className="space-y-1">
-              <Label>Default Credit</Label>
+              <Label>Default Credit Author</Label>
               <Select
-                value={localSettings?.defaultCredit ?? ''}
-                onValueChange={(val) => handleChange('defaultCredit', val)}
+                value={localSettings?.defaultCreditAuthorId ? String(localSettings.defaultCreditAuthorId) : 'none'}
+                onValueChange={(val) => handleChange('defaultCreditAuthorId', val === 'none' ? '' : Number(val))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select an author" />
@@ -279,7 +279,7 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {authors.map(author => (
-                    <SelectItem key={author.id} value={author.name}>
+                    <SelectItem key={author.id} value={String(author.id)}>
                       {author.name}
                     </SelectItem>
                   ))}

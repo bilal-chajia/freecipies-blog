@@ -5,7 +5,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
-import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { validateQuery, ProxyImageQuery } from '@shared/validation';
 
@@ -32,7 +31,7 @@ function isPrivateHost(url: URL): boolean {
     return false;
 }
 
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
     try {
 
         const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;

@@ -158,7 +158,7 @@ export function parseImagesJson(value: any): string {
       const images = typeof parsed === 'object' && parsed ? parsed : {};
       const normalized: CategoryImagesJson = {
         thumbnail: normalizeImageSlot(images.thumbnail),
-        cover: normalizeImageSlot(images.cover),
+        hero: normalizeImageSlot(images.hero),
       };
       return JSON.stringify(normalized);
     } catch {
@@ -169,7 +169,7 @@ export function parseImagesJson(value: any): string {
   if (typeof value === 'object') {
     const normalized: CategoryImagesJson = {
       thumbnail: normalizeImageSlot(value.thumbnail),
-      cover: normalizeImageSlot(value.cover),
+      hero: normalizeImageSlot(value.hero),
     };
     return JSON.stringify(normalized);
   }
@@ -317,7 +317,7 @@ export function transformCategoryRequestBody(body: any): any {
   if (body.imagesJson !== undefined) {
     transformed.imagesJson = parseImagesJson(body.imagesJson);
   } else if (hasLegacyImageFields) {
-    const images: CategoryImagesJson = {};
+    const images: Partial<Record<'thumbnail', unknown>> = {};
     if (body.imageUrl) {
       const r2Key = extractR2KeyFromUrl(body.imageUrl);
       images.thumbnail = {
@@ -413,7 +413,7 @@ export function transformCategoryResponse(category: any): any {
   if (category.imagesJson) {
     try {
       const images: CategoryImagesJson = JSON.parse(category.imagesJson);
-      const primarySlot = images.thumbnail ?? images.cover;
+      const primarySlot = images.thumbnail ?? images.hero;
       const variant = getBestVariant(primarySlot?.variants);
       response.imageUrl = resolveVariantUrl(variant);
       response.imageAlt = primarySlot?.alt;

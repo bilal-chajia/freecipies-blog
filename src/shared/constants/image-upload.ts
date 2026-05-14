@@ -15,7 +15,7 @@ export const IMAGE_UPLOAD_DEFAULTS = {
     variantXs: 360,
     defaultFormat: 'webp',
     defaultAspectRatio: 'free',
-    defaultCredit: '',
+    defaultCreditAuthorId: '',
 } as const;
 
 export type ImageUploadSettings = typeof IMAGE_UPLOAD_DEFAULTS;

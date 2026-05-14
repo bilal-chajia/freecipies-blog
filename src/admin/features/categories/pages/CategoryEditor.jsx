@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, Upload, Image as ImageIcon, Layout, Settings, Globe, FileJson, FolderOpen } from 'lucide-react';
+import { Save, ArrowLeft, Layout, Settings, Globe, FileJson } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Label } from '@/ui/label.jsx';
@@ -40,7 +40,7 @@ const CategoryEditor = () => {
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
-  const [uploaderSlot, setUploaderSlot] = useState('thumbnail'); // 'thumbnail' | 'cover'
+  const [uploaderSlot, setUploaderSlot] = useState('thumbnail'); // 'thumbnail' | 'hero'
   const [mediaTarget, setMediaTarget] = useState('thumbnail');
   const [parentOptions, setParentOptions] = useState([]);
   const [parentLoading, setParentLoading] = useState(false);
@@ -72,7 +72,7 @@ const CategoryEditor = () => {
     shortDescription: '',
     tldr: '',
     imageThumbnail: null,
-    imageCover: null,
+    imageHero: null,
     collectionTitle: '',
     numEntriesPerPage: 12,
     showInNav: false,
@@ -236,7 +236,7 @@ const CategoryEditor = () => {
         })();
 
         const imageFromJsonThumbnail = parsedImages?.thumbnail || null;
-        const imageFromJsonCover = parsedImages?.cover || null;
+        const imageFromJsonHero = parsedImages?.hero || null;
         const legacyImage = category.imageUrl ? {
           url: category.imageUrl,
           alt: category.imageAlt || '',
@@ -261,7 +261,7 @@ const CategoryEditor = () => {
           tldr: category.tldr || '',
           // Map flat image properties back to nested object for UI
           imageThumbnail: imageFromJsonThumbnail || legacyImage,
-          imageCover: imageFromJsonCover || null,
+          imageHero: imageFromJsonHero || null,
           collectionTitle: category.collectionTitle || '',
           numEntriesPerPage: category.numEntriesPerPage || 12,
           showInNav: category.showInNav || false,
@@ -307,17 +307,17 @@ const CategoryEditor = () => {
   const handleUploadComplete = (mediaRecord) => {
     setFormData(prev => {
       const slot = buildImageSlotFromMedia(mediaRecord, {
-        alt: prev[uploaderSlot === 'cover' ? 'imageCover' : 'imageThumbnail']?.alt || prev.label || '',
+        alt: prev[uploaderSlot === 'hero' ? 'imageHero' : 'imageThumbnail']?.alt || prev.label || '',
       });
       return {
         ...prev,
-        [uploaderSlot === 'cover' ? 'imageCover' : 'imageThumbnail']: slot,
+        [uploaderSlot === 'hero' ? 'imageHero' : 'imageThumbnail']: slot,
       };
     });
   };
 
   const handleRemoveImage = (slot) => {
-    setFormData(prev => ({ ...prev, [slot === 'cover' ? 'imageCover' : 'imageThumbnail']: null }));
+    setFormData(prev => ({ ...prev, [slot === 'hero' ? 'imageHero' : 'imageThumbnail']: null }));
   };
 
   // Handle selection from media library
@@ -329,7 +329,7 @@ const CategoryEditor = () => {
 
       return {
         ...prev,
-        [mediaTarget === 'cover' ? 'imageCover' : 'imageThumbnail']: slot,
+        [mediaTarget === 'hero' ? 'imageHero' : 'imageThumbnail']: slot,
       };
     });
     setMediaDialogOpen(false);
@@ -378,14 +378,14 @@ const CategoryEditor = () => {
         return;
       }
 
-      const { imageThumbnail, imageCover, displayOrder, ...restData } = formData;
+      const { imageThumbnail, imageHero, displayOrder, ...restData } = formData;
       const categoryData = {
         ...restData,
         layout: formData.layoutMode,
         sortOrder: displayOrder, // Map frontend displayOrder to backend sortOrder (numeric)
         imagesJson: JSON.stringify({
           ...(imageThumbnail ? { thumbnail: imageThumbnail } : {}),
-          ...(imageCover ? { cover: imageCover } : {}),
+          ...(imageHero ? { hero: imageHero } : {}),
         }),
         headline: formData.headline || formData.label,
         metaTitle: formData.metaTitle || formData.label,
@@ -473,7 +473,7 @@ const CategoryEditor = () => {
   }
 
   const thumbnailSlot = formData.imageThumbnail ? { thumbnail: formData.imageThumbnail } : null;
-  const coverSlot = formData.imageCover ? { cover: formData.imageCover } : null;
+  const heroSlotData = formData.imageHero ? { hero: formData.imageHero } : null;
 
   const previewThumb = extractImage(thumbnailSlot, 'thumbnail', 1200);
   const previewThumbSrcSet = toAdminSrcSet(getImageSrcSet(thumbnailSlot, 'thumbnail'));
@@ -482,12 +482,12 @@ const CategoryEditor = () => {
   const previewThumbSizes = previewThumbSrcSet ? '400px' : undefined;
   const previewThumbStyle = buildImageStyle(previewThumb);
 
-  const previewCover = extractImage(coverSlot, 'cover', 1200);
-  const previewCoverSrcSet = toAdminSrcSet(getImageSrcSet(coverSlot, 'cover'));
-  const previewCoverUrl = toAdminImageUrl(previewCover.imageUrl || formData.imageCover?.url);
-  const previewCoverAlt = formData.imageCover?.alt || formData.label || '';
-  const previewCoverSizes = previewCoverSrcSet ? '400px' : undefined;
-  const previewCoverStyle = buildImageStyle(previewCover);
+  const previewHero = extractImage(heroSlotData, 'hero', 1200);
+  const previewHeroSrcSet = toAdminSrcSet(getImageSrcSet(heroSlotData, 'hero'));
+  const previewHeroUrl = toAdminImageUrl(previewHero.imageUrl || formData.imageHero?.url);
+  const previewHeroAlt = formData.imageHero?.alt || formData.label || '';
+  const previewHeroSizes = previewHeroSrcSet ? '400px' : undefined;
+  const previewHeroStyle = buildImageStyle(previewHero);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -1119,35 +1119,35 @@ const CategoryEditor = () => {
               </CardContent>
             </Card>
 
-            {/* Cover Image Card */}
+            {/* Hero Image Card */}
             <Card className="border-0 shadow-sm ring-1 ring-border/50 overflow-hidden">
               <CardHeader className="pb-3 border-b bg-muted/30">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 bg-indigo-500/10 rounded-md">
                     <ImageIcon className="w-4 h-4 text-indigo-500" />
                   </div>
-                  <CardTitle className="text-base">Cover Image (Optional)</CardTitle>
+                  <CardTitle className="text-base">Hero Image (Optional)</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                {previewCoverUrl ? (
+                {previewHeroUrl ? (
                   <div className="relative group">
                     <img
-                      src={previewCoverUrl}
-                      alt={previewCoverAlt}
-                      width={previewCover.imageWidth || 1200}
-                      height={previewCover.imageHeight || 675}
-                      srcSet={previewCoverSrcSet || undefined}
-                      sizes={previewCoverSizes}
+                      src={previewHeroUrl}
+                      alt={previewHeroAlt}
+                      width={previewHero.imageWidth || 1200}
+                      height={previewHero.imageHeight || 675}
+                      srcSet={previewHeroSrcSet || undefined}
+                      sizes={previewHeroSizes}
                       className="w-full aspect-video object-cover transition-opacity"
-                      style={previewCoverStyle}
+                      style={previewHeroStyle}
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
                       <Button
                         variant="secondary"
                         size="sm"
                         className="h-8"
-                        onClick={() => { setUploaderSlot('cover'); setIsUploaderOpen(true); }}
+                        onClick={() => { setUploaderSlot('hero'); setIsUploaderOpen(true); }}
                       >
                         Change
                       </Button>
@@ -1155,7 +1155,7 @@ const CategoryEditor = () => {
                         variant="destructive"
                         size="sm"
                         className="h-8"
-                        onClick={() => handleRemoveImage('cover')}
+                        onClick={() => handleRemoveImage('hero')}
                       >
                         Remove
                       </Button>
@@ -1165,12 +1165,12 @@ const CategoryEditor = () => {
                   <div className="p-6 space-y-4">
                     <div
                       className="flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/30 transition-colors rounded-lg py-6"
-                      onClick={() => { setUploaderSlot('cover'); setIsUploaderOpen(true); }}
+                      onClick={() => { setUploaderSlot('hero'); setIsUploaderOpen(true); }}
                     >
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
                         <Upload className="w-6 h-6 text-muted-foreground" />
                       </div>
-                      <h3 className="font-medium mb-1 text-sm">Upload Cover</h3>
+                      <h3 className="font-medium mb-1 text-sm">Upload Hero</h3>
                       <p className="text-[11px] text-muted-foreground mb-1 max-w-[180px]">
                         Click to open the image uploader
                       </p>
@@ -1188,7 +1188,7 @@ const CategoryEditor = () => {
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={() => { setMediaTarget('cover'); setMediaDialogOpen(true); }}
+                      onClick={() => { setMediaTarget('hero'); setMediaDialogOpen(true); }}
                       className="w-full h-8 text-xs"
                     >
                       <FolderOpen className="w-3 h-3 mr-2" />
@@ -1200,14 +1200,14 @@ const CategoryEditor = () => {
                   <div className="space-y-1.5">
                     <Label className="text-[11px] font-medium text-muted-foreground">Alt Text</Label>
                     <Input
-                      value={formData.imageCover?.alt || ''}
+                      value={formData.imageHero?.alt || ''}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        imageCover: prev.imageCover ? { ...prev.imageCover, alt: e.target.value } : prev.imageCover
+                        imageHero: prev.imageHero ? { ...prev.imageHero, alt: e.target.value } : prev.imageHero
                       }))}
                       placeholder="Describe the image"
                       className="h-8 text-xs"
-                      disabled={!formData.imageCover}
+                      disabled={!formData.imageHero}
                     />
                   </div>
                 </div>

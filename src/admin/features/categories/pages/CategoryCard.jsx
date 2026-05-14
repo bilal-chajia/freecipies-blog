@@ -43,10 +43,10 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }) => {
 
     const badgeColor = pendingColor || category.color || '#ff6b35';
     const textColor = getContrastColor(badgeColor);
-    const cover = extractImage(category.imagesJson, 'cover', 1200);
+    const hero = extractImage(category.imagesJson, 'hero', 1200);
     const thumbnail = extractImage(category.imagesJson, 'thumbnail', 720);
-    const slotName = cover.imageUrl ? 'cover' : 'thumbnail';
-    const selectedImage = cover.imageUrl ? cover : thumbnail;
+    const slotName = hero.imageUrl ? 'hero' : 'thumbnail';
+    const selectedImage = hero.imageUrl ? hero : thumbnail;
     const imageUrl = toAdminImageUrl(selectedImage.imageUrl || category.imageUrl);
     const srcSet = toAdminSrcSet(getImageSrcSet(category.imagesJson, slotName));
     const sizes = srcSet ? '320px' : undefined;

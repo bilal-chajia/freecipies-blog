@@ -4,9 +4,9 @@
  * Configuration page for AI providers (Gemini, OpenAI, Anthropic).
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Sparkles, Key, Check, X, Loader2, AlertCircle, Eye, EyeOff, Thermometer, FileText, Plus } from 'lucide-react';
+import { Sparkles, Key, Check, Loader2, AlertCircle, Eye, EyeOff, Thermometer, FileText, Plus } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
 import { Label } from '@/ui/label.jsx';

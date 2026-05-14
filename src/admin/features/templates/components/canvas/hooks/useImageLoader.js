@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getValue } from '../../../../utils/dataBinding';
+import { getValue } from '@modules/templates/utils/dataBinding';
 
 /**
  * Get proxied URL for CORS-safe image loading

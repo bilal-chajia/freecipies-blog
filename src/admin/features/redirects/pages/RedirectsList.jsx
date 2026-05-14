@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     Plus, Trash2, X, Check, Search, Edit, ArrowRightLeft,
-    Power, PowerOff, FileText, Activity, AlertCircle
+    Power, PowerOff, FileText, Activity
 } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';

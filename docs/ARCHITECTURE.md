@@ -1,6 +1,6 @@
 # Project Architecture
 
-> **Last Updated:** 2026-04-29
+> **Last Updated:** 2026-05-11
 > **Framework:** Astro 6 + React 19
 > **Deployment:** Cloudflare Pages + D1 + R2 + KV
 
@@ -121,7 +121,7 @@ recipes-saas/
 The app stays as one Astro 6 application and one Cloudflare deployment, but the
 internal runtime boundaries are strict:
 
-- `src/pages` owns Astro file-based routes. Public pages may call server data
+- `src/pages` owns Astro file-based routes. Public pages call server data
   loaders, and API route files should stay as thin adapters.
 - `src/site` owns public Astro UI only. Components and layouts must not import
   `cloudflare:workers` or access `env.DB`, `env.IMAGES`, or `env.SESSION`
@@ -485,7 +485,7 @@ The `articles` table supports three content types:
 
 ### Content Blocks
 
-Articles use a versioned block document in `content_json`. The canonical contract is documented in `docs/CONTENT_JSON_CONTRACT.md` and implemented by `src/modules/content-blocks`.
+Articles use a versioned block document in `content_json`. The container contract is documented in `docs/CONTENT_JSON_CONTRACT.md`; the block vocabulary contract is documented in `docs/CONTENT_BLOCKS_CONTRACT.md` and implemented by `src/modules/content-blocks`.
 
 Database and JSON documentation is split by responsibility:
 
@@ -493,7 +493,8 @@ Database and JSON documentation is split by responsibility:
 - `docs/ARTICLE_JSON_CONTRACTS.md`: article JSON fields except `content_json`.
 - `docs/ARTICLE_TABLE_CONTRACT.md`: complete `articles` table contract.
 - `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md`: cached field contracts for `articles`.
-- `docs/CONTENT_JSON_CONTRACT.md`: only `articles.content_json`.
+- `docs/CONTENT_JSON_CONTRACT.md`: only the `articles.content_json` container document.
+- `docs/CONTENT_BLOCKS_CONTRACT.md`: block vocabulary stored in `articles.content_json.blocks`.
 - `docs/MEDIA_TABLE_CONTRACT.md`: complete `media` table contract.
 - `docs/IMAGE_JSON_CONTRACT.md`: media variants, image slots, and public/private image rules.
 - `docs/CATEGORIES_TABLE_CONTRACT.md`: complete `categories` table contract.
@@ -511,7 +512,7 @@ Database and JSON documentation is split by responsibility:
 }
 ```
 
-Naming rule: use `content_json` only for SQL/DB, `contentJson` for JS/API/React, and snake_case for all stored `block.type` values across BlockEditor, API, DB, and renderer. Compatibility mappings for older editor names live in `docs/IMPLEMENTATION_GAPS.md`.
+Naming rule: `docs/NAMING_CONTRACT.md` is canonical. Stored `block.type` values follow `docs/CONTENT_BLOCKS_CONTRACT.md`. Compatibility mappings for older editor names live in `docs/IMPLEMENTATION_GAPS.md`.
 
 Source file rule: new logic uses `.ts`, React components use `.tsx`, and new `.js`/`.jsx` files should not be introduced.
 
@@ -521,7 +522,7 @@ Source file rule: new logic uses `.ts`, React components use `.tsx`, and new `.j
 | **Media** | `image`, `video` |
 | **Callouts** | `tip_box` |
 | **Layout** | `divider`, `table`, `main_recipe` |
-| **Food Blog** | `before_after`, `faq_section`, `related_content`, `roundup_item` |
+| **Food Blog** | `before_after`, `main_faq`, `related_content`, `main_roundup` |
 | **Reserved Future** | `embed`, `product_card`, `ingredient_spotlight` |
 | **Reserved System/Layout** | `spacer`, `ad_slot` |
 

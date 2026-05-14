@@ -13,7 +13,7 @@ import { categories } from '../../categories/schema/categories.schema';
 import { authors } from '../../authors/schema/authors.schema';
 import { tags as tagsTable } from '../../tags/schema/tags.schema';
 import { equipment as equipmentTable } from '../../equipment/schema/equipment.schema';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedTag } from '../../../shared/utils/hydration';
 import { resolveVariantUrl } from '../../../shared/types/images';
 import { generateJsonLd } from '../utils/jsonld';
@@ -501,9 +501,9 @@ export async function syncCachedFields(
       : '[]';
   }
 
-  // ── Sync recipe scalar indexes & cached recipe summary ──
-  // These populate articles.totalTimeMinutes, articles.difficultyLabel,
-  // and articles.cachedRecipeJson for optimized SQL filtering/listing.
+  // ── Sync cached recipe summary ──
+  // Recipe-specific list/card metadata stays in cachedRecipeJson, not
+  // top-level articles columns.
   let recipe: any = null;
   let totalTimeMinutes: number | null = null;
   if (article.type === 'recipe' && article.recipeJson) {
@@ -512,10 +512,6 @@ export async function syncCachedFields(
       // Derive total time: explicit total, or prep + cook
       totalTimeMinutes = recipe.total
         ?? (((recipe.prep ?? 0) + (recipe.cook ?? 0)) || null);
-
-      // Scalar index columns for SQL WHERE/ORDER BY
-      (updateData as any).totalTimeMinutes = totalTimeMinutes;
-      (updateData as any).difficultyLabel = recipe.difficulty ?? null;
 
       // Cached recipe summary for optimized listing API
       (updateData as any).cachedRecipeJson = JSON.stringify({
@@ -596,15 +592,16 @@ export async function syncCachedFields(
   // ── Generate cached_card_json for zero-join card rendering ──
   {
     const images = safeParseJson<any>(article.imagesJson) || {};
-    const coverVariants = images?.cover?.variants;
+    const hero = images?.hero;
+    const heroVariants = hero?.variants;
 
-    const thumbnail = coverVariants ? {
-      alt: images?.cover?.alt || article.headline,
+    const thumbnail = heroVariants ? {
+      alt: hero?.alt || article.headline,
       variants: {
-        xs: coverVariants.xs ? { url: resolveVariantUrl(coverVariants.xs), width: coverVariants.xs.width } : undefined,
-        sm: coverVariants.sm ? { url: resolveVariantUrl(coverVariants.sm), width: coverVariants.sm.width } : undefined,
-        md: coverVariants.md ? { url: resolveVariantUrl(coverVariants.md), width: coverVariants.md.width } : undefined,
-        lg: coverVariants.lg ? { url: resolveVariantUrl(coverVariants.lg), width: coverVariants.lg.width } : undefined,
+        xs: heroVariants.xs ? { url: resolveVariantUrl(heroVariants.xs), width: heroVariants.xs.width } : undefined,
+        sm: heroVariants.sm ? { url: resolveVariantUrl(heroVariants.sm), width: heroVariants.sm.width } : undefined,
+        md: heroVariants.md ? { url: resolveVariantUrl(heroVariants.md), width: heroVariants.md.width } : undefined,
+        lg: heroVariants.lg ? { url: resolveVariantUrl(heroVariants.lg), width: heroVariants.lg.width } : undefined,
       }
     } : null;
 

@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validate, z } from '@shared/validation';
@@ -8,7 +7,6 @@ import { validate, z } from '@shared/validation';
 export const prerender = false;
 
 // Valid logo types
-const VALID_LOGO_TYPES = ['main', 'dark', 'mobile'];
 const VALID_IMAGE_TYPES = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/x-icon'];
 
 /** Schema for POST /api/branding action path parts */
@@ -40,7 +38,7 @@ function getExtensionFromMimeType(mimeType: string): string {
     return mimeToExt[mimeType] || 'png';
 }
 
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
     try {
         const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -79,7 +77,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
 };
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
     try {
         const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -163,7 +161,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 };
 
 // Upload generated favicon variant
-export const PUT: APIRoute = async ({ request, locals }) => {
+export const PUT: APIRoute = async ({ request }) => {
     try {
         const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
         const authContext = await extractAuthContext(request, jwtSecret);
@@ -212,7 +210,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     }
 };
 
-export const DELETE: APIRoute = async ({ request, locals }) => {
+export const DELETE: APIRoute = async ({ request }) => {
     try {
         const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
         const authContext = await extractAuthContext(request, jwtSecret);

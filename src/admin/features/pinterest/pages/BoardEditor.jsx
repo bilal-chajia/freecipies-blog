@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Image as ImageIcon, X } from 'lucide-react';
@@ -183,7 +183,7 @@ const BoardEditor = () => {
             <div className="flex flex-col gap-3">
               {formData.cover_image_url ? (() => {
                 const imageData = typeof formData.cover_image_url === 'object' 
-                  ? extractImage(formData.cover_image_url, 'cover', 1200)
+                  ? extractImage(formData.cover_image_url, 'hero', 1200)
                   : { imageUrl: formData.cover_image_url };
                 
                 const previewUrl = toAdminImageUrl(imageData.imageUrl);

@@ -8,7 +8,7 @@ import { eq, and, asc, isNull, like, or } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { equipment, type Equipment, type NewEquipment } from '../schema/equipment.schema';
 import { articles } from '../../articles/schema/articles.schema';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { resolveVariantUrl } from '../../../shared/types/images';
 
 /**

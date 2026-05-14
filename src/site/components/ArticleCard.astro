@@ -1,7 +1,6 @@
 ---
 import type { HydratedArticle } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
-import FormattedDate from "./FormattedDate.astro";
 import RatingSystem from "./content/RatingSystem";
 
 
@@ -18,9 +17,9 @@ const isMinimal = cardStyle === "minimal";
 const isList = layoutMode === "list";
 
 const thumbnail = extractImage(article.imagesJson, "thumbnail", 720);
-const cover = extractImage(article.imagesJson, "cover", 720);
-const slotName = thumbnail.imageUrl ? "thumbnail" : "cover";
-const selected = thumbnail.imageUrl ? thumbnail : cover;
+const hero = extractImage(article.imagesJson, "hero", 720);
+const slotName = thumbnail.imageUrl ? "thumbnail" : "hero";
+const selected = thumbnail.imageUrl ? thumbnail : hero;
 const srcSet = getImageSrcSet(article.imagesJson, slotName);
 const sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px";
 const listSizes = "(max-width: 768px) 100vw, 320px";
@@ -44,10 +43,8 @@ const recipe = 'recipeJson' in article && article.recipeJson
 
 const ratingValue = recipe?.aggregateRating?.ratingValue ?? null;
 const ratingCount = recipe?.aggregateRating?.ratingCount ?? 0;
-const normalizedRating = ratingValue ? Math.max(0, Math.min(5, ratingValue)) : 0;
 const hasRating = ratingValue !== null && ratingCount > 0;
 const authorLabel = article.authorName || article.authorSlug || "Unknown";
-const ratingStars = Array.from({ length: 5 });
 const showBookmark = article.type === "recipe";
 ---
 
@@ -106,7 +103,7 @@ const showBookmark = article.type === "recipe";
         </div>
         <div class="list-rating">
           <RatingSystem
-            client:load
+            client:visible
             articleId={article.id}
             initialValue={ratingValue || 0}
             initialCount={ratingCount || 0}
@@ -198,7 +195,7 @@ const showBookmark = article.type === "recipe";
       <!-- Rating (Grid View) -->
       <div class="mb-4">
         <RatingSystem
-          client:load
+          client:visible
           articleId={article.id}
           initialValue={ratingValue || 0}
           initialCount={ratingCount || 0}
@@ -438,4 +435,3 @@ const showBookmark = article.type === "recipe";
     color: var(--text-secondary);
   }
 </style>
-

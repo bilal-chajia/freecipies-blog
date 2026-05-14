@@ -20,7 +20,8 @@ export {
     type ImageSlotName,
 
     type StorageVariant,
-    type StorageVariants,
+    type StrictStorageVariants,
+    type PartialStorageVariants,
     type MediaVariantsJson,
 
     type StoredImageVariant,

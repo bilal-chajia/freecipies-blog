@@ -1,5 +1,4 @@
 import api from './api-client';
-import { resolveVariantUrl } from '@shared/types/images';
 
 // ============================================
 // ARTICLES API
@@ -106,118 +105,18 @@ export const mediaAPI = {
   // Get all media files
   getAll: (params = {}) => api.get('/media', { params }),
 
-  // Upload file to R2
-  upload: async (file, options = {}) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (options.folder) formData.append('folder', options.folder);
-    if (options.contextSlug) formData.append('contextSlug', options.contextSlug);
-    if (options.alt) formData.append('alt', options.alt);
-    if (options.attribution) formData.append('attribution', options.attribution);
-
-    const response = await api.post('/upload-image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    // Backfill url from variantsJson for backward compatibility
-    if (response.data?.success && response.data?.data) {
-      const data = response.data.data;
-      if (!data.url && data.variantsJson) {
-        try {
-          const variants = typeof data.variantsJson === 'string' ? JSON.parse(data.variantsJson) : data.variantsJson;
-          const url = resolveVariantUrl(variants.original) || resolveVariantUrl(variants.lg) || resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.xs) || '';
-          response.data.data.url = url;
-          // Also set top-level url if some components look there (though typically they look at data.data)
-          if (!response.data.url) response.data.url = url;
-        } catch (e) {
-          console.error('Failed to polyfill url from variantsJson', e);
-        }
-      }
-    }
-
-    return response;
-  },
-
-  // Upload image from URL
-  uploadFromUrl: async (url, options = {}) => {
-    const response = await api.post('/upload-from-url', {
-      url,
-      alt: options.alt || '',
-      attribution: options.attribution || '',
-      convertToWebp: options.convertToWebp !== false,
-      folder: options.folder || '',
-      contextSlug: options.contextSlug || '',
-    });
-
-    // Backfill url from variantsJson for backward compatibility
-    if (response.data?.success && response.data?.data) {
-      const data = response.data.data;
-      if (!data.url && data.variantsJson) {
-        try {
-          const variants = typeof data.variantsJson === 'string' ? JSON.parse(data.variantsJson) : data.variantsJson;
-          const url = resolveVariantUrl(variants.original) || resolveVariantUrl(variants.lg) || resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.xs) || '';
-          response.data.data.url = url;
-          if (!response.data.url) response.data.url = url;
-        } catch (e) {
-          console.error('Failed to polyfill url from variantsJson', e);
-        }
-      }
-    }
-
-    return response;
-  },
-
-  // Delete media file
+  // Delete media file (soft-delete)
   delete: (id) => api.delete(`/media/${id}`),
 
   // Bulk delete multiple media files
   bulkDelete: (ids) => api.post('/media/bulk-delete', { ids }),
 
-  // Replace image file (in-place)
-  replaceImage: (id, file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.put(`/media/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-  },
-
-  // Get presigned URLs for direct R2 upload
-  getUploadUrls: async (options) => {
-    const params = new URLSearchParams({
-      baseName: options.baseName,
-      variants: options.variants.join(','),
-      mimeType: options.mimeType || 'image/webp',
-      originalExt: options.originalExt || 'jpg',
-    });
-    return api.get(`/media/upload-urls?${params.toString()}`);
-  },
-
-  // Confirm upload after all variants uploaded to R2
+  // Confirm upload after all variants uploaded to R2 via upload-variant
   confirmUpload: async (payload, config = {}) => {
     return api.post('/media/confirm', payload, config);
   },
 
-  // Upload directly to presigned URL (no auth needed, URL is pre-signed)
-  uploadToPresignedUrl: async (url, blob, contentType) => {
-    const response = await fetch(url, {
-      method: 'PUT',
-      body: blob,
-      headers: {
-        'Content-Type': contentType,
-      },
-    });
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.status}`);
-    }
-    return response;
-  },
-
-  // Upload variant via Worker (fallback when presigned URLs unavailable)
+  // Upload a single variant blob via Worker
   uploadVariant: async (blob, options, config = {}) => {
     const formData = new FormData();
     formData.append('file', blob, options.filename || 'image.webp');
