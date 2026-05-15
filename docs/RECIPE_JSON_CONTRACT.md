@@ -543,8 +543,7 @@ table to render the equipment section.
       },
       "affiliate_url": "https://example.com",
       "affiliate_provider": "amazon",
-      "affiliate_note": null,
-      "price_display": "$299"
+      "affiliate_note": null
     }
   },
   {
@@ -559,7 +558,7 @@ table to render the equipment section.
 ]
 ```
 
-The `equipment` table is the source of truth for kitchen tools, affiliate links, brand, product image, category, price display, and provider metadata.
+The `equipment` table is the source of truth for kitchen tools, affiliate links, brand, product image, category, and provider metadata.
 
 Rules:
 
@@ -581,9 +580,9 @@ Rules:
 - `source_type = "manual"` requires `equipment_id: null` and `snapshot: null`.
 - Catalog snapshots are copied from the selected active `equipment` row at
   article save time.
-- Catalog snapshots may include `slug`, `name`, `brand`, `description`,
+- Catalog snapshots include `slug`, `name`, `brand`, `description`,
   `category`, `image`, `affiliate_url`, `affiliate_provider`,
-  `affiliate_note`, and `price_display`.
+  and `affiliate_note`.
 - Snapshot images store internal `r2_key` values and public props resolve them
   to `url`.
 - If an equipment row changes later, affected article `recipe_json.equipment[]`

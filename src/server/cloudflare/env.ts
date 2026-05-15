@@ -18,3 +18,8 @@ export const getRequiredBinding = <Name extends BindingName>(
 export const getR2PublicUrl = (): string | undefined => {
   return getCloudflareEnv().R2_PUBLIC_URL || import.meta.env.R2_PUBLIC_URL;
 };
+
+export const getSettingsCache = () => {
+  const cloudflareEnv = getCloudflareEnv();
+  return cloudflareEnv.SETTINGS_CACHE ?? cloudflareEnv.SESSION;
+};

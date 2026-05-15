@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Load upload settings
     const settings = await getImageUploadSettings(env.DB);
-    const MAX_SIZE_BYTES = settings.maxFileSizeMB * 1024 * 1024;
+    const MAX_SIZE_BYTES = settings.max_file_size_mb * 1024 * 1024;
     const allowedTypes = IMAGE_SUPPORTED_TYPES;
 
     // Parse form data

@@ -7,7 +7,7 @@ import { z } from '../helpers';
 import { SlugField, LabelField, DescriptionField } from './common';
 
 /** JSON string or object (for keywords, imageJson) */
-const JsonField = z.union([z.string(), z.record(z.unknown()), z.array(z.unknown())]).optional();
+const JsonField = z.union([z.string(), z.record(z.string(), z.unknown()), z.array(z.unknown())]).optional();
 
 /**
  * Schema for creating equipment.
@@ -25,7 +25,6 @@ export const CreateEquipmentSchema = z.object({
   affiliateUrl: z.string().url().optional().or(z.literal('')),
   affiliateProvider: z.string().max(100).optional(),
   affiliateNote: z.string().max(1000).optional(),
-  priceDisplay: z.string().max(50).optional(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
 }).passthrough();

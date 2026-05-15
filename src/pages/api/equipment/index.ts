@@ -7,7 +7,6 @@ import {
     updateEquipment,
     deleteEquipment,
     matchEquipmentInText,
-    refreshCachedEquipmentForArticles,
 } from '@modules/equipment';
 import { transformEquipmentRequestBody, transformEquipmentResponse } from '@modules/equipment';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
@@ -123,13 +122,6 @@ export const PUT: APIRoute = async ({ request }) => {
         const transformedBody = transformEquipmentRequestBody(reqBody);
         const item = await updateEquipment(env.DB, slug, transformedBody);
         const responseItem = transformEquipmentResponse(item);
-
-        // Cascade: refresh cachedEquipmentJson in all articles referencing this item
-        if (item?.id) {
-            refreshCachedEquipmentForArticles(env.DB, item.id)
-                .then((count) => { if (count > 0) console.log(`Refreshed equipment cache in ${count} articles`); })
-                .catch((err) => console.error('Failed to cascade equipment update:', err));
-        }
 
         const { body, status, headers } = formatSuccessResponse(responseItem);
         return new Response(body, { status, headers });

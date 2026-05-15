@@ -101,17 +101,43 @@ export const AppearanceSchema = z
 // ────────────────────────────────────────────
 
 /** PUT body for image-upload: partial match of known defaults, types must match */
+const ImageUploadCreditAvatarVariantSchema = z.object({
+  r2_key: z.string().min(1),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  size_bytes: z.number().int().nonnegative().optional(),
+});
+
+const ImageUploadCreditSchema = z.object({
+  type: z.literal('author'),
+  id: z.number().int().positive(),
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  avatar: z.object({
+    media_id: z.number().int().positive().optional(),
+    alt: z.string().optional(),
+    variants: z.object({
+      xs: ImageUploadCreditAvatarVariantSchema,
+      sm: ImageUploadCreditAvatarVariantSchema,
+    }),
+  }).nullable(),
+});
+
 export const ImageUploadSettingsSchema = z
   .object({
-    webpQuality: z.number().int().min(1).max(100).optional(),
-    avifQuality: z.number().int().min(1).max(100).optional(),
-    maxFileSizeMB: z.number().positive().optional(),
-    variantLg: z.number().int().positive().optional(),
-    variantMd: z.number().int().positive().optional(),
-    variantSm: z.number().int().positive().optional(),
-    variantXs: z.number().int().positive().optional(),
-    defaultFormat: z.string().optional(),
-    defaultAspectRatio: z.string().optional(),
-    defaultCreditAuthorId: z.coerce.number().int().positive().optional().or(z.literal('')),
+    max_file_size_mb: z.number().positive().optional(),
+    variant_widths: z.object({
+      xs: z.number().int().positive(),
+      sm: z.number().int().positive(),
+      md: z.number().int().positive(),
+      lg: z.number().int().positive(),
+    }).optional(),
+    encoding: z.object({
+      format: z.enum(['webp', 'avif']),
+      webp_quality: z.number().int().min(1).max(100),
+      avif_quality: z.number().int().min(1).max(100),
+    }).optional(),
+    default_aspect_ratio: z.string().optional(),
+    default_credit: ImageUploadCreditSchema.nullable().optional(),
   })
   .passthrough();

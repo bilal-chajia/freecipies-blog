@@ -150,7 +150,7 @@ Important fields:
 
 - identity: `id`, `slug`, `name`, `brand`
 - matching/filtering: `keywords`, `category`
-- product display: `description`, `image_json`, `price_display`
+- product display: `description`, `image_json`
 - affiliate: `affiliate_url`, `affiliate_provider`, `affiliate_note`
 - workflow/lifecycle: `is_active`, `sort_order`, `deleted_at`
 

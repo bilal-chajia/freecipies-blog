@@ -5,7 +5,8 @@
 This document is the canonical contract for image storage and output shapes across media storage, stored usage snapshots, admin API responses, server render payloads, and public HTML output.
 
 For the `media` table columns, lifecycle, cleanup, and source-of-truth rules, use `docs/MEDIA_TABLE_CONTRACT.md`.
-For naming rules, use `docs/NAMING_CONTRACT.md`.
+For naming rules, including canonical R2 image object key format, use
+`docs/NAMING_CONTRACT.md`.
 
 This contract defines the target shape. Current implementation drift is tracked outside this contract.
 
@@ -106,6 +107,8 @@ Rules:
 - Every variant must include `r2_key`, `width`, and `height`.
 - `size_bytes` should be stored when available.
 - Stored variants must not contain `url`.
+- Stored `r2_key` values must follow the R2 image object key format in
+  `docs/NAMING_CONTRACT.md`.
 - `original` is required as the preserved source asset for high-quality regeneration and Pinterest generation input.
 - `original` is not generated like `xs`, `sm`, `md`, and `lg`; it is the uploaded/cropped source image stored separately, with no required format conversion or compression.
 - `original` must not be copied into normal public/card/related-content snapshots.

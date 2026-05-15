@@ -184,17 +184,17 @@ export default function ImageUploader({
       setCrop({ x: 0, y: 0 });
       setZoom(1);
       setRotation(0);
-      setAspect(settings?.defaultAspectRatio || 'free');
+      setAspect(settings?.default_aspect_ratio || 'free');
       setCroppedAreaPixels(null);
       setFocalPoint({ x: 50, y: 50 });
       setShowFocalPoint(false);
-      setFormat(settings?.defaultFormat || defaultFormat);
+      setFormat(settings?.encoding?.format || defaultFormat);
       setMetadata({
         filename: '',
         altText: '',
         caption: '',
-        creditAuthorId: settings?.defaultCreditAuthorId
-          ? String(settings.defaultCreditAuthorId)
+        creditAuthorId: settings?.default_credit?.id
+          ? String(settings.default_credit.id)
           : ''
       });
       // Reset queue state
@@ -290,8 +290,8 @@ export default function ImageUploader({
       filename: nameWithoutExt,
       altText: '',
       caption: '',
-      creditAuthorId: settings?.defaultCreditAuthorId
-        ? String(settings.defaultCreditAuthorId)
+      creditAuthorId: settings?.default_credit?.id
+        ? String(settings.default_credit.id)
         : '',
     });
 
@@ -664,7 +664,7 @@ export default function ImageUploader({
                     onUrlImport={handleUrlImport}
                     onUrlsImport={addUrlsToQueue}
                     allowMultiple={allowMultiple}
-                    maxFileSizeMB={settings?.maxFileSizeMB}
+                    maxFileSizeMB={settings?.max_file_size_mb}
                   />
                 )}
               </motion.div>

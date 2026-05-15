@@ -12,7 +12,6 @@ import { articlesToTags } from '../schema/articles-to-tags.schema';
 import { categories } from '../../categories/schema/categories.schema';
 import { authors } from '../../authors/schema/authors.schema';
 import { tags as tagsTable } from '../../tags/schema/tags.schema';
-import { equipment as equipmentTable } from '../../equipment/schema/equipment.schema';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedTag } from '../../../shared/utils/hydration';
 import { resolveVariantUrl } from '../../../shared/types/images';
@@ -244,7 +243,7 @@ function prepareJsonFields(patch: Record<string, any>): Record<string, any> {
     'imagesJson', 'contentJson', 'recipeJson', 'roundupJson',
     'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
     'cachedTagsJson', 'cachedCategoryJson',
-    'cachedAuthorJson', 'cachedEquipmentJson', 'cachedRatingJson',
+    'cachedAuthorJson', 'cachedRatingJson',
     'cachedTocJson', 'cachedRecipeJson', 'cachedCardJson'
   ];
 
@@ -530,62 +529,6 @@ export async function syncCachedFields(
         isBudget: recipe.estimatedCost === 'Budget',
       });
 
-      // ── Sync cachedEquipmentJson ──
-      // Look up equipment names from recipeJson in the equipment table
-      // to get rich data (brand, description, image, price, affiliate info)
-      const recipeEquipment: any[] = recipe.equipment ?? [];
-      if (recipeEquipment.length > 0) {
-        const equipNames = recipeEquipment.map((e: any) =>
-          (typeof e === 'string' ? e : e.name)?.toLowerCase().trim()
-        ).filter(Boolean);
-
-        // Fetch all active equipment in one query
-        const allEquip = await drizzle
-          .select()
-          .from(equipmentTable)
-          .where(eq(equipmentTable.isActive, true))
-          .all();
-
-        // Match by name (case-insensitive)
-        const matched = allEquip.filter((eq: any) =>
-          equipNames.includes(eq.name?.toLowerCase().trim())
-        );
-
-        // Build CachedEquipmentItem[] with all rich fields
-        const cachedEquip = matched.map((eq: any) => {
-          // Find the recipe equipment entry to get 'required' flag
-          const recipeEntry = recipeEquipment.find((re: any) =>
-            (typeof re === 'string' ? re : re.name)?.toLowerCase().trim() === eq.name?.toLowerCase().trim()
-          );
-          // Parse imageJson to extract image URL
-          let imageUrl: string | undefined;
-          try {
-            const imgData = typeof eq.imageJson === 'string' ? JSON.parse(eq.imageJson) : eq.imageJson;
-            imageUrl = resolveVariantUrl(imgData?.variants?.md || imgData?.variants?.sm || null)
-              || imgData?.url || undefined;
-          } catch { /* ignore */ }
-
-          return {
-            id: eq.id,
-            name: eq.name,
-            slug: eq.slug,
-            brand: eq.brand || undefined,
-            description: eq.description || undefined,
-            category: eq.category || undefined,
-            affiliate_url: eq.affiliateUrl || undefined,
-            affiliate_provider: eq.affiliateProvider || undefined,
-            affiliate_note: eq.affiliateNote || undefined,
-            price_display: eq.priceDisplay || undefined,
-            image_url: imageUrl,
-            required: typeof recipeEntry === 'object' ? (recipeEntry.required !== false) : true,
-          };
-        });
-
-        (updateData as any).cachedEquipmentJson = JSON.stringify(cachedEquip);
-      } else {
-        // No equipment in recipe — clear the cache
-        (updateData as any).cachedEquipmentJson = '[]';
-      }
     }
   }
 

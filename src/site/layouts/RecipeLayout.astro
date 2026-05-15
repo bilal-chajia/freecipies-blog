@@ -273,15 +273,7 @@ const breadcrumbJsonLd = {
               <>
                 <IngredientsSection ingredients={recipeJson.ingredients} />
                 <InstructionsSection instructions={recipeJson.instructions} />
-                <EquipmentSection
-                  equipment={
-                    (typeof recipe.cachedEquipmentJson === "string"
-                      ? JSON.parse(recipe.cachedEquipmentJson || "[]")
-                      : recipe.cachedEquipmentJson) ||
-                    recipeJson?.equipment ||
-                    []
-                  }
-                />
+                <EquipmentSection equipment={recipeJson?.equipment || []} />
                 <div class="mobile-only">
                   <NutritionFacts
                     nutrition={recipeJson.nutrition}

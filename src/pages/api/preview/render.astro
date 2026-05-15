@@ -24,8 +24,8 @@ let category = null;
 let savedArticle = null;
 
 if (db) {
-    // Fetch the saved article from DB to get server-side cached fields
-    // (cachedEquipmentJson, cachedTocJson, faqsJson, etc.)
+    // Fetch the saved article from DB to get server-side fields
+    // (cachedTocJson, faqsJson, etc.)
     if (formData.slug) {
         savedArticle = await getArticleBySlug(db, formData.slug).catch(
             () => null,
@@ -72,7 +72,6 @@ const imagesJson =
           });
 
 // Use saved article's cached fields when available (these are built server-side on save)
-const cachedEquipmentJson = savedArticle?.cachedEquipmentJson ?? null;
 const cachedTocJson = savedArticle?.cachedTocJson ?? null;
 const faqsJson = savedArticle?.faqsJson ?? formData.faqsJson ?? null;
 
@@ -98,7 +97,6 @@ const recipe = {
 
     // Server-side cached fields  (always from saved article)
     faqsJson: faqsJson,
-    cachedEquipmentJson: cachedEquipmentJson,
     cachedTocJson: cachedTocJson,
 
     // SEO

@@ -12,6 +12,8 @@ import type { TocSettings } from '@modules/settings/types/settings.types';
 import { validateBody } from '@shared/validation';
 import { AppearanceSchema } from '@shared/validation/schemas/settings';
 
+const getSettingsCache = () => env?.SETTINGS_CACHE ?? env?.SESSION ?? null;
+
 /**
  * GET /api/settings/appearance
  * Returns all appearance-related settings
@@ -26,7 +28,7 @@ export const GET: APIRoute = async ({ locals }) => {
             });
         }
 
-        const tocSettings = await getTocSettings(db);
+        const tocSettings = await getTocSettings(db, { cache: getSettingsCache() });
 
         return new Response(JSON.stringify({
             success: true,
@@ -65,11 +67,11 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 
         // Update TOC settings if provided
         if (body.toc) {
-            updatedToc = await updateTocSettings(db, body.toc);
+            updatedToc = await updateTocSettings(db, body.toc, { cache: getSettingsCache() });
         }
 
         // Get current settings for response
-        const tocSettings = updatedToc || await getTocSettings(db);
+        const tocSettings = updatedToc || await getTocSettings(db, { cache: getSettingsCache() });
 
         return new Response(JSON.stringify({
             success: true,

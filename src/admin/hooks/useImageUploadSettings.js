@@ -26,7 +26,7 @@ function normalizeSettings(payload) {
   let depth = 0;
 
   while (current && typeof current === 'object' && depth < 4) {
-    if ('webpQuality' in current) {
+    if ('max_file_size_mb' in current && 'variant_widths' in current && 'encoding' in current) {
       return current;
     }
     if ('success' in current && 'data' in current) {

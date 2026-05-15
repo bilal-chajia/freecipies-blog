@@ -153,17 +153,17 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         }
       : {
           variantSizes: {
-            lg: settings.variantLg,
-            md: settings.variantMd,
-            sm: settings.variantSm,
-            xs: settings.variantXs,
+            lg: settings.variant_widths.lg,
+            md: settings.variant_widths.md,
+            sm: settings.variant_widths.sm,
+            xs: settings.variant_widths.xs,
           },
           encodingQuality: {
             ...ENCODING_QUALITY,
-            webp: settings.webpQuality,
-            avif: settings.avifQuality,
+            webp: settings.encoding.webp_quality,
+            avif: settings.encoding.avif_quality,
           },
-          maxSizeBytes: settings.maxFileSizeMB * 1024 * 1024,
+          maxSizeBytes: settings.max_file_size_mb * 1024 * 1024,
         };
 
     const overrideVariants = variantSizes && Object.keys(variantSizes).length

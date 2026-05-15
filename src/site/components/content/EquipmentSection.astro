@@ -1,13 +1,40 @@
 ---
 /**
  * EquipmentSection — Premium equipment display for recipes.
- * Uses CachedEquipmentItem[] from cachedEquipmentJson for rich data:
- * brand, description, category, image, price, affiliate links.
+ * Uses recipe_json.equipment[] as the source for manual and catalog equipment.
  */
-import type { CachedEquipmentItem } from "@modules/articles/types/cache.types";
+import { resolveVariantUrl } from "@shared/types/images";
+
+interface RecipeEquipmentSnapshot {
+  slug?: string;
+  name?: string;
+  brand?: string | null;
+  description?: string | null;
+  category?: string | null;
+  image?: {
+    alt?: string;
+    variants?: {
+      xs?: { r2_key?: string; url?: string; width?: number; height?: number };
+      sm?: { r2_key?: string; url?: string; width?: number; height?: number };
+    };
+  } | null;
+  affiliate_url?: string | null;
+  affiliate_provider?: string | null;
+  affiliate_note?: string | null;
+}
+
+interface RecipeEquipmentItem {
+  id?: string;
+  equipment_id?: number | null;
+  label?: string;
+  required?: boolean;
+  notes?: string | null;
+  source_type: "catalog" | "manual";
+  snapshot?: RecipeEquipmentSnapshot | null;
+}
 
 interface Props {
-  equipment: CachedEquipmentItem[];
+  equipment: RecipeEquipmentItem[];
 }
 
 const { equipment = [] } = Astro.props;
@@ -51,27 +78,38 @@ const categoryIcons: Record<string, string> = {
   <div class="equipment-grid">
     {
       equipment.map((item) => {
+        const snapshot = item.snapshot;
+        const imageVariant =
+          snapshot?.image?.variants?.sm || snapshot?.image?.variants?.xs;
+        const imageUrl = resolveVariantUrl(imageVariant);
+        const imageWidth = imageVariant?.width || 720;
+        const imageHeight = imageVariant?.height || 480;
+        const name = snapshot?.name || item.label || "Equipment";
+        const required = item.required !== false;
+        const category = snapshot?.category || "other";
         const iconPath =
-          categoryIcons[item.category || "other"] || categoryIcons.other;
+          categoryIcons[category] || categoryIcons.other;
         return (
           <div
             class:list={[
               "equipment-card",
-              { "has-image": !!item.image_url, "is-optional": !item.required },
+              { "has-image": !!imageUrl, "is-optional": !required },
             ]}
           >
             {/* Product Image */}
-            {item.image_url ? (
+            {imageUrl ? (
               <div class="card-image">
                 <img
-                  src={item.image_url}
-                  alt={item.name}
+                  src={imageUrl}
+                  alt={snapshot?.image?.alt || name}
+                  width={imageWidth}
+                  height={imageHeight}
                   loading="lazy"
                   decoding="async"
                 />
-                {item.category && (
-                  <span class="category-badge" data-category={item.category}>
-                    {item.category}
+                {snapshot?.category && (
+                  <span class="category-badge" data-category={snapshot.category}>
+                    {snapshot.category}
                   </span>
                 )}
               </div>
@@ -87,9 +125,9 @@ const categoryIcons: Record<string, string> = {
                 >
                   <path d={iconPath} />
                 </svg>
-                {item.category && (
-                  <span class="category-badge" data-category={item.category}>
-                    {item.category}
+                {snapshot?.category && (
+                  <span class="category-badge" data-category={snapshot.category}>
+                    {snapshot.category}
                   </span>
                 )}
               </div>
@@ -98,31 +136,31 @@ const categoryIcons: Record<string, string> = {
             {/* Card Content */}
             <div class="card-body">
               <div class="card-title-row">
-                <h4 class="item-name">{item.name}</h4>
-                {!item.required && <span class="optional-pill">optional</span>}
+                <h4 class="item-name">{name}</h4>
+                {!required && <span class="optional-pill">optional</span>}
               </div>
 
-              {item.brand && <span class="brand-name">by {item.brand}</span>}
+              {snapshot?.brand && <span class="brand-name">by {snapshot.brand}</span>}
 
-              {item.description && (
-                <p class="item-description">{item.description}</p>
+              {snapshot?.description && (
+                <p class="item-description">{snapshot.description}</p>
+              )}
+              {item.notes && (
+                <p class="item-description">{item.notes}</p>
               )}
 
-              {/* Price + Affiliate CTA */}
-              {item.affiliate_url && (
+              {/* Affiliate CTA */}
+              {snapshot?.affiliate_url && (
                 <div class="card-footer">
-                  {item.price_display && (
-                    <span class="price-tag">{item.price_display}</span>
-                  )}
                   <a
-                    href={item.affiliate_url}
+                    href={snapshot.affiliate_url}
                     target="_blank"
                     rel="noopener noreferrer sponsored"
                     class="affiliate-cta"
                   >
-                    {item.affiliate_provider
-                      ? `View on ${item.affiliate_provider}`
-                      : "Check Price"}
+                    {snapshot.affiliate_provider
+                      ? `View on ${snapshot.affiliate_provider}`
+                      : "View product"}
                     <svg
                       class="cta-arrow"
                       viewBox="0 0 24 24"
@@ -148,7 +186,7 @@ const categoryIcons: Record<string, string> = {
 
   {/* Affiliate Disclaimer */}
   {
-    equipment.some((e) => e.affiliate_url) && (
+    equipment.some((e) => e.snapshot?.affiliate_url) && (
       <p class="affiliate-disclaimer">
         <svg
           viewBox="0 0 24 24"
@@ -384,19 +422,13 @@ const categoryIcons: Record<string, string> = {
     overflow: hidden;
   }
 
-  /* ===== Footer: Price + CTA ===== */
+  /* ===== Footer CTA ===== */
   .card-footer {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     margin-top: auto;
     padding-top: 0.6rem;
-  }
-  .price-tag {
-    font-size: 0.8rem;
-    font-weight: 800;
-    color: var(--accent, var(--accent-sage));
-    white-space: nowrap;
   }
   .affiliate-cta {
     display: inline-flex;

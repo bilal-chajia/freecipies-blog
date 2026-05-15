@@ -26,7 +26,6 @@ export const equipment = sqliteTable('equipment', {
     affiliateUrl: text('affiliate_url'),
     affiliateProvider: text('affiliate_provider'),
     affiliateNote: text('affiliate_note'),
-    priceDisplay: text('price_display'),
 
     // 4. SYSTEM
     isActive: integer('is_active', { mode: 'boolean' }).default(true),

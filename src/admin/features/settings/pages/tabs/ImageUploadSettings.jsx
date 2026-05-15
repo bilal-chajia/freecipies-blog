@@ -61,6 +61,39 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
     setLocalSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleEncodingChange = (key, value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      encoding: {
+        ...(prev?.encoding || defaults.encoding),
+        [key]: value,
+      },
+    }));
+  };
+
+  const handleVariantWidthChange = (key, value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      variant_widths: {
+        ...(prev?.variant_widths || defaults.variant_widths),
+        [key]: value,
+      },
+    }));
+  };
+
+  const buildDefaultCredit = (authorId) => {
+    if (!authorId || authorId === 'none') return null;
+    const author = authors.find(item => String(item.id) === String(authorId));
+    if (!author?.id || !author?.name || !author?.slug) return null;
+    return {
+      type: 'author',
+      id: Number(author.id),
+      name: author.name,
+      slug: author.slug,
+      avatar: null,
+    };
+  };
+
   const setStatus = useCallback((status, message, timeoutMs = 3000) => {
     setSaveStatus(status);
     setSaveMessage(message);
@@ -190,14 +223,14 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
                   <span>WebP Quality</span>
                   <span className="font-normal text-xs text-muted-foreground">Balance between size and quality for WebP images.</span>
                 </Label>
-                <span className="font-mono text-sm bg-muted px-2 py-0.5 rounded">{localSettings?.webpQuality ?? 80}%</span>
+                <span className="font-mono text-sm bg-muted px-2 py-0.5 rounded">{localSettings?.encoding?.webp_quality ?? 80}%</span>
               </div>
               <Slider
-                value={[localSettings?.webpQuality ?? 80]}
+                value={[localSettings?.encoding?.webp_quality ?? 80]}
                 min={10}
                 max={100}
                 step={5}
-                onValueChange={([val]) => handleChange('webpQuality', val)}
+                onValueChange={([val]) => handleEncodingChange('webp_quality', val)}
                 className="w-full"
               />
             </div>
@@ -208,14 +241,14 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
                   <span>AVIF Quality</span>
                   <span className="font-normal text-xs text-muted-foreground">Newer format with better compression. Usually requires lower values than WebP.</span>
                 </Label>
-                <span className="font-mono text-sm bg-muted px-2 py-0.5 rounded">{localSettings?.avifQuality ?? 70}%</span>
+                <span className="font-mono text-sm bg-muted px-2 py-0.5 rounded">{localSettings?.encoding?.avif_quality ?? 70}%</span>
               </div>
               <Slider
-                value={[localSettings?.avifQuality ?? 70]}
+                value={[localSettings?.encoding?.avif_quality ?? 70]}
                 min={10}
                 max={100}
                 step={5}
-                onValueChange={([val]) => handleChange('avifQuality', val)}
+                onValueChange={([val]) => handleEncodingChange('avif_quality', val)}
                 className="w-full"
               />
             </div>
@@ -233,8 +266,8 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
             <div className="space-y-1">
               <Label>Default Aspect Ratio</Label>
               <Select
-                value={localSettings?.defaultAspectRatio ?? 'free'}
-                onValueChange={(val) => handleChange('defaultAspectRatio', val)}
+                value={localSettings?.default_aspect_ratio ?? 'free'}
+                onValueChange={(val) => handleChange('default_aspect_ratio', val)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -253,8 +286,8 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
             <div className="space-y-1">
               <Label>Default Output Format</Label>
               <Select
-                value={localSettings?.defaultFormat ?? 'webp'}
-                onValueChange={(val) => handleChange('defaultFormat', val)}
+                value={localSettings?.encoding?.format ?? 'webp'}
+                onValueChange={(val) => handleEncodingChange('format', val)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -270,8 +303,8 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
             <div className="space-y-1">
               <Label>Default Credit Author</Label>
               <Select
-                value={localSettings?.defaultCreditAuthorId ? String(localSettings.defaultCreditAuthorId) : 'none'}
-                onValueChange={(val) => handleChange('defaultCreditAuthorId', val === 'none' ? '' : Number(val))}
+                value={localSettings?.default_credit?.id ? String(localSettings.default_credit.id) : 'none'}
+                onValueChange={(val) => handleChange('default_credit', buildDefaultCredit(val))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select an author" />
@@ -295,8 +328,8 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
                   id="max-file-size"
                   name="maxFileSizeMB"
                   type="number"
-                  value={localSettings?.maxFileSizeMB ?? 50}
-                  onChange={(e) => handleChange('maxFileSizeMB', parseInt(e.target.value))}
+                  value={localSettings?.max_file_size_mb ?? 50}
+                  onChange={(e) => handleChange('max_file_size_mb', parseInt(e.target.value))}
                   className="h-8 w-full pr-8"
                 />
                 <span className="absolute right-3 top-2 text-xs text-muted-foreground">MB</span>
@@ -322,8 +355,8 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
                     id="variant-lg"
                     name="variantLg"
                     type="number"
-                    value={localSettings?.variantLg ?? 2048}
-                    onChange={(e) => handleChange('variantLg', parseInt(e.target.value))}
+                    value={localSettings?.variant_widths?.lg ?? 2048}
+                    onChange={(e) => handleVariantWidthChange('lg', parseInt(e.target.value))}
                     className="h-8 w-full pr-8"
                   />
                   <span className="absolute right-3 top-2 text-xs text-muted-foreground">px</span>
@@ -336,8 +369,8 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
                     id="variant-md"
                     name="variantMd"
                     type="number"
-                    value={localSettings?.variantMd ?? 1200}
-                    onChange={(e) => handleChange('variantMd', parseInt(e.target.value))}
+                    value={localSettings?.variant_widths?.md ?? 1200}
+                    onChange={(e) => handleVariantWidthChange('md', parseInt(e.target.value))}
                     className="h-8 w-full pr-8"
                   />
                   <span className="absolute right-3 top-2 text-xs text-muted-foreground">px</span>
@@ -350,8 +383,8 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
                     id="variant-sm"
                     name="variantSm"
                     type="number"
-                    value={localSettings?.variantSm ?? 720}
-                    onChange={(e) => handleChange('variantSm', parseInt(e.target.value))}
+                    value={localSettings?.variant_widths?.sm ?? 720}
+                    onChange={(e) => handleVariantWidthChange('sm', parseInt(e.target.value))}
                     className="h-8 w-full pr-8"
                   />
                   <span className="absolute right-3 top-2 text-xs text-muted-foreground">px</span>
@@ -364,8 +397,8 @@ const ImageUploadSettings = ({ onRegisterActions }) => {
                     id="variant-xs"
                     name="variantXs"
                     type="number"
-                    value={localSettings?.variantXs ?? 360}
-                    onChange={(e) => handleChange('variantXs', parseInt(e.target.value))}
+                    value={localSettings?.variant_widths?.xs ?? 360}
+                    onChange={(e) => handleVariantWidthChange('xs', parseInt(e.target.value))}
                     className="h-8 w-full pr-8"
                   />
                   <span className="absolute right-3 top-2 text-xs text-muted-foreground">px</span>

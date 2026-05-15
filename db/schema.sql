@@ -532,10 +532,6 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- DEFAULT: Use global site_settings disclosure.
     affiliate_note TEXT,
 
-    -- Price (optional, for display only - may become stale).
-    -- EXAMPLE: "$299.99"
-    price_display TEXT,
-
     -- 4. SYSTEM
 
     -- Visibility toggle.

@@ -440,16 +440,7 @@ const navItems = [
           {/* Equipment */}
           {hasEquipment && (
             <section id="recipe-equipment" class="recipe-section">
-              <EquipmentSection
-                equipment={
-                  (typeof article.cachedEquipmentJson === "string"
-                    ? JSON.parse(article.cachedEquipmentJson || "[]")
-                    : article.cachedEquipmentJson) ||
-                  recipe?.equipment ||
-                  equipment ||
-                  []
-                }
-              />
+              <EquipmentSection equipment={equipment} />
             </section>
           )}
 

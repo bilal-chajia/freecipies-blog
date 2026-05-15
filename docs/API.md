@@ -230,8 +230,7 @@ Get article by slug with full details.
                 "xs": { "url": "https://...", "width": 360, "height": 360 },
                 "sm": { "url": "https://...", "width": 720, "height": 720 }
               }
-            },
-            "price_display": "$89.99"
+            }
           }
         },
         {
@@ -972,7 +971,6 @@ List kitchen equipment catalog entries with optional affiliate links.
       "affiliateProvider": "Amazon",
       "affiliateNote": "Affiliate link",
       "imageUrl": "https://...",
-      "priceDisplay": "$89.99",
       "category": "tools",
       "isActive": true,
       "route": "/equipment/chefs-knife-8"
@@ -996,7 +994,6 @@ Create equipment entry. **Requires Auth.**
   "affiliateUrl": "https://...",
   "affiliateProvider": "Amazon",
   "affiliateNote": "Affiliate link",
-  "priceDisplay": "$49.99",
   "category": "tools",
   "isActive": true
 }

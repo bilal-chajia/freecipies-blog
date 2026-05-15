@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     Plus, Trash2, X, Check, Search, Edit, Wrench,
-    ExternalLink, DollarSign, ImageIcon
+    ExternalLink, ImageIcon
 } from 'lucide-react';
 import { Button } from '@/ui/button.jsx';
 import { Input } from '@/ui/input.jsx';
@@ -52,7 +52,6 @@ const EMPTY_FORM = {
     category: 'other',
     affiliateUrl: '',
     affiliateProvider: '',
-    priceDisplay: '',
     imageUrl: '',
 };
 
@@ -107,7 +106,6 @@ const EquipmentList = () => {
             category: item.category || 'other',
             affiliateUrl: item.affiliateUrl || item.affiliate_url || '',
             affiliateProvider: item.affiliateProvider || item.affiliate_provider || '',
-            priceDisplay: item.priceDisplay || item.price_display || '',
             imageUrl: imgUrl,
         });
         setIsCreatingNew(false);
@@ -150,7 +148,6 @@ const EquipmentList = () => {
             category: formData.category,
             affiliateUrl: formData.affiliateUrl.trim() || null,
             affiliateProvider: formData.affiliateProvider.trim() || null,
-            priceDisplay: formData.priceDisplay.trim() || null,
             imageJson,
         };
     };
@@ -245,29 +242,18 @@ const EquipmentList = () => {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <Label className="text-xs">Category</Label>
-                    <Select value={formData.category} onValueChange={(v) => updateField('category', v)}>
-                        <SelectTrigger className="h-9">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {CATEGORIES.map((c) => (
-                                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1.5">
-                    <Label className="text-xs">Price Display</Label>
-                    <Input
-                        value={formData.priceDisplay}
-                        onChange={(e) => updateField('priceDisplay', e.target.value)}
-                        placeholder="$299.99"
-                        className="h-9"
-                    />
-                </div>
+            <div className="space-y-1.5">
+                <Label className="text-xs">Category</Label>
+                <Select value={formData.category} onValueChange={(v) => updateField('category', v)}>
+                    <SelectTrigger className="h-9">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {CATEGORIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="space-y-1.5">
@@ -466,12 +452,6 @@ const EquipmentList = () => {
 
                                         <div className="flex flex-wrap gap-1.5 mb-3">
                                             <Badge variant="secondary" className="text-[10px]">{item.category || 'other'}</Badge>
-                                            {item.priceDisplay || item.price_display ? (
-                                                <Badge variant="outline" className="text-[10px] gap-1">
-                                                    <DollarSign className="size-2.5" />
-                                                    {item.priceDisplay || item.price_display}
-                                                </Badge>
-                                            ) : null}
                                         </div>
 
                                         {/* Keywords preview */}

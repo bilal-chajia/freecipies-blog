@@ -30,7 +30,7 @@ export function transformArticleRequestBody(body: any): any {
         'imagesJson', 'recipeJson', 'roundupJson',
         'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
         'cachedTagsJson', 'cachedCategoryJson',
-        'cachedAuthorJson', 'cachedEquipmentJson', 'cachedRecipeJson',
+        'cachedAuthorJson', 'cachedRecipeJson',
         'cachedCardJson'
     ];
 

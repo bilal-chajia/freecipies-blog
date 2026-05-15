@@ -474,7 +474,6 @@ This file must not duplicate media JSON examples because image slot rules differ
 | `affiliate_url`      | TEXT     | ❌        | NULL              | Primary affiliate link                                               |
 | `affiliate_provider` | TEXT     | ❌        | NULL              | `amazon`, `williams-sonoma`, `target`, etc.                          |
 | `affiliate_note`     | TEXT     | ❌        | NULL              | Disclosure override                                                  |
-| `price_display`      | TEXT     | ❌        | NULL              | Display price (`$299.99`)                                            |
 | `is_active`          | BOOLEAN  | ❌        | `1`               | Show in recipes                                                      |
 | `sort_order`         | INTEGER  | ❌        | `0`               | Display order                                                        |
 | `created_at`         | DATETIME | ❌        | CURRENT_TIMESTAMP | Creation timestamp                                                   |
@@ -536,7 +535,6 @@ This file must not duplicate media JSON examples because image slot rules differ
 | `cached_tags_json`      | TEXT    | Minimal tag snapshots `[{ "id": 1, "label": "Vegan", "slug": "vegan" }]` |
 | `cached_category_json`  | TEXT    | Category snapshot                         |
 | `cached_author_json`    | TEXT    | Author snapshot with avatar               |
-| `cached_equipment_json` | TEXT    | Rich equipment card snapshots             |
 | `cached_rating_json`    | TEXT    | Star rating snapshot                      |
 | `cached_toc_json`       | TEXT    | Table of contents from headings           |
 | `cached_recipe_json`    | TEXT    | Lightweight recipe summary for listings   |
@@ -793,7 +791,6 @@ articles (1) ←──── (N) articles (pillar/cluster via parent_article_id)
 | `cached_tags_json`      | articles_to_tags changes                                 |
 | `cached_category_json`  | category_id changes OR categories table updates          |
 | `cached_author_json`    | author_id changes OR authors table updates               |
-| `cached_equipment_json` | recipe_json.equipment changes OR linked equipment updates |
 | `cached_rating_json`    | recipe_json.aggregate_rating changes                     |
 | `cached_recipe_json`    | recipe_json changes                                      |
 | `cached_card_json`      | Any visible field changes (headline, thumbnail, etc.)    |

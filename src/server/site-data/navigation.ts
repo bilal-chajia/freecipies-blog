@@ -1,6 +1,6 @@
 import { getMenuItems } from "@modules/menus/services/menus.service";
 import type { MenuItem } from "@modules/menus/types/menus.types";
-import { getCloudflareEnv } from "@server/cloudflare/env";
+import { getCloudflareEnv, getSettingsCache } from "@server/cloudflare/env";
 
 export const DEFAULT_HEADER_MENU: MenuItem[] = [
   { id: "nav-1", label: "Categories", type: "link", url: "/categories" },
@@ -16,7 +16,9 @@ export const getHeaderMenu = async (): Promise<MenuItem[]> => {
     const db = getCloudflareEnv().DB;
     if (!db) return DEFAULT_HEADER_MENU;
 
-    const storedMenu = await getMenuItems(db, "header");
+    const storedMenu = await getMenuItems(db, "header", {
+      cache: getSettingsCache(),
+    });
     return Array.isArray(storedMenu) && storedMenu.length > 0
       ? storedMenu
       : DEFAULT_HEADER_MENU;

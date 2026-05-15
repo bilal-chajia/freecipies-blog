@@ -1,12 +1,12 @@
 # Equipment Table Contract
 
-> **Last Updated:** 2026-05-13
+> **Last Updated:** 2026-05-14
 
 This document is the product/data contract for the `equipment` table. The executable SQL source remains `db/schema.sql`.
 
 ## Scope
 
-`equipment` is the admin-managed catalog of kitchen tools used by recipes. It owns affiliate metadata, active/inactive product state, and product imagery.
+`equipment` is the admin-managed catalog of kitchen tools used by recipes. It owns product/tool identity, affiliate metadata, active/inactive state, and product imagery.
 
 Related contracts:
 
@@ -16,12 +16,18 @@ Related contracts:
 
 ## Source Of Truth
 
-The `equipment` row is the source of truth for product/affiliate metadata.
+The `equipment` row is the source of truth for reusable product/tool metadata.
 
 `recipe_json.equipment` is the source of truth for the complete recipe equipment checklist.
 
-When an article uses a catalog equipment row, the render snapshot is copied into
-`recipe_json.equipment[]` at article save time.
+When a recipe uses a catalog equipment row, the render snapshot is copied into
+`recipe_json.equipment[]` at article save time. Public recipe rendering reads
+that saved recipe snapshot, not the `equipment` table.
+
+The `equipment` table does not own plain one-off checklist tools. Simple tools
+such as a bowl, spoon, knife, parchment paper, or saucepan can live only in
+`recipe_json.equipment[]` as manual items when they do not need catalog metadata
+or affiliate metadata.
 
 ## Columns
 
@@ -38,7 +44,6 @@ When an article uses a catalog equipment row, the render snapshot is copied into
 | `affiliate_url` | no | Admin/affiliate | Primary affiliate URL. |
 | `affiliate_provider` | no | Admin/affiliate | Provider name such as `amazon`, `williams-sonoma`, `target`, `walmart`, `custom`. |
 | `affiliate_note` | no | Admin/legal | Optional disclosure override. Defaults to global disclosure when empty. |
-| `price_display` | no | Admin/affiliate | Optional display-only price. Treat as stale display copy. |
 | `is_active` | no | Admin/workflow | `1` means eligible for rich recipe equipment cards. |
 | `sort_order` | no | Admin/UI | Ordering for equipment lists. |
 | `created_at` | no | DB | UTC creation timestamp. |
@@ -70,9 +75,18 @@ Purpose: product image snapshot copied from `media`.
 {
   "media_id": 301,
   "alt": "KitchenAid stand mixer",
+  "placeholder": "data:image/jpeg;base64,...",
   "variants": {
-    "xs": { "r2_key": "media/mixer-xs.webp", "width": 360, "height": 360 },
-    "sm": { "r2_key": "media/mixer-sm.webp", "width": 720, "height": 720 }
+    "xs": {
+      "r2_key": "media/images/stand-mixer-xs-a91c3f2b.webp",
+      "width": 360,
+      "height": 360
+    },
+    "sm": {
+      "r2_key": "media/images/stand-mixer-sm-a91c3f2b.webp",
+      "width": 720,
+      "height": 720
+    }
   }
 }
 ```
@@ -80,13 +94,28 @@ Purpose: product image snapshot copied from `media`.
 Rules:
 
 - `media.variants_json` remains the complete asset source.
-- Equipment cards are small UI/card contexts, so `xs` and `sm` are usually enough.
+- `image_json` is an equipment product/tool image snapshot.
+- `image_json.media_id` is required when `image_json` is not null.
+- `image_json.alt` is required when `image_json` is not null.
+- `image_json.placeholder` is required when `image_json` is not null.
+- Equipment cards are small UI/card contexts, so stored snapshots use `xs` and
+  `sm`.
 - Internal snapshots contain `r2_key`; public props must convert to URLs.
-- Do not store absolute CDN/domain URLs when a media reference can be resolved dynamically.
+- R2 keys follow `docs/NAMING_CONTRACT.md`.
+- Do not store absolute CDN/domain URLs when a media reference can be resolved
+  dynamically.
+- Equipment `image_json` must not store `caption`, `credit`, or `original`.
+- Public/admin resolved payloads expose `url`, not `r2_key`.
 
 ## Recipe Integration
 
-`recipe_json.equipment` complete checklist shape:
+`recipe_json.equipment` is the complete ordered checklist rendered inside the
+full recipe card.
+
+Catalog equipment items copy a render snapshot from the selected active
+`equipment` row at article save time.
+
+Complete checklist shape:
 
 ```json
 [
@@ -102,18 +131,27 @@ Rules:
       "name": "Stand Mixer",
       "brand": "KitchenAid",
       "description": "Useful for whipping and kneading.",
+      "category": "appliances",
       "image": {
         "media_id": 301,
         "alt": "KitchenAid stand mixer",
+        "placeholder": "data:image/jpeg;base64,...",
         "variants": {
-          "xs": { "r2_key": "media/mixer-xs.webp", "width": 360, "height": 360 },
-          "sm": { "r2_key": "media/mixer-sm.webp", "width": 720, "height": 720 }
+          "xs": {
+            "r2_key": "media/images/stand-mixer-xs-a91c3f2b.webp",
+            "width": 360,
+            "height": 360
+          },
+          "sm": {
+            "r2_key": "media/images/stand-mixer-sm-a91c3f2b.webp",
+            "width": 720,
+            "height": 720
+          }
         }
       },
       "affiliate_url": "https://example.com/product?tag=saas-blog",
       "affiliate_provider": "amazon",
-      "affiliate_note": null,
-      "price_display": "$299.99"
+      "affiliate_note": null
     }
   },
   {
@@ -130,14 +168,47 @@ Rules:
 
 Rules:
 
+- `recipe_json.equipment` stores the complete recipe equipment checklist.
+- Item order is the public render order.
+- `id` is required and stable inside the recipe editor.
 - `equipment_id` is required and is either an active `equipment.id` or `null`.
-- `label` is required because unmapped or inactive items still render as plain checklist items.
+- `label` is required because manual or unresolved items still render as plain
+  checklist items.
+- `required` is required and boolean.
+- `notes` is required and is either a short recipe-specific note or `null`.
+- `source_type` is required and is either `catalog` or `manual`.
+- `snapshot` is required and is either a copied catalog snapshot object or
+  `null`.
+- `required` and `notes` stay in `recipe_json` because they are recipe-specific.
 - `source_type = "catalog"` requires `equipment_id` and a copied `snapshot`.
 - `source_type = "manual"` requires `equipment_id: null` and `snapshot: null`.
-- If `equipment_id` maps to an active, non-deleted `equipment` row, article
-  save copies the render fields into `recipe_json.equipment[].snapshot`.
+- If `equipment_id` maps to an active, non-deleted `equipment` row, article save
+  copies the render fields into `recipe_json.equipment[].snapshot`.
 - If `equipment_id` is inactive, deleted, or not found at save time, the editor
   must either save the item as `manual` or block the catalog reference.
+- Catalog snapshots may include `slug`, `name`, `brand`, `description`,
+  `category`, `image`, `affiliate_url`, `affiliate_provider`, and
+  `affiliate_note`.
+- Catalog snapshots must not include `price_display`.
+- Snapshot images follow the equipment `image_json` rules: `xs` and `sm`,
+  `r2_key` storage, no `caption`, no `credit`, no `original`.
+- `recipe_json.equipment[]` must not depend on `cached_equipment_json`.
+
+## Affiliate Rules
+
+- Affiliate metadata belongs to the `equipment` row.
+- Affiliate links are copied into `recipe_json.equipment[].snapshot` only for
+  catalog items.
+- Manual equipment items must not store affiliate fields.
+- `affiliate_url` is optional. When present, it must be a valid public URL.
+- `affiliate_provider` is optional but required when the admin needs provider
+  filtering/reporting.
+- `affiliate_note` is optional and overrides the global disclosure text only for
+  this equipment item.
+- If `affiliate_note` is `null`, rendering uses the global affiliate disclosure.
+- Do not store prices in the equipment contract.
+- Do not store payment, checkout, inventory, commission, or tracking secrets in
+  the equipment table.
 
 ## Runtime Usage
 
@@ -146,6 +217,10 @@ Admin:
 - Equipment list/editor manages product metadata and active state.
 - Recipe editor references equipment rows by `equipment_id` when a canonical equipment row exists.
 - Save logic copies active equipment render snapshots into `recipe_json.equipment[]`.
+- Updating an equipment row does not automatically change already-published
+  recipe snapshots unless the application refreshes the affected articles.
+- If an equipment row becomes inactive, it is no longer selectable for new
+  catalog snapshots.
 
 Public Astro:
 
@@ -153,6 +228,8 @@ Public Astro:
 - Catalog items render from their saved `snapshot`.
 - Manual items render as plain bullets/checklist items.
 - Affiliate disclosure appears when at least one rendered catalog snapshot has an affiliate URL.
+- Public recipe rendering must not join the `equipment` table.
+- Public recipe rendering must not read `cached_equipment_json`.
 
 ## Validation Rules
 
@@ -165,3 +242,17 @@ Public Astro:
 - `affiliate_provider`: controlled provider string when present.
 - Public/rich-card source rows require `deleted_at IS NULL` and `is_active = 1`.
 - `is_active = 0` prevents new catalog snapshot selection. Existing saved recipe snapshots remain until article refresh.
+- `price_display` is not part of the contract.
+
+## Lifecycle Rules
+
+- Active equipment queries must filter `deleted_at IS NULL`.
+- Public selectable equipment queries must also filter `is_active = 1`.
+- Soft delete marks `deleted_at`; do not hard-delete rows that can be referenced
+  by saved recipe snapshots.
+- Existing recipe snapshots remain renderable after an equipment row is updated,
+  deactivated, or soft-deleted.
+- Application/service refresh logic can rebuild affected recipe snapshots from
+  current active equipment rows.
+- SQL triggers should not rebuild `recipe_json.equipment[]` because the payload
+  includes recipe-specific fields and editor decisions.

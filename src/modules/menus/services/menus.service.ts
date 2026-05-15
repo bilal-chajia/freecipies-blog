@@ -7,7 +7,12 @@
 
 import type { D1Database } from '@cloudflare/workers-types';
 import { getSettingValue, upsertSetting } from '@modules/settings/services/settings.service';
+import type { SettingsCacheStore } from '@modules/settings/services/settings.service';
 import type { MenuItem, MenuConfig, CreateMenuInput, UpdateMenuInput } from '../types/menus.types';
+
+interface MenuServiceOptions {
+    cache?: SettingsCacheStore | null;
+}
 
 // Settings keys for menu storage
 const MENU_KEY_PREFIX = 'menu_';
@@ -67,9 +72,13 @@ function getDefaultMenu(key: string): MenuItem[] {
  * Get menu items by key (convenience function for frontend)
  * Returns default menu items if not found in database
  */
-export async function getMenuItems(db: D1Database, key: string): Promise<MenuItem[]> {
+export async function getMenuItems(
+    db: D1Database,
+    key: string,
+    options?: MenuServiceOptions,
+): Promise<MenuItem[]> {
     try {
-        const storedMenu = await getSettingValue<MenuItem[]>(db, getMenuKey(key));
+        const storedMenu = await getSettingValue<MenuItem[]>(db, getMenuKey(key), options);
         if (storedMenu && Array.isArray(storedMenu) && storedMenu.length > 0) {
             return storedMenu;
         }
@@ -84,9 +93,13 @@ export async function getMenuItems(db: D1Database, key: string): Promise<MenuIte
 /**
  * Get a menu config object by key
  */
-export async function getMenuByKey(db: D1Database, key: string): Promise<MenuConfig | null> {
+export async function getMenuByKey(
+    db: D1Database,
+    key: string,
+    options?: MenuServiceOptions,
+): Promise<MenuConfig | null> {
     try {
-        const items = await getMenuItems(db, key);
+        const items = await getMenuItems(db, key, options);
 
         return {
             id: 0, // Not applicable when using settings table
@@ -109,13 +122,15 @@ export async function getMenuByKey(db: D1Database, key: string): Promise<MenuCon
 export async function saveMenuItems(
     db: D1Database,
     key: string,
-    items: MenuItem[]
+    items: MenuItem[],
+    options?: MenuServiceOptions,
 ): Promise<boolean> {
     try {
         await upsertSetting(db, getMenuKey(key), items, {
             description: `${key.charAt(0).toUpperCase() + key.slice(1)} navigation menu configuration`,
             category: 'menus',
             type: 'json',
+            cache: options?.cache,
         });
         return true;
     } catch (error) {
@@ -130,14 +145,15 @@ export async function saveMenuItems(
 export async function updateMenuByKey(
     db: D1Database,
     key: string,
-    input: UpdateMenuInput
+    input: UpdateMenuInput,
+    options?: MenuServiceOptions,
 ): Promise<MenuConfig | null> {
     if (input.items) {
-        const success = await saveMenuItems(db, key, input.items);
+        const success = await saveMenuItems(db, key, input.items, options);
         if (!success) return null;
     }
 
-    return getMenuByKey(db, key);
+    return getMenuByKey(db, key, options);
 }
 
 /**
@@ -146,25 +162,26 @@ export async function updateMenuByKey(
 export async function upsertMenu(
     db: D1Database,
     key: string,
-    input: UpdateMenuInput & { label?: string }
+    input: UpdateMenuInput & { label?: string },
+    options?: MenuServiceOptions,
 ): Promise<MenuConfig | null> {
     if (input.items) {
-        const success = await saveMenuItems(db, key, input.items);
+        const success = await saveMenuItems(db, key, input.items, options);
         if (!success) return null;
     }
 
-    return getMenuByKey(db, key);
+    return getMenuByKey(db, key, options);
 }
 
 /**
  * Get all menus
  */
-export async function getMenus(db: D1Database): Promise<MenuConfig[]> {
+export async function getMenus(db: D1Database, options?: MenuServiceOptions): Promise<MenuConfig[]> {
     const menuKeys = ['header', 'footer', 'mobile', 'sidebar'];
     const menus: MenuConfig[] = [];
 
     for (const key of menuKeys) {
-        const menu = await getMenuByKey(db, key);
+        const menu = await getMenuByKey(db, key, options);
         if (menu && menu.items.length > 0) {
             menus.push(menu);
         }
@@ -176,12 +193,17 @@ export async function getMenus(db: D1Database): Promise<MenuConfig[]> {
 /**
  * Delete a menu by key
  */
-export async function deleteMenuByKey(db: D1Database, key: string): Promise<boolean> {
+export async function deleteMenuByKey(
+    db: D1Database,
+    key: string,
+    options?: MenuServiceOptions,
+): Promise<boolean> {
     try {
         await upsertSetting(db, getMenuKey(key), [], {
             description: `${key.charAt(0).toUpperCase() + key.slice(1)} navigation menu configuration (deleted)`,
             category: 'menus',
             type: 'json',
+            cache: options?.cache,
         });
         return true;
     } catch {
@@ -194,12 +216,13 @@ export async function deleteMenuByKey(db: D1Database, key: string): Promise<bool
  */
 export async function createMenu(
     db: D1Database,
-    input: CreateMenuInput
+    input: CreateMenuInput,
+    options?: MenuServiceOptions,
 ): Promise<MenuConfig | null> {
-    const success = await saveMenuItems(db, input.key, input.items || []);
+    const success = await saveMenuItems(db, input.key, input.items || [], options);
     if (!success) return null;
 
-    return getMenuByKey(db, input.key);
+    return getMenuByKey(db, input.key, options);
 }
 
 /**
@@ -207,9 +230,10 @@ export async function createMenu(
  */
 export async function getMenusByLocation(
     db: D1Database,
-    location: 'header' | 'footer' | 'sidebar' | 'mobile'
+    location: 'header' | 'footer' | 'sidebar' | 'mobile',
+    options?: MenuServiceOptions,
 ): Promise<MenuConfig[]> {
-    const menu = await getMenuByKey(db, location);
+    const menu = await getMenuByKey(db, location, options);
     return menu ? [menu] : [];
 }
 

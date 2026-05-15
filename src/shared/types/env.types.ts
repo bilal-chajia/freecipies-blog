@@ -10,6 +10,7 @@ export interface Env {
   DB: D1Database;
   IMAGES: R2Bucket;
   SESSION: KVNamespace;
+  SETTINGS_CACHE?: KVNamespace;
   R2_PUBLIC_URL: string;
   SITE_URL: string;
   JWT_SECRET: string;

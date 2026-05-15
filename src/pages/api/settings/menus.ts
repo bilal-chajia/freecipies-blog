@@ -20,6 +20,8 @@ import type { MenuItem } from '@modules/menus/types/menus.types';
 import { validateBody, validateQuery } from '@shared/validation';
 import { SaveMenusSchema, CreateMenuSchema, DeleteMenuQuery } from '@shared/validation/schemas/settings';
 
+const getSettingsCache = () => env?.SETTINGS_CACHE ?? env?.SESSION ?? null;
+
 /**
  * GET /api/settings/menus
  * GET /api/settings/menus?key=header
@@ -38,10 +40,10 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
         if (key) {
             // Get specific menu
-            const menu = await getMenuByKey(db, key);
+            const menu = await getMenuByKey(db, key, { cache: getSettingsCache() });
             if (!menu) {
                 // Return default items for known keys
-                const items = await getMenuItems(db, key);
+                const items = await getMenuItems(db, key, { cache: getSettingsCache() });
                 return new Response(JSON.stringify({
                     key,
                     items,
@@ -57,8 +59,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
         }
 
         // Get all menus (for admin panel compatibility, return headerMenu/footerMenu format)
-        const headerItems = await getMenuItems(db, 'header');
-        const footerItems = await getMenuItems(db, 'footer');
+        const headerItems = await getMenuItems(db, 'header', { cache: getSettingsCache() });
+        const footerItems = await getMenuItems(db, 'footer', { cache: getSettingsCache() });
 
         return new Response(JSON.stringify({
             headerMenu: headerItems,
@@ -101,6 +103,8 @@ export const PUT: APIRoute = async ({ request, locals }) => {
                 items: body.headerMenu as MenuItem[],
                 location: 'header',
                 description: 'Primary navigation in site header',
+            }, {
+                cache: getSettingsCache(),
             });
         }
 
@@ -111,12 +115,14 @@ export const PUT: APIRoute = async ({ request, locals }) => {
                 items: body.footerMenu as MenuItem[],
                 location: 'footer',
                 description: 'Footer navigation links',
+            }, {
+                cache: getSettingsCache(),
             });
         }
 
         // Return updated menus
-        const headerItems = await getMenuItems(db, 'header');
-        const footerItems = await getMenuItems(db, 'footer');
+        const headerItems = await getMenuItems(db, 'header', { cache: getSettingsCache() });
+        const footerItems = await getMenuItems(db, 'footer', { cache: getSettingsCache() });
 
         return new Response(JSON.stringify({
             success: true,
@@ -164,9 +170,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const menu = await createMenu(db, {
             key: body.key,
             label: body.label,
-            items: body.items,
+            items: body.items as MenuItem[] | undefined,
             location: body.location,
             description: body.description,
+        }, {
+            cache: getSettingsCache(),
         });
 
         if (!menu) {
@@ -215,7 +223,7 @@ export const DELETE: APIRoute = async ({ url, locals }) => {
 
         const { key } = validateQuery(url.searchParams, DeleteMenuQuery);
 
-        const deleted = await deleteMenuByKey(db, key);
+        const deleted = await deleteMenuByKey(db, key, { cache: getSettingsCache() });
 
         return new Response(JSON.stringify({
             success: deleted,

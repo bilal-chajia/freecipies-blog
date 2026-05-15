@@ -5,9 +5,42 @@
  */
 
 import { eq } from 'drizzle-orm';
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Database, KVNamespace } from '@cloudflare/workers-types';
 import { siteSettings, type SiteSetting } from '../schema/settings.schema';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+
+export type SettingsCacheStore = Pick<KVNamespace, 'get' | 'put' | 'delete'>;
+
+interface SettingServiceOptions {
+  cache?: SettingsCacheStore | null;
+}
+
+interface UpsertSettingOptions extends SettingServiceOptions {
+  description?: string;
+  category?: string;
+  type?: string;
+}
+
+const SETTINGS_CACHE_PREFIX = 'site_settings:v1:';
+const SETTINGS_CACHE_TTL_SECONDS = 60 * 60;
+
+const getSettingCacheKey = (key: string): string => `${SETTINGS_CACHE_PREFIX}${key}`;
+
+function parseSettingValue<T>(value: string): T {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return value as unknown as T;
+  }
+}
+
+export async function invalidateSettingCache(
+  cache: SettingsCacheStore | null | undefined,
+  key: string,
+): Promise<void> {
+  if (!cache) return;
+  await cache.delete(getSettingCacheKey(key));
+}
 
 /**
  * Get all settings
@@ -30,15 +63,27 @@ export async function getSetting(db: D1Database | DrizzleDb, key: string): Promi
 /**
  * Get a setting value (parsed if JSON)
  */
-export async function getSettingValue<T = any>(db: D1Database | DrizzleDb, key: string): Promise<T | null> {
+export async function getSettingValue<T = unknown>(
+  db: D1Database | DrizzleDb,
+  key: string,
+  options?: SettingServiceOptions,
+): Promise<T | null> {
+  const cacheKey = getSettingCacheKey(key);
+  const cachedValue = options?.cache ? await options.cache.get(cacheKey) : null;
+  if (cachedValue !== null) {
+    return parseSettingValue<T>(cachedValue);
+  }
+
   const setting = await getSetting(db, key);
   if (!setting) return null;
 
-  try {
-    return JSON.parse(setting.value) as T;
-  } catch {
-    return setting.value as unknown as T;
+  if (options?.cache) {
+    await options.cache.put(cacheKey, setting.value, {
+      expirationTtl: SETTINGS_CACHE_TTL_SECONDS,
+    });
   }
+
+  return parseSettingValue<T>(setting.value);
 }
 
 /**
@@ -48,7 +93,7 @@ export async function upsertSetting(
   db: D1Database | DrizzleDb,
   key: string,
   value: string | object,
-  options?: { description?: string; category?: string; type?: string }
+  options?: UpsertSettingOptions
 ): Promise<boolean> {
   const drizzle = getDb(db);
 
@@ -77,15 +122,21 @@ export async function upsertSetting(
     });
   }
 
+  await invalidateSettingCache(options?.cache, key);
   return true;
 }
 
 /**
  * Delete a setting
  */
-export async function deleteSetting(db: D1Database | DrizzleDb, key: string): Promise<boolean> {
+export async function deleteSetting(
+  db: D1Database | DrizzleDb,
+  key: string,
+  options?: SettingServiceOptions,
+): Promise<boolean> {
   const drizzle = getDb(db);
   await drizzle.delete(siteSettings).where(eq(siteSettings.key, key));
+  await invalidateSettingCache(options?.cache, key);
   return true;
 }
 
@@ -152,8 +203,11 @@ const IMAGE_SETTINGS_KEY = IMAGE_SETTINGS_DB_KEY;
 /**
  * Get image upload settings (merged with defaults)
  */
-export async function getImageUploadSettings(db: D1Database | DrizzleDb): Promise<ImageUploadSettings> {
-  const stored = await getSettingValue<Partial<ImageUploadSettings>>(db, IMAGE_SETTINGS_KEY);
+export async function getImageUploadSettings(
+  db: D1Database | DrizzleDb,
+  options?: SettingServiceOptions,
+): Promise<ImageUploadSettings> {
+  const stored = await getSettingValue<Partial<ImageUploadSettings>>(db, IMAGE_SETTINGS_KEY, options);
   return { ...IMAGE_UPLOAD_DEFAULTS, ...stored };
 }
 
@@ -162,7 +216,8 @@ export async function getImageUploadSettings(db: D1Database | DrizzleDb): Promis
  */
 export async function updateImageUploadSettings(
   db: D1Database | DrizzleDb,
-  updates: Partial<ImageUploadSettings>
+  updates: Partial<ImageUploadSettings>,
+  options?: SettingServiceOptions,
 ): Promise<ImageUploadSettings> {
   // Get current settings
   const current = await getImageUploadSettings(db);
@@ -175,6 +230,7 @@ export async function updateImageUploadSettings(
     description: 'Image upload module configuration',
     category: 'media',
     type: 'json',
+    cache: options?.cache,
   });
 
   return newSettings;
@@ -183,11 +239,15 @@ export async function updateImageUploadSettings(
 /**
  * Reset image upload settings to defaults
  */
-export async function resetImageUploadSettings(db: D1Database | DrizzleDb): Promise<ImageUploadSettings> {
+export async function resetImageUploadSettings(
+  db: D1Database | DrizzleDb,
+  options?: SettingServiceOptions,
+): Promise<ImageUploadSettings> {
   await upsertSetting(db, IMAGE_SETTINGS_KEY, IMAGE_UPLOAD_DEFAULTS, {
     description: 'Image upload module configuration',
     category: 'media',
     type: 'json',
+    cache: options?.cache,
   });
   return IMAGE_UPLOAD_DEFAULTS;
 }
@@ -201,8 +261,11 @@ const TOC_SETTINGS_KEY = 'toc_settings';
 /**
  * Get TOC settings (merged with defaults)
  */
-export async function getTocSettings(db: D1Database | DrizzleDb): Promise<TocSettings> {
-  const stored = await getSettingValue<TocSettingsInput>(db, TOC_SETTINGS_KEY);
+export async function getTocSettings(
+  db: D1Database | DrizzleDb,
+  options?: SettingServiceOptions,
+): Promise<TocSettings> {
+  const stored = await getSettingValue<TocSettingsInput>(db, TOC_SETTINGS_KEY, options);
   return normalizeTocSettings(stored);
 }
 
@@ -211,7 +274,8 @@ export async function getTocSettings(db: D1Database | DrizzleDb): Promise<TocSet
  */
 export async function updateTocSettings(
   db: D1Database | DrizzleDb,
-  updates: TocSettingsInput
+  updates: TocSettingsInput,
+  options?: SettingServiceOptions,
 ): Promise<TocSettings> {
   const current = await getTocSettings(db);
   const newSettings = normalizeTocSettings({ ...current, ...normalizeTocSettings(updates) });
@@ -220,6 +284,7 @@ export async function updateTocSettings(
     description: 'Table of Contents display settings',
     category: 'appearance',
     type: 'json',
+    cache: options?.cache,
   });
 
   return newSettings;
