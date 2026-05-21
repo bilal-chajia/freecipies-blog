@@ -1,5 +1,6 @@
 ---
 import RelatedContentView from '../../RelatedContent.astro';
-const { block } = Astro.props as { block: any };
+import type { ContentBlock } from '@modules/content-blocks/contract/content-blocks.types';
+const { block } = Astro.props as { block: ContentBlock };
 ---
 <RelatedContentView block={block} />

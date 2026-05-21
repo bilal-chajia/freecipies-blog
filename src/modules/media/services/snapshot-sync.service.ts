@@ -24,6 +24,7 @@ import { categories } from '../../categories/schema/categories.schema';
 import {
   normalizeMediaVariantsJson,
 } from '@shared/images/image-contract';
+import type { StorageVariant, StrictStorageVariants } from '@shared/types/images';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -42,7 +43,7 @@ interface SnapshotPatch {
   placeholder?: string;
   focal_point?: { x: number; y: number };
   aspect_ratio?: string;
-  variants?: Record<string, { r2_key: string; width: number; height: number; size_bytes?: number }>;
+  variants?: StrictStorageVariants;
 }
 
 // ─── Core Logic ──────────────────────────────────────────────────
@@ -107,7 +108,7 @@ function buildSnapshotPatch(mediaRow: Media): SnapshotPatch {
 function applyPatchToSlot(
   slot: Record<string, unknown>,
   patch: SnapshotPatch,
-  allowedVariantKeys: readonly string[]
+  allowedVariantKeys: readonly (keyof StrictStorageVariants)[]
 ): Record<string, unknown> {
   const updated = { ...slot };
 
@@ -123,9 +124,9 @@ function applyPatchToSlot(
 
   // Rebuild variants for the allowed keys only
   if (patch.variants) {
-    const newVariants: Record<string, unknown> = {};
+    const newVariants: Partial<Record<keyof StrictStorageVariants, StorageVariant>> = {};
     for (const key of allowedVariantKeys) {
-      const source = (patch.variants as Record<string, unknown>)[key];
+      const source = patch.variants[key];
       if (source) {
         newVariants[key] = source;
       }

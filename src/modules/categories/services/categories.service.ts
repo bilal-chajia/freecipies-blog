@@ -7,7 +7,24 @@
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { categories, type Category, type NewCategory } from '../schema/categories.schema';
+import { articles } from '../../articles/schema/articles.schema';
+import { syncCachedFields } from '../../articles/services/articles.service';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+
+async function getArticleIdsForCategory(drizzle: DrizzleDb, categoryId: number): Promise<number[]> {
+  const rows = await drizzle
+    .select({ id: articles.id })
+    .from(articles)
+    .where(and(eq(articles.categoryId, categoryId), isNull(articles.deletedAt)));
+
+  return rows.map((row) => row.id);
+}
+
+async function refreshCategoryArticleCaches(db: D1Database | DrizzleDb, articleIds: number[]): Promise<void> {
+  for (const articleId of articleIds) {
+    await syncCachedFields(db, articleId);
+  }
+}
 
 /**
  * Get all categories
@@ -100,6 +117,9 @@ export async function updateCategory(
   category: Partial<NewCategory>
 ): Promise<Category | null> {
   const drizzle = getDb(db);
+  const existing = await getCategoryBySlug(db, slug);
+  if (!existing) return null;
+  const affectedArticleIds = await getArticleIdsForCategory(drizzle, existing.id);
 
   // Recalculate depth if parentId is being changed
   const depth = category.parentId !== undefined
@@ -116,6 +136,8 @@ export async function updateCategory(
     .set(updateData)
     .where(eq(categories.slug, slug));
 
+  await refreshCategoryArticleCaches(db, affectedArticleIds);
+
   return getCategoryBySlug(db, slug);
 }
 
@@ -128,6 +150,9 @@ export async function updateCategoryById(
   category: Partial<NewCategory>
 ): Promise<Category | null> {
   const drizzle = getDb(db);
+  const existing = await getCategoryById(db, id);
+  if (!existing) return null;
+  const affectedArticleIds = await getArticleIdsForCategory(drizzle, id);
 
   // Recalculate depth if parentId is being changed
   const depth = category.parentId !== undefined
@@ -143,6 +168,8 @@ export async function updateCategoryById(
   await drizzle.update(categories)
     .set(updateData)
     .where(eq(categories.id, id));
+
+  await refreshCategoryArticleCaches(db, affectedArticleIds);
 
   return getCategoryById(db, id);
 }
@@ -168,5 +195,4 @@ export async function deleteCategoryById(db: D1Database | DrizzleDb, id: number)
     .where(eq(categories.id, id));
   return (result.rowsAffected ?? 0) > 0;
 }
-
 

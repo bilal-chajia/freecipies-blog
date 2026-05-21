@@ -8,22 +8,75 @@ import { eq } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { pinTemplates, type PinTemplate, type NewPinTemplate } from '../schema/templates.schema';
+import { toStoredTemplateElements } from '../utils/elementSerialization';
+
+export interface TemplateApiPayload {
+  id: number;
+  slug: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  background_color: string;
+  width: number;
+  height: number;
+  thumbnail_url: string | null;
+  elements_json: string;
+  is_active: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface CreateTemplatePayload {
+  slug: string;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  background_color?: string;
+  width?: number;
+  height?: number;
+  elements_json?: string | Record<string, unknown>[];
+  thumbnail_url?: string | null;
+  is_active?: boolean;
+}
+
+export type UpdateTemplatePayload = Partial<CreateTemplatePayload>;
 
 /**
- * Helper to map Drizzle camelCase properties to snake_case 
- * for frontend backward compatibility
+ * Helper to serialize Drizzle camelCase properties to contract snake_case.
  */
-function mapToSnakeCase(t: PinTemplate | undefined): any {
+function mapToSnakeCase(t: PinTemplate | undefined): TemplateApiPayload | undefined {
   if (!t) return t;
   return {
-    ...t,
+    id: t.id,
+    slug: t.slug,
+    name: t.name,
+    description: t.description,
+    category: t.category,
     elements_json: t.elementsJson,
     thumbnail_url: t.thumbnailUrl,
-    is_active: t.isActive,
-    background_color: t.backgroundColor,
+    is_active: Boolean(t.isActive),
+    background_color: t.backgroundColor ?? '#ffffff',
+    width: t.width ?? 1000,
+    height: t.height ?? 1500,
     created_at: t.createdAt,
     updated_at: t.updatedAt,
   };
+}
+
+function normalizeElementsJson(elementsJson: CreateTemplatePayload['elements_json']): string {
+  if (typeof elementsJson === 'string') {
+    const parsed = JSON.parse(elementsJson);
+    if (!Array.isArray(parsed)) {
+      throw new Error('elements_json must be an array');
+    }
+    return JSON.stringify(toStoredTemplateElements(parsed as Record<string, unknown>[]));
+  }
+
+  if (Array.isArray(elementsJson)) {
+    return JSON.stringify(toStoredTemplateElements(elementsJson));
+  }
+
+  return '[]';
 }
 
 /**
@@ -32,7 +85,7 @@ function mapToSnakeCase(t: PinTemplate | undefined): any {
 export async function getTemplates(
   db: D1Database | DrizzleDb,
   options: { activeOnly?: boolean } = {}
-): Promise<any[]> {
+): Promise<TemplateApiPayload[]> {
   const drizzle = getDb(db);
   const { activeOnly = true } = options;
 
@@ -43,7 +96,7 @@ export async function getTemplates(
     results = await drizzle.select().from(pinTemplates).all();
   }
 
-  return results.map(mapToSnakeCase);
+  return results.map((result) => mapToSnakeCase(result)).filter((result): result is TemplateApiPayload => Boolean(result));
 }
 
 /**
@@ -52,7 +105,7 @@ export async function getTemplates(
 export async function getTemplateBySlug(
   db: D1Database | DrizzleDb,
   slug: string
-): Promise<any | undefined> {
+): Promise<TemplateApiPayload | undefined> {
   const drizzle = getDb(db);
   const result = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.slug, slug)).get();
   return mapToSnakeCase(result);
@@ -64,7 +117,7 @@ export async function getTemplateBySlug(
 export async function getTemplateById(
   db: D1Database | DrizzleDb,
   id: number
-): Promise<any | undefined> {
+): Promise<TemplateApiPayload | undefined> {
   const drizzle = getDb(db);
   const result = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.id, id)).get();
   return mapToSnakeCase(result);
@@ -75,30 +128,26 @@ export async function getTemplateById(
  */
 export async function createTemplate(
   db: D1Database | DrizzleDb,
-  data: any
-): Promise<any> {
+  data: CreateTemplatePayload
+): Promise<TemplateApiPayload> {
   const drizzle = getDb(db);
 
-  // Support both camelCase and snake_case inputs from frontend
-  const rawElements = data.elementsJson ?? data.elements_json;
-  const elementsStr = typeof rawElements === 'string'
-    ? rawElements
-    : JSON.stringify(rawElements || []);
+  const elementsStr = normalizeElementsJson(data.elements_json);
 
   const result = await drizzle.insert(pinTemplates).values({
     slug: data.slug,
     name: data.name,
     description: data.description,
     category: data.category ?? 'general',
-    width: data.width || data.canvas_width || 1000,
-    height: data.height || data.canvas_height || 1500,
+    width: data.width ?? 1000,
+    height: data.height ?? 1500,
     elementsJson: elementsStr,
-    thumbnailUrl: data.thumbnailUrl ?? data.thumbnail_url ?? null,
-    backgroundColor: data.backgroundColor ?? data.background_color ?? '#ffffff',
-    isActive: data.isActive ?? data.is_active ?? true,
+    thumbnailUrl: data.thumbnail_url ?? null,
+    backgroundColor: data.background_color ?? '#ffffff',
+    isActive: data.is_active ?? true,
   }).returning().get();
 
-  return mapToSnakeCase(result);
+  return mapToSnakeCase(result) as TemplateApiPayload;
 }
 
 /**
@@ -107,8 +156,8 @@ export async function createTemplate(
 export async function updateTemplate(
   db: D1Database | DrizzleDb,
   slug: string,
-  data: any
-): Promise<any | undefined> {
+  data: UpdateTemplatePayload
+): Promise<TemplateApiPayload | undefined> {
   const drizzle = getDb(db);
   const updates: Partial<NewPinTemplate> = {};
 
@@ -116,28 +165,20 @@ export async function updateTemplate(
   if (data.description !== undefined) updates.description = data.description;
   if (data.category !== undefined) updates.category = data.category;
 
-  const w = data.width ?? data.canvas_width;
-  if (w !== undefined) updates.width = w;
+  if (data.width !== undefined) updates.width = data.width;
 
-  const h = data.height ?? data.canvas_height;
-  if (h !== undefined) updates.height = h;
+  if (data.height !== undefined) updates.height = data.height;
 
-  const thumb = data.thumbnailUrl ?? data.thumbnail_url;
-  if (thumb !== undefined) updates.thumbnailUrl = thumb;
+  if (data.thumbnail_url !== undefined) updates.thumbnailUrl = data.thumbnail_url;
 
-  const active = data.isActive ?? data.is_active;
-  if (active !== undefined) updates.isActive = active;
+  if (data.is_active !== undefined) updates.isActive = data.is_active;
 
-  const bg = data.backgroundColor ?? data.background_color;
-  if (bg !== undefined) updates.backgroundColor = bg;
+  if (data.background_color !== undefined) updates.backgroundColor = data.background_color;
 
   if (data.slug !== undefined) updates.slug = data.slug;
 
-  const rootElements = data.elementsJson ?? data.elements_json;
-  if (rootElements !== undefined) {
-    updates.elementsJson = typeof rootElements === 'string'
-      ? rootElements
-      : JSON.stringify(rootElements);
+  if (data.elements_json !== undefined) {
+    updates.elementsJson = normalizeElementsJson(data.elements_json);
   }
 
   if (Object.keys(updates).length === 0) {

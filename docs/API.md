@@ -3,7 +3,7 @@
 > **Last Updated:** 2026-05-13
 > **Base URL:** `/api`
 > **Auth:** Bearer Token (Admin endpoints)
-> **Version:** Astro 6 + React 19
+> **Version:** Astro 6.3.3 + React 19
 
 ---
 

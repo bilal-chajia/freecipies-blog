@@ -28,12 +28,13 @@ export const GET: APIRoute = async ({ params, locals }) => {
         
         const { body, status, headers } = formatSuccessResponse(template);
         return new Response(body, { status, headers });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error fetching template:', error);
+        const message = error instanceof Error ? error.message : 'Failed to fetch template';
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error
-                : new AppError(ErrorCodes.DATABASE_ERROR, error.message || 'Failed to fetch template', 500)
+                : new AppError(ErrorCodes.DATABASE_ERROR, message, 500)
         );
         return new Response(body, { status, headers });
     }
@@ -67,20 +68,22 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         
         const { body, status, headers } = formatSuccessResponse(updated);
         return new Response(body, { status, headers });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error updating template:', error);
+        const err = error as { message?: string };
         
-        if (error.message?.includes('UNIQUE constraint')) {
+        if (err.message?.includes('UNIQUE constraint')) {
             const { body, status, headers } = formatErrorResponse(
                 new AppError(ErrorCodes.VALIDATION_ERROR, 'Template with this slug already exists', 409)
             );
             return new Response(body, { status, headers });
         }
         
+        const message = error instanceof Error ? error.message : 'Failed to update template';
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error
-                : new AppError(ErrorCodes.DATABASE_ERROR, error.message || 'Failed to update template', 500)
+                : new AppError(ErrorCodes.DATABASE_ERROR, message, 500)
         );
         return new Response(body, { status, headers });
     }
@@ -113,12 +116,13 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
         
         const { body, status, headers } = formatSuccessResponse({ message: 'Template deleted successfully' });
         return new Response(body, { status, headers });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error deleting template:', error);
+        const message = error instanceof Error ? error.message : 'Failed to delete template';
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error
-                : new AppError(ErrorCodes.DATABASE_ERROR, error.message || 'Failed to delete template', 500)
+                : new AppError(ErrorCodes.DATABASE_ERROR, message, 500)
         );
         return new Response(body, { status, headers });
     }

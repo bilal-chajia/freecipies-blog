@@ -32,12 +32,12 @@ function getEditorTypeMap(): Map<string, BlockAdapter> {
         'bulletListItem':   'list',
         'numberedListItem': 'list',
         'checkListItem':    'list',
-        'faqSection':       'faq_section',
+        'faqSection':       'main_faq',
         'relatedContent':   'related_content',
         'divider':          'divider',
         'simpleTable':      'table',
         'beforeAfter':      'before_after',
-        'roundupList': 'roundup_item',
+        'roundupList': 'main_roundup',
         'mainRecipe': 'main_recipe',
   };
 

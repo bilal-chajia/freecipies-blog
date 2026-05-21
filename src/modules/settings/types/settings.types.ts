@@ -52,7 +52,7 @@ export interface TocSettings {
   max_depth: number;
 }
 
-export interface LegacyTocSettings {
+interface LegacyTocSettings {
   enabled: boolean;
   numbering: boolean;
   collapsible: boolean;
@@ -89,3 +89,87 @@ export function normalizeTocSettings(input: TocSettingsInput): TocSettings {
     max_depth: canonical.max_depth ?? legacy.maxDepth ?? TOC_DEFAULTS.max_depth,
   };
 }
+
+export interface SiteIdentitySettings {
+  site_name: string;
+  site_url: string;
+  tagline: string;
+  locale: string;
+}
+
+export interface SeoDefaultsSettings {
+  default_meta_description: string;
+  default_og_image: string;
+  twitter_card: 'summary' | 'summary_large_image';
+  title_separator: string;
+  robots_index: boolean;
+  robots_follow: boolean;
+}
+
+export interface PageSeoSettings {
+  meta_title: string;
+  meta_description: string;
+  no_index: boolean;
+  canonical: string;
+  og_image: string;
+  og_title: string;
+  og_description: string;
+  twitter_card: 'summary' | 'summary_large_image';
+}
+
+export interface HomepageSettings {
+  seo: PageSeoSettings;
+}
+
+export interface OrganizationProfileSettings {
+  name: string;
+  url: string;
+  logo_url: string;
+  same_as: string[];
+  contact_email: string;
+}
+
+export interface PublicSocialLink {
+  network: string;
+  url: string;
+  label: string;
+}
+
+export const SITE_IDENTITY_DEFAULTS: SiteIdentitySettings = {
+  site_name: 'SaaS Blog',
+  site_url: 'https://saas-blog.com',
+  tagline: 'Reliable recipes and cooking guides.',
+  locale: 'en-US',
+};
+
+export const SEO_DEFAULTS: SeoDefaultsSettings = {
+  default_meta_description: 'Reliable recipes and cooking guides.',
+  default_og_image: 'https://saas-blog.com/logo.png',
+  twitter_card: 'summary_large_image',
+  title_separator: '|',
+  robots_index: true,
+  robots_follow: true,
+};
+
+export const HOMEPAGE_SETTINGS_DEFAULTS: HomepageSettings = {
+  seo: {
+    meta_title: 'SaaS Blog',
+    meta_description: 'Reliable recipes and cooking guides.',
+    no_index: false,
+    canonical: SITE_IDENTITY_DEFAULTS.site_url,
+    og_image: SEO_DEFAULTS.default_og_image,
+    og_title: 'SaaS Blog',
+    og_description: 'Reliable recipes and cooking guides.',
+    twitter_card: 'summary_large_image',
+  },
+};
+
+export const ORGANIZATION_PROFILE_DEFAULTS: OrganizationProfileSettings = {
+  name: SITE_IDENTITY_DEFAULTS.site_name,
+  url: SITE_IDENTITY_DEFAULTS.site_url,
+  logo_url: SEO_DEFAULTS.default_og_image,
+  same_as: [],
+  contact_email: 'contact@recipes-saas.com',
+};
+
+export const PUBLIC_SOCIAL_LINKS_DEFAULTS: PublicSocialLink[] = [];

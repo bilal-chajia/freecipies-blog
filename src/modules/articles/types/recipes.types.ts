@@ -245,10 +245,10 @@ export interface InstructionStep {
     text: string;
 
     /**
-     * Step photo URL — visual guidance for the step.
-     * Maps to HowToStep.image in JSON-LD.
+     * Step image reference resolved from `articles.images_json.recipe_steps`.
+     * Maps to HowToStep.image in JSON-LD after server-side resolution.
      */
-    image?: string | null;
+    image_ref?: string | null;
 
     /**
      * Timer duration in **minutes** for the UI timer feature.
@@ -288,43 +288,33 @@ export interface InstructionSection {
 // §4. Equipment
 // ═══════════════════════════════════════════════
 
-/**
- * Equipment item needed for the recipe.
- * 
- * Simplified model — uses a plain name instead of FK reference to an equipment
- * table (no equipment module exists in the project).
- * 
- * RecipeCard.astro renders equipment as a checklist with optional/required tags.
- * 
- * @example { name: "Stand Mixer", required: true, notes: "or use hand mixer" }
- * @example { name: "9x13 Baking Pan", required: true }
- * @example { name: "Kitchen Torch", required: false, notes: "for brûlée topping" }
- */
-export interface EquipmentItem {
-    /** Equipment name @example "Stand Mixer", "Baking Sheet", "Parchment Paper" */
+export interface RecipeEquipmentSnapshot {
+    slug: string;
     name: string;
-
-    /**
-     * Whether this equipment is required (default: true).
-     * Optional equipment shown with "(optional)" tag in RecipeCard.
-     */
-    required?: boolean;
-
-    /** Usage notes or size info @example "9x13 inch", "or use hand mixer" */
-    notes?: string;
-
-    /** Optional affiliate/product link */
-    affiliateUrl?: string;
+    brand?: string | null;
+    description?: string | null;
+    category?: string | null;
+    image?: Record<string, unknown> | null;
+    affiliate_url?: string | null;
+    affiliate_provider?: string | null;
+    affiliate_note?: string | null;
 }
 
 /**
- * @deprecated Use `EquipmentItem` instead. This interface used `equipment_id`
- * which references a non-existent equipment table.
+ * Equipment item needed for the recipe.
+ *
+ * `recipe_json.equipment` is the complete checklist. Catalog items copy their
+ * render snapshot from the equipment table at article save time; public render
+ * reads this snapshot and does not join the equipment table.
  */
-export interface EquipmentRef {
-    equipment_id: number;
+export interface EquipmentItem {
+    id: string;
+    equipment_id: number | null;
+    label: string;
     required: boolean;
-    notes?: string;
+    notes?: string | null;
+    source_type: 'catalog' | 'manual';
+    snapshot: RecipeEquipmentSnapshot | null;
 }
 
 
@@ -417,7 +407,8 @@ export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 
 /**
  * Estimated cost level for filtering and display.
- * Stored in `cachedRecipeJson.isBudget` (derived from `estimatedCost === 'Budget'`).
+ * Mirrored to `cached_recipe_json.estimated_cost`; budget display flags are
+ * derived into `cached_recipe_json.badges.is_budget`.
  */
 export type CostLevel = 'Budget' | 'Moderate' | 'Premium';
 
@@ -527,7 +518,8 @@ export interface RecipeJson {
 
     /**
      * Estimated cost level for filtering.
-     * Synced to `cachedRecipeJson.isBudget` when value is "Budget".
+     * Synced to `cached_recipe_json.estimated_cost`; budget flags are derived
+     * into `cached_recipe_json.badges.is_budget`.
      */
     estimatedCost: CostLevel | null;
 
@@ -787,6 +779,7 @@ export function flattenIngredients(ingredients: IngredientGroup[]): string[] {
  */
 export function toSchemaOrgInstructions(
     instructions: InstructionSection[],
+    resolveStepImage?: (imageRef: string) => string | null,
 ): Array<{ '@type': 'HowToSection' | 'HowToStep';[key: string]: unknown }> {
     const result: Array<{ '@type': 'HowToSection' | 'HowToStep';[key: string]: unknown }> = [];
     let globalStepNumber = 1;
@@ -804,7 +797,10 @@ export function toSchemaOrgInstructions(
                         text: step.text,
                     };
                     if (step.name) stepData.name = step.name;
-                    if (step.image) stepData.image = step.image;
+                    if (step.image_ref && resolveStepImage) {
+                        const imageUrl = resolveStepImage(step.image_ref);
+                        if (imageUrl) stepData.image = imageUrl;
+                    }
                     return stepData;
                 })
             });
@@ -817,7 +813,10 @@ export function toSchemaOrgInstructions(
                     text: step.text,
                 };
                 if (step.name) stepData.name = step.name;
-                if (step.image) stepData.image = step.image;
+                if (step.image_ref && resolveStepImage) {
+                    const imageUrl = resolveStepImage(step.image_ref);
+                    if (imageUrl) stepData.image = imageUrl;
+                }
                 result.push(stepData);
             }
         }

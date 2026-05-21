@@ -12,12 +12,12 @@ interface Props {
 }
 
 const defaultHeaderMenu: MenuItem[] = [
-  { id: "nav-1", label: "Categories", type: "link", url: "/categories" },
-  { id: "nav-2", label: "Recipes", type: "link", url: "/recipes" },
-  { id: "nav-3", label: "Bookmarks", type: "link", url: "/my-bookmarks" },
-  { id: "nav-4", label: "Authors", type: "link", url: "/authors" },
-  { id: "nav-5", label: "About", type: "link", url: "/about" },
-  { id: "nav-6", label: "Contact", type: "link", url: "/contact" },
+  { id: "nav-1", label: "Categories", type: "link", target: { type: "internal_route", href: "/categories" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-2", label: "Recipes", type: "link", target: { type: "internal_route", href: "/recipes" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-3", label: "Bookmarks", type: "link", target: { type: "internal_route", href: "/my-bookmarks" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-4", label: "Authors", type: "link", target: { type: "internal_route", href: "/authors" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-5", label: "About", type: "link", target: { type: "internal_route", href: "/about" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-6", label: "Contact", type: "link", target: { type: "internal_route", href: "/contact" }, is_enabled: true, visibility: "all", highlight: false },
 ];
 
 const { headerMenu = defaultHeaderMenu } = Astro.props as Props;

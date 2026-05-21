@@ -2,8 +2,14 @@
 import type { HydratedAuthor } from "@shared/utils";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 
+type AuthorCardAuthor = HydratedAuthor & {
+  name: string;
+  shortDescription?: string | null;
+  isFeatured?: boolean | null;
+};
+
 interface Props {
-  author: HydratedAuthor;
+  author: AuthorCardAuthor;
   showArticleCount?: boolean;
   articleCount?: number;
 }

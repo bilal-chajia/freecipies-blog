@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   TOC_DEFAULTS,
   normalizeTocSettings,
-  type LegacyTocSettings,
   type TocSettings,
 } from '../../types/settings.types';
 
@@ -21,8 +20,8 @@ describe('normalizeTocSettings', () => {
     });
   });
 
-  it('normalizes legacy camelCase TOC settings to snake_case', () => {
-    const legacy: Partial<LegacyTocSettings> = {
+  it('normalizes legacy camelCase TOC settings during read/migration only', () => {
+    const legacy = {
       defaultOpen: false,
       showJumpButton: false,
       accentColor: '#222222',

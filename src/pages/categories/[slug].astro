@@ -317,16 +317,12 @@ const categoryJsonLd = {
                 role="listitem"
               >
                 <div class="chip-svg">
-                  {cat.iconSvg ? (
-                    <Fragment set:html={cat.iconSvg} />
-                  ) : (
-                    <div
-                      class="chip-placeholder"
-                      style={`background-color: ${cat.color || "#ff3366"}`}
-                    >
-                      <span>{cat.label.charAt(0)}</span>
-                    </div>
-                  )}
+                  <div
+                    class="chip-placeholder"
+                    style={`background-color: ${cat.color || "#ff3366"}`}
+                  >
+                    <span>{cat.label.charAt(0)}</span>
+                  </div>
                 </div>
                 <span class="chip-label">{cat.label}</span>
               </a>

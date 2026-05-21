@@ -2,7 +2,7 @@
 
 ## Stack
 
-- Astro 6 + React 19 + Tailwind 4 + Drizzle ORM + Zod 4
+- Astro 6.3.3 + React 19 + Tailwind 4 + Drizzle ORM + Zod 4
 - Cloudflare: D1 (SQLite), R2 (storage), KV (cache), Workers (runtime)
 - TypeScript 6 strict, `pnpm` only
 

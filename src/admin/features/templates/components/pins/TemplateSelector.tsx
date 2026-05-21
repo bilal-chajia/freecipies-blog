@@ -1,18 +1,44 @@
-// @ts-nocheck
 import React from 'react';
 import { Check } from 'lucide-react';
+
+interface Template {
+    id?: string | number;
+    name: string;
+    slug: string;
+    description?: string;
+    width?: number;
+    height?: number;
+    background_color?: string;
+    thumbnail_url?: string | null;
+    is_active?: boolean;
+    elements_json?: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+interface TemplateSelectorProps {
+    templates?: Template[];
+    selectedId?: string | number | null;
+    onSelect: (template: Template) => void;
+    isLoading?: boolean;
+}
 
 /**
  * TemplateSelector - Gallery to select a pin template
  */
-const TemplateSelector = ({ templates = [], selectedId, onSelect, isLoading = false }) => {
+const TemplateSelector: React.FC<TemplateSelectorProps> = ({
+    templates = [],
+    selectedId,
+    onSelect,
+    isLoading = false
+}) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-3 gap-4">
                 {[1, 2, 3].map((i) => (
                     <div
                         key={i}
-                        className="aspect-[2/3] rounded-lg bg-muted animate-pulse"
+                        className="aspect-2/3 rounded-lg bg-muted animate-pulse"
                     />
                 ))}
             </div>
@@ -39,7 +65,7 @@ const TemplateSelector = ({ templates = [], selectedId, onSelect, isLoading = fa
                         type="button"
                         onClick={() => onSelect(template)}
                         className={`
-                            relative aspect-[2/3] rounded-lg overflow-hidden border-2 transition-all
+                            relative aspect-2/3 rounded-lg overflow-hidden border-2 transition-all
                             hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary
                             ${isSelected
                                 ? 'border-primary ring-2 ring-primary shadow-lg'
@@ -75,7 +101,7 @@ const TemplateSelector = ({ templates = [], selectedId, onSelect, isLoading = fa
                         )}
 
                         {/* Template name overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/80 to-transparent p-2">
                             <p className="text-white text-xs font-medium truncate">
                                 {template.name}
                             </p>
@@ -88,4 +114,3 @@ const TemplateSelector = ({ templates = [], selectedId, onSelect, isLoading = fa
 };
 
 export default TemplateSelector;
-

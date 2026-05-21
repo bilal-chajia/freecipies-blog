@@ -1,4 +1,4 @@
-// Canvas Constants for PinCanvas
+// Canvas Constants for TemplateCanvas
 // Centralized configuration for Pinterest pin canvas
 
 // Pin canvas dimensions (Pinterest standard 2:3 ratio)

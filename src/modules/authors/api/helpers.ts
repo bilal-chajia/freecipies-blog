@@ -6,6 +6,7 @@
 
 import type { ImagesJson, BioJson, PersonaJson, SeoJson, BioSocialLink } from '../types/authors.types';
 import type { ImageVariants } from '../../articles/types/images.types';
+import type { StoredImageSlot } from '@shared/types/images';
 import { resolveVariantUrl } from '@shared/types/images';
 import {
     buildAuthorCreditSnapshot,
@@ -99,40 +100,80 @@ const normalizeSeoJsonObject = (value: any): SeoJson => {
     if (!value || typeof value !== 'object') return {};
 
     return {
-        metaTitle: value.metaTitle,
-        metaDescription: value.metaDescription,
-        noIndex: value.noIndex,
+        meta_title: value.meta_title ?? value.metaTitle ?? null,
+        meta_description: value.meta_description ?? value.metaDescription ?? null,
+        no_index: Boolean(value.no_index ?? value.noIndex ?? false),
         canonical: value.canonical ?? value.canonicalUrl,
-        ogImage: value.ogImage,
-        ogTitle: value.ogTitle,
-        ogDescription: value.ogDescription,
-        twitterCard: value.twitterCard,
-        robots: value.robots,
+        og_image: value.og_image ?? value.ogImage ?? null,
+        og_title: value.og_title ?? value.ogTitle ?? null,
+        og_description: value.og_description ?? value.ogDescription ?? null,
+        twitter_card: value.twitter_card ?? value.twitterCard ?? 'summary_large_image',
     };
 };
 
-const normalizeImageSlot = (slot: any) => {
-    if (!slot || typeof slot !== 'object') return slot;
+const getSeoValue = <T = unknown>(seo: SeoJson, snakeKey: keyof SeoJson, camelKey: string): T | undefined => {
+    const legacy = seo as Record<string, unknown>;
+    return (seo[snakeKey] ?? legacy[camelKey]) as T | undefined;
+};
 
-    if (slot.variants && typeof slot.variants === 'object') {
-        return slot;
+const normalizeStoredVariant = (variant: any) => {
+    if (!variant || typeof variant !== 'object') return null;
+    const r2Key = typeof variant.r2_key === 'string'
+        ? variant.r2_key
+        : typeof variant.url === 'string'
+            ? extractR2KeyFromUrl(variant.url)
+            : null;
+    if (!r2Key) return null;
+
+    const width = Number(variant.width);
+    const height = Number(variant.height);
+    if (!Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0) return null;
+
+    return {
+        r2_key: r2Key,
+        width,
+        height,
+        ...(Number.isFinite(Number(variant.size_bytes ?? variant.sizeBytes))
+            ? { size_bytes: Number(variant.size_bytes ?? variant.sizeBytes) }
+            : {}),
+    };
+};
+
+type AuthorStoredImagesJson = {
+    avatar?: StoredImageSlot;
+    hero?: StoredImageSlot;
+};
+
+const normalizeImageSlot = (slot: any, variantKeys: string[], fallbackAspectRatio: string): StoredImageSlot | undefined => {
+    if (!slot || typeof slot !== 'object') return undefined;
+
+    const variants: Record<string, unknown> = {};
+    const sourceVariants = slot.variants && typeof slot.variants === 'object' ? slot.variants : {};
+
+    for (const key of variantKeys) {
+        const normalized = normalizeStoredVariant(sourceVariants[key]);
+        if (normalized) variants[key] = normalized;
     }
 
-    if (slot.url) {
-        const r2Key = extractR2KeyFromUrl(slot.url);
-        return {
-            ...slot,
-            variants: {
-                original: {
-                    ...(r2Key ? { r2_key: r2Key } : { url: slot.url }),
-                    width: slot.width ?? 0,
-                    height: slot.height ?? 0,
-                },
-            },
-        };
-    }
+    if (Object.keys(variants).length !== variantKeys.length) return undefined;
 
-    return slot;
+    const normalized: StoredImageSlot = {
+        ...(typeof slot.media_id === 'number' ? { media_id: slot.media_id } : {}),
+        ...(typeof slot.mediaId === 'number' ? { media_id: slot.mediaId } : {}),
+        alt: typeof slot.alt === 'string' && slot.alt.trim() ? slot.alt : '',
+        placeholder: typeof slot.placeholder === 'string' ? slot.placeholder : '',
+        aspect_ratio: typeof slot.aspect_ratio === 'string'
+            ? slot.aspect_ratio
+            : typeof slot.aspectRatio === 'string'
+                ? slot.aspectRatio
+                : fallbackAspectRatio,
+        variants,
+    };
+
+    if (slot.focal_point && typeof slot.focal_point === 'object') normalized.focal_point = slot.focal_point as StoredImageSlot['focal_point'];
+    if (slot.focalPoint && typeof slot.focalPoint === 'object') normalized.focal_point = slot.focalPoint as StoredImageSlot['focal_point'];
+
+    return normalized;
 };
 
 /**
@@ -146,9 +187,9 @@ export function parseImagesJson(value: any): string {
         try {
             const parsed = JSON.parse(value);
             const images = typeof parsed === 'object' && parsed ? parsed : {};
-            const normalized: ImagesJson = {
-                avatar: normalizeImageSlot(images.avatar),
-                hero: normalizeImageSlot(images.hero),
+            const normalized: AuthorStoredImagesJson = {
+                avatar: normalizeImageSlot(images.avatar, ['xs', 'sm'], '1:1'),
+                hero: normalizeImageSlot(images.hero, ['sm', 'md', 'lg'], '16:9'),
             };
             return JSON.stringify(normalized);
         } catch {
@@ -158,9 +199,9 @@ export function parseImagesJson(value: any): string {
 
     // If object, stringify
     if (typeof value === 'object') {
-        const normalized: ImagesJson = {
-            avatar: normalizeImageSlot(value.avatar),
-            hero: normalizeImageSlot(value.hero),
+        const normalized: AuthorStoredImagesJson = {
+            avatar: normalizeImageSlot(value.avatar, ['xs', 'sm'], '1:1'),
+            hero: normalizeImageSlot(value.hero, ['sm', 'md', 'lg'], '16:9'),
         };
         return JSON.stringify(normalized);
     }
@@ -254,7 +295,12 @@ export function transformAuthorRequestBody(body: any): any {
             images.avatar = {
                 alt: body.imageAlt,
                 variants: {
-                    original: {
+                    xs: {
+                        ...(r2Key ? { r2_key: r2Key } : { url: body.imageUrl }),
+                        width: body.imageWidth ?? 0,
+                        height: body.imageHeight ?? 0,
+                    },
+                    sm: {
                         ...(r2Key ? { r2_key: r2Key } : { url: body.imageUrl }),
                         width: body.imageWidth ?? 0,
                         height: body.imageHeight ?? 0,
@@ -290,12 +336,27 @@ export function transformAuthorRequestBody(body: any): any {
     // Handle seoJson - convert flat fields if needed
     if (body.seoJson !== undefined) {
         transformed.seoJson = parseSeoJson(body.seoJson);
-    } else if (body.metaTitle || body.metaDescription || body.canonicalUrl || body.canonical) {
+    } else if (
+        body.metaTitle ||
+        body.metaDescription ||
+        body.canonicalUrl ||
+        body.canonical ||
+        body.ogImage ||
+        body.ogTitle ||
+        body.ogDescription ||
+        body.twitterCard ||
+        body.noIndex
+    ) {
         transformed.seoJson = parseSeoJson({
             metaTitle: body.metaTitle,
             metaDescription: body.metaDescription,
             canonical: body.canonical,
             canonicalUrl: body.canonicalUrl,
+            ogImage: body.ogImage,
+            ogTitle: body.ogTitle,
+            ogDescription: body.ogDescription,
+            twitterCard: body.twitterCard,
+            noIndex: body.noIndex,
         });
         // Keep flat fields for now (backward compat)
     }
@@ -332,9 +393,19 @@ export function transformAuthorResponse(author: any): any {
     if (author.seoJson) {
         try {
             const seo: SeoJson = JSON.parse(author.seoJson);
-            if (!response.metaTitle) response.metaTitle = seo.metaTitle;
-            if (!response.metaDescription) response.metaDescription = seo.metaDescription;
+            if (!response.metaTitle) response.metaTitle = getSeoValue<string | null>(seo, 'meta_title', 'metaTitle') ?? undefined;
+            if (!response.metaDescription) response.metaDescription = getSeoValue<string | null>(seo, 'meta_description', 'metaDescription') ?? undefined;
             if (!response.canonicalUrl && seo.canonical) response.canonicalUrl = seo.canonical;
+            const ogImage = getSeoValue<string | null>(seo, 'og_image', 'ogImage');
+            const ogTitle = getSeoValue<string | null>(seo, 'og_title', 'ogTitle');
+            const ogDescription = getSeoValue<string | null>(seo, 'og_description', 'ogDescription');
+            const twitterCard = getSeoValue<string>(seo, 'twitter_card', 'twitterCard');
+            const noIndex = getSeoValue<boolean>(seo, 'no_index', 'noIndex');
+            if (response.ogImage === undefined && ogImage !== undefined) response.ogImage = ogImage;
+            if (response.ogTitle === undefined && ogTitle !== undefined) response.ogTitle = ogTitle;
+            if (response.ogDescription === undefined && ogDescription !== undefined) response.ogDescription = ogDescription;
+            if (response.twitterCard === undefined && twitterCard !== undefined) response.twitterCard = twitterCard;
+            if (response.noIndex === undefined && noIndex !== undefined) response.noIndex = noIndex;
         } catch {
             // Invalid JSON, skip
         }

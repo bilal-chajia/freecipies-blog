@@ -8,7 +8,6 @@
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import {

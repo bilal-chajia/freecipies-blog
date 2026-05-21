@@ -52,15 +52,14 @@ export interface PersonaJson {
 // ============================================
 
 export interface SeoJson {
-  metaTitle?: string;
-  metaDescription?: string;
-  noIndex?: boolean;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  no_index?: boolean;
   canonical?: string;
-  ogImage?: string;
-  ogTitle?: string;
-  ogDescription?: string;
-  twitterCard?: string;
-  robots?: string;
+  og_image?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  twitter_card?: 'summary' | 'summary_large_image';
 }
 
 // ============================================
@@ -136,9 +135,14 @@ export function imagesJsonToFlat(imagesJson: string | null): FlatAuthorImages {
  */
 export function flatToSeoJson(flat: FlatAuthorSeo): string {
   const seo: SeoJson = {
-    metaTitle: flat.metaTitle,
-    metaDescription: flat.metaDescription,
+    meta_title: flat.metaTitle ?? null,
+    meta_description: flat.metaDescription ?? null,
+    no_index: false,
     canonical: flat.canonicalUrl,
+    og_image: null,
+    og_title: null,
+    og_description: null,
+    twitter_card: 'summary_large_image',
   };
 
   return JSON.stringify(seo);
@@ -151,10 +155,10 @@ export function seoJsonToFlat(seoJson: string | null): FlatAuthorSeo {
   if (!seoJson) return {};
 
   try {
-    const seo: SeoJson = JSON.parse(seoJson);
+    const seo: SeoJson & Record<string, unknown> = JSON.parse(seoJson);
     return {
-      metaTitle: seo.metaTitle,
-      metaDescription: seo.metaDescription,
+      metaTitle: (seo.meta_title ?? seo.metaTitle) as string | undefined,
+      metaDescription: (seo.meta_description ?? seo.metaDescription) as string | undefined,
       canonicalUrl: seo.canonical,
     };
   } catch {

@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { getArticles } from '@modules/articles';
+import { getArticles, type RecipeContent } from '@modules/articles';
+import type { ArticleQueryOptions } from '@modules/articles/services/articles.service';
+import { normalizeRecipeForRender } from '@site/utils/recipe-render';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateQuery, PaginationQuery } from '@shared/validation';
 
@@ -36,7 +38,7 @@ export const GET: APIRoute = async ({ request }) => {
         }
 
         // Build query options - always filter by type='recipe'
-        const options: any = {
+        const options: ArticleQueryOptions = {
             type: 'recipe',
             isOnline: true,
             limit,
@@ -51,15 +53,14 @@ export const GET: APIRoute = async ({ request }) => {
 
         // Transform for recipe cards
         const items = result.items.map(article => {
+            const recipeArticle = article.type === 'recipe' ? article as RecipeContent : null;
             // Parse recipe JSON for card data
-            let recipeData: any = {};
-            if ((article as any).recipeJson) {
+            let recipeData = null;
+            if (recipeArticle?.recipeJson) {
                 try {
-                    recipeData = typeof (article as any).recipeJson === 'string'
-                        ? JSON.parse((article as any).recipeJson)
-                        : (article as any).recipeJson;
+                    recipeData = normalizeRecipeForRender(recipeArticle.recipeJson);
                 } catch {
-                    recipeData = {};
+                    recipeData = null;
                 }
             }
 
@@ -82,19 +83,19 @@ export const GET: APIRoute = async ({ request }) => {
                 headline: article.headline,
                 shortDescription: article.shortDescription,
                 thumbnail,
-                categoryLabel: (article as any).categoryLabel,
-                categorySlug: (article as any).categorySlug,
-                categoryColor: (article as any).categoryColor,
-                authorName: (article as any).authorName,
-                authorSlug: (article as any).authorSlug,
+                categoryLabel: article.categoryLabel,
+                categorySlug: article.categorySlug,
+                categoryColor: article.categoryColor,
+                authorName: article.authorName,
+                authorSlug: article.authorSlug,
                 publishedAt: article.publishedAt,
                 // Recipe-specific fields
-                totalTime: recipeData.total,
-                prepTime: recipeData.prep,
-                cookTime: recipeData.cook,
-                difficulty: recipeData.difficulty,
-                servings: recipeData.servings,
-                rating: recipeData.aggregateRating,
+                totalTime: recipeData?.total,
+                prepTime: recipeData?.prep,
+                cookTime: recipeData?.cook,
+                difficulty: recipeData?.difficulty,
+                servings: recipeData?.servings,
+                rating: recipeData?.aggregate_rating,
             };
         });
 

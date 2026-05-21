@@ -1,4 +1,5 @@
 import { getVariantMap, parseVariantsJson, resolveVariantUrl } from '@shared/types/images';
+import type { ResolvedImageVariant } from '@shared/types/images';
 
 export const parseJsonArray = (value: unknown) => {
     if (!value) return [];
@@ -43,6 +44,17 @@ interface UploadPayload {
     variants?: Record<string, unknown>;
 }
 
+type VariantMap = Partial<Record<'xs' | 'sm' | 'md' | 'lg' | 'original', ResolvedImageVariant>>;
+
+const isVariantMap = (value: unknown): value is VariantMap => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const record = value as Record<string, unknown>;
+    return ['xs', 'sm', 'md', 'lg', 'original'].some((key) => {
+        const variant = record[key];
+        return !!variant && typeof variant === 'object' && !Array.isArray(variant);
+    });
+};
+
 const serializeAuthorCredit = (credit: unknown) => {
     if (!credit || typeof credit !== 'object') return '{}';
     const record = credit as Record<string, unknown>;
@@ -75,7 +87,7 @@ export const buildImageReplaceProps = (item: MediaSelectPayload, currentProps: B
 };
 
 export const buildImageUploadProps = (data: UploadPayload, currentProps: BlockImageProps) => {
-    const variants = data.variants || {};
+    const variants = isVariantMap(data.variants) ? data.variants : {};
     const url = resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.lg) || data.url;
     const bestVariant = variants.md || variants.lg || variants.original;
 

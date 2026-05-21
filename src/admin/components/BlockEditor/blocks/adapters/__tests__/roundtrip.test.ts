@@ -59,22 +59,7 @@ describe('BlockAdapter round-trip: DB → Editor → DB', () => {
       adapterType: 'image',
       db: {
         type: 'image',
-        media_id: 42,
-        alt: 'Test image',
-        caption: 'A test',
-        credit: {
-          type: 'author',
-          id: 1,
-          name: 'Chef Maria salvador',
-          slug: 'chef-maria',
-          avatar: {
-            alt: 'Chef Maria salvador',
-            variants: {
-              xs: { url: '/api/images/media/chef-xs.webp', width: 50, height: 50 },
-            },
-          },
-        },
-        variants: { md: { url: '/test-md.webp', width: 800, height: 600 } },
+        image_ref: 'body-image-1',
       },
     },
     {
@@ -100,12 +85,10 @@ describe('BlockAdapter round-trip: DB → Editor → DB', () => {
       },
     },
     {
-      name: 'faq_section',
-      adapterType: 'faq_section',
+      name: 'main_faq',
+      adapterType: 'main_faq',
       db: {
-        type: 'faq_section',
-        title: 'FAQ',
-        items: [{ question: 'Can I freeze it?', answer: 'Yes, up to 3 months' }],
+        type: 'main_faq',
       },
     },
     {
@@ -115,8 +98,15 @@ describe('BlockAdapter round-trip: DB → Editor → DB', () => {
         type: 'related_content',
         title: 'You May Also Like',
         layout: 'grid',
-        mode: 'manual',
-        items: [{ content_type: 'recipe', article_id: 1, title: 'Test Recipe', slug: 'test-recipe' }],
+        items: [{
+          article_id: 1,
+          snapshot: {
+            id: 1,
+            type: 'recipe',
+            headline: 'Test Recipe',
+            slug: 'test-recipe',
+          },
+        }],
       },
     },
     {
@@ -125,17 +115,15 @@ describe('BlockAdapter round-trip: DB → Editor → DB', () => {
       db: {
         type: 'before_after',
         layout: 'slider',
-        before: { media_id: 1, alt: 'Before' },
-        after: { media_id: 2, alt: 'After' },
+        before_image_ref: 'before-image',
+        after_image_ref: 'after-image',
       },
     },
     {
-      name: 'roundup_item',
-      adapterType: 'roundup_item',
+      name: 'main_roundup',
+      adapterType: 'main_roundup',
       db: {
-        type: 'roundup_item',
-        title: 'Top Pick',
-        article_id: 5,
+        type: 'main_roundup',
       },
     },
   ];

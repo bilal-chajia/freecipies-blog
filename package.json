@@ -14,6 +14,13 @@
     "image:audit:local": "node scripts/local-image-contract.mjs audit",
     "image:migrate:local:dry-run": "node scripts/local-image-contract.mjs migrate --dry-run",
     "image:migrate:local:apply": "node scripts/local-image-contract.mjs migrate --apply",
+    "contract:audit:local": "node scripts/local-contract-audit.mjs",
+    "media:migrate-r2-naming:local": "node scripts/migrate-media-r2-naming-local.mjs",
+    "content:migrate-json:local": "node scripts/migrate-content-json-local.mjs",
+    "article:migrate-recipe-roundup-caches:local": "node scripts/migrate-recipe-roundup-caches-local.mjs",
+    "article:migrate-cache-drift:local": "node scripts/migrate-article-cache-drift-local.mjs",
+    "author:migrate-images:local": "node scripts/migrate-author-images-local.mjs",
+    "seo:migrate-json:local": "node scripts/migrate-seo-json-local.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs"
   },
   "dependencies": {
@@ -65,7 +72,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-table": "^8.21.3",
-    "astro": "^6.1.4",
+    "astro": "^6.3.3",
     "aws4fetch": "^1.0.20",
     "axios": "^1.14.0",
     "class-variance-authority": "^0.7.1",

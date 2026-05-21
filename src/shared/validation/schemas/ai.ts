@@ -70,7 +70,8 @@ export const UpdateSettingsSchema = z.object({
   defaultModel: z.string().optional(),
   temperature: z.number().min(0).max(1).optional(),
   systemPrompt: z.string().optional(),
-  providers: z.record(
+  providers: z.partialRecord(
+    ProviderEnum,
     z.object({
       apiKey: z.string().optional(),
       enabled: z.boolean().optional(),

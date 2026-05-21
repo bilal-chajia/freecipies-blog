@@ -3,7 +3,8 @@
  */
 
 // Canvas components
-export { default as PinCanvas } from './canvas/PinCanvas';
+export { default as TemplateCanvas } from './canvas/TemplateCanvas';
+export { TemplateCanvas as PinCanvas } from './canvas/TemplateCanvas';
 export { default as ElementPanel, AddElementPanel, FONTS } from './canvas/ElementPanel';
 export { default as FloatingToolbar } from './canvas/FloatingToolbar';
 export { default as CanvasToolbar } from './canvas/CanvasToolbar';

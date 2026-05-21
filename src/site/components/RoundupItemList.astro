@@ -6,47 +6,45 @@ import {
   extractImage,
   getImageSrcSet,
 } from "@shared/utils/hydration";
-import type { RoundupArticleMap } from "@server/site-data";
 import AuthorBadge from "./AuthorBadge.astro";
 
+type RoundupItem = NonNullable<RoundupJson["items"]>[number];
+
 interface Props {
-  roundup?: any; // Leaving for legacy
-  block?: any; // New block format
-  roundupArticles?: RoundupArticleMap;
+  roundup?: Record<string, unknown>;
+  block?: Record<string, unknown>;
+  roundupJson?: Record<string, unknown>;
   startNumber?: number;
 }
 
 const {
   roundup: rawRoundup,
   block,
-  roundupArticles = {},
+  roundupJson: rawRoundupJson,
   startNumber = 1,
 } = Astro.props;
 
 // Parse roundup if it's a string (Legacy support)
-let items = [];
+let items: RoundupItem[] = [];
 let groupTitle = "";
 let groupDescription = "";
 let showStats = true;
 
-if (block) {
-  // New block-based logic
-  const props = block.props || {};
-  items =
-    typeof props.itemsJson === "string"
-      ? JSON.parse(props.itemsJson)
-      : props.items || block.items || [];
-  groupTitle = props.title || block.title || "";
-  groupDescription = props.description || block.description || "";
-  showStats = props.showStats !== false && block.show_stats !== false;
+if (block?.type === "main_roundup") {
+  const roundup =
+    typeof rawRoundupJson === "string"
+      ? JSON.parse(rawRoundupJson)
+      : rawRoundupJson || { list_type: "ItemList", items: [] };
+  items = (roundup.items || []).sort(
+    (a: RoundupItem, b: RoundupItem) => (a.position || 0) - (b.position || 0),
+  );
 } else {
-  // Legacy roundupJson support
   const roundup: RoundupJson =
     typeof rawRoundup === "string"
       ? JSON.parse(rawRoundup)
-      : rawRoundup || { listType: "ItemList", items: [] };
+      : rawRoundup || { list_type: "ItemList", items: [] };
   items = (roundup.items || []).sort(
-    (a, b) => (a.position || 0) - (b.position || 0),
+    (a: RoundupItem, b: RoundupItem) => (a.position || 0) - (b.position || 0),
   );
 }
 
@@ -54,7 +52,7 @@ if (!items || items.length === 0) return null;
 
 ---
 
-<div class="roundup-container">
+<div class="roundup-container" id={block?.type === "main_roundup" ? "main-roundup" : undefined}>
   {
     groupTitle && (
       <div class="group-header">
@@ -67,48 +65,29 @@ if (!items || items.length === 0) return null;
   }
 
   {
-    items.map((item: any, index: number) => {
-      // Determine data source
-      const aId = item.articleId || item.article_id;
-      const isInternal = !!aId;
-      const article = isInternal ? roundupArticles[Number(aId)] : null;
+    items.map((item: RoundupItem, index: number) => {
+      const isInternal = item.source_type !== "external_recipe";
       const position = startNumber + index;
 
-      // Resolve link
       const href =
-        isInternal && article
-          ? article.type === "recipe"
-            ? `/recipes/${article.slug}`
-            : `/articles/${article.slug}`
-          : item.external_url || "#";
+        isInternal && item.slug
+            ? `/recipes/${item.slug}`
+            : item.external_url || "#";
 
-      // Resolve content (prefer manual item title/subtitle/note, fallback to article)
-      const title = item.title || article?.headline || "Untitled";
+      const title = item.title || "Untitled";
       const subtitle =
-        item.subtitle || article?.subtitle || article?.shortDescription || article?.excerpt || "";
+        item.subtitle || item.description || "";
       const note = item.note || "";
 
-      // Resolve image
-      // 1. Item-specific cover (if provided)
-        // 2. Article thumbnail or hero
-      let imgData: any = {};
+      let imgData: Record<string, unknown> = {};
       let srcSet = "";
 
-      if (item.cover?.variants) {
-        // Manual cover from roundup item
-        const slots = { thumbnail: item.cover };
+      if (item.image?.variants) {
+        const slots = { thumbnail: item.image };
         imgData = extractImage(JSON.stringify(slots), "thumbnail", 800);
         srcSet = getImageSrcSet(JSON.stringify(slots), "thumbnail");
-      } else if (article) {
-        // Fallback to article images
-        imgData = extractImage(article.imagesJson, "thumbnail", 800);
-        srcSet = getImageSrcSet(article.imagesJson, "thumbnail");
-        // If no thumbnail, try hero
-        if (!imgData.imageUrl) {
-          imgData = extractImage(article.imagesJson, "hero", 800);
-          srcSet = getImageSrcSet(article.imagesJson, "hero");
-        }
       }
+      const author = item.author;
 
       return (
         <div class="roundup-item-card" id={`item-${position}`}>
@@ -137,12 +116,10 @@ if (!items || items.length === 0) return null;
             </div>
           )}
 
-          {article?.author && (
+          {author?.name && (
             <AuthorBadge
-              name={article.author.name}
-              slug={article.author.slug}
-              avatar={article.author.avatar}
-              role={article.author.role}
+              name={author.name}
+              slug={author.slug}
             />
           )}
 

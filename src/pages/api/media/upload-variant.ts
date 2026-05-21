@@ -11,7 +11,7 @@
  *     - baseName: string
  *     - uploadId: string (for grouping variants)
  * 
- *   Returns: { r2Key, url, width, height }
+ *   Returns: { upload_key, url, width, height, size_bytes }
  */
 
 import type { APIRoute } from 'astro';
@@ -22,6 +22,7 @@ import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@module
 import { getImageUploadSettings } from '@modules/settings';
 import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
 import { validate, VariantUploadFields } from '@shared/validation';
+import { buildMediaImageR2Key, normalizeImageAssetId, normalizeImageExtension } from '@shared/images/r2-naming';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -42,7 +43,7 @@ export const POST: APIRoute = async ({ request }) => {
     const publicUrl = '/api/images';
 
     // Load upload settings
-    const settings = await getImageUploadSettings(env.DB);
+    const settings = await getImageUploadSettings(env.DB, { cache: env.SETTINGS_CACHE ?? env.SESSION ?? null });
     const MAX_SIZE_BYTES = settings.max_file_size_mb * 1024 * 1024;
     const allowedTypes = IMAGE_SUPPORTED_TYPES;
 
@@ -74,22 +75,24 @@ export const POST: APIRoute = async ({ request }) => {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, `Invalid file type: ${file.type}`, 400);
     }
 
-    // Build key path
-    const suffix = variantName === 'original' ? '' : `-${variantName}`;
-    const ext = file.name.split('.').pop() || 'webp';
-    const folder = 'media';
-    const r2Key = `${folder}/${baseName}${suffix}-${uploadId || Date.now()}.${ext}`;
+    const ext = normalizeImageExtension(file.name.split('.').pop());
+    const assetId = normalizeImageAssetId(uploadId);
+    const r2Key = buildMediaImageR2Key({
+      slugBase: baseName,
+      variant: variantName,
+      assetId,
+      extension: ext,
+    });
 
     // Upload to R2
     const arrayBuffer = await file.arrayBuffer();
 
-    const result = await uploadImage(
+    await uploadImage(
       env.IMAGES,
       {
         file,
-        filename: `${baseName}${suffix}.${ext}`,
+        filename: `${baseName}-${variantName}.${ext}`,
         contentType: file.type || 'image/webp',
-        folder,
         key: r2Key,
         arrayBuffer,
       },
@@ -97,10 +100,11 @@ export const POST: APIRoute = async ({ request }) => {
     );
 
     const { body, status, headers } = formatSuccessResponse({
-      r2Key: r2Key,
+      upload_key: r2Key,
       url: `${publicUrl}/${r2Key}`,
       width,
       height,
+      size_bytes: arrayBuffer.byteLength,
     });
 
     return new Response(body, { status, headers });

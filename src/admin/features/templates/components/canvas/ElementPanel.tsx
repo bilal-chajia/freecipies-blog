@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
@@ -20,7 +19,7 @@ import {
 import {
     Type,
     Square,
-    Image,
+    Image as ImageIcon,
     Layers,
     AlignLeft,
     AlignCenter,
@@ -36,25 +35,27 @@ import {
     ChevronRight,
     Palette,
     Move,
-    RotateCw,
-    Maximize2,
     Upload,
     HardDriveUpload,
     Loader2,
-    ALargeSmall,
-    CaseSensitive,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MediaDialog } from '@admin/features/media/components';
-import { mediaAPI } from '@admin/services/api';
 import ColorPicker from '@admin/components/ColorPicker';
 import { FONTS, COLOR_PRESETS } from './utils/editorConstants';
-import useEditorStore from '@admin/features/templates/store/useEditorStore';
+import useEditorStore, { type EditorElement } from '@admin/features/templates/store/useEditorStore';
+
+interface CollapsibleSectionProps {
+    title: string;
+    icon?: React.ComponentType<{ className?: string }>;
+    children: React.ReactNode;
+    defaultOpen?: boolean;
+}
 
 /**
  * CollapsibleSection - Accordion section for property panels
  */
-const CollapsibleSection = ({ title, icon: Icon, children, defaultOpen = true }) => {
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ title, icon: Icon, children, defaultOpen = true }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     return (
@@ -73,10 +74,16 @@ const CollapsibleSection = ({ title, icon: Icon, children, defaultOpen = true })
     );
 };
 
+interface ColorInputProps {
+    value?: string;
+    onChange: (value: string) => void;
+    label?: string;
+}
+
 /**
  * ColorInput - Color picker with advanced picker
  */
-const ColorInput = ({ value, onChange, label }) => {
+const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, label }) => {
     const [showPicker, setShowPicker] = useState(false);
     return (
         <div className="space-y-2 relative">
@@ -89,7 +96,7 @@ const ColorInput = ({ value, onChange, label }) => {
                 />
                 <Input
                     value={value || ''}
-                    onChange={(e) => onChange(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
                     placeholder="#ffffff"
                     className="flex-1 font-mono text-sm"
                 />
@@ -97,7 +104,7 @@ const ColorInput = ({ value, onChange, label }) => {
             {showPicker && (
                 <ColorPicker
                     color={value || '#ffffff'}
-                    onChange={onChange}
+                    onChange={(color: string | null) => onChange(color ?? '')}
                     onClose={() => setShowPicker(false)}
                     className="top-16 left-0 z-50"
                 />
@@ -106,10 +113,19 @@ const ColorInput = ({ value, onChange, label }) => {
     );
 };
 
+interface ElementPanelProps {
+    element: EditorElement | null;
+    onUpdate: (element: EditorElement) => void;
+    onDelete: () => void;
+    onDuplicate: () => void;
+    onMoveUp: () => void;
+    onMoveDown: () => void;
+}
+
 /**
  * ElementPanel - Enhanced property panel for editing selected elements
  */
-const ElementPanel = ({
+const ElementPanel: React.FC<ElementPanelProps> = ({
     element,
     onUpdate,
     onDelete,
@@ -131,21 +147,36 @@ const ElementPanel = ({
         );
     }
 
-    const handleChange = (key, value) => {
-        onUpdate({ ...element, [key]: value });
+    // Generic field updater — accepts any property key since element type is
+    // always narrowed in JSX via `element.type === 'text'` guards before use.
+    const handleChange = (key: string, value: unknown) => {
+        onUpdate({ ...element, [key]: value } as EditorElement);
     };
 
-    const handleNestedChange = (parent, key, value) => {
+    // Alias for sub-type specific keys (kept for readability in imageSlot/shape sections)
+    const handleAnyChange = handleChange;
+
+    // Rich read alias — unions all sub-type properties for read access.
+    // Runtime correctness is guaranteed by element.type === '...' guards in JSX.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const el = element as any;
+
+
+    const handleNestedChange = <K extends 'background' | 'shadow' | 'border'>(
+        parent: K,
+        key: string,
+        value: any
+    ) => {
         onUpdate({
             ...element,
             [parent]: {
-                ...(element[parent] || {}),
+                ...((el[parent] as Record<string, unknown>) || {}),
                 [key]: value,
             },
-        });
+        } as EditorElement);
     };
 
-    const handleImageSelect = (media) => {
+    const handleImageSelect = (media: any) => {
         if (!media) return;
 
         onUpdate({
@@ -153,7 +184,7 @@ const ElementPanel = ({
             imageUrl: media.url,
             sourceType: 'upload',
             name: media.alt_text || element.name || 'Image',
-        });
+        } as EditorElement);
     };
 
     return (
@@ -163,7 +194,7 @@ const ElementPanel = ({
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
                         {element.type === 'text' && <Type className="w-4 h-4 text-primary" />}
-                        {element.type === 'imageSlot' && <Image className="w-4 h-4 text-primary" />}
+                        {element.type === 'imageSlot' && <ImageIcon className="w-4 h-4 text-primary" />}
                         {element.type === 'shape' && <Square className="w-4 h-4 text-primary" />}
                         {element.type === 'overlay' && <Layers className="w-4 h-4 text-primary" />}
                     </div>
@@ -198,7 +229,7 @@ const ElementPanel = ({
                             <Input
                                 type="number"
                                 value={Math.round(element.x || 0)}
-                                onChange={(e) => handleChange('x', parseInt(e.target.value) || 0)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('x', parseInt(e.target.value) || 0)}
                                 className="h-8"
                             />
                         </div>
@@ -207,7 +238,7 @@ const ElementPanel = ({
                             <Input
                                 type="number"
                                 value={Math.round(element.y || 0)}
-                                onChange={(e) => handleChange('y', parseInt(e.target.value) || 0)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('y', parseInt(e.target.value) || 0)}
                                 className="h-8"
                             />
                         </div>
@@ -218,7 +249,7 @@ const ElementPanel = ({
                                     <Input
                                         type="number"
                                         value={Math.round(element.width || 100)}
-                                        onChange={(e) => handleChange('width', parseInt(e.target.value) || 100)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('width', parseInt(e.target.value) || 100)}
                                         className="h-8"
                                     />
                                 </div>
@@ -227,7 +258,7 @@ const ElementPanel = ({
                                     <Input
                                         type="number"
                                         value={Math.round(element.height || 100)}
-                                        onChange={(e) => handleChange('height', parseInt(e.target.value) || 100)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('height', parseInt(e.target.value) || 100)}
                                         className="h-8"
                                     />
                                 </div>
@@ -237,11 +268,13 @@ const ElementPanel = ({
                             <div className="col-span-2">
                                 <Label className="text-xs">Rotation: {Math.round(element.rotation || 0)}°</Label>
                                 <Slider
+                                    className=""
+                                    defaultValue={[0]}
                                     value={[element.rotation || 0]}
                                     min={-180}
                                     max={180}
                                     step={1}
-                                    onValueChange={([v]) => handleChange('rotation', v)}
+                                    onValueChange={([v]: [number]) => handleChange('rotation', v)}
                                 />
                             </div>
                         )}
@@ -256,16 +289,16 @@ const ElementPanel = ({
                                 <div>
                                     <Label className="text-xs">Static Text</Label>
                                     <Input
-                                        value={element.content || ''}
-                                        onChange={(e) => handleChange('content', e.target.value)}
+                                        value={el.content || ''}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('content', e.target.value)}
                                         placeholder="Enter text..."
                                     />
                                 </div>
                                 <div>
                                     <Label className="text-xs">Data Binding (dot notation)</Label>
                                     <Input
-                                        value={element.binding || ''}
-                                        onChange={(e) => handleChange('binding', e.target.value)}
+                                        value={el.binding || ''}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('binding', e.target.value)}
                                         placeholder="e.g. title, recipeJson.prep"
                                     />
                                     <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded mt-1">
@@ -293,8 +326,8 @@ const ElementPanel = ({
                                     <Label className="text-xs">Font Family</Label>
                                     <div className="space-y-2">
                                         <Select
-                                            value={element.fontFamily || 'Inter'}
-                                            onValueChange={(v) => handleChange('fontFamily', v)}
+                                            value={el.fontFamily || 'Inter'}
+                                            onValueChange={(v: string) => handleChange('fontFamily', v)}
                                         >
                                             <SelectTrigger className="h-9">
                                                 <SelectValue />
@@ -306,9 +339,10 @@ const ElementPanel = ({
                                                             variant="outline"
                                                             size="sm"
                                                             className="w-full justify-start text-xs"
-                                                            onClick={(e) => {
+                                                            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                                                 e.preventDefault();
-                                                                document.getElementById('font-upload-input').click();
+                                                                const input = document.getElementById('font-upload-input');
+                                                                if (input) input.click();
                                                             }}
                                                         >
                                                             <Upload className="w-3 h-3 mr-2" />
@@ -325,23 +359,27 @@ const ElementPanel = ({
 
                                                                 const loadingToast = toast.loading('Uploading font...');
                                                                 try {
-                                                                    // 1. Upload to R2
-                                                                    const response = await mediaAPI.upload(file, {
-                                                                        folder: 'fonts',
-                                                                        alt: file.name
+                                                                    const formData = new FormData();
+                                                                    formData.append('file', file);
+
+                                                                    const response = await fetch('/api/upload-font', {
+                                                                        method: 'POST',
+                                                                        headers: {
+                                                                            Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
+                                                                        },
+                                                                        body: formData,
                                                                     });
-                                                                    const url = response.data?.data?.url || response.data?.url;
+
+                                                                    const result = await response.json();
+                                                                    if (!response.ok) throw new Error(result.error || 'Upload failed');
+
+                                                                    const url = result.data?.url;
 
                                                                     if (!url) throw new Error('No URL returned');
 
-                                                                    const fontName = file.name.split('.')[0];
+                                                                    const fontName = result.data?.filename?.replace(/\.[^.]+$/, '') || file.name.split('.')[0];
 
                                                                     // 2. Add to store (persisted)
-                                                                    // We need to access useEditorStore directly here as this component doesn't use the hook
-                                                                    // But wait, ElementPanel is a child of the Editor which uses the store? 
-                                                                    // Actually we can just import the store hook in this file
-                                                                    // Since we didn't add it to imports yet, let's fix imports first
-                                                                    // For now, I'll access the store instance directly via getState() for non-hook usage or add hook usage
                                                                     const { addCustomFont } = useEditorStore.getState();
 
                                                                     addCustomFont({ name: fontName, url });
@@ -363,7 +401,6 @@ const ElementPanel = ({
 
                                                 {/* Custom Fonts Section */}
                                                 {(() => {
-                                                    // Access custom fonts from store state directly
                                                     const customFonts = useEditorStore.getState().customFonts || [];
                                                     if (customFonts.length > 0) {
                                                         return (
@@ -400,35 +437,37 @@ const ElementPanel = ({
                                 </div>
 
                                 <div>
-                                    <Label className="text-xs">Font Size: {element.fontSize || 32}px</Label>
+                                    <Label className="text-xs">Font Size: {el.fontSize || 32}px</Label>
                                     <Slider
-                                        value={[element.fontSize || 32]}
+                                        className=""
+                                        defaultValue={[32]}
+                                        value={[el.fontSize || 32]}
                                         min={12}
                                         max={120}
                                         step={1}
-                                        onValueChange={([v]) => handleChange('fontSize', v)}
+                                        onValueChange={([v]: [number]) => handleChange('fontSize', v)}
                                     />
                                 </div>
 
                                 <div className="flex gap-1">
                                     <Button
-                                        variant={element.fontWeight === 'bold' ? 'secondary' : 'outline'}
+                                        variant={el.fontWeight === 'bold' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('fontWeight', element.fontWeight === 'bold' ? 'normal' : 'bold')}
+                                        onClick={() => handleChange('fontWeight', el.fontWeight === 'bold' ? 'normal' : 'bold')}
                                     >
                                         <Bold className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={element.fontStyle === 'italic' ? 'secondary' : 'outline'}
+                                        variant={el.fontStyle === 'italic' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('fontStyle', element.fontStyle === 'italic' ? 'normal' : 'italic')}
+                                        onClick={() => handleChange('fontStyle', el.fontStyle === 'italic' ? 'normal' : 'italic')}
                                     >
                                         <Italic className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={element.textAlign === 'left' ? 'secondary' : 'outline'}
+                                        variant={el.textAlign === 'left' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
                                         onClick={() => handleChange('textAlign', 'left')}
@@ -436,7 +475,7 @@ const ElementPanel = ({
                                         <AlignLeft className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={element.textAlign === 'center' ? 'secondary' : 'outline'}
+                                        variant={el.textAlign === 'center' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
                                         onClick={() => handleChange('textAlign', 'center')}
@@ -444,7 +483,7 @@ const ElementPanel = ({
                                         <AlignCenter className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={element.textAlign === 'right' ? 'secondary' : 'outline'}
+                                        variant={el.textAlign === 'right' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
                                         onClick={() => handleChange('textAlign', 'right')}
@@ -456,19 +495,19 @@ const ElementPanel = ({
                                 {/* Text Decoration */}
                                 <div className="flex gap-1">
                                     <Button
-                                        variant={element.textDecoration === 'underline' ? 'secondary' : 'outline'}
+                                        variant={el.textDecoration === 'underline' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('textDecoration', element.textDecoration === 'underline' ? 'none' : 'underline')}
+                                        onClick={() => handleChange('textDecoration', el.textDecoration === 'underline' ? 'none' : 'underline')}
                                         title="Underline"
                                     >
                                         <Underline className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={element.textDecoration === 'line-through' ? 'secondary' : 'outline'}
+                                        variant={el.textDecoration === 'line-through' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('textDecoration', element.textDecoration === 'line-through' ? 'none' : 'line-through')}
+                                        onClick={() => handleChange('textDecoration', el.textDecoration === 'line-through' ? 'none' : 'line-through')}
                                         title="Strikethrough"
                                     >
                                         <Strikethrough className="w-4 h-4" />
@@ -477,25 +516,29 @@ const ElementPanel = ({
 
                                 {/* Letter Spacing */}
                                 <div>
-                                    <Label className="text-xs">Letter Spacing: {element.letterSpacing || 0}px</Label>
+                                    <Label className="text-xs">Letter Spacing: {el.letterSpacing || 0}px</Label>
                                     <Slider
-                                        value={[element.letterSpacing || 0]}
+                                        className=""
+                                        defaultValue={[0]}
+                                        value={[el.letterSpacing || 0]}
                                         min={-5}
                                         max={20}
                                         step={0.5}
-                                        onValueChange={([v]) => handleChange('letterSpacing', v)}
+                                        onValueChange={([v]: [number]) => handleChange('letterSpacing', v)}
                                     />
                                 </div>
 
                                 {/* Line Height */}
                                 <div>
-                                    <Label className="text-xs">Line Height: {element.lineHeight || 1.2}</Label>
+                                    <Label className="text-xs">Line Height: {el.lineHeight || 1.2}</Label>
                                     <Slider
-                                        value={[(element.lineHeight || 1.2) * 100]}
+                                        className=""
+                                        defaultValue={[120]}
+                                        value={[(el.lineHeight || 1.2) * 100]}
                                         min={80}
                                         max={250}
                                         step={5}
-                                        onValueChange={([v]) => handleChange('lineHeight', v / 100)}
+                                        onValueChange={([v]: [number]) => handleChange('lineHeight', v / 100)}
                                     />
                                 </div>
 
@@ -503,25 +546,25 @@ const ElementPanel = ({
                                 <div>
                                     <Label className="text-xs">Text Transform</Label>
                                     <Select
-                                        value={element.textTransform || 'none'}
-                                        onValueChange={(v) => handleChange('textTransform', v)}
+                                        value={el.textTransform || 'none'}
+                                        onValueChange={(v: string) => handleChange('textTransform', v)}
                                     >
                                         <SelectTrigger className="h-8">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">Normal</SelectItem>
-                                            <SelectItem value="uppercase">UPPERCASE</SelectItem>
-                                            <SelectItem value="lowercase">lowercase</SelectItem>
-                                            <SelectItem value="capitalize">Capitalize</SelectItem>
+                                        <SelectContent className="">
+                                            <SelectItem className="" value="none">Normal</SelectItem>
+                                            <SelectItem className="" value="uppercase">UPPERCASE</SelectItem>
+                                            <SelectItem className="" value="lowercase">lowercase</SelectItem>
+                                            <SelectItem className="" value="capitalize">Capitalize</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <ColorInput
                                     label="Text Color"
-                                    value={element.color}
-                                    onChange={(v) => handleChange('color', v)}
+                                    value={el.color}
+                                    onChange={(v: string) => handleChange('color', v)}
                                 />
                             </div>
                         </CollapsibleSection>
@@ -533,12 +576,12 @@ const ElementPanel = ({
                                     <input
                                         type="checkbox"
                                         id="enable-bg"
-                                        checked={!!element.background}
-                                        onChange={(e) => {
+                                        checked={!!el.background}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                             if (e.target.checked) {
                                                 handleChange('background', { color: 'rgba(0,0,0,0.5)', padding: 12, borderRadius: 8, opacity: 1 });
                                             } else {
-                                                handleChange('background', null);
+                                                handleChange('background', undefined);
                                             }
                                         }}
                                         className="rounded"
@@ -546,44 +589,50 @@ const ElementPanel = ({
                                     <Label htmlFor="enable-bg" className="text-xs cursor-pointer">Enable Background</Label>
                                 </div>
 
-                                {element.background && (
+                                {el.background && (
                                     <>
                                         <ColorInput
                                             label="Background Color"
-                                            value={element.background?.color || 'rgba(0,0,0,0.5)'}
-                                            onChange={(v) => handleNestedChange('background', 'color', v)}
+                                            value={el.background?.color || 'rgba(0,0,0,0.5)'}
+                                            onChange={(v: string) => handleNestedChange('background', 'color', v)}
                                         />
 
                                         <div>
-                                            <Label className="text-xs">Padding: {element.background?.padding || 0}px</Label>
+                                            <Label className="text-xs">Padding: {el.background?.padding || 0}px</Label>
                                             <Slider
-                                                value={[element.background?.padding || 0]}
+                                                className=""
+                                                defaultValue={[0]}
+                                                value={[el.background?.padding || 0]}
                                                 min={0}
                                                 max={40}
                                                 step={2}
-                                                onValueChange={([v]) => handleNestedChange('background', 'padding', v)}
+                                                onValueChange={([v]: [number]) => handleNestedChange('background', 'padding', v)}
                                             />
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs">Corner Radius: {element.background?.borderRadius || 0}px</Label>
+                                            <Label className="text-xs">Corner Radius: {el.background?.borderRadius || 0}px</Label>
                                             <Slider
-                                                value={[element.background?.borderRadius || 0]}
+                                                className=""
+                                                defaultValue={[0]}
+                                                value={[el.background?.borderRadius || 0]}
                                                 min={0}
                                                 max={30}
                                                 step={1}
-                                                onValueChange={([v]) => handleNestedChange('background', 'borderRadius', v)}
+                                                onValueChange={([v]: [number]) => handleNestedChange('background', 'borderRadius', v)}
                                             />
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs">Opacity: {Math.round((element.background?.opacity || 1) * 100)}%</Label>
+                                            <Label className="text-xs">Opacity: {Math.round((el.background?.opacity || 1) * 100)}%</Label>
                                             <Slider
-                                                value={[(element.background?.opacity || 1) * 100]}
+                                                className=""
+                                                defaultValue={[100]}
+                                                value={[(el.background?.opacity || 1) * 100]}
                                                 min={0}
                                                 max={100}
                                                 step={5}
-                                                onValueChange={([v]) => handleNestedChange('background', 'opacity', v / 100)}
+                                                onValueChange={([v]: [number]) => handleNestedChange('background', 'opacity', v / 100)}
                                             />
                                         </div>
                                     </>
@@ -594,19 +643,21 @@ const ElementPanel = ({
                         <CollapsibleSection title="Text Shadow" icon={Layers} defaultOpen={false}>
                             <div className="space-y-3">
                                 <div>
-                                    <Label className="text-xs">Blur: {element.shadow?.blur || 0}px</Label>
+                                    <Label className="text-xs">Blur: {el.shadow?.blur || 0}px</Label>
                                     <Slider
-                                        value={[element.shadow?.blur || 0]}
+                                        className=""
+                                        defaultValue={[0]}
+                                        value={[el.shadow?.blur || 0]}
                                         min={0}
                                         max={30}
                                         step={1}
-                                        onValueChange={([v]) => handleNestedChange('shadow', 'blur', v)}
+                                        onValueChange={([v]: [number]) => handleNestedChange('shadow', 'blur', v)}
                                     />
                                 </div>
                                 <ColorInput
                                     label="Shadow Color"
-                                    value={element.shadow?.color || '#000000'}
-                                    onChange={(v) => handleNestedChange('shadow', 'color', v)}
+                                    value={el.shadow?.color || '#000000'}
+                                    onChange={(v: string) => handleNestedChange('shadow', 'color', v)}
                                 />
                             </div>
                         </CollapsibleSection>
@@ -619,30 +670,34 @@ const ElementPanel = ({
                         <div className="space-y-3">
                             <ColorInput
                                 label="Fill Color"
-                                value={element.fill}
-                                onChange={(v) => handleChange('fill', v)}
+                                value={el.fill}
+                                onChange={(v: string) => handleChange('fill', v)}
                             />
 
                             <div>
                                 <Label className="text-xs">Opacity: {Math.round((element.opacity || 1) * 100)}%</Label>
                                 <Slider
+                                    className=""
+                                    defaultValue={[100]}
                                     value={[(element.opacity || 1) * 100]}
                                     min={0}
                                     max={100}
                                     step={1}
-                                    onValueChange={([v]) => handleChange('opacity', v / 100)}
+                                    onValueChange={([v]: [number]) => handleChange('opacity', v / 100)}
                                 />
                             </div>
 
                             {element.type === 'shape' && (
                                 <div>
-                                    <Label className="text-xs">Corner Radius: {element.borderRadius || 0}px</Label>
+                                    <Label className="text-xs">Corner Radius: {el.borderRadius || 0}px</Label>
                                     <Slider
-                                        value={[element.borderRadius || 0]}
+                                        className=""
+                                        defaultValue={[0]}
+                                        value={[el.borderRadius || 0]}
                                         min={0}
                                         max={100}
                                         step={1}
-                                        onValueChange={([v]) => handleChange('borderRadius', v)}
+                                        onValueChange={([v]: [number]) => handleAnyChange('borderRadius', v)}
                                     />
                                 </div>
                             )}
@@ -652,13 +707,13 @@ const ElementPanel = ({
 
                 {/* Image Slot options */}
                 {element.type === 'imageSlot' && (
-                    <CollapsibleSection title="Image Settings" icon={Image}>
+                    <CollapsibleSection title="Image Settings" icon={ImageIcon}>
                         <div className="space-y-3">
                             <div>
                                 <Label className="text-xs">Slot Name</Label>
                                 <Input
                                     value={element.name || ''}
-                                    onChange={(e) => handleChange('name', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('name', e.target.value)}
                                     placeholder="e.g., Main Image"
                                 />
                             </div>
@@ -667,24 +722,24 @@ const ElementPanel = ({
                                 <Label className="text-xs">Image Source</Label>
                                 <div className="space-y-2">
                                     <Select
-                                        value={element.sourceType || 'article'}
-                                        onValueChange={(v) => handleChange('sourceType', v)}
+                                        value={el.sourceType || 'article'}
+                                        onValueChange={(v: string) => handleAnyChange('sourceType', v)}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="article">From Article</SelectItem>
-                                            <SelectItem value="upload">Specific Image</SelectItem>
+                                        <SelectContent className="">
+                                            <SelectItem className="" value="article">From Article</SelectItem>
+                                            <SelectItem className="" value="upload">Specific Image</SelectItem>
                                         </SelectContent>
                                     </Select>
 
-                                    {element.sourceType === 'upload' && (
+                                    {el.sourceType === 'upload' && (
                                         <div className="pt-2">
-                                            {element.imageUrl && (
+                                            {el.imageUrl && (
                                                 <div className="mb-2 rounded overflow-hidden aspect-video relative group border border-zinc-700">
                                                     <img
-                                                        src={element.imageUrl}
+                                                        src={el.imageUrl}
                                                         alt="Selected"
                                                         className="w-full h-full object-cover"
                                                     />
@@ -696,7 +751,7 @@ const ElementPanel = ({
                                                 onClick={() => setMediaDialogOpen(true)}
                                             >
                                                 <Upload className="w-4 h-4 mr-2" />
-                                                {element.imageUrl ? 'Change Image' : 'Select Image'}
+                                                {el.imageUrl ? 'Change Image' : 'Select Image'}
                                             </Button>
                                         </div>
                                     )}
@@ -704,13 +759,15 @@ const ElementPanel = ({
                             </div>
 
                             <div>
-                                <Label className="text-xs">Corner Radius: {element.borderRadius || 0}px</Label>
+                                <Label className="text-xs">Corner Radius: {el.borderRadius || 0}px</Label>
                                 <Slider
-                                    value={[element.borderRadius || 0]}
+                                    className=""
+                                    defaultValue={[0]}
+                                    value={[el.borderRadius || 0]}
                                     min={0}
                                     max={100}
                                     step={1}
-                                    onValueChange={([v]) => handleChange('borderRadius', v)}
+                                    onValueChange={([v]: [number]) => handleAnyChange('borderRadius', v)}
                                 />
                             </div>
                         </div>
@@ -722,23 +779,28 @@ const ElementPanel = ({
                 open={mediaDialogOpen}
                 onOpenChange={setMediaDialogOpen}
                 onSelect={handleImageSelect}
+                variantSizes={undefined}
             />
         </div>
     );
 };
 
+interface AddElementPanelProps {
+    onAddElement: (type: string, defaults: Record<string, any>) => void;
+}
+
 /**
  * AddElementPanel - Enhanced panel for adding new elements
  */
-const AddElementPanel = ({ onAddElement }) => {
+const AddElementPanel: React.FC<AddElementPanelProps> = ({ onAddElement }) => {
     const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-    const fileInputRef = useRef(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const elements = [
         {
             type: 'imageSlot',
-            icon: Image,
+            icon: ImageIcon,
             label: 'Image Slot',
             description: 'Placeholder for recipe images',
             defaults: { width: 500, height: 400, x: 250, y: 100 }
@@ -766,7 +828,7 @@ const AddElementPanel = ({ onAddElement }) => {
         },
     ];
 
-    const handleMediaSelect = (media) => {
+    const handleMediaSelect = (media: any) => {
         if (!media) return;
 
         onAddElement('imageSlot', {
@@ -781,111 +843,14 @@ const AddElementPanel = ({ onAddElement }) => {
     };
 
     // Handle file upload from desktop
-    const handleFileUpload = async (e) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
-        if (!allowedTypes.includes(file.type)) {
-            toast.error('Please select an image file (JPG, PNG, WebP, GIF, or SVG)');
-            return;
-        }
-
-        try {
-            setIsUploading(true);
-
-            // Upload to media library
-            const response = await mediaAPI.upload(file, {
-                folder: 'canvas-elements',
-                alt: file.name.replace(/\.[^/.]+$/, ''),
-            });
-
-            // Handle response structure
-            const imageUrl = response.data?.data?.url || response.data?.url;
-
-            if (!imageUrl) {
-                throw new Error('Upload failed - no URL returned');
-            }
-
-            // Get actual image dimensions
-            const img = new window.Image();
-            img.crossOrigin = 'anonymous';
-
-            img.onload = () => {
-                let width = img.naturalWidth;
-                let height = img.naturalHeight;
-
-                // Maximum size constraints (fit within canvas reasonably)
-                const maxWidth = 800;
-                const maxHeight = 1200;
-
-                // Scale down if needed while maintaining aspect ratio
-                if (width > maxWidth) {
-                    const ratio = maxWidth / width;
-                    width = maxWidth;
-                    height = Math.round(height * ratio);
-                }
-                if (height > maxHeight) {
-                    const ratio = maxHeight / height;
-                    height = maxHeight;
-                    width = Math.round(width * ratio);
-                }
-
-                // Center on canvas (canvas is 1000x1500)
-                const x = Math.max(0, Math.round((1000 - width) / 2));
-                const y = Math.max(0, Math.round((1500 - height) / 4)); // Position in upper portion
-
-                // Add image element to canvas with actual dimensions
-                onAddElement('imageSlot', {
-                    width,
-                    height,
-                    x,
-                    y,
-                    sourceType: 'upload',
-                    imageUrl: imageUrl,
-                    name: file.name.replace(/\.[^/.]+$/, '') || 'Uploaded Image'
-                });
-
-                toast.success('Image added to canvas!');
-                setIsUploading(false);
-
-                // Reset file input
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                }
-            };
-
-            img.onerror = () => {
-                // Fallback to default size if image load fails
-                onAddElement('imageSlot', {
-                    width: 500,
-                    height: 400,
-                    x: 250,
-                    y: 250,
-                    sourceType: 'upload',
-                    imageUrl: imageUrl,
-                    name: file.name.replace(/\.[^/.]+$/, '') || 'Uploaded Image'
-                });
-
-                toast.success('Image added to canvas!');
-                setIsUploading(false);
-
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                }
-            };
-
-            img.src = imageUrl;
-
-        } catch (error) {
-            console.error('Upload failed:', error);
-            toast.error('Failed to upload image');
-            setIsUploading(false);
-            // Reset file input
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
+        toast.error('Template asset upload needs the dedicated template asset flow first.');
+        setIsUploading(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 
@@ -966,6 +931,7 @@ const AddElementPanel = ({ onAddElement }) => {
                 open={mediaDialogOpen}
                 onOpenChange={setMediaDialogOpen}
                 onSelect={handleMediaSelect}
+                variantSizes={undefined}
             />
         </div>
     );

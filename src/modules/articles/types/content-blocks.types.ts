@@ -8,7 +8,6 @@
 export type {
   AdSlotBlock,
   BeforeAfterBlock,
-  BeforeAfterImage,
   BlockId,
   BlockquoteBlock,
   ContentBlock,
@@ -16,18 +15,19 @@ export type {
   DividerBlock,
   EmbedBlock,
   FAQItem,
-  FAQSectionBlock,
   HeadingBlock,
   ImageBlock,
   IngredientSpotlightBlock,
   ListBlock,
+  MainFaqBlock,
   MainRecipeBlock,
+  MainRoundupBlock,
   NormalizedContentBlock,
   ParagraphBlock,
   ProductCardBlock,
   RelatedArticleCard,
   RelatedContentBlock,
-  RoundupItemPlaceholderBlock,
+  RelatedContentItem,
   SpacerBlock,
   TableBlock,
   TipBoxBlock,
@@ -57,8 +57,8 @@ export function isHeadingBlock(block: import('@modules/content-blocks').ContentB
   return block.type === 'heading';
 }
 
-export function isFAQSectionBlock(block: import('@modules/content-blocks').ContentBlock): block is import('@modules/content-blocks').FAQSectionBlock {
-  return block.type === 'faq_section';
+export function isFAQSectionBlock(block: import('@modules/content-blocks').ContentBlock): block is import('@modules/content-blocks').MainFaqBlock {
+  return block.type === 'main_faq';
 }
 
 export function isImageBlock(block: import('@modules/content-blocks').ContentBlock): block is import('@modules/content-blocks').ImageBlock {

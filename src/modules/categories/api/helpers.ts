@@ -8,15 +8,14 @@ import type { CategoryImagesJson, ImageVariants } from '../../articles/types/ima
 import { resolveVariantUrl } from '@shared/types/images';
 
 interface SeoJson {
-  metaTitle?: string;
-  metaDescription?: string;
-  noIndex?: boolean;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  no_index?: boolean;
   canonical?: string;
-  ogImage?: string;
-  ogTitle?: string;
-  ogDescription?: string;
-  twitterCard?: string;
-  robots?: string;
+  og_image?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  twitter_card?: 'summary' | 'summary_large_image';
 }
 
 interface ConfigJson {
@@ -55,44 +54,81 @@ const extractR2KeyFromUrl = (url: string): string | null => {
   return null;
 };
 
-const normalizeImageSlot = (slot: any) => {
+const normalizeImageVariant = (variant: any) => {
+  if (!variant || typeof variant !== 'object') return undefined;
+  const r2Key = typeof variant.r2_key === 'string'
+    ? variant.r2_key
+    : typeof variant.url === 'string'
+      ? extractR2KeyFromUrl(variant.url)
+      : null;
+  const width = Number(variant.width);
+  const height = Number(variant.height);
+  if (!r2Key || !Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0) return undefined;
+  return {
+    r2_key: r2Key,
+    width,
+    height,
+    ...(Number.isFinite(Number(variant.size_bytes ?? variant.sizeBytes))
+      ? { size_bytes: Number(variant.size_bytes ?? variant.sizeBytes) }
+      : {}),
+  };
+};
+
+const normalizeImageSlot = (slot: any, variantKeys: string[], fallbackAspectRatio: string) => {
   if (!slot || typeof slot !== 'object') return slot;
 
-  if (slot.variants && typeof slot.variants === 'object') {
-    return slot;
-  }
-
-  if (slot.url) {
+  const sourceVariants = slot.variants && typeof slot.variants === 'object' ? slot.variants : {};
+  if (slot.url && Object.keys(sourceVariants).length === 0) {
     const r2Key = extractR2KeyFromUrl(slot.url);
-    return {
-      ...slot,
-      variants: {
-        original: {
-          ...(r2Key ? { r2_key: r2Key } : { url: slot.url }),
-          width: slot.width ?? 0,
-          height: slot.height ?? 0,
-        },
-      },
-    };
+    for (const key of variantKeys) {
+      sourceVariants[key] = {
+        ...(r2Key ? { r2_key: r2Key } : {}),
+        width: slot.width ?? 0,
+        height: slot.height ?? 0,
+      };
+    }
   }
 
-  return slot;
+  const variants: Record<string, unknown> = {};
+  for (const key of variantKeys) {
+    const normalized = normalizeImageVariant(sourceVariants[key]);
+    if (normalized) variants[key] = normalized;
+  }
+
+  return {
+    ...(typeof slot.media_id === 'number' ? { media_id: slot.media_id } : {}),
+    ...(typeof slot.mediaId === 'number' ? { media_id: slot.mediaId } : {}),
+    alt: typeof slot.alt === 'string' ? slot.alt : '',
+    placeholder: typeof slot.placeholder === 'string' ? slot.placeholder : '',
+    aspect_ratio: typeof slot.aspect_ratio === 'string'
+      ? slot.aspect_ratio
+      : typeof slot.aspectRatio === 'string'
+        ? slot.aspectRatio
+        : fallbackAspectRatio,
+    ...(slot.focal_point && typeof slot.focal_point === 'object' ? { focal_point: slot.focal_point } : {}),
+    ...(slot.focalPoint && typeof slot.focalPoint === 'object' ? { focal_point: slot.focalPoint } : {}),
+    variants,
+  };
 };
 
 const normalizeSeoJsonObject = (value: any): SeoJson => {
   if (!value || typeof value !== 'object') return {};
 
   return {
-    metaTitle: value.metaTitle,
-    metaDescription: value.metaDescription,
-    noIndex: value.noIndex,
+    meta_title: value.meta_title ?? value.metaTitle ?? null,
+    meta_description: value.meta_description ?? value.metaDescription ?? null,
+    no_index: Boolean(value.no_index ?? value.noIndex ?? false),
     canonical: value.canonical ?? value.canonicalUrl,
-    ogImage: value.ogImage,
-    ogTitle: value.ogTitle,
-    ogDescription: value.ogDescription,
-    twitterCard: value.twitterCard,
-    robots: value.robots,
+    og_image: value.og_image ?? value.ogImage ?? null,
+    og_title: value.og_title ?? value.ogTitle ?? null,
+    og_description: value.og_description ?? value.ogDescription ?? null,
+    twitter_card: value.twitter_card ?? value.twitterCard ?? 'summary_large_image',
   };
+};
+
+const getSeoValue = <T = unknown>(seo: SeoJson, snakeKey: keyof SeoJson, camelKey: string): T | undefined => {
+  const legacy = seo as Record<string, unknown>;
+  return (seo[snakeKey] ?? legacy[camelKey]) as T | undefined;
 };
 
 const normalizeConfigJsonObject = (value: any): ConfigJson => {
@@ -157,8 +193,8 @@ export function parseImagesJson(value: any): string {
       const parsed = JSON.parse(value);
       const images = typeof parsed === 'object' && parsed ? parsed : {};
       const normalized: CategoryImagesJson = {
-        thumbnail: normalizeImageSlot(images.thumbnail),
-        hero: normalizeImageSlot(images.hero),
+        thumbnail: normalizeImageSlot(images.thumbnail, ['xs', 'sm'], '1:1'),
+        hero: normalizeImageSlot(images.hero, ['sm', 'md', 'lg'], '16:9'),
       };
       return JSON.stringify(normalized);
     } catch {
@@ -168,8 +204,8 @@ export function parseImagesJson(value: any): string {
 
   if (typeof value === 'object') {
     const normalized: CategoryImagesJson = {
-      thumbnail: normalizeImageSlot(value.thumbnail),
-      hero: normalizeImageSlot(value.hero),
+      thumbnail: normalizeImageSlot(value.thumbnail, ['xs', 'sm'], '1:1'),
+      hero: normalizeImageSlot(value.hero, ['sm', 'md', 'lg'], '16:9'),
     };
     return JSON.stringify(normalized);
   }
@@ -322,13 +358,9 @@ export function transformCategoryRequestBody(body: any): any {
       const r2Key = extractR2KeyFromUrl(body.imageUrl);
       images.thumbnail = {
         alt: body.imageAlt,
-        variants: {
-          original: {
-            ...(r2Key ? { r2_key: r2Key } : { url: body.imageUrl }),
-            width: body.imageWidth ?? 0,
-            height: body.imageHeight ?? 0,
-          },
-        },
+        url: r2Key ? `/api/images/${r2Key}` : body.imageUrl,
+        width: body.imageWidth ?? 0,
+        height: body.imageHeight ?? 0,
       };
     }
     transformed.imagesJson = JSON.stringify(images);
@@ -366,10 +398,7 @@ export function transformCategoryRequestBody(body: any): any {
     });
   }
 
-  if (body.configJson !== undefined || Object.keys(configOverrides).length > 0) {
-    const baseConfig = parseConfigJsonValue(body.configJson);
-    transformed.configJson = parseConfigJson({ ...baseConfig, ...configOverrides });
-  }
+  delete transformed.configJson;
 
   // Basic required field validation REMOVED to allow partial updates (PATCH)
   // The database schema or specialized Creation validation should handle requirements.
@@ -389,8 +418,8 @@ export function transformCategoryRequestBody(body: any): any {
   // actual DB columns — they would cause Drizzle to fail silently.
   const dbColumns = new Set([
     'slug', 'label', 'parentId', 'depth', 'headline', 'collectionTitle',
-    'shortDescription', 'imagesJson', 'color', 'iconSvg', 'isFeatured',
-    'seoJson', 'configJson', 'i18nJson', 'sortOrder', 'isOnline',
+    'shortDescription', 'imagesJson', 'color', 'isFeatured',
+    'seoJson', 'sortOrder', 'isOnline',
     'cachedPostCount', 'createdAt', 'updatedAt', 'deletedAt',
   ]);
   for (const key of Object.keys(transformed)) {
@@ -406,9 +435,6 @@ export function transformCategoryResponse(category: any): any {
   if (!category) return category;
 
   const response = { ...category };
-  if (!response.iconSvg && (category as any).icon_svg) {
-    response.iconSvg = (category as any).icon_svg;
-  }
 
   if (category.imagesJson) {
     try {
@@ -426,15 +452,19 @@ export function transformCategoryResponse(category: any): any {
   if (category.seoJson) {
     try {
       const seo: SeoJson = JSON.parse(category.seoJson);
-      if (!response.metaTitle) response.metaTitle = seo.metaTitle;
-      if (!response.metaDescription) response.metaDescription = seo.metaDescription;
+      if (!response.metaTitle) response.metaTitle = getSeoValue<string | null>(seo, 'meta_title', 'metaTitle') ?? undefined;
+      if (!response.metaDescription) response.metaDescription = getSeoValue<string | null>(seo, 'meta_description', 'metaDescription') ?? undefined;
       if (!response.canonicalUrl && seo.canonical) response.canonicalUrl = seo.canonical;
-      if (response.ogImage === undefined && seo.ogImage !== undefined) response.ogImage = seo.ogImage;
-      if (response.ogTitle === undefined && seo.ogTitle !== undefined) response.ogTitle = seo.ogTitle;
-      if (response.ogDescription === undefined && seo.ogDescription !== undefined) response.ogDescription = seo.ogDescription;
-      if (response.twitterCard === undefined && seo.twitterCard !== undefined) response.twitterCard = seo.twitterCard;
-      if (response.robots === undefined && seo.robots !== undefined) response.robots = seo.robots;
-      if (response.noIndex === undefined && seo.noIndex !== undefined) response.noIndex = seo.noIndex;
+      const ogImage = getSeoValue<string | null>(seo, 'og_image', 'ogImage');
+      const ogTitle = getSeoValue<string | null>(seo, 'og_title', 'ogTitle');
+      const ogDescription = getSeoValue<string | null>(seo, 'og_description', 'ogDescription');
+      const twitterCard = getSeoValue<string>(seo, 'twitter_card', 'twitterCard');
+      const noIndex = getSeoValue<boolean>(seo, 'no_index', 'noIndex');
+      if (response.ogImage === undefined && ogImage !== undefined) response.ogImage = ogImage;
+      if (response.ogTitle === undefined && ogTitle !== undefined) response.ogTitle = ogTitle;
+      if (response.ogDescription === undefined && ogDescription !== undefined) response.ogDescription = ogDescription;
+      if (response.twitterCard === undefined && twitterCard !== undefined) response.twitterCard = twitterCard;
+      if (response.noIndex === undefined && noIndex !== undefined) response.noIndex = noIndex;
     } catch {
       // Invalid JSON, skip
     }
@@ -443,10 +473,6 @@ export function transformCategoryResponse(category: any): any {
   if (category.configJson) {
     try {
       const config: ConfigJson = JSON.parse(category.configJson);
-      const configIconSvg = (config as any)?.iconSvg ?? (config as any)?.icon_svg;
-      if (!response.iconSvg && typeof configIconSvg === 'string') {
-        response.iconSvg = configIconSvg;
-      }
       if (response.numEntriesPerPage === undefined && typeof config.postsPerPage === 'number') {
         response.numEntriesPerPage = config.postsPerPage;
       }

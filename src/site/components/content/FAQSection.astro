@@ -14,25 +14,41 @@ interface FaqItem {
 }
 
 interface Props {
-    faqs: string | FaqItem[] | null | undefined;
+    faqs: string | FaqItem[] | { heading?: string; intro?: string | null; items?: FaqItem[] } | null | undefined;
     title?: string;
 }
 
-const { faqs: faqsInput, title = "Frequently Asked Questions" } = Astro.props;
+const { faqs: faqsInput, title } = Astro.props;
 
-const faqs: FaqItem[] = (() => {
-    if (!faqsInput) return [];
-    if (Array.isArray(faqsInput)) return faqsInput;
+const parsedFaqs = (() => {
+    if (!faqsInput) return null;
     if (typeof faqsInput === "string") {
         try {
-            const parsed = JSON.parse(faqsInput);
-            return Array.isArray(parsed) ? parsed : [];
+            return JSON.parse(faqsInput);
         } catch {
-            return [];
+            return null;
         }
+    }
+    return faqsInput;
+})();
+
+const faqs: FaqItem[] = (() => {
+    if (Array.isArray(parsedFaqs)) return parsedFaqs;
+    if (parsedFaqs && typeof parsedFaqs === "object" && Array.isArray(parsedFaqs.items)) {
+        return parsedFaqs.items;
     }
     return [];
 })();
+
+const faqTitle =
+    title ||
+    (parsedFaqs && !Array.isArray(parsedFaqs) && typeof parsedFaqs.heading === "string"
+        ? parsedFaqs.heading
+        : "Frequently Asked Questions");
+const faqIntro =
+    parsedFaqs && !Array.isArray(parsedFaqs) && typeof parsedFaqs.intro === "string"
+        ? parsedFaqs.intro
+        : "";
 
 if (faqs.length === 0) {
     return null;
@@ -57,8 +73,9 @@ if (faqs.length === 0) {
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
         </div>
-        <h2 class="faq-title">{title}</h2>
+        <h2 class="faq-title">{faqTitle}</h2>
     </div>
+    {faqIntro && <p class="faq-intro">{faqIntro}</p>}
 
     <div class="faq-list" id="faq-accordion">
         {
@@ -133,6 +150,12 @@ if (faqs.length === 0) {
         margin: 0;
         padding: 0;
         border: none;
+    }
+
+    .faq-intro {
+        margin: -0.75rem 0 1.25rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
     }
 
     /* ── Accordion list ── */

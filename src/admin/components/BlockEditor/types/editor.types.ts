@@ -7,6 +7,15 @@
 export type { AppSchema, AppEditor } from '../schema';
 
 /**
- * Strongly typed Block for the application schema.
+ * Runtime editor block shape used by adapter/normalization code.
+ *
+ * BlockNote's generic schema types are stricter than this adapter boundary
+ * needs. The conversion layer only requires the stable runtime fields below.
  */
-export type AppBlock = import('@blocknote/core').Block<import('../schema').AppSchema>;
+export interface AppBlock {
+    id?: string;
+    type: string;
+    props?: Record<string, unknown>;
+    content?: unknown;
+    children?: AppBlock[];
+}

@@ -93,8 +93,9 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
 
   // Listen for ratings from other components on the same page
   useEffect(() => {
-    const handleGlobalRating = (e: any) => {
-      const { articleId: id, rating: newRating, count: newCount } = e.detail;
+    const handleGlobalRating = (e: Event) => {
+      const customEvent = e as CustomEvent<{ articleId: number; rating: number; count: number }>;
+      const { articleId: id, rating: newRating, count: newCount } = customEvent.detail;
       if (id === articleId) {
         setRating(newRating);
         setCount(newCount);

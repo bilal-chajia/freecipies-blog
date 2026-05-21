@@ -31,7 +31,7 @@ export const articles = sqliteTable('articles', {
   imagesJson: text('images_json'),
   contentJson: text('content_json'),
   recipeJson: text('recipe_json'),
-  roundupJson: text('roundup_json'), // DEPRECATED: Source of truth is now content_json (roundup_item blocks).
+  roundupJson: text('roundup_json'),
   faqsJson: text('faqs_json'),
 
   // Cached Fields (Zero-Join)

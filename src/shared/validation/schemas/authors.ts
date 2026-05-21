@@ -19,12 +19,12 @@ export const CreateAuthorSchema = z.object({
   socialLinks: z.record(z.string(), z.string()).optional(),
   isOnline: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
-  seoJson: z.union([z.string(), z.record(z.unknown())]).optional(),
-  configJson: z.union([z.string(), z.record(z.unknown())]).optional(),
+  seoJson: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
+  configJson: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
 }).passthrough();
 
 /**
  * Schema for updating an author.
- * Same as create — transformAuthorRequestBody handles partial updates.
+ * PATCH/PUT payloads from admin can contain a single changed field.
  */
-export const UpdateAuthorSchema = CreateAuthorSchema;
+export const UpdateAuthorSchema = CreateAuthorSchema.partial().passthrough();

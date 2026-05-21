@@ -31,36 +31,15 @@ function numberValue(value: unknown): number | undefined {
   return undefined;
 }
 
-function authorCreditValue(value: unknown): unknown {
-  const record = asRecord(value);
-  if (!record) return undefined;
-  if (record.type !== 'author') return undefined;
-  if (!numberValue(record.id) || !stringValue(record.name) || !stringValue(record.slug)) return undefined;
-  return value;
-}
-
-function normalizeFAQItems(items: unknown): unknown[] {
-  if (!Array.isArray(items)) return [];
-  return items
-    .map((item) => {
-      const record = asRecord(item);
-      if (!record) return null;
-      const question = stringValue(record.question) ?? stringValue(record.q);
-      const answer = stringValue(record.answer) ?? stringValue(record.a);
-      if (!question || !answer) return null;
-      return { question, answer };
-    })
-    .filter(Boolean) as unknown[];
-}
-
-function publicVariantSnapshot(input: unknown): Record<string, unknown> | undefined {
+function storedVariantSnapshot(input: unknown): Record<string, unknown> | undefined {
   const record = asRecord(input);
   if (!record) return undefined;
-  const url = stringValue(record.url);
+  const r2Key = stringValue(record.r2_key);
   const width = numberValue(record.width);
   const height = numberValue(record.height);
-  if (!url || !width || !height) return undefined;
-  return { url, width, height };
+  if (!r2Key || !width || !height) return undefined;
+  const sizeBytes = numberValue(record.size_bytes);
+  return { r2_key: r2Key, width, height, ...(sizeBytes ? { size_bytes: sizeBytes } : {}) };
 }
 
 function compactRelatedImage(input: unknown): Record<string, unknown> | undefined {
@@ -69,15 +48,15 @@ function compactRelatedImage(input: unknown): Record<string, unknown> | undefine
   const mediaId = numberValue(record.media_id);
   const alt = stringValue(record.alt);
   const variants = asRecord(record.variants);
-  const sm = publicVariantSnapshot(variants?.sm);
-  const md = publicVariantSnapshot(variants?.md);
-  if (!mediaId || !alt || (!sm && !md)) return undefined;
+  const xs = storedVariantSnapshot(variants?.xs);
+  const sm = storedVariantSnapshot(variants?.sm);
+  if (!mediaId || !alt || !xs || !sm) return undefined;
   return {
     media_id: mediaId,
     alt,
     variants: {
-      ...(sm ? { sm } : {}),
-      ...(md ? { md } : {}),
+      xs,
+      sm,
     },
   };
 }
@@ -85,26 +64,27 @@ function compactRelatedImage(input: unknown): Record<string, unknown> | undefine
 function normalizeRelatedItem(input: unknown, contentType?: string): Record<string, unknown> | null {
   const record = asRecord(input);
   if (!record) return null;
-  const type = stringValue(record.content_type) ?? contentType;
-  if (type !== 'recipe' && type !== 'article' && type !== 'roundup') return null;
-
   const articleId = numberValue(record.article_id) ?? numberValue(record.id);
-  const slug = stringValue(record.slug);
-  const title = stringValue(record.title) ?? stringValue(record.headline);
-  if (!slug || !title) return null;
+  const snapshot = asRecord(record.snapshot);
+  if (articleId && snapshot) return { article_id: articleId, snapshot };
 
+  const type = stringValue(record.content_type) ?? contentType;
+  const slug = stringValue(record.slug);
+  const headline = stringValue(record.headline) ?? stringValue(record.title);
+  if (!articleId || !slug || !headline) return null;
   const image = compactRelatedImage(record.image) ?? compactRelatedImage(record.thumbnail);
   return {
-    content_type: type,
-    ...(articleId ? { article_id: articleId } : {}),
-    slug,
-    title,
-    ...(stringValue(record.description) ? { description: stringValue(record.description) } : {}),
-    ...(image ? { image } : {}),
-    ...(numberValue(record.total_time) ? { total_time: numberValue(record.total_time) } : {}),
-    ...(stringValue(record.difficulty) ? { difficulty: stringValue(record.difficulty) } : {}),
-    ...(numberValue(record.reading_time) ? { reading_time: numberValue(record.reading_time) } : {}),
-    ...(numberValue(record.item_count) ? { item_count: numberValue(record.item_count) } : {}),
+    article_id: articleId,
+    snapshot: {
+      id: articleId,
+      type: type === 'recipe' || type === 'roundup' || type === 'article' ? type : 'article',
+      slug,
+      headline,
+      ...(stringValue(record.short_description) || stringValue(record.description)
+        ? { short_description: stringValue(record.short_description) ?? stringValue(record.description) }
+        : {}),
+      ...(image ? { image } : {}),
+    },
   };
 }
 
@@ -138,23 +118,17 @@ function normalizeLegacyType(block: Record<string, unknown>): Record<string, unk
 
   if (type === 'customImage') {
     const props = asRecord(block.props);
-    const mediaId = props?.mediaId;
     return {
       id: block.id,
       type: 'image',
-      media_id: typeof mediaId === 'number' ? mediaId : Number(mediaId || 0),
-      alt: stringValue(props?.alt) ?? stringValue(block.alt) ?? '',
-      caption: typeof props?.caption === 'string' ? props.caption : typeof props?.placeholder === 'string' ? props.placeholder : undefined,
-      credit: authorCreditValue(props?.credit),
+      image_ref: stringValue(props?.image_ref) ?? stringValue(props?.imageRef) ?? stringValue(props?.mediaId) ?? stringValue(block.image_ref) ?? stringValue(block.imageRef) ?? '',
     };
   }
 
   if (type === 'faqSection') {
     return {
       id: block.id,
-      type: 'faq_section',
-      title: stringValue(block.title),
-      items: normalizeFAQItems(block.items),
+      type: 'main_faq',
     };
   }
 
@@ -164,19 +138,15 @@ function normalizeLegacyType(block: Record<string, unknown>): Record<string, unk
       type: 'related_content',
       title: stringValue(block.title),
       layout: stringValue(block.layout) ?? 'grid',
-      mode: stringValue(block.mode),
       limit: numberValue(block.limit),
       items: normalizeRelatedItems(block),
     };
   }
 
   if (type === 'roundupList' || type === 'roundup_list') {
-    const items = Array.isArray(block.items) ? block.items : [];
-    const first = asRecord(items[0]) ?? block;
     return {
-      ...first,
       id: block.id,
-      type: 'roundup_item',
+      type: 'main_roundup',
     };
   }
 
@@ -187,9 +157,7 @@ function normalizeLegacyType(block: Record<string, unknown>): Record<string, unk
   if (type === 'faq_section') {
     return {
       id: block.id,
-      type: 'faq_section',
-      title: stringValue(block.title),
-      items: normalizeFAQItems(block.items),
+      type: 'main_faq',
     };
   }
 
@@ -199,7 +167,6 @@ function normalizeLegacyType(block: Record<string, unknown>): Record<string, unk
       type: 'related_content',
       title: stringValue(block.title),
       layout: stringValue(block.layout) ?? 'grid',
-      mode: stringValue(block.mode),
       limit: numberValue(block.limit),
       items: normalizeRelatedItems(block),
     };
@@ -217,13 +184,25 @@ function normalizeLegacyType(block: Record<string, unknown>): Record<string, unk
 
   if (type === 'image') {
     return {
-      ...block,
+      id: block.id,
       type: 'image',
-      media_id: numberValue(block.media_id) ?? numberValue(block.mediaId) ?? 0,
-      alt: stringValue(block.alt) ?? '',
-      caption: typeof block.caption === 'string' ? block.caption : typeof block.placeholder === 'string' ? block.placeholder : undefined,
-      credit: authorCreditValue(block.credit),
-      variants: asRecord(block.variants),
+      image_ref: stringValue(block.image_ref) ?? stringValue(block.imageRef) ?? '',
+    };
+  }
+
+  if (type === 'before_after') {
+    return {
+      id: block.id,
+      type: 'before_after',
+      layout: stringValue(block.layout) ?? 'slider',
+      before_image_ref: stringValue(block.before_image_ref) ?? stringValue(block.beforeImageRef) ?? '',
+      after_image_ref: stringValue(block.after_image_ref) ?? stringValue(block.afterImageRef) ?? '',
+      ...(stringValue(block.before_label) ?? stringValue(block.beforeLabel)
+        ? { before_label: stringValue(block.before_label) ?? stringValue(block.beforeLabel) }
+        : {}),
+      ...(stringValue(block.after_label) ?? stringValue(block.afterLabel)
+        ? { after_label: stringValue(block.after_label) ?? stringValue(block.afterLabel) }
+        : {}),
     };
   }
 

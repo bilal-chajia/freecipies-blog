@@ -125,9 +125,13 @@ export function transformMenuResponse(menu: MenuConfig): any {
         label: menu.label,
         items: menu.items,
         isEnabled: menu.isEnabled,
+        is_enabled: menu.isEnabled,
         location: menu.location,
+        document: menu.document,
         description: menu.description,
         createdAt: menu.createdAt,
+        created_at: menu.createdAt,
         updatedAt: menu.updatedAt,
+        updated_at: menu.updatedAt,
     };
 }

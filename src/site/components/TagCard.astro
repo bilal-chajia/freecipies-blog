@@ -1,8 +1,14 @@
 ---
 import type { HydratedTag } from "@modules/tags";
 
+type TagCardTag = HydratedTag & {
+  headline?: string | null;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+};
+
 interface Props {
-  tag: HydratedTag;
+  tag: TagCardTag;
   showArticleCount?: boolean;
   articleCount?: number;
 }

@@ -1,29 +1,37 @@
-// @ts-nocheck
-import React, { useState, useRef } from 'react';
-import { GripVertical, Eye, EyeOff, Lock, Unlock, Type, Image, Square, Layers } from 'lucide-react';
+import React, { useState } from 'react';
+import { GripVertical, Lock, Unlock, Type, Image as ImageIcon, Square, Layers } from 'lucide-react';
 import { useUIStore } from '@admin/features/templates/store/useUIStore';
+import type { EditorElement } from '@admin/features/templates/store/useEditorStore';
+
+interface DraggableLayersListProps {
+    elements: EditorElement[];
+    selectedElement: EditorElement | null;
+    onSelect: (element: EditorElement) => void;
+    onReorder: (elements: EditorElement[]) => void;
+    onToggleVisibility?: (id: string) => void;
+    onToggleLock?: (id: string) => void;
+}
 
 /**
  * DraggableLayersList - Drag-and-drop reorderable layers panel
  * Uses native HTML5 drag and drop for smooth reordering
  */
-const DraggableLayersList = ({
+const DraggableLayersList: React.FC<DraggableLayersListProps> = ({
     elements,
     selectedElement,
     onSelect,
     onReorder,
-    onToggleVisibility,
     onToggleLock
 }) => {
     const { theme } = useUIStore();
     const isDark = theme === 'dark';
 
-    const [draggedId, setDraggedId] = useState(null);
-    const [dragOverId, setDragOverId] = useState(null);
-    const [dragPosition, setDragPosition] = useState(null); // 'above' or 'below'
+    const [draggedId, setDraggedId] = useState<string | null>(null);
+    const [dragOverId, setDragOverId] = useState<string | null>(null);
+    const [dragPosition, setDragPosition] = useState<'above' | 'below' | null>(null);
 
     // Handle drag start
-    const handleDragStart = (e, id) => {
+    const handleDragStart = (e: React.DragEvent, id: string) => {
         setDraggedId(id);
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', id);
@@ -34,7 +42,7 @@ const DraggableLayersList = ({
     };
 
     // Handle drag end
-    const handleDragEnd = (e) => {
+    const handleDragEnd = (e: React.DragEvent) => {
         if (e.target instanceof HTMLElement) {
             e.target.style.opacity = '1';
         }
@@ -44,7 +52,7 @@ const DraggableLayersList = ({
     };
 
     // Handle drag over
-    const handleDragOver = (e, id, element) => {
+    const handleDragOver = (e: React.DragEvent, id: string) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
 
@@ -59,15 +67,15 @@ const DraggableLayersList = ({
     };
 
     // Handle drag leave
-    const handleDragLeave = (e) => {
+    const handleDragLeave = (e: React.DragEvent) => {
         // Only clear if leaving the current target
-        if (e.currentTarget.contains(e.relatedTarget)) return;
+        if (e.currentTarget.contains(e.relatedTarget as Node)) return;
         setDragOverId(null);
         setDragPosition(null);
     };
 
     // Handle drop
-    const handleDrop = (e, targetId) => {
+    const handleDrop = (e: React.DragEvent, targetId: string) => {
         e.preventDefault();
 
         if (!draggedId || draggedId === targetId) {
@@ -109,10 +117,10 @@ const DraggableLayersList = ({
     };
 
     // Get element icon
-    const getElementIcon = (type) => {
+    const getElementIcon = (type: string) => {
         switch (type) {
             case 'text': return Type;
-            case 'imageSlot': return Image;
+            case 'imageSlot': return ImageIcon;
             case 'shape': return Square;
             case 'overlay': return Layers;
             default: return Square;
@@ -146,7 +154,7 @@ const DraggableLayersList = ({
                         draggable
                         onDragStart={(e) => handleDragStart(e, el.id)}
                         onDragEnd={handleDragEnd}
-                        onDragOver={(e) => handleDragOver(e, el.id, el)}
+                        onDragOver={(e) => handleDragOver(e, el.id)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, el.id)}
                         onClick={() => onSelect(el)}
@@ -163,10 +171,10 @@ const DraggableLayersList = ({
             `}
                     >
                         {/* Drag Handle */}
-                        <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0 hover:text-foreground" />
+                        <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 hover:text-foreground" />
 
                         {/* Element Icon */}
-                        <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${isSelected
+                        <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${isSelected
                             ? 'bg-primary/20'
                             : (isDark ? 'bg-zinc-800' : 'bg-zinc-200')
                             }`}>

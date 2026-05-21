@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const { file } = validate(PinUploadImageForm, { file: formData.get('file') });
 
     // Settings and validation
-    const settings = await getImageUploadSettings(env.DB);
+    const settings = await getImageUploadSettings(env.DB, { cache: env.SETTINGS_CACHE ?? env.SESSION ?? null });
     const MAX_SIZE_BYTES = settings.max_file_size_mb * 1024 * 1024;
     const allowedTypes = IMAGE_SUPPORTED_TYPES;
 

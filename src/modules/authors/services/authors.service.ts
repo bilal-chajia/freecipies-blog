@@ -7,7 +7,24 @@
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { authors, type Author, type NewAuthor } from '../schema/authors.schema';
+import { articles } from '../../articles/schema/articles.schema';
+import { syncCachedFields } from '../../articles/services/articles.service';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+
+async function getArticleIdsForAuthor(drizzle: DrizzleDb, authorId: number): Promise<number[]> {
+  const rows = await drizzle
+    .select({ id: articles.id })
+    .from(articles)
+    .where(and(eq(articles.authorId, authorId), isNull(articles.deletedAt)));
+
+  return rows.map((row) => row.id);
+}
+
+async function refreshAuthorArticleCaches(db: D1Database | DrizzleDb, articleIds: number[]): Promise<void> {
+  for (const articleId of articleIds) {
+    await syncCachedFields(db, articleId);
+  }
+}
 
 /**
  * Get all authors
@@ -72,6 +89,9 @@ export async function updateAuthor(
   author: Partial<NewAuthor>
 ): Promise<Author | null> {
   const drizzle = getDb(db);
+  const existing = await getAuthorBySlug(db, slug);
+  if (!existing) return null;
+  const affectedArticleIds = await getArticleIdsForAuthor(drizzle, existing.id);
 
   const updateData = {
     ...author,
@@ -82,8 +102,7 @@ export async function updateAuthor(
     .set(updateData)
     .where(eq(authors.slug, slug));
 
-  // Note: cached_author_json in articles is auto-refreshed by a SQL trigger
-  // defined in db/schema.sql.
+  await refreshAuthorArticleCaches(db, affectedArticleIds);
 
   return getAuthorBySlug(db, slug);
 }
@@ -108,6 +127,9 @@ export async function updateAuthorById(
   author: Partial<NewAuthor>
 ): Promise<Author | null> {
   const drizzle = getDb(db);
+  const existing = await getAuthorById(db, id);
+  if (!existing) return null;
+  const affectedArticleIds = await getArticleIdsForAuthor(drizzle, id);
 
   const updateData = {
     ...author,
@@ -118,7 +140,8 @@ export async function updateAuthorById(
     .set(updateData)
     .where(eq(authors.id, id));
 
-  // Note: cached_author_json in articles is auto-refreshed by SQL trigger
+  await refreshAuthorArticleCaches(db, affectedArticleIds);
+
   return getAuthorById(db, id);
 }
 

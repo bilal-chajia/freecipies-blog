@@ -12,12 +12,13 @@ import { articlesToTags } from '../schema/articles-to-tags.schema';
 import { categories } from '../../categories/schema/categories.schema';
 import { authors } from '../../authors/schema/authors.schema';
 import { tags as tagsTable } from '../../tags/schema/tags.schema';
+import { equipment as equipmentTable, type Equipment } from '../../equipment/schema/equipment.schema';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type HydratedTag } from '../../../shared/utils/hydration';
-import { resolveVariantUrl } from '../../../shared/types/images';
 import { generateJsonLd } from '../utils/jsonld';
 import type { HydratedArticle } from '../types/articles.types';
-import { extractFAQsFromContentDocument, extractTocFromContentDocument } from '../../content-blocks';
+import { extractTocFromContentDocument } from '../../content-blocks';
+import { buildCachedRatingJson, buildCachedRecipeJson, normalizeRecipeJson } from '../utils/article-json-contract';
 
 async function getTagsForArticleId(drizzle: any, articleId: number): Promise<HydratedTag[]> {
   const rows = await drizzle
@@ -28,6 +29,52 @@ async function getTagsForArticleId(drizzle: any, articleId: number): Promise<Hyd
     .orderBy(asc(tagsTable.label));
 
   return rows.map(hydrateTag);
+}
+
+function buildCachedTagSnapshots(tags: HydratedTag[]) {
+  return tags.map((tag: any) => ({
+    id: tag.id,
+    label: tag.label,
+    slug: tag.slug,
+    color: tag.color ?? null,
+  }));
+}
+
+function normalizeCardVariant(variant: any) {
+  if (!variant || typeof variant !== 'object' || !variant.r2_key) return undefined;
+  return {
+    r2_key: variant.r2_key,
+    width: Number(variant.width) || 0,
+    height: Number(variant.height) || 0,
+    ...(Number.isFinite(Number(variant.size_bytes)) ? { size_bytes: Number(variant.size_bytes) } : {}),
+  };
+}
+
+function buildCardImage(imagesJson: unknown, fallbackAlt: string) {
+  const images = safeParseJson<any>(imagesJson as any) || {};
+  const slot = images.thumbnail || images.hero;
+  if (!slot?.variants) return null;
+  const xs = normalizeCardVariant(slot.variants.xs);
+  const sm = normalizeCardVariant(slot.variants.sm);
+  if (!xs || !sm) return null;
+  return {
+    ...(typeof slot.media_id === 'number' ? { media_id: slot.media_id } : {}),
+    alt: slot.alt || fallbackAlt,
+    placeholder: slot.placeholder || '',
+    variants: { xs, sm },
+  };
+}
+
+function buildAuthorSocialLinks(bioJson: unknown) {
+  const bio = safeParseJson<any>(bioJson as any) || {};
+  const socials = Array.isArray(bio.socials) ? bio.socials : [];
+  return socials
+    .filter((item: any) => item && typeof item === 'object' && item.network && item.url)
+    .map((item: any) => ({
+      network: item.network,
+      url: item.url,
+      ...(item.label ? { label: item.label } : {}),
+    }));
 }
 
 export async function setArticleTagsById(
@@ -55,12 +102,13 @@ export async function setArticleTagsById(
   }
 
   // Update zero-join cache (used by search indexing + UI)
-  const cachedTagsJson = JSON.stringify(resolvedTags.map((tag) => tag.label));
+  const hydratedTags = await getTagsForArticleId(drizzle, articleId);
+  const cachedTagsJson = JSON.stringify(buildCachedTagSnapshots(hydratedTags));
   await drizzle.update(articles)
     .set({ cachedTagsJson, updatedAt: new Date().toISOString() })
     .where(eq(articles.id, articleId));
 
-  return getTagsForArticleId(drizzle, articleId);
+  return hydratedTags;
 }
 
 export interface ArticleQueryOptions {
@@ -258,6 +306,107 @@ function prepareJsonFields(patch: Record<string, any>): Record<string, any> {
   return processed;
 }
 
+type RecipeEquipmentEntry = {
+  id?: string;
+  equipment_id?: number | null;
+  label?: string;
+  required?: boolean;
+  notes?: string | null;
+  source_type?: 'catalog' | 'manual';
+  snapshot?: Record<string, unknown> | null;
+};
+
+function buildEquipmentSnapshot(row: Equipment): Record<string, unknown> {
+  const image = safeParseJson<Record<string, unknown>>(row.imageJson || '{}') || {};
+  return {
+    slug: row.slug,
+    name: row.name,
+    brand: row.brand ?? null,
+    description: row.description ?? null,
+    category: row.category ?? null,
+    image,
+    affiliate_url: row.affiliateUrl ?? null,
+    affiliate_provider: row.affiliateProvider ?? null,
+    affiliate_note: row.affiliateNote ?? null,
+  };
+}
+
+async function attachEquipmentSnapshots(
+  drizzle: DrizzleDb,
+  patch: Record<string, any>
+): Promise<Record<string, any>> {
+  if (!patch.recipeJson || typeof patch.recipeJson !== 'object') return patch;
+
+  const recipeJson = { ...patch.recipeJson };
+  if (!Array.isArray(recipeJson.equipment)) return patch;
+
+  const catalogIds: number[] = Array.from(new Set<number>(
+    recipeJson.equipment
+      .map((item: RecipeEquipmentEntry) => Number(item?.equipment_id))
+      .filter((id: number) => Number.isFinite(id) && id > 0)
+  ));
+
+  if (!catalogIds.length) {
+    recipeJson.equipment = recipeJson.equipment.map((item: RecipeEquipmentEntry, index: number) => ({
+      id: item.id ?? `eq-${index + 1}`,
+      equipment_id: null,
+      label: item.label ?? '',
+      required: item.required !== false,
+      notes: item.notes ?? null,
+      source_type: 'manual',
+      snapshot: null,
+    }));
+    return { ...patch, recipeJson };
+  }
+
+  const rows = await drizzle
+    .select()
+    .from(equipmentTable)
+    .where(and(
+      inArray(equipmentTable.id, catalogIds),
+      eq(equipmentTable.isActive, true),
+      isNull(equipmentTable.deletedAt)
+    ));
+
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const missing = catalogIds.filter((id) => !byId.has(id));
+  if (missing.length) {
+    throw new Error(`Inactive or missing equipment_id: ${missing.join(', ')}`);
+  }
+
+  recipeJson.equipment = recipeJson.equipment.map((item: RecipeEquipmentEntry, index: number) => {
+    const equipmentId = Number(item?.equipment_id);
+    if (!Number.isFinite(equipmentId) || equipmentId <= 0) {
+      return {
+        id: item.id ?? `eq-${index + 1}`,
+        equipment_id: null,
+        label: item.label ?? '',
+        required: item.required !== false,
+        notes: item.notes ?? null,
+        source_type: 'manual',
+        snapshot: null,
+      };
+    }
+
+    const row = byId.get(equipmentId);
+    if (!row) {
+      throw new Error(`Inactive or missing equipment_id: ${equipmentId}`);
+    }
+
+    return {
+      id: item.id ?? `eq-${index + 1}`,
+      equipment_id: equipmentId,
+      label: item.label || row.name,
+      required: item.required !== false,
+      notes: item.notes ?? null,
+      source_type: 'catalog',
+      snapshot: buildEquipmentSnapshot(row),
+    };
+  });
+
+  return { ...patch, recipeJson };
+}
+
 /**
  * Create a new article
  */
@@ -266,7 +415,8 @@ export async function createArticle(
   article: NewArticle
 ): Promise<Article | null> {
   const drizzle = getDb(db);
-  const processed = prepareJsonFields(article as any);
+  const withEquipmentSnapshots = await attachEquipmentSnapshots(drizzle, article as any);
+  const processed = prepareJsonFields(withEquipmentSnapshots);
 
   const [inserted] = await drizzle.insert(articles).values(processed as any).returning();
   return inserted || null;
@@ -282,7 +432,8 @@ export async function updateArticle(
 ): Promise<boolean> {
   const drizzle = getDb(db);
 
-  const processed = prepareJsonFields(article as any);
+  const withEquipmentSnapshots = await attachEquipmentSnapshots(drizzle, article as any);
+  const processed = prepareJsonFields(withEquipmentSnapshots);
   const updateData = {
     ...processed,
     updatedAt: new Date().toISOString(),
@@ -363,7 +514,8 @@ export async function updateArticleById(
 ): Promise<boolean> {
   const drizzle = getDb(db);
 
-  const processedPatch = prepareJsonFields(patch);
+  const withEquipmentSnapshots = await attachEquipmentSnapshots(drizzle, patch);
+  const processedPatch = prepareJsonFields(withEquipmentSnapshots);
 
   const updateData = {
     ...processedPatch,
@@ -454,6 +606,10 @@ export async function syncCachedFields(
       authorSlug: authors.slug,
       authorAvatar: authors.imagesJson,
       authorRole: authors.jobTitle,
+      authorBio: authors.shortDescription,
+      authorBioJson: authors.bioJson,
+      authorDeletedAt: authors.deletedAt,
+      categoryIdValue: categories.id,
       categoryLabel: categories.label,
       categorySlug: categories.slug,
       categoryColor: categories.color,
@@ -469,36 +625,32 @@ export async function syncCachedFields(
   const updateData: Partial<Article> = {};
 
   if (article.authorId) {
-    const hydrator = hydrateArticle(article as any);
+    const authorImages = safeParseJson<any>((article as any).authorAvatar) || {};
     updateData.cachedAuthorJson = JSON.stringify({
+      id: article.authorId,
       name: article.authorName,
       slug: article.authorSlug,
-      avatar: hydrator.authorAvatar || null,
-      role: (article as any).authorRole || null,
+      job_title: (article as any).authorRole || null,
+      bio: (article as any).authorBio || null,
+      avatar: authorImages.avatar || null,
+      social_links: buildAuthorSocialLinks((article as any).authorBioJson),
     });
   }
 
   if (article.categoryId) {
     updateData.cachedCategoryJson = JSON.stringify({
+      id: (article as any).categoryIdValue ?? article.categoryId,
       label: article.categoryLabel,
       slug: article.categorySlug,
       color: article.categoryColor,
     });
   }
 
-  // Extract TOC from contentJson
-  const toc = extractTocFromContentDocument(article.contentJson, article.headline);
-  if (toc.length > 0) {
-    updateData.cachedTocJson = JSON.stringify(toc);
-  }
+  updateData.cachedTagsJson = JSON.stringify(buildCachedTagSnapshots(await getTagsForArticleId(drizzle, id)));
 
-  // ── Extract FAQs from content_json faq_section blocks ──
-  if (article.contentJson) {
-    const faqs = extractFAQsFromContentDocument(article.contentJson);
-    (updateData as any).faqsJson = faqs.length > 0
-      ? JSON.stringify(faqs)
-      : '[]';
-  }
+  // Extract TOC from contentJson
+  const toc = extractTocFromContentDocument(article.contentJson, article.headline, article.roundupJson);
+  updateData.cachedTocJson = JSON.stringify(toc);
 
   // ── Sync cached recipe summary ──
   // Recipe-specific list/card metadata stays in cachedRecipeJson, not
@@ -506,47 +658,27 @@ export async function syncCachedFields(
   let recipe: any = null;
   let totalTimeMinutes: number | null = null;
   if (article.type === 'recipe' && article.recipeJson) {
-    recipe = safeParseJson<any>(article.recipeJson);
+    recipe = normalizeRecipeJson(safeParseJson<any>(article.recipeJson));
     if (recipe) {
       // Derive total time: explicit total, or prep + cook
       totalTimeMinutes = recipe.total
         ?? (((recipe.prep ?? 0) + (recipe.cook ?? 0)) || null);
 
       // Cached recipe summary for optimized listing API
-      (updateData as any).cachedRecipeJson = JSON.stringify({
-        isRecipe: true,
-        totalTimeMinutes,
-        difficulty: recipe.difficulty ?? null,
-        servings: recipe.servings ?? null,
-        caloriesPerServing: recipe.nutrition?.calories ?? null,
-        primaryDietLabels: (recipe.suitableForDiet ?? []).slice(0, 3),
-        mainIngredients: (recipe.ingredients ?? [])
-          .flatMap((g: any) => g.items ?? [])
-          .slice(0, 5)
-          .map((i: any) => i.name),
-        isQuick: (totalTimeMinutes ?? 999) <= 30,
-        isHealthy: (recipe.suitableForDiet?.length ?? 0) > 0,
-        isBudget: recipe.estimatedCost === 'Budget',
-      });
+      (updateData as any).recipeJson = JSON.stringify(recipe);
+      (updateData as any).cachedRecipeJson = JSON.stringify(buildCachedRecipeJson(recipe, article.type));
+      (updateData as any).cachedRatingJson = JSON.stringify(buildCachedRatingJson(recipe));
 
     }
   }
 
   // ── Generate cached_card_json for zero-join card rendering ──
   {
-    const images = safeParseJson<any>(article.imagesJson) || {};
-    const hero = images?.hero;
-    const heroVariants = hero?.variants;
-
-    const thumbnail = heroVariants ? {
-      alt: hero?.alt || article.headline,
-      variants: {
-        xs: heroVariants.xs ? { url: resolveVariantUrl(heroVariants.xs), width: heroVariants.xs.width } : undefined,
-        sm: heroVariants.sm ? { url: resolveVariantUrl(heroVariants.sm), width: heroVariants.sm.width } : undefined,
-        md: heroVariants.md ? { url: resolveVariantUrl(heroVariants.md), width: heroVariants.md.width } : undefined,
-        lg: heroVariants.lg ? { url: resolveVariantUrl(heroVariants.lg), width: heroVariants.lg.width } : undefined,
-      }
-    } : null;
+    const cachedCategory = safeParseJson<any>((updateData.cachedCategoryJson ?? article.cachedCategoryJson) as any) || {};
+    const cachedAuthor = safeParseJson<any>((updateData.cachedAuthorJson ?? article.cachedAuthorJson) as any) || {};
+    const cachedTags = safeParseJson<any[]>((updateData.cachedTagsJson ?? article.cachedTagsJson) as any) || [];
+    const cachedRecipe = safeParseJson<any>(((updateData as any).cachedRecipeJson ?? article.cachedRecipeJson) as any) || {};
+    const cachedRating = safeParseJson<any>(((updateData as any).cachedRatingJson ?? article.cachedRatingJson) as any) || {};
 
     const card: Record<string, any> = {
       id: article.id,
@@ -554,17 +686,28 @@ export async function syncCachedFields(
       slug: article.slug,
       headline: article.headline,
       short_description: article.shortDescription,
-      thumbnail,
+      image: buildCardImage(article.imagesJson, article.headline),
+      category: Object.keys(cachedCategory).length ? cachedCategory : null,
+      author: Object.keys(cachedAuthor).length ? {
+        id: cachedAuthor.id,
+        slug: cachedAuthor.slug,
+        name: cachedAuthor.name,
+        job_title: cachedAuthor.job_title ?? null,
+        avatar: cachedAuthor.avatar ?? null,
+      } : null,
+      tags: cachedTags,
     };
 
     if (article.type === 'recipe' && recipe) {
-      card.total_time = totalTimeMinutes;
-      card.difficulty = recipe.difficulty ?? null;
-      card.servings = recipe.servings ?? null;
-      card.rating = safeParseJson<any>(article.cachedRatingJson) || null;
+      card.recipe = {
+        total_time_minutes: cachedRecipe.total_time_minutes ?? totalTimeMinutes,
+        difficulty: cachedRecipe.difficulty ?? recipe.difficulty ?? null,
+        calories_per_serving: cachedRecipe.calories_per_serving ?? null,
+        badges: cachedRecipe.badges ?? {},
+      };
+      card.rating = Object.keys(cachedRating).length ? cachedRating : null;
     } else if (article.type === 'article') {
       card.reading_time = article.readingTimeMinutes || null;
-      card.category = safeParseJson<any>(article.cachedCategoryJson)?.label || null;
     } else if (article.type === 'roundup') {
       const roundupData = safeParseJson<any>(article.roundupJson);
       card.item_count = roundupData?.items?.length ?? 0;
@@ -640,30 +783,32 @@ export async function addRecipeVote(
   const recipe = safeParseJson<any>(article.recipeJson);
   if (!recipe) return null;
 
-  const currentValue = recipe.aggregateRating?.ratingValue || 0;
-  const currentCount = recipe.aggregateRating?.ratingCount || 0;
+  const normalizedRecipe = normalizeRecipeJson(recipe);
+  const currentValue = normalizedRecipe.aggregate_rating?.rating_value || 0;
+  const currentCount = normalizedRecipe.aggregate_rating?.rating_count || 0;
 
   // 3. Calculate exact average
   const newCount = currentCount + 1;
   const newValue = Number(((currentValue * currentCount + rating) / newCount).toFixed(1));
 
   const newRating = {
-    ratingValue: newValue,
-    ratingCount: newCount
+    rating_value: newValue,
+    rating_count: newCount
   };
 
   // 4. Update recipeJson
-  recipe.aggregateRating = newRating;
-  const recipeJson = JSON.stringify(recipe);
+  normalizedRecipe.aggregate_rating = newRating;
+  const recipeJson = JSON.stringify(normalizedRecipe);
 
   // 5. Update database (and cache)
   await drizzle.update(articles)
     .set({ 
       recipeJson, 
       cachedRatingJson: JSON.stringify(newRating),
+      cachedRecipeJson: JSON.stringify(buildCachedRecipeJson(normalizedRecipe, 'recipe')),
       updatedAt: new Date().toISOString() 
     })
     .where(eq(articles.id, articleId));
 
-  return newRating;
+  return { ratingValue: newValue, ratingCount: newCount };
 }

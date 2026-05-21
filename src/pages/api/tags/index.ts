@@ -19,7 +19,7 @@ export const GET: APIRoute = async ({ request }) => {
     const responseTags = tags.map(transformTagResponse);
 
     const { body, status, headers } = formatSuccessResponse(responseTags, {
-      cacheControl: 'public, max-age=3600'
+      cacheControl: 'no-cache, no-store, must-revalidate'
     });
     return new Response(body, { status, headers });
   } catch (error) {

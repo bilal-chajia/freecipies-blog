@@ -1,7 +1,7 @@
 # Project Architecture
 
 > **Last Updated:** 2026-05-11
-> **Framework:** Astro 6 + React 19
+> **Framework:** Astro 6.3.3 + React 19
 > **Deployment:** Cloudflare Pages + D1 + R2 + KV
 
 ---
@@ -10,7 +10,7 @@
 
 This is a **recipe/food blog SaaS** built with:
 
-- **Astro 6** - SSR framework with islands architecture
+- **Astro 6.3.3** - SSR framework with islands architecture
 - **React 19** - Admin panel and interactive components
 - **Cloudflare D1** - SQLite database
 - **Cloudflare R2** - Image storage with responsive variants
@@ -23,7 +23,7 @@ This is a **recipe/food blog SaaS** built with:
 
 | Layer          | Technology            | Purpose                  |
 | -------------- | --------------------- | ------------------------ |
-| **Framework**  | Astro 6               | SSR with islands         |
+| **Framework**  | Astro 6.3.3           | SSR with islands         |
 | **UI Library** | React 19              | Interactive components   |
 | **Styling**    | Tailwind CSS 4        | Utility-first CSS        |
 | **Components** | shadcn/ui + Radix     | Accessible UI primitives |
@@ -118,7 +118,7 @@ recipes-saas/
 
 ## Runtime Boundaries
 
-The app stays as one Astro 6 application and one Cloudflare deployment, but the
+The app stays as one Astro 6.3.3 application and one Cloudflare deployment, but the
 internal runtime boundaries are strict:
 
 - `src/pages` owns Astro file-based routes. Public pages call server data

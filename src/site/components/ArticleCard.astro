@@ -2,6 +2,8 @@
 import type { HydratedArticle } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import RatingSystem from "./content/RatingSystem";
+import { normalizeRecipeForRender } from "@site/utils/recipe-render";
+import FormattedDate from "./FormattedDate.astro";
 
 
 interface Props {
@@ -35,14 +37,14 @@ const image = {
 };
 
 // Parse recipeJson if it's a string
-const recipe = 'recipeJson' in article && article.recipeJson
+const recipe = normalizeRecipeForRender('recipeJson' in article && article.recipeJson
   ? typeof article.recipeJson === "string"
     ? JSON.parse(article.recipeJson)
     : article.recipeJson
-  : null;
+  : null);
 
-const ratingValue = recipe?.aggregateRating?.ratingValue ?? null;
-const ratingCount = recipe?.aggregateRating?.ratingCount ?? 0;
+const ratingValue = recipe?.aggregate_rating?.rating_value ?? null;
+const ratingCount = recipe?.aggregate_rating?.rating_count ?? 0;
 const hasRating = ratingValue !== null && ratingCount > 0;
 const authorLabel = article.authorName || article.authorSlug || "Unknown";
 const showBookmark = article.type === "recipe";
@@ -172,10 +174,10 @@ const showBookmark = article.type === "recipe";
           {article.categoryLabel || article.categorySlug?.replace(/-/g, " ") || "Uncategorized"}
         </span>
         
-        {recipe && recipe.prepTime && String(recipe.prepTime).toLowerCase() !== "n/a" && (
+        {recipe && recipe.prep && (
           <>
             <span class="text-[var(--border-strong)] text-[10px]">•</span>
-            <span class="text-[12px] text-[var(--text-tertiary)]">{recipe.prepTime}</span>
+            <span class="text-[12px] text-[var(--text-tertiary)]">{`${recipe.prep} min`}</span>
           </>
         )}
       </div>

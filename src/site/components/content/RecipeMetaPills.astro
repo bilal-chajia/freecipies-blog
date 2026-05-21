@@ -14,12 +14,14 @@ import type {
   RecipeJson,
   DifficultyLevel,
 } from "@modules/articles/types/recipes.types";
+import { normalizeRecipeForRender } from "@site/utils/recipe-render";
 
 interface Props {
   recipe: RecipeJson | null | undefined;
 }
 
-const { recipe } = Astro.props;
+const { recipe: rawRecipe } = Astro.props;
+const recipe = normalizeRecipeForRender(rawRecipe);
 
 if (!recipe) return null;
 
@@ -28,8 +30,8 @@ const cook = recipe.cook || 0;
 const total = recipe.total || prep + cook;
 const servings = recipe.servings || 0;
 const difficulty = recipe.difficulty;
-const cuisine = recipe.recipeCuisine;
-const diets = recipe.suitableForDiet || [];
+const cuisine = recipe.recipe_cuisine;
+const diets = recipe.suitable_for_diet || [];
 
 function formatTime(minutes: number): string {
   if (minutes < 60) return `${minutes}m`;

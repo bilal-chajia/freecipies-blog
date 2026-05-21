@@ -678,7 +678,11 @@ CREATE TABLE IF NOT EXISTS articles (
 
     -- 7. STRUCTURED FAQ SOURCE
 
-    faqs_json TEXT DEFAULT '[]' CHECK (json_valid(faqs_json)),
+    faqs_json TEXT DEFAULT '{
+      "heading": "Frequently Asked Questions",
+      "intro": null,
+      "items": []
+    }' CHECK (json_valid(faqs_json)),
     -- Source FAQ items used for visible FAQ display and jsonld_json generation.
 
     -- 8. SNAPSHOTS & CACHES (ZERO-JOIN RENDERING)
@@ -705,16 +709,34 @@ CREATE TABLE IF NOT EXISTS articles (
 
     cached_recipe_json TEXT DEFAULT '{
       "is_recipe": false,
+      "prep_time_minutes": null,
+      "cook_time_minutes": null,
       "total_time_minutes": null,
       "difficulty": null,
       "servings": null,
+      "recipe_yield": null,
+      "recipe_category": null,
+      "recipe_cuisine": null,
+      "cooking_method": null,
+      "estimated_cost": null,
       "calories_per_serving": null,
-      "primary_diet_labels": [],
-      "primary_occasion_labels": [],
+      "protein_g": null,
+      "carbohydrate_g": null,
+      "fat_g": null,
+      "diet_labels": [],
+      "keyword_labels": [],
       "main_ingredients": [],
-      "is_quick": false,
-      "is_healthy": false,
-      "is_budget": false
+      "badges": {
+        "is_quick": false,
+        "is_budget": false,
+        "is_healthy": false,
+        "is_high_protein": false,
+        "is_low_calorie": false,
+        "is_vegetarian": false,
+        "is_vegan": false,
+        "is_gluten_free": false,
+        "is_dairy_free": false
+      }
     }' CHECK (json_valid(cached_recipe_json)),
     -- Lightweight recipe snapshot for lists, cards, roundup items,
     -- related content, and recipe filters. Full recipe rendering reads recipe_json.
@@ -1003,12 +1025,12 @@ BEGIN
 
         -- FAQ source items.
         SELECT json_extract(item.value, '$.question')
-        FROM json_each(NEW.faqs_json) AS item
+        FROM json_each(NEW.faqs_json, '$.items') AS item
 
         UNION ALL
 
         SELECT json_extract(item.value, '$.answer')
-        FROM json_each(NEW.faqs_json) AS item
+        FROM json_each(NEW.faqs_json, '$.items') AS item
 
         UNION ALL
 
@@ -1170,10 +1192,10 @@ BEGIN
         WHERE json_extract(block.value, '$.type') = 'list'
         UNION ALL
         SELECT json_extract(item.value, '$.question')
-        FROM json_each(OLD.faqs_json) AS item
+        FROM json_each(OLD.faqs_json, '$.items') AS item
         UNION ALL
         SELECT json_extract(item.value, '$.answer')
-        FROM json_each(OLD.faqs_json) AS item
+        FROM json_each(OLD.faqs_json, '$.items') AS item
         UNION ALL
         SELECT header.value
         FROM json_each(OLD.content_json, '$.blocks') AS block,
@@ -1311,12 +1333,12 @@ BEGIN
 
         -- FAQ source items.
         SELECT json_extract(item.value, '$.question')
-        FROM json_each(NEW.faqs_json) AS item
+        FROM json_each(NEW.faqs_json, '$.items') AS item
 
         UNION ALL
 
         SELECT json_extract(item.value, '$.answer')
-        FROM json_each(NEW.faqs_json) AS item
+        FROM json_each(NEW.faqs_json, '$.items') AS item
 
         UNION ALL
 
@@ -1477,10 +1499,10 @@ BEGIN
         WHERE json_extract(block.value, '$.type') = 'list'
         UNION ALL
         SELECT json_extract(item.value, '$.question')
-        FROM json_each(OLD.faqs_json) AS item
+        FROM json_each(OLD.faqs_json, '$.items') AS item
         UNION ALL
         SELECT json_extract(item.value, '$.answer')
-        FROM json_each(OLD.faqs_json) AS item
+        FROM json_each(OLD.faqs_json, '$.items') AS item
         UNION ALL
         SELECT header.value
         FROM json_each(OLD.content_json, '$.blocks') AS block,

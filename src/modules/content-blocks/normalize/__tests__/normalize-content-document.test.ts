@@ -39,10 +39,10 @@ describe('normalizeContentDocument', () => {
 
     expect(document.blocks[0].type).toBe('tip_box');
     expect((document.blocks[0] as any).variant).toBe('warning');
-    expect(document.blocks[1].type).toBe('roundup_item');
+    expect(document.blocks[1].type).toBe('main_roundup');
   });
 
-  it('normalizes legacy FAQ q/a fields to question/answer', () => {
+  it('normalizes legacy FAQ blocks to the main_faq marker only', () => {
     const document = normalizeContentDocument({
       blocks: [
         {
@@ -55,8 +55,7 @@ describe('normalizeContentDocument', () => {
 
     expect(document.blocks[0]).toEqual({
       id: 'faq',
-      type: 'faq_section',
-      items: [{ question: 'Can I freeze it?', answer: 'Yes.' }],
+      type: 'main_faq',
     });
   });
 
@@ -110,16 +109,19 @@ describe('ContentDocumentInputSchema', () => {
           layout: 'grid',
           items: [
             {
-              content_type: 'recipe',
               article_id: 123,
-              slug: 'easy-pasta',
-              title: 'Easy Pasta',
-              image: {
-                media_id: 55,
-                alt: 'Bowl of pasta',
-                variants: {
-                  sm: { url: '/api/images/media/55/sm.webp', width: 720, height: 480 },
-                  md: { url: '/api/images/media/55/md.webp', width: 1200, height: 800 },
+              snapshot: {
+                id: 123,
+                type: 'recipe',
+                slug: 'easy-pasta',
+                headline: 'Easy Pasta',
+                image: {
+                  media_id: 55,
+                  alt: 'Bowl of pasta',
+                  variants: {
+                    xs: { r2_key: 'media/images/easy-pasta-xs-a1b2c3d4.webp', width: 360, height: 240 },
+                    sm: { r2_key: 'media/images/easy-pasta-sm-a1b2c3d4.webp', width: 720, height: 480 },
+                  },
                 },
               },
             },
@@ -151,7 +153,7 @@ describe('ContentDocumentInputSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects related_content image snapshots with r2_key', () => {
+  it('rejects related_content image snapshots with public url', () => {
     const result = ContentDocumentInputSchema.safeParse({
       version: 1,
       kind: 'content_document',
@@ -162,15 +164,19 @@ describe('ContentDocumentInputSchema', () => {
           layout: 'grid',
           items: [
             {
-              content_type: 'recipe',
               article_id: 1,
-              slug: 'pasta',
-              title: 'Pasta',
-              image: {
-                media_id: 55,
-                alt: 'Pasta',
-                variants: {
-                  sm: { r2_key: 'private/key.webp', width: 720, height: 480 },
+              snapshot: {
+                id: 1,
+                type: 'recipe',
+                slug: 'pasta',
+                headline: 'Pasta',
+                image: {
+                  media_id: 55,
+                  alt: 'Pasta',
+                  variants: {
+                    xs: { url: '/api/images/private-xs.webp', width: 360, height: 240 },
+                    sm: { r2_key: 'private/key.webp', width: 720, height: 480 },
+                  },
                 },
               },
             },
@@ -182,11 +188,21 @@ describe('ContentDocumentInputSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects empty roundup_item blocks', () => {
+  it('rejects old roundup_item blocks', () => {
     const result = ContentDocumentInputSchema.safeParse({
       version: 1,
       kind: 'content_document',
       blocks: [{ id: 'item', type: 'roundup_item' }],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects editor-only block names in strict save validation', () => {
+    const result = ContentDocumentInputSchema.safeParse({
+      version: 1,
+      kind: 'content_document',
+      blocks: [{ id: 'image', type: 'customImage', imageRef: 'body-image-1' }],
     });
 
     expect(result.success).toBe(false);

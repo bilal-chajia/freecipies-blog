@@ -3,8 +3,6 @@ import type { LucideIcon } from 'lucide-react';
 import { MAX_STRUCTURE_LABEL, BLOCK_TYPE_ICONS } from './constants';
 import { extractText, truncateInlineContent, serializeInlineContent } from './inlineContent';
 import type { ContentBlock } from '../../../../modules/articles/types/content-blocks.types';
-import type { ImageVariants, ImageSlot } from '../../../../shared/types/images';
-import { resolveVariantUrl } from '../../../../shared/types/images';
 
 type AnyBlock = Block<any, any, any>;
 
@@ -140,20 +138,6 @@ export const normalizeTipVariant = (variant: string | undefined): 'tip' | 'warni
         return variant;
     }
     return 'warning';
-};
-
-export const resolveCoverUrl = (cover: string | ImageSlot | undefined): string => {
-    if (!cover) return '';
-    if (typeof cover === 'string') return cover;
-    const variants = (cover.variants || {}) as ImageVariants;
-    return (
-        resolveVariantUrl(variants.md) ||
-        resolveVariantUrl(variants.sm) ||
-        resolveVariantUrl(variants.lg) ||
-        resolveVariantUrl(variants.xs) ||
-        (cover as any).url ||
-        ''
-    );
 };
 
 export const buildVideoUrl = (provider: string | undefined, videoId: string | undefined): string => {

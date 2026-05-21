@@ -1,52 +1,23 @@
 import { z } from 'zod';
+import { CONTENT_BLOCK_TYPES } from '../contract/content-blocks.types';
 import { normalizeContentDocument } from '../normalize/normalize-content-document';
 
-const publicImageVariantSchema = z.object({
-  url: z.string().min(1).optional(),
-  r2_key: z.string().min(1).optional(),
+const canonicalBlockTypes = new Set<string>(CONTENT_BLOCK_TYPES);
+
+const storedImageVariantSchema = z.object({
+  r2_key: z.string().min(1),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   size_bytes: z.number().int().nonnegative().optional(),
-}).strict().refine((variant) => Boolean(variant.url || variant.r2_key), {
-  message: 'image variant requires url or r2_key',
-});
+}).strict();
 
 const compactRelatedImageSchema = z.object({
   media_id: z.number().int().positive(),
   alt: z.string().min(1),
   variants: z.object({
-    sm: publicImageVariantSchema.optional(),
-    md: publicImageVariantSchema.optional(),
-  }).strict().refine((variants) => Boolean(variants.sm || variants.md), {
-    message: 'related_content.image requires sm or md variant',
+    xs: storedImageVariantSchema,
+    sm: storedImageVariantSchema,
   }),
-}).strict();
-
-const publicImageVariantsSchema = z.object({
-  sm: publicImageVariantSchema.optional(),
-  md: publicImageVariantSchema.optional(),
-  lg: publicImageVariantSchema.optional(),
-}).strict().refine((variants) => Boolean(variants.sm && variants.md && variants.lg), {
-  message: 'image block requires sm, md, and lg variants',
-});
-
-const imageCreditAvatarSchema = z.object({
-  media_id: z.number().int().positive().optional(),
-  alt: z.string().optional(),
-  variants: z.object({
-    xs: publicImageVariantSchema.optional(),
-    sm: publicImageVariantSchema.optional(),
-  }).strict().refine((variants) => Boolean(variants.xs || variants.sm), {
-    message: 'image credit avatar requires xs or sm variant',
-  }),
-}).strict();
-
-const imageCreditSchema = z.object({
-  type: z.literal('author'),
-  id: z.number().int().positive(),
-  name: z.string().min(1),
-  slug: z.string().min(1),
-  avatar: imageCreditAvatarSchema.optional(),
 }).strict();
 
 const baseBlockSchema = z.object({
@@ -78,11 +49,7 @@ const listBlockSchema = baseBlockSchema.extend({
 
 const imageBlockSchema = baseBlockSchema.extend({
   type: z.literal('image'),
-  media_id: z.number().int().positive(),
-  alt: z.string(),
-  caption: z.string().optional(),
-  credit: imageCreditSchema.optional(),
-  variants: publicImageVariantsSchema.optional(),
+  image_ref: z.string().min(1),
 }).strict();
 
 const videoBlockSchema = baseBlockSchema.extend({
@@ -109,65 +76,47 @@ const tableBlockSchema = baseBlockSchema.extend({
   rows: z.array(z.array(z.string())),
 }).strict();
 
-const beforeAfterImageSchema = z.object({
-  media_id: z.number().int().positive(),
-  alt: z.string(),
-  label: z.string().optional(),
-  variants: publicImageVariantsSchema.optional(),
-}).strict();
-
 const beforeAfterBlockSchema = baseBlockSchema.extend({
   type: z.literal('before_after'),
   layout: z.enum(['slider', 'side_by_side']),
-  before: beforeAfterImageSchema,
-  after: beforeAfterImageSchema,
-}).strict();
-
-const faqItemSchema = z.object({
-  question: z.string().min(1),
-  answer: z.string().min(1),
-}).strict();
-
-const faqSectionBlockSchema = baseBlockSchema.extend({
-  type: z.literal('faq_section'),
-  title: z.string().optional(),
-  items: z.array(faqItemSchema),
+  before_image_ref: z.string().min(1),
+  after_image_ref: z.string().min(1),
+  before_label: z.string().optional(),
+  after_label: z.string().optional(),
 }).strict();
 
 const relatedContentItemSchema = z.object({
-  content_type: z.enum(['recipe', 'article', 'roundup']),
-  article_id: z.number().int().positive().optional(),
-  slug: z.string().min(1),
-  title: z.string().min(1),
-  description: z.string().optional(),
-  image: compactRelatedImageSchema.optional(),
-  total_time: z.number().int().positive().optional(),
-  difficulty: z.string().optional(),
-  reading_time: z.number().int().positive().optional(),
-  item_count: z.number().int().positive().optional(),
-}).strict();
+  article_id: z.number().int().positive(),
+  snapshot: z.object({
+    id: z.number().int().positive(),
+    type: z.enum(['recipe', 'article', 'roundup']),
+    slug: z.string().min(1),
+    headline: z.string().min(1),
+    short_description: z.string().optional(),
+    image: compactRelatedImageSchema.optional(),
+  }).passthrough(),
+}).strict().refine((item) => item.snapshot.id === item.article_id, {
+  message: 'related_content snapshot.id must match article_id',
+});
 
 const relatedContentBlockSchema = baseBlockSchema.extend({
   type: z.literal('related_content'),
   title: z.string().optional(),
   layout: z.enum(['grid', 'carousel', 'list']),
-  mode: z.enum(['manual', 'auto']).optional(),
   limit: z.number().int().positive().optional(),
   items: z.array(relatedContentItemSchema),
 }).strict();
 
-const roundupItemBlockSchema = baseBlockSchema.extend({
-  type: z.literal('roundup_item'),
-  article_id: z.number().int().positive().nullable().optional(),
-  external_url: z.string().optional(),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
-  note: z.string().optional(),
-  cover: z.string().nullable().optional(),
-}).strict();
-
 const mainRecipeBlockSchema = baseBlockSchema.extend({
   type: z.literal('main_recipe'),
+}).strict();
+
+const mainRoundupBlockSchema = baseBlockSchema.extend({
+  type: z.literal('main_roundup'),
+}).strict();
+
+const mainFaqBlockSchema = baseBlockSchema.extend({
+  type: z.literal('main_faq'),
 }).strict();
 
 export const ContentBlockSchema = z.discriminatedUnion('type', [
@@ -181,18 +130,11 @@ export const ContentBlockSchema = z.discriminatedUnion('type', [
   dividerBlockSchema,
   tableBlockSchema,
   beforeAfterBlockSchema,
-  faqSectionBlockSchema,
   relatedContentBlockSchema,
-  roundupItemBlockSchema,
   mainRecipeBlockSchema,
-]).superRefine((block, ctx) => {
-  if (block.type === 'roundup_item' && !block.article_id && !(block.external_url && block.title)) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'roundup_item requires article_id or external_url and title',
-    });
-  }
-});
+  mainRoundupBlockSchema,
+  mainFaqBlockSchema,
+]);
 
 export const ContentDocumentSchema = z.object({
   version: z.literal(1),
@@ -237,6 +179,15 @@ export const ContentDocumentInputSchema = z.unknown().transform((input, ctx) => 
       ctx.addIssue({
         code: 'custom',
         message: 'contentJson blocks must include id',
+      });
+      return z.NEVER;
+    }
+
+    const rawType = (rawBlock as { type?: unknown }).type;
+    if (typeof rawType !== 'string' || !canonicalBlockTypes.has(rawType)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'contentJson contains unsupported blocks',
       });
       return z.NEVER;
     }

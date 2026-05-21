@@ -38,6 +38,7 @@ export interface NormalizedImageSnapshotContainer {
   thumbnail?: NormalizedImageSnapshot;
   avatar?: NormalizedImageSnapshot;
   recipe_steps?: Record<string, NormalizedImageSnapshot>;
+  content_images?: Record<string, NormalizedImageSnapshot>;
 }
 
 export interface PublicImageVariantContract {
@@ -444,6 +445,18 @@ export function normalizeImageSnapshotContainer(
       }
       if (Object.keys(recipeSteps).length) {
         result.recipe_steps = recipeSteps;
+      }
+    }
+
+    const contentImagesSource = readRecord(source, 'content_images') ?? readRecord(source, 'contentImages');
+    if (contentImagesSource) {
+      const contentImages: Record<string, NormalizedImageSnapshot> = {};
+      for (const [imageKey, imageValue] of Object.entries(contentImagesSource)) {
+        const imageSlot = normalizeSnapshotSlot(imageValue, INLINE_VARIANTS);
+        if (imageSlot) contentImages[imageKey] = imageSlot;
+      }
+      if (Object.keys(contentImages).length) {
+        result.content_images = contentImages;
       }
     }
   }

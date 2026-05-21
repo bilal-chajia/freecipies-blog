@@ -26,7 +26,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
         const result = await getPopularArticles(env.DB, limit);
 
-        const articles = (result || []).map((a: any) => {
+        const articles = (result || []).map((a: Record<string, unknown>) => {
                 // Extract hero image URL from images_json
                 let imageUrl = '';
                 try {
@@ -50,12 +50,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
             cacheControl: 'no-cache, no-store, must-revalidate'
         });
         return new Response(body, { status, headers });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error fetching popular articles:', error);
+        const message = error instanceof Error ? error.message : 'Failed to fetch popular articles';
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error
-                : new AppError(ErrorCodes.DATABASE_ERROR, error.message || 'Failed to fetch popular articles', 500)
+                : new AppError(ErrorCodes.DATABASE_ERROR, message, 500)
         );
         return new Response(body, { status, headers });
     }

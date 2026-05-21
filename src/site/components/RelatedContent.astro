@@ -1,15 +1,9 @@
 ---
-const { block } = Astro.props as {
-  block: {
-    type: "related_content";
-    title?: string;
-    layout?: "grid" | "carousel" | "list";
-    items?: RelatedContentItem[];
-  };
-};
+import { resolveVariantUrl } from "@shared/types/images";
 
 type RelatedContentImageVariant = {
-  url: string;
+  url?: string;
+  r2_key?: string;
   width: number;
   height: number;
 };
@@ -17,15 +11,32 @@ type RelatedContentImageVariant = {
 type RelatedContentImage = {
   media_id: number;
   alt: string;
-  variants: {
-    sm?: RelatedContentImageVariant;
-    md?: RelatedContentImageVariant;
+  variants: Partial<Record<"sm" | "md", RelatedContentImageVariant>>;
+};
+
+type RelatedContentType = "recipe" | "article" | "roundup";
+
+type SnapshotContent = {
+  id: number;
+  type: RelatedContentType;
+  slug: string;
+  headline: string;
+  short_description?: string;
+  image?: RelatedContentImage;
+  recipe?: {
+    total_time_minutes?: number;
+    difficulty?: string;
+  };
+  rating?: {
+    rating_value?: number;
+    rating_count?: number;
   };
 };
 
 type RelatedContentItem = {
-  content_type: "recipe" | "article" | "roundup";
   article_id?: number;
+  snapshot?: SnapshotContent;
+  content_type: RelatedContentType;
   slug: string;
   title: string;
   description?: string;
@@ -34,6 +45,17 @@ type RelatedContentItem = {
   difficulty?: string;
   reading_time?: number;
   item_count?: number;
+};
+
+type RelatedContentBlock = {
+  type: "related_content";
+  title?: string;
+  layout?: "grid" | "carousel" | "list";
+  items?: RelatedContentItem[];
+};
+
+const { block } = Astro.props as {
+  block: RelatedContentBlock;
 };
 
 const layout = block.layout || "grid";
@@ -51,9 +73,24 @@ const TYPE_LABEL_SINGULAR: Record<string, string> = {
   roundup: "Roundup",
 };
 
+const normalizeItem = (item: RelatedContentItem): RelatedContentItem => {
+  const snapshot = item.snapshot;
+  if (!snapshot) return item;
+  return {
+    ...item,
+    content_type: snapshot.type,
+    slug: snapshot.slug,
+    title: snapshot.headline,
+    description: snapshot.short_description,
+    image: snapshot.image,
+    total_time: snapshot.recipe?.total_time_minutes,
+    difficulty: snapshot.recipe?.difficulty,
+  };
+};
+
 const withType = (items: RelatedContentItem[] | undefined) =>
   Array.isArray(items)
-    ? items.map((item) => ({ ...item, __type: item.content_type }))
+    ? items.map(normalizeItem).map((item) => ({ ...item, __type: item.content_type }))
     : [];
 
 const groups = [
@@ -77,14 +114,14 @@ const getRelatedImage = (item: RenderItem) => item.image;
 const getImageVariant = (slot?: RelatedContentImage) =>
   slot?.variants?.md || slot?.variants?.sm || null;
 
-const getImageUrl = (slot?: RelatedContentImage) => getImageVariant(slot)?.url || null;
+const getImageUrl = (slot?: RelatedContentImage) => resolveVariantUrl(getImageVariant(slot) as any) || null;
 
 const getImageSrcSet = (slot?: RelatedContentImage) => {
   if (!slot?.variants) return "";
-  return ["sm", "md"]
+  return (["sm", "md"] as const)
     .map((key) => slot.variants[key])
-    .filter((variant) => variant?.url && variant?.width)
-    .map((variant) => `${variant.url} ${variant.width}w`)
+    .filter((variant): variant is RelatedContentImageVariant => Boolean(resolveVariantUrl(variant) && variant?.width))
+    .map((variant) => `${resolveVariantUrl(variant)} ${variant.width}w`)
     .join(", ");
 };
 

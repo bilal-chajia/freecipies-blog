@@ -5,7 +5,6 @@ import { getCategories } from '@modules/categories';
 import { getTags } from '@modules/tags';
 import { getAuthors } from '@modules/authors';
 import { extractImage } from '@shared/utils';
-import type { Env } from '@shared/types';
 
 export const prerender = false;
 
@@ -22,7 +21,7 @@ export const GET: APIRoute = async ({ site }) => {
         const [recipesResult, categoriesResult, tagsResult, authorsResult] = await Promise.all([
             getArticles(env.DB, { type: 'recipe', limit: 1000 }),
             getCategories(env.DB, { isOnline: true }),
-            getTags(env.DB, { isOnline: true }),
+            getTags(env.DB),
             getAuthors(env.DB, { isOnline: true })
         ]);
 

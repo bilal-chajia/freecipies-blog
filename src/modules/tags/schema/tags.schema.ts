@@ -16,13 +16,10 @@ export const tags = sqliteTable('tags', {
   label: text('label').notNull(),
   description: text('description'),
   
-  // 2. FILTER LOGIC (Multi-Grouping)
-  filterGroupsJson: text('filter_groups_json').default('[]'),
-  
-  // 3. VISUAL STYLING
+  // 2. VISUAL STYLING
   styleJson: text('style_json').default('{}'),
   
-  // 4. SYSTEM & METRICS
+  // 3. SYSTEM & METRICS
   cachedPostCount: integer('cached_post_count').default(0),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),

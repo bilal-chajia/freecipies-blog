@@ -30,7 +30,7 @@ export {
   ImageUploadSettingsSchema,
 } from './schemas/settings';
 export { CreateEquipmentSchema, UpdateEquipmentSchema } from './schemas/equipment';
-export { CreateTemplateSchema, UpdateTemplateSchema } from './schemas/templates';
+export { CreateTemplateSchema, UpdateTemplateSchema, TemplateThumbnailUploadFields } from './schemas/templates';
 export { CreateRedirectSchema, UpdateRedirectSchema } from './schemas/redirects';
 export {
   GenerateSchema,

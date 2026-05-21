@@ -22,12 +22,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
         
         const { body, status, headers } = formatSuccessResponse(templates);
         return new Response(body, { status, headers });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error fetching templates:', error);
+        const message = error instanceof Error ? error.message : 'Failed to fetch templates';
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error
-                : new AppError(ErrorCodes.DATABASE_ERROR, error.message || 'Failed to fetch templates', 500)
+                : new AppError(ErrorCodes.DATABASE_ERROR, message, 500)
         );
         return new Response(body, { status, headers });
     }
@@ -52,21 +53,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
         
         const { body, status, headers } = formatSuccessResponse(result);
         return new Response(body, { status: 201, headers });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error creating template:', error);
+        const err = error as { message?: string };
         
         // Handle SQLite Unique constraint error on slug
-        if (error.message?.includes('UNIQUE constraint')) {
+        if (err.message?.includes('UNIQUE constraint')) {
             const { body, status, headers } = formatErrorResponse(
                 new AppError(ErrorCodes.VALIDATION_ERROR, 'Template with this slug already exists', 409)
             );
             return new Response(body, { status, headers });
         }
         
+        const message = error instanceof Error ? error.message : 'Failed to create template';
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error
-                : new AppError(ErrorCodes.DATABASE_ERROR, error.message || 'Failed to create template', 500)
+                : new AppError(ErrorCodes.DATABASE_ERROR, message, 500)
         );
         return new Response(body, { status, headers });
     }

@@ -6,29 +6,24 @@
  * Used in Header.astro for dynamic navigation.
  */
 
-interface MenuItem {
-    id: string;
-    label: string;
-    type: "mega" | "link";
+import type { MenuColumn, MenuFeaturedItem, MenuImageSnapshot, MenuItem } from "@modules/menus/types/menus.types";
+
+interface LegacyFeaturedConfig {
+    enabled: boolean;
+    title?: string;
+    image?: string;
     url?: string;
-    highlight?: boolean;
-    openInNewTab?: boolean;
-    columns?: {
-        id: string;
-        title: string;
-        links: { id: string; label: string; url: string }[];
-    }[];
-    featured?: {
-        enabled: boolean;
-        title?: string;
-        image?: string;
-        url?: string;
-        description?: string;
-    };
+    description?: string;
 }
 
+type MenuItemWithLegacyFeatured = MenuItem & { featured?: LegacyFeaturedConfig };
+type RenderedFeaturedItem = MenuFeaturedItem & { legacyImage?: string };
+type MenuColumnWithLegacyLinks = MenuColumn & {
+    links?: { id: string; label?: string; url?: string; target?: { href?: string }; is_enabled?: boolean }[];
+};
+
 interface Props {
-    items: MenuItem[];
+    items: MenuItemWithLegacyFeatured[];
     currentPath: string;
 }
 
@@ -42,32 +37,41 @@ function sanitizeUrl(url: string | undefined): string | undefined {
     if (!url) return url;
     return url.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, '');
 }
+
+const enabledItems = items.filter((item) => item.is_enabled !== false && item.visibility !== "mobile");
+const getHref = (item: { target?: { href?: string }; url?: string; href?: string }) =>
+    item.href || item.target?.href || item.url || "#";
+const opensNewTab = (item: MenuItem) => item.open_in_new_tab ?? false;
+const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
+    const variant = image?.variants?.sm || image?.variants?.xs;
+    return variant?.r2_key ? `/api/images/${variant.r2_key}` : undefined;
+};
 ---
 
 <nav class="mega-nav" id="mega-nav">
     {
-        items.map((item) => (
+        enabledItems.map((item) => (
             <div class="nav-item" data-type={item.type}>
                 {item.type === "link" ? (
                     <a
-                        href={item.url}
+                        href={getHref(item)}
                         class:list={[
                             "nav-link",
-                            { active: currentPath.startsWith(item.url || "") },
+                            { active: currentPath.startsWith(getHref(item)) },
                             { highlight: item.highlight },
                         ]}
                         aria-current={
-                            currentPath === item.url ? "page" : undefined
+                            currentPath === getHref(item) ? "page" : undefined
                         }
-                        target={item.openInNewTab ? "_blank" : undefined}
+                        target={opensNewTab(item) ? "_blank" : undefined}
                         rel={
-                            item.openInNewTab
+                            opensNewTab(item)
                                 ? "noopener noreferrer"
                                 : undefined
                         }
                     >
                         {item.label}
-                        {item.openInNewTab && (
+                        {opensNewTab(item) && (
                             <svg
                                 class="external-icon"
                                 width="12"
@@ -83,7 +87,7 @@ function sanitizeUrl(url: string | undefined): string | undefined {
                             </svg>
                         )}
                     </a>
-                ) : (
+                ) : item.type === "separator" ? null : (
                     <>
                         <button
                             class:list={[
@@ -111,16 +115,16 @@ function sanitizeUrl(url: string | undefined): string | undefined {
                             <div class="mega-content">
                                 {/* Columns */}
                                 <div class="mega-columns">
-                                    {item.columns?.map((col) => (
+                                    {item.columns?.map((col: MenuColumnWithLegacyLinks) => (
                                         <div class="mega-column">
                                             <h4 class="column-title">
                                                 {col.title}
                                             </h4>
                                             <ul class="column-links">
-                                                {col.links?.map((link) => (
+                                                {(col.items || col.links || []).filter((link) => link.is_enabled !== false).map((link) => (
                                                     <li>
                                                         <a
-                                                            href={link.url}
+                                                            href={getHref(link)}
                                                             class="column-link"
                                                         >
                                                             {link.label}
@@ -133,56 +137,47 @@ function sanitizeUrl(url: string | undefined): string | undefined {
                                 </div>
 
                                 {/* Featured Content */}
-                                {item.featured?.enabled && (
+                                {(item.featured_items?.length || item.featured?.enabled) && (
                                     <div class="mega-featured">
-                                        <a
-                                            href={item.featured.url || "#"}
-                                            class="featured-card"
-                                        >
-                                            {item.featured.image ? (
-                                                <img
-                                                    src={sanitizeUrl(item.featured.image)}
-                                                    alt={
-                                                        item.featured.title ||
-                                                        "Featured"
-                                                    }
-                                                    class="featured-image"
-                                                    width="220"
-                                                    height="120"
-                                                    loading="lazy"
-                                                />
-                                            ) : (
-                                                <div class="featured-placeholder">
-                                                    <svg
-                                                        width="40"
-                                                        height="40"
-                                                        viewBox="0 0 24 24"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.5"
-                                                    >
-                                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                                    </svg>
-                                                </div>
-                                            )}
-                                            <div class="featured-content">
-                                                <span class="featured-label">
-                                                    Featured
-                                                </span>
-                                                <h5 class="featured-title">
-                                                    {item.featured.title ||
-                                                        "Featured Recipe"}
-                                                </h5>
-                                                {item.featured.description && (
-                                                    <p class="featured-desc">
-                                                        {
-                                                            item.featured
-                                                                .description
-                                                        }
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </a>
+                                        {((item.featured_items || [{
+                                            id: `${item.id}-featured`,
+                                            type: "featured_item",
+                                            label: item.featured?.title || "Featured Recipe",
+                                            description: item.featured?.description,
+                                            target: { type: "internal_route", href: item.featured?.url || "#" },
+                                            legacyImage: item.featured?.image,
+                                        }] satisfies RenderedFeaturedItem[]) as RenderedFeaturedItem[]).map((featured) => {
+                                            const imageUrl = resolveImageUrl(featured.image) || sanitizeUrl(featured.legacyImage);
+                                            return (
+                                                <a href={featured.target?.href || "#"} class="featured-card">
+                                                    {imageUrl ? (
+                                                        <img
+                                                            src={imageUrl}
+                                                            alt={featured.image?.alt || featured.label || "Featured"}
+                                                            class="featured-image"
+                                                            width="220"
+                                                            height="120"
+                                                            loading="lazy"
+                                                        />
+                                                    ) : (
+                                                        <div class="featured-placeholder">
+                                                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                    <div class="featured-content">
+                                                        <span class="featured-label">
+                                                            {featured.disclosure_label || "Featured"}
+                                                        </span>
+                                                        <h5 class="featured-title">{featured.label}</h5>
+                                                        {featured.description && (
+                                                            <p class="featured-desc">{featured.description}</p>
+                                                        )}
+                                                    </div>
+                                                </a>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

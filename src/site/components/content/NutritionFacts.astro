@@ -11,32 +11,73 @@ import Icon from "../ui/Icon.astro";
  */
 
 interface Props {
-  nutrition?: Record<string, string | number> | null;
+  nutrition?: Record<string, unknown> | null;
   variant?: "label" | "grid" | "compact";
 }
 
+type NutritionValue = string | number | null | undefined;
+
+interface NutritionServingSize {
+  label?: string | null;
+  grams?: number | null;
+}
+
+interface RecipeNutritionPayload extends Record<string, unknown> {
+  serving_size?: NutritionServingSize | null;
+  calories?: NutritionValue;
+  total_fat_g?: NutritionValue;
+  saturated_fat_g?: NutritionValue;
+  trans_fat_g?: NutritionValue;
+  cholesterol_mg?: NutritionValue;
+  sodium_mg?: NutritionValue;
+  total_carbohydrate_g?: NutritionValue;
+  dietary_fiber_g?: NutritionValue;
+  total_sugars_g?: NutritionValue;
+  protein_g?: NutritionValue;
+  vitamin_c_mg?: NutritionValue;
+  calcium_mg?: NutritionValue;
+  iron_mg?: NutritionValue;
+  vitamin_d_mcg?: NutritionValue;
+  potassium_mg?: NutritionValue;
+  servings_per_recipe?: NutritionValue;
+  proteinPercent?: NutritionValue;
+  totalFatPercent?: NutritionValue;
+  carbohydratePercent?: NutritionValue;
+  fiberPercent?: NutritionValue;
+  vitaminDPercent?: NutritionValue;
+  calciumPercent?: NutritionValue;
+  ironPercent?: NutritionValue;
+}
+
 const { nutrition, variant = "label" } = Astro.props;
+const nutritionData = nutrition as RecipeNutritionPayload | null | undefined;
+const servingSize =
+  typeof nutritionData?.serving_size === "object" &&
+  nutritionData.serving_size !== null &&
+  "label" in nutritionData.serving_size
+    ? nutritionData.serving_size.label
+    : null;
 
 const data = {
-  calories: nutrition?.calories ?? null,
-  totalFat: nutrition?.totalFat ?? nutrition?.fatContent ?? null,
+  calories: nutritionData?.calories ?? null,
+  totalFat: nutritionData?.total_fat_g ?? null,
   saturatedFat:
-    nutrition?.saturatedFat ?? nutrition?.saturatedFatContent ?? null,
-  transFat: nutrition?.transFat ?? nutrition?.transFatContent ?? null,
-  cholesterol: nutrition?.cholesterol ?? nutrition?.cholesterolContent ?? null,
-  sodium: nutrition?.sodium ?? nutrition?.sodiumContent ?? null,
+    nutritionData?.saturated_fat_g ?? null,
+  transFat: nutritionData?.trans_fat_g ?? null,
+  cholesterol: nutritionData?.cholesterol_mg ?? null,
+  sodium: nutritionData?.sodium_mg ?? null,
   totalCarbohydrates:
-    nutrition?.totalCarbohydrates ?? nutrition?.carbohydrateContent ?? null,
-  dietaryFiber: nutrition?.dietaryFiber ?? nutrition?.fiberContent ?? null,
-  totalSugars: nutrition?.totalSugars ?? nutrition?.sugarContent ?? null,
-  protein: nutrition?.protein ?? nutrition?.proteinContent ?? null,
-  vitaminC: nutrition?.vitaminC ?? null,
-  calcium: nutrition?.calcium ?? null,
-  iron: nutrition?.iron ?? null,
-  vitaminD: nutrition?.vitaminD ?? null,
-  potassium: nutrition?.potassium ?? null,
-  servingSize: nutrition?.servingSize ?? "1 serving",
-  servingsPerRecipe: nutrition?.servingsPerRecipe ?? 1,
+    nutritionData?.total_carbohydrate_g ?? null,
+  dietaryFiber: nutritionData?.dietary_fiber_g ?? null,
+  totalSugars: nutritionData?.total_sugars_g ?? null,
+  protein: nutritionData?.protein_g ?? null,
+  vitaminC: nutritionData?.vitamin_c_mg ?? null,
+  calcium: nutritionData?.calcium_mg ?? null,
+  iron: nutritionData?.iron_mg ?? null,
+  vitaminD: nutritionData?.vitamin_d_mcg ?? null,
+  potassium: nutritionData?.potassium_mg ?? null,
+  servingSize: servingSize ?? "1 serving",
+  servingsPerRecipe: nutritionData?.servings_per_recipe ?? 1,
 };
 
 const hasData = Object.entries(data).some(([key, value]) => {
@@ -134,22 +175,22 @@ function autoDvPct(
 
 const proteinPct = autoDvPct(
   data.protein,
-  nutrition?.proteinPercent,
+  nutritionData?.proteinPercent,
   dvRecommended.protein,
 );
 const fatPct = autoDvPct(
   data.totalFat,
-  nutrition?.totalFatPercent,
+  nutritionData?.totalFatPercent,
   dvRecommended.totalFat,
 );
 const carbsPct = autoDvPct(
   data.totalCarbohydrates,
-  nutrition?.carbohydratePercent,
+  nutritionData?.carbohydratePercent,
   dvRecommended.carbs,
 );
 const fiberPct = autoDvPct(
   data.dietaryFiber,
-  nutrition?.fiberPercent,
+  nutritionData?.fiberPercent,
   dvRecommended.fiber,
 );
 
@@ -460,8 +501,8 @@ const hasVitamins =
               <span class="nutrient-name">Vitamin D</span>
               <span class="nutrient-val">
                 {fmt(data.vitaminD, "mcg")}
-                {nutrition?.vitaminDPercent
-                  ? ` (${fmtPct(nutrition.vitaminDPercent)} DV)`
+                {nutritionData?.vitaminDPercent
+                  ? ` (${fmtPct(nutritionData.vitaminDPercent)} DV)`
                   : ""}
               </span>
             </div>
@@ -477,8 +518,8 @@ const hasVitamins =
               <span class="nutrient-name">Calcium</span>
               <span class="nutrient-val">
                 {fmt(data.calcium, "mg")}
-                {nutrition?.calciumPercent
-                  ? ` (${fmtPct(nutrition.calciumPercent)} DV)`
+                {nutritionData?.calciumPercent
+                  ? ` (${fmtPct(nutritionData.calciumPercent)} DV)`
                   : ""}
               </span>
             </div>
@@ -488,8 +529,8 @@ const hasVitamins =
               <span class="nutrient-name">Iron</span>
               <span class="nutrient-val">
                 {fmt(data.iron, "mg")}
-                {nutrition?.ironPercent
-                  ? ` (${fmtPct(nutrition.ironPercent)} DV)`
+                {nutritionData?.ironPercent
+                  ? ` (${fmtPct(nutritionData.ironPercent)} DV)`
                   : ""}
               </span>
             </div>
@@ -588,8 +629,8 @@ const hasVitamins =
           <span class="nutrient-name">Vitamin D</span>
           <span class="nutrient-val">
             {fmt(data.vitaminD, "mcg")}
-            {nutrition?.vitaminDPercent
-              ? ` (${fmtPct(nutrition.vitaminDPercent)} DV)`
+            {nutritionData?.vitaminDPercent
+              ? ` (${fmtPct(nutritionData.vitaminDPercent)} DV)`
               : ""}
           </span>
         </div>
@@ -605,8 +646,8 @@ const hasVitamins =
           <span class="nutrient-name">Calcium</span>
           <span class="nutrient-val">
             {fmt(data.calcium, "mg")}
-            {nutrition?.calciumPercent
-              ? ` (${fmtPct(nutrition.calciumPercent)} DV)`
+            {nutritionData?.calciumPercent
+              ? ` (${fmtPct(nutritionData.calciumPercent)} DV)`
               : ""}
           </span>
         </div>
@@ -616,8 +657,8 @@ const hasVitamins =
           <span class="nutrient-name">Iron</span>
           <span class="nutrient-val">
             {fmt(data.iron, "mg")}
-            {nutrition?.ironPercent
-              ? ` (${fmtPct(nutrition.ironPercent)} DV)`
+            {nutritionData?.ironPercent
+              ? ` (${fmtPct(nutritionData.ironPercent)} DV)`
               : ""}
           </span>
         </div>

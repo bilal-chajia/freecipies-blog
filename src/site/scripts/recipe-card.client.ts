@@ -239,11 +239,11 @@
     let currentStep = 1;
     let totalSteps = 0;
     let steps: HTMLElement[] = [];
-    let timerInterval: any = null;
+    let timerInterval: ReturnType<typeof setInterval> | null = null;
     let timerSeconds = 0;
     let timerRunning = false;
     let currentStepDuration = 0;
-    let wakeLockSentinel: any = null;
+    let wakeLockSentinel: WakeLockSentinel | null = null;
 
     // ── Duration parser (returns seconds) — EN + FR, ranges, combined h+m ──
     function parseDuration(text: string) {
@@ -350,7 +350,7 @@
     function playTimerSound() {
       try {
         const ctx = new (
-          window.AudioContext || (window as any).webkitAudioContext
+          window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
         )();
         // 3-beep pattern
         [0, 0.35, 0.7].forEach((delay) => {
@@ -391,20 +391,20 @@
     }
 
     // ── Populate ingredients panel ──
-    function populateIngredients(recipe: any) {
+    function populateIngredients(recipe: Record<string, unknown>) {
       if (!ingList) return;
       ingList.innerHTML = "";
-      const groups = recipe?.ingredients || [];
-      groups.forEach((g: any) => {
+      const groups = (recipe?.ingredients as Record<string, unknown>[]) || [];
+      groups.forEach((g: Record<string, unknown>) => {
         if (g.group_title) {
           const label = document.createElement("li");
           label.style.cssText =
             "background:transparent;font-weight:700;color:var(--success);font-size:13px;text-transform:uppercase;letter-spacing:.05em;padding:8px 0 4px;pointer-events:none";
-          label.textContent = g.group_title;
+          label.textContent = g.group_title as string;
           label.removeAttribute("class"); // no checkbox pseudo
           ingList.appendChild(label);
         }
-        (g.items || []).forEach((item: any) => {
+        ((g.items || []) as Record<string, unknown>[]).forEach((item: Record<string, unknown>) => {
           const li = document.createElement("li");
           const amtStr = item.amount
             ? `<span class="cm-ing-amount">${esc(String(item.amount))}</span>`
@@ -452,21 +452,21 @@
           throw new Error("Invalid recipe data format");
         }
         const recipe = JSON.parse(raw);
-        const allSteps: any[] = [];
+        const allSteps: Record<string, unknown>[] = [];
 
         if (recipe.instructions && Array.isArray(recipe.instructions)) {
-          recipe.instructions.forEach((section: any) => {
-            (section.steps || []).forEach((s: any) => allSteps.push(s));
+          recipe.instructions.forEach((section: Record<string, unknown>) => {
+            ((section.steps || []) as Record<string, unknown>[]).forEach((s: Record<string, unknown>) => allSteps.push(s));
           });
         } else if (recipe.recipeInstructions) {
           const instr = recipe.recipeInstructions;
           if (Array.isArray(instr)) {
-            instr.forEach((s: any, i: number) => {
+            instr.forEach((s: Record<string, unknown> | string, i: number) => {
               if (typeof s === "string")
                 allSteps.push({ text: s, name: "Step " + (i + 1) });
               else if (s.text) allSteps.push(s);
               else if (s.itemListElement)
-                s.itemListElement.forEach((sub: any) => allSteps.push(sub));
+                (s.itemListElement as Record<string, unknown>[]).forEach((sub: Record<string, unknown>) => allSteps.push(sub));
             });
           } else if (typeof instr === "string")
             allSteps.push({ text: instr, name: "Instructions" });
@@ -599,7 +599,7 @@
           if ("wakeLock" in navigator) {
             (navigator as any).wakeLock
               .request("screen")
-              .then((s: any) => {
+              .then((s: WakeLockSentinel) => {
                 wakeLockSentinel = s;
               })
               .catch(() => {});

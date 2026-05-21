@@ -5,7 +5,6 @@
  */
 
 interface TagStyleJson {
-  svg_code?: string;
   color?: string;
   variant?: string;
 }
@@ -14,7 +13,6 @@ const normalizeStyleJsonObject = (value: any): TagStyleJson => {
   if (!value || typeof value !== 'object') return {};
 
   return {
-    svg_code: value.svg_code ?? value.svgCode ?? value.icon,
     color: value.color,
     variant: value.variant,
   };
@@ -50,10 +48,9 @@ export function transformTagRequestBody(body: any): any {
 
   if (body.styleJson !== undefined) {
     transformed.styleJson = parseStyleJson(body.styleJson);
-  } else if (body.color || body.svg_code || body.svgCode || body.variant || body.icon) {
+  } else if (body.color || body.variant) {
     transformed.styleJson = parseStyleJson({
       color: body.color,
-      svg_code: body.svg_code ?? body.svgCode ?? body.icon,
       variant: body.variant,
     });
   }
@@ -79,8 +76,6 @@ export function transformTagResponse(tag: any): any {
     try {
       const style: TagStyleJson = JSON.parse(tag.styleJson);
       response.color = style.color;
-      response.svgCode = style.svg_code;
-      response.icon = style.svg_code;
       response.variant = style.variant;
     } catch {
       // Invalid JSON, skip

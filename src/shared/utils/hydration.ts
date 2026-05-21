@@ -199,15 +199,12 @@ export function extractRecipe(recipeJson: string | null | undefined): RecipeJson
 // ============================================================================
 
 interface TagStyleJson {
-  svg_code?: string;
   color?: string;
   variant?: string;
 }
 
 export interface ExtractedTagStyle {
   color?: string;
-  icon?: string;
-  svgCode?: string;
   variant?: string;
 }
 
@@ -220,8 +217,6 @@ export function extractTagStyle(styleJson: string | null | undefined): Extracted
 
   return {
     color: style.color,
-    icon: style.svg_code,
-    svgCode: style.svg_code,
     variant: style.variant,
   };
 }
@@ -276,6 +271,7 @@ export function hydrateArticle<T extends {
     ?? cachedAuthor?.slug
     ?? (article as any).author?.slug;
   const authorRole = (article as any).authorJob
+    ?? cachedAuthor?.job_title
     ?? cachedAuthor?.role
     ?? (article as any).author?.jobTitle;
 
@@ -290,7 +286,7 @@ export function hydrateArticle<T extends {
     ?? (article as any).category?.slug;
 
   const tags = article.cachedTagsJson
-    ? safeParseJson<string[]>(article.cachedTagsJson) || []
+    ? safeParseJson<any[]>(article.cachedTagsJson) || []
     : [];
 
   const seo = extractSeo(article.seoJson);
@@ -361,14 +357,6 @@ export function hydrateCategory<T extends {
   const showHeroCta = config?.showHeroCta ?? config?.show_hero_cta;
   const heroCtaText = config?.heroCtaText ?? config?.hero_cta_text;
   const heroCtaLink = config?.heroCtaLink ?? config?.hero_cta_link;
-  const rawIconSvg = (category as any).iconSvg
-    ?? (category as any).icon_svg
-    ?? config?.iconSvg
-    ?? config?.icon_svg;
-  const iconSvg = typeof rawIconSvg === 'string' && rawIconSvg.trim()
-    ? rawIconSvg.trim()
-    : undefined;
-
   return {
     ...category,
     ...image,
@@ -376,7 +364,6 @@ export function hydrateCategory<T extends {
     imagesJson: safeParseJson(category.imagesJson),
     seoJson: safeParseJson(category.seoJson),
     route: `/categories/${category.slug}`,
-    ...(iconSvg ? { iconSvg } : {}),
     ...(typeof numEntriesPerPage === 'number' ? { numEntriesPerPage } : {}),
     ...(typeof tldr === 'string' ? { tldr } : {}),
     ...(layoutMode ? { layoutMode } : {}),

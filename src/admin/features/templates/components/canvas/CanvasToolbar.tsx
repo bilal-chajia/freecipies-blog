@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { Button } from '@/ui/button';
 import { Slider } from '@/ui/slider';
@@ -23,11 +22,25 @@ import {
 
 import { useUIStore } from '@admin/features/templates/store/useUIStore';
 
+interface CanvasToolbarProps {
+    zoom?: number;
+    onZoomChange?: (zoom: number) => void;
+    showGrid?: boolean;
+    onGridToggle?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
+    onUndo?: () => void;
+    onRedo?: () => void;
+    onPreview?: () => void;
+    onExport?: () => void;
+    onReset?: () => void;
+}
+
 /**
  * CanvasToolbar - Floating toolbar for canvas controls
  * Features: Zoom, Grid toggle, Undo/Redo, Preview
  */
-const CanvasToolbar = ({
+const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
     zoom = 100,
     onZoomChange,
     showGrid = false,

@@ -1,22 +1,11 @@
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
-import { Badge } from '@/ui/badge';
 import {
     Card,
-    CardContent,
-    CardFooter,
 } from '@/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuSeparator,
-} from '@/ui/dropdown-menu';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -33,7 +22,6 @@ import {
     Edit3,
     Trash2,
     Copy,
-    Star,
     LayoutTemplate,
     Clock,
     Palette,
@@ -42,17 +30,33 @@ import { toast } from 'sonner';
 import { templatesAPI } from '@admin/services/api';
 import { cn } from '@/lib/utils';
 
+interface Template {
+    id?: string | number;
+    name: string;
+    slug: string;
+    description?: string;
+    category?: string | null;
+    width?: number;
+    height?: number;
+    background_color?: string;
+    thumbnail_url?: string | null;
+    is_active?: boolean;
+    elements_json?: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
 /**
  * TemplatesList - Professional Grid view of all Pinterest pin templates
  */
-const TemplatesList = () => {
+const TemplatesList: React.FC = () => {
     const navigate = useNavigate();
-    const [templates, setTemplates] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [sizeFilter, setSizeFilter] = useState('all');
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [templateToDelete, setTemplateToDelete] = useState(null);
+    const [templates, setTemplates] = useState<Template[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [sizeFilter, setSizeFilter] = useState<string>('all');
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+    const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null);
 
     // Load templates
     useEffect(() => {
@@ -77,14 +81,14 @@ const TemplatesList = () => {
     // Filter templates
     const filteredTemplates = templates.filter(t => {
         // Search filter
-        const matchesSearch = t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (t.name?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+            (t.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
 
         // Size filter
         if (sizeFilter === 'all') return matchesSearch;
 
-        const width = t.width || t.canvas_width || 1000;
-        const height = t.height || t.canvas_height || 1500;
+        const width = t.width || 1000;
+        const height = t.height || 1500;
         const sizeKey = `${width}x${height}`;
 
         return matchesSearch && sizeKey === sizeFilter;
@@ -105,18 +109,20 @@ const TemplatesList = () => {
         }
     };
 
-    const handleDuplicate = async (template) => {
+    const handleDuplicate = async (template: Template) => {
         try {
             const newTemplate = {
-                ...template,
+                category: template.category ?? undefined,
+                description: template.description ?? undefined,
+                background_color: template.background_color ?? '#ffffff',
+                width: template.width ?? 1000,
+                height: template.height ?? 1500,
+                elements_json: template.elements_json ?? '[]',
+                thumbnail_url: template.thumbnail_url ?? null,
+                is_active: template.is_active ?? true,
                 name: `${template.name} (Copy)`,
                 slug: `${template.slug}-copy-${Date.now()}`,
-                is_default: false,
             };
-            // Clean ID and timestamps
-            delete newTemplate.id;
-            delete newTemplate.created_at;
-            delete newTemplate.updated_at;
 
             await templatesAPI.create(newTemplate);
             toast.success('Template duplicated');
@@ -126,24 +132,10 @@ const TemplatesList = () => {
         }
     };
 
-    const handleSetDefault = async (template) => {
-        try {
-            const currentDefault = templates.find(t => t.is_default);
-            if (currentDefault) {
-                await templatesAPI.update(currentDefault.slug, { is_default: false });
-            }
-            await templatesAPI.update(template.slug, { is_default: true });
-            toast.success('Default template updated');
-            loadTemplates();
-        } catch (error) {
-            toast.error('Failed to update default template');
-        }
-    };
-
     // Render loading skeletons
     if (isLoading) {
         return (
-            <div className="space-y-8 p-8 max-w-[1600px] mx-auto">
+            <div className="space-y-8 p-8 max-w-400 mx-auto">
                 <div className="flex items-center justify-between">
                     <div className="space-y-2">
                         <div className="h-8 w-48 bg-muted animate-pulse rounded" />
@@ -153,7 +145,7 @@ const TemplatesList = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                        <div key={i} className="aspect-[2/3] bg-muted/30 animate-pulse rounded-xl border border-muted" />
+                        <div key={i} className="aspect-2/3 bg-muted/30 animate-pulse rounded-xl border border-muted" />
                     ))}
                 </div>
             </div>
@@ -161,7 +153,7 @@ const TemplatesList = () => {
     }
 
     return (
-        <div className="space-y-8 p-8 max-w-[1600px] mx-auto min-h-screen bg-background text-foreground">
+        <div className="space-y-8 p-8 max-w-400 mx-auto min-h-screen bg-background text-foreground">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -185,8 +177,9 @@ const TemplatesList = () => {
                 <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
+                        type="text"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                         placeholder="Search templates..."
                         className="pl-9 bg-background/50 border-transparent focus:bg-background transition-all"
                     />
@@ -225,7 +218,7 @@ const TemplatesList = () => {
                             ? "Try adjusting your search terms to find what you're looking for."
                             : "Create your first template to start generating beautiful pins automatically."}
                     </p>
-                    <Button onClick={() => navigate('/templates/new')} variant="outline">
+                    <Button onClick={() => navigate('/templates/new')} variant="outline" className="">
                         Create New Template
                     </Button>
                 </div>
@@ -250,8 +243,7 @@ const TemplatesList = () => {
                             >
                                 <Card
                                     className={cn(
-                                        "group relative overflow-hidden bg-card hover:shadow-2xl hover:shadow-black/40 transition-all duration-300 hover:-translate-y-1 border-0 ring-1 ring-border/20 p-0 gap-0",
-                                        template.is_default && "ring-2 ring-primary/50"
+                                        "group relative overflow-hidden bg-card hover:shadow-2xl hover:shadow-black/40 transition-all duration-300 hover:-translate-y-1 border-0 ring-1 ring-border/20 p-0 gap-0"
                                     )}
                                 >
                                     {/* Card Image Area */}
@@ -271,9 +263,12 @@ const TemplatesList = () => {
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                 loading="lazy"
                                                 onError={(e) => {
-                                                    // Hide broken image and show placeholder
-                                                    e.target.style.display = 'none';
-                                                    e.target.nextSibling.style.display = 'flex';
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.style.display = 'none';
+                                                    const placeholder = target.nextSibling as HTMLDivElement | null;
+                                                    if (placeholder) {
+                                                        placeholder.style.display = 'flex';
+                                                    }
                                                 }}
                                             />
                                         ) : null}
@@ -286,7 +281,7 @@ const TemplatesList = () => {
                                         </div>
 
                                         {/* Overlay Gradient */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                                         {/* Floating Action Buttons - Edit & Delete */}
                                         <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -294,7 +289,7 @@ const TemplatesList = () => {
                                                 size="icon"
                                                 variant="secondary"
                                                 className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-black/50 hover:bg-black/70 border border-white/20"
-                                                onClick={(e) => {
+                                                onClick={(e: React.MouseEvent) => {
                                                     e.stopPropagation();
                                                     navigate(`/templates/${template.slug}`);
                                                 }}
@@ -306,7 +301,7 @@ const TemplatesList = () => {
                                                 size="icon"
                                                 variant="secondary"
                                                 className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-black/50 hover:bg-black/70 border border-white/20"
-                                                onClick={(e) => {
+                                                onClick={(e: React.MouseEvent) => {
                                                     e.stopPropagation();
                                                     handleDuplicate(template);
                                                 }}
@@ -318,7 +313,7 @@ const TemplatesList = () => {
                                                 size="icon"
                                                 variant="secondary"
                                                 className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md bg-red-500/80 hover:bg-red-600 border border-white/20"
-                                                onClick={(e) => {
+                                                onClick={(e: React.MouseEvent) => {
                                                     e.stopPropagation();
                                                     setTemplateToDelete(template);
                                                     setDeleteDialogOpen(true);
@@ -329,18 +324,10 @@ const TemplatesList = () => {
                                             </Button>
                                         </div>
 
-                                        {/* Default Badge */}
-                                        {!!template.is_default && (
-                                            <div className="absolute top-3 left-3">
-                                                <Badge className="bg-yellow-500/90 hover:bg-yellow-500 border-none shadow-lg text-black font-semibold backdrop-blur-sm">
-                                                    <Star className="w-3 h-3 mr-1 fill-black" /> Default
-                                                </Badge>
-                                            </div>
-                                        )}
                                     </div>
 
                                     {/* Card Footer Info */}
-                                    < div className="px-2 py-3 bg-card group-hover:bg-muted/30 transition-colors" >
+                                    <div className="px-2 py-3 bg-card group-hover:bg-muted/30 transition-colors">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="min-w-0 flex-1">
                                                 <h3 className="font-medium truncate text-sm text-foreground/90 group-hover:text-primary transition-colors">
@@ -348,7 +335,7 @@ const TemplatesList = () => {
                                                 </h3>
                                                 {/* Canvas Size - below title */}
                                                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                                                    {(template.width || template.canvas_width || 1000)}×{(template.height || template.canvas_height || 1500)}
+                                                    {(template.width || 1000)}×{(template.height || 1500)}
                                                 </p>
                                             </div>
                                             {/* Date */}
@@ -367,15 +354,15 @@ const TemplatesList = () => {
 
             {/* Delete Dialog */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Template?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                <AlertDialogContent className="">
+                    <AlertDialogHeader className="">
+                        <AlertDialogTitle className="">Delete Template?</AlertDialogTitle>
+                        <AlertDialogDescription className="">
                             Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogFooter className="">
+                        <AlertDialogCancel className="">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
                             className="bg-red-500 hover:bg-red-600 text-white"
@@ -385,9 +372,8 @@ const TemplatesList = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div >
+        </div>
     );
 };
 
 export default TemplatesList;
-

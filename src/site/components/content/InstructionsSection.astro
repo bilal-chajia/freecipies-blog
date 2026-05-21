@@ -4,12 +4,95 @@
  */
 
 import type { InstructionSection } from "@modules/articles/types/recipes.types";
+import { resolveVariantUrl } from "@shared/types/images";
 
 interface Props {
   instructions: InstructionSection[];
+  imagesJson?: unknown;
 }
 
-const { instructions } = Astro.props;
+const { instructions, imagesJson } = Astro.props;
+
+type StepImageVariant = {
+  url?: string;
+  r2_key?: string;
+  width?: number;
+  height?: number;
+};
+
+type StepImageSlot = {
+  alt?: string;
+  caption?: string;
+  credit?: string | { name?: string; slug?: string };
+  focal_point?: { x?: number; y?: number };
+  variants?: {
+    sm?: StepImageVariant;
+    md?: StepImageVariant;
+    lg?: StepImageVariant;
+  };
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseImagesJson(value: unknown): Record<string, StepImageSlot> {
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value || "{}") : value;
+    if (!isRecord(parsed) || !isRecord(parsed.recipe_steps)) return {};
+    return parsed.recipe_steps as Record<string, StepImageSlot>;
+  } catch {
+    return {};
+  }
+}
+
+function getCreditLabel(credit: StepImageSlot["credit"]): string | null {
+  if (!credit) return null;
+  if (typeof credit === "string") return credit;
+  return credit.name || null;
+}
+
+function getCreditUrl(credit: StepImageSlot["credit"]): string | null {
+  if (!credit || typeof credit === "string" || !credit.slug) return null;
+  return `/authors/${credit.slug}`;
+}
+
+function getStepImage(imageRef: string | null | undefined) {
+  if (!imageRef) return null;
+  const slot = stepImages[imageRef];
+  if (!slot?.variants) return null;
+  const selected = slot.variants.md || slot.variants.lg || slot.variants.sm;
+  const src = resolveVariantUrl(selected);
+  if (!src || !selected?.width || !selected?.height) return null;
+  const srcSet = [
+    slot.variants.sm,
+    slot.variants.md,
+    slot.variants.lg,
+  ]
+    .map((variant) => {
+      const url = resolveVariantUrl(variant);
+      return url && variant?.width ? `${url} ${variant.width}w` : null;
+    })
+    .filter(Boolean)
+    .join(", ");
+  const focalPoint = slot.focal_point
+    ? `${slot.focal_point.x ?? 50}% ${slot.focal_point.y ?? 50}%`
+    : undefined;
+
+  return {
+    src,
+    srcSet,
+    width: selected.width,
+    height: selected.height,
+    alt: slot.alt || "",
+    caption: slot.caption || null,
+    creditLabel: getCreditLabel(slot.credit),
+    creditUrl: getCreditUrl(slot.credit),
+    focalPoint,
+  };
+}
+
+const stepImages = parseImagesJson(imagesJson);
 
 function formatTime(minutes: number): string {
   if (!minutes) return "";
@@ -35,6 +118,7 @@ let globalStep = 0;
         <ol class="tl-steps group-items" start={globalStep + 1}>
           {section.steps.map((step) => {
             const stepNumber = ++globalStep;
+            const stepImage = getStepImage(step.image_ref);
             return (
               <li
                 class="tl-step"
@@ -73,6 +157,40 @@ let globalStep = 0;
                       <span class="tip-icon">💡</span>
                       <span>{step.tip}</span>
                     </div>
+                  )}
+                  {stepImage && (
+                    <figure class="step-image">
+                      <img
+                        src={stepImage.src}
+                        srcset={stepImage.srcSet || undefined}
+                        sizes="(max-width: 768px) 100vw, 720px"
+                        width={stepImage.width}
+                        height={stepImage.height}
+                        alt={stepImage.alt}
+                        loading="lazy"
+                        decoding="async"
+                        style={stepImage.focalPoint ? `object-position: ${stepImage.focalPoint}` : undefined}
+                      />
+                      {(stepImage.caption || stepImage.creditLabel) && (
+                        <figcaption class="step-image-meta">
+                          {stepImage.caption && (
+                            <span class="step-image-caption">
+                              {stepImage.caption}
+                            </span>
+                          )}
+                          {stepImage.creditLabel && (
+                            <span class="step-image-credit">
+                              Credit:{" "}
+                              {stepImage.creditUrl ? (
+                                <a href={stepImage.creditUrl}>{stepImage.creditLabel}</a>
+                              ) : (
+                                stepImage.creditLabel
+                              )}
+                            </span>
+                          )}
+                        </figcaption>
+                      )}
+                    </figure>
                   )}
                 </div>
               </li>
@@ -239,6 +357,48 @@ let globalStep = 0;
     border: 1px solid var(--warning-bg);
   }
 
+  .step-image {
+    margin: 16px 0 0;
+  }
+
+  .step-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    object-fit: cover;
+    background: var(--bg-inset);
+  }
+
+  .step-image-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+    font-size: var(--text-xs);
+    line-height: var(--leading-snug);
+    color: var(--text-tertiary);
+  }
+
+  .step-image-caption {
+    min-width: 0;
+  }
+
+  .step-image-credit {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+  }
+
+  .step-image-credit a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .step-image-credit a:hover {
+    color: var(--brand-primary);
+  }
+
   /* ── Timer Badge (inline) ── */
   .step-timer-widget {
     position: relative;
@@ -385,6 +545,10 @@ let globalStep = 0;
 </style>
 
 <script>
+  interface AudioContextWindow extends Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const widgets = document.querySelectorAll(".step-timer-widget");
 
@@ -468,7 +632,7 @@ let globalStep = 0;
       function beep() {
         try {
           const AudioContextClass =
-            window.AudioContext || (window as any).webkitAudioContext;
+            window.AudioContext || (window as AudioContextWindow).webkitAudioContext;
           if (!AudioContextClass) return;
           const ctx = new AudioContextClass();
           [0, 0.35, 0.7].forEach((d) => {

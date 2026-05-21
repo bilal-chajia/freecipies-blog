@@ -7,21 +7,21 @@ import PopularRecipes from "../components/PopularRecipes.astro";
 import NewsletterWidget from "../components/NewsletterWidget.astro";
 import ContentRenderer from "../components/ContentRenderer.astro";
 import { normalizeContentDocument } from "@modules/content-blocks";
+import type { NormalizedContentBlock } from "@modules/content-blocks/contract/content-blocks.types";
 import HeroImage from "../components/content/HeroImage.astro";
 import RecipeMetaPills from "../components/content/RecipeMetaPills.astro";
 import IngredientsSection from "../components/content/IngredientsSection.astro";
 import InstructionsSection from "../components/content/InstructionsSection.astro";
 import EquipmentSection from "../components/content/EquipmentSection.astro";
 import NutritionFacts from "../components/content/NutritionFacts.astro";
-import FAQSection from "../components/content/FAQSection.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
 import RatingSystem from "../components/content/RatingSystem";
 import Breadcrumb from "../components/Breadcrumb.astro";
 
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import { normalizeRecipeForRender } from "@site/utils/recipe-render";
 import {
   getPopularRecipes,
-  getRoundupArticleMap,
   getSiteTocSettings,
 } from "@server/site-data";
 
@@ -31,8 +31,8 @@ import {
  * job, etc.) that don't exist on the raw DB schema types.
  */
 interface Props {
-  recipe: Record<string, any>;
-  author?: Record<string, any> | null;
+  recipe: Record<string, unknown>;
+  author?: Record<string, unknown> | null;
   category?: Category | null;
 }
 
@@ -41,14 +41,13 @@ const categoryColor = category?.color || "#ff6600";
 
 const tocSettings = await getSiteTocSettings();
 const popularRecipes = await getPopularRecipes(recipe.slug, 5);
-const roundupArticles = await getRoundupArticleMap(recipe);
 
 // Parse recipeJson if it's a string
-const recipeJson = recipe.recipeJson
+const recipeJson = normalizeRecipeForRender(recipe.recipeJson
   ? typeof recipe.recipeJson === "string"
     ? JSON.parse(recipe.recipeJson)
     : recipe.recipeJson
-  : null;
+  : null);
 
 // Calculate estimated reading time (approx 200 words per minute)
 const wordCount = [
@@ -185,8 +184,8 @@ const breadcrumbJsonLd = {
           <RatingSystem
             client:idle
             articleId={recipe.id}
-            initialValue={recipeJson?.aggregateRating?.ratingValue || 0}
-            initialCount={recipeJson?.aggregateRating?.ratingCount || 0}
+            initialValue={recipeJson?.aggregate_rating?.rating_value || 0}
+            initialCount={recipeJson?.aggregate_rating?.rating_count || 0}
             size="lg"
           />
         </div>
@@ -256,7 +255,6 @@ const breadcrumbJsonLd = {
               <ContentRenderer
                 article={recipe}
                 settings={tocSettings}
-                roundupArticles={roundupArticles}
               />
             </section>
           )
@@ -267,12 +265,15 @@ const breadcrumbJsonLd = {
         }
         {
           !contentBlocks.some(
-            (b: any) => b.type === "main_recipe",
+            (b: NormalizedContentBlock) => b.type === "main_recipe",
           ) &&
             recipeJson && (
               <>
                 <IngredientsSection ingredients={recipeJson.ingredients} />
-                <InstructionsSection instructions={recipeJson.instructions} />
+                <InstructionsSection
+                  instructions={recipeJson.instructions}
+                  imagesJson={recipe.imagesJson}
+                />
                 <EquipmentSection equipment={recipeJson?.equipment || []} />
                 <div class="mobile-only">
                   <NutritionFacts
@@ -284,8 +285,6 @@ const breadcrumbJsonLd = {
             )
         }
 
-        <!-- FAQs - Modern Accordion -->
-        <FAQSection faqs={recipe.faqsJson} />
       </div>
 
       <!-- Sidebar -->

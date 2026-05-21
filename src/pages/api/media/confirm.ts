@@ -5,11 +5,11 @@
  * POST /api/media/confirm
  *   Body:
  *     {
- *       uploadId: string,
- *       baseName: string,
+ *       upload_id: string,
+ *       base_name: string,
  *       name: string,
- *       altText: string,
- *       caption?: string,
+ *       alt_text: string,
+ *       caption: string,
  *       credit: {
  *         type: "author",
  *         id: number,
@@ -17,15 +17,15 @@
  *         slug: string,
  *         avatar?: { variants: { xs: { r2_key: string, width: number, height: number }, sm: { r2_key: string, width: number, height: number } } }
  *       },
- *       aspectRatio?: string,
- *       focalPoint?: { x: number, y: number },
- *       mimeType: string,
+ *       aspect_ratio?: string,
+ *       focal_point?: { x: number, y: number },
+ *       mime_type: string,
  *       variants: {
- *         original: { r2Key: string, width: number, height: number, sizeBytes?: number },
- *         lg: { r2Key: string, width: number, height: number, sizeBytes?: number },
- *         md: { r2Key: string, width: number, height: number, sizeBytes?: number },
- *         sm: { r2Key: string, width: number, height: number, sizeBytes?: number },
- *         xs: { r2Key: string, width: number, height: number, sizeBytes?: number }
+ *         original: { r2_key: string, width: number, height: number, size_bytes?: number },
+ *         lg: { r2_key: string, width: number, height: number, size_bytes?: number },
+ *         md: { r2_key: string, width: number, height: number, size_bytes?: number },
+ *         sm: { r2_key: string, width: number, height: number, size_bytes?: number },
+ *         xs: { r2_key: string, width: number, height: number, size_bytes?: number }
  *       },
  *       placeholder: string // base64 LQIP
  *     }

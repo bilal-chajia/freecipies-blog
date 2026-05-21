@@ -1,9 +1,12 @@
-import { nanoid } from 'nanoid';
+import { customAlphabet } from 'nanoid';
+
+// Create a custom alphabet nanoid that only generates lowercase alphanumeric characters
+const nanoidLower = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 6);
 
 /**
  * Generates a clean, unique slug for a new template.
  * Format: clean-name-nanoid(6)
- * Example: "My Design" -> "my-design-x8k9Lm"
+ * Example: "My Design" -> "my-design-x8k9lm"
  */
 export function generateSlug(name: string): string {
     const base = (name || 'untitled')
@@ -11,14 +14,14 @@ export function generateSlug(name: string): string {
         .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with dashes
         .replace(/^-|-$/g, '');      // Trim leading/trailing dashes
 
-    // nanoid(6) provides enough entropy for this context while keeping URLs short
-    return `${base}-${nanoid(6)}`;
+    // Use nanoidLower to ensure strictly lowercase alphanumeric characters (satisfies Zod regex)
+    return `${base}-${nanoidLower()}`;
 }
 
 /**
  * Generates a clean duplicata slug, removing previous suffixes.
  * Format: clean-original-name-copy-nanoid(6)
- * Example: "my-design-12345-copy-67890" -> "my-design-copy-Zn7k2x"
+ * Example: "my-design-12345-copy-67890" -> "my-design-copy-zn7k2x"
  */
 export function cleanDuplicateSlug(oldSlug: string): string {
     let base = oldSlug;
@@ -36,5 +39,5 @@ export function cleanDuplicateSlug(oldSlug: string): string {
     // Let's be careful not to remove "version-2" type names.
     // For now, steps 1 & 2 handle the bulk of "ugly stacking".
 
-    return `${base}-copy-${nanoid(6)}`;
+    return `${base}-copy-${nanoidLower()}`;
 }

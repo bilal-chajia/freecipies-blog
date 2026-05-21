@@ -15,10 +15,9 @@ export const CreateCategorySchema = z.object({
   isOnline: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
-  iconSvg: z.string().optional(),
   imagesJson: z.string().optional(),
   seoJson: z.string().optional(),
   configJson: z.string().optional(),
 }).passthrough();
 
-export const UpdateCategorySchema = CreateCategorySchema;
+export const UpdateCategorySchema = CreateCategorySchema.partial().passthrough();

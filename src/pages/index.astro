@@ -8,14 +8,14 @@ import { getCategories } from "@modules/categories";
 import { getAuthors } from "@modules/authors";
 import { hydrateCategory } from "@shared/utils/hydration";
 import { extractImage, getImageSrcSet } from "@shared/utils";
-import { getStories } from "@server/site-data";
+import { getPublicHomepageSettings, getStories } from "@server/site-data";
 import type { HydratedArticle } from "@modules/articles/types";
 import type { HydratedCategory } from "@modules/categories/types/categories.types";
 import type { Author } from "@modules/authors/schema/authors.schema";
 
-const siteTitle = "Easy and Quick Recipes for Everyone - SaaS Blog";
-const siteDescription =
-  "Discover delicious, easy-to-follow recipes with everyday ingredients. From quick weeknight dinners to impressive desserts, SaaS Blog makes cooking fun and accessible!";
+const homepageSettings = await getPublicHomepageSettings();
+const siteTitle = homepageSettings.seo.meta_title;
+const siteDescription = homepageSettings.seo.meta_description;
 
 // Fetch data from database
 let allRecipes: HydratedArticle[] = [];
@@ -78,7 +78,12 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 };
 ---
 
-<Layout title={siteTitle} description={siteDescription}>
+<Layout
+  title={siteTitle}
+  description={siteDescription}
+  image={homepageSettings.seo.og_image}
+  noindex={homepageSettings.seo.no_index}
+>
   <main class="homepage">
     <StoriesBar stories={stories} />
     {

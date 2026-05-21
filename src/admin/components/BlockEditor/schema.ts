@@ -38,4 +38,4 @@ export const schema = BlockNoteSchema.create({
 });
 
 export type AppSchema = typeof schema;
-export type AppEditor = BlockNoteEditor<AppSchema>;
+export type AppEditor = BlockNoteEditor<any>;

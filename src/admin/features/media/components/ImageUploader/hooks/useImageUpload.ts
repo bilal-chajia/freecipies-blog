@@ -17,6 +17,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { mediaAPI } from '@admin/services/api';
 import { withRetry, isRetryableError } from '@admin/utils/retry';
+import { createImageAssetId } from '@shared/images/r2-naming';
 import { 
   VARIANT_SIZES, 
   ENCODING_QUALITY, 
@@ -97,7 +98,7 @@ interface UseImageUploadOptions {
 interface UploadVariantResult {
   name: string;
   result: {
-    r2Key: string;
+    uploadKey: string;
     width: number;
     height: number;
     sizeBytes: number;
@@ -664,8 +665,8 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     originalExt: string,
     fileType: string,
     signal: AbortSignal | null | undefined
-  ): Promise<Record<string, { r2Key: string; width: number; height: number; sizeBytes: number }>> => {
-    const uploadedVariants: Record<string, { r2Key: string; width: number; height: number; sizeBytes: number }> = {};
+  ): Promise<Record<string, { uploadKey: string; width: number; height: number; sizeBytes: number }>> => {
+    const uploadedVariants: Record<string, { uploadKey: string; width: number; height: number; sizeBytes: number }> = {};
     const totalVariants = variantNames.length;
     const maxConcurrent = UPLOAD_CONFIG.maxConcurrentUploads;
 
@@ -705,10 +706,10 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         return {
           name,
           result: {
-            r2Key: response.data.data.r2Key,
+            uploadKey: response.data.data.upload_key ?? response.data.data.uploadKey,
             width: variantInfo.width,
             height: variantInfo.height,
-            sizeBytes: blob?.size,
+            sizeBytes: response.data.data.size_bytes ?? response.data.data.sizeBytes ?? blob?.size,
           },
         };
       });
@@ -853,7 +854,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         .replace(/-+/g, '-')
         .slice(0, 50);
 
-      const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      const uploadId = createImageAssetId();
 
       // === Step 4: Upload variants in parallel ===
       assertNotAborted();

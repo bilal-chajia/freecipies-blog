@@ -1,10 +1,4 @@
-import type {
-  ImageSlot,
-  ResolvedAuthorCreditSnapshot,
-  ResolvedImageVariants,
-  StoredAuthorCreditSnapshot,
-  StoredImageVariants,
-} from '@shared/types/images';
+import type { ImageSlot } from '@shared/types/images';
 
 export type BlockId = string;
 
@@ -38,11 +32,7 @@ export interface ListBlock extends BaseContentBlock {
 
 export interface ImageBlock extends BaseContentBlock {
   type: 'image';
-  media_id: number;
-  alt: string;
-  caption?: string;
-  credit?: ResolvedAuthorCreditSnapshot | StoredAuthorCreditSnapshot;
-  variants?: Pick<ResolvedImageVariants | StoredImageVariants, 'sm' | 'md' | 'lg'>;
+  image_ref: string;
 }
 
 export interface VideoBlock extends BaseContentBlock {
@@ -95,28 +85,13 @@ export interface TableBlock extends BaseContentBlock {
   rows: string[][];
 }
 
-export interface RoundupItemPlaceholderBlock extends BaseContentBlock {
-  type: 'roundup_item';
-  article_id?: number | null;
-  external_url?: string;
-  title?: string;
-  subtitle?: string;
-  note?: string;
-  cover?: string | null;
-}
-
-export interface BeforeAfterImage {
-  media_id: number;
-  alt: string;
-  label?: string;
-  variants?: ImageVariants;
-}
-
 export interface BeforeAfterBlock extends BaseContentBlock {
   type: 'before_after';
   layout: 'slider' | 'side_by_side';
-  before: BeforeAfterImage;
-  after: BeforeAfterImage;
+  before_image_ref: string;
+  after_image_ref: string;
+  before_label?: string;
+  after_label?: string;
 }
 
 export interface ReservedIngredientSpotlightBlock extends BaseContentBlock {
@@ -134,51 +109,45 @@ export interface FAQItem {
   answer: string;
 }
 
-export interface FAQSectionBlock extends BaseContentBlock {
-  type: 'faq_section';
-  title?: string;
-  items: FAQItem[];
-}
-
 export interface RelatedContentImageVariant {
-  url: string;
+  r2_key: string;
   width: number;
   height: number;
+  size_bytes?: number;
 }
 
 export interface RelatedContentImageSnapshot {
   media_id: number;
   alt: string;
   variants: {
-    sm?: RelatedContentImageVariant;
-    md?: RelatedContentImageVariant;
+    xs: RelatedContentImageVariant;
+    sm: RelatedContentImageVariant;
   };
 }
 
 export interface RelatedContentItem {
-  content_type: 'recipe' | 'article' | 'roundup';
-  article_id?: number;
-  slug: string;
-  title: string;
-  description?: string;
-  image?: RelatedContentImageSnapshot;
-  total_time?: number;
-  difficulty?: string;
-  reading_time?: number;
-  item_count?: number;
+  article_id: number;
+  snapshot: Record<string, unknown>;
 }
 
 export interface RelatedContentBlock extends BaseContentBlock {
   type: 'related_content';
   title?: string;
   layout: 'grid' | 'carousel' | 'list';
-  mode?: 'manual' | 'auto';
   limit?: number;
   items: RelatedContentItem[];
 }
 
 export interface MainRecipeBlock extends BaseContentBlock {
   type: 'main_recipe';
+}
+
+export interface MainRoundupBlock extends BaseContentBlock {
+  type: 'main_roundup';
+}
+
+export interface MainFaqBlock extends BaseContentBlock {
+  type: 'main_faq';
 }
 
 export type ContentBlock =
@@ -191,11 +160,11 @@ export type ContentBlock =
   | TipBoxBlock
   | DividerBlock
   | TableBlock
-  | RoundupItemPlaceholderBlock
   | BeforeAfterBlock
-  | FAQSectionBlock
   | RelatedContentBlock
-  | MainRecipeBlock;
+  | MainRecipeBlock
+  | MainRoundupBlock
+  | MainFaqBlock;
 
 export type NormalizedContentBlock = ContentBlock & { id: BlockId };
 
@@ -223,11 +192,11 @@ export const CONTENT_BLOCK_TYPES = [
   'tip_box',
   'divider',
   'table',
-  'roundup_item',
   'before_after',
-  'faq_section',
   'related_content',
   'main_recipe',
+  'main_roundup',
+  'main_faq',
 ] as const;
 
 export type ContentBlockType = (typeof CONTENT_BLOCK_TYPES)[number];

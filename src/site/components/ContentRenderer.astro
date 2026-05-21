@@ -1,6 +1,5 @@
 ---
 import type { TocSettings } from "@modules/settings/types/settings.types";
-import type { RoundupArticleMap } from "@server/site-data";
 import { normalizeContentDocument } from "@modules/content-blocks";
 
 // Block partials
@@ -8,7 +7,7 @@ import Alert from "./content/blocks/Alert.astro";
 import BlockBlock from "./content/blocks/Blockquote.astro";
 import BeforeAfter from "./content/blocks/BeforeAfter.astro";
 import Divider from "./content/blocks/Divider.astro";
-import FaqSection from "./content/blocks/FaqSection.astro";
+import FaqSection from "./content/FAQSection.astro";
 import Heading from "./content/blocks/Heading.astro";
 import Image from "./content/blocks/Image.astro";
 import List from "./content/blocks/List.astro";
@@ -19,12 +18,12 @@ import RoundupList from "./content/blocks/RoundupList.astro";
 import TableBlock from "./content/blocks/Table.astro";
 import Video from "./content/blocks/Video.astro";
 
+import type { NormalizedContentBlock } from "@modules/content-blocks/contract/content-blocks.types";
+
 const { article, settings } = Astro.props as {
-  article: Record<string, any>;
+  article: Record<string, unknown>;
   settings?: TocSettings;
-  roundupArticles?: RoundupArticleMap;
 };
-const roundupArticles = Astro.props.roundupArticles || {};
 
 const parsed = normalizeContentDocument(article?.contentJson).blocks;
 
@@ -39,19 +38,24 @@ const roundupJson = article?.roundupJson
     ? JSON.parse(article.roundupJson)
     : article.roundupJson
   : null;
+const imagesJson = article?.imagesJson
+  ? typeof article.imagesJson === "string"
+    ? JSON.parse(article.imagesJson)
+    : article.imagesJson
+  : {};
 
 // Author/category from hydration
-const author = (article as any)?.author || null;
-const category = (article as any)?.category || null;
+const author = (article as Record<string, unknown>)?.author || null;
+const category = (article as Record<string, unknown>)?.category || null;
 
 // Heading numbering
 const numberingEnabled = settings?.numbering ?? true;
 let h2 = 0,
   h3 = 0,
   h4 = 0;
-const processedBlocks = parsed.map((block: any) => {
+const processedBlocks = parsed.map((block: NormalizedContentBlock) => {
   if (block?.type === "heading") {
-    const level = block.level || 2;
+    const level = (block as Record<string, unknown>).level || 2;
     let num = "";
     if (numberingEnabled) {
       if (level === 2) {
@@ -75,14 +79,14 @@ const processedBlocks = parsed.map((block: any) => {
 
 let globalRoundupIndex = 1;
 const hasRoundupList = processedBlocks.some(
-  (b: any) => b.type === "roundup_item",
+  (b: NormalizedContentBlock) => b.type === "main_roundup",
 );
 const standaloneRoundup =
-  !hasRoundupList && roundupJson?.items?.length > 0;
+  !hasRoundupList && (roundupJson as Record<string, unknown>)?.items?.length > 0;
 ---
 
 <div class="content-blocks">
-  {processedBlocks.map((block: any) => {
+  {processedBlocks.map((block: NormalizedContentBlock) => {
     if (!block?.type) return null;
     switch (block.type) {
       case "paragraph":
@@ -96,7 +100,14 @@ const standaloneRoundup =
       case "tip_box":
         return <Alert block={block} />;
       case "image":
-        return <Image block={block} />;
+        return (
+          <Image
+            block={{
+              ...(imagesJson?.content_images?.[block.image_ref] || {}),
+              ...block,
+            }}
+          />
+        );
       case "video":
         return <Video block={block} />;
       case "divider":
@@ -107,14 +118,13 @@ const standaloneRoundup =
         return <BeforeAfter block={block} />;
       case "related_content":
         return <RelatedContent block={block} />;
-      case "roundup_item": {
+      case "main_roundup": {
         const idx = globalRoundupIndex;
-        globalRoundupIndex += 1;
+        globalRoundupIndex += roundupJson?.items?.length || 1;
         return (
           <RoundupList
-            block={{ ...block, items: [block] }}
+            block={block}
             roundupJson={roundupJson}
-            roundupArticles={roundupArticles}
             startNumber={idx}
           />
         );
@@ -129,8 +139,8 @@ const standaloneRoundup =
             category={category}
           />
         );
-      case "faq_section":
-        return <FaqSection />;
+      case "main_faq":
+        return <FaqSection faqs={article.faqsJson} />;
       default:
         return null;
     }
@@ -140,7 +150,7 @@ const standaloneRoundup =
       <div class="standalone-header">
         <h2 class="standalone-title">Featured Recipes</h2>
       </div>
-      <RoundupList roundup={roundupJson} roundupArticles={roundupArticles} />
+      <RoundupList roundup={roundupJson} />
     </div>
   )}
 </div>

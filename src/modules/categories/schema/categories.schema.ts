@@ -27,13 +27,10 @@ export const categories = sqliteTable('categories', {
   
   // 4. LOGIC & THEME
   color: text('color').default('#ff6600ff'),
-  iconSvg: text('icon_svg'),
   isFeatured: integer('is_featured', { mode: 'boolean' }).default(false),
   
   // 5. JSON CONFIG CONTAINERS
   seoJson: text('seo_json').default('{}'),
-  configJson: text('config_json').default('{}'),
-  i18nJson: text('i18n_json').default('{}'),
   
   // 6. SYSTEM & METRICS
   sortOrder: integer('sort_order').default(0),

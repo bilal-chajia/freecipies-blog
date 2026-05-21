@@ -35,7 +35,7 @@ export const GET: APIRoute = async ({ request }) => {
         }
 
         // Build query options - always filter by type='roundup'
-        const options: any = {
+        const options: Record<string, unknown> = {
             type: 'roundup',
             isOnline: true,
             limit,
@@ -52,12 +52,12 @@ export const GET: APIRoute = async ({ request }) => {
         const items = result.items.map(article => {
             // Parse roundup JSON for item count
             let itemCount = 0;
-            if ((article as any).roundupJson) {
+            if ((article as Record<string, unknown>).roundupJson) {
                 try {
-                    const roundupData = typeof (article as any).roundupJson === 'string'
-                        ? JSON.parse((article as any).roundupJson)
-                        : (article as any).roundupJson;
-                    itemCount = roundupData.items?.length || 0;
+                    const roundupData = typeof (article as Record<string, unknown>).roundupJson === 'string'
+                        ? JSON.parse((article as Record<string, unknown>).roundupJson as string)
+                        : (article as Record<string, unknown>).roundupJson;
+                    itemCount = (roundupData as Record<string, unknown>).items?.length || 0;
                 } catch {
                     itemCount = 0;
                 }
@@ -82,11 +82,11 @@ export const GET: APIRoute = async ({ request }) => {
                 headline: article.headline,
                 shortDescription: article.shortDescription,
                 thumbnail,
-                categoryLabel: (article as any).categoryLabel,
-                categorySlug: (article as any).categorySlug,
-                categoryColor: (article as any).categoryColor,
-                authorName: (article as any).authorName,
-                authorSlug: (article as any).authorSlug,
+                categoryLabel: (article as Record<string, unknown>).categoryLabel,
+                categorySlug: (article as Record<string, unknown>).categorySlug,
+                categoryColor: (article as Record<string, unknown>).categoryColor,
+                authorName: (article as Record<string, unknown>).authorName,
+                authorSlug: (article as Record<string, unknown>).authorSlug,
                 publishedAt: article.publishedAt,
                 // Roundup-specific
                 itemCount,

@@ -8,6 +8,7 @@ import type { Article } from "@modules/articles/schema/articles.schema";
 import type { RecipeJson } from "@modules/articles/types/recipes.types";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import RatingSystem from "./content/RatingSystem";
+import { normalizeRecipeForRender } from "@site/utils/recipe-render";
 
 
 interface Props {
@@ -22,10 +23,11 @@ const heroSlotSrcSet = getImageSrcSet(article.imagesJson, "hero");
 const sizes = "(max-width: 768px) 100vw, 33vw";
 
 // Parse recipe data
-const recipe =
-  recipeJson || (article.recipeJson ? JSON.parse(article.recipeJson) : null);
-const prepTime = recipe?.prep || recipe?.prepTime;
-const cookTime = recipe?.cook || recipe?.cookTime;
+const recipe = normalizeRecipeForRender(
+  recipeJson || (article.recipeJson ? JSON.parse(article.recipeJson) : null)
+);
+const prepTime = recipe?.prep;
+const cookTime = recipe?.cook;
 const totalTime = (prepTime || 0) + (cookTime || 0);
 
 function formatTime(minutes: number): string {
@@ -104,8 +106,8 @@ const author = article.cachedAuthorJson
       <RatingSystem
         client:load
         articleId={article.id}
-        initialValue={recipe?.aggregateRating?.ratingValue || 0}
-        initialCount={recipe?.aggregateRating?.ratingCount || 0}
+        initialValue={recipe?.aggregate_rating?.rating_value || 0}
+        initialCount={recipe?.aggregate_rating?.rating_count || 0}
         size="sm"
       />
 

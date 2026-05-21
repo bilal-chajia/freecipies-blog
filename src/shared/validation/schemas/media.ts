@@ -5,21 +5,55 @@
  *
  * ## Naming Convention
  *
- * This file deliberately uses TWO naming conventions:
- *
- * - **camelCase** (`r2Key`, `sizeBytes`)  — client-side / upload pipeline
- *   Used in: `VariantInfoSchema`, `ConfirmUploadSchema`
- *   These match what the browser/worker sends in request bodies.
- *
- * - **snake_case** (`r2_key`, `size_bytes`) — storage / DB format
- *   Used in: `StoredVariantSchema`, `MediaVariantsJsonSchema`
- *   These match the `variants_json` column written to D1.
- *
- * The conversion between the two happens inside `normalizeMediaVariantsJson`
- * in `@shared/images/image-contract.ts` (called by `/api/media/confirm`).
+ * API JSON payloads use snake_case. Schemas normalize request bodies to
+ * camelCase for TypeScript services, then storage helpers serialize DB JSON
+ * back to snake_case.
  */
 import { z } from '../helpers';
 import { PaginationSchema } from './common';
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+const normalizeVariantInput = (value: unknown): unknown => {
+  if (!isRecord(value)) return value;
+  return {
+    r2Key: value.upload_key ?? value.uploadKey ?? value.r2_key ?? value.r2Key,
+    width: value.width,
+    height: value.height,
+    sizeBytes: value.size_bytes ?? value.sizeBytes,
+  };
+};
+
+const normalizeConfirmUploadInput = (value: unknown): unknown => {
+  if (!isRecord(value)) return value;
+  return {
+    uploadId: value.upload_id ?? value.uploadId,
+    baseName: value.base_name ?? value.baseName,
+    name: value.name,
+    altText: value.alt_text ?? value.altText,
+    caption: value.caption,
+    credit: value.credit,
+    aspectRatio: value.aspect_ratio ?? value.aspectRatio,
+    focalPoint: value.focal_point ?? value.focalPoint,
+    mimeType: value.mime_type ?? value.mimeType,
+    variants: value.variants,
+    placeholder: value.placeholder,
+  };
+};
+
+const normalizeUpdateMediaInput = (value: unknown): unknown => {
+  if (!isRecord(value)) return value;
+  return {
+    name: value.name,
+    altText: value.alt_text ?? value.altText,
+    caption: value.caption,
+    credit: value.credit,
+    focalPoint: value.focal_point ?? value.focalPoint,
+    aspectRatio: value.aspect_ratio ?? value.aspectRatio,
+  };
+};
 
 /** GET /api/media query params */
 export const MediaListQuery = PaginationSchema.extend({
@@ -42,16 +76,12 @@ export const BulkDeleteSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1),
 });
 
-/**
- * Client-side variant info — camelCase, sent by the browser upload pipeline.
- * Validated by `ConfirmUploadSchema`. Converted to snake_case by `normalizeMediaVariantsJson`.
- */
-const VariantInfoSchema = z.object({
+const VariantInfoSchema = z.preprocess(normalizeVariantInput, z.object({
   r2Key: z.string().min(1),
   width: z.coerce.number().int().nonnegative(),
   height: z.coerce.number().int().nonnegative(),
   sizeBytes: z.coerce.number().int().nonnegative().optional(),
-});
+}));
 
 /**
  * Schema for a single stored image variant (DB/R2 snake_case format).
@@ -104,7 +134,7 @@ const AuthorCreditSnapshotSchema = z.object({
 });
 
 /** POST /api/media/confirm body */
-export const ConfirmUploadSchema = z.object({
+export const ConfirmUploadSchema = z.preprocess(normalizeConfirmUploadInput, z.object({
   uploadId: z.string().min(1),
   baseName: z.string().min(1),
   name: z.string().min(1),
@@ -125,11 +155,11 @@ export const ConfirmUploadSchema = z.object({
     xs: VariantInfoSchema,
   }),
   placeholder: z.string().min(1),
-});
+}));
 
 
 /** PATCH /api/media/:id body — update metadata without re-uploading variants */
-export const UpdateMediaSchema = z.object({
+export const UpdateMediaSchema = z.preprocess(normalizeUpdateMediaInput, z.object({
   name: z.string().min(1).optional(),
   altText: z.string().min(1).optional(),
   caption: z.string().min(1).optional(),
@@ -139,7 +169,7 @@ export const UpdateMediaSchema = z.object({
     y: z.number().min(0).max(100),
   }).optional(),
   aspectRatio: z.string().nullable().optional(),
-});
+}));
 
 /** POST /api/media/upload-variant fields (FormData) */
 export const VariantUploadFields = z.object({

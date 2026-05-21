@@ -53,7 +53,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         }
 
         // Build query options
-        const options: any = {
+        const options: Record<string, unknown> = {
             limit,
             offset,
         };
@@ -122,11 +122,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 headline: article.headline,
                 shortDescription: article.shortDescription,
                 thumbnail,
-                categoryLabel: (article as any).categoryLabel,
-                categorySlug: (article as any).categorySlug,
-                categoryColor: (article as any).categoryColor,
-                authorName: (article as any).authorName,
-                authorSlug: (article as any).authorSlug,
+                categoryLabel: (article as Record<string, unknown>).categoryLabel,
+                categorySlug: (article as Record<string, unknown>).categorySlug,
+                categoryColor: (article as Record<string, unknown>).categoryColor,
+                authorName: (article as Record<string, unknown>).authorName,
+                authorSlug: (article as Record<string, unknown>).authorSlug,
                 publishedAt: article.publishedAt,
                 isOnline: article.isOnline,
                 // Type-specific fields from cache

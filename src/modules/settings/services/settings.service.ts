@@ -190,7 +190,17 @@ export async function getDashboardStats(db: D1Database | DrizzleDb): Promise<{
 import { IMAGE_UPLOAD_DEFAULTS, IMAGE_SETTINGS_DB_KEY } from '../../../shared/constants/image-upload';
 import type { ImageUploadSettings } from '../../../shared/constants/image-upload';
 import {
+  HOMEPAGE_SETTINGS_DEFAULTS,
+  ORGANIZATION_PROFILE_DEFAULTS,
+  PUBLIC_SOCIAL_LINKS_DEFAULTS,
+  SEO_DEFAULTS,
+  SITE_IDENTITY_DEFAULTS,
   normalizeTocSettings,
+  type HomepageSettings,
+  type OrganizationProfileSettings,
+  type PublicSocialLink,
+  type SeoDefaultsSettings,
+  type SiteIdentitySettings,
   type TocSettings,
   type TocSettingsInput,
 } from '../types/settings.types';
@@ -288,4 +298,60 @@ export async function updateTocSettings(
   });
 
   return newSettings;
+}
+
+const mergeObject = <T extends object>(defaults: T, stored: Partial<T> | null): T => ({
+  ...defaults,
+  ...(stored && typeof stored === 'object' ? stored : {}),
+});
+
+export async function getSiteIdentitySettings(
+  db: D1Database | DrizzleDb,
+  options?: SettingServiceOptions,
+): Promise<SiteIdentitySettings> {
+  const stored = await getSettingValue<Partial<SiteIdentitySettings>>(db, 'site_identity', options);
+  return mergeObject(SITE_IDENTITY_DEFAULTS, stored);
+}
+
+export async function getSeoDefaultsSettings(
+  db: D1Database | DrizzleDb,
+  options?: SettingServiceOptions,
+): Promise<SeoDefaultsSettings> {
+  const stored = await getSettingValue<Partial<SeoDefaultsSettings>>(db, 'seo_defaults', options);
+  return mergeObject(SEO_DEFAULTS, stored);
+}
+
+export async function getHomepageSettings(
+  db: D1Database | DrizzleDb,
+  options?: SettingServiceOptions,
+): Promise<HomepageSettings> {
+  const stored = await getSettingValue<Partial<HomepageSettings>>(db, 'homepage_settings', options);
+  return {
+    ...HOMEPAGE_SETTINGS_DEFAULTS,
+    ...(stored && typeof stored === 'object' ? stored : {}),
+    seo: {
+      ...HOMEPAGE_SETTINGS_DEFAULTS.seo,
+      ...(stored?.seo && typeof stored.seo === 'object' ? stored.seo : {}),
+    },
+  };
+}
+
+export async function getOrganizationProfileSettings(
+  db: D1Database | DrizzleDb,
+  options?: SettingServiceOptions,
+): Promise<OrganizationProfileSettings> {
+  const stored = await getSettingValue<Partial<OrganizationProfileSettings>>(db, 'organization_profile', options);
+  return {
+    ...ORGANIZATION_PROFILE_DEFAULTS,
+    ...(stored && typeof stored === 'object' ? stored : {}),
+    same_as: Array.isArray(stored?.same_as) ? stored.same_as : ORGANIZATION_PROFILE_DEFAULTS.same_as,
+  };
+}
+
+export async function getPublicSocialLinksSettings(
+  db: D1Database | DrizzleDb,
+  options?: SettingServiceOptions,
+): Promise<PublicSocialLink[]> {
+  const stored = await getSettingValue<PublicSocialLink[]>(db, 'public_social_links', options);
+  return Array.isArray(stored) ? stored : PUBLIC_SOCIAL_LINKS_DEFAULTS;
 }

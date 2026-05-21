@@ -26,7 +26,13 @@ const { article, recipe, author, heroImageUrl, heroImageAlt } = Astro.props;
 
 const ingredients: IngredientGroup[] = recipe?.ingredients || [];
 const instructions: InstructionSection[] = recipe?.instructions || [];
-const nutrition = recipe?.nutrition;
+const nutrition = recipe?.nutrition as Record<string, unknown> | null | undefined;
+const nutritionCalories = nutrition?.calories as string | number | null | undefined;
+const nutritionProtein = nutrition?.protein_g as string | number | null | undefined;
+const nutritionFat = nutrition?.total_fat_g as string | number | null | undefined;
+const nutritionCarbs = nutrition?.total_carbohydrate_g as string | number | null | undefined;
+const nutritionFiber = nutrition?.dietary_fiber_g as string | number | null | undefined;
+const nutritionSodium = nutrition?.sodium_mg as string | number | null | undefined;
 const tips = recipe?.tips || [];
 const servings = recipe?.servings || 4;
 const prepTime = recipe?.prep || 0;
@@ -82,6 +88,7 @@ function fmtNutrition(
 }
 
 let stepCounter = 0;
+
 ---
 
 <!-- Print Overlay (hidden by default) -->
@@ -220,11 +227,11 @@ let stepCounter = 0;
                         )
                     }
                     {
-                        nutrition?.calories && (
+                        nutritionCalories && (
                             <div class="print-stat">
                                 <span class="print-stat-label">Calories</span>
                                 <span class="print-stat-value">
-                                    {nutrition.calories} kcal
+                                    {nutritionCalories} kcal
                                 </span>
                             </div>
                         )
@@ -321,65 +328,59 @@ let stepCounter = 0;
                         <div class="print-nutrition">
                             <h2 class="print-section-title">Nutrition Facts</h2>
                             <div class="print-nutrition-grid">
-                                {nutrition.calories && (
+                                {nutritionCalories && (
                                     <div class="print-nut-item">
                                         <span class="print-nut-val">
-                                            {nutrition.calories}
+                                            {nutritionCalories}
                                         </span>
                                         <span class="print-nut-label">
                                             Calories
                                         </span>
                                     </div>
                                 )}
-                                {nutrition.proteinContent && (
+                                {nutritionProtein && (
                                     <div class="print-nut-item">
                                         <span class="print-nut-val">
-                                            {fmtNutrition(
-                                                nutrition.proteinContent,
-                                            )}
+                                            {fmtNutrition(nutritionProtein)}
                                         </span>
                                         <span class="print-nut-label">
                                             Protein
                                         </span>
                                     </div>
                                 )}
-                                {nutrition.fatContent && (
+                                {nutritionFat && (
                                     <div class="print-nut-item">
                                         <span class="print-nut-val">
-                                            {fmtNutrition(nutrition.fatContent)}
+                                            {fmtNutrition(nutritionFat)}
                                         </span>
                                         <span class="print-nut-label">Fat</span>
                                     </div>
                                 )}
-                                {nutrition.carbohydrateContent && (
+                                {nutritionCarbs && (
                                     <div class="print-nut-item">
                                         <span class="print-nut-val">
-                                            {fmtNutrition(
-                                                nutrition.carbohydrateContent,
-                                            )}
+                                            {fmtNutrition(nutritionCarbs)}
                                         </span>
                                         <span class="print-nut-label">
                                             Carbs
                                         </span>
                                     </div>
                                 )}
-                                {nutrition.fiberContent && (
+                                {nutritionFiber && (
                                     <div class="print-nut-item">
                                         <span class="print-nut-val">
-                                            {fmtNutrition(
-                                                nutrition.fiberContent,
-                                            )}
+                                            {fmtNutrition(nutritionFiber)}
                                         </span>
                                         <span class="print-nut-label">
                                             Fiber
                                         </span>
                                     </div>
                                 )}
-                                {nutrition.sodiumContent && (
+                                {nutritionSodium && (
                                     <div class="print-nut-item">
                                         <span class="print-nut-val">
                                             {fmtNutrition(
-                                                nutrition.sodiumContent,
+                                                nutritionSodium,
                                                 "mg",
                                             )}
                                         </span>
@@ -853,6 +854,20 @@ let stepCounter = 0;
 </style>
 
 <script>
+    interface Html2PdfFactory {
+        (): {
+            set: (options: unknown) => {
+                from: (element: HTMLElement) => {
+                    save: () => Promise<void>;
+                };
+            };
+        };
+    }
+
+    interface Html2PdfWindow extends Window {
+        html2pdf?: Html2PdfFactory;
+    }
+
     function initPrintOverlay() {
         const overlay = document.getElementById("print-overlay");
         const printBtn = document.getElementById(
@@ -1081,7 +1096,9 @@ let stepCounter = 0;
                     pagebreak: { mode: ["css"] },
                 };
 
-                await (window as any).html2pdf().set(opt).from(pageEl).save();
+                const html2pdf = (window as Html2PdfWindow).html2pdf;
+                if (!html2pdf) throw new Error("html2pdf is not loaded");
+                await html2pdf().set(opt).from(pageEl).save();
 
                 // Restore overlay styles
                 safeOverlay.style.position = savedStyles.position;

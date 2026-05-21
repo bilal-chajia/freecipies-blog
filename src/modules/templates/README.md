@@ -28,7 +28,7 @@ import {
   SUPPORTED_PLACEHOLDERS,
 } from "@modules/templates";
 
-import { TemplateEditor, PinCanvas } from "@admin/features/templates/components";
+import { TemplateEditor, TemplateCanvas } from "@admin/features/templates/components";
 import { useEditorStore } from "@admin/features/templates/store";
 ```
 

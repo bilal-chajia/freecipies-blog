@@ -17,6 +17,7 @@ import type { Category } from "@modules/categories/schema/categories.schema";
 import type { RecipeJson } from "@modules/articles/types/recipes.types";
 import type { ArticleImagesJson } from "@shared/types/images";
 import { extractImage, getImageSrcSet, formatAmount, formatTime } from "@shared/utils";
+import { normalizeRecipeForRender } from "@site/utils/recipe-render";
 
 import IngredientsSection from "./content/IngredientsSection.astro";
 import InstructionsSection from "./content/InstructionsSection.astro";
@@ -52,7 +53,7 @@ const {
 
 const TitleTag = embedded ? "h2" : "h1";
 
-const recipe = recipeJson;
+const recipe = normalizeRecipeForRender(recipeJson);
 
 const imagesJson: ArticleImagesJson = article.imagesJson
   ? JSON.parse(article.imagesJson)
@@ -61,8 +62,8 @@ const imagesJson: ArticleImagesJson = article.imagesJson
 const heroImage = extractImage(article.imagesJson, "hero", 1200);
 const heroSlotSrcSet = getImageSrcSet(article.imagesJson, "hero");
 
-const rating = recipe?.aggregateRating;
-const hasRating = rating && rating.ratingValue && rating.ratingCount > 0;
+const rating = recipe?.aggregate_rating;
+const hasRating = rating && rating.rating_value && rating.rating_count > 0;
 
 const equipment = recipe?.equipment || [];
 const hasEquipment = equipment.length > 0;
@@ -70,13 +71,14 @@ const tips = recipe?.tips || [];
 const hasTips = tips.length > 0;
 
 const video = recipe?.video;
-const hasVideo = video?.url;
+const videoUrl = video?.embed_url || video?.content_url;
+const hasVideo = Boolean(videoUrl);
 
 
 const defaultServings = recipe?.servings || 4;
-const yieldText = recipe?.recipeYield;
+const yieldText = recipe?.recipe_yield;
 
-const dietBadges = recipe?.suitableForDiet || [];
+const dietBadges = recipe?.suitable_for_diet || [];
 const hasDietBadges = dietBadges.length > 0;
 
 const prepTime = recipe?.prep || 0;
@@ -231,8 +233,8 @@ const navItems = [
               <RatingSystem
                 client:idle
                 articleId={article.id}
-                initialValue={rating?.ratingValue || 0}
-                initialCount={rating?.ratingCount || 0}
+                initialValue={rating?.rating_value || 0}
+                initialCount={rating?.rating_count || 0}
                 size="lg"
               />
             </div>
@@ -245,16 +247,16 @@ const navItems = [
 
           {/* Metadata Row */}
           <div class="metadata-pills">
-            {recipe?.recipeCategory && (
+            {recipe?.recipe_category && (
               <span class="meta-pill">
                 <span class="meta-label">Course:</span>
-                <span class="meta-value">{recipe.recipeCategory}</span>
+                <span class="meta-value">{recipe.recipe_category}</span>
               </span>
             )}
-            {recipe?.recipeCuisine && (
+            {recipe?.recipe_cuisine && (
               <span class="meta-pill">
                 <span class="meta-label">Cuisine:</span>
-                <span class="meta-value">{recipe.recipeCuisine}</span>
+                <span class="meta-value">{recipe.recipe_cuisine}</span>
               </span>
             )}
             {recipe?.difficulty && (
@@ -452,7 +454,10 @@ const navItems = [
               </span>
               <h2 class="section-heading">Instructions</h2>
             </div>
-            <InstructionsSection instructions={recipe?.instructions || []} />
+            <InstructionsSection
+              instructions={recipe?.instructions || []}
+              imagesJson={article.imagesJson}
+            />
           </section>
 
           {/* Nutrition */}
@@ -464,12 +469,12 @@ const navItems = [
           </section>
 
           {/* Video */}
-          {hasVideo && video?.url && (
+          {hasVideo && videoUrl && (
             <section id="recipe-video" class="recipe-section">
               <h2 class="section-heading">Video Tutorial</h2>
               <div class="video-container">
                 <iframe
-                  src={video.url}
+                  src={videoUrl}
                   title={video.name || article.headline + " Video"}
                   frameborder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

@@ -7,6 +7,30 @@ import { validateParams, SlugOrIdParam } from '@shared/validation';
 
 export const prerender = false;
 
+type JsonLdArticle = Parameters<typeof generateJsonLd>[0];
+
+function toJsonLdArticle(article: NonNullable<Awaited<ReturnType<typeof getArticleBySlug>>>): JsonLdArticle {
+    const recipeJson = article.type === 'recipe'
+        ? article.recipeJson as unknown as Record<string, unknown> | undefined
+        : undefined;
+    const roundupJson = article.type === 'roundup'
+        ? article.roundupJson as unknown as Record<string, unknown> | undefined
+        : undefined;
+
+    return {
+        ...article,
+        shortDescription: article.shortDescription ?? undefined,
+        publishedAt: article.publishedAt ?? undefined,
+        updatedAt: article.updatedAt ?? undefined,
+        recipeJson,
+        roundupJson,
+        imagesJson: article.imagesJson ?? undefined,
+        faqsJson: article.faqsJson ?? undefined,
+        cachedAuthorJson: article.cachedAuthorJson ?? undefined,
+        cachedCategoryJson: article.cachedCategoryJson ?? undefined,
+    };
+}
+
 /**
  * GET /api/roundups/:slug
  * Public endpoint to get roundup by slug with JSON-LD ItemList
@@ -33,7 +57,7 @@ export const GET: APIRoute = async ({ params, url }) => {
         const baseUrl = `${url.protocol}//${url.host}`;
         const jsonLd = article.jsonldJson
             ? (typeof article.jsonldJson === 'string' ? JSON.parse(article.jsonldJson) : article.jsonldJson)
-            : generateJsonLd(article, baseUrl);
+            : generateJsonLd(toJsonLdArticle(article), baseUrl);
 
         // Include JSON-LD in response
         const responseData = {

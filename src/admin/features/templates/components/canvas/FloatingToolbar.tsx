@@ -1,6 +1,5 @@
-// @ts-nocheck
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useRef } from 'react';
+import { motion } from 'motion/react';
 import {
     RotateCw,
     Lock,
@@ -27,18 +26,24 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
-import { useEditorStore } from '@admin/features/templates/store';
+import { useEditorStore, type EditorElement } from '@admin/features/templates/store';
 import { useUIStore } from '@admin/features/templates/store/useUIStore';
 
 // Default canvas dimensions (fallback)
 const DEFAULT_CANVAS_WIDTH = 1000;
 const DEFAULT_CANVAS_HEIGHT = 1500;
+
+interface FloatingToolbarProps {
+    selectedElement: EditorElement;
+    canvasScale?: number;
+    canvasOffset?: { x: number; y: number };
+    containerRef: React.RefObject<HTMLDivElement | null>;
+    stageRef: React.RefObject<any>;
+    onElementChange?: (id: string, updates: Partial<EditorElement>) => void;
+}
 
 /**
  * FloatingToolbar - Canva-style floating toolbar above selected elements
@@ -46,20 +51,19 @@ const DEFAULT_CANVAS_HEIGHT = 1500;
  * Shows quick actions: Rotate, Lock, Duplicate, Delete, More (...)
  * Positioned above the selected element on the canvas
  */
-const FloatingToolbar = ({
+const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     selectedElement,
     canvasScale = 1,
     canvasOffset = { x: 0, y: 0 },
     containerRef,
-    stageRef,
     onElementChange,
 }) => {
-    const toolbarRef = useRef(null);
+    const toolbarRef = useRef<HTMLDivElement>(null);
 
     // Get canvas dimensions from store template
     const template = useEditorStore(state => state.template);
-    const CANVAS_WIDTH = template?.width || template?.canvas_width || DEFAULT_CANVAS_WIDTH;
-    const CANVAS_HEIGHT = template?.height || template?.canvas_height || DEFAULT_CANVAS_HEIGHT;
+    const CANVAS_WIDTH = template?.width || DEFAULT_CANVAS_WIDTH;
+    const CANVAS_HEIGHT = template?.height || DEFAULT_CANVAS_HEIGHT;
 
     // Store actions
     const deleteSelected = useEditorStore(state => state.deleteSelected);
@@ -70,7 +74,7 @@ const FloatingToolbar = ({
     const sendToBack = useEditorStore(state => state.sendToBack);
 
     // Clipboard state for copy/paste
-    const [clipboard, setClipboard] = useState(null);
+    const [clipboard, setClipboard] = useState<EditorElement | null>(null);
 
     // Theme state
     const { theme } = useUIStore();
@@ -182,8 +186,8 @@ const FloatingToolbar = ({
         duplicateSelected();
     };
 
-    const handleAlignToPage = (alignment) => {
-        let newProps = {};
+    const handleAlignToPage = (alignment: string) => {
+        const newProps: Partial<EditorElement> = {};
 
         switch (alignment) {
             case 'left':
@@ -327,20 +331,19 @@ const FloatingToolbar = ({
                             : 'bg-white/95 border-zinc-200 text-zinc-700'
                             }`}
                     >
-                        <DropdownMenuItem onClick={handleCopy} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                        <DropdownMenuItem inset={false} onClick={handleCopy} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
                             <ClipboardCopy className="h-3 w-3 mr-2" />
                             Copy
                             <span className="ml-auto text-xs opacity-50">Ctrl+C</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handlePaste} disabled={!clipboard} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                        <DropdownMenuItem inset={false} onClick={handlePaste} disabled={!clipboard} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
                             <Clipboard className="h-3 w-3 mr-2" />
                             Paste
                             <span className="ml-auto text-xs text-muted-foreground">Ctrl+V</span>
                         </DropdownMenuItem>
 
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator className="" />
 
-                        {/* Align to Page - inline buttons in two rows */}
                         {/* Align to Page - inline buttons in two rows */}
                         <div className="px-2 py-1.5">
                             <div className={`text-xs mb-1.5 ${isDark ? 'text-muted-foreground' : 'text-zinc-500'}`}>Align to page</div>
@@ -380,22 +383,22 @@ const FloatingToolbar = ({
                             </div>
                         </div>
 
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator className="" />
 
                         {/* Layer Controls */}
-                        <DropdownMenuItem onClick={() => bringToFront?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                        <DropdownMenuItem inset={false} onClick={() => bringToFront?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
                             <ChevronsUp className="h-3 w-3 mr-2" />
                             Bring to front
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => moveElementUp?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                        <DropdownMenuItem inset={false} onClick={() => moveElementUp?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
                             <ChevronUp className="h-3 w-3 mr-2" />
                             Bring forward
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => moveElementDown?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                        <DropdownMenuItem inset={false} onClick={() => moveElementDown?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
                             <ChevronDown className="h-3 w-3 mr-2" />
                             Send backward
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => sendToBack?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
+                        <DropdownMenuItem inset={false} onClick={() => sendToBack?.(selectedElement.id)} className={isDark ? 'focus:bg-violet-500/20 focus:text-violet-200' : 'focus:bg-zinc-100'}>
                             <ChevronsDown className="h-3 w-3 mr-2" />
                             Send to back
                         </DropdownMenuItem>

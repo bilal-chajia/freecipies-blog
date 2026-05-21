@@ -8,12 +8,10 @@ import NewsletterWidget from "../components/NewsletterWidget.astro";
 import ContentRenderer from "../components/ContentRenderer.astro";
 import { normalizeContentDocument } from "@modules/content-blocks";
 import HeroImage from "../components/content/HeroImage.astro";
-import FAQSection from "../components/content/FAQSection.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import {
   getPopularRecipes,
-  getRoundupArticleMap,
   getSiteTocSettings,
 } from "@server/site-data";
 interface Props {
@@ -31,7 +29,6 @@ const categoryColor = category?.color || "#ff6600";
 
 const tocSettings = await getSiteTocSettings();
 const popularRecipes = await getPopularRecipes(article.slug, 5);
-const roundupArticles = await getRoundupArticleMap(article);
 
 const wordCount = [
   article.shortDescription,
@@ -149,13 +146,11 @@ const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
               <ContentRenderer
                 article={article}
                 settings={tocSettings}
-                roundupArticles={roundupArticles}
               />
             </section>
           )
         }
 
-        <FAQSection faqs={article.faqsJson} />
       </div>
 
       <aside class="sidebar l-sidebar">

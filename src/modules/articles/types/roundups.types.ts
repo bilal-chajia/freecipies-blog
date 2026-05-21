@@ -2,7 +2,8 @@
  * Roundup Types
  * ==============
  * TypeScript types for roundup_json field
- * Based on schema.org/ItemList for SEO
+ * Stored JSON uses snake_case. Schema.org output is produced at the JSON-LD
+ * boundary only.
  */
 
 import type { ImageVariants } from './images.types';
@@ -12,20 +13,44 @@ import { resolveVariantUrl } from '@shared/types/images';
 // Roundup Item
 // ============================================
 
-export interface RoundupItemCover {
-    /** Alt text for image */
+export interface RoundupItemImage {
     alt?: string;
-
-    /** Responsive image variants */
+    caption?: string;
+    placeholder?: string;
+    aspect_ratio?: string;
     variants?: ImageVariants;
+}
+
+export interface RoundupItemRecipeSnapshot {
+    total_time_minutes?: number | null;
+    difficulty?: string | null;
+    servings?: number | null;
+}
+
+export interface RoundupItemRatingSnapshot {
+    rating_value?: number | null;
+    rating_count?: number | null;
+}
+
+export interface RoundupItemLabelSnapshot {
+    id?: number;
+    name: string;
+    slug?: string;
+    url?: string;
 }
 
 export interface RoundupItem {
     /** Position in the list (1-indexed for Schema.org) */
     position: number;
 
+    /** Contract source discriminator */
+    source_type: 'internal_recipe' | 'external_recipe';
+
     /** Reference to internal article ID (optional) */
     article_id?: number;
+
+    /** Internal recipe slug for public links */
+    slug?: string;
 
     /** External URL if not internal article */
     external_url?: string;
@@ -36,11 +61,20 @@ export interface RoundupItem {
     /** Optional subtitle/tagline */
     subtitle?: string;
 
+    /** Resolved card description or roundup-specific description */
+    description?: string;
+
     /** Editorial note about this item */
     note?: string;
 
-    /** Cover image for card display */
-    cover?: RoundupItemCover;
+    /** Resolved hero snapshot for roundup card display */
+    image?: RoundupItemImage;
+
+    recipe?: RoundupItemRecipeSnapshot;
+    rating?: RoundupItemRatingSnapshot;
+    author?: RoundupItemLabelSnapshot;
+    category?: RoundupItemLabelSnapshot;
+    tags?: RoundupItemLabelSnapshot[];
 }
 
 // ============================================
@@ -51,7 +85,7 @@ export type RoundupListType = 'ItemList';
 
 export interface RoundupJson {
     /** Schema.org list type */
-    listType: RoundupListType;
+    list_type: RoundupListType;
 
     /** Collection of roundup items */
     items: RoundupItem[];
@@ -62,7 +96,7 @@ export interface RoundupJson {
 // ============================================
 
 export const DEFAULT_ROUNDUP_JSON: RoundupJson = {
-    listType: 'ItemList',
+    list_type: 'ItemList',
     items: [],
 };
 
@@ -95,10 +129,10 @@ export function toSchemaOrgItemList(
             '@type': 'ListItem',
             position: item.position,
             name: item.title,
-            ...(item.article_id && { url: `${baseUrl}/recipes/${item.article_id}` }),
+            ...(item.source_type === 'internal_recipe' && item.slug && { url: `${baseUrl}/recipes/${item.slug}` }),
             ...(item.external_url && { url: item.external_url }),
-            ...(item.cover?.variants?.lg && { image: resolveVariantUrl(item.cover.variants.lg) || undefined }),
-            ...(item.subtitle && { description: item.subtitle }),
+            ...(item.image?.variants?.md && { image: resolveVariantUrl(item.image.variants.md) || undefined }),
+            ...((item.description || item.subtitle) && { description: item.description || item.subtitle }),
         })),
     };
 }

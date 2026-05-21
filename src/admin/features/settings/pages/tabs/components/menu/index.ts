@@ -9,8 +9,8 @@
  * - MegaMenuPreview: Full-page preview modal
  */
 
-export { default as SortableLinkRow } from './SortableLinkRow.jsx';
-export { default as SortableColumnCard } from './SortableColumnCard.jsx';
-export { default as SortableMenuItemRow } from './SortableMenuItemRow.jsx';
-export { default as MenuItemInspector } from './MenuItemInspector.jsx';
-export { default as MegaMenuPreview } from './MegaMenuPreview.jsx';
+export { default as SortableLinkRow } from './SortableLinkRow';
+export { default as SortableColumnCard } from './SortableColumnCard';
+export { default as SortableMenuItemRow } from './SortableMenuItemRow';
+export { default as MenuItemInspector } from './MenuItemInspector';
+export { default as MegaMenuPreview } from './MegaMenuPreview';
