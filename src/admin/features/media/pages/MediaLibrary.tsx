@@ -1,15 +1,12 @@
-import { useEffect, useState, useRef } from 'react';
+import { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useMediaAssets } from '../hooks/useMediaAssets';
 import {
-  parseVariantsJson,
-  getVariantMap,
-  getBestVariant,
-  getVariantForContainer,
-  resolveVariantUrl
-} from '@shared/types/images';
-import type { MediaRecord } from '@modules/media/types/media.types';
-import type { ResolvedImageVariant } from '@shared/types/images';
-import { ImageEditor, ImageUploader } from '@admin/features/media/components';
+  ImageEditor,
+  ImageUploader,
+  MediaGrid,
+  MediaList
+} from '../components';
 import { DateRangePicker } from '@/ui/date-range-picker';
 import {
   Upload,
@@ -23,27 +20,14 @@ import {
   Archive,
   Copy,
   Trash2,
-  Eye,
-  Check,
-  RefreshCw,
+  X,
   Filter,
-  Info,
-  Maximize2,
+  RefreshCw,
   ChevronLeft,
-  ChevronRight,
-  X
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
-import { Card } from '@/ui/card';
-import { Badge } from '@/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -51,290 +35,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/ui/select';
-import { mediaAPI } from '../../../services/api';
-import { formatFileSize, isImageFile, formatDate } from '../../../utils/helpers';
-import { useMediaStore } from '../../../store/useStore';
 import ConfirmationModal from '@/ui/confirmation-modal';
-import { toast } from 'sonner';
-
-// Extended media item with API-specific fields (snake_case from API + resolved url)
-type MediaLibraryItem = MediaRecord & {
-  url?: string;
-  mime_type?: string;
-  created_at?: string;
-};
-
-// Helper to check if item is image (by mime or name)
-const isMediaItemImage = (item: MediaLibraryItem): boolean => {
-  if (item.mimeType?.startsWith('image/') || item.mime_type?.startsWith('image/')) return true;
-  // Fallback to name check if mimeType missing
-  return isImageFile(item.name || '');
-};
-
-// Helper: parse variants from item (uses shared helper)
-const parseVariants = (item: MediaLibraryItem) => parseVariantsJson(item);
-
-// Helper: getVariantSizeBytes (local, simple logic)
-const getVariantSizeBytes = (variant: ResolvedImageVariant | null | undefined): number | null => {
-  if (!variant) return null;
-  return variant.size_bytes ?? null;
-};
-
-const getDisplayedSizeBytes = (item: MediaLibraryItem): number | null => {
-  const variants = parseVariants(item);
-  const best = getBestVariant(variants);
-  const variantSize = getVariantSizeBytes(best);
-  if (typeof variantSize === 'number') return variantSize;
-  return null;
-};
-
-const formatDisplayedSize = (item: MediaLibraryItem): string => {
-  const bytes = getDisplayedSizeBytes(item);
-  return typeof bytes === 'number' && bytes > 0 ? formatFileSize(bytes) : '-';
-};
-
-// Get optimized thumbnail URL (uses container-based selection)
-// Media grid thumbnails are ~150px, so we use 'thumbnail' container with 'lg' size
-const getThumbnailUrl = (item: MediaLibraryItem): string => {
-  const parsed = parseVariants(item);
-  const variants = getVariantMap(parsed);
-  if (!variants) return resolveVariantUrl(null) || item.url || '';
-
-  const slot = { variants };
-  const variant = getVariantForContainer(slot, 'thumbnail', 'lg');
-  return resolveVariantUrl(variant) || item.url || '';
-};
-
-const getFullUrl = (item: MediaLibraryItem): string => {
-  const parsed = parseVariants(item);
-  const variants = getVariantMap(parsed);
-  if (!variants) return item.url || '';
-
-  const slot = { variants };
-  const variant = getVariantForContainer(slot, 'hero', 'xl');
-  return resolveVariantUrl(variant) || item.url || '';
-};
-
-interface OptimizedImageProps {
-  item: MediaLibraryItem;
-  className?: string;
-  priority?: boolean;
-}
-
-const OptimizedImage = ({ item, className = "", priority = false }: OptimizedImageProps) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const parsed = parseVariants(item);
-  const placeholder = parsed?.placeholder;
-  const variants = getVariantMap(parsed);
-
-  // Build srcset from available variants
-  let srcset = '';
-  let src = item.url || '';
-  let width: number | undefined = undefined;
-  let height: number | undefined = undefined;
-
-  if (variants) {
-    const srcsetParts: string[] = [];
-    if (variants.xs) srcsetParts.push(`${resolveVariantUrl(variants.xs)} ${variants.xs.width}w`);
-    if (variants.sm) srcsetParts.push(`${resolveVariantUrl(variants.sm)} ${variants.sm.width}w`);
-    if (variants.md) srcsetParts.push(`${resolveVariantUrl(variants.md)} ${variants.md.width}w`);
-    if (variants.lg) srcsetParts.push(`${resolveVariantUrl(variants.lg)} ${variants.lg.width}w`);
-    srcset = srcsetParts.join(', ');
-
-    const slot = { variants };
-    const selectedVariant = getVariantForContainer(slot, 'thumbnail', 'lg');
-    if (selectedVariant) {
-      src = resolveVariantUrl(selectedVariant) || src;
-      width = selectedVariant.width;
-      height = selectedVariant.height;
-    }
-  }
-
-  // Fallback to item URL if calculation failed
-  if (!src) src = item.url || '';
-
-  return (
-    <div className={`relative w-full h-full overflow-hidden ${className}`}>
-      {placeholder && (
-        <img
-          src={placeholder}
-          alt=""
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 blur-xl scale-110 ${isLoaded ? 'opacity-0' : 'opacity-100'}`}
-          aria-hidden={true}
-        />
-      )}
-      <img
-        src={src}
-        srcSet={srcset || undefined}
-        sizes="180px"
-        width={width}
-        height={height}
-        alt={item.altText || item.name}
-        loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "high" : "auto"}
-        className={`w-full h-full object-cover transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-        onLoad={() => setIsLoaded(true)}
-      />
-    </div>
-  );
-};
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.02 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  show: { opacity: 1, scale: 1 }
-};
+import { getFullUrl } from '../utils/mediaHelpers';
+import type { MediaLibraryItem } from '../utils/mediaHelpers';
 
 interface MediaLibraryProps {
   onSelect?: (item: MediaLibraryItem) => void;
   isDialog?: boolean;
-  variantSizes?: number[];
+  variantSizes?: Record<string, number>;
 }
+
+const getFileIcon = (filename: string | undefined): React.ReactNode => {
+  if (!filename) return <FileIcon className="w-8 h-8 opacity-40" />;
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return <ImageIcon className="size-8 text-primary" />;
+  if (['mp4', 'avi', 'mov', 'wmv'].includes(ext)) return <Video className="size-8 text-destructive" />;
+  if (['mp3', 'wav', 'flac', 'aac'].includes(ext)) return <Music className="size-8 text-success" />;
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return <Archive className="size-8 text-secondary" />;
+  return <FileIcon className="size-8 opacity-40" />;
+};
 
 const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) => {
   const {
-    media,
+    mediaItems,
     selectedMedia,
     loading,
-    setMedia,
-    appendMedia,
-    toggleMediaSelection,
-    clearSelection,
     pagination,
-    setPagination,
-    setLoading
-  } = useMediaStore();
+    viewMode,
+    setViewMode,
+    searchQuery,
+    setSearchQuery,
+    filterType,
+    setFilterType,
+    sortBy,
+    setSortBy,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    showUploadDialog,
+    setShowUploadDialog,
+    deleteModal,
+    setDeleteModal,
+    editingImage,
+    setEditingImage,
+    loadMedia,
+    handlePageChange,
+    handleBulkDelete,
+    confirmDelete,
+    handleCopyUrl,
+    handleEditorSave,
+    clearSelection,
+    toggleMediaSelection
+  } = useMediaAssets();
 
-  const mediaItems = media as unknown as MediaLibraryItem[];
-
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [sortBy, setSortBy] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [uploading, setUploading] = useState(false);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: number | string | null; isBulk: boolean }>({ isOpen: false, id: null, isBulk: false });
-  const [editingImage, setEditingImage] = useState<{ source: MediaLibraryItem; context?: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const loadMedia = async (pageNum = 1) => {
-    try {
-      setLoading(true);
-      const params: Record<string, unknown> = {
-        type: filterType,
-        search: searchQuery || undefined,
-        sortBy,
-        order: sortOrder,
-        page: pageNum,
-        limit: pagination.limit
-      };
-
-      const getUtcBoundary = (d: Date, isEndOfDay: boolean): string => {
-        const date = new Date(d);
-        if (isEndOfDay) {
-          date.setHours(23, 59, 59, 999);
-        } else {
-          date.setHours(0, 0, 0, 0);
-        }
-        return date.toISOString();
-      };
-
-      if (dateFrom) params.dateFrom = getUtcBoundary(dateFrom, false);
-      if (dateTo) params.dateTo = getUtcBoundary(dateTo, true);
-
-      const response = await mediaAPI.getAll(params);
-
-      if (response.data.success) {
-        const { data, pagination: paginationData } = response.data.data as { data: unknown[]; pagination: { page: number; limit: number; total: number; totalPages: number } };
-        setMedia(data);
-        setPagination(paginationData);
-      }
-    } catch (error) {
-      toast.error('Failed to load media assets');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage < 1 || newPage > pagination.totalPages || newPage === pagination.page) return;
-    loadMedia(newPage);
-  };
-
-  useEffect(() => {
-    loadMedia(1);
-  }, [filterType, sortBy, sortOrder, dateFrom, dateTo, searchQuery]);
-
-  const handleBulkDelete = () => {
-    setDeleteModal({ isOpen: true, id: null, isBulk: true });
-  };
-
-  const confirmDelete = async () => {
-    const { id, isBulk } = deleteModal;
-    try {
-      if (isBulk) {
-        // Use optimized bulk delete endpoint
-        await mediaAPI.bulkDelete(selectedMedia);
-        clearSelection();
-        toast.success(`Deleted ${selectedMedia.length} assets`);
-      } else if (id !== null) {
-        await mediaAPI.delete(id);
-        toast.success('Asset deleted');
-      }
-      loadMedia();
-    } catch (error) {
-      toast.error('Failed to delete asset(s)');
-    } finally {
-      setDeleteModal({ isOpen: false, id: null, isBulk: false });
-    }
-  };
-
-  const handleCopyUrl = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Asset URL copied');
-    } catch (error) {
-      toast.error('Failed to copy URL');
-    }
-  };
-
-  const handleEditorSave = async (file: File) => {
-    if (editingImage?.context === 'upload') {
-      setEditingImage(null);
-      return;
-    }
-
-    try {
-      setUploading(true);
-      // In-place replacement is no longer supported. Re-upload via ImageUploader.
-      toast.info('To replace an image, please delete it and upload a new one via the Upload Assets button.');
-      setEditingImage(null);
-    } catch (error) {
-      toast.error('Failed to update image');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const getFileIcon = (filename: string | undefined): React.ReactNode => {
-    if (!filename) return <FileIcon className="w-8 h-8 opacity-40" />;
-    const ext = filename.split('.').pop()?.toLowerCase() || '';
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return <ImageIcon className="size-8 text-primary" />;
-    if (['mp4', 'avi', 'mov', 'wmv'].includes(ext)) return <Video className="size-8 text-destructive" />;
-    if (['mp3', 'wav', 'flac', 'aac'].includes(ext)) return <Music className="size-8 text-success" />;
-    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return <Archive className="size-8 text-secondary" />;
-    return <FileIcon className="size-8 opacity-40" />;
-  };
 
   const filteredMedia = mediaItems.filter(item => {
     const matchesSearch = !searchQuery ||
@@ -342,165 +97,6 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
       item.altText?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
-
-  const renderGridView = () => (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
-      className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
-    >
-      <AnimatePresence mode="popLayout">
-        {filteredMedia.map((item, index) => (
-          <motion.div
-            key={item.id}
-            variants={itemVariants}
-            layout
-            className="group"
-          >
-            <Card
-              className={`relative overflow-hidden border-none bg-accent/50 group hover:ring-2 hover:ring-primary/40 transition-all duration-300 aspect-square rounded-2xl cursor-pointer shadow-sm p-0 ${selectedMedia.includes(item.id) ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-              onClick={() => onSelect ? onSelect(item) : toggleMediaSelection(item.id)}
-            >
-              {isMediaItemImage(item) ? (
-                <OptimizedImage item={item} priority={index < 8} className="transition-transform duration-700 group-hover:scale-110" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center transition-transform duration-500 group-hover:scale-110">
-                  {getFileIcon(item.name)}
-                </div>
-              )}
-
-              {/* Modern Overlay */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute top-2 right-2 flex gap-0.5 translate-x-2 group-hover:translate-x-0 transition-transform duration-300">
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="size-5 rounded-full bg-primary/80 backdrop-blur-md border-none text-white hover:bg-primary"
-                    onClick={(e) => { e.stopPropagation(); window.open(getFullUrl(item), '_blank'); }}
-                    title="View Full"
-                  >
-                    <Maximize2 className="size-2.5" />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="size-5 rounded-full bg-success/80 backdrop-blur-md border-none text-white hover:bg-success"
-                    onClick={(e) => { e.stopPropagation(); handleCopyUrl(getFullUrl(item)); }}
-                    title="Copy URL"
-                  >
-                    <Copy className="size-2.5" />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="size-5 rounded-full bg-destructive/80 backdrop-blur-md border-none text-white hover:bg-destructive"
-                    onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item.id, isBulk: false }); }}
-                    title="Delete"
-                  >
-                    <Trash2 className="size-2.5" />
-                  </Button>
-                </div>
-
-                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                  <span className="text-[10px] text-white/90 font-medium truncate max-w-25">
-                    {item.name}
-                  </span>
-                  <Badge variant="secondary" className="h-4 px-1 text-[8px] bg-white/10 backdrop-blur-md text-white border-white/10 font-bold uppercase truncate">
-                    {formatDisplayedSize(item)}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Image Type Badge (top-left, aligned with action buttons) */}
-              {!selectedMedia.includes(item.id) && (() => {
-                const type = (item.mimeType || item.mime_type || 'image/jpeg').split('/').pop() || 'jpeg';
-                const colorClass: Record<string, string> = {
-                  webp: 'bg-success/80',
-                  avif: 'bg-secondary/80',
-                  jpeg: 'bg-primary/80',
-                  jpg: 'bg-primary/80',
-                  png: 'bg-warning/80',
-                };
-                return (
-                  <div className="absolute top-2 left-2 pointer-events-none">
-                    <Badge className={`h-5 px-1.5 text-[7px] ${colorClass[type] || 'bg-muted/50'} backdrop-blur-sm text-white border-none font-bold uppercase flex items-center`}>
-                      {type}
-                    </Badge>
-                  </div>
-                );
-              })()}
-
-              {/* Selection Checkmark */}
-              {selectedMedia.includes(item.id) && (
-                <div className="absolute top-2 left-2 h-5 w-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg border-2 border-background">
-                  <Check className="size-3 bold" />
-                </div>
-              )}
-            </Card>
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </motion.div>
-  );
-
-  const renderListView = () => (
-    <div className="bg-card rounded-2xl overflow-hidden">
-      {/* Table Header */}
-      <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border/40 bg-accent/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-        <div className="w-10 shrink-0" />
-        <div className="flex-1 min-w-0">Name</div>
-        <div className="w-20 text-center hidden sm:block">Size</div>
-        <div className="w-32 text-center hidden md:block">Date</div>
-        <div className="w-24 shrink-0" />
-      </div>
-
-      {/* Table Rows */}
-      {filteredMedia.map((item, index) => (
-        <div
-          key={item.id}
-          className={`group flex items-center gap-4 px-4 py-2.5 cursor-pointer transition-all duration-300 ease-out hover:bg-accent/30 ${index < filteredMedia.length - 1 ? 'border-b border-border/30' : ''} ${selectedMedia.includes(item.id) ? 'bg-primary/5 translate-x-2' : ''}`}
-          onClick={() => onSelect ? onSelect(item) : toggleMediaSelection(item.id)}
-        >
-          {/* Thumbnail */}
-          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-accent/40 flex items-center justify-center shrink-0 border border-border/30">
-            {isMediaItemImage(item) ? (
-              <OptimizedImage item={item} priority={index < 8} className="transition-transform duration-500 group-hover:scale-105" />
-            ) : (
-              <span className="scale-50">{getFileIcon(item.name)}</span>
-            )}
-            {selectedMedia.includes(item.id) && (
-              <div className="absolute inset-0 bg-primary/70 flex items-center justify-center">
-                <Check className="size-4 text-white" />
-              </div>
-            )}
-          </div>
-
-          {/* Name */}
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-          </div>
-
-          {/* Size */}
-          <div className="w-20 text-center hidden sm:block">
-            <span className="text-xs text-muted-foreground font-medium">{formatDisplayedSize(item)}</span>
-          </div>
-
-          {/* Date */}
-          <div className="w-32 text-center hidden md:block">
-            <span className="text-xs text-muted-foreground font-medium">{formatDate(item.createdAt || item.created_at)}</span>
-          </div>
-
-          {/* Actions */}
-          <div className="w-24 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={(e) => { e.stopPropagation(); handleCopyUrl(getFullUrl(item)); }}><Copy className="size-3" /></Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={(e) => { e.stopPropagation(); window.open(getFullUrl(item), '_blank'); }}><Eye className="size-3" /></Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item.id, isBulk: false }); }}><Trash2 className="size-3" /></Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 
   return (
     <div className="space-y-8 pb-10">
@@ -611,11 +207,30 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
         </div>
       </div>
 
-
       {/* Main Library Display */}
       <div className="min-h-125 bg-accent/20 rounded-[40px] p-6 border border-border/30">
         <AnimatePresence mode="wait">
-          {viewMode === 'grid' ? renderGridView() : renderListView()}
+          {viewMode === 'grid' ? (
+            <MediaGrid
+              filteredMedia={filteredMedia}
+              selectedMedia={selectedMedia}
+              toggleMediaSelection={toggleMediaSelection}
+              onSelect={onSelect}
+              getFileIcon={getFileIcon}
+              setDeleteModal={setDeleteModal}
+              handleCopyUrl={handleCopyUrl}
+            />
+          ) : (
+            <MediaList
+              filteredMedia={filteredMedia}
+              selectedMedia={selectedMedia}
+              toggleMediaSelection={toggleMediaSelection}
+              onSelect={onSelect}
+              getFileIcon={getFileIcon}
+              setDeleteModal={setDeleteModal}
+              handleCopyUrl={handleCopyUrl}
+            />
+          )}
         </AnimatePresence>
 
         {filteredMedia.length === 0 && !loading && (
@@ -704,7 +319,8 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
 
       {editingImage && (
         <ImageEditor
-          image={editingImage.source}
+          isOpen={!!editingImage}
+          image={getFullUrl(editingImage.source)}
           onSave={handleEditorSave}
           onCancel={() => setEditingImage(null)}
         />
@@ -716,7 +332,6 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
         onOpenChange={setShowUploadDialog}
         onUploadComplete={() => {
           loadMedia();
-          toast.success('Image uploaded successfully!');
         }}
         variantSizes={variantSizes}
         allowMultiple={true}
