@@ -1,5 +1,4 @@
 import { safeParseJson } from '../../../shared/utils/hydration';
-import type { HydratedTag } from '../../tags';
 import { buildCachedRatingJson, buildCachedRecipeJson, normalizeRecipeJson } from '../utils/article-json-contract';
 
 // --- Input Interfaces ---
@@ -148,7 +147,9 @@ export function buildCategoryCache(input: CategoryCacheInput): CategoryCachePayl
   };
 }
 
-export function buildTagsCache(tags: HydratedTag[]): TagCachePayload[] {
+export function buildTagsCache(
+  tags: Array<{ id: number; label: string; slug: string; color?: string | null }>
+): TagCachePayload[] {
   return tags.map((tag) => ({
     id: tag.id,
     label: tag.label,
