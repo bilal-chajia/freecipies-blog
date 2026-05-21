@@ -45,6 +45,10 @@ export const OptimizedImage = ({ item, className = "", priority = false }: Optim
   // Fallback to item URL if calculation failed
   if (!src) src = item.url || '';
 
+  // Defensive fallbacks to prevent empty width/height attributes
+  const finalWidth = width || 150;
+  const finalHeight = height || 150;
+
   return (
     <div className={`relative w-full h-full overflow-hidden ${className}`}>
       {placeholder && (
@@ -59,8 +63,8 @@ export const OptimizedImage = ({ item, className = "", priority = false }: Optim
         src={src}
         srcSet={srcset || undefined}
         sizes="180px"
-        width={width}
-        height={height}
+        width={finalWidth}
+        height={finalHeight}
         alt={item.altText || item.name}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}
