@@ -20,27 +20,34 @@ import {
 } from "@modules/settings/types/settings.types";
 import { getCloudflareEnv, getSettingsCache } from "@server/cloudflare/env";
 
-async function loadSetting<T>(loader: (db: D1Database, options: { cache: KVNamespace | null }) => Promise<T>, fallback: T): Promise<T> {
+async function loadSetting<T>(
+  loader: (db: D1Database, options: { cache: KVNamespace | null }) => Promise<T>,
+  fallback: T,
+  options?: { db?: D1Database; cache?: KVNamespace | null }
+): Promise<T> {
   try {
-    const db = getCloudflareEnv().DB;
-    return db ? await loader(db, { cache: getSettingsCache() }) : fallback;
+    const db = options?.db ?? getCloudflareEnv().DB;
+    if (!db) return fallback;
+
+    const cache = options?.cache !== undefined ? options.cache : getSettingsCache();
+    return await loader(db, { cache });
   } catch (error) {
     console.error("Failed to load site setting:", error);
     return fallback;
   }
 }
 
-export const getPublicSiteIdentity = (): Promise<SiteIdentitySettings> =>
-  loadSetting(getSiteIdentitySettings, SITE_IDENTITY_DEFAULTS);
+export const getPublicSiteIdentity = (options?: { db?: D1Database; cache?: KVNamespace | null }): Promise<SiteIdentitySettings> =>
+  loadSetting(getSiteIdentitySettings, SITE_IDENTITY_DEFAULTS, options);
 
-export const getPublicSeoDefaults = (): Promise<SeoDefaultsSettings> =>
-  loadSetting(getSeoDefaultsSettings, SEO_DEFAULTS);
+export const getPublicSeoDefaults = (options?: { db?: D1Database; cache?: KVNamespace | null }): Promise<SeoDefaultsSettings> =>
+  loadSetting(getSeoDefaultsSettings, SEO_DEFAULTS, options);
 
-export const getPublicHomepageSettings = (): Promise<HomepageSettings> =>
-  loadSetting(getHomepageSettings, HOMEPAGE_SETTINGS_DEFAULTS);
+export const getPublicHomepageSettings = (options?: { db?: D1Database; cache?: KVNamespace | null }): Promise<HomepageSettings> =>
+  loadSetting(getHomepageSettings, HOMEPAGE_SETTINGS_DEFAULTS, options);
 
-export const getPublicOrganizationProfile = (): Promise<OrganizationProfileSettings> =>
-  loadSetting(getOrganizationProfileSettings, ORGANIZATION_PROFILE_DEFAULTS);
+export const getPublicOrganizationProfile = (options?: { db?: D1Database; cache?: KVNamespace | null }): Promise<OrganizationProfileSettings> =>
+  loadSetting(getOrganizationProfileSettings, ORGANIZATION_PROFILE_DEFAULTS, options);
 
-export const getPublicSocialLinks = (): Promise<PublicSocialLink[]> =>
-  loadSetting(getPublicSocialLinksSettings, PUBLIC_SOCIAL_LINKS_DEFAULTS);
+export const getPublicSocialLinks = (options?: { db?: D1Database; cache?: KVNamespace | null }): Promise<PublicSocialLink[]> =>
+  loadSetting(getPublicSocialLinksSettings, PUBLIC_SOCIAL_LINKS_DEFAULTS, options);

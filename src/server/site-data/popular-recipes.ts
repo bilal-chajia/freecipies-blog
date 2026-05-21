@@ -1,12 +1,17 @@
 import { getArticles, type HydratedArticle } from "@modules/articles";
+import type { D1Database } from "@cloudflare/workers-types";
 import { getCloudflareEnv } from "@server/cloudflare/env";
+import { presentPopularRecipes } from "./presenters";
+
+export { presentPopularRecipes };
 
 export const getPopularRecipes = async (
   currentSlug = "",
   limit = 5,
+  options?: { db?: D1Database }
 ): Promise<HydratedArticle[]> => {
   try {
-    const db = getCloudflareEnv().DB;
+    const db = options?.db ?? getCloudflareEnv().DB;
     if (!db) return [];
 
     const result = await getArticles(db, {
@@ -14,9 +19,7 @@ export const getPopularRecipes = async (
       limit: limit + 1,
     });
 
-    return (result.items || [])
-      .filter((recipe) => recipe.slug !== currentSlug)
-      .slice(0, limit);
+    return presentPopularRecipes(result.items, currentSlug, limit);
   } catch (error) {
     console.error("Error loading popular recipes:", error);
     return [];

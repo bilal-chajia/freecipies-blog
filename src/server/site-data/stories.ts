@@ -1,29 +1,14 @@
 import { getArticles, type HydratedArticle } from "@modules/articles";
-import { extractImage, getImageSrcSet } from "@shared/utils";
+import type { D1Database } from "@cloudflare/workers-types";
 import { getCloudflareEnv } from "@server/cloudflare/env";
+import { presentStories, type StoryPreview, type StoryPageData } from "./presenters";
 
-export interface StoryPreview {
-  imageUrl?: string;
-  imageAlt?: string;
-  imageWidth?: number;
-  imageHeight?: number;
-  imageStyle?: string;
-  srcSet?: string;
-}
+export { presentStories };
+export type { StoryPreview, StoryPageData };
 
-export type StoryPageData = HydratedArticle & {
-  storyImage?: string;
-  storyPreview: StoryPreview;
-  storyPages: Array<{
-    imageUrl?: string;
-    title: string;
-    text: string;
-  }>;
-};
-
-export const getStories = async (): Promise<StoryPageData[]> => {
+export const getStories = async (options?: { db?: D1Database }): Promise<StoryPageData[]> => {
   try {
-    const db = getCloudflareEnv().DB;
+    const db = options?.db ?? getCloudflareEnv().DB;
     if (!db) return [];
 
     const oneDayAgo = new Date();
@@ -41,49 +26,7 @@ export const getStories = async (): Promise<StoryPageData[]> => {
       stories = fallback.items;
     }
 
-    return stories
-      .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
-      .map((story) => {
-        const preview = extractImage(story.imagesJson, "thumbnail", 120);
-        const hero = extractImage(story.imagesJson, "hero", 1200);
-        const storyImage = hero.imageUrl || preview.imageUrl || story.imageUrl;
-
-        const storyTextSource = story as HydratedArticle & { tldr?: string };
-
-        return {
-          ...story,
-          storyImage,
-          storyPreview: {
-            imageUrl: preview.imageUrl || story.imageUrl,
-            imageAlt: preview.imageAlt || story.headline,
-            imageWidth: preview.imageWidth || 80,
-            imageHeight: preview.imageHeight || 80,
-            imageStyle: preview.imageStyle,
-            srcSet: getImageSrcSet(story.imagesJson, "thumbnail"),
-          },
-          storyPages: [
-            {
-              imageUrl: storyImage,
-              title: story.headline,
-              text: story.shortDescription || storyTextSource.tldr || "",
-            },
-            ...(storyImage
-              ? [
-                  {
-                    imageUrl: storyImage,
-                    title: "Swipe to continue",
-                    text: "Tap right to see more",
-                  },
-                ]
-              : []),
-            {
-              imageUrl: storyImage,
-              title: story.headline,
-              text: "Ready to cook?",
-            },
-          ],
-        };
-      });
+    return presentStories(stories);
   } catch (error) {
     console.error("StoriesBar: Error fetching stories:", error);
     return [];
