@@ -1,5 +1,6 @@
 import { safeParseJson } from '../../../shared/utils/hydration';
 import { buildCachedRatingJson, buildCachedRecipeJson, normalizeRecipeJson } from '../utils/article-json-contract';
+import { buildCardImage } from '../../../shared/images/image-contract';
 
 // --- Input Interfaces ---
 export interface AuthorCacheInput {
@@ -96,30 +97,7 @@ export function buildAuthorSocialLinks(bioJson: unknown) {
     }));
 }
 
-export function normalizeCardVariant(variant: any) {
-  if (!variant || typeof variant !== 'object' || !variant.r2_key) return undefined;
-  return {
-    r2_key: variant.r2_key,
-    width: Number(variant.width) || 0,
-    height: Number(variant.height) || 0,
-    ...(Number.isFinite(Number(variant.size_bytes)) ? { size_bytes: Number(variant.size_bytes) } : {}),
-  };
-}
 
-export function buildCardImage(imagesJson: unknown, fallbackAlt: string) {
-  const images = safeParseJson<any>(imagesJson) || {};
-  const slot = images.thumbnail || images.hero;
-  if (!slot?.variants) return null;
-  const xs = normalizeCardVariant(slot.variants.xs);
-  const sm = normalizeCardVariant(slot.variants.sm);
-  if (!xs || !sm) return null;
-  return {
-    ...(typeof slot.media_id === 'number' ? { media_id: slot.media_id } : {}),
-    alt: slot.alt || fallbackAlt,
-    placeholder: slot.placeholder || '',
-    variants: { xs, sm },
-  };
-}
 
 // --- Public Domain Builders ---
 export function buildAuthorCache(input: AuthorCacheInput): AuthorCachePayload | null {

@@ -536,3 +536,141 @@ export function serializeAdminMediaPayload(row: MediaRowForPayload): AdminMediaP
     deletedAt: row.deletedAt ?? row.deleted_at ?? null,
   };
 }
+
+export const HERO_ALLOWED_VARIANTS = ['sm', 'md', 'lg'] as const;
+export const THUMBNAIL_ALLOWED_VARIANTS = ['xs', 'sm'] as const;
+export const AVATAR_ALLOWED_VARIANTS = ['xs', 'sm'] as const;
+export const RECIPE_STEP_ALLOWED_VARIANTS = ['sm', 'md'] as const;
+
+export interface SnapshotPatch {
+  alt?: string;
+  caption?: string;
+  credit?: unknown;
+  placeholder?: string;
+  focal_point?: { x: number; y: number };
+  aspect_ratio?: string;
+  variants?: SnapshotStorageVariants;
+}
+
+export function buildSnapshotPatch(mediaRow: {
+  altText?: string | null;
+  caption?: string | null;
+  credit?: string | null;
+  focalPointJson?: string | null;
+  focal_point_json?: string | null;
+  aspectRatio?: string | null;
+  aspect_ratio?: string | null;
+  variantsJson?: string | null;
+  variants_json?: string | null;
+}): SnapshotPatch {
+  const patch: SnapshotPatch = {
+    alt: mediaRow.altText ?? undefined,
+    caption: mediaRow.caption ?? undefined,
+  };
+
+  const credit = mediaRow.credit;
+  if (credit) {
+    try {
+      patch.credit = JSON.parse(credit);
+    } catch {
+      // keep existing
+    }
+  }
+
+  const fpJson = mediaRow.focalPointJson ?? mediaRow.focal_point_json;
+  if (fpJson) {
+    try {
+      const fp = JSON.parse(fpJson);
+      if (typeof fp?.x === 'number' && typeof fp?.y === 'number') {
+        patch.focal_point = fp;
+      }
+    } catch {
+      // keep existing
+    }
+  }
+
+  const ar = mediaRow.aspectRatio ?? mediaRow.aspect_ratio;
+  if (ar) {
+    patch.aspect_ratio = ar;
+  }
+
+  const varJson = mediaRow.variantsJson ?? mediaRow.variants_json;
+  if (varJson) {
+    try {
+      const normalized = normalizeMediaVariantsJson(varJson);
+      patch.placeholder = normalized.placeholder;
+      patch.variants = normalized.variants;
+    } catch {
+      // keep existing
+    }
+  }
+
+  return patch;
+}
+
+export function applyPatchToSlot(
+  slot: Record<string, unknown>,
+  patch: SnapshotPatch,
+  allowedVariantKeys: readonly SnapshotVariantKey[]
+): Record<string, unknown> {
+  const updated = { ...slot };
+
+  if (patch.alt !== undefined) updated.alt = patch.alt;
+  if (patch.caption !== undefined) updated.caption = patch.caption;
+  if (patch.credit !== undefined) updated.credit = patch.credit;
+  if (patch.placeholder !== undefined) updated.placeholder = patch.placeholder;
+
+  if (patch.focal_point !== undefined) updated.focal_point = patch.focal_point;
+  if (patch.aspect_ratio !== undefined) updated.aspect_ratio = patch.aspect_ratio;
+
+  if (patch.variants) {
+    const newVariants: SnapshotStorageVariants = {};
+    for (const key of allowedVariantKeys) {
+      const source = patch.variants[key];
+      if (source) {
+        newVariants[key] = source;
+      }
+    }
+    if (Object.keys(newVariants).length > 0) {
+      updated.variants = newVariants;
+    }
+  }
+
+  return updated;
+}
+
+export function buildCardImage(
+  imagesJson: unknown,
+  fallbackAlt: string
+): {
+  media_id?: number;
+  alt: string;
+  placeholder: string;
+  variants: {
+    xs: StorageImageVariant;
+    sm: StorageImageVariant;
+  };
+} | null {
+  const images = parseJsonRecord(imagesJson) || {};
+  const slot = parseJsonRecord(images.thumbnail ?? images.hero);
+  if (!slot) return null;
+
+  const variantsSource = parseJsonRecord(slot.variants);
+  if (!variantsSource) return null;
+
+  const xs = normalizeSnapshotVariant(variantsSource.xs, 'xs');
+  const sm = normalizeSnapshotVariant(variantsSource.sm, 'sm');
+  if (!xs || !sm) return null;
+
+  const mediaId = readNumber(slot, 'media_id') ?? readNumber(slot, 'mediaId');
+  const alt = readString(slot, 'alt') || fallbackAlt;
+  const placeholder = readString(slot, 'placeholder') || '';
+
+  return {
+    ...(typeof mediaId === 'number' ? { media_id: mediaId } : {}),
+    alt,
+    placeholder,
+    variants: { xs, sm },
+  };
+}
+

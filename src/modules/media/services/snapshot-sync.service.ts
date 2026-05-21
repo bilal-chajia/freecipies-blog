@@ -22,8 +22,14 @@ import { articles } from '../../articles/schema/articles.schema';
 import { authors } from '../../authors/schema/authors.schema';
 import { categories } from '../../categories/schema/categories.schema';
 import {
-  normalizeMediaVariantsJson,
+  buildSnapshotPatch,
+  applyPatchToSlot,
+  HERO_ALLOWED_VARIANTS,
+  THUMBNAIL_ALLOWED_VARIANTS,
+  AVATAR_ALLOWED_VARIANTS,
+  RECIPE_STEP_ALLOWED_VARIANTS,
 } from '@shared/images/image-contract';
+import type { SnapshotPatch } from '@shared/images/image-contract';
 import type { StorageVariant, StrictStorageVariants } from '@shared/types/images';
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -36,114 +42,7 @@ export interface SnapshotSyncResult {
   errors: string[];
 }
 
-interface SnapshotPatch {
-  alt?: string;
-  caption?: string;
-  credit?: unknown;
-  placeholder?: string;
-  focal_point?: { x: number; y: number };
-  aspect_ratio?: string;
-  variants?: StrictStorageVariants;
-}
-
 // ─── Core Logic ──────────────────────────────────────────────────
-
-/**
- * Build a patch object from a media row containing only the fields
- * that snapshots should mirror from the source-of-truth media record.
- */
-function buildSnapshotPatch(mediaRow: Media): SnapshotPatch {
-  const patch: SnapshotPatch = {
-    alt: mediaRow.altText,
-    caption: mediaRow.caption,
-  };
-
-  // Parse credit JSON
-  if (mediaRow.credit) {
-    try {
-      const parsed = JSON.parse(mediaRow.credit);
-      patch.credit = parsed;
-    } catch {
-      // Keep existing credit if parse fails
-    }
-  }
-
-  // Parse focal_point
-  if (mediaRow.focalPointJson) {
-    try {
-      const fp = JSON.parse(mediaRow.focalPointJson);
-      if (typeof fp?.x === 'number' && typeof fp?.y === 'number') {
-        patch.focal_point = fp;
-      }
-    } catch { /* keep existing */ }
-  }
-
-  // Parse aspect_ratio
-  if (mediaRow.aspectRatio) {
-    patch.aspect_ratio = mediaRow.aspectRatio;
-  }
-
-  // Parse variants + placeholder from variants_json
-  if (mediaRow.variantsJson) {
-    try {
-      const normalized = normalizeMediaVariantsJson(mediaRow.variantsJson);
-      patch.placeholder = normalized.placeholder;
-      patch.variants = normalized.variants;
-    } catch { /* keep existing */ }
-  }
-
-  return patch;
-}
-
-/**
- * Apply a snapshot patch to a single image slot object.
- * Only updates fields that the snapshot already contains or that
- * should be present per the contract.
- *
- * @param slot - The existing snapshot slot (hero, thumbnail, etc.)
- * @param patch - Fresh data from the media row
- * @param allowedVariantKeys - Which variant keys this slot should contain
- * @returns The updated slot, or null if the slot is invalid
- */
-function applyPatchToSlot(
-  slot: Record<string, unknown>,
-  patch: SnapshotPatch,
-  allowedVariantKeys: readonly (keyof StrictStorageVariants)[]
-): Record<string, unknown> {
-  const updated = { ...slot };
-
-  // Always update these required fields
-  if (patch.alt !== undefined) updated.alt = patch.alt;
-  if (patch.caption !== undefined) updated.caption = patch.caption;
-  if (patch.credit !== undefined) updated.credit = patch.credit;
-  if (patch.placeholder !== undefined) updated.placeholder = patch.placeholder;
-
-  // Optional fields
-  if (patch.focal_point !== undefined) updated.focal_point = patch.focal_point;
-  if (patch.aspect_ratio !== undefined) updated.aspect_ratio = patch.aspect_ratio;
-
-  // Rebuild variants for the allowed keys only
-  if (patch.variants) {
-    const newVariants: Partial<Record<keyof StrictStorageVariants, StorageVariant>> = {};
-    for (const key of allowedVariantKeys) {
-      const source = patch.variants[key];
-      if (source) {
-        newVariants[key] = source;
-      }
-    }
-    if (Object.keys(newVariants).length > 0) {
-      updated.variants = newVariants;
-    }
-  }
-
-  return updated;
-}
-
-// Variant keys by slot type (per IMAGE_JSON_CONTRACT.md Snapshot Variant Matrix)
-const HERO_ALLOWED = ['sm', 'md', 'lg'] as const;
-const THUMBNAIL_ALLOWED = ['xs', 'sm'] as const;
-const AVATAR_ALLOWED = ['xs', 'sm'] as const;
-const RECIPE_STEP_ALLOWED = ['sm', 'md'] as const;
 
 /**
  * Apply the patch to an entire images_json container.
@@ -170,14 +69,14 @@ function patchImagesJsonContainer(
   // Check hero slot
   const hero = container.hero as Record<string, unknown> | undefined;
   if (hero && (hero.media_id === mediaId || hero.mediaId === mediaId)) {
-    container.hero = applyPatchToSlot(hero, patch, HERO_ALLOWED);
+    container.hero = applyPatchToSlot(hero, patch, HERO_ALLOWED_VARIANTS);
     changed = true;
   }
 
   // Check thumbnail slot
   const thumbnail = container.thumbnail as Record<string, unknown> | undefined;
   if (thumbnail && (thumbnail.media_id === mediaId || thumbnail.mediaId === mediaId)) {
-    container.thumbnail = applyPatchToSlot(thumbnail, patch, THUMBNAIL_ALLOWED);
+    container.thumbnail = applyPatchToSlot(thumbnail, patch, THUMBNAIL_ALLOWED_VARIANTS);
     changed = true;
   }
 
@@ -185,7 +84,7 @@ function patchImagesJsonContainer(
   if (containerKind === 'author') {
     const avatar = container.avatar as Record<string, unknown> | undefined;
     if (avatar && (avatar.media_id === mediaId || avatar.mediaId === mediaId)) {
-      container.avatar = applyPatchToSlot(avatar, patch, AVATAR_ALLOWED);
+      container.avatar = applyPatchToSlot(avatar, patch, AVATAR_ALLOWED_VARIANTS);
       changed = true;
     }
   }
@@ -196,7 +95,7 @@ function patchImagesJsonContainer(
     if (recipeSteps && typeof recipeSteps === 'object') {
       for (const [stepKey, stepSlot] of Object.entries(recipeSteps)) {
         if (stepSlot && (stepSlot.media_id === mediaId || stepSlot.mediaId === mediaId)) {
-          recipeSteps[stepKey] = applyPatchToSlot(stepSlot, patch, RECIPE_STEP_ALLOWED);
+          recipeSteps[stepKey] = applyPatchToSlot(stepSlot, patch, RECIPE_STEP_ALLOWED_VARIANTS);
           changed = true;
         }
       }
@@ -228,7 +127,7 @@ function patchCachedCardJson(
   if (!thumbnail) return null;
   if (thumbnail.media_id !== mediaId && thumbnail.mediaId !== mediaId) return null;
 
-  card.thumbnail = applyPatchToSlot(thumbnail, patch, THUMBNAIL_ALLOWED);
+  card.thumbnail = applyPatchToSlot(thumbnail, patch, THUMBNAIL_ALLOWED_VARIANTS);
   return JSON.stringify(card);
 }
 
