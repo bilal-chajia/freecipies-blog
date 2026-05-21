@@ -69,14 +69,14 @@ function patchImagesJsonContainer(
   // Check hero slot
   const hero = container.hero as Record<string, unknown> | undefined;
   if (hero && (hero.media_id === mediaId || hero.mediaId === mediaId)) {
-    container.hero = applyPatchToSlot(hero, patch, HERO_ALLOWED_VARIANTS);
+    container.hero = applyPatchToSlot(hero, patch, HERO_ALLOWED_VARIANTS, { omitCaptionCredit: true });
     changed = true;
   }
 
   // Check thumbnail slot
   const thumbnail = container.thumbnail as Record<string, unknown> | undefined;
   if (thumbnail && (thumbnail.media_id === mediaId || thumbnail.mediaId === mediaId)) {
-    container.thumbnail = applyPatchToSlot(thumbnail, patch, THUMBNAIL_ALLOWED_VARIANTS);
+    container.thumbnail = applyPatchToSlot(thumbnail, patch, THUMBNAIL_ALLOWED_VARIANTS, { omitCaptionCredit: true });
     changed = true;
   }
 
@@ -84,7 +84,7 @@ function patchImagesJsonContainer(
   if (containerKind === 'author') {
     const avatar = container.avatar as Record<string, unknown> | undefined;
     if (avatar && (avatar.media_id === mediaId || avatar.mediaId === mediaId)) {
-      container.avatar = applyPatchToSlot(avatar, patch, AVATAR_ALLOWED_VARIANTS);
+      container.avatar = applyPatchToSlot(avatar, patch, AVATAR_ALLOWED_VARIANTS, { omitCaptionCredit: true });
       changed = true;
     }
   }
@@ -106,7 +106,7 @@ function patchImagesJsonContainer(
 }
 
 /**
- * Patch cached_card_json thumbnail if it references the given media_id.
+ * Patch cached_card_json image if it references the given media_id.
  */
 function patchCachedCardJson(
   cachedCardStr: string | null,
@@ -123,11 +123,11 @@ function patchCachedCardJson(
     return null;
   }
 
-  const thumbnail = card.thumbnail as Record<string, unknown> | undefined;
-  if (!thumbnail) return null;
-  if (thumbnail.media_id !== mediaId && thumbnail.mediaId !== mediaId) return null;
+  const image = card.image as Record<string, unknown> | undefined;
+  if (!image) return null;
+  if (image.media_id !== mediaId && image.mediaId !== mediaId) return null;
 
-  card.thumbnail = applyPatchToSlot(thumbnail, patch, THUMBNAIL_ALLOWED_VARIANTS);
+  card.image = applyPatchToSlot(image, patch, THUMBNAIL_ALLOWED_VARIANTS, { omitCaptionCredit: true });
   return JSON.stringify(card);
 }
 

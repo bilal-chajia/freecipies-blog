@@ -540,7 +540,7 @@ export function serializeAdminMediaPayload(row: MediaRowForPayload): AdminMediaP
 export const HERO_ALLOWED_VARIANTS = ['sm', 'md', 'lg'] as const;
 export const THUMBNAIL_ALLOWED_VARIANTS = ['xs', 'sm'] as const;
 export const AVATAR_ALLOWED_VARIANTS = ['xs', 'sm'] as const;
-export const RECIPE_STEP_ALLOWED_VARIANTS = ['sm', 'md'] as const;
+export const RECIPE_STEP_ALLOWED_VARIANTS = ['sm', 'md', 'lg'] as const;
 
 export interface SnapshotPatch {
   alt?: string;
@@ -608,16 +608,28 @@ export function buildSnapshotPatch(mediaRow: {
   return patch;
 }
 
+export interface ApplyPatchOptions {
+  omitCaptionCredit?: boolean;
+}
+
 export function applyPatchToSlot(
   slot: Record<string, unknown>,
   patch: SnapshotPatch,
-  allowedVariantKeys: readonly SnapshotVariantKey[]
+  allowedVariantKeys: readonly SnapshotVariantKey[],
+  options?: ApplyPatchOptions
 ): Record<string, unknown> {
   const updated = { ...slot };
 
   if (patch.alt !== undefined) updated.alt = patch.alt;
-  if (patch.caption !== undefined) updated.caption = patch.caption;
-  if (patch.credit !== undefined) updated.credit = patch.credit;
+
+  if (options?.omitCaptionCredit) {
+    delete updated.caption;
+    delete updated.credit;
+  } else {
+    if (patch.caption !== undefined) updated.caption = patch.caption;
+    if (patch.credit !== undefined) updated.credit = patch.credit;
+  }
+
   if (patch.placeholder !== undefined) updated.placeholder = patch.placeholder;
 
   if (patch.focal_point !== undefined) updated.focal_point = patch.focal_point;

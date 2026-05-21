@@ -21,6 +21,8 @@ import {
 } from '@/ui/sheet';
 import { cn } from '@/lib/utils';
 import { toAdminImageUrl } from '@admin/utils/helpers';
+import api from '@admin/services/api-client';
+import { resolveVariantUrl } from '@shared/types/images';
 import type { MegaMenuPreviewProps, MenuItem } from '../../types/menu-editor.types';
 
 interface MetadataItem {
@@ -91,11 +93,11 @@ const MegaMenuPreview = ({ items, setHeaderActions }: MegaMenuPreviewProps) => {
             const fetchData = async () => {
                 try {
                     const [catsRes, tagsRes] = await Promise.all([
-                        fetch('/api/categories?limit=100'),
-                        fetch('/api/tags?limit=100')
+                        api.get('/categories', { params: { limit: 100 } }),
+                        api.get('/tags', { params: { limit: 100 } })
                     ]);
-                    const cats: unknown = await catsRes.json();
-                    const tags: unknown = await tagsRes.json();
+                    const cats: unknown = catsRes.data;
+                    const tags: unknown = tagsRes.data;
                     setDbData({
                         categories: Array.isArray(cats) ? cats : parseRecord(cats).data as MetadataItem[] || [],
                         tags: Array.isArray(tags) ? tags : parseRecord(tags).data as MetadataItem[] || []
@@ -302,7 +304,7 @@ const MegaMenuPreview = ({ items, setHeaderActions }: MegaMenuPreviewProps) => {
                                                                         {(() => {
                                                                             const featured = item.featured_items?.[0];
                                                                             if (!featured) return null;
-                                                                            const imageUrl = toAdminImageUrl(featured.image?.variants?.sm || featured.image?.variants?.xs);
+                                                                            const imageUrl = toAdminImageUrl(resolveVariantUrl(featured.image?.variants?.sm) || resolveVariantUrl(featured.image?.variants?.xs));
                                                                             return (
                                                                         <div className="group/card relative h-full rounded-2xl overflow-hidden bg-card shadow-sm hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 cursor-pointer border border-border ring-1 ring-border/50">
                                                                             {imageUrl ? (

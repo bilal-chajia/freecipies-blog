@@ -166,10 +166,14 @@ export interface CachedCardJson {
     /** Short description */
     short_description?: string;
 
-    /** Thumbnail image */
-    thumbnail?: {
+    /** Card image slot (replaces thumbnail to match image contract) */
+    image?: {
+        media_id?: number;
         alt?: string;
         variants?: ImageVariants;
+        placeholder?: string;
+        aspect_ratio?: string;
+        focal_point?: { x: number; y: number };
     };
 
     // Recipe-specific (when type='recipe')

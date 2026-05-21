@@ -19,6 +19,8 @@ import { Textarea } from '@/ui/textarea';
 import { cn } from '@/lib/utils';
 import { SidebarSection } from '@/components/BlockEditor/components/SettingsSidebar';
 import { ArticlePicker, LinkSelector } from '@/components/pickers';
+import type { ArticlePickerValue } from '@/components/pickers';
+import { resolveVariantUrl } from '@shared/types/images';
 import SortableColumnCard from './SortableColumnCard';
 import type {
     MenuItem,
@@ -27,12 +29,16 @@ import type {
     MenuTarget,
 } from '../../types/menu-editor.types';
 
-interface PickerArticle {
-    articleId?: number;
-    title?: string;
-    url?: string;
-    description?: string;
-}
+const mapFeaturedItemToPickerValue = (featuredItem?: MenuFeaturedItem): ArticlePickerValue | null => {
+    if (!featuredItem) return null;
+    return {
+        articleId: featuredItem.target.id || '',
+        title: featuredItem.label,
+        url: featuredItem.target.href,
+        image: resolveVariantUrl(featuredItem.image?.variants?.xs) || '',
+        description: featuredItem.description || '',
+    };
+};
 
 const getTargetHref = (item: MenuItem) => item.target?.href || '#';
 const updateTargetHref = (item: MenuItem, href: string): MenuTarget => ({
@@ -207,8 +213,8 @@ const MenuItemInspector = ({
                                 <div className="space-y-1">
                                     <Label className="uppercase text-[11px] font-semibold text-muted-foreground mb-1 block">Target Article</Label>
                                     <ArticlePicker
-                                        value={item.featured_items?.[0]}
-                                        onChange={(article: PickerArticle | null) => {
+                                        value={mapFeaturedItemToPickerValue(item.featured_items?.[0])}
+                                        onChange={(article: ArticlePickerValue | null) => {
                                             const featured = item.featured_items?.[0] || createFeaturedItem();
                                             if (article) {
                                                 const { articleId, title, url, description } = article;
@@ -219,7 +225,7 @@ const MenuItemInspector = ({
                                                     label: title || featured.label || 'Featured',
                                                     target: {
                                                         type: 'article',
-                                                        id: articleId,
+                                                        id: typeof articleId === 'string' ? parseInt(articleId, 10) || undefined : articleId,
                                                         href: url || featured.target?.href || '#',
                                                         snapshot: { title: title || featured.label || 'Featured' },
                                                     },

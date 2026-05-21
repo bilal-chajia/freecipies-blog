@@ -759,7 +759,7 @@ function auditCode(report) {
       paths: ['src'],
       extraGlobs: [
         '!src/admin/components/BlockEditor/**',
-        '!src/admin/features/articles/pages/shared/useGutenbergCanvasHandlers.js',
+        '!src/admin/features/articles/pages/shared/useGutenbergCanvasHandlers.ts',
       ],
     },
     {
