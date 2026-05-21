@@ -20,7 +20,7 @@ import { ScrollArea } from '@/ui/scroll-area';
 import type { MenuLocation } from '@modules/menus/types/menus.types';
 
 // Layout components
-import GutenbergEditorLayout from '@/components/BlockEditor/components/GutenbergEditorLayout.jsx';
+import GutenbergEditorLayout from '@/components/BlockEditor/components/GutenbergEditorLayout';
 
 // Menu-specific components
 import {

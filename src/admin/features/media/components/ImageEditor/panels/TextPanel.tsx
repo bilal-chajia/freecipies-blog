@@ -12,6 +12,13 @@ import {
     SelectValue,
 } from '@/ui/select';
 import { TEXT_POSITIONS, TEXT_COLORS } from '../constants';
+import type { TextOverlayState } from '../hooks/useImageEditorState';
+
+interface TextPanelProps {
+    textOverlay: TextOverlayState;
+    onTextOverlayChange: React.Dispatch<React.SetStateAction<TextOverlayState>>;
+    saveToHistory: () => void;
+}
 
 /**
  * TextPanel - Handles text overlay settings
@@ -20,13 +27,13 @@ const TextPanel = ({
     textOverlay,
     onTextOverlayChange,
     saveToHistory
-}) => {
-    const updateTextOverlay = (updates) => {
-        onTextOverlayChange(prev => ({ ...prev, ...updates }));
+}: TextPanelProps) => {
+    const updateTextOverlay = (updates: Partial<TextOverlayState>) => {
+        onTextOverlayChange((prev: TextOverlayState) => ({ ...prev, ...updates }));
     };
 
     const handleRecipeCardTemplate = () => {
-        onTextOverlayChange(prev => ({
+        onTextOverlayChange((prev: TextOverlayState) => ({
             ...prev,
             enabled: true,
             text: 'Recipe Title',
@@ -40,7 +47,7 @@ const TextPanel = ({
     };
 
     const handleCopyrightTemplate = () => {
-        onTextOverlayChange(prev => ({
+        onTextOverlayChange((prev: TextOverlayState) => ({
             ...prev,
             enabled: true,
             text: '© SaaS Blog',

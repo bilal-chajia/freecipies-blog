@@ -14,7 +14,7 @@ import {
 export default function SessionMonitor() {
     const { token, setAuth, clearAuth } = useAuthStore();
     const [showWarning, setShowWarning] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(null);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const showWarningRef = useRef(showWarning);
 
     // Keep ref in sync with state
@@ -64,8 +64,9 @@ export default function SessionMonitor() {
     const handleRefresh = async () => {
         try {
             const response = await authAPI.refreshToken();
-            if (response.data.token) {
-                setAuth(response.data.user, response.data.token);
+            const payload = response.data.data;
+            if (payload && payload.token) {
+                setAuth(payload.user, payload.token);
                 setShowWarning(false);
             }
         } catch (error) {

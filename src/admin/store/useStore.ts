@@ -60,6 +60,9 @@ interface ArticleFilters {
   author: string;
   status: string;
   search: string;
+  tags?: string[];
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 interface PaginationState {

@@ -45,7 +45,7 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const { buffer, width, height, format, quality } = payload;
 
   try {
-    const imageData = new ImageData(new Uint8ClampedArray(buffer), width, height);
+    const imageData = new ImageData(new Uint8ClampedArray(buffer as ArrayBuffer), width, height);
     let outputFormat = format === 'avif' ? 'avif' : 'webp';
     let blob: Blob;
 

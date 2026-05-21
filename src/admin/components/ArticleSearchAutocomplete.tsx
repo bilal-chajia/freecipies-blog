@@ -19,13 +19,30 @@ import { articlesAPI } from '../services/api';
 import { extractImage } from '@shared/utils/hydration';
 import { toast } from 'sonner';
 
-export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search recipes...", className }) {
+type ArticleSearchResult = {
+    id: number | string;
+    headline: string;
+    type?: string | null;
+    imagesJson?: string | null;
+};
+
+type ArticleSearchAutocompleteProps = {
+    onSelect: (article: ArticleSearchResult) => void;
+    placeholder?: string;
+    className?: string;
+};
+
+type ArticlesListPayload = ArticleSearchResult[] | {
+    items?: ArticleSearchResult[];
+};
+
+export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search recipes...", className }: ArticleSearchAutocompleteProps) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState([]);
+    const [results, setResults] = useState<ArticleSearchResult[]>([]);
 
-    const fetchResults = useCallback(async (searchQuery) => {
+    const fetchResults = useCallback(async (searchQuery: string) => {
         if (!searchQuery || searchQuery.length < 2) {
             setResults([]);
             return;
@@ -41,9 +58,10 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
             
             if (response.data?.success) {
                 // Ensure we have an array of items
-                const items = Array.isArray(response.data.data) 
-                    ? response.data.data 
-                    : (response.data.data?.items || []);
+                const payload = response.data.data as ArticlesListPayload | undefined;
+                const items = Array.isArray(payload)
+                    ? payload
+                    : (payload?.items || []);
                 setResults(items);
             }
         } catch (error) {
@@ -116,9 +134,9 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
                                         className="flex items-center gap-3 p-2 cursor-pointer"
                                     >
                                         <div className="h-10 w-10 shrink-0 rounded bg-muted overflow-hidden">
-                                            {thumbnailInfo?.url ? (
+                                            {thumbnailInfo.imageUrl ? (
                                                 <img 
-                                                    src={thumbnailInfo.url} 
+                                                    src={thumbnailInfo.imageUrl} 
                                                     alt="" 
                                                     className="h-full w-full object-cover"
                                                 />

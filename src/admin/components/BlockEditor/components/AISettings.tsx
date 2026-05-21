@@ -16,6 +16,52 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/ui/collap
 import { cn } from '@/lib/utils';
 import { aiAPI } from '@/services/api';
 
+type AIModel = {
+    id: string;
+    name: string;
+    description?: string;
+    maxTokens?: number;
+    contextWindow?: number;
+};
+
+type ProviderInfo = {
+    icon?: string;
+    name?: string;
+};
+
+type AISettingsProps = {
+    contentType?: string;
+    onContentGenerated?: (content: GeneratedContent) => void;
+    disabled?: boolean;
+};
+
+type GeneratedContent = {
+    label?: string;
+    shortDescription?: string;
+    [key: string]: unknown;
+};
+
+type ProviderDefaults = {
+    provider?: string;
+    model?: string;
+};
+
+type ProvidersResponse = {
+    configuredProviders?: string[];
+    availableModels?: Record<string, AIModel[]>;
+    providerInfo?: Record<string, ProviderInfo>;
+    defaults?: ProviderDefaults;
+};
+
+type ApiErrorLike = {
+    response?: {
+        data?: {
+            error?: string;
+        };
+    };
+    message?: string;
+};
+
 /**
  * AI Settings Panel for Block Editor Sidebar
  */
@@ -23,17 +69,17 @@ export default function AISettings({
     contentType = 'recipe',
     onContentGenerated,
     disabled = false,
-}) {
+}: AISettingsProps) {
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
     // Provider/Model configuration
-    const [providers, setProviders] = useState([]);
-    const [availableModels, setAvailableModels] = useState({});
-    const [providerInfo, setProviderInfo] = useState({});
-    const [defaults, setDefaults] = useState({});
+    const [providers, setProviders] = useState<string[]>([]);
+    const [availableModels, setAvailableModels] = useState<Record<string, AIModel[]>>({});
+    const [providerInfo, setProviderInfo] = useState<Record<string, ProviderInfo>>({});
+    const [, setDefaults] = useState<ProviderDefaults>({});
 
     // User selections
     const [selectedProvider, setSelectedProvider] = useState('');
@@ -41,7 +87,7 @@ export default function AISettings({
     const [prompt, setPrompt] = useState('');
 
     // Generated content preview
-    const [generatedContent, setGeneratedContent] = useState(null);
+    const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
     const [showAdvanced, setShowAdvanced] = useState(false);
 
     // Load available providers
@@ -51,8 +97,8 @@ export default function AISettings({
             setError(null);
             const response = await aiAPI.getProviders();
             if (response.data.success) {
-                const { configuredProviders, availableModels: models, providerInfo: info, defaults: defs } = response.data.data;
-                setProviders(configuredProviders || []);
+                const { configuredProviders = [], availableModels: models, providerInfo: info, defaults: defs } = response.data.data as ProvidersResponse;
+                setProviders(configuredProviders);
                 setAvailableModels(models || {});
                 setProviderInfo(info || {});
                 setDefaults(defs || {});
@@ -114,7 +160,8 @@ export default function AISettings({
             }
         } catch (err) {
             console.error('AI generation failed:', err);
-            setError(err.response?.data?.error || err.message || 'Generation failed');
+            const apiError = err as ApiErrorLike;
+            setError(apiError.response?.data?.error || apiError.message || 'Generation failed');
         } finally {
             setGenerating(false);
         }

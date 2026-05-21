@@ -89,14 +89,54 @@ function normalizeIngredientGroups(value: unknown) {
     if (!isRecord(group)) return { group_title: 'Ingredients', items: [] };
     return {
       group_title: stringOrNull(group.group_title) ?? stringOrNull(group.group) ?? 'Ingredients',
-      items: arrayOrEmpty(group.items).map((item) => {
-        if (typeof item === 'string') return { name: item, amount: null, unit: null };
-        if (!isRecord(item)) return { name: '', amount: null, unit: null };
+      items: arrayOrEmpty(group.items).map((item, index) => {
+        if (typeof item === 'string') {
+          return {
+            id: `ingredient-${index + 1}`,
+            amount: null,
+            unit: null,
+            name: item,
+            prep: null,
+            notes: null,
+            is_optional: false,
+            substitutes: [],
+          };
+        }
+        if (!isRecord(item)) {
+          return {
+            id: `ingredient-${index + 1}`,
+            amount: null,
+            unit: null,
+            name: '',
+            prep: null,
+            notes: null,
+            is_optional: false,
+            substitutes: [],
+          };
+        }
+
+        const rawSubstitutes = arrayOrEmpty(item.substitutes);
+        const substitutes = rawSubstitutes.map((sub) => {
+          if (typeof sub === 'string') return { name: sub, ratio: null, notes: null };
+          if (isRecord(sub)) {
+            return {
+              name: stringOrNull(sub.name) ?? '',
+              ratio: stringOrNull(sub.ratio) ?? null,
+              notes: stringOrNull(sub.notes) ?? null,
+            };
+          }
+          return { name: '', ratio: null, notes: null };
+        });
+
         return {
-          ...item,
+          id: stringOrNull(item.id) ?? stringOrNull(item.ingredient_id) ?? `ingredient-${index + 1}`,
+          amount: numberOrNull(item.amount),
+          unit: item.unit !== undefined ? stringOrNull(item.unit) : null,
           name: stringOrNull(item.name) ?? '',
-          amount: item.amount ?? null,
-          unit: item.unit ?? null,
+          prep: stringOrNull(item.prep) ?? null,
+          notes: stringOrNull(item.notes) ?? null,
+          is_optional: Boolean(item.is_optional ?? item.isOptional ?? false),
+          substitutes,
         };
       }),
     };
@@ -109,24 +149,37 @@ function normalizeInstructions(value: unknown) {
     return {
       section_title: stringOrNull(section.section_title) ?? stringOrNull(section.group),
       steps: arrayOrEmpty(section.steps).map((step, index) => {
-        if (typeof step === 'string') return { id: `step-${index + 1}`, text: step };
-        if (!isRecord(step)) return { id: `step-${index + 1}`, text: '' };
-        const normalized: JsonRecord = {
-          ...step,
-          id: stringOrNull(step.id) ?? `step-${index + 1}`,
-          text: stringOrNull(step.text) ?? '',
-        };
-        const imageRef = stringOrNull(pick(step, 'image_ref', 'imageRef'));
-        if (imageRef) {
-          normalized.image_ref = imageRef;
-        } else {
-          delete normalized.image_ref;
+        if (typeof step === 'string') {
+          return {
+            id: `step-${index + 1}`,
+            name: null,
+            text: step,
+            image_ref: null,
+            timer: null,
+            tip: null,
+          };
         }
-        delete normalized.image;
-        delete normalized.imageUrl;
-        delete normalized.image_url;
-        delete normalized.imageRef;
-        return normalized;
+        if (!isRecord(step)) {
+          return {
+            id: `step-${index + 1}`,
+            name: null,
+            text: '',
+            image_ref: null,
+            timer: null,
+            tip: null,
+          };
+        }
+
+        const timerVal = numberOrNull(step.timer);
+
+        return {
+          id: stringOrNull(step.id) ?? `step-${index + 1}`,
+          name: stringOrNull(step.name) ?? null,
+          text: stringOrNull(step.text) ?? '',
+          image_ref: stringOrNull(pick(step, 'image_ref', 'imageRef')) ?? null,
+          timer: timerVal !== null && timerVal > 0 ? timerVal : null,
+          tip: stringOrNull(step.tip) ?? null,
+        };
       }),
     };
   });

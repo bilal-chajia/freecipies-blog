@@ -1,14 +1,26 @@
 import React, { Component } from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCcw, Home } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
+
+interface ErrorBoundaryProps {
+    fallbackMessage?: string;
+    children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+    hasError: boolean;
+    error: Error | null;
+    errorInfo: ErrorInfo | null;
+}
 
 /**
  * Error Boundary Component for Admin Panel
  * Catches JavaScript errors anywhere in child component tree and displays a fallback UI
  */
-class ErrorBoundary extends Component {
-    constructor(props) {
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    constructor(props: ErrorBoundaryProps) {
         super(props);
         this.state = {
             hasError: false,
@@ -17,12 +29,12 @@ class ErrorBoundary extends Component {
         };
     }
 
-    static getDerivedStateFromError(error) {
+    static getDerivedStateFromError(_error: Error): Partial<ErrorBoundaryState> {
         // Update state so the next render will show the fallback UI
         return { hasError: true };
     }
 
-    componentDidCatch(error, errorInfo) {
+    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         // Log the error to console (could also send to error reporting service)
         console.error('ErrorBoundary caught an error:', error, errorInfo);
         this.setState({

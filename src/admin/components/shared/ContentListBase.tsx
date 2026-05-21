@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import type { LucideIcon } from 'lucide-react';
+import type { ColumnDef, Row } from '@tanstack/react-table';
 import { motion } from 'motion/react';
 import {
     Plus,
@@ -37,9 +39,58 @@ import { formatDate, formatRelativeTime, formatNumber, debounce, toAdminImageUrl
 import { useArticlesStore, useCategoriesStore, useAuthorsStore, useTagsStore } from '../../store/useStore';
 import { PinCreator } from '@admin/features/pins/components';
 import ArticleFilters from '@admin/features/articles/pages/ArticleFilters';
+import type { ContentFilters, ContentType, CategoryItem, AuthorItem, TagItem } from '@admin/features/articles/pages/ArticleFilters';
 import ConfirmationModal from '@/ui/confirmation-modal';
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/ui/EmptyState';
+
+type ContentListItem = {
+    id: string | number;
+    slug?: string;
+    label?: string;
+    headline?: string;
+    imageUrl?: string;
+    imageAlt?: string;
+    isFavorite?: boolean;
+    categoryLabel?: string;
+    viewCount?: number;
+    authorAvatar?: string;
+    authorName?: string;
+    isOnline?: boolean;
+    publishedAt?: string;
+    createdAt?: string;
+    [key: string]: unknown;
+};
+
+type ArticleQueryParams = {
+    page: number;
+    limit: number;
+    type: ContentType;
+    category?: string;
+    author?: string;
+    status?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+};
+
+type ContentListBaseProps = {
+    contentType: ContentType;
+    title: string;
+    description: string;
+    newButtonLabel: string;
+    newButtonPath: string;
+    editPathPrefix: string;
+    livePathPrefix: string;
+    editIdField?: string;
+    typeIcon?: LucideIcon;
+    statsLabel?: string;
+};
+
+type DeleteModalState = {
+    isOpen: boolean;
+    itemToDelete: string | number | null;
+};
 
 const ContentListBase = ({
     contentType,
@@ -52,16 +103,17 @@ const ContentListBase = ({
     editIdField = 'id',
     typeIcon: TypeIcon = FileText,
     statsLabel = 'Total Items',
-}) => {
+}: ContentListBaseProps) => {
     const navigate = useNavigate();
 
-    const { articles, filters, pagination, setArticles, setFilters, setPagination } = useArticlesStore();
+    const { articles: rawArticles, filters, pagination, setArticles, setFilters, setPagination } = useArticlesStore();
+    const articles = rawArticles as ContentListItem[];
     const { categories, setCategories } = useCategoriesStore();
     const { authors, setAuthors } = useAuthorsStore();
     const { tags, setTags } = useTagsStore();
     const [loading, setLoading] = useState(true);
-    const [selectedRows, setSelectedRows] = useState([]);
-    const [localFilters, setLocalFilters] = useState({
+    const [selectedRows, setSelectedRows] = useState<ContentListItem[]>([]);
+    const [localFilters, setLocalFilters] = useState<ContentFilters>({
         search: '',
         type: contentType,
         category: 'all',
@@ -75,9 +127,9 @@ const ContentListBase = ({
 
     // Pin Creator state
     const [showPinCreator, setShowPinCreator] = useState(false);
-    const [selectedArticleForPin, setSelectedArticleForPin] = useState(null);
+    const [selectedArticleForPin, setSelectedArticleForPin] = useState<ContentListItem | null>(null);
 
-    const [deleteModal, setDeleteModal] = useState({
+    const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
         isOpen: false,
         itemToDelete: null
     });
@@ -115,7 +167,7 @@ const ContentListBase = ({
     const loadArticles = useCallback(async () => {
         try {
             setLoading(true);
-            const params = {
+            const params: ArticleQueryParams = {
                 page: pagination.page,
                 limit: pagination.limit,
                 type: contentType,
@@ -131,7 +183,7 @@ const ContentListBase = ({
             const response = await articlesAPI.getAll(params);
 
             if (response.data.success) {
-                const articlesData = response.data.data || [];
+                const articlesData = (response.data.data || []) as ContentListItem[];
                 const paginationData = response.data.pagination || {};
 
                 setArticles(articlesData);
@@ -155,11 +207,11 @@ const ContentListBase = ({
         loadArticles();
     }, [loadArticles]);
 
-    const handleRowSelectionChange = (rows) => {
+    const handleRowSelectionChange = (rows: ContentListItem[]) => {
         setSelectedRows(rows);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = (id: string | number) => {
         setDeleteModal({ isOpen: true, itemToDelete: id });
     };
 
@@ -176,7 +228,7 @@ const ContentListBase = ({
         }
     };
 
-    const handleToggleOnline = async (id) => {
+    const handleToggleOnline = async (id: string | number) => {
         try {
             await articlesAPI.toggleOnline(id);
             toast.success('Status updated');
@@ -187,17 +239,17 @@ const ContentListBase = ({
     };
 
     const debouncedSearch = useMemo(
-        () => debounce((value) => {
+        () => debounce((value: string) => {
             setFilters({ search: value });
             setPagination({ page: 1 });
         }, 500),
         [setFilters, setPagination]
     );
 
-    const handleFilterChange = (keyOrObj, value) => {
+    const handleFilterChange = (keyOrObj: keyof ContentFilters | Partial<ContentFilters>, value?: string | (string | number)[]) => {
         if (typeof keyOrObj === 'object' && keyOrObj !== null) {
             setLocalFilters(prev => ({ ...prev, ...keyOrObj }));
-            setFilters(keyOrObj);
+            setFilters(keyOrObj as Parameters<typeof setFilters>[0]);
             setPagination({ page: 1 });
             return;
         }
@@ -206,9 +258,11 @@ const ContentListBase = ({
         setLocalFilters(prev => ({ ...prev, [key]: value }));
 
         if (key === 'search') {
-            debouncedSearch(value);
+            if (typeof value === 'string') {
+                debouncedSearch(value);
+            }
         } else {
-            setFilters({ [key]: value });
+            setFilters({ [key]: value } as Parameters<typeof setFilters>[0]);
             setPagination({ page: 1 });
         }
     };
@@ -237,11 +291,11 @@ const ContentListBase = ({
         });
     }, [localFilters]);
 
-    const columns = useMemo(() => [
+    const columns = useMemo<ColumnDef<ContentListItem>[]>(() => [
         {
             accessorKey: 'label',
             header: 'Content',
-            cell: ({ row }) => {
+            cell: ({ row }: { row: Row<ContentListItem> }) => {
                 const item = row.original;
                 const imageUrl = toAdminImageUrl(item.imageUrl || '');
                 const imageAlt = item.imageAlt || item.label || item.headline || '';
@@ -291,7 +345,7 @@ const ContentListBase = ({
             accessorKey: 'authorName',
             header: 'Author',
             meta: { className: 'hidden md:table-cell' },
-            cell: ({ row }) => {
+            cell: ({ row }: { row: Row<ContentListItem> }) => {
                 const item = row.original;
                 return (
                     <div className="flex items-center gap-2">
@@ -309,11 +363,11 @@ const ContentListBase = ({
         {
             accessorKey: 'status',
             header: 'Status',
-            cell: ({ row }) => {
+            cell: ({ row }: { row: Row<ContentListItem> }) => {
                 const isOnline = row.original.isOnline;
                 return (
                     <Badge
-                        variant={isOnline ? "success" : "secondary"}
+                        variant="secondary"
                         className={`gap-1 px-2.5 py-0.5 font-medium ${isOnline ? "bg-success/10 text-success border-success/20" : ""}`}
                     >
                         {isOnline ? <CheckCircle2 className="size-3" /> : <Clock className="size-3" />}
@@ -326,7 +380,7 @@ const ContentListBase = ({
             accessorKey: 'publishedAt',
             header: 'Date',
             meta: { className: 'hidden md:table-cell' },
-            cell: ({ row }) => (
+            cell: ({ row }: { row: Row<ContentListItem> }) => (
                 <div className="flex flex-col">
                     <span className="text-sm font-medium">
                         {formatDate(row.original.publishedAt || row.original.createdAt, 'MMM dd, yyyy')}
@@ -340,7 +394,7 @@ const ContentListBase = ({
         {
             id: 'actions',
             header: '',
-            cell: ({ row }) => {
+            cell: ({ row }: { row: Row<ContentListItem> }) => {
                 const item = row.original;
                 return (
                     <div className="flex items-center justify-end gap-2">
@@ -439,7 +493,7 @@ const ContentListBase = ({
                     <CardContent className="pt-4 flex items-center justify-between">
                         <div className="space-y-1">
                             <p className="text-xs font-semibold text-success uppercase tracking-wider">Published</p>
-                            <p className="text-2xl font-bold">{articles.filter(a => a.isOnline).length}</p>
+                            <p className="text-2xl font-bold">{(articles as ContentListItem[]).filter(a => a.isOnline).length}</p>
                         </div>
                         <div className="p-2 bg-success/10 rounded-lg text-success">
                             <CheckCircle2 className="size-5" />
@@ -456,9 +510,9 @@ const ContentListBase = ({
                     setShowFilters={setShowFilters}
                     hasActiveFilters={hasActiveFilters}
                     onClearFilters={handleClearFilters}
-                    categories={categories}
-                    authors={authors}
-                    tags={tags}
+                    categories={categories as Parameters<typeof ArticleFilters>[0]['categories']}
+                    authors={authors as Parameters<typeof ArticleFilters>[0]['authors']}
+                    tags={tags as Parameters<typeof ArticleFilters>[0]['tags']}
                     fixedType={contentType}
                 />
 
@@ -490,11 +544,11 @@ const ContentListBase = ({
 
                 {articles.length === 0 && !loading ? (
                     <EmptyState
-                        icon={TypeIcon}
+                        icon={contentType}
                         title={`No ${title} Yet`}
                         description={`Get started by creating your first ${contentType}.`}
                         actionLabel={`New ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}`}
-                        actionPath={newButtonPath}
+                        actionHref={newButtonPath}
                     />
                 ) : (
                     <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">

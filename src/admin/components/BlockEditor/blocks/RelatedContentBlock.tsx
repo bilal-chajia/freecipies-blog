@@ -6,14 +6,51 @@
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import { LayoutGrid } from 'lucide-react';
-import { getBestVariantUrl, getSrcSet } from '@shared/types/images';
+import { getBestVariantUrl, getSrcSet, type ImageSlot } from '@shared/types/images';
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
 import { useBlockSelection } from '../selection-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
-const parseList = (value) => {
+type RelatedContentType = 'recipe' | 'article' | 'roundup';
+type RelatedLayout = 'grid' | 'carousel' | 'list';
+
+type RelatedThumbnail = Partial<ImageSlot> & {
+    url?: string;
+    focal_point?: {
+        x: number;
+        y: number;
+    };
+    aspectRatio?: string;
+    [key: string]: unknown;
+};
+
+type RelatedItem = {
+    id: string | number;
+    headline?: string;
+    slug?: string;
+    categoryName?: string;
+    categoryColor?: string;
+    thumbnail?: RelatedThumbnail;
+    total_time?: number;
+    difficulty?: string;
+    reading_time?: number;
+    item_count?: number;
+};
+
+type TypedRelatedItem = RelatedItem & {
+    __type: RelatedContentType;
+};
+
+type RelatedGroup = {
+    type: RelatedContentType;
+    label: string;
+    items: TypedRelatedItem[];
+};
+
+const parseList = (value: string): RelatedItem[] => {
     if (!value) return [];
     try {
         const parsed = JSON.parse(value);
@@ -23,20 +60,20 @@ const parseList = (value) => {
     }
 };
 
-const GROUP_LABELS = {
+const GROUP_LABELS: Record<RelatedContentType, string> = {
     recipe: 'Recipes',
     article: 'Articles',
     roundup: 'Roundups',
 };
 
-const TYPE_LABEL_SINGULAR = {
+const TYPE_LABEL_SINGULAR: Record<RelatedContentType, string> = {
     recipe: 'Recipe',
     article: 'Article',
     roundup: 'Roundup',
 };
 
 // Normalize hex color - strip alpha if 8 chars (#rrggbbaa -> #rrggbb)
-const normalizeCategoryColor = (color) => {
+const normalizeCategoryColor = (color?: string) => {
     if (!color) return '#ff6600';
     const hex = color.startsWith('#') ? color : `#${color}`;
     // If 9 chars (#rrggbbaa), strip last 2 (alpha)
@@ -54,6 +91,7 @@ export const RelatedContentBlock = createReactBlockSpec(
             recipesJson: { default: '[]' },
             articlesJson: { default: '[]' },
             roundupsJson: { default: '[]' },
+            itemsJson: { default: '[]' },
         },
         content: 'none',
     },
@@ -89,7 +127,7 @@ export const RelatedContentBlock = createReactBlockSpec(
                 />
             );
 
-            const savedLayout = block.props.layout || 'grid';
+            const savedLayout = (block.props.layout || 'grid') as RelatedLayout;
             const savedTitle = block.props.title || '';
 
             const savedRecipes = useMemo(
@@ -106,24 +144,25 @@ export const RelatedContentBlock = createReactBlockSpec(
             );
 
             const savedGroups = useMemo(() => {
-                const withType = (items, type) => (Array.isArray(items)
+                const withType = (items: RelatedItem[], type: RelatedContentType): TypedRelatedItem[] => (Array.isArray(items)
                     ? items.map((item) => ({ ...item, __type: type }))
                     : []);
                 return [
                     { type: 'recipe', label: GROUP_LABELS.recipe, items: withType(savedRecipes, 'recipe') },
                     { type: 'article', label: GROUP_LABELS.article, items: withType(savedArticles, 'article') },
                     { type: 'roundup', label: GROUP_LABELS.roundup, items: withType(savedRoundups, 'roundup') },
-                ].filter((group) => group.items.length > 0);
+                ].filter((group): group is RelatedGroup => group.items.length > 0);
             }, [savedRecipes, savedArticles, savedRoundups]);
 
             const savedTotalSelected = savedRecipes.length + savedArticles.length + savedRoundups.length;
             const savedTitleValue = savedTitle.trim();
 
-            const resolveThumbnail = (slot) => {
+            const resolveThumbnail = (slot?: RelatedThumbnail) => {
                 if (!slot) return { url: '', srcSet: '', style: undefined };
-                const url = getBestVariantUrl(slot) || slot.url || '';
-                const srcSet = getSrcSet(slot) || '';
-                const style = {};
+                const resolvedSlot = slot as ImageSlot;
+                const url = getBestVariantUrl(resolvedSlot) || slot.url || '';
+                const srcSet = getSrcSet(resolvedSlot) || '';
+                const style: CSSProperties = {};
                 if (slot.focal_point) {
                     style.objectPosition = `${slot.focal_point.x}% ${slot.focal_point.y}%`;
                 }
@@ -135,8 +174,8 @@ export const RelatedContentBlock = createReactBlockSpec(
                 return { url, srcSet, style: Object.keys(style).length ? style : undefined };
             };
 
-            const buildMeta = (item, itemType) => {
-                const parts = [];
+            const buildMeta = (item: TypedRelatedItem, itemType: RelatedContentType) => {
+                const parts: string[] = [];
                 if (itemType === 'recipe') {
                     if (typeof item.total_time === 'number') parts.push(`${item.total_time} min`);
                     if (item.difficulty) parts.push(String(item.difficulty));
@@ -150,7 +189,7 @@ export const RelatedContentBlock = createReactBlockSpec(
                 return parts;
             };
 
-            const getLayoutClasses = (layoutValue) => {
+            const getLayoutClasses = (layoutValue: RelatedLayout) => {
                 if (layoutValue === 'list') {
                     return {
                         listClass: 'flex flex-col',
@@ -172,7 +211,7 @@ export const RelatedContentBlock = createReactBlockSpec(
                 };
             };
 
-            const renderPreviewCards = (groupsList, layoutValue) => {
+            const renderPreviewCards = (groupsList: RelatedGroup[], layoutValue: RelatedLayout) => {
                 const { listClass, isList, isCarousel } = getLayoutClasses(layoutValue);
                 return groupsList.map((group) => (
                     <div key={group.type} className="space-y-2">
@@ -328,7 +367,3 @@ export const RelatedContentBlock = createReactBlockSpec(
         },
     }
 );
-
-
-
-

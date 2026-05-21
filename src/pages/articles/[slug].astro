@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import ArticleLayout from "@layouts/ArticleLayout.astro";
 import SEO from "@components/SEO.astro";
 import { getArticleBySlug, getArticleById } from "@modules/articles";
+import { parseJsonLdArray } from "@modules/articles/utils/cached-fields";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 
 const { slug } = Astro.params;
@@ -46,9 +47,7 @@ const heroImage = useHeroSlot ? heroSlot : heroThumb;
 const author = (article as any).author || null;
 const category = (article as any).category || null;
 
-const jsonldSchemas = typeof article.jsonldJson === 'string' 
-  ? JSON.parse(article.jsonldJson || '[]') 
-  : (article.jsonldJson || []);
+const jsonldSchemas = parseJsonLdArray(article.jsonldJson);
 
 const pageTitle = article.metaTitle || article.headline;
 const pageDescription = article.metaDescription || article.shortDescription;

@@ -11,6 +11,8 @@ import HeroImage from "../components/content/HeroImage.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
 import Breadcrumb from "../components/Breadcrumb.astro";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import { resolveVariantUrl, getSrcSet, type ImageSlot } from "@shared/types/images";
+import { getReadingTimeDisplay } from "@modules/articles/utils/cached-fields";
 import {
   getPopularRecipes,
   getSiteTocSettings,
@@ -28,16 +30,7 @@ const categoryColor = category?.color || "#ff6600";
 const tocSettings = await getSiteTocSettings();
 const popularRecipes = await getPopularRecipes(article.slug, 5);
 
-const wordCount = [
-  article.shortDescription,
-  article.introduction,
-  JSON.stringify(article.contentJson || []),
-]
-  .filter(Boolean)
-  .join(" ")
-  .split(/\s+/).length;
-
-const readingTime = Math.max(3, Math.ceil(wordCount / 200));
+const readingTime = getReadingTimeDisplay(article);
 const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
 
 const heroSlot = extractImage(article.imagesJson, "hero", 1200);
@@ -48,12 +41,40 @@ const useHeroSlot = heroSlot.imageUrl && (heroSlotSrcSet || !heroThumb.imageUrl)
 const heroSrcSet = useHeroSlot ? heroSlotSrcSet : thumbSrcSet;
 const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
-const authorAvatar = author?.imagesJson
-  ? extractImage(author.imagesJson, "avatar", 96)
-  : {};
+let authorAvatar: {
+  imageUrl?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageAspectRatio?: string;
+  imageObjectPosition?: string;
+  imageStyle?: string;
+} = {};
+
+if (author) {
+  if (author.imagesJson) {
+    authorAvatar = extractImage(author.imagesJson, "avatar", 96);
+  } else if (author.avatar) {
+    const avatarSlot = author.avatar;
+    if (typeof avatarSlot === 'string') {
+      authorAvatar = { imageUrl: avatarSlot, imageWidth: 96, imageHeight: 96 };
+    } else if (avatarSlot && typeof avatarSlot === 'object') {
+      const variants = avatarSlot.variants || {};
+      const bestVariant = variants.sm || variants.xs || null;
+      authorAvatar = {
+        imageUrl: resolveVariantUrl(bestVariant) || (avatarSlot as ImageSlot & { url?: string }).url || undefined,
+        imageAlt: avatarSlot.alt || undefined,
+        imageWidth: bestVariant?.width || 96,
+        imageHeight: bestVariant?.height || 96,
+        imageStyle: avatarSlot.focal_point ? `object-position: ${avatarSlot.focal_point.x}% ${avatarSlot.focal_point.y}%;` : undefined,
+      };
+    }
+  }
+}
+
 const authorAvatarSrcSet = author?.imagesJson
   ? getImageSrcSet(author.imagesJson, "avatar")
-  : "";
+  : (author?.avatar && typeof author.avatar === 'object' ? getSrcSet(author.avatar as ImageSlot) : "");
 const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
 const authorImage = authorAvatar.imageUrl || author?.imageUrl;
 const authorImageWidth = authorAvatar.imageWidth || 48;
@@ -71,27 +92,7 @@ const breadcrumbItems = [
   { label: truncate(article.label || article.headline, 50) },
 ];
 
-// JSON-LD BreadcrumbList
-const breadcrumbJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: Astro.site?.origin || "/" },
-    ...(category
-      ? [{
-          "@type": "ListItem",
-          position: 2,
-          name: category.label,
-          item: `${Astro.site?.origin || ""}/categories/${category.slug}`,
-        }]
-      : []),
-    {
-      "@type": "ListItem",
-      position: category ? 3 : 2,
-      name: article.label || article.headline,
-    },
-  ],
-};
+
 
 ---
 
@@ -117,11 +118,7 @@ const breadcrumbJsonLd = {
       />
     )
   }
-  <script
-    slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify(breadcrumbJsonLd)}
-  />
+
 
   <article
     class="article-page"

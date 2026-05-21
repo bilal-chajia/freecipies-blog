@@ -13,6 +13,8 @@
  */
 
 import { forwardRef } from 'react';
+import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import {
     GripVertical,
     ChevronUp,
@@ -37,7 +39,13 @@ import {
 /**
  * Toolbar button with optional tooltip
  */
-export const ToolbarButton = forwardRef(({
+interface ToolbarButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+    icon: LucideIcon;
+    label?: string;
+    isActive?: boolean;
+}
+
+export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(({
     icon: Icon,
     label,
     isActive = false,
@@ -106,7 +114,7 @@ export function ToolbarSeparator() {
 /**
  * Toolbar group container
  */
-export function ToolbarGroup({ children, className }) {
+export function ToolbarGroup({ children, className }: { children?: ReactNode; className?: string }) {
     return (
         <div className={cn(
             'wp-block-toolbar__group',
@@ -126,6 +134,11 @@ export function BlockTypeIndicator({
     label,
     onSwitchType,
     switchOptions = [],
+}: {
+    icon: LucideIcon;
+    label?: string;
+    onSwitchType?: (value: string) => void;
+    switchOptions?: Array<{ value: string; label: string; icon: LucideIcon }>;
 }) {
     if (switchOptions.length === 0) {
         return (
@@ -187,6 +200,13 @@ export function BlockMover({
     canMoveDown = true,
     showDragHandle = true,
     dragHandleProps,
+}: {
+    onMoveUp?: () => void;
+    onMoveDown?: () => void;
+    canMoveUp?: boolean;
+    canMoveDown?: boolean;
+    showDragHandle?: boolean;
+    dragHandleProps?: ButtonHTMLAttributes<HTMLButtonElement>;
 }) {
     return (
         <ToolbarGroup>
@@ -273,6 +293,11 @@ export function BlockMoreMenu({
     onDelete,
     onCopy,
     children,
+}: {
+    onDuplicate?: () => void;
+    onDelete?: () => void;
+    onCopy?: () => void;
+    children?: ReactNode;
 }) {
     return (
         <DropdownMenu>
@@ -324,7 +349,27 @@ export function BlockMoreMenu({
  * Complete BlockToolbar component
  * Assembles all toolbar elements following WordPress patterns
  */
-const BlockToolbar = forwardRef(({
+interface BlockToolbarProps extends HTMLAttributes<HTMLDivElement> {
+    blockIcon?: LucideIcon;
+    blockLabel?: string;
+    onSwitchType?: (value: string) => void;
+    switchOptions?: Array<{ value: string; label: string; icon: LucideIcon }>;
+    showMover?: boolean;
+    onMoveUp?: () => void;
+    onMoveDown?: () => void;
+    canMoveUp?: boolean;
+    canMoveDown?: boolean;
+    showDragHandle?: boolean;
+    dragHandleProps?: ButtonHTMLAttributes<HTMLButtonElement>;
+    children?: ReactNode;
+    showMoreMenu?: boolean;
+    onDuplicate?: () => void;
+    onDelete?: () => void;
+    onCopy?: () => void;
+    moreMenuContent?: ReactNode;
+}
+
+const BlockToolbar = forwardRef<HTMLDivElement, BlockToolbarProps>(({
     // Block type indicator
     blockIcon,
     blockLabel,

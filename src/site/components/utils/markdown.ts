@@ -1,10 +1,11 @@
 export function sanitizeHref(href: string): string {
   if (!href) return "";
-  if (href.startsWith("/") || href.startsWith("#")) return href;
+  const trimmed = href.trim();
+  if (trimmed.startsWith("/") || trimmed.startsWith("#")) return trimmed;
   try {
-    const url = new URL(href);
+    const url = new URL(trimmed);
     if (["http:", "https:", "mailto:", "tel:"].includes(url.protocol)) {
-      return href;
+      return trimmed;
     }
   } catch {
     return "";

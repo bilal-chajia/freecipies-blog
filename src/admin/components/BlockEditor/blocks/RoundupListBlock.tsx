@@ -9,6 +9,21 @@ import { useBlockSelection } from '../selection-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 import { getBestVariantUrl } from '@shared/types/images';
 
+type RoundupListItem = {
+    articleId?: string | number;
+    article_id?: string | number;
+    externalUrl?: string;
+    title?: string;
+    subtitle?: string;
+    note?: string;
+    image?: Parameters<typeof getBestVariantUrl>[0];
+    stats?: {
+        totalTime?: number;
+        difficulty?: string;
+        rating?: number | string;
+    };
+};
+
 /**
  * RoundupListBlock
  * 
@@ -46,7 +61,7 @@ export const RoundupListBlock = createReactBlockSpec(
                 isDragging,
             } = useBlockDragHandle(block.id);
 
-            const items = useMemo(() => {
+            const items = useMemo<RoundupListItem[]>(() => {
                 try {
                     const parsed = JSON.parse(block.props.itemsJson);
                     return Array.isArray(parsed) ? parsed : [];
@@ -132,7 +147,7 @@ export const RoundupListBlock = createReactBlockSpec(
                                             <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-muted relative">
                                                 {item.image?.variants ? (
                                                     <img 
-                                                        src={getBestVariantUrl(item.image, 'xs')} 
+                                                        src={getBestVariantUrl(item.image) || undefined} 
                                                         alt="" 
                                                         className="w-full h-full object-cover"
                                                     />
@@ -152,7 +167,7 @@ export const RoundupListBlock = createReactBlockSpec(
                                                     <h4 className="font-bold text-sm text-foreground line-clamp-1">
                                                         {item.title || "Untitled Item"}
                                                     </h4>
-                                                    {item.articleId ? (
+                                                    {item.articleId || item.article_id ? (
                                                         <Link2 className="h-3 w-3 text-muted-foreground opacity-50" />
                                                     ) : (
                                                         <ExternalLink className="h-3 w-3 text-muted-foreground opacity-50" />

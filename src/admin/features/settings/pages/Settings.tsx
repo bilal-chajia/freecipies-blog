@@ -22,6 +22,7 @@ import ImageUploadSettings from './tabs/ImageUploadSettings';
 import AISettings, { aiSettingsTabs } from './tabs/AISettings';
 import { toast } from 'sonner';
 import type { MenuDocument, MenuLocation } from '@modules/menus/types/menus.types';
+import api from '@admin/services/api-client';
 
 type MainSettingsTab =
   | 'general'
@@ -293,10 +294,11 @@ const Settings = () => {
     setFormData(prev => ({ ...prev, ...updatedMockSettings }));
 
     // Load menu settings from API
-    fetch('/api/settings/menus')
-      .then(res => res.json())
-      .then((data: SettingsApiResponse) => {
-        if (data.menu_header || data.menu_footer || data.menu_mobile || data.menu_sidebar) {
+    api.get('/settings/menus')
+      .then(res => res.data)
+      .then((res: { success: boolean; data: SettingsApiResponse }) => {
+        const data = res.data;
+        if (data && (data.menu_header || data.menu_footer || data.menu_mobile || data.menu_sidebar)) {
           setFormData(prev => ({
             ...prev,
             ...(data.menu_header && { menu_header: data.menu_header }),
@@ -309,10 +311,11 @@ const Settings = () => {
       .catch(() => toast.error('Failed to load menus'));
 
     // Load appearance settings from API (TOC settings)
-    fetch('/api/settings/appearance')
-      .then(res => res.json())
-      .then((data: SettingsApiResponse) => {
-        if (data.toc) {
+    api.get('/settings/appearance')
+      .then(res => res.data)
+      .then((res: { success: boolean; data: SettingsApiResponse }) => {
+        const data = res.data;
+        if (data && data.toc) {
           const toc = data.toc;
           setFormData(prev => ({
             ...prev,
@@ -342,43 +345,27 @@ const Settings = () => {
 
       // Save menu settings to API if on menus tab
       if (tab === 'menus') {
-        const response = await fetch('/api/settings/menus', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            menu_header: formData.menu_header,
-            menu_footer: formData.menu_footer,
-            menu_mobile: formData.menu_mobile,
-            menu_sidebar: formData.menu_sidebar,
-          }),
+        await api.put('/settings/menus', {
+          menu_header: formData.menu_header,
+          menu_footer: formData.menu_footer,
+          menu_mobile: formData.menu_mobile,
+          menu_sidebar: formData.menu_sidebar,
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to save menu settings');
-        }
       }
 
       // Save appearance settings to API if on appearance tab
       if (tab === 'appearance') {
-        const response = await fetch('/api/settings/appearance', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            toc: {
-              enabled: formData.tocEnabled,
-              numbering: formData.tocNumbering,
-              collapsible: formData.tocCollapsible,
-              default_open: formData.tocDefaultOpen,
-              show_jump_button: formData.tocShowJumpButton,
-              accent_color: formData.tocAccentColor,
-              max_depth: formData.tocMaxDepth,
-            },
-          }),
+        await api.put('/settings/appearance', {
+          toc: {
+            enabled: formData.tocEnabled,
+            numbering: formData.tocNumbering,
+            collapsible: formData.tocCollapsible,
+            default_open: formData.tocDefaultOpen,
+            show_jump_button: formData.tocShowJumpButton,
+            accent_color: formData.tocAccentColor,
+            max_depth: formData.tocMaxDepth,
+          },
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to save appearance settings');
-        }
       }
 
       // For other settings, use the store (TODO: add more API endpoints)

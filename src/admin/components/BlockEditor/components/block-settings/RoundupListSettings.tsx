@@ -16,12 +16,76 @@ import {
 import { Badge } from '@/ui/badge';
 import { SettingsSection } from '../DocumentSettings';
 
-const parseJsonObject = (value) => {
+type JsonRecord = Record<string, unknown>;
+
+type RoundupRecipe = {
+    total_time_minutes?: number | null;
+    difficulty?: string | null;
+    servings?: number | string | null;
+};
+
+type RoundupListItem = {
+    source_type: 'internal_recipe';
+    article_id: string | number;
+    slug?: string;
+    title: string;
+    subtitle?: string;
+    description?: string;
+    note?: string;
+    image?: ReturnType<typeof getImageSlot>;
+    recipe?: RoundupRecipe;
+    rating?: JsonRecord | null;
+    author?: JsonRecord | null;
+    category?: JsonRecord | null;
+    tags?: unknown[];
+};
+
+type SearchResultItem = {
+    id: string | number;
+    slug?: string;
+    headline?: string;
+    label?: string;
+    subtitle?: string;
+    shortDescription?: string;
+    short_description?: string;
+    imagesJson?: string | null;
+    cachedRecipeJson?: string | JsonRecord | null;
+    cached_recipe_json?: string | JsonRecord | null;
+    cachedRatingJson?: string | JsonRecord | null;
+    cached_rating_json?: string | JsonRecord | null;
+    cachedAuthorJson?: string | JsonRecord | null;
+    cached_author_json?: string | JsonRecord | null;
+    cachedCategoryJson?: string | JsonRecord | null;
+    cached_category_json?: string | JsonRecord | null;
+    cachedTagsJson?: unknown[] | string | null;
+    cached_tags_json?: unknown[] | string | null;
+};
+
+type RoundupListBlockProps = {
+    title?: string;
+    description?: string;
+    itemsJson?: string;
+    showStats?: boolean;
+};
+
+type RoundupListSelectedBlock = {
+    props: RoundupListBlockProps;
+};
+
+type RoundupListSettingsProps = {
+    selectedBlock: RoundupListSelectedBlock;
+    updateProps: (updates: Partial<RoundupListBlockProps>) => void;
+};
+
+type RoundupItemField = 'title' | 'subtitle' | 'note';
+
+const parseJsonObject = (value: unknown): JsonRecord => {
     if (!value) return {};
-    if (typeof value === 'object' && !Array.isArray(value)) return value;
+    if (typeof value === 'object' && !Array.isArray(value)) return value as JsonRecord;
+    if (typeof value !== 'string') return {};
     try {
         const parsed = JSON.parse(value);
-        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as JsonRecord : {};
     } catch {
         return {};
     }
@@ -36,15 +100,15 @@ const parseJsonObject = (value) => {
 function RoundupListSettings({
     selectedBlock,
     updateProps,
-}) {
+}: RoundupListSettingsProps) {
     const [searchTerm, setSearchTerm] = useState('');
-    const [results, setResults] = useState([]);
+    const [results, setResults] = useState<SearchResultItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [openItemId, setOpenItemId] = useState(null);
+    const [openItemId, setOpenItemId] = useState<string | number | null>(null);
 
-    const items = useMemo(() => {
-        return parseJsonArray(selectedBlock.props.itemsJson);
+    const items = useMemo<RoundupListItem[]>(() => {
+        return parseJsonArray(selectedBlock.props.itemsJson) as RoundupListItem[];
     }, [selectedBlock.props.itemsJson]);
 
     // Search articles (recipes only)
@@ -62,12 +126,12 @@ function RoundupListSettings({
                 const response = await articlesAPI.getAll({
                     search: term,
                     type: 'recipe',
-                    status: 'online',
+                    status: 'all',
                     limit: 8,
                 });
                 const data = response.data?.data || response.data || [];
                 if (isActive) {
-                    setResults(Array.isArray(data) ? data : []);
+                    setResults(Array.isArray(data) ? data as SearchResultItem[] : []);
                 }
             } catch {
                 if (isActive) {
@@ -85,7 +149,7 @@ function RoundupListSettings({
         };
     }, [searchTerm]);
 
-    const buildItem = (item) => {
+    const buildItem = (item: SearchResultItem): RoundupListItem => {
         const headline = item.headline || item.label || item.slug || '';
         const image = getImageSlot(item.imagesJson, 'thumbnail') || getImageSlot(item.imagesJson, 'hero');
         const recipe = parseJsonObject(item.cachedRecipeJson ?? item.cached_recipe_json);
@@ -106,9 +170,9 @@ function RoundupListSettings({
             note: '',
             image,
             recipe: {
-                total_time_minutes: recipe.total_time_minutes ?? null,
-                difficulty: recipe.difficulty ?? null,
-                servings: recipe.servings ?? null,
+                total_time_minutes: typeof recipe.total_time_minutes === 'number' ? recipe.total_time_minutes : null,
+                difficulty: typeof recipe.difficulty === 'string' ? recipe.difficulty : null,
+                servings: typeof recipe.servings === 'number' || typeof recipe.servings === 'string' ? recipe.servings : null,
             },
             rating: Object.keys(rating).length ? rating : null,
             author: Object.keys(author).length ? author : null,
@@ -117,7 +181,7 @@ function RoundupListSettings({
         };
     };
 
-    const addItem = (item) => {
+    const addItem = (item: SearchResultItem) => {
         if (!item?.id) return;
         if (items.some((existing) => existing.article_id === item.id)) return;
         const nextItems = [...items, buildItem(item)];
@@ -126,12 +190,12 @@ function RoundupListSettings({
         setResults([]);
     };
 
-    const removeItem = (articleIdValue) => {
+    const removeItem = (articleIdValue: string | number) => {
         const nextItems = items.filter((item) => item.article_id !== articleIdValue);
         updateProps({ itemsJson: JSON.stringify(nextItems) });
     };
 
-    const moveItem = (index, direction) => {
+    const moveItem = (index: number, direction: -1 | 1) => {
         const nextItems = [...items];
         const target = index + direction;
         if (target < 0 || target >= nextItems.length) return;
@@ -140,7 +204,7 @@ function RoundupListSettings({
         updateProps({ itemsJson: JSON.stringify(nextItems) });
     };
 
-    const updateItemField = (index, field, value) => {
+    const updateItemField = (index: number, field: RoundupItemField, value: string) => {
         const nextItems = [...items];
         nextItems[index] = { ...nextItems[index], [field]: value };
         updateProps({ itemsJson: JSON.stringify(nextItems) });
@@ -216,7 +280,7 @@ function RoundupListSettings({
                                 <div key={item.id} className="p-2 flex items-center gap-3">
                                     <div className="w-8 h-8 rounded bg-muted overflow-hidden shrink-0">
                                         <img 
-                                            src={getBestVariantUrl(getImageSlot(item.imagesJson, 'thumbnail'), 'xs')} 
+                                            src={getBestVariantUrl(getImageSlot(item.imagesJson, 'thumbnail') || undefined) || undefined} 
                                             alt="" 
                                             className="w-full h-full object-cover" 
                                         />
@@ -258,7 +322,7 @@ function RoundupListSettings({
                                     <div className="p-2 flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
                                             <img 
-                                                src={getBestVariantUrl(item.image, 'xs')} 
+                                                src={item.image ? getBestVariantUrl(item.image) || undefined : undefined} 
                                                 alt="" 
                                                 className="w-full h-full object-cover" 
                                             />

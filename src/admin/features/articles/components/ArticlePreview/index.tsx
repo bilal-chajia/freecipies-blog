@@ -9,11 +9,25 @@ import {
 import { Button } from '@/ui/button';
 import { Loader2, Monitor, Tablet, Smartphone, AlertCircle } from 'lucide-react';
 
+interface ArticlePreviewProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    formData: Record<string, unknown>;
+    contentJson: string | unknown[];
+    recipeJson?: string | Record<string, unknown>;
+    roundupJson?: string | Record<string, unknown>;
+    imagesData?: Record<string, unknown>;
+    categories?: unknown[];
+    authors?: unknown[];
+}
+
 const DEVICE_WIDTHS = {
     desktop: '100%',
     tablet: '768px',
     mobile: '375px',
-};
+} as const;
+
+type DeviceType = keyof typeof DEVICE_WIDTHS;
 
 export default function ArticlePreview({
     open,
@@ -23,12 +37,12 @@ export default function ArticlePreview({
     recipeJson,
     roundupJson,
     imagesData,
-}) {
-    const [device, setDevice] = useState('desktop');
+}: ArticlePreviewProps) {
+    const [device, setDevice] = useState<DeviceType>('desktop');
     const [htmlContent, setHtmlContent] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const iframeRef = useRef(null);
+    const [error, setError] = useState<string | null>(null);
+    const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
     // Stable serialization of the payload to avoid re-renders on every parent render
     const payloadKey = useCallback(() => {

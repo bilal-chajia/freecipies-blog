@@ -13,6 +13,8 @@
  */
 
 import { forwardRef } from 'react';
+import type { ButtonHTMLAttributes, ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
@@ -27,7 +29,15 @@ import { Button } from '@/ui/button';
  * @property {boolean} [withIllustration] - Show larger illustration style
  */
 
-const BlockPlaceholder = forwardRef(({
+interface BlockPlaceholderProps extends React.ComponentPropsWithoutRef<typeof motion.div> {
+    icon?: LucideIcon;
+    label: string;
+    instructions?: string;
+    children?: ReactNode;
+    withIllustration?: boolean;
+}
+
+const BlockPlaceholder = forwardRef<HTMLDivElement, BlockPlaceholderProps>(({
     icon: Icon,
     label,
     instructions,
@@ -109,6 +119,11 @@ export function PlaceholderButton({
     size = 'sm',
     className,
     ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+    icon?: LucideIcon;
+    variant?: React.ComponentProps<typeof Button>['variant'];
+    size?: React.ComponentProps<typeof Button>['size'];
+    children?: ReactNode;
 }) {
     return (
         <Button
@@ -138,8 +153,13 @@ export function PlaceholderInput({
     buttonLabel = 'Add',
     className,
     ...props
+}: Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> & {
+    icon?: LucideIcon;
+    onChange?: (value: string) => void;
+    onSubmit?: () => void;
+    buttonLabel?: string;
 }) {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && onSubmit) {
             e.preventDefault();
             onSubmit();
@@ -160,7 +180,7 @@ export function PlaceholderInput({
                 type="text"
                 placeholder={placeholder}
                 value={value}
-                onChange={(e) => onChange?.(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className={cn(
                     'flex-1 h-9 px-3',
@@ -195,6 +215,15 @@ export function MediaPlaceholder({
     onUrlInput,
     accept = 'image/*',
     className,
+}: {
+    icon?: LucideIcon;
+    label: string;
+    instructions?: string;
+    onUpload?: (file: File) => void;
+    onMediaLibrary?: () => void;
+    onUrlInput?: () => void;
+    accept?: string;
+    className?: string;
 }) {
     return (
         <BlockPlaceholder
@@ -211,8 +240,8 @@ export function MediaPlaceholder({
                             const input = document.createElement('input');
                             input.type = 'file';
                             input.accept = accept;
-                            input.onchange = (e) => {
-                                const file = e.target.files?.[0];
+                            input.onchange = (e: Event) => {
+                                const file = (e.target as HTMLInputElement | null)?.files?.[0];
                                 if (file) onUpload(file);
                             };
                             input.click();
@@ -256,6 +285,15 @@ export function EmbedPlaceholder({
     onChange,
     onEmbed,
     className,
+}: {
+    icon?: LucideIcon;
+    label: string;
+    instructions?: string;
+    placeholder?: string;
+    value?: string;
+    onChange?: (value: string) => void;
+    onEmbed?: () => void;
+    className?: string;
 }) {
     return (
         <BlockPlaceholder

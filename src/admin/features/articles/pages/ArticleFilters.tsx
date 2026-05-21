@@ -18,6 +18,50 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
 
+export type ContentType = 'article' | 'recipe' | 'roundup';
+
+export type ContentFilters = {
+    search: string;
+    type: ContentType | 'all';
+    category: string;
+    author: string;
+    status: string;
+    tags: (string | number)[];
+    dateFrom: string;
+    dateTo: string;
+};
+
+export interface CategoryItem {
+    id: string | number;
+    slug: string;
+    label: string;
+}
+
+export interface AuthorItem {
+    id: string | number;
+    slug: string;
+    name: string;
+    avatar?: string;
+}
+
+export interface TagItem {
+    id: string | number;
+    slug: string;
+    label: string;
+}
+
+interface ArticleFiltersProps {
+    localFilters: ContentFilters;
+    onFilterChange: (keyOrObj: keyof ContentFilters | Partial<ContentFilters>, value?: string | (string | number)[]) => void;
+    showFilters: boolean;
+    setShowFilters: (show: boolean) => void;
+    hasActiveFilters: boolean;
+    onClearFilters: () => void;
+    categories: CategoryItem[];
+    authors: AuthorItem[];
+    tags: TagItem[];
+    fixedType?: ContentType;
+}
 
 const ArticleFilters = ({
     localFilters,
@@ -30,13 +74,13 @@ const ArticleFilters = ({
     authors,
     tags,
     fixedType
-}) => {
+}: ArticleFiltersProps) => {
     const activeFilterCount = Object.entries(localFilters).filter(([key, value]) => {
         if (fixedType && key === 'type') return false;
         return value !== '' && value !== 'all' && (!Array.isArray(value) || value.length > 0);
     }).length;
 
-    const parseDateParam = (dateStr) => {
+    const parseDateParam = (dateStr: string | null | undefined) => {
         if (!dateStr) return undefined;
         const d = new Date(dateStr);
         return isNaN(d.getTime()) ? undefined : d;
@@ -219,7 +263,7 @@ const ArticleFilters = ({
                             dateFrom={df}
                             dateTo={dt}
                             onApply={({ dateFrom, dateTo }) => {
-                                const getUtcBoundary = (d, isEndOfDay) => {
+                                const getUtcBoundary = (d: Date | null | undefined, isEndOfDay: boolean) => {
                                     if (!d) return '';
                                     const date = new Date(d);
                                     if (isEndOfDay) {

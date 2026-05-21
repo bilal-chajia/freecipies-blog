@@ -26,18 +26,24 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring", stiffness: 400, damping: 28 }
+    transition: { type: "spring" as const, stiffness: 400, damping: 28 }
   }
 };
 
+interface TagItem {
+  slug: string;
+  name: string;
+  color: string;
+}
+
 const TagsList = () => {
   const location = useLocation();
-  const [tags, setTags] = useState([]);
+  const [tags, setTags] = useState<TagItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [editingColor, setEditingColor] = useState('#ff6b35');
   const [saving, setSaving] = useState(false);
@@ -48,7 +54,10 @@ const TagsList = () => {
   const [newTagColor, setNewTagColor] = useState('#ff6b35');
   const [showNewColorPicker, setShowNewColorPicker] = useState(false);
 
-  const [deleteModal, setDeleteModal] = useState({
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    tagToDelete: TagItem | null;
+  }>({
     isOpen: false,
     tagToDelete: null
   });
@@ -63,7 +72,7 @@ const TagsList = () => {
       const response = await tagsAPI.getAll();
       const apiResponse = response.data;
       const tagsData = Array.isArray(apiResponse) ? apiResponse : (apiResponse?.data || []);
-      const mappedTags = tagsData.map(tag => ({
+      const mappedTags = tagsData.map((tag: any) => ({
         slug: tag.slug,
         name: tag.label || tag.name,
         color: tag.color || '#ff6b35'
@@ -82,7 +91,7 @@ const TagsList = () => {
     tag.slug?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleStartEdit = (tag) => {
+  const handleStartEdit = (tag: TagItem) => {
     setEditingId(tag.slug);
     setEditingName(tag.name);
     setEditingColor(tag.color);
@@ -95,7 +104,7 @@ const TagsList = () => {
   };
 
   const handleSaveEdit = async () => {
-    if (!editingName.trim()) return;
+    if (!editingName.trim() || !editingId) return;
 
     try {
       setSaving(true);
@@ -150,10 +159,11 @@ const TagsList = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteModal.tagToDelete) return;
+    const { tagToDelete } = deleteModal;
+    if (!tagToDelete) return;
     try {
-      await tagsAPI.delete(deleteModal.tagToDelete.slug);
-      setTags(tags.filter(tag => tag.slug !== deleteModal.tagToDelete.slug));
+      await tagsAPI.delete(tagToDelete.slug);
+      setTags(tags.filter(tag => tag.slug !== tagToDelete.slug));
       setDeleteModal({ isOpen: false, tagToDelete: null });
       toast.success('Tag deleted');
     } catch (err) {
@@ -252,7 +262,7 @@ const TagsList = () => {
                     />
                     {showNewColorPicker && (
                       <div className="absolute top-10 left-0 z-50">
-                        <ColorPicker color={newTagColor} onChange={setNewTagColor} onClose={() => setShowNewColorPicker(false)} />
+                        <ColorPicker color={newTagColor} onChange={(val) => setNewTagColor(val || '#ff6b35')} onClose={() => setShowNewColorPicker(false)} />
                       </div>
                     )}
                   </div>
@@ -302,7 +312,7 @@ const TagsList = () => {
                           />
                           {showEditColorPicker && (
                             <div className="absolute top-9 left-0 z-50">
-                              <ColorPicker color={editingColor} onChange={setEditingColor} onClose={() => setShowEditColorPicker(false)} />
+                              <ColorPicker color={editingColor} onChange={(val) => setEditingColor(val || '#ff6b35')} onClose={() => setShowEditColorPicker(false)} />
                             </div>
                           )}
                         </div>

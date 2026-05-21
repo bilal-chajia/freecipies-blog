@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import { getArticleBySlug } from '@modules/articles';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { generateJsonLd } from '@modules/articles/utils/jsonld';
+import { parseJsonLdArray } from '@modules/articles/utils/cached-fields';
 import { validateParams, SlugOrIdParam } from '@shared/validation';
 
 export const prerender = false;
@@ -11,10 +12,10 @@ type JsonLdArticle = Parameters<typeof generateJsonLd>[0];
 
 function toJsonLdArticle(article: NonNullable<Awaited<ReturnType<typeof getArticleBySlug>>>): JsonLdArticle {
     const recipeJson = article.type === 'recipe'
-        ? article.recipeJson as unknown as Record<string, unknown> | undefined
+        ? (article.recipeJson ?? undefined)
         : undefined;
     const roundupJson = article.type === 'roundup'
-        ? article.roundupJson as unknown as Record<string, unknown> | undefined
+        ? (article.roundupJson ?? undefined)
         : undefined;
 
     return {
@@ -55,8 +56,9 @@ export const GET: APIRoute = async ({ params, url }) => {
 
         // Use pre-generated JSON-LD with fallback to runtime generation
         const baseUrl = `${url.protocol}//${url.host}`;
-        const jsonLd = article.jsonldJson
-            ? (typeof article.jsonldJson === 'string' ? JSON.parse(article.jsonldJson) : article.jsonldJson)
+        const cachedJsonLd = parseJsonLdArray(article.jsonldJson);
+        const jsonLd = cachedJsonLd.length > 0
+            ? cachedJsonLd
             : generateJsonLd(toJsonLdArticle(article), baseUrl);
 
         // Include JSON-LD in response

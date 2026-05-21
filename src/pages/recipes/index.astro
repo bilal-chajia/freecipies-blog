@@ -10,6 +10,7 @@ import {
   hydrateTags,
 } from "@shared/utils/hydration";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import { parseCachedRecipe } from "@modules/articles/utils/cached-fields";
 import Pagination from "@components/Pagination.astro";
 
 export const prerender = false;
@@ -259,9 +260,12 @@ const siteDescription =
           recipes.length > 0 ? (
             <div class="recipes-grid">
               {recipes.map((recipe) => {
-const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
+                const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 768px) 50vw, 25vw";
                 const { badgeColor, badgeText } = getBadgeColors(recipe.categoryColor);
+                const cachedRecipe = parseCachedRecipe(recipe.cachedRecipeJson);
+                const prepTime = cachedRecipe?.prep_time_minutes ?? cachedRecipe?.prepTimeMinutes ?? null;
+                const servings = cachedRecipe?.servings ?? null;
                 return (
                   <article class="recipe-card">
                     <button
@@ -301,7 +305,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                         <a href={`/recipes/${recipe.slug}`}>{recipe.headline}</a>
                       </h3>
                       <div class="card-meta">
-                        {recipe.recipeJson?.prepTime && (
+                        {prepTime !== null && (
                           <span class="meta-item">
                             <svg
                               viewBox="0 0 24 24"
@@ -312,10 +316,10 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                               <circle cx="12" cy="12" r="10" />
                               <path d="M12 6v6l4 2" />
                             </svg>
-                            {recipe.recipeJson.prepTime}
+                            {`${prepTime} min`}
                           </span>
                         )}
-                        {recipe.recipeJson?.servings && (
+                        {servings !== null && (
                           <span class="meta-item">
                             <svg
                               viewBox="0 0 24 24"
@@ -326,7 +330,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                               <circle cx="9" cy="7" r="4" />
                             </svg>
-                            {recipe.recipeJson.servings}
+                            {`${servings} servings`}
                           </span>
                         )}
                       </div>

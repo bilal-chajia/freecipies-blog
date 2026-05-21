@@ -1,5 +1,5 @@
 import type { Article as DbArticle } from '../schema/articles.schema';
-import type { ExtractedImage, ExtractedSeo } from '@shared/utils';
+import type { ExtractedImage, ExtractedSeo, HydratedTag } from '@shared/utils';
 import type { RecipeJson } from './recipes.types';
 import type { RoundupJson } from './roundups.types';
 import type { ArticleImagesJson } from './images.types';
@@ -27,6 +27,7 @@ export type BaseContent = Omit<DbArticle, 'recipeJson' | 'roundupJson'> & Extrac
     label?: string;
     slug?: string;
   };
+  tags?: HydratedTag[];
 };
 
 // 2. Specific Content Types

@@ -19,6 +19,7 @@
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { useState, useCallback, useEffect, useRef } from 'react';
+import type { FocusEvent, MouseEvent, PointerEvent, SyntheticEvent } from 'react';
 import {
     Image,
     Upload,
@@ -29,12 +30,71 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
-import { parseVariantsJson, getVariantMap, resolveVariantUrl, stripStorageKeys } from '@shared/types/images';
+import { parseVariantsJson, getVariantMap, resolveVariantUrl, stripStorageKeys, type ParsedMediaVariantsJson } from '@shared/types/images';
 import { ImageUploader, MediaDialog } from '@admin/features/media/components';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
+import { useBlockEditorSourceData } from '../source-data-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+
+type ImageUploadData = {
+    id?: string | number;
+    url?: string;
+    altText?: string;
+    caption?: string;
+    credit?: unknown;
+    width?: number;
+    height?: number;
+    variants?: Record<string, { url?: string; width?: number; height?: number }>;
+};
+
+type MediaSelectItem = {
+    id?: string | number;
+    url?: string;
+    altText?: string;
+    alt_text?: string;
+    name?: string;
+    caption?: string;
+    credit?: unknown;
+    width?: number;
+    height?: number;
+    variantsJson?: string;
+    variants_json?: string;
+    variants?: unknown;
+};
+
+type ImageBlockOpenEvent = globalThis.CustomEvent<{ blockId?: string }>;
+
+function parseImagesData(value: unknown): Record<string, unknown> {
+    if (!value) return {};
+    if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+    if (typeof value !== 'string') return {};
+    try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+            ? parsed as Record<string, unknown>
+            : {};
+    } catch {
+        return {};
+    }
+}
+
+function upsertContentImageSlot(
+    imagesData: unknown,
+    imageRef: string,
+    slot: Record<string, unknown>
+): Record<string, unknown> {
+    const images = parseImagesData(imagesData);
+    const contentImages = parseImagesData(images.content_images);
+    return {
+        ...images,
+        content_images: {
+            ...contentImages,
+            [imageRef]: slot,
+        },
+    };
+}
 
 export const ImageBlock = createReactBlockSpec(
     {
@@ -49,6 +109,7 @@ export const ImageBlock = createReactBlockSpec(
             height: { default: 0 },
             mediaId: { default: '' },
             variantsJson: { default: '{}' },
+            imageRef: { default: '' },
             alignment: { default: 'center' },
         },
         content: 'none',
@@ -56,13 +117,14 @@ export const ImageBlock = createReactBlockSpec(
     {
         render: (props) => {
             const { block, editor } = props;
+            const { imagesData, onImagesChange } = useBlockEditorSourceData();
 
             const [uploaderOpen, setUploaderOpen] = useState(false);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
             const [inputUrl, setInputUrl] = useState(block.props.url || '');
 
             const { isSelected, selectBlock } = useBlockSelection(block.id);
-            const captionRef = useRef(null);
+            const captionRef = useRef<HTMLInputElement | null>(null);
             const autoOpenedRef = useRef(false);
             const isOverlayOpen = mediaDialogOpen || uploaderOpen;
             const {
@@ -80,7 +142,7 @@ export const ImageBlock = createReactBlockSpec(
                 dragStyle,
                 isDragging,
             } = useBlockDragHandle(block.id, { disabled: isOverlayOpen });
-            const handleSelect = useCallback((event) => {
+            const handleSelect = useCallback((event: SyntheticEvent) => {
                 if (event?.target instanceof HTMLElement) {
                     if (event.target.closest('.wp-block-toolbar') || event.target.closest('.wp-block-toolbar-wrap')) {
                         return;
@@ -89,7 +151,7 @@ export const ImageBlock = createReactBlockSpec(
                 selectBlock();
             }, [selectBlock]);
 
-            const scheduleBlockSelection = useCallback((blockId) => {
+            const scheduleBlockSelection = useCallback((blockId: string) => {
                 if (!blockId) return;
                 requestAnimationFrame(() => {
                     try {
@@ -130,15 +192,17 @@ export const ImageBlock = createReactBlockSpec(
             // Listen for sidebar-dispatched events so BlockSettings can open our
             // dialogs without mounting a second MediaLibrary (which would double /api/media).
             useEffect(() => {
-                const onOpenMedia = (e) => {
-                    if (e.detail?.blockId === block.id) {
+                const onOpenMedia = (e: Event) => {
+                    const event = e as ImageBlockOpenEvent;
+                    if (event.detail?.blockId === block.id) {
                         autoOpenedRef.current = true;
                         selectBlock();
                         setMediaDialogOpen(true);
                     }
                 };
-                const onOpenUploader = (e) => {
-                    if (e.detail?.blockId === block.id) {
+                const onOpenUploader = (e: Event) => {
+                    const event = e as ImageBlockOpenEvent;
+                    if (event.detail?.blockId === block.id) {
                         selectBlock();
                         setUploaderOpen(true);
                     }
@@ -151,7 +215,7 @@ export const ImageBlock = createReactBlockSpec(
                 };
             }, [block.id, selectBlock]);
 
-            const getCreditName = useCallback((creditJson, fallback = '') => {
+            const getCreditName = useCallback((creditJson: unknown, fallback = '') => {
                 if (!creditJson || creditJson === '{}') return fallback || '';
                 try {
                     const parsed = typeof creditJson === 'string' ? JSON.parse(creditJson) : creditJson;
@@ -163,16 +227,27 @@ export const ImageBlock = createReactBlockSpec(
 
 
             // Handle upload complete from ImageUploader
-            const handleUploadComplete = useCallback((data) => {
+            const handleUploadComplete = useCallback((data: ImageUploadData) => {
                 const variants = data.variants || {};
                 const url = resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.lg) || data.url;
                 const bestVariant = variants.md || variants.lg || variants.original;
                 const currentBlock = editor.getBlock(block.id) || block;
+                const imageRef = typeof currentBlock.props.imageRef === 'string' && currentBlock.props.imageRef
+                    ? currentBlock.props.imageRef
+                    : `body-image-${data.id || block.id}`;
+                onImagesChange?.(upsertContentImageSlot(imagesData, imageRef, {
+                    media_id: typeof data.id === 'number' ? data.id : Number(data.id) || data.id || imageRef,
+                    alt: data.altText || '',
+                    caption: data.caption || '',
+                    credit: data.credit || null,
+                    variants,
+                }));
 
                 editor.updateBlock(currentBlock, {
                     type: 'customImage',
                     props: {
                         ...currentBlock.props,
+                        imageRef,
                         url,
                         mediaId: data.id?.toString() || '',
                         alt: data.altText || '',
@@ -192,21 +267,32 @@ export const ImageBlock = createReactBlockSpec(
                     selectBlock();
                     scheduleBlockSelection(currentBlock.id);
                 }, 50);
-            }, [block, editor, getCreditName, scheduleBlockSelection, selectBlock]);
+            }, [block, editor, getCreditName, imagesData, onImagesChange, scheduleBlockSelection, selectBlock]);
 
             // Handle media selection from MediaDialog
-            const handleMediaSelect = useCallback((item) => {
+            const handleMediaSelect = useCallback((item: MediaSelectItem) => {
                 const parsed = parseVariantsJson(item);
-                const rawVariants = getVariantMap(parsed);
-                const variants = stripStorageKeys(rawVariants);
+                const storageVariants = parsed?.variants || {};
+                const variants = stripStorageKeys(storageVariants);
                 const url = variants.md?.url || variants.sm?.url || variants.lg?.url || variants.xs?.url || item.url;
                 const bestVariant = variants.md || variants.lg || variants.sm || variants.xs || variants.original;
                 const currentBlock = editor.getBlock(block.id) || block;
+                const imageRef = typeof currentBlock.props.imageRef === 'string' && currentBlock.props.imageRef
+                    ? currentBlock.props.imageRef
+                    : `body-image-${item.id || block.id}`;
+                onImagesChange?.(upsertContentImageSlot(imagesData, imageRef, {
+                    media_id: typeof item.id === 'number' ? item.id : Number(item.id) || item.id || imageRef,
+                    alt: item.altText || item.alt_text || item.name || '',
+                    caption: item.caption || '',
+                    credit: item.credit || null,
+                    variants,
+                }));
 
                 editor.updateBlock(currentBlock, {
                     type: 'customImage',
                     props: {
                         ...currentBlock.props,
+                        imageRef,
                         url,
                         mediaId: item.id?.toString() || '',
                         alt: item.altText || item.alt_text || item.name || '',
@@ -226,7 +312,7 @@ export const ImageBlock = createReactBlockSpec(
                     selectBlock();
                     scheduleBlockSelection(currentBlock.id);
                 }, 50);
-            }, [block, editor, getCreditName, scheduleBlockSelection, selectBlock]);
+            }, [block, editor, getCreditName, imagesData, onImagesChange, scheduleBlockSelection, selectBlock]);
 
 
 
@@ -289,7 +375,7 @@ export const ImageBlock = createReactBlockSpec(
                         <ImageUploader
                             open={uploaderOpen}
                             onOpenChange={setUploaderOpen}
-                            onUploadComplete={handleUploadComplete}
+                            onUploadComplete={(data) => handleUploadComplete(data as ImageUploadData)}
                         />
 
                         <MediaDialog

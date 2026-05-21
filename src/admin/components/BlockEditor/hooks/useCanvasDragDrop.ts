@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useSensors, useSensor, PointerSensor, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { moveBlockById } from '../blocks/primitives';
+import { getEditorDomElement } from '../utils/editorView';
 
 interface StructureItem {
     id: string;
@@ -19,7 +20,7 @@ interface CanvasDragDropProps {
  */
 export function useCanvasDragDrop({ editor, structureItemsRef, setActiveBlockId }: CanvasDragDropProps) {
     const canvasDragPointerRef = useRef({ x: 0, y: 0 });
-    const canvasDragPointerListenerRef = useRef<((event: PointerEvent | MouseEvent | TouchEvent) => void) | null>(null);
+    const canvasDragPointerListenerRef = useRef<EventListener | null>(null);
     const moveActionBlockIdRef = useRef<string | null>(null);
 
     const canvasSensors = useSensors(
@@ -43,7 +44,7 @@ export function useCanvasDragDrop({ editor, structureItemsRef, setActiveBlockId 
     const startCanvasDragPointerTracking = useCallback((initialEvent: PointerEvent | MouseEvent | TouchEvent) => {
         if (canvasDragPointerListenerRef.current) return;
         updateCanvasDragPointer(initialEvent);
-        const handler = (event: PointerEvent | MouseEvent | TouchEvent) => updateCanvasDragPointer(event);
+        const handler: EventListener = (event) => updateCanvasDragPointer(event as PointerEvent | MouseEvent | TouchEvent);
         window.addEventListener('pointermove', handler, { capture: true });
         window.addEventListener('mousemove', handler, { capture: true });
         window.addEventListener('touchmove', handler, { capture: true, passive: true });
@@ -55,7 +56,7 @@ export function useCanvasDragDrop({ editor, structureItemsRef, setActiveBlockId 
         if (!handler) return;
         window.removeEventListener('pointermove', handler, { capture: true });
         window.removeEventListener('mousemove', handler, { capture: true });
-        window.removeEventListener('touchmove', handler, { capture: true, passive: true });
+        window.removeEventListener('touchmove', handler, { capture: true });
         canvasDragPointerListenerRef.current = null;
     }, []);
 
@@ -93,7 +94,7 @@ export function useCanvasDragDrop({ editor, structureItemsRef, setActiveBlockId 
     }, [editor, structureItemsRef, setActiveBlockId]);
 
     const getBlockFromPoint = useCallback((x: number, y: number): { id: string; element: HTMLElement } | null => {
-        const root = (editor as Record<string, HTMLElement | null> | null)?.domElement;
+        const root = getEditorDomElement(editor);
         if (!root) return null;
         const element = document.elementFromPoint(x, y);
         if (!(element instanceof HTMLElement)) return null;

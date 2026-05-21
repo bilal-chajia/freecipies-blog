@@ -205,7 +205,7 @@ const AuthorEditor = () => {
 
   const handleMediaSelect = (item: unknown) => {
     if (activeImageType) {
-      const slot = buildImageSlotFromMedia(item, {
+      const slot = buildImageSlotFromMedia(item as Parameters<typeof buildImageSlotFromMedia>[0], {
         alt: formData.name || '',
         variant_keys: activeImageType === 'hero' ? ['sm', 'md', 'lg'] : ['xs', 'sm'],
       });
@@ -325,7 +325,7 @@ const AuthorEditor = () => {
         {/* Sidebar */}
         <div className="col-span-4 overflow-y-auto bg-muted/30">
           <AuthorSidebar
-            formData={formData as unknown as Record<string, unknown>}
+            formData={formData}
             onInputChange={(field: string, value: unknown) => handleInputChange(field as keyof FormData, value)}
             onSave={handleSave}
             saving={saving}

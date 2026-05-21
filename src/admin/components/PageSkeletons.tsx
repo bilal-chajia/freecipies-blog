@@ -196,7 +196,7 @@ export const EditorSkeleton = () => (
 );
 
 // Generic page skeleton
-export const PageSkeleton = ({ children }) => (
+export const PageSkeleton = ({ children }: { children: React.ReactNode }) => (
   <div className="animate-in fade-in duration-300">
     {children}
   </div>

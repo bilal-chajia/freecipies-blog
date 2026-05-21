@@ -114,7 +114,7 @@ const AppearanceSettings = ({ formData, handleInputChange }: AppearanceSettingsP
       <TabsContent value="branding" className="mt-0">
         <BrandingCards
           logos={logos}
-          favicon={favicon}
+          favicon={favicon ?? undefined}
           onLogoChange={handleLogoChange}
           onLogoDelete={handleLogoDelete}
           onFaviconChange={handleFaviconChange}

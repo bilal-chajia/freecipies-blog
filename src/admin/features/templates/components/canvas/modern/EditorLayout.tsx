@@ -4,7 +4,15 @@ import TopToolbar from './TopToolbar';
 import SidePanel from './SidePanel';
 import ContextToolbar from './ContextToolbar';
 
-const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewOpen }) => {
+interface EditorLayoutProps {
+    children: React.ReactNode;
+    onExport?: () => void;
+    onPreview?: () => void;
+    onExportImage?: () => void;
+    isPreviewOpen?: boolean;
+}
+
+const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewOpen }: EditorLayoutProps) => {
     // Theme
     const { theme } = useUIStore();
     const isDark = theme === 'dark';
@@ -12,14 +20,14 @@ const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewO
     // Left mouse button panning state
     const [isPanning, setIsPanning] = useState(false);
     const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-    const scrollContainerRef = useRef(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Handle Shift+Wheel for horizontal scrolling
     useEffect(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
 
-        const handleWheel = (e) => {
+        const handleWheel = (e: WheelEvent) => {
             if (e.shiftKey) {
                 e.preventDefault();
                 container.scrollLeft += e.deltaY;
@@ -31,7 +39,7 @@ const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewO
     }, []);
 
     // Handle mouse events for left-click panning on background
-    const handleMouseDown = (e) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.button === 0 && e.target === e.currentTarget) {
             e.preventDefault();
             setIsPanning(true);
@@ -42,7 +50,7 @@ const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewO
         }
     };
 
-    const handleWrapperMouseDown = (e) => {
+    const handleWrapperMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.button === 0 && e.target === e.currentTarget) {
             e.preventDefault();
             setIsPanning(true);
@@ -53,7 +61,7 @@ const EditorLayout = ({ children, onExport, onPreview, onExportImage, isPreviewO
         }
     };
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (isPanning && scrollContainerRef.current) {
             scrollContainerRef.current.scrollLeft = panStart.x - e.clientX;
             scrollContainerRef.current.scrollTop = panStart.y - e.clientY;

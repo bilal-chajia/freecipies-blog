@@ -12,49 +12,79 @@ import { X } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
 import { toast } from 'sonner';
+import api from '@admin/services/api-client';
 
 /**
  * Strip absolute dev URLs to relative paths.
  * Prevents storing http://localhost:XXXX or http://127.0.0.1:XXXX in the DB.
  */
-const toRelativeUrl = (url) => {
+const toRelativeUrl = (url: string | null | undefined): string => {
     if (!url || typeof url !== 'string') return '';
     // Strip absolute localhost / 127.0.0.1 origins
     return url.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, '');
 };
 
-const ArticlePicker = ({ value, onChange }) => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
-    const [selectedArticle, setSelectedArticle] = useState(null);
+interface ArticleApiItem {
+    id: number | string;
+    title: string;
+    slug: string;
+    imageUrl?: string;
+    featured_image?: string;
+    image?: string;
+    excerpt?: string;
+    metaDescription?: string;
+}
+
+export interface ArticlePickerValue {
+    articleId: number | string;
+    title: string;
+    url: string;
+    image: string;
+    description: string;
+}
+
+export interface ArticlePickerProps {
+    value: ArticlePickerValue | null | undefined;
+    onChange: (value: ArticlePickerValue | null) => void;
+}
+
+interface ArticlesApiResponse {
+    data?: ArticleApiItem[];
+}
+
+const ArticlePicker: React.FC<ArticlePickerProps> = ({ value, onChange }) => {
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [searchResults, setSearchResults] = useState<ArticleApiItem[]>([]);
+    const [isSearching, setIsSearching] = useState<boolean>(false);
+    const [showDropdown, setShowDropdown] = useState<boolean>(false);
+    const [selectedArticle, setSelectedArticle] = useState<ArticleApiItem | null>(null);
 
     // Load selected article info
     useEffect(() => {
         if (value?.articleId && !selectedArticle) {
-            fetch(`/api/articles?limit=1&id=${value.articleId}`)
-                .then(res => res.json())
+            api.get('/articles', { params: { limit: 1, id: value.articleId } })
+                .then(res => res.data as ArticleApiItem[] | ArticlesApiResponse)
                 .then(data => {
-                    const article = data.data?.[0] || data[0];
+                    const items = Array.isArray(data) ? data : (data.data || []);
+                    const article = items[0];
                     if (article) {
                         setSelectedArticle(article);
                     }
                 })
                 .catch(() => { });
         }
-    }, [value?.articleId]);
+    }, [value?.articleId, selectedArticle]);
 
     // Search articles
-    const handleSearch = useCallback(async (query) => {
+    const handleSearch = useCallback(async (query: string) => {
         if (!query || query.length < 2) {
             setSearchResults([]);
             return;
         }
         setIsSearching(true);
         try {
-            const response = await fetch(`/api/articles?search=${encodeURIComponent(query)}&limit=8`);
-            const data = await response.json();
+            const response = await api.get('/articles', { params: { search: query, limit: 8 } });
+            const data = response.data as ArticleApiItem[] | ArticlesApiResponse;
             const items = Array.isArray(data) ? data : (data.data || []);
             setSearchResults(items);
         } catch (error) {
@@ -75,7 +105,7 @@ const ArticlePicker = ({ value, onChange }) => {
     }, [searchQuery, handleSearch]);
 
     // Handle article selection
-    const handleSelect = (article) => {
+    const handleSelect = (article: ArticleApiItem) => {
         setSelectedArticle(article);
         // Use imageUrl (current API field) with fallbacks, and ensure relative paths
         const rawImage = article.imageUrl || article.featured_image || article.image || '';
@@ -104,6 +134,9 @@ const ArticlePicker = ({ value, onChange }) => {
                         <img
                             src={selectedArticle.featured_image}
                             alt=""
+                            width={64}
+                            height={48}
+                            loading="lazy"
                             className="w-16 h-12 object-cover rounded-sm"
                         />
                     )}
@@ -153,6 +186,9 @@ const ArticlePicker = ({ value, onChange }) => {
                                             <img
                                                 src={article.featured_image}
                                                 alt=""
+                                                width={40}
+                                                height={32}
+                                                loading="lazy"
                                                 className="w-10 h-8 object-cover rounded"
                                             />
                                         )}

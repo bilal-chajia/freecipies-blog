@@ -20,13 +20,10 @@ export type { ImageVariant, ImageVariants, ImageSlot };
 // JSON Parsing Helpers
 // ============================================================================
 
-/**
- * Safely parse a JSON string, returning null on failure
- */
-export function safeParseJson<T>(json: string | null | undefined): T | null {
-  if (!json) return null;
+export function safeParseJson<T>(json: unknown): T | null {
+  if (json === null || json === undefined || json === '') return null;
   try {
-    return typeof json === 'string' ? JSON.parse(json) : json;
+    return typeof json === 'string' ? JSON.parse(json) : (json as T);
   } catch {
     return null;
   }
@@ -191,7 +188,29 @@ export type { RecipeJson };
  * Parse recipe JSON for display
  */
 export function extractRecipe(recipeJson: string | null | undefined): RecipeJson | null {
-  return safeParseJson<RecipeJson>(recipeJson);
+  const recipe = safeParseJson<RecipeJson>(recipeJson);
+  if (!recipe) return null;
+  // Deep map is_optional -> isOptional to keep the TS interface happy
+  if (Array.isArray(recipe.ingredients)) {
+    recipe.ingredients = recipe.ingredients.map((group: any) => {
+      if (group && Array.isArray(group.items)) {
+        return {
+          ...group,
+          items: group.items.map((item: any) => {
+            if (item && typeof item === 'object') {
+              return {
+                ...item,
+                isOptional: item.isOptional ?? item.is_optional ?? false,
+              };
+            }
+            return item;
+          }),
+        };
+      }
+      return group;
+    });
+  }
+  return recipe;
 }
 
 // ============================================================================
@@ -242,6 +261,23 @@ export function hydrateArticle<T extends {
   headline?: string;
   slug: string;
   type?: string;
+  author?: {
+    imagesJson?: string | null;
+    name?: string | null;
+    slug?: string | null;
+    jobTitle?: string | null;
+  } | null;
+  authorName?: string | null;
+  authorSlug?: string | null;
+  authorJob?: string | null;
+  category?: {
+    label?: string | null;
+    color?: string | null;
+    slug?: string | null;
+  } | null;
+  categoryLabel?: string | null;
+  categoryColor?: string | null;
+  categorySlug?: string | null;
 }>(article: T) {
   const image = extractImage(article.imagesJson);
 
@@ -257,33 +293,41 @@ export function hydrateArticle<T extends {
   let authorAvatar = extractImage(article.authorImagesJson, 'avatar').imageUrl;
 
   if (!authorAvatar && cachedAuthor) {
-    authorAvatar = cachedAuthor?.avatar;
+    const avatarSlot = cachedAuthor?.avatar;
+    if (typeof avatarSlot === 'string') {
+      authorAvatar = avatarSlot;
+    } else if (avatarSlot && typeof avatarSlot === 'object') {
+      authorAvatar = resolveVariantUrl(avatarSlot.variants?.sm) 
+        || resolveVariantUrl(avatarSlot.variants?.xs) 
+        || (avatarSlot as any).url 
+        || null;
+    }
   }
 
-  if (!authorAvatar && (article as any).author?.imagesJson) {
-    authorAvatar = extractImage((article as any).author.imagesJson, 'avatar').imageUrl;
+  if (!authorAvatar && article.author?.imagesJson) {
+    authorAvatar = extractImage(article.author.imagesJson, 'avatar').imageUrl;
   }
 
-  const authorName = (article as any).authorName
+  const authorName = article.authorName
     ?? cachedAuthor?.name
-    ?? (article as any).author?.name;
-  const authorSlug = (article as any).authorSlug
+    ?? article.author?.name;
+  const authorSlug = article.authorSlug
     ?? cachedAuthor?.slug
-    ?? (article as any).author?.slug;
-  const authorRole = (article as any).authorJob
+    ?? article.author?.slug;
+  const authorRole = article.authorJob
     ?? cachedAuthor?.job_title
     ?? cachedAuthor?.role
-    ?? (article as any).author?.jobTitle;
+    ?? article.author?.jobTitle;
 
-  const categoryLabel = (article as any).categoryLabel
+  const categoryLabel = article.categoryLabel
     ?? cachedCategory?.label
-    ?? (article as any).category?.label;
-  const categoryColor = (article as any).categoryColor
+    ?? article.category?.label;
+  const categoryColor = article.categoryColor
     ?? cachedCategory?.color
-    ?? (article as any).category?.color;
-  const categorySlug = (article as any).categorySlug
+    ?? article.category?.color;
+  const categorySlug = article.categorySlug
     ?? cachedCategory?.slug
-    ?? (article as any).category?.slug;
+    ?? article.category?.slug;
 
   const tags = article.cachedTagsJson
     ? safeParseJson<any[]>(article.cachedTagsJson) || []
@@ -302,8 +346,8 @@ export function hydrateArticle<T extends {
     ...image,
     ...seo,
     contentJson: safeParseJson(article.contentJson),
-    recipeJson: safeParseJson(article.recipeJson),
-    recipe: safeParseJson(article.recipeJson), // Alias for RecipeContent.recipe
+    recipeJson: extractRecipe(article.recipeJson),
+    recipe: extractRecipe(article.recipeJson), // Alias for RecipeContent.recipe
     roundupJson: safeParseJson(article.roundupJson),
     faqsJson: safeParseJson(article.faqsJson),
     label: article.headline, // Alias for UI consistency

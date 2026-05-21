@@ -22,6 +22,7 @@ import {
     SplitSquareHorizontal,
     GalleryHorizontal
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseVariantsJson, getVariantMap, getBestVariantUrl } from '@shared/types/images';
 import { Button } from '@/ui/button';
@@ -29,8 +30,63 @@ import { MediaDialog } from '@admin/features/media/components';
 import BlockToolbar, { ToolbarButton } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
+import { useBlockEditorSourceData } from '../source-data-context';
 
-const parseSlot = (value) => {
+type ImageSlotKey = 'before' | 'after';
+
+type BeforeAfterSlot = {
+    media_id?: number | string;
+    alt?: string;
+    label?: string;
+    variants?: unknown;
+};
+
+type MediaDialogItem = {
+    id: number | string;
+    altText?: string | null;
+    alt_text?: string | null;
+    name?: string | null;
+};
+
+type BeforeAfterUpdates = {
+    layout?: 'slider' | 'side_by_side';
+    beforeImageRef?: string;
+    afterImageRef?: string;
+    beforeJson?: string;
+    afterJson?: string;
+};
+
+function parseImagesData(value: unknown): Record<string, unknown> {
+    if (!value) return {};
+    if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+    if (typeof value !== 'string') return {};
+    try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+            ? parsed as Record<string, unknown>
+            : {};
+    } catch {
+        return {};
+    }
+}
+
+function upsertContentImageSlot(
+    imagesData: unknown,
+    imageRef: string,
+    slot: Record<string, unknown>
+): Record<string, unknown> {
+    const images = parseImagesData(imagesData);
+    const contentImages = parseImagesData(images.content_images);
+    return {
+        ...images,
+        content_images: {
+            ...contentImages,
+            [imageRef]: slot,
+        },
+    };
+}
+
+const parseSlot = (value: string): BeforeAfterSlot | null => {
     if (!value) return null;
     try {
         const parsed = JSON.parse(value);
@@ -40,10 +96,10 @@ const parseSlot = (value) => {
     }
 };
 
-const toJson = (value) => JSON.stringify(value || null);
+const toJson = (value: BeforeAfterSlot | null) => JSON.stringify(value || null);
 
 // Layout options
-const layouts = [
+const layouts: Array<{ value: NonNullable<BeforeAfterUpdates['layout']>; icon: LucideIcon; label: string }> = [
     { value: 'slider', icon: SplitSquareHorizontal, label: 'Slider' },
     { value: 'side_by_side', icon: GalleryHorizontal, label: 'Side by side' },
 ];
@@ -53,6 +109,8 @@ export const BeforeAfterBlock = createReactBlockSpec(
         type: 'beforeAfter',
         propSchema: {
             layout: { default: 'slider', values: ['slider', 'side_by_side'] },
+            beforeImageRef: { default: '' },
+            afterImageRef: { default: '' },
             beforeJson: { default: '' },
             afterJson: { default: '' },
         },
@@ -61,45 +119,54 @@ export const BeforeAfterBlock = createReactBlockSpec(
     {
         render: (props) => {
             const { block, editor } = props;
+            const { imagesData, onImagesChange } = useBlockEditorSourceData();
             const before = useMemo(() => parseSlot(block.props.beforeJson), [block.props.beforeJson]);
             const after = useMemo(() => parseSlot(block.props.afterJson), [block.props.afterJson]);
             const { isSelected, selectBlock } = useBlockSelection(block.id);
-            const [activeSlot, setActiveSlot] = useState(null);
+            const [activeSlot, setActiveSlot] = useState<ImageSlotKey | null>(null);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
 
-            const updateBlockProps = (updates) => {
+            const updateBlockProps = (updates: BeforeAfterUpdates) => {
                 editor.updateBlock(block, {
                     type: 'beforeAfter',
                     props: { ...block.props, ...updates },
                 });
             };
 
-            const updateSlot = (slotKey, nextSlot) => {
+            const updateSlot = (slotKey: ImageSlotKey, nextSlot: BeforeAfterSlot | null) => {
                 updateBlockProps({ [`${slotKey}Json`]: toJson(nextSlot) });
             };
 
-            const resolvePreview = (slot) => {
+            const resolvePreview = (slot: BeforeAfterSlot | null) => {
                 if (!slot?.variants) return '';
-                return getBestVariantUrl(slot) || '';
+                return getBestVariantUrl(slot as Parameters<typeof getBestVariantUrl>[0]) || '';
             };
 
-            const handleSelect = (item) => {
+            const handleSelect = (item: MediaDialogItem) => {
                 if (!activeSlot) return;
-                const parsed = parseVariantsJson(item);
+                const parsed = parseVariantsJson(item as Parameters<typeof parseVariantsJson>[0]);
                 const variants = getVariantMap(parsed);
                 const existing = activeSlot === 'before' ? before : after;
+                const refProp = activeSlot === 'before' ? block.props.beforeImageRef : block.props.afterImageRef;
+                const imageRef = typeof refProp === 'string' && refProp
+                    ? refProp
+                    : `${activeSlot}-image-${item.id || block.id}`;
                 const nextSlot = {
                     media_id: item.id,
                     alt: existing?.alt || item.altText || item.alt_text || item.name || '',
                     label: existing?.label || (activeSlot === 'before' ? 'Before' : 'After'),
                     variants,
                 };
-                updateSlot(activeSlot, nextSlot);
+                onImagesChange?.(upsertContentImageSlot(imagesData, imageRef, nextSlot));
+                updateBlockProps({
+                    [`${activeSlot}ImageRef`]: imageRef,
+                    [`${activeSlot}Json`]: toJson(nextSlot),
+                } as BeforeAfterUpdates);
                 setMediaDialogOpen(false);
                 setActiveSlot(null);
             };
 
-            const renderSlot = (slotKey, slotData) => {
+            const renderSlot = (slotKey: ImageSlotKey, slotData: BeforeAfterSlot | null) => {
                 const preview = resolvePreview(slotData);
                 const label = slotData?.label || (slotKey === 'before' ? 'Before' : 'After');
 
@@ -285,6 +352,3 @@ export const BeforeAfterBlock = createReactBlockSpec(
 );
 
 export default BeforeAfterBlock;
-
-
-

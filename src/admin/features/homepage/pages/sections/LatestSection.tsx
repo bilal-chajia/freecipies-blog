@@ -9,12 +9,9 @@ import { Newspaper } from 'lucide-react';
 import { Switch } from '@/ui/switch';
 import { Label } from '@/ui/label';
 
-interface LatestSectionProps {
-  formData: Record<string, unknown>;
-  handleNestedInputChange: (field: string, value: unknown) => void;
-}
+import type { HomepageSectionProps } from '../../types';
 
-const LatestSection = ({ formData, handleNestedInputChange }: LatestSectionProps) => {
+const LatestSection = ({ formData, handleNestedInputChange }: HomepageSectionProps) => {
     return (
         <SectionCard
             title="Latest Posts"

@@ -4,9 +4,10 @@
 
 import { motion } from 'motion/react';
 import VariantProgress from '../VariantProgress';
+import type { UploadProgress } from '../types';
 
 interface ProgressPanelProps {
-  progress: number;
+  progress: UploadProgress;
   error?: string;
 }
 

@@ -15,7 +15,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { mediaAPI } from '@admin/services/api';
+import { mediaAPI, type UploadVariantOptions } from '@admin/services/api';
 import { withRetry, isRetryableError } from '@admin/utils/retry';
 import { createImageAssetId } from '@shared/images/r2-naming';
 import { 
@@ -187,7 +187,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     }
 
     const worker = new Worker(
-      new URL('../workers/encoder.worker.js', import.meta.url),
+      new URL('../workers/encoder.worker.ts', import.meta.url),
       { type: 'module' }
     );
 
@@ -639,11 +639,11 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
    */
   const uploadVariantWithRetry = useCallback(async (
     blob: Blob, 
-    options: Record<string, unknown>, 
+    options: UploadVariantOptions, 
     signal: AbortSignal | null | undefined
   ) => {
     return withRetry(
-      () => mediaAPI.uploadVariant(blob, options, { signal }),
+      () => mediaAPI.uploadVariant(blob, options, { signal: signal || undefined }),
       {
         maxRetries: UPLOAD_CONFIG.retryAttempts,
         baseDelay: UPLOAD_CONFIG.retryBaseDelayMs,

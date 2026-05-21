@@ -54,11 +54,11 @@ export const adminLayoutRoutes: AdminLayoutRoute[] = [
   },
   {
     path: 'articles/new',
-    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergArticleEditor')),
+    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergEditor')),
   },
   {
     path: 'articles/:slug',
-    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergArticleEditor')),
+    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergEditor')),
   },
   {
     path: 'recipes',
@@ -66,11 +66,11 @@ export const adminLayoutRoutes: AdminLayoutRoute[] = [
   },
   {
     path: 'recipes/new',
-    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergRecipeEditor')),
+    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergEditor')),
   },
   {
     path: 'recipes/:slug',
-    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergRecipeEditor')),
+    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergEditor')),
   },
   {
     path: 'roundups',
@@ -78,11 +78,11 @@ export const adminLayoutRoutes: AdminLayoutRoute[] = [
   },
   {
     path: 'roundups/new',
-    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergRoundupEditor')),
+    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergEditor')),
   },
   {
     path: 'roundups/:slug',
-    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergRoundupEditor')),
+    Component: lazyPage(() => import('@admin/features/articles/pages/GutenbergEditor')),
   },
   {
     path: 'categories',

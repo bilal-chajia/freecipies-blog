@@ -7,12 +7,9 @@ import { FormField } from '@admin/features/settings/components';
 import { SectionCard } from '@admin/features/homepage/components';
 import { Search } from 'lucide-react';
 
-interface SeoSectionProps {
-  formData: { seo: Record<string, string> };
-  handleNestedInputChange: (section: string, field: string, value: string) => void;
-}
+import type { HomepageSectionProps } from '../../types';
 
-const SeoSection = ({ formData, handleNestedInputChange }: SeoSectionProps) => {
+const SeoSection = ({ formData, handleNestedInputChange }: HomepageSectionProps) => {
     return (
         <SectionCard
             title="SEO Settings"

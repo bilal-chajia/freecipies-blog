@@ -31,18 +31,29 @@ const EMPTY_FORM = {
     notes: '',
 };
 
+interface RedirectItem {
+    id: string | number;
+    fromPath: string;
+    toPath: string;
+    statusCode: number | string;
+    isActive: boolean;
+    notes?: string | null;
+    hitCount?: number;
+    lastHitAt?: string | null;
+}
+
 const RedirectsList = () => {
-    const [items, setItems] = useState([]);
+    const [items, setItems] = useState<RedirectItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterActive, setFilterActive] = useState('all');
 
-    const [editingId, setEditingId] = useState(null);
+    const [editingId, setEditingId] = useState<string | number | null>(null);
     const [formData, setFormData] = useState(EMPTY_FORM);
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; item: RedirectItem | null }>({ isOpen: false, item: null });
 
     useEffect(() => { fetchItems(); }, []);
 
@@ -70,7 +81,7 @@ const RedirectsList = () => {
         return matchesSearch && matchesStatus;
     });
 
-    const handleStartEdit = (item) => {
+    const handleStartEdit = (item: RedirectItem) => {
         setEditingId(item.id);
         setFormData({
             fromPath: item.fromPath || '',
@@ -114,6 +125,7 @@ const RedirectsList = () => {
                 setItems((prev) => [res.data?.data || res.data, ...prev]);
                 toast.success('Redirect created');
             } else {
+                if (editingId === null) return;
                 const res = await redirectsAPI.update(editingId, payload);
                 const updated = res.data?.data || res.data;
                 setItems((prev) => prev.map((i) => (i.id === editingId ? updated : i)));
@@ -128,7 +140,7 @@ const RedirectsList = () => {
         }
     };
 
-    const handleToggleActive = async (item) => {
+    const handleToggleActive = async (item: RedirectItem) => {
         try {
             const updatedStatus = !item.isActive;
             const res = await redirectsAPI.update(item.id, { isActive: updatedStatus });
@@ -141,10 +153,11 @@ const RedirectsList = () => {
     };
 
     const handleDeleteConfirm = async () => {
-        if (!deleteModal.item) return;
+        const item = deleteModal.item;
+        if (!item) return;
         try {
-            await redirectsAPI.delete(deleteModal.item.id);
-            setItems((prev) => prev.filter((i) => i.id !== deleteModal.item.id));
+            await redirectsAPI.delete(item.id);
+            setItems((prev) => prev.filter((i) => i.id !== item.id));
             setDeleteModal({ isOpen: false, item: null });
             toast.success('Redirect deleted');
         } catch (err) {
@@ -152,11 +165,11 @@ const RedirectsList = () => {
         }
     };
 
-    const updateField = (field, value) => {
+    const updateField = (field: string, value: any) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
-    const RedirectForm = ({ onCancel }) => (
+    const RedirectForm = ({ onCancel }: { onCancel: () => void }) => (
         <Card className="p-6 border-2 border-primary/20 bg-primary/5 shadow-lg rounded-2xl space-y-4 mb-6">
             <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">
@@ -313,7 +326,7 @@ const RedirectsList = () => {
                                         <div className="flex flex-col md:flex-row md:items-center gap-4">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <Badge className={item.statusCode >= 307 ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}>
+                                                    <Badge className={Number(item.statusCode) >= 307 ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}>
                                                         {item.statusCode}
                                                     </Badge>
                                                     <span className="font-mono text-sm font-bold truncate block flex-1">

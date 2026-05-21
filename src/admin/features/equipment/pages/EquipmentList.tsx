@@ -17,6 +17,38 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { generateSlug } from '../../../utils/helpers';
 import { toast } from 'sonner';
 
+interface EquipmentItem {
+    id?: number;
+    name: string;
+    slug: string;
+    brand?: string | null;
+    description?: string | null;
+    keywordsList?: string[];
+    category?: string;
+    affiliateUrl?: string | null;
+    affiliate_url?: string | null;
+    affiliateProvider?: string | null;
+    affiliate_provider?: string | null;
+    image?: {
+        url?: string;
+        variants?: {
+            md?: { url: string };
+            sm?: { url: string };
+        };
+    } | null;
+}
+
+interface EquipmentFormData {
+    name: string;
+    brand: string;
+    description: string;
+    keywords: string;
+    category: string;
+    affiliateUrl: string;
+    affiliateProvider: string;
+    imageUrl: string;
+}
+
 const CATEGORIES = [
     { value: 'appliances', label: 'Appliances' },
     { value: 'bakeware', label: 'Bakeware' },
@@ -40,11 +72,11 @@ const itemVariants = {
         opacity: 1,
         y: 0,
         scale: 1,
-        transition: { type: "spring", stiffness: 400, damping: 28 }
+        transition: { type: "spring" as const, stiffness: 400, damping: 28 }
     }
 };
 
-const EMPTY_FORM = {
+const EMPTY_FORM: EquipmentFormData = {
     name: '',
     brand: '',
     description: '',
@@ -56,18 +88,21 @@ const EMPTY_FORM = {
 };
 
 const EquipmentList = () => {
-    const [items, setItems] = useState([]);
+    const [items, setItems] = useState<EquipmentItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('all');
 
     // Edit / Create state
-    const [editingSlug, setEditingSlug] = useState(null);
-    const [formData, setFormData] = useState(EMPTY_FORM);
+    const [editingSlug, setEditingSlug] = useState<string | null>(null);
+    const [formData, setFormData] = useState<EquipmentFormData>(EMPTY_FORM);
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
+    const [deleteModal, setDeleteModal] = useState<{
+        isOpen: boolean;
+        item: EquipmentItem | null;
+    }>({ isOpen: false, item: null });
 
     useEffect(() => { fetchItems(); }, []);
 
@@ -94,7 +129,7 @@ const EquipmentList = () => {
         return matchesSearch && matchesCategory;
     });
 
-    const handleStartEdit = (item) => {
+    const handleStartEdit = (item: EquipmentItem) => {
         setEditingSlug(item.slug);
         // Extract image URL from parsed image object
         const imgUrl = item.image?.variants?.md?.url || item.image?.variants?.sm?.url || item.image?.url || '';
@@ -165,6 +200,10 @@ const EquipmentList = () => {
                 setItems((prev) => [...prev, newItem]);
                 toast.success('Equipment created');
             } else {
+                if (!editingSlug) {
+                    toast.error('Invalid editing state');
+                    return;
+                }
                 const res = await equipmentAPI.update(editingSlug, payload);
                 const updated = res.data?.data || res.data;
                 setItems((prev) => prev.map((i) => (i.slug === editingSlug ? updated : i)));
@@ -180,10 +219,11 @@ const EquipmentList = () => {
     };
 
     const handleDeleteConfirm = async () => {
-        if (!deleteModal.item) return;
+        const itemToDelete = deleteModal.item;
+        if (!itemToDelete) return;
         try {
-            await equipmentAPI.delete(deleteModal.item.slug);
-            setItems((prev) => prev.filter((i) => i.slug !== deleteModal.item.slug));
+            await equipmentAPI.delete(itemToDelete.slug);
+            setItems((prev) => prev.filter((i) => i.slug !== itemToDelete.slug));
             setDeleteModal({ isOpen: false, item: null });
             toast.success('Equipment deleted');
         } catch (err) {
@@ -191,12 +231,15 @@ const EquipmentList = () => {
         }
     };
 
-    const updateField = (field, value) => {
+    const updateField = <K extends keyof EquipmentFormData>(field: K, value: EquipmentFormData[K]) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
     // ─── Form component (reused for create & edit) ─────────────
-    const EquipmentForm = ({ onCancel }) => (
+    interface EquipmentFormProps {
+        onCancel: () => void;
+    }
+    const EquipmentForm = ({ onCancel }: EquipmentFormProps) => (
         <Card className="p-6 border-2 border-primary/20 bg-primary/5 shadow-lg rounded-2xl space-y-4">
             <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">
@@ -287,7 +330,10 @@ const EquipmentList = () => {
                                 src={formData.imageUrl}
                                 alt="Preview"
                                 className="w-full h-full object-cover"
-                                onError={(e) => { e.target.style.display = 'none'; }}
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                width={64}
+                                height={64}
+                                loading="lazy"
                             />
                         </div>
                     )}
@@ -420,6 +466,9 @@ const EquipmentList = () => {
                                                         src={item.image?.variants?.md?.url || item.image?.url}
                                                         alt={item.name}
                                                         className="w-full h-full object-cover"
+                                                        width={40}
+                                                        height={40}
+                                                        loading="lazy"
                                                     />
                                                 </div>
                                             )}
@@ -473,7 +522,7 @@ const EquipmentList = () => {
                                         <div className="mt-auto pt-2 border-t border-border/30">
                                             {item.affiliateUrl || item.affiliate_url ? (
                                                 <a
-                                                    href={item.affiliateUrl || item.affiliate_url}
+                                                    href={item.affiliateUrl || item.affiliate_url || undefined}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-[10px] text-primary flex items-center gap-1 hover:underline truncate"

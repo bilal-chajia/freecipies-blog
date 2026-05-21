@@ -11,6 +11,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PanelLeft, PanelRight, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,31 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BlockInserter from './BlockInserter';
 import SettingsSidebar from './SettingsSidebar';
+
+type GutenbergContentType = 'article' | 'recipe' | 'roundup' | 'menu';
+
+type LayoutSelectedBlock = {
+    id?: string | null;
+    type?: string;
+};
+
+type GutenbergEditorLayoutProps = {
+    children: ReactNode;
+    contentType?: GutenbergContentType;
+    onInsertBlock?: (blockType: string) => void;
+    defaultInserterOpen?: boolean;
+    documentSettings?: ReactNode;
+    blockSettings?: ReactNode;
+    selectedBlock?: LayoutSelectedBlock | null;
+    defaultSidebarOpen?: boolean;
+    canvasClassName?: string;
+    className?: string;
+};
+
+type ContentCanvasProps = {
+    children: ReactNode;
+    className?: string;
+};
 
 /**
  * GutenbergEditorLayout - Main 3-panel layout component
@@ -42,10 +68,10 @@ export default function GutenbergEditorLayout({
     canvasClassName,
 
     className,
-}) {
+}: GutenbergEditorLayoutProps) {
     const [inserterOpen, setInserterOpen] = useState(defaultInserterOpen);
     const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
-    const [sidebarTab, setSidebarTab] = useState('document');
+    const [sidebarTab, setSidebarTab] = useState<'document' | 'block' | 'ai'>('document');
     const isMobile = useIsMobile();
 
     // Auto-close sidebars on mobile
@@ -72,7 +98,7 @@ export default function GutenbergEditorLayout({
         setSidebarOpen(prev => !prev);
     }, []);
 
-    const handleInsertBlock = useCallback((blockType) => {
+    const handleInsertBlock = useCallback((blockType: string) => {
         onInsertBlock?.(blockType);
         // Optionally close inserter after inserting
         // setInserterOpen(false);
@@ -156,7 +182,7 @@ export default function GutenbergEditorLayout({
                         isOpen={inserterOpen}
                         onClose={toggleInserter}
                         onInsertBlock={handleInsertBlock}
-                        contentType={contentType}
+                        contentType={contentType === 'menu' ? 'article' : contentType}
                     />
                 )}
             </AnimatePresence>
@@ -198,7 +224,7 @@ export default function GutenbergEditorLayout({
  * Content Canvas component for use within the layout
  * Provides proper styling for the central content area
  */
-export function ContentCanvas({ children, className }) {
+export function ContentCanvas({ children, className }: ContentCanvasProps) {
     return (
         <div className={cn(
             'wp-canvas-content',
@@ -216,8 +242,8 @@ export function ContentCanvas({ children, className }) {
 export function useGutenbergLayout() {
     const [inserterOpen, setInserterOpen] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [sidebarTab, setSidebarTab] = useState('document');
-    const [selectedBlock, setSelectedBlock] = useState(null);
+    const [sidebarTab, setSidebarTab] = useState<'document' | 'block' | 'ai'>('document');
+    const [selectedBlock, setSelectedBlock] = useState<LayoutSelectedBlock | null>(null);
 
     return {
         inserterOpen,

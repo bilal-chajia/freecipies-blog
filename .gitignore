@@ -80,3 +80,36 @@ content.json
 .zencoder/
 db/DATABASE_SCHEMA.md
 .gitignore
+
+# System & Agent Memory caches
+.remember/
+
+# Temporary test and audit outputs
+temp_res.html
+lighthouse-*.json
+
+# Expanded Local environment variables
+.env.local
+.env.*.local
+
+# Test Coverage & E2E outputs
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+.vitest/
+.vite-node/
+*.timestamp-*
+
+# Linting & Formatting Caches
+.eslintcache
+.prettiercache
+.stylelintcache
+
+# Local Package Manager & Lock Caches
+.pnpm-store/
+.npm/
+
+# General logs
+*.log
+logs/

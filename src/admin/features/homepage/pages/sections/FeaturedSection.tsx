@@ -8,13 +8,9 @@ import { SectionCard } from '@admin/features/homepage/components';
 import { Star } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import { Label } from '@/ui/label';
+import type { HomepageSectionProps } from '../../types';
 
-interface FeaturedSectionProps {
-  formData: Record<string, unknown>;
-  handleNestedInputChange: (field: string, value: unknown) => void;
-}
-
-const FeaturedSection = ({ formData, handleNestedInputChange }: FeaturedSectionProps) => {
+const FeaturedSection = ({ formData, handleNestedInputChange }: HomepageSectionProps) => {
     return (
         <SectionCard
             title="Featured Posts"

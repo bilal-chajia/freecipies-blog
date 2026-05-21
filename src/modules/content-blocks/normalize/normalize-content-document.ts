@@ -92,14 +92,14 @@ function normalizeRelatedItems(block: Record<string, unknown>): unknown[] {
   if (Array.isArray(block.items)) {
     return block.items
       .map((item) => normalizeRelatedItem(item))
-      .filter(Boolean) as unknown[];
+      .filter((item): item is Record<string, unknown> => Boolean(item));
   }
 
   return [
     ...(Array.isArray(block.recipes) ? block.recipes.map((item) => normalizeRelatedItem(item, 'recipe')) : []),
     ...(Array.isArray(block.articles) ? block.articles.map((item) => normalizeRelatedItem(item, 'article')) : []),
     ...(Array.isArray(block.roundups) ? block.roundups.map((item) => normalizeRelatedItem(item, 'roundup')) : []),
-  ].filter(Boolean) as unknown[];
+  ].filter((item): item is Record<string, unknown> => Boolean(item));
 }
 
 function normalizeLegacyType(block: Record<string, unknown>): Record<string, unknown> {
@@ -224,6 +224,32 @@ function normalizeBlock(block: unknown, index: number): NormalizedContentBlock |
   } as ContentBlock as NormalizedContentBlock;
 }
 
+function createUniqueBlockId(baseId: string, index: number, usedIds: Set<string>): string {
+  const rawBase = baseId.trim() || `block-${index}`;
+
+  if (!usedIds.has(rawBase)) {
+    usedIds.add(rawBase);
+    return rawBase;
+  }
+
+  let suffix = 2;
+  let nextId = `${rawBase}-${suffix}`;
+  while (usedIds.has(nextId)) {
+    suffix += 1;
+    nextId = `${rawBase}-${suffix}`;
+  }
+  usedIds.add(nextId);
+  return nextId;
+}
+
+function ensureUniqueBlockIds(blocks: NormalizedContentBlock[]): NormalizedContentBlock[] {
+  const usedIds = new Set<string>();
+  return blocks.map((block, index) => ({
+    ...block,
+    id: createUniqueBlockId(block.id, index, usedIds),
+  }));
+}
+
 function extractBlocks(parsed: unknown): unknown[] {
   if (Array.isArray(parsed)) return parsed;
 
@@ -243,7 +269,7 @@ export function normalizeContentDocument(input: unknown): ContentDocument {
   return {
     version: 1,
     kind: 'content_document',
-    blocks,
+    blocks: ensureUniqueBlockIds(blocks),
   };
 }
 

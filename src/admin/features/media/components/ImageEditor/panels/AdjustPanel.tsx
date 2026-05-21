@@ -5,6 +5,27 @@ import { Label } from '@/ui/label';
 import { Separator } from '@/ui/separator';
 import { FILTERS } from '../constants';
 
+interface AdjustPanelProps {
+    imageSrc: string;
+    activeFilter: string;
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    temperature: number;
+    blur: number;
+    vignetteEnabled: boolean;
+    vignetteIntensity: number;
+    onFilterChange: (filter: string) => void;
+    onBrightnessChange: (val: number) => void;
+    onContrastChange: (val: number) => void;
+    onSaturationChange: (val: number) => void;
+    onTemperatureChange: (val: number) => void;
+    onBlurChange: (val: number) => void;
+    onVignetteEnabledChange: (val: boolean) => void;
+    onVignetteIntensityChange: (val: number) => void;
+    saveToHistory: () => void;
+}
+
 /**
  * AdjustPanel - Handles brightness, contrast, saturation, temperature, blur, vignette, and filters
  */
@@ -27,7 +48,7 @@ const AdjustPanel = ({
     onVignetteEnabledChange,
     onVignetteIntensityChange,
     saveToHistory
-}) => {
+}: AdjustPanelProps) => {
     const handleResetAdjust = () => {
         onBrightnessChange(1);
         onContrastChange(1);

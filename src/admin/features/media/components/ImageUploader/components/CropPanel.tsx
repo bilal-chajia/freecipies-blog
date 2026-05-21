@@ -16,7 +16,7 @@ interface CropPanelProps {
   crop: Point;
   zoom: number;
   rotation: number;
-  aspect: number;
+  aspect?: number;
   focalPoint: Point;
   showFocalPoint: boolean;
   onCropChange: (crop: Point) => void;

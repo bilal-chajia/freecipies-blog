@@ -28,7 +28,9 @@ import { authorsAPI } from '@admin/services/api';
 // Imports from modular structure
 import { FILTERS, QUALITY_PRESETS } from './ImageEditor/constants';
 import { CropPanel, AdjustPanel, TextPanel, WatermarkPanel, SEOPanel } from './ImageEditor/panels';
+import type { AuthorOption } from './ImageEditor/panels';
 import { useImageEditorState } from './ImageEditor/hooks/useImageEditorState';
+import type { CroppedArea, CroppedAreaPixels } from './ImageEditor/hooks/useImageEditorState';
 import { useImageHistory } from './ImageEditor/hooks/useImageHistory';
 import WatermarkOverlay from './ImageEditor/overlays/WatermarkOverlay';
 import VignetteOverlay from './ImageEditor/overlays/VignetteOverlay';
@@ -102,7 +104,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
     const [altText, setAltText] = React.useState('');
     const [selectedAuthor, setSelectedAuthor] = React.useState('none');
     const [compressionQuality, setCompressionQuality] = React.useState('high');
-    const [authors, setAuthors] = React.useState<Record<string, unknown>[]>([]);
+    const [authors, setAuthors] = React.useState<AuthorOption[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const initializedForImageRef = useRef<string | null>(null); // Track which image we've initialized for
@@ -129,7 +131,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
             try {
                 const response = await authorsAPI.getAll();
                 if (response.data.success) {
-                    setAuthors(response.data.data || []);
+                    setAuthors((response.data.data || []) as AuthorOption[]);
                 }
             } catch (error) {
                 console.error('Failed to load authors:', error);
@@ -239,7 +241,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
         saveToHistory();
     };
 
-    const handleAspectChange = (value: number) => {
+    const handleAspectChange = (value: number | null) => {
         setAspect(value);
         saveToHistory();
     };
@@ -257,15 +259,19 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
         }
     };
 
-    const onCropComplete = (_croppedAreaPercent: unknown, croppedAreaPixelsVal: Record<string, number>) => {
+    const onCropComplete = (croppedAreaPercent: CroppedArea, croppedAreaPixelsVal: CroppedAreaPixels) => {
         setCroppedAreaPixels(croppedAreaPixelsVal);
-        setCroppedArea(_croppedAreaPercent);
+        setCroppedArea(croppedAreaPercent);
     };
 
     const handleApplyCrop = async () => {
         try {
             setProcessing(true);
             const currentSrc = workingImage || (typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null));
+
+            if (!currentSrc) {
+                throw new Error('No image source to crop');
+            }
 
             // If croppedAreaPixels is null, get full image dimensions
             let cropAreaToUse = croppedAreaPixels;
@@ -294,6 +300,10 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
                 null, null, null
             );
 
+            if (!croppedBlob) {
+                throw new Error('Failed to generate cropped blob');
+            }
+
             const newImageUrl = URL.createObjectURL(croppedBlob);
             setWorkingImage(newImageUrl);
 
@@ -319,14 +329,14 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
             setProcessing(true);
 
             const watermarkConfig = watermarkType !== 'none' ? {
-                type: watermarkType === 'custom' ? 'image' : 'text',
-                content: watermarkType === 'text' ? 'SaaS Blog' : null,
-                imageObj: watermarkType === 'custom' ? customWatermark : null,
+                type: (watermarkType === 'custom' ? 'image' : 'text') as 'text' | 'image',
+                content: watermarkType === 'text' ? 'SaaS Blog' : undefined,
+                imageObj: (watermarkType === 'custom' && customWatermark) ? customWatermark : undefined,
                 opacity: watermarkOpacity,
                 position: watermarkPosition,
                 scale: watermarkScale,
-                repeat: watermarkRepeat,
-                pattern: watermarkPattern,
+                repeat: watermarkRepeat as 'single' | 'tiled',
+                pattern: watermarkPattern as 'grid' | 'diagonal' | 'horizontal' | 'vertical',
                 spacingH: watermarkSpacingH,
                 spacingV: watermarkSpacingV,
                 rotation: watermarkRotation
@@ -347,6 +357,9 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
             } : null;
 
             const saveImageSrc = workingImage || (typeof image === 'string' ? image : (image instanceof File ? URL.createObjectURL(image) : null));
+            if (!saveImageSrc) {
+                throw new Error('No image source to save');
+            }
             const qualityValue = QUALITY_PRESETS[compressionQuality]?.quality || 0.85;
 
             // If croppedAreaPixels is null, we need to get the full image dimensions
@@ -379,6 +392,10 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
                 textOverlay,
                 qualityValue
             );
+
+            if (!croppedImageBlob) {
+                throw new Error('Failed to generate cropped image blob');
+            }
 
             let fileName;
             if (originalFilename) {
@@ -487,6 +504,7 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
                         selectedAuthor={selectedAuthor}
                         authors={authors}
                         compressionQuality={compressionQuality}
+                        imageUrl={imageSrc}
                         onAltTextChange={setAltText}
                         onSelectedAuthorChange={setSelectedAuthor}
                         onCompressionQualityChange={setCompressionQuality}
@@ -615,9 +633,9 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
                                     crop={crop}
                                     zoom={zoom}
                                     rotation={rotation}
-                                    aspect={aspect}
+                                    aspect={aspect ?? undefined}
                                     onCropChange={setCrop}
-                                    onCropComplete={onCropComplete}
+                                    onCropComplete={(croppedArea: CroppedArea, croppedAreaPixels: CroppedAreaPixels) => onCropComplete(croppedArea, croppedAreaPixels)}
                                     onZoomChange={setZoom}
                                     onRotationChange={setRotation}
                                     style={{
@@ -663,17 +681,18 @@ const ImageEditor = ({ isOpen, image, originalFilename, onSave, onCancel }: Imag
                                     watermarkSpacingV={watermarkSpacingV}
                                     customWatermark={customWatermark}
                                     aspect={aspect}
+                                    watermarkDensity={watermarkDensity}
                                 />
 
                                 <VignetteOverlay
                                     enabled={vignetteEnabled}
                                     intensity={vignetteIntensity}
-                                    aspect={aspect}
+                                    aspect={aspect || 1}
                                 />
 
                                 <TextOverlay
                                     textOverlay={textOverlay}
-                                    aspect={aspect}
+                                    aspect={aspect || 1}
                                 />
                             </>
                         )}

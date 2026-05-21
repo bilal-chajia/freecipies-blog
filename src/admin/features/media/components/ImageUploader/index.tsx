@@ -22,7 +22,7 @@ import { authorsAPI } from '@admin/services/api';
 import { useImageUploadSettings } from '@admin/hooks/useImageUploadSettings';
 import { toast } from 'sonner';
 
-import type { UploadProgress } from './types';
+import type { UploadProgress, CroppedArea, ImageFormat, UploadResultData } from './types';
 
 const AUTHORS_CACHE_KEY = 'media_credit_authors';
 const AUTHORS_CACHE_TTL = 24 * 60 * 60 * 1000;
@@ -42,6 +42,7 @@ interface CreditSnapshot {
   name: string;
   slug: string;
   avatar?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 function readCachedAuthors(): AuthorRecord[] {
@@ -132,8 +133,8 @@ interface QueueItem {
 interface ImageUploaderProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUploadComplete?: (data: unknown) => void;
-  defaultFormat?: string;
+  onUploadComplete?: (data: UploadResultData) => void;
+  defaultFormat?: ImageFormat;
   variantSizes?: Record<string, number>;
   allowMultiple?: boolean;
 }
@@ -181,14 +182,14 @@ export default function ImageUploader({
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [aspect, setAspect] = useState('free');
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Record<string, number> | null>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedArea | null>(null);
 
   // Focal Point state
   const [focalPoint, setFocalPoint] = useState({ x: 50, y: 50 });
   const [showFocalPoint, setShowFocalPoint] = useState(false);
 
   // Metadata state
-  const [format, setFormat] = useState(defaultFormat);
+  const [format, setFormat] = useState<ImageFormat>(defaultFormat as ImageFormat);
   const [metadata, setMetadata] = useState({
     filename: '',
     altText: '',
@@ -254,6 +255,7 @@ export default function ImageUploader({
       const cachedAuthors = readCachedAuthors();
       if (cachedAuthors.length) {
         setAuthors(cachedAuthors);
+        return;
       }
       setLoadingAuthors(true);
       authorsAPI.getAll()
@@ -438,8 +440,8 @@ export default function ImageUploader({
   }, [currentQueueIndex, queue, skipInQueue, handleFileSelect, handleUrlImport, previewUrl]);
 
   // Handle crop complete
-  const onCropComplete = useCallback((_croppedArea: unknown, croppedAreaPixels: Record<string, number>) => {
-    setCroppedAreaPixels(croppedAreaPixels);
+  const onCropComplete = useCallback((_croppedArea: unknown, croppedAreaPixels: unknown) => {
+    setCroppedAreaPixels(croppedAreaPixels as CroppedArea);
   }, []);
 
   const handleFocalPointClick = useCallback((point: { x: number; y: number }) => {
@@ -475,7 +477,7 @@ export default function ImageUploader({
         toast('Upload cancelled');
         return;
       }
-      if (result.success) {
+      if (result.success && result.data) {
         onUploadComplete?.(result.data);
         onOpenChange(false);
       }
@@ -491,8 +493,8 @@ export default function ImageUploader({
   const handleUploadInBackground = useCallback(async (queueIndex: number, uploadData: Record<string, unknown>) => {
     const { file, cropArea, outputFormat, meta, focal, aspectRatio, itemName } = uploadData as {
       file: File;
-      cropArea: Record<string, number> | null;
-      outputFormat: string;
+      cropArea: CroppedArea | null;
+      outputFormat: ImageFormat;
       meta: Record<string, string>;
       focal: { x: number; y: number };
       aspectRatio: string;
@@ -532,7 +534,7 @@ export default function ImageUploader({
         return;
       }
 
-      if (result.success) {
+      if (result.success && result.data) {
         // Mark as done in queue
         markItemDone(queueIndex, result.data);
         toast.success(`${itemName} uploaded ✅`);
@@ -731,7 +733,7 @@ export default function ImageUploader({
                   crop={crop}
                   zoom={zoom}
                   rotation={rotation}
-                  aspect={numericAspect}
+                  aspect={numericAspect ?? undefined}
                   focalPoint={focalPoint}
                   showFocalPoint={showFocalPoint}
                   onCropChange={setCrop}
@@ -746,7 +748,7 @@ export default function ImageUploader({
                   metadata={metadata}
                   onMetadataChange={setMetadata}
                   format={format}
-                  onFormatChange={setFormat}
+                  onFormatChange={(val) => setFormat(val as ImageFormat)}
                   aspect={aspect}
                   onAspectChange={setAspect}
                   zoom={zoom}
@@ -763,7 +765,7 @@ export default function ImageUploader({
             )}
 
             {/* Step 3: Uploading */}
-            {isUploading && <ProgressPanel progress={progress} error={error} />}
+            {isUploading && <ProgressPanel progress={progress} error={error || undefined} />}
           </AnimatePresence>
         </div>
 

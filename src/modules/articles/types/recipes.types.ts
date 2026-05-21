@@ -723,10 +723,12 @@ export function isoDurationToMinutes(duration: string | null | undefined): numbe
 export function formatIngredient(item: IngredientItem): string {
     const parts: string[] = [];
 
-    if (item.amount) {
-        const amountStr = Number.isInteger(item.amount)
-            ? item.amount.toString()
-            : item.amount.toFixed(2).replace(/\.?0+$/, '');
+    const amount = typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount;
+
+    if (amount !== undefined && amount !== null && !isNaN(amount) && amount > 0) {
+        const amountStr = Number.isInteger(amount)
+            ? amount.toString()
+            : amount.toFixed(2).replace(/\.?0+$/, '');
         parts.push(amountStr);
     }
 
@@ -884,18 +886,31 @@ export function migrateRecipeJson(raw: Record<string, any>): RecipeJson {
                 name: text,
                 amount: 0,
                 unit: '',
+                isOptional: false,
             })),
         }];
-    } else if (ingredients.length > 0 && ingredients[0].group !== undefined) {
-        // Old `{ group, items }` format → `{ group_title, items }`
-        ingredients = ingredients.map((g: any) => ({
-            group_title: g.group || g.group_title || 'Ingredients',
-            items: (g.items || []).map((item: any) =>
-                typeof item === 'string'
-                    ? { name: item, amount: 0, unit: '' }
-                    : item
-            ),
-        }));
+    } else {
+        // Ensure all groups have group_title instead of group, and map isOptional correctly
+        ingredients = ingredients.map((g: any) => {
+            if (g && typeof g === 'object') {
+                return {
+                    group_title: g.group_title || g.group || 'Ingredients',
+                    items: (g.items || []).map((item: any) => {
+                        if (typeof item === 'string') {
+                            return { name: item, amount: 0, unit: '', isOptional: false };
+                        }
+                        if (item && typeof item === 'object') {
+                            return {
+                                ...item,
+                                isOptional: item.isOptional ?? item.is_optional ?? false,
+                            };
+                        }
+                        return item;
+                    }),
+                };
+            }
+            return g;
+        });
     }
     result.ingredients = ingredients;
 

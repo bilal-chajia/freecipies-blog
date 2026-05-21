@@ -28,9 +28,9 @@ const getSettingCacheKey = (key: string): string => `${SETTINGS_CACHE_PREFIX}${k
 
 function parseSettingValue<T>(value: string): T {
   try {
-    return JSON.parse(value) as T;
+    return JSON.parse(value);
   } catch {
-    return value as unknown as T;
+    return value as T & string;
   }
 }
 
@@ -78,9 +78,8 @@ export async function getSettingValue<T = unknown>(
   if (!setting) return null;
 
   if (options?.cache) {
-    await options.cache.put(cacheKey, setting.value, {
-      expirationTtl: SETTINGS_CACHE_TTL_SECONDS,
-    });
+    // Write permanently into the KV cache (no expirationTtl) to prevent D1 row reads
+    await options.cache.put(cacheKey, setting.value);
   }
 
   return parseSettingValue<T>(setting.value);
@@ -122,7 +121,10 @@ export async function upsertSetting(
     });
   }
 
-  await invalidateSettingCache(options?.cache, key);
+  // Write-through cache: actively write the updated value to the KV cache permanently
+  if (options?.cache) {
+    await options.cache.put(getSettingCacheKey(key), valueStr);
+  }
   return true;
 }
 

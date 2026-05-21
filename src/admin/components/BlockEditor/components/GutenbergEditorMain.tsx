@@ -9,14 +9,55 @@
  */
 
 import { motion } from 'motion/react';
+import React from 'react';
 import { cn } from '@/lib/utils';
 import Editor from '@monaco-editor/react';
 import BlockEditor from '..';
 
+type EditorContentType = 'article' | 'recipe' | 'roundup';
+
+type TitleInputProps = {
+    value?: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    className?: string;
+    containerClassName?: string;
+};
+
+type HeadlineInputProps = {
+    value?: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+};
+
+type GutenbergEditorMainProps = {
+    formData: {
+        type?: EditorContentType;
+        [key: string]: unknown;
+    };
+    onInputChange?: (field: string, value: unknown) => void;
+    contentJson: string | unknown[] | { blocks: unknown[] };
+    setContentJson: (value: string) => void;
+    validateJSON?: (field: string, value: string) => void;
+    relatedContext?: React.ComponentProps<typeof BlockEditor>['context'];
+    onEditorReady?: (editor: unknown) => void;
+    onStructureUpdate?: (payload: unknown) => void;
+    onSelectedBlockChange?: (block: unknown) => void;
+    forceSelectBlockId?: string | null;
+    onForceSelectHandled?: () => void;
+    className?: string;
+    viewMode?: 'visual' | 'json';
+    sidebarOpen?: boolean;
+    contentType?: EditorContentType;
+    blockEditorProps?: Record<string, unknown>;
+    placeholder?: string;
+    jsonHeight?: string;
+};
+
 /**
  * WordPress-style inline title input
  */
-function TitleInput({ value, onChange, placeholder = "Add title", className, containerClassName }) {
+function TitleInput({ value, onChange, placeholder = "Add title", className, containerClassName }: TitleInputProps) {
     return (
         <div className={cn("wp-block-post-title-wrapper", containerClassName)}>
             <input
@@ -42,7 +83,7 @@ function TitleInput({ value, onChange, placeholder = "Add title", className, con
 /**
  * WordPress-style inline headline/subtitle input
  */
-function HeadlineInput({ value, onChange, placeholder = "Add headline..." }) {
+function HeadlineInput({ value, onChange, placeholder = "Add headline..." }: HeadlineInputProps) {
     return (
         <div className="wp-block-headline-wrapper mt-4">
             <input
@@ -64,7 +105,7 @@ function HeadlineInput({ value, onChange, placeholder = "Add headline..." }) {
 /**
  * Content type badge
  */
-function ContentTypeBadge({ type }) {
+function ContentTypeBadge({ type }: { type: EditorContentType }) {
     const typeLabels = {
         article: { label: 'Article', emoji: '📝', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
         recipe: { label: 'Recipe', emoji: '🍳', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
@@ -107,7 +148,7 @@ export default function GutenbergEditorMain({
     blockEditorProps = {},
     placeholder = 'Start writing...',
     jsonHeight = '70vh',
-}) {
+}: GutenbergEditorMainProps) {
     return (
         <>
             <motion.div

@@ -42,7 +42,7 @@ const BoardEditor = () => {
   const loadBoard = async () => {
     try {
       setLoading(true);
-      const response = await pinterestBoardsAPI.getBySlug(id);
+      const response = await pinterestBoardsAPI.getBySlug(id || '');
       const board = response.data?.data?.board || response.data?.board;
       if (board) {
         setBoardId(board.id);
@@ -85,7 +85,7 @@ const BoardEditor = () => {
     }
   };
 
-  const handleMediaSelect = (item) => {
+  const handleMediaSelect = (item: any) => {
     const slot = buildImageSlotFromMedia(item, {
       alt: item.altText || formData.name || '',
       variant_keys: ['sm', 'md', 'lg'],
@@ -96,7 +96,7 @@ const BoardEditor = () => {
     setMediaDialogOpen(false);
   };
 
-  const handleChange = (field, value) => {
+  const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (field === 'name' && !isEditMode) {
       setFormData(prev => ({ ...prev, slug: generateSlug(value) }));
@@ -276,7 +276,7 @@ const BoardEditor = () => {
                 value={getRSSFeedURL()}
                 readOnly
                 className="w-full font-mono text-sm"
-                onClick={(e) => e.target.select()}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
               />
               <p className="text-xs text-muted-foreground">
                 This feed will contain pins created in the last 24 hours assigned to this board.

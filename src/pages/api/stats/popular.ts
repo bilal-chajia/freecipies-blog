@@ -30,7 +30,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 // Extract hero image URL from images_json
                 let imageUrl = '';
                 try {
-                    const images = a.images_json ? JSON.parse(a.images_json) : {};
+                    const imagesJson = typeof a.images_json === 'string' ? JSON.parse(a.images_json) : (a.images_json || {});
+                    const images = imagesJson as Record<string, any>;
                     imageUrl = resolveVariantUrl(images?.hero?.variants?.md || images?.hero?.variants?.sm) || '';
                 } catch { }
             

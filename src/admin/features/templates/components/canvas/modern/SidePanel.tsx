@@ -23,7 +23,7 @@ import { ScrollArea } from '@/ui/scroll-area';
 import { Separator } from '@/ui/separator';
 import { toast } from 'sonner';
 
-import useEditorStore, { type EditorElement, type TemplateState } from '@admin/features/templates/store/useEditorStore';
+import useEditorStore, { type EditorElement, type TemplateState, type TextElement } from '@admin/features/templates/store/useEditorStore';
 import { useUIStore } from '@admin/features/templates/store/useUIStore';
 import DraggableLayersList from '../DraggableLayersList';
 import { templatesAPI } from '@admin/services/api';
@@ -116,16 +116,17 @@ const SidePanel: React.FC = () => {
 
     // Listen for template save events to update the list
     useEffect(() => {
-        const handleTemplateSaved = async (event: CustomEvent<{ template: TemplateState }>) => {
-            const { template: savedTemplate } = event.detail || {};
+        const handleTemplateSaved = async (e: Event) => {
+            const customEvent = e as CustomEvent<{ template: TemplateState }>;
+            const { template: savedTemplate } = customEvent.detail || {};
             if (!savedTemplate) return;
 
             setTemplates(prev => upsertTemplate(prev, savedTemplate));
 
             await loadTemplates();
         };
-        window.addEventListener('template:saved', handleTemplateSaved as unknown as EventListener);
-        return () => window.removeEventListener('template:saved', handleTemplateSaved as unknown as EventListener);
+        window.addEventListener('template:saved', handleTemplateSaved);
+        return () => window.removeEventListener('template:saved', handleTemplateSaved);
     }, []);
 
     const loadTemplates = async () => {
@@ -194,9 +195,9 @@ const SidePanel: React.FC = () => {
 
     // Execute functions for confirmation actions (must be outside renderContent for scope)
     const executeLoadTemplate = (t: TemplateState) => {
-        const parsedElements = typeof ((t as unknown) as Record<string, unknown>).elements_json === 'string'
-            ? JSON.parse(((t as unknown) as Record<string, unknown>).elements_json as string)
-            : ((t as unknown) as Record<string, unknown>).elements_json;
+        const parsedElements = typeof t.elements_json === 'string'
+            ? JSON.parse(t.elements_json)
+            : (t.elements_json || []);
         loadTemplateToStore(t, parsedElements);
         navigate(`/templates/${t.slug}`);
         toast.success('Template loaded');
@@ -566,7 +567,7 @@ const SidePanel: React.FC = () => {
                                             y: el.y * scaleY,
                                             width: el.width * scaleX,
                                             height: el.height * scaleY,
-                                            fontSize: ((el as unknown) as Record<string, unknown>).fontSize ? ((el as unknown) as Record<string, unknown>).fontSize as number * Math.min(scaleX, scaleY) : ((el as unknown) as Record<string, unknown>).fontSize as number | undefined
+                                            fontSize: el.type === 'text' && el.fontSize ? el.fontSize * Math.min(scaleX, scaleY) : undefined
                                         }));
                                         setElements(newElements);
 
@@ -625,7 +626,7 @@ const SidePanel: React.FC = () => {
                                             y: el.y * sY,
                                             width: el.width * sX,
                                             height: el.height * sY,
-                                            fontSize: ((el as unknown) as Record<string, unknown>).fontSize ? ((el as unknown) as Record<string, unknown>).fontSize as number * Math.min(sX, sY) : ((el as unknown) as Record<string, unknown>).fontSize as number | undefined
+                                            fontSize: el.type === 'text' && el.fontSize ? el.fontSize * Math.min(sX, sY) : undefined
                                         }));
                                         setElements(newElements);
 
@@ -706,7 +707,7 @@ const SidePanel: React.FC = () => {
                     >
                         {activePanel === 'effects' ? (
                             <TextEffectsPanel
-                                selectedElement={selectedElement ?? null}
+                                selectedElement={selectedElement?.type === 'text' ? (selectedElement as TextElement) : null}
                                 updateElement={updateElement}
                                 onClose={() => setActivePanel('default')}
                             />

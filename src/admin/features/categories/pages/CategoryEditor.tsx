@@ -252,7 +252,7 @@ const CategoryEditor = () => {
         const response = await articlesAPI.getAll({
           search: query,
           type: 'recipe',
-          status: 'online',
+          status: 'all',
           limit: 8,
         });
         const data = unwrapApiData<unknown>(response, []);
@@ -313,6 +313,7 @@ const CategoryEditor = () => {
   };
 
   const loadCategory = async () => {
+    if (!slug) return;
     if (isLoadingRef.current) return; // Prevent duplicate calls
     isLoadingRef.current = true;
 
@@ -402,7 +403,7 @@ const CategoryEditor = () => {
     }
   };
 
-  const handleUploadComplete = (mediaRecord: unknown) => {
+  const handleUploadComplete = (mediaRecord: Parameters<typeof buildImageSlotFromMedia>[0]) => {
     setFormData(prev => {
       const slot = buildImageSlotFromMedia(mediaRecord, {
         alt: prev[uploaderSlot === 'hero' ? 'imageHero' : 'imageThumbnail']?.alt || prev.label || '',
@@ -1108,7 +1109,7 @@ const CategoryEditor = () => {
                     {showColorPicker && (
                       <ColorPicker
                         color={formData.color || '#ff6b35ff'}
-                        onChange={(color: string) => handleChange('color', color)}
+                        onChange={(color: string | null) => handleChange('color', color || '#ff6b35ff')}
                         onClose={() => setShowColorPicker(false)}
                         className="top-12 left-0"
                       />

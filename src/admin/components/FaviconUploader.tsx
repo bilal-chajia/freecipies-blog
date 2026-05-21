@@ -14,20 +14,40 @@ const FAVICON_SIZES = [
     { name: 'apple-touch-icon.png', size: 180, label: 'Apple Touch (180×180)' },
     { name: 'android-chrome-192x192.png', size: 192, label: 'Android (192×192)' },
     { name: 'android-chrome-512x512.png', size: 512, label: 'Android Large (512×512)' },
-];
+] as const;
 
 const ACCEPTED_TYPES = '.svg,.png,.jpg,.jpeg,.webp,.gif,.ico';
 
-const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconDelete }) => {
+interface FaviconVariants {
+    [key: string]: string | undefined;
+}
+
+interface FaviconUploaderProps {
+    favicon?: string;
+    faviconVariants?: FaviconVariants;
+    onFaviconChange: (url: string) => void;
+    onFaviconDelete: () => void;
+}
+
+const FaviconUploader: React.FC<FaviconUploaderProps> = ({
+    favicon,
+    faviconVariants,
+    onFaviconChange,
+    onFaviconDelete
+}) => {
     const [uploading, setUploading] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [generating, setGenerating] = useState(false);
-    const [generationProgress, setGenerationProgress] = useState({});
+    const [generationProgress, setGenerationProgress] = useState<Record<string, string>>({});
     const [dragOver, setDragOver] = useState(false);
-    const fileInputRef = useRef(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     // Generate a favicon variant at specified size
-    const generateFaviconVariant = async (sourceImage, size, filename) => {
+    const generateFaviconVariant = async (
+        sourceImage: HTMLImageElement,
+        size: number,
+        filename: string
+    ): Promise<{ blob: Blob; filename: string; size: number }> => {
         return new Promise((resolve, reject) => {
             const canvas = document.createElement('canvas');
             canvas.width = size;
@@ -57,12 +77,13 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
     };
 
     // Upload a generated variant
-    const uploadVariant = async (blob, filename) => {
-        const response = await brandingAPI.uploadFaviconVariant(blob, filename);
+    const uploadVariant = async (blob: Blob, filename: string): Promise<any> => {
+        const file = new File([blob], filename, { type: blob.type });
+        const response = await brandingAPI.uploadFaviconVariant(file, filename);
         return response.data;
     };
 
-    const handleFileSelect = async (file) => {
+    const handleFileSelect = async (file: File | undefined): Promise<void> => {
         if (!file) return;
 
         // Validate file type
@@ -99,14 +120,14 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
             const img = new Image();
             img.crossOrigin = 'anonymous';
 
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
+            await new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
                 img.onerror = reject;
                 img.src = response.data.data.url + '?t=' + Date.now(); // Cache bust
             });
 
             // Generate each variant
-            for (const { name, size, label } of FAVICON_SIZES) {
+            for (const { name, size } of FAVICON_SIZES) {
                 try {
                     setGenerationProgress(prev => ({ ...prev, [name]: 'generating' }));
 
@@ -130,13 +151,14 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
             setUploading(false);
             setGenerating(false);
         }
+        return;
     };
 
-    const handleDelete = () => {
+    const handleDelete = (): void => {
         setDeleteModalOpen(true);
     };
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = async (): Promise<void> => {
         setDeleteModalOpen(false);
         try {
             const response = await brandingAPI.deleteFavicon();
@@ -147,33 +169,34 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
             } else {
                 toast.error(response.data?.error || 'Failed to delete favicon');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Delete failed:', error);
             toast.error(error.response?.data?.error || 'Failed to delete favicon');
         }
+        return;
     };
 
-    const handleDragOver = (e) => {
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>): void => {
         e.preventDefault();
         setDragOver(true);
     };
 
-    const handleDragLeave = (e) => {
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>): void => {
         e.preventDefault();
         setDragOver(false);
     };
 
-    const handleDrop = (e) => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>): void => {
         e.preventDefault();
         setDragOver(false);
 
         const file = e.dataTransfer.files[0];
         if (file) {
-            handleFileSelect(file);
+            handleFileSelect(file).catch(console.error);
         }
     };
 
-    const getStatusIcon = (status) => {
+    const getStatusIcon = (status: string) => {
         switch (status) {
             case 'generating':
             case 'uploading':
@@ -339,6 +362,15 @@ const FaviconUploader = ({ favicon, faviconVariants, onFaviconChange, onFaviconD
                     </div>
                 )}
             </CardContent>
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Favicon"
+                description="Are you sure you want to delete the favicon and all its generated variants?"
+                confirmText="Delete"
+                cancelText="Cancel"
+            />
         </Card>
     );
 };

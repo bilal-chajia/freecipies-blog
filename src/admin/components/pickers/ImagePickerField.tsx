@@ -8,16 +8,33 @@
  */
 
 import React, { useState } from 'react';
-import { Image, X } from 'lucide-react';
+import { Image as ImageIcon, X } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
 import { MediaDialog } from '@admin/features/media/components';
+import type { MediaRecord } from '@modules/media/types/media.types';
 
-const ImagePickerField = ({ value, onChange, placeholder = 'Enter image URL' }) => {
-    const [isMediaOpen, setIsMediaOpen] = useState(false);
+interface ImagePickerFieldProps {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+}
 
-    const handleMediaSelect = (item) => {
-        const imageUrl = item?.url || item?.path || '';
+interface SelectableMediaItem extends MediaRecord {
+    url?: string;
+    path?: string;
+}
+
+const ImagePickerField: React.FC<ImagePickerFieldProps> = ({ 
+    value, 
+    onChange, 
+    placeholder = 'Enter image URL' 
+}) => {
+    const [isMediaOpen, setIsMediaOpen] = useState<boolean>(false);
+
+    const handleMediaSelect = (item: MediaRecord) => {
+        const selectableItem = item as SelectableMediaItem;
+        const imageUrl = selectableItem.url || selectableItem.path || '';
         onChange(imageUrl);
     };
 
@@ -33,9 +50,12 @@ const ImagePickerField = ({ value, onChange, placeholder = 'Enter image URL' }) 
                     <img
                         src={value}
                         alt="Selected"
+                        width={500}
+                        height={128}
+                        loading="lazy"
                         className="w-full h-32 object-cover"
                         onError={(e) => {
-                            e.target.style.display = 'none';
+                            e.currentTarget.style.display = 'none';
                         }}
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -44,7 +64,7 @@ const ImagePickerField = ({ value, onChange, placeholder = 'Enter image URL' }) 
                             size="sm"
                             onClick={() => setIsMediaOpen(true)}
                         >
-                            <Image className="size-4 mr-1" />
+                            <ImageIcon className="size-4 mr-1" />
                             Change
                         </Button>
                         <Button
@@ -74,7 +94,7 @@ const ImagePickerField = ({ value, onChange, placeholder = 'Enter image URL' }) 
                     title="Select from Media Library"
                     className="h-8 w-8 rounded-sm border-input text-muted-foreground hover:text-foreground hover:border-input"
                 >
-                    <Image className="size-4" />
+                    <ImageIcon className="size-4" />
                 </Button>
             </div>
 

@@ -19,6 +19,7 @@ import TableBlock from "./content/blocks/Table.astro";
 import Video from "./content/blocks/Video.astro";
 
 import type { NormalizedContentBlock } from "@modules/content-blocks/contract/content-blocks.types";
+import { safeParseJson } from "@shared/utils/hydration";
 
 const { article, settings } = Astro.props as {
   article: Record<string, unknown>;
@@ -29,19 +30,13 @@ const parsed = normalizeContentDocument(article?.contentJson).blocks;
 
 // Recipe/FAQ/Roundup from dedicated columns
 const recipeJson = article?.recipeJson
-  ? typeof article.recipeJson === "string"
-    ? JSON.parse(article.recipeJson)
-    : article.recipeJson
+  ? safeParseJson<Record<string, unknown>>(article.recipeJson)
   : null;
 const roundupJson = article?.roundupJson
-  ? typeof article.roundupJson === "string"
-    ? JSON.parse(article.roundupJson)
-    : article.roundupJson
+  ? safeParseJson<Record<string, unknown>>(article.roundupJson)
   : null;
 const imagesJson = article?.imagesJson
-  ? typeof article.imagesJson === "string"
-    ? JSON.parse(article.imagesJson)
-    : article.imagesJson
+  ? safeParseJson<Record<string, unknown>>(article.imagesJson)
   : {};
 
 // Author/category from hydration

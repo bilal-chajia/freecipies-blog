@@ -194,23 +194,27 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
     };
 
     // Common actions for selected elements
-    const renderCommonActions = () => (
-        <>
-            <Separator orientation="vertical" className={`h-6 mx-1 ${isDark ? 'bg-zinc-700' : 'bg-zinc-200'}`} />
-            <Button variant="ghost" size="icon" className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} onClick={duplicateSelected} title="Duplicate" aria-label="Duplicate element">
-                <Copy className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} onClick={() => moveElementDown(selectedElement.id)} title="Send Backward" aria-label="Send backward">
-                <MoveDown className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} onClick={() => moveElementUp(selectedElement.id)} title="Bring Forward" aria-label="Bring forward">
-                <MoveUp className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={deleteSelected} title="Delete" aria-label="Delete element">
-                <Trash2 className="w-4 h-4" />
-            </Button>
-        </>
-    );
+    const renderCommonActions = () => {
+        if (!selectedElement) return null;
+        const elementId = selectedElement.id;
+        return (
+            <>
+                <Separator orientation="vertical" className={`h-6 mx-1 ${isDark ? 'bg-zinc-700' : 'bg-zinc-200'}`} />
+                <Button variant="ghost" size="icon" className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} onClick={duplicateSelected} title="Duplicate" aria-label="Duplicate element">
+                    <Copy className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} onClick={() => moveElementDown(elementId)} title="Send Backward" aria-label="Send backward">
+                    <MoveDown className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} onClick={() => moveElementUp(elementId)} title="Bring Forward" aria-label="Bring forward">
+                    <MoveUp className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={deleteSelected} title="Delete" aria-label="Delete element">
+                    <Trash2 className="w-4 h-4" />
+                </Button>
+            </>
+        );
+    };
 
     // Render context-aware controls based on selected element
     const renderContextControls = () => {
@@ -408,7 +412,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                     </Popover>
 
                     {/* Font Weight Dropdown */}
-                    <Select value={selectedElement.fontWeight || 'normal'} onValueChange={(val) => updateProp('fontWeight', val)}>
+                    <Select value={String(selectedElement.fontWeight || 'normal')} onValueChange={(val) => updateProp('fontWeight', val)}>
                         <SelectTrigger className={`w-24 h-8 text-xs ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`} aria-label="Font weight">
                             <SelectValue placeholder="Weight" />
                         </SelectTrigger>
@@ -603,7 +607,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
             );
         }
 
-        if (selectedElement.type === 'image' || selectedElement.type === 'imageSlot') {
+        if (selectedElement.type === 'imageSlot') {
             return (
                 <div className="flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()}>
                     <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageReplace} />

@@ -9,13 +9,9 @@ import { Grid } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import { Switch } from '@/ui/switch';
 import { Label } from '@/ui/label';
+import type { HomepageSectionProps } from '../../types';
 
-interface CategoriesSectionProps {
-  formData: Record<string, unknown>;
-  handleNestedInputChange: (field: string, value: unknown) => void;
-}
-
-const CategoriesSection = ({ formData, handleNestedInputChange }: CategoriesSectionProps) => {
+const CategoriesSection = ({ formData, handleNestedInputChange }: HomepageSectionProps) => {
     return (
         <SectionCard
             title="Categories"

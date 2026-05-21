@@ -1,7 +1,7 @@
 ---
 import type { HydratedArticle, RecipeContent } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
-import { normalizeRecipeForRender } from "@site/utils/recipe-render";
+import { parseCachedRecipe } from "@modules/articles/utils/cached-fields";
 
 interface Props {
   currentSlug?: string;
@@ -25,9 +25,8 @@ const visibleRecipes = recipes
     visibleRecipes.length > 0 ? (
       <div class="recipe-list">
         {visibleRecipes.map((recipe) => {
-          const recipeData = normalizeRecipeForRender(
-            recipe.type === "recipe" ? (recipe as RecipeContent).recipeJson : null,
-          );
+          const cachedRecipe = parseCachedRecipe(recipe.cachedRecipeJson);
+          const cookTime = cachedRecipe?.cook_time_minutes ?? null;
           const thumbnail = extractImage(recipe.imagesJson, "thumbnail", 120);
           const hero = extractImage(recipe.imagesJson, "hero", 120);
           const slotName = thumbnail.imageUrl ? "thumbnail" : "hero";
@@ -47,11 +46,11 @@ const visibleRecipes = recipes
                       {recipe.categoryLabel}
                     </span>
                   )}
-                  {recipeData?.cook && (
+                  {cookTime && (
                     <>
                       <span class="separator">•</span>
                       <span class="cook-time">
-                        {`${recipeData.cook} min`}
+                        {`${cookTime} min`}
                       </span>
                     </>
                   )}

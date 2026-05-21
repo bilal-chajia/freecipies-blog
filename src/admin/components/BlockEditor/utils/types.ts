@@ -38,14 +38,17 @@ export interface BlockEditorContextPayload {
 export interface BlockEditorProps {
   value: string | unknown[] | { blocks: unknown[] } | undefined;
   onChange?: (nextValue: string) => void;
+  recipeJson?: unknown;
+  onRecipeChange?: (nextValue: string) => void;
+  faqsJson?: unknown;
+  onFaqsChange?: (nextValue: string) => void;
+  imagesData?: unknown;
+  onImagesChange?: (nextValue: unknown) => void;
+  roundupJson?: unknown;
   contentType?: 'article' | 'recipe' | 'roundup';
   isSidebarOpen?: boolean;
   onStructureUpdate?: (payload: { items: BlockStructureRow[]; activeBlockId: string | null }) => void;
   onSelectedBlockChange?: (block: unknown | null) => void;
-  // Context-bridged props eliminated (Phase 3):
-  // - recipe/onRecipeChange → MainRecipeBlock uses recipeJson prop
-  // - faqs/onFaqsChange/faqs/onFaqTitleChange → FAQSectionBlock uses itemsJson prop
-  // - roundup → RoundupListBlock is self-contained
   onRoundupChange?: (nextValue: unknown) => void; // Phase 4 will merge into content_json
   onEditorReady?: (editor: unknown) => void;
   forceSelectBlockId?: string | null;

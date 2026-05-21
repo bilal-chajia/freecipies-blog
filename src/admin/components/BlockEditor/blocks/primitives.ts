@@ -7,7 +7,7 @@ import { CSS } from '@dnd-kit/utilities';
  * This is critical for custom blocks (content: 'none') where
  * setTextCursorPosition() fails silently.
  */
-function moveBlockById(editor: Record<string, unknown> | null, blockId: string, direction: 'up' | 'down'): boolean {
+function moveBlockById(editor: object | null, blockId: string, direction: 'up' | 'down'): boolean {
     if (!editor || !blockId) return false;
     const block = (editor as Record<string, (id: string) => unknown | null>).getBlock?.(blockId);
     if (!block) return false;
@@ -29,7 +29,7 @@ function moveBlockById(editor: Record<string, unknown> | null, blockId: string, 
 }
 
 interface BlockActionPrimitivesProps {
-    editor: Record<string, unknown> | null;
+    editor: object | null;
     blockId: string;
     onSelect?: () => void;
 }

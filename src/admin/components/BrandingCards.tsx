@@ -48,26 +48,53 @@ const BRANDING_ITEMS = [
         iconColor: 'text-info',
         borderColor: 'hover:border-info/50'
     },
-];
+] as const;
 
 const ACCEPTED_TYPES = '.svg,.png,.jpg,.jpeg,.webp,.gif';
 const FAVICON_ACCEPTED_TYPES = '.svg,.png,.jpg,.jpeg,.webp,.gif,.ico';
 
-const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconChange, onFaviconDelete }) => {
-    const [uploading, setUploading] = useState({});
-    const [dragOver, setDragOver] = useState({});
-    const [hovered, setHovered] = useState({});
-    const fileInputRefs = useRef({});
+interface Logos {
+    logoMain?: string;
+    logoDark?: string;
+    logoMobile?: string;
+}
 
-    const getAssetUrl = (item) => {
+interface BrandingCardsProps {
+    logos: Logos;
+    favicon?: string;
+    onLogoChange: (id: string, url: string) => void;
+    onLogoDelete: (id: string) => void;
+    onFaviconChange: (url: string) => void;
+    onFaviconDelete: () => void;
+}
+
+const BrandingCards: React.FC<BrandingCardsProps> = ({
+    logos,
+    favicon,
+    onLogoChange,
+    onLogoDelete,
+    onFaviconChange,
+    onFaviconDelete
+}) => {
+    const [uploading, setUploading] = useState<Record<string, boolean>>({});
+    const [dragOver, setDragOver] = useState<Record<string, boolean>>({});
+    const [hovered, setHovered] = useState<Record<string, boolean>>({});
+    const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+    const [deleteModal, setDeleteModal] = useState<{
+        isOpen: boolean;
+        itemToDelete: typeof BRANDING_ITEMS[number] | null;
+    }>({ isOpen: false, itemToDelete: null });
+
+    const getAssetUrl = (item: typeof BRANDING_ITEMS[number]): string | undefined => {
         if (item.type === 'favicon') {
             return favicon;
         }
-        const keyMap = { main: 'logoMain', dark: 'logoDark', mobile: 'logoMobile' };
-        return logos[keyMap[item.id]];
+        const keyMap = { main: 'logoMain', dark: 'logoDark', mobile: 'logoMobile' } as const;
+        const key = keyMap[item.id as keyof typeof keyMap];
+        return logos[key];
     };
 
-    const handleFileSelect = async (item, file) => {
+    const handleFileSelect = async (item: typeof BRANDING_ITEMS[number], file: File | undefined): Promise<void> => {
         if (!file) return;
 
         const validTypes = item.type === 'favicon'
@@ -104,29 +131,30 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                     toast.error(response.data?.error || 'Failed to upload logo');
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Upload failed:', error);
             toast.error(error.response?.data?.error || 'Failed to upload');
         } finally {
             setUploading(prev => ({ ...prev, [item.id]: false }));
         }
+        return;
     };
 
-    const generateFaviconVariants = async (faviconUrl) => {
+    const generateFaviconVariants = async (faviconUrl: string): Promise<void> => {
         const FAVICON_SIZES = [
             { name: 'favicon-16x16.png', size: 16 },
             { name: 'favicon-32x32.png', size: 32 },
             { name: 'apple-touch-icon.png', size: 180 },
             { name: 'android-chrome-192x192.png', size: 192 },
             { name: 'android-chrome-512x512.png', size: 512 },
-        ];
+        ] as const;
 
         try {
             const img = new Image();
             img.crossOrigin = 'anonymous';
 
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
+            await new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
                 img.onerror = reject;
                 img.src = faviconUrl + '?t=' + Date.now();
             });
@@ -138,22 +166,26 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                     ctx.drawImage(img, 0, 0, size, size);
-                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+                    const blob = await new Promise<Blob | null>((resolve) => {
+                        canvas.toBlob(resolve, 'image/png', 1.0);
+                    });
                     if (blob) {
-                        await brandingAPI.uploadFaviconVariant(blob, name);
+                        const file = new File([blob], name, { type: blob.type });
+                        await brandingAPI.uploadFaviconVariant(file, name);
                     }
                 }
             }
         } catch (error) {
             console.error('Failed to generate favicon variants:', error);
         }
+        return;
     };
 
-    const handleDelete = (item) => {
+    const handleDelete = (item: typeof BRANDING_ITEMS[number]): void => {
         setDeleteModal({ isOpen: true, itemToDelete: item });
     };
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = async (): Promise<void> => {
         const item = deleteModal.itemToDelete;
         if (!item) return;
         try {
@@ -170,23 +202,26 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
         } finally {
             setDeleteModal({ isOpen: false, itemToDelete: null });
         }
+        return;
     };
 
-    const handleDragOver = (e, id) => {
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, id: string): void => {
         e.preventDefault();
         setDragOver(prev => ({ ...prev, [id]: true }));
     };
 
-    const handleDragLeave = (e, id) => {
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>, id: string): void => {
         e.preventDefault();
         setDragOver(prev => ({ ...prev, [id]: false }));
     };
 
-    const handleDrop = (e, item) => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, item: typeof BRANDING_ITEMS[number]): void => {
         e.preventDefault();
         setDragOver(prev => ({ ...prev, [item.id]: false }));
         const file = e.dataTransfer.files[0];
-        if (file) handleFileSelect(item, file);
+        if (file) {
+            handleFileSelect(item, file).catch(console.error);
+        }
     };
 
     return (
@@ -338,7 +373,7 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                                 </div>
 
                                 <input
-                                    ref={(el) => fileInputRefs.current[item.id] = el}
+                                    ref={(el) => { fileInputRefs.current[item.id] = el; }}
                                     type="file"
                                     accept={item.type === 'favicon' ? FAVICON_ACCEPTED_TYPES : ACCEPTED_TYPES}
                                     className="hidden"
@@ -348,19 +383,19 @@ const BrandingCards = ({ logos, favicon, onLogoChange, onLogoDelete, onFaviconCh
                         </Card>
                     );
                 })}
-      </div>
+            </div>
 
-      <ConfirmationModal
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, itemToDelete: null })}
-        onConfirm={handleDeleteConfirm}
-        title="Delete Branding Asset"
-        description={deleteModal.itemToDelete ? `Delete this ${deleteModal.itemToDelete.type}?` : ''}
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
-    </div>
-  );
+            <ConfirmationModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, itemToDelete: null })}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Branding Asset"
+                description={deleteModal.itemToDelete ? `Delete this ${deleteModal.itemToDelete.type}?` : ''}
+                confirmText="Delete"
+                cancelText="Cancel"
+            />
+        </div>
+    );
 };
 
 export default BrandingCards;

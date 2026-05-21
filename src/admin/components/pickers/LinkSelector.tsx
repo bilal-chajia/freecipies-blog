@@ -12,6 +12,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Link2, FolderOpen, LayoutGrid, Star } from 'lucide-react';
 import { Input } from '@/ui/input';
 import { toast } from 'sonner';
+import api from '@admin/services/api-client';
 import {
     Select,
     SelectContent,
@@ -25,14 +26,35 @@ const LINK_TYPES = [
     { value: 'article', label: 'Article', icon: FolderOpen },
     { value: 'category', label: 'Category', icon: LayoutGrid },
     { value: 'tag', label: 'Tag', icon: Star },
-];
+] as const;
 
-const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
-    const [linkType, setLinkType] = useState('custom');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
+interface LinkSelectorItem {
+    id?: number | string;
+    slug?: string;
+    title?: string;
+    name?: string;
+    label?: string;
+    url?: string;
+}
+
+interface LinkSelectorProps {
+    url: string;
+    onUrlChange: (url: string) => void;
+    onLabelChange?: (label: string) => void;
+    currentLabel?: string;
+}
+
+interface LinkSelectorApiResponse {
+    data?: LinkSelectorItem[];
+    items?: LinkSelectorItem[];
+}
+
+const LinkSelector: React.FC<LinkSelectorProps> = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
+    const [linkType, setLinkType] = useState<string>('custom');
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [searchResults, setSearchResults] = useState<LinkSelectorItem[]>([]);
+    const [isSearching, setIsSearching] = useState<boolean>(false);
+    const [showDropdown, setShowDropdown] = useState<boolean>(false);
 
     // Detect link type from URL
     useEffect(() => {
@@ -45,10 +67,10 @@ const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
         } else {
             setLinkType('custom');
         }
-    }, []);
+    }, [url]);
 
     // Fetch search results based on type
-    const handleSearch = useCallback(async (query) => {
+    const handleSearch = useCallback(async (query: string) => {
         if (!query || query.length < 2) {
             setSearchResults([]);
             return;
@@ -57,15 +79,19 @@ const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
         setIsSearching(true);
         try {
             let endpoint = '';
+            let params: Record<string, unknown> = {};
             switch (linkType) {
                 case 'article':
-                    endpoint = `/api/articles?search=${encodeURIComponent(query)}&limit=10`;
+                    endpoint = '/articles';
+                    params = { search: query, limit: 10 };
                     break;
                 case 'category':
-                    endpoint = `/api/categories?search=${encodeURIComponent(query)}&limit=10`;
+                    endpoint = '/categories';
+                    params = { search: query, limit: 10 };
                     break;
                 case 'tag':
-                    endpoint = `/api/tags?search=${encodeURIComponent(query)}&limit=10`;
+                    endpoint = '/tags';
+                    params = { search: query, limit: 10 };
                     break;
                 default:
                     setSearchResults([]);
@@ -73,8 +99,8 @@ const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
                     return;
             }
 
-            const response = await fetch(endpoint);
-            const data = await response.json();
+            const response = await api.get(endpoint, { params });
+            const data = response.data as LinkSelectorApiResponse | LinkSelectorItem[];
 
             // Normalize results
             const items = Array.isArray(data) ? data : (data.data || data.items || []);
@@ -97,19 +123,19 @@ const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
     }, [searchQuery, linkType, handleSearch]);
 
     // Handle selection from dropdown
-    const handleSelect = (item) => {
+    const handleSelect = (item: LinkSelectorItem) => {
         let newUrl = '';
-        let newLabel = item.title || item.name || item.label || '';
+        const newLabel = item.title || item.name || item.label || '';
 
         switch (linkType) {
             case 'article':
-                newUrl = `/recipes/${item.slug}`;
+                newUrl = item.slug ? `/recipes/${item.slug}` : '';
                 break;
             case 'category':
-                newUrl = `/categories/${item.slug}`;
+                newUrl = item.slug ? `/categories/${item.slug}` : '';
                 break;
             case 'tag':
-                newUrl = `/tags/${item.slug}`;
+                newUrl = item.slug ? `/tags/${item.slug}` : '';
                 break;
             default:
                 newUrl = item.url || '#';
@@ -123,7 +149,7 @@ const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
         setSearchQuery('');
     };
 
-    const handleTypeChange = (newType) => {
+    const handleTypeChange = (newType: string) => {
         setLinkType(newType);
         setSearchResults([]);
         setSearchQuery('');
@@ -181,9 +207,9 @@ const LinkSelector = ({ url, onUrlChange, onLabelChange, currentLabel }) => {
                                         Searching...
                                     </div>
                                 ) : (
-                                    searchResults.map((item) => (
+                                    searchResults.map((item, index) => (
                                         <button
-                                            key={item.id || item.slug}
+                                            key={item.id || item.slug || index}
                                             type="button"
                                             className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2"
                                             onClick={() => handleSelect(item)}

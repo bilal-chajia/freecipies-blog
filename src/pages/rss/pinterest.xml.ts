@@ -43,7 +43,19 @@ export const GET: APIRoute = async ({ locals, site }) => {
       board_name?: string;
     }
 
-    const pins = (results as unknown as PinResult[]) || [];
+    const pins: PinResult[] = (results || []).map((row: any) => ({
+      id: Number(row.id),
+      title: String(row.title ?? ''),
+      description: String(row.description ?? ''),
+      image_url: String(row.image_url ?? ''),
+      image_alt: row.image_alt ? String(row.image_alt) : undefined,
+      image_width: Number(row.image_width ?? 0),
+      image_height: Number(row.image_height ?? 0),
+      created_at: String(row.created_at ?? ''),
+      article_slug: row.article_slug ? String(row.article_slug) : undefined,
+      article_label: row.article_label ? String(row.article_label) : undefined,
+      board_name: row.board_name ? String(row.board_name) : undefined,
+    }));
 
     // Generate RSS feed
     const rss = `<?xml version="1.0" encoding="UTF-8"?>

@@ -6,7 +6,7 @@ interface MediaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (item: MediaRecord) => void;
-  variantSizes?: string[];
+  variantSizes?: Record<string, number>;
 }
 
 export default function MediaDialog({ open, onOpenChange, onSelect, variantSizes }: MediaDialogProps) {

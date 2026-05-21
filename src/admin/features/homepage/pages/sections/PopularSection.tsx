@@ -10,12 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/ui/switch';
 import { Label } from '@/ui/label';
 
-interface PopularSectionProps {
-  formData: Record<string, unknown>;
-  handleNestedInputChange: (field: string, value: unknown) => void;
-}
+import type { HomepageSectionProps } from '../../types';
 
-const PopularSection = ({ formData, handleNestedInputChange }: PopularSectionProps) => {
+const PopularSection = ({ formData, handleNestedInputChange }: HomepageSectionProps) => {
     return (
         <SectionCard
             title="Popular Posts"

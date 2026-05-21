@@ -19,6 +19,27 @@ import {
 } from "@/ui/popover"
 import { Badge } from "@/ui/badge"
 
+type TagOption = {
+    id: string | number;
+    label?: string;
+    color?: string | null;
+    style_json?: string | Record<string, unknown> | null;
+    styleJson?: string | Record<string, unknown> | null;
+    style?: string | Record<string, unknown> | null;
+};
+
+type TagSelectorProps = {
+    tags?: TagOption[];
+    selectedTags?: Array<string | number>;
+    onTagsChange: (tags: Array<string | number>) => void;
+    containerClassName?: string;
+    buttonClassName?: string;
+    popoverClassName?: string;
+    badgeClassName?: string;
+    useChips?: boolean;
+    searchPlaceholder?: string;
+};
+
 export default function TagSelector({
     tags = [],
     selectedTags = [],
@@ -29,11 +50,11 @@ export default function TagSelector({
     badgeClassName,
     useChips = false,
     searchPlaceholder = "Search tags..."
-}) {
+}: TagSelectorProps) {
     const [open, setOpen] = React.useState(false)
     const [searchQuery, setSearchQuery] = React.useState("");
 
-    const handleSelect = (tagId) => {
+    const handleSelect = (tagId: string | number) => {
         if (selectedTags.includes(tagId)) {
             onTagsChange(selectedTags.filter((id) => id !== tagId))
         } else {
@@ -41,12 +62,12 @@ export default function TagSelector({
         }
     };
 
-    const getTagLabel = (id) => {
+    const getTagLabel = (id: string | number) => {
         const tag = tags.find(t => t.id === id);
         return tag ? tag.label : id;
     };
 
-    const getTagColor = (tag) => {
+    const getTagColor = (tag: TagOption | undefined) => {
         if (tag?.color) return tag.color;
         const style = tag?.style_json ?? tag?.styleJson ?? tag?.style;
         if (!style) return null;
@@ -58,7 +79,7 @@ export default function TagSelector({
                 return null;
             }
         }
-        return style?.color || null;
+        return typeof style === 'object' ? style?.color as string | null : null;
     };
 
     const chipSizeClass = badgeClassName || "px-2 py-1 text-xs";

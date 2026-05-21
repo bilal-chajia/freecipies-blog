@@ -5,21 +5,21 @@ interface CropState {
     y: number;
 }
 
-interface CroppedAreaPixels {
+export interface CroppedAreaPixels {
     x: number;
     y: number;
     width: number;
     height: number;
 }
 
-interface CroppedArea {
+export interface CroppedArea {
     x: number;
     y: number;
     width: number;
     height: number;
 }
 
-interface TextOverlayState {
+export interface TextOverlayState {
     enabled: boolean;
     text: string;
     font: string;
@@ -33,7 +33,7 @@ interface EditorSnapshot {
     crop: CropState;
     zoom: number;
     rotation: number;
-    aspect: number;
+    aspect: number | null;
     activeFilter: string;
     flipH: boolean;
     flipV: boolean;
@@ -54,7 +54,7 @@ interface EditorSnapshot {
     watermarkSpacingH?: number;
     watermarkSpacingV?: number;
     watermarkRotation?: number;
-    customWatermark?: string | null;
+    customWatermark?: HTMLImageElement | null;
     textOverlay: TextOverlayState;
     workingImage: string | null;
 }
@@ -67,7 +67,7 @@ export const useImageEditorState = () => {
     const [crop, setCrop] = useState<CropState>({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [rotation, setRotation] = useState(0);
-    const [aspect, setAspect] = useState(1);
+    const [aspect, setAspect] = useState<number | null>(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedAreaPixels | null>(null);
     const [croppedArea, setCroppedArea] = useState<CroppedArea | null>(null);
 
@@ -111,7 +111,7 @@ export const useImageEditorState = () => {
     const [watermarkSpacingV, setWatermarkSpacingV] = useState(80);
     const [watermarkRotation, setWatermarkRotation] = useState(-30);
     const [watermarkDensity, setWatermarkDensity] = useState(3);
-    const [customWatermark, setCustomWatermark] = useState<string | null>(null);
+    const [customWatermark, setCustomWatermark] = useState<HTMLImageElement | null>(null);
 
     // Working Images
     const [workingImage, setWorkingImage] = useState<string | null>(null);

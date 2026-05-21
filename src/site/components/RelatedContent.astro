@@ -114,7 +114,7 @@ const getRelatedImage = (item: RenderItem) => item.image;
 const getImageVariant = (slot?: RelatedContentImage) =>
   slot?.variants?.md || slot?.variants?.sm || null;
 
-const getImageUrl = (slot?: RelatedContentImage) => resolveVariantUrl(getImageVariant(slot) as any) || null;
+const getImageUrl = (slot?: RelatedContentImage) => resolveVariantUrl(getImageVariant(slot)) || null;
 
 const getImageSrcSet = (slot?: RelatedContentImage) => {
   if (!slot?.variants) return "";

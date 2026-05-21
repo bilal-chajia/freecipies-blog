@@ -12,9 +12,18 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/ui/alert';
 import api from '@/services/api';
 
-export function MigrateModelsButton({ onSuccess, settings }) {
+interface MigrateModelsButtonProps {
+    onSuccess?: () => void;
+    settings?: {
+        providers?: Record<string, {
+            availableModels?: unknown[];
+        } | null | undefined>;
+    } | null;
+}
+
+export function MigrateModelsButton({ onSuccess, settings }: MigrateModelsButtonProps) {
     const [migrating, setMigrating] = useState(false);
-    const [result, setResult] = useState(null);
+    const [result, setResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [shouldShow, setShouldShow] = useState(false);
 
     // Check if migration is needed

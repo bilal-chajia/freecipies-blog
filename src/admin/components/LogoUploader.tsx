@@ -26,17 +26,34 @@ const LOGO_TYPES = [
         description: 'Compact logo for mobile devices',
         icon: Smartphone
     },
-];
+] as const;
 
 const ACCEPTED_TYPES = '.svg,.png,.jpg,.jpeg,.webp,.gif';
 
-const LogoUploader = ({ logos, onLogoChange, onLogoDelete }) => {
-const [uploading, setUploading] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [dragOver, setDragOver] = useState({});
-    const fileInputRefs = useRef({});
+interface Logos {
+    logoMain?: string;
+    logoDark?: string;
+    logoMobile?: string;
+}
 
-    const handleFileSelect = async (type, file) => {
+interface LogoUploaderProps {
+    logos: Logos;
+    onLogoChange: (type: string, url: string) => void;
+    onLogoDelete: (type: string) => void;
+}
+
+const LogoUploader: React.FC<LogoUploaderProps> = ({
+    logos,
+    onLogoChange,
+    onLogoDelete
+}) => {
+    const [uploading, setUploading] = useState<Record<string, boolean>>({});
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [logoToDelete, setLogoToDelete] = useState<string | null>(null);
+    const [dragOver, setDragOver] = useState<Record<string, boolean>>({});
+    const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+    const handleFileSelect = async (type: string, file: File | undefined): Promise<void> => {
         if (!file) return;
 
         // Validate file type
@@ -62,56 +79,62 @@ const [uploading, setUploading] = useState(false);
             } else {
                 toast.error(response.data?.error || 'Failed to upload logo');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Upload failed:', error);
             toast.error(error.response?.data?.error || 'Failed to upload logo');
         } finally {
             setUploading(prev => ({ ...prev, [type]: false }));
         }
+        return;
     };
 
-const handleDelete = () => {
+    const handleDelete = (type: string): void => {
+        setLogoToDelete(type);
         setDeleteModalOpen(true);
     };
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = async (): Promise<void> => {
+        if (!logoToDelete) return;
         setDeleteModalOpen(false);
         try {
-            const response = await brandingAPI.deleteLogo(type);
+            const response = await brandingAPI.deleteLogo(logoToDelete);
 
             if (response.data?.success) {
-                onLogoDelete(type);
+                onLogoDelete(logoToDelete);
             } else {
                 toast.error(response.data?.error || 'Failed to delete logo');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Delete failed:', error);
             toast.error(error.response?.data?.error || 'Failed to delete logo');
+        } finally {
+            setLogoToDelete(null);
         }
+        return;
     };
 
-    const handleDragOver = (e, type) => {
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, type: string): void => {
         e.preventDefault();
         setDragOver(prev => ({ ...prev, [type]: true }));
     };
 
-    const handleDragLeave = (e, type) => {
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>, type: string): void => {
         e.preventDefault();
         setDragOver(prev => ({ ...prev, [type]: false }));
     };
 
-    const handleDrop = (e, type) => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, type: string): void => {
         e.preventDefault();
         setDragOver(prev => ({ ...prev, [type]: false }));
 
         const file = e.dataTransfer.files[0];
         if (file) {
-            handleFileSelect(type, file);
+            handleFileSelect(type, file).catch(console.error);
         }
     };
 
-    const getLogoKey = (type) => {
-        const keyMap = { main: 'logoMain', dark: 'logoDark', mobile: 'logoMobile' };
+    const getLogoKey = (type: typeof LOGO_TYPES[number]['id']) => {
+        const keyMap = { main: 'logoMain', dark: 'logoDark', mobile: 'logoMobile' } as const;
         return keyMap[type];
     };
 
@@ -212,7 +235,7 @@ const handleDelete = () => {
                                 )}
 
                                 <input
-                                    ref={(el) => fileInputRefs.current[logoType.id] = el}
+                                    ref={(el) => { fileInputRefs.current[logoType.id] = el; }}
                                     type="file"
                                     accept={ACCEPTED_TYPES}
                                     className="hidden"
@@ -271,6 +294,19 @@ const handleDelete = () => {
                     </CardContent>
                 </Card>
             )}
+
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setLogoToDelete(null);
+                }}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Logo"
+                description={logoToDelete ? `Are you sure you want to delete the ${logoToDelete} logo?` : ''}
+                confirmText="Delete"
+                cancelText="Cancel"
+            />
         </div>
     );
 };

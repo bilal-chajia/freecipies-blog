@@ -14,6 +14,7 @@
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { MouseEvent } from 'react';
 import { Table2, Plus, Trash2, Columns, Rows } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -22,19 +23,33 @@ import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
-const parseList = (value, fallback = []) => {
+type TableRow = string[];
+type InsertIndicator = {
+    index: number;
+    top: number;
+    left: number;
+    width?: number;
+    height?: number;
+};
+
+type TableUpdates = {
+    headersJson?: string;
+    rowsJson?: string;
+};
+
+const parseList = <T extends unknown[]>(value: string, fallback: T): T => {
     if (!value) return fallback;
     try {
         const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed : fallback;
+        return Array.isArray(parsed) ? parsed as T : fallback;
     } catch {
         return fallback;
     }
 };
 
-const toJson = (value) => JSON.stringify(value || []);
+const toJson = (value: TableRow | TableRow[]) => JSON.stringify(value || []);
 
-const normalizeRows = (rows, columns) => {
+const normalizeRows = (rows: TableRow[], columns: number): TableRow[] => {
     if (!Array.isArray(rows)) return [];
     return rows.map((row) => {
         const next = Array.isArray(row) ? [...row] : [];
@@ -55,8 +70,8 @@ export const TableBlock = createReactBlockSpec(
     {
         render: (props) => {
             const { block, editor } = props;
-            const wrapperRef = useRef(null);
-            const tableRef = useRef(null);
+            const wrapperRef = useRef<HTMLDivElement | null>(null);
+            const tableRef = useRef<HTMLTableElement | null>(null);
             const { isSelected, selectBlock } = useBlockSelection(block.id);
             const {
                 moveUp: moveBlockUp,
@@ -75,27 +90,27 @@ export const TableBlock = createReactBlockSpec(
             } = useBlockDragHandle(block.id);
 
             const headers = useMemo(
-                () => parseList(block.props.headersJson),
+                () => parseList<TableRow>(block.props.headersJson, []),
                 [block.props.headersJson]
             );
             const rows = useMemo(
-                () => parseList(block.props.rowsJson),
+                () => parseList<TableRow[]>(block.props.rowsJson, []),
                 [block.props.rowsJson]
             );
-            const [rowInsert, setRowInsert] = useState(null);
-            const [colInsert, setColInsert] = useState(null);
+            const [rowInsert, setRowInsert] = useState<InsertIndicator | null>(null);
+            const [colInsert, setColInsert] = useState<InsertIndicator | null>(null);
 
             const safeHeaders = headers.length > 0 ? headers : ['Column 1', 'Column 2'];
             const safeRows = normalizeRows(rows, safeHeaders.length);
 
-            const updateBlockProps = (updates) => {
+            const updateBlockProps = (updates: TableUpdates) => {
                 editor.updateBlock(block, {
                     type: 'simpleTable',
                     props: { ...block.props, ...updates },
                 });
             };
 
-            const updateHeaders = (nextHeaders) => {
+            const updateHeaders = (nextHeaders: TableRow) => {
                 const normalizedRows = normalizeRows(safeRows, nextHeaders.length);
                 updateBlockProps({
                     headersJson: toJson(nextHeaders),
@@ -103,11 +118,11 @@ export const TableBlock = createReactBlockSpec(
                 });
             };
 
-            const updateRows = (nextRows) => {
+            const updateRows = (nextRows: TableRow[]) => {
                 updateBlockProps({ rowsJson: toJson(normalizeRows(nextRows, safeHeaders.length)) });
             };
 
-            const insertColumnAt = (index) => {
+            const insertColumnAt = (index: number) => {
                 const nextHeaders = [...safeHeaders];
                 nextHeaders.splice(index, 0, `Column ${nextHeaders.length + 1}`);
                 const nextRows = safeRows.map((row) => {
@@ -125,7 +140,7 @@ export const TableBlock = createReactBlockSpec(
                 insertColumnAt(safeHeaders.length);
             };
 
-            const removeColumn = (index) => {
+            const removeColumn = (index: number) => {
                 if (safeHeaders.length <= 1) return;
                 const nextHeaders = safeHeaders.filter((_, i) => i !== index);
                 const nextRows = safeRows.map((row) => {
@@ -144,18 +159,18 @@ export const TableBlock = createReactBlockSpec(
                 updateRows(nextRows);
             };
 
-            const insertRowAt = (index) => {
+            const insertRowAt = (index: number) => {
                 const nextRows = [...safeRows];
                 nextRows.splice(index, 0, Array(safeHeaders.length).fill(''));
                 updateRows(nextRows);
             };
 
-            const removeRow = (index) => {
+            const removeRow = (index: number) => {
                 const nextRows = safeRows.filter((_, i) => i !== index);
                 updateRows(nextRows);
             };
 
-            const updateHoverIndicators = (event) => {
+            const updateHoverIndicators = (event: MouseEvent<HTMLDivElement>) => {
                 if (!isSelected) return;
                 const wrapper = wrapperRef.current;
                 const table = tableRef.current;
@@ -177,7 +192,7 @@ export const TableBlock = createReactBlockSpec(
                 const tbody = table.querySelector('tbody');
                 if (tbody) {
                     const rowsEls = Array.from(tbody.querySelectorAll('tr'));
-                    const boundaries = [];
+                    const boundaries: number[] = [];
                     const tbodyRect = tbody.getBoundingClientRect();
                     boundaries.push(tbodyRect.top - rect.top + scrollTop);
                     rowsEls.forEach((row) => {
@@ -216,12 +231,12 @@ export const TableBlock = createReactBlockSpec(
                 }
 
                 const headerRow = table.querySelector('thead tr');
-                let colCells = [];
+                let colCells: HTMLTableCellElement[] = [];
                 if (headerRow) {
                     colCells = Array.from(headerRow.querySelectorAll('th.table-col'));
                 }
                 if (colCells.length > 0) {
-                    const boundaries = [];
+                    const boundaries: number[] = [];
                     const firstRect = colCells[0].getBoundingClientRect();
                     boundaries.push(firstRect.left - rect.left + scrollLeft);
                     colCells.forEach((cell) => {
@@ -448,7 +463,10 @@ export const TableBlock = createReactBlockSpec(
 /**
  * Helper component for editable table cells to prevent focus loss
  */
-function TableCell({ initialValue, onSave }) {
+function TableCell({ initialValue, onSave }: {
+    initialValue: string;
+    onSave: (value: string) => void;
+}) {
     const [value, setValue] = useState(initialValue);
 
     // Keep state in sync if prop changes while not focused
@@ -480,7 +498,12 @@ function TableCell({ initialValue, onSave }) {
 /**
  * Helper component for editable table headers
  */
-function TableHeaderCell({ initialValue, onSave, isSelected, onRemove }) {
+function TableHeaderCell({ initialValue, onSave, isSelected, onRemove }: {
+    initialValue: string;
+    onSave: (value: string) => void;
+    isSelected: boolean;
+    onRemove: () => void;
+}) {
     const [value, setValue] = useState(initialValue);
 
     useEffect(() => {
@@ -521,7 +544,4 @@ function TableHeaderCell({ initialValue, onSave, isSelected, onRemove }) {
 }
 
 export default TableBlock;
-
-
-
 

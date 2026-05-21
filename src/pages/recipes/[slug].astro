@@ -4,6 +4,7 @@ import RecipeLayout from "@layouts/RecipeLayout.astro";
 import SEO from "@components/SEO.astro";
 import { getArticleBySlug, getArticleById } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import { parseJsonLdArray } from "@modules/articles/utils/cached-fields";
 
 /**
  * In SSR mode, Astro doesn't require getStaticPaths.
@@ -44,9 +45,7 @@ if (!recipe) {
 const author = recipe.author;
 const category = recipe.category;
 
-const jsonldSchemas = typeof recipe.jsonldJson === 'string'
-  ? JSON.parse(recipe.jsonldJson || '[]')
-  : (recipe.jsonldJson || []);
+const jsonldSchemas = parseJsonLdArray(recipe.jsonldJson);
 
 const heroSlot = extractImage(recipe.imagesJson, "hero", 1200);
 const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);

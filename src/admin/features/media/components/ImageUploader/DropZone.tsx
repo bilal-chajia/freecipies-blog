@@ -34,7 +34,7 @@ interface Particle {
   size: number;
 }
 
-interface DropZoneProps {
+export interface DropZoneProps {
   onFileSelect: (file: File) => void;
   onFilesSelect?: (files: File[]) => void;
   onUrlImport: (url: string) => void;

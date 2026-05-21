@@ -39,7 +39,7 @@ const TagEditor = () => {
             name: tag.label || tag.name || '',
             color: tag.color || 'hsl(var(--primary))',
           });
-        } catch (err) {
+        } catch (err: any) {
           toast.error('Failed to load tag');
           setError('Failed to load tag: ' + (err.response?.data?.error || err.message));
         } finally {
@@ -79,7 +79,7 @@ const TagEditor = () => {
       }
 
       navigate('/tags');
-    } catch (err) {
+    } catch (err: any) {
       toast.error('Failed to save tag');
       setError('Failed to save tag: ' + (err.response?.data?.error || err.message));
     } finally {
@@ -87,7 +87,7 @@ const TagEditor = () => {
     }
   };
 
-  const handleChange = (field, value) => {
+  const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (field === 'name' && !isEditMode) {
       setFormData(prev => ({ ...prev, slug: generateSlug(value) }));
@@ -232,7 +232,7 @@ const TagEditor = () => {
                 {showColorPicker && (
                   <ColorPicker
                     color={formData.color}
-                    onChange={(color) => handleChange('color', color)}
+                    onChange={(color) => handleChange('color', color || '')}
                     onClose={() => setShowColorPicker(false)}
                     className="top-20 left-0"
                   />

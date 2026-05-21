@@ -19,7 +19,9 @@ import RatingSystem from "../components/content/RatingSystem";
 import Breadcrumb from "../components/Breadcrumb.astro";
 
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import { resolveVariantUrl, getSrcSet, type ImageSlot } from "@shared/types/images";
 import { normalizeRecipeForRender } from "@site/utils/recipe-render";
+import { getReadingTimeDisplay } from "@modules/articles/utils/cached-fields";
 import {
   getPopularRecipes,
   getSiteTocSettings,
@@ -42,26 +44,9 @@ const categoryColor = category?.color || "#ff6600";
 const tocSettings = await getSiteTocSettings();
 const popularRecipes = await getPopularRecipes(recipe.slug, 5);
 
-// Parse recipeJson if it's a string
-const recipeJson = normalizeRecipeForRender(recipe.recipeJson
-  ? typeof recipe.recipeJson === "string"
-    ? JSON.parse(recipe.recipeJson)
-    : recipe.recipeJson
-  : null);
+const recipeJson = normalizeRecipeForRender(recipe.recipeJson);
 
-// Calculate estimated reading time (approx 200 words per minute)
-const wordCount = [
-  recipe.shortDescription,
-  recipe.tldr,
-  recipe.introduction,
-  JSON.stringify(recipeJson?.ingredients || []),
-  JSON.stringify(recipeJson?.instructions || []),
-]
-  .filter(Boolean)
-  .join(" ")
-  .split(/\s+/).length;
-
-const readingTime = Math.max(5, Math.ceil(wordCount / 200));
+const readingTime = getReadingTimeDisplay(recipe);
 
 const heroSlot = extractImage(recipe.imagesJson, "hero", 1200);
 const heroThumb = extractImage(recipe.imagesJson, "thumbnail", 1200);
@@ -72,21 +57,40 @@ const heroImage = useHeroSlot ? heroSlot : heroThumb;
 const heroSrcSet = useHeroSlot ? heroSlotSrcSet : thumbSrcSet;
 const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
-const authorAvatar = author?.imagesJson
-  ? extractImage(author.imagesJson, "avatar", 96)
-  : {
-      imageUrl: author?.avatar,
-      imageAlt: undefined,
-      imageWidth: 96,
-      imageHeight: 96,
-      imageAspectRatio: undefined,
-      imageObjectPosition: undefined,
-      imageStyle: undefined,
-    };
+let authorAvatar: {
+  imageUrl?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageAspectRatio?: string;
+  imageObjectPosition?: string;
+  imageStyle?: string;
+} = {};
+
+if (author) {
+  if (author.imagesJson) {
+    authorAvatar = extractImage(author.imagesJson, "avatar", 96);
+  } else if (author.avatar) {
+    const avatarSlot = author.avatar;
+    if (typeof avatarSlot === 'string') {
+      authorAvatar = { imageUrl: avatarSlot, imageWidth: 96, imageHeight: 96 };
+    } else if (avatarSlot && typeof avatarSlot === 'object') {
+      const variants = avatarSlot.variants || {};
+      const bestVariant = variants.sm || variants.xs || null;
+      authorAvatar = {
+        imageUrl: resolveVariantUrl(bestVariant) || (avatarSlot as ImageSlot & { url?: string }).url || undefined,
+        imageAlt: avatarSlot.alt || undefined,
+        imageWidth: bestVariant?.width || 96,
+        imageHeight: bestVariant?.height || 96,
+        imageStyle: avatarSlot.focal_point ? `object-position: ${avatarSlot.focal_point.x}% ${avatarSlot.focal_point.y}%;` : undefined,
+      };
+    }
+  }
+}
 
 const authorAvatarSrcSet = author?.imagesJson
   ? getImageSrcSet(author.imagesJson, "avatar")
-  : "";
+  : (author?.avatar && typeof author.avatar === 'object' ? getSrcSet(author.avatar as ImageSlot) : "");
 const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
 const authorImage = authorAvatar.imageUrl || author?.imageUrl;
 const authorImageWidth = authorAvatar.imageWidth || 48;
@@ -106,28 +110,7 @@ const breadcrumbItems = [
   { label: truncate(recipe.label || recipe.headline, 50) },
 ];
 
-// JSON-LD BreadcrumbList
-const breadcrumbJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: Astro.site?.origin || "/" },
-    { "@type": "ListItem", position: 2, name: "Recipes", item: `${Astro.site?.origin || ""}/recipes` },
-    ...(category
-      ? [{
-          "@type": "ListItem",
-          position: 3,
-          name: category.label,
-          item: `${Astro.site?.origin || ""}/categories/${category.slug}`,
-        }]
-      : []),
-    {
-      "@type": "ListItem",
-      position: category ? 4 : 3,
-      name: recipe.label || recipe.headline,
-    },
-  ],
-};
+
 ---
 
 <Layout
@@ -149,11 +132,7 @@ const breadcrumbJsonLd = {
       />
     )
   }
-  <script
-    slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify(breadcrumbJsonLd)}
-  />
+
 
   <article
     class="recipe-page"

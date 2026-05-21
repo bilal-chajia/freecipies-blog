@@ -50,6 +50,39 @@ if (block?.type === "main_roundup") {
 
 if (!items || items.length === 0) return null;
 
+const renderedItems = items.map((item, index) => {
+  const isInternal = item.source_type !== "external_recipe";
+  const position = startNumber + index;
+  const href =
+    isInternal && item.slug
+      ? `/recipes/${item.slug}`
+      : item.external_url || "#";
+  const title = item.title || "Untitled";
+  const subtitle = item.subtitle || item.description || "";
+  const note = item.note || "";
+  let imgData: Record<string, any> = {};
+  let srcSet = "";
+
+  if (item.image?.variants) {
+    const slots = { thumbnail: item.image };
+    imgData = extractImage(JSON.stringify(slots), "thumbnail", 800) as Record<string, any>;
+    srcSet = getImageSrcSet(JSON.stringify(slots), "thumbnail");
+  }
+
+  return {
+    item,
+    author: item.author,
+    href,
+    imgData,
+    isInternal,
+    note,
+    position,
+    srcSet,
+    subtitle,
+    title,
+  };
+});
+
 ---
 
 <div class="roundup-container" id={block?.type === "main_roundup" ? "main-roundup" : undefined}>
@@ -65,31 +98,17 @@ if (!items || items.length === 0) return null;
   }
 
   {
-    items.map((item: RoundupItem, index: number) => {
-      const isInternal = item.source_type !== "external_recipe";
-      const position = startNumber + index;
-
-      const href =
-        isInternal && item.slug
-            ? `/recipes/${item.slug}`
-            : item.external_url || "#";
-
-      const title = item.title || "Untitled";
-      const subtitle =
-        item.subtitle || item.description || "";
-      const note = item.note || "";
-
-      let imgData: Record<string, unknown> = {};
-      let srcSet = "";
-
-      if (item.image?.variants) {
-        const slots = { thumbnail: item.image };
-        imgData = extractImage(JSON.stringify(slots), "thumbnail", 800);
-        srcSet = getImageSrcSet(JSON.stringify(slots), "thumbnail");
-      }
-      const author = item.author;
-
-      return (
+    renderedItems.map(({
+      author,
+      href,
+      imgData,
+      isInternal,
+      note,
+      position,
+      srcSet,
+      subtitle,
+      title,
+    }) => (
         <div class="roundup-item-card" id={`item-${position}`}>
           <div class="item-header">
             <div class="position-badge">{position}</div>
@@ -156,8 +175,7 @@ if (!items || items.length === 0) return null;
             </div>
           </div>
         </div>
-      );
-    })
+      ))
   }
 </div>
 

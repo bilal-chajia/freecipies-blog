@@ -14,6 +14,22 @@ import {
 } from '@/ui/select';
 import { ASPECT_RATIO_GROUPS, parseAspectValue } from '../constants';
 
+interface CropPanelProps {
+    aspect: number | null;
+    zoom: number;
+    rotation: number;
+    flipH: boolean;
+    flipV: boolean;
+    processing: boolean;
+    onAspectChange: (aspect: number | null) => void;
+    onZoomChange: (zoom: number) => void;
+    onRotationChange: (rotation: number) => void;
+    onFlipHChange: (flipH: boolean) => void;
+    onFlipVChange: (flipV: boolean) => void;
+    onApplyCrop: () => void;
+    saveToHistory: () => void;
+}
+
 /**
  * CropPanel - Handles cropping, zoom, rotation, and flip controls
  */
@@ -31,7 +47,7 @@ const CropPanel = ({
     onFlipVChange,
     onApplyCrop,
     saveToHistory
-}) => {
+}: CropPanelProps) => {
     return (
         <div className="space-y-4">
             <div className="space-y-2">

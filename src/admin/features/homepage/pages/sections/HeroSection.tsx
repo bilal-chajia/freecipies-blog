@@ -6,10 +6,11 @@ import { Input } from '@/ui/input';
 import { Switch } from '@/ui/switch';
 import { Label } from '@/ui/label';
 import ColorPicker from '@/components/ColorPicker';
+import type { HomepageSectionProps } from '../../types';
 
-const HeroSection = ({ formData, handleNestedInputChange }) => {
+const HeroSection = ({ formData, handleNestedInputChange }: HomepageSectionProps) => {
     const [showColorPicker, setShowColorPicker] = useState(false);
-    const colorTriggerRef = useRef(null);
+    const colorTriggerRef = useRef<HTMLDivElement | null>(null);
 
     return (
         <SectionCard

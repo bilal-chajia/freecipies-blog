@@ -8,7 +8,7 @@ import type { Article } from "@modules/articles/schema/articles.schema";
 import type { RecipeJson } from "@modules/articles/types/recipes.types";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import RatingSystem from "./content/RatingSystem";
-import { normalizeRecipeForRender } from "@site/utils/recipe-render";
+import { parseCachedRecipe, parseCachedRating } from "@modules/articles/utils/cached-fields";
 
 
 interface Props {
@@ -22,13 +22,12 @@ const heroImage = extractImage(article.imagesJson, "hero", 400);
 const heroSlotSrcSet = getImageSrcSet(article.imagesJson, "hero");
 const sizes = "(max-width: 768px) 100vw, 33vw";
 
-// Parse recipe data
-const recipe = normalizeRecipeForRender(
-  recipeJson || (article.recipeJson ? JSON.parse(article.recipeJson) : null)
-);
-const prepTime = recipe?.prep;
-const cookTime = recipe?.cook;
-const totalTime = (prepTime || 0) + (cookTime || 0);
+const cachedRecipe = parseCachedRecipe(article.cachedRecipeJson);
+const cachedRating = parseCachedRating(article.cachedRatingJson);
+
+const prepTime = cachedRecipe?.prep_time_minutes ?? cachedRecipe?.prepTimeMinutes ?? 0;
+const cookTime = cachedRecipe?.cook_time_minutes ?? cachedRecipe?.cookTimeMinutes ?? 0;
+const totalTime = cachedRecipe?.total_time_minutes ?? cachedRecipe?.totalTimeMinutes ?? (prepTime + cookTime);
 
 function formatTime(minutes: number): string {
   if (!minutes) return "";
@@ -106,8 +105,8 @@ const author = article.cachedAuthorJson
       <RatingSystem
         client:load
         articleId={article.id}
-        initialValue={recipe?.aggregate_rating?.rating_value || 0}
-        initialCount={recipe?.aggregate_rating?.rating_count || 0}
+        initialValue={cachedRating?.rating_value ?? cachedRating?.ratingValue ?? 0}
+        initialCount={cachedRating?.rating_count ?? cachedRating?.ratingCount ?? 0}
         size="sm"
       />
 
@@ -135,7 +134,7 @@ const author = article.cachedAuthorJson
           )
         }
         {
-          recipe?.servings && (
+          cachedRecipe?.servings && (
             <span class="meta-item">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -153,7 +152,7 @@ const author = article.cachedAuthorJson
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
-              {recipe.servings} servings
+              {cachedRecipe.servings} servings
             </span>
           )
         }

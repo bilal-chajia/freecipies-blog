@@ -13,7 +13,7 @@
  *   - Article (+ FAQPage)
  *   - Recipe  (+ FAQPage, VideoObject, AggregateRating)
  *   - ItemList (roundups)
- *   - BreadcrumbList (handled separately in page layouts)
+ *   - BreadcrumbList
  *
  * @see SEO.astro — frontend consumer
  * @see articles.service.ts refreshArticleCaches() — save-time hook
@@ -36,6 +36,11 @@ type JsonImageSlot = {
     variants?: Record<string, JsonImageVariant | undefined>;
 };
 type JsonImages = Record<string, any>;
+type CachedCategory = {
+    label?: string;
+    name?: string;
+    slug?: string;
+};
 
 function resolveImageSlotUrl(slot: JsonImageSlot | undefined): string | null {
     if (!slot?.variants) return null;
@@ -50,20 +55,20 @@ function resolveImageSlotUrl(slot: JsonImageSlot | undefined): string | null {
 // ═══════════════════════════════════════════════
 
 /** Raw article row from DB (before hydration) */
-interface ArticleRow {
+export interface ArticleRow {
     id: number;
     type: string;
     headline: string;
     slug: string;
-    shortDescription?: string;
-    publishedAt?: string;
-    updatedAt?: string;
-    recipeJson?: string | Record<string, unknown>;
-    roundupJson?: string | Record<string, unknown>;
-    imagesJson?: string | Record<string, unknown>;
-    faqsJson?: string | unknown[] | Record<string, unknown>;
-    cachedAuthorJson?: string | Record<string, unknown>;
-    cachedCategoryJson?: string | Record<string, unknown>;
+    shortDescription?: string | null;
+    publishedAt?: string | null;
+    updatedAt?: string | null;
+    recipeJson?: string | object | null;
+    roundupJson?: string | object | null;
+    imagesJson?: string | object | null;
+    faqsJson?: string | unknown[] | object | null;
+    cachedAuthorJson?: string | object | null;
+    cachedCategoryJson?: string | object | null;
 }
 
 /** Output shape — array of JSON-LD objects */
@@ -84,6 +89,55 @@ function makePublisher(siteUrl: string) {
             width: 600,
             height: 60,
         },
+    };
+}
+
+function makeBreadcrumbSchema(article: ArticleRow, siteUrl: string): Record<string, unknown> {
+    const category = safeParseJson<CachedCategory>(article.cachedCategoryJson);
+    const elements: Record<string, unknown>[] = [
+        {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: siteUrl,
+        },
+    ];
+
+    if (article.type === 'recipe') {
+        elements.push({
+            '@type': 'ListItem',
+            position: elements.length + 1,
+            name: 'Recipes',
+            item: `${siteUrl}/recipes`,
+        });
+    } else if (article.type === 'roundup') {
+        elements.push({
+            '@type': 'ListItem',
+            position: elements.length + 1,
+            name: 'Roundups',
+            item: `${siteUrl}/roundups`,
+        });
+    }
+
+    if (category?.slug && (category.label || category.name)) {
+        elements.push({
+            '@type': 'ListItem',
+            position: elements.length + 1,
+            name: category.label || category.name,
+            item: `${siteUrl}/categories/${category.slug}`,
+        });
+    }
+
+    elements.push({
+        '@type': 'ListItem',
+        position: elements.length + 1,
+        name: article.headline,
+    });
+
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: elements,
     };
 }
 
@@ -195,6 +249,7 @@ function generateArticleJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
         schemas[0]!.mainEntity = faqSchema.mainEntity;
     }
 
+    schemas.push(makeBreadcrumbSchema(article, siteUrl));
     return schemas;
 }
 
@@ -311,6 +366,7 @@ function generateRecipeJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutpu
     }
 
     schemas.push(schema);
+    schemas.push(makeBreadcrumbSchema(article, siteUrl));
     return schemas;
 }
 
@@ -367,6 +423,7 @@ function generateRoundupJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
         });
     }
 
+    schemas.push(makeBreadcrumbSchema(article, siteUrl));
     return schemas;
 }
 

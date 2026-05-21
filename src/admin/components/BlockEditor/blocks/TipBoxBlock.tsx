@@ -15,8 +15,10 @@
 import { createReactBlockSpec } from '@blocknote/react';
 import { defaultProps } from '@blocknote/core';
 import { AlertTriangle, Info, Lightbulb, AlertCircle } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import type { FocusEvent, KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
 import {
     DropdownMenu,
@@ -30,9 +32,31 @@ import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
 
 // Alert type definitions
-const alertTypes = ['tip', 'warning', 'info', 'note'];
+type AlertType = 'tip' | 'warning' | 'info' | 'note';
 
-const alertConfig = {
+type AlertConfig = {
+    icon: LucideIcon;
+    label: string;
+    bg: string;
+    borderColor: string;
+    iconColor: string;
+    iconBg: string;
+    titleColor: string;
+    subtitleColor: string;
+    textColor: string;
+};
+
+type AlertContentElement = HTMLDivElement & {
+    __pasteHandlerAttached?: boolean;
+};
+
+type MutableElementRef = {
+    current: AlertContentElement | null;
+};
+
+const alertTypes: AlertType[] = ['tip', 'warning', 'info', 'note'];
+
+const alertConfig: Record<AlertType, AlertConfig> = {
     tip: {
         icon: Lightbulb,
         label: 'Tip',
@@ -83,7 +107,10 @@ const alertConfig = {
  * Alert Type Toolbar Button
  * Dropdown to select alert type in the toolbar
  */
-function AlertTypeToolbar({ currentType, onChange }) {
+function AlertTypeToolbar({ currentType, onChange }: {
+    currentType: AlertType;
+    onChange: (type: AlertType) => void;
+}) {
     const config = alertConfig[currentType] || alertConfig.warning;
     const Icon = config.icon;
 
@@ -158,13 +185,13 @@ export const Alert = createReactBlockSpec(
     {
         render: (props) => {
             const { block, editor, contentRef } = props;
-            const alertType = block.props.type || 'warning';
+            const alertType = (block.props.type || 'warning') as AlertType;
             const config = alertConfig[alertType] || alertConfig.warning;
             const Icon = config.icon;
 
             const { isSelected, selectBlock } = useBlockSelection(block.id);
 
-            const handleTypeChange = (newType) => {
+            const handleTypeChange = (newType: AlertType) => {
                 editor.updateBlock(block, {
                     type: 'alert',
                     props: { ...block.props, type: newType },
@@ -287,7 +314,7 @@ export const Alert = createReactBlockSpec(
                                     onPointerDownCapture={(e) => e.stopPropagation()}
                                     onClick={(e) => e.stopPropagation()}
                                     onFocus={(e) => e.stopPropagation()}
-                                    onBlur={(e) => {
+                                    onBlur={(e: FocusEvent<HTMLInputElement>) => {
                                         const newTitle = e.target.value.trim();
                                         if (newTitle !== (block.props.title || '')) {
                                             editor.updateBlock(block, {
@@ -296,11 +323,11 @@ export const Alert = createReactBlockSpec(
                                             });
                                         }
                                     }}
-                                    onKeyDown={(e) => {
+                                    onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                                         e.stopPropagation();
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
-                                            e.target.blur();
+                                            e.currentTarget.blur();
                                         }
                                     }}
                                 />
@@ -317,12 +344,12 @@ export const Alert = createReactBlockSpec(
                         {/* Content Area */}
                         <div style={{ padding: '24px' }}>
                             <div
-                                ref={(node) => {
+                                ref={(node: AlertContentElement | null) => {
                                     // Attach BlockNote's contentRef
                                     if (typeof contentRef === 'function') {
                                         contentRef(node);
-                                    } else if (contentRef) {
-                                        contentRef.current = node;
+                                    } else if (contentRef && typeof contentRef === 'object') {
+                                        (contentRef as MutableElementRef).current = node;
                                     }
                                     // Attach paste interceptor
                                     if (node && !node.__pasteHandlerAttached) {
@@ -333,7 +360,12 @@ export const Alert = createReactBlockSpec(
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 // Insert as plain text via the editor's underlying ProseMirror view
-                                                const pmView = editor._tiptapEditor?.view;
+                                                let pmView = null;
+                                                try {
+                                                    pmView = editor._tiptapEditor?.view ?? null;
+                                                } catch {
+                                                    pmView = null;
+                                                }
                                                 if (pmView) {
                                                     const { state, dispatch } = pmView;
                                                     const tr = state.tr.insertText(text);
@@ -354,7 +386,4 @@ export const Alert = createReactBlockSpec(
 );
 
 export default Alert;
-
-
-
 

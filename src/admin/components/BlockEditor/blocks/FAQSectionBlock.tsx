@@ -27,6 +27,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  type DragEndEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -36,24 +37,70 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import type { CSSProperties, Ref } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
 import { Badge } from '@/ui/badge';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
+import { useBlockEditorSourceData } from '../source-data-context';
 import { toInlineMarkdownHtml } from '../utils/safeInlineHtml';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
 /**
  * Parse FAQ items from the itemsJson prop.
  */
-function parseItems(itemsJson) {
+type FAQItem = {
+  q: string;
+  a: string;
+};
+
+type IndexState = Record<number, boolean>;
+
+type FAQItemField = keyof FAQItem;
+
+type SortableFAQItemProps = {
+  idx: number;
+  item: FAQItem;
+  isSelected: boolean;
+  expanded: IndexState;
+  editing: IndexState;
+  onToggleExpand: (idx: number) => void;
+  onUpdateItem: (idx: number, field: FAQItemField, value: string) => void;
+  onRemoveItem: (idx: number) => void;
+  onStartEditing: (idx: number) => void;
+  onStopEditing: (idx: number) => void;
+  answerRef: Ref<HTMLTextAreaElement>;
+};
+
+function parseItems(itemsJson: string): FAQItem[] {
   try {
     const parsed = JSON.parse(itemsJson || '[]');
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed)
+      ? parsed
+        .filter((item): item is Partial<FAQItem> => item && typeof item === 'object')
+        .map((item) => ({
+          q: typeof item.q === 'string' ? item.q : '',
+          a: typeof item.a === 'string' ? item.a : '',
+        }))
+      : [];
   } catch {
     return [];
+  }
+}
+
+function parseFaqDocument(value: unknown): Record<string, unknown> {
+  if (!value) return {};
+  if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (typeof value !== 'string') return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : {};
+  } catch {
+    return {};
   }
 }
 
@@ -72,7 +119,7 @@ function SortableFAQItem({
   onStartEditing,
   onStopEditing,
   answerRef,
-}) {
+}: SortableFAQItemProps) {
   const {
     attributes,
     listeners,
@@ -82,7 +129,7 @@ function SortableFAQItem({
     isDragging
   } = useSortable({ id: `faq-item-${idx}` });
 
-  const style = {
+  const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 10 : 1,
@@ -229,10 +276,22 @@ export const FAQSectionBlock = createReactBlockSpec(
   {
     render: (props) => {
       const { block, editor } = props;
+      const { faqsJson, onFaqsChange } = useBlockEditorSourceData();
 
-      // Parse items from block props — self-contained, no context needed
-      const items = parseItems(block.props.itemsJson);
-      const title = block.props.title || 'Frequently Asked Questions';
+      const sourceFaqs = parseFaqDocument(faqsJson);
+      const sourceItems = Array.isArray(sourceFaqs.items)
+        ? sourceFaqs.items.map((item) => {
+          const record = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+          return {
+            q: typeof record.question === 'string' ? record.question : typeof record.q === 'string' ? record.q : '',
+            a: typeof record.answer === 'string' ? record.answer : typeof record.a === 'string' ? record.a : '',
+          };
+        })
+        : [];
+      const items = sourceItems.length > 0 ? sourceItems : parseItems(block.props.itemsJson);
+      const title = typeof sourceFaqs.heading === 'string' && sourceFaqs.heading
+        ? sourceFaqs.heading
+        : block.props.title || 'Frequently Asked Questions';
 
       const { isSelected, selectBlock } = useBlockSelection(block.id);
       const {
@@ -250,9 +309,9 @@ export const FAQSectionBlock = createReactBlockSpec(
         dragStyle,
         isDragging,
       } = useBlockDragHandle(block.id);
-      const [expanded, setExpanded] = useState({});
-      const [editing, setEditing] = useState({});
-      const answerRefs = useRef({});
+      const [expanded, setExpanded] = useState<IndexState>({});
+      const [editing, setEditing] = useState<IndexState>({});
+      const answerRefs = useRef<Record<number, HTMLTextAreaElement>>({});
 
       // DnD kit sensors
       const sensors = useSensors(
@@ -266,14 +325,32 @@ export const FAQSectionBlock = createReactBlockSpec(
         })
       );
 
-      const updateItems = (newItems) => {
+      const updateItems = (newItems: FAQItem[]) => {
+        const currentFaqs = parseFaqDocument(faqsJson);
+        onFaqsChange?.(JSON.stringify({
+          heading: currentFaqs.heading || block.props.title || 'Frequently Asked Questions',
+          intro: currentFaqs.intro ?? null,
+          items: newItems.map((item) => ({
+            question: item.q,
+            answer: item.a,
+          })),
+        }, null, 2));
         editor.updateBlock(block, {
           type: 'faqSection',
           props: { ...block.props, itemsJson: JSON.stringify(newItems) },
         });
       };
 
-      const updateTitle = (newTitle) => {
+      const updateTitle = (newTitle: string) => {
+        const currentFaqs = parseFaqDocument(faqsJson);
+        onFaqsChange?.(JSON.stringify({
+          heading: newTitle,
+          intro: currentFaqs.intro ?? null,
+          items: items.map((item) => ({
+            question: item.q,
+            answer: item.a,
+          })),
+        }, null, 2));
         editor.updateBlock(block, {
           type: 'faqSection',
           props: { ...block.props, title: newTitle },
@@ -292,7 +369,7 @@ export const FAQSectionBlock = createReactBlockSpec(
         });
       };
 
-      const removeItem = (idx) => {
+      const removeItem = (idx: number) => {
         updateItems(items.filter((_, i) => i !== idx));
         setEditing((prev) => {
           const next = { ...prev };
@@ -301,17 +378,17 @@ export const FAQSectionBlock = createReactBlockSpec(
         });
       };
 
-      const updateItem = (idx, field, value) => {
+      const updateItem = (idx: number, field: FAQItemField, value: string) => {
         const newItems = [...items];
         newItems[idx] = { ...newItems[idx], [field]: value };
         updateItems(newItems);
       };
 
-      const toggleExpand = (idx) => {
+      const toggleExpand = (idx: number) => {
         setExpanded(prev => ({ ...prev, [idx]: !prev[idx] }));
       };
 
-      const startEditing = (idx) => {
+      const startEditing = (idx: number) => {
         setEditing((prev) => ({ ...prev, [idx]: true }));
         requestAnimationFrame(() => {
           const textarea = answerRefs.current[idx];
@@ -319,15 +396,15 @@ export const FAQSectionBlock = createReactBlockSpec(
         });
       };
 
-      const stopEditing = (idx) => {
+      const stopEditing = (idx: number) => {
         setEditing((prev) => ({ ...prev, [idx]: false }));
       };
 
-      const handleDragEnd = (event) => {
+      const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        if (active.id !== over?.id) {
-          const oldIndex = parseInt(active.id.split('-').pop());
-          const newIndex = parseInt(over.id.split('-').pop());
+        if (over && active.id !== over.id) {
+          const oldIndex = parseInt(String(active.id).split('-').pop() || '0', 10);
+          const newIndex = parseInt(String(over.id).split('-').pop() || '0', 10);
           const newItems = arrayMove(items, oldIndex, newIndex);
           updateItems(newItems);
         }

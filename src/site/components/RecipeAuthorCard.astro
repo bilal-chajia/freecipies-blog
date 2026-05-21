@@ -26,7 +26,7 @@ const {
 } = Astro.props;
 
 // Check if image is valid (not undefined, null, or empty string)
-const hasValidImage = authorImage && authorImage.trim() !== '';
+const hasValidImage = typeof authorImage === 'string' && authorImage.length > 0;
 
 // Format date
 let formattedDate = "";

@@ -14,6 +14,7 @@
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { Video, X, RectangleHorizontal, Square, RectangleVertical } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { EmbedPlaceholder } from '../components/BlockPlaceholder';
@@ -29,8 +30,11 @@ import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
+type VideoProvider = 'youtube' | 'vimeo';
+type AspectRatio = '16:9' | '4:3' | '1:1' | '9:16';
+
 // Video provider extraction
-function extractVideoId(url) {
+function extractVideoId(url: string): { provider: VideoProvider; videoId: string } | null {
     if (!url) return null;
 
     // YouTube
@@ -44,19 +48,19 @@ function extractVideoId(url) {
     return null;
 }
 
-function getEmbedUrl(provider, videoId) {
+function getEmbedUrl(provider: string, videoId: string): string | undefined {
     switch (provider) {
         case 'youtube':
             return `https://www.youtube.com/embed/${videoId}`;
         case 'vimeo':
             return `https://player.vimeo.com/video/${videoId}`;
         default:
-            return null;
+            return undefined;
     }
 }
 
 // Aspect ratio options
-const aspectRatios = [
+const aspectRatios: Array<{ value: AspectRatio; label: string; icon: LucideIcon; class: string }> = [
     { value: '16:9', label: '16:9', icon: RectangleHorizontal, class: 'aspect-video' },
     { value: '4:3', label: '4:3', icon: RectangleHorizontal, class: 'aspect-[4/3]' },
     { value: '1:1', label: '1:1', icon: Square, class: 'aspect-square' },
@@ -66,7 +70,10 @@ const aspectRatios = [
 /**
  * Aspect Ratio Toolbar
  */
-function AspectRatioToolbar({ current, onChange }) {
+function AspectRatioToolbar({ current, onChange }: {
+    current: AspectRatio;
+    onChange: (ratio: AspectRatio) => void;
+}) {
     const currentRatio = aspectRatios.find(r => r.value === current) || aspectRatios[0];
     const Icon = currentRatio.icon;
 
@@ -131,7 +138,7 @@ export const VideoBlock = createReactBlockSpec(
     {
         render: (props) => {
             const { block, editor } = props;
-            const [inputUrl, setInputUrl] = useState(block.props.url);
+            const [inputUrl, setInputUrl] = useState<string>(block.props.url);
             const { isSelected, selectBlock } = useBlockSelection(block.id);
             const hasVideo = block.props.provider && block.props.videoId;
             const {
@@ -150,7 +157,7 @@ export const VideoBlock = createReactBlockSpec(
                 isDragging,
             } = useBlockDragHandle(block.id);
 
-            const handleUrlChange = (url) => {
+            const handleUrlChange = (url: string) => {
                 setInputUrl(url);
             };
 
@@ -177,7 +184,7 @@ export const VideoBlock = createReactBlockSpec(
                 setInputUrl('');
             };
 
-            const handleAspectChange = (ratio) => {
+            const handleAspectChange = (ratio: AspectRatio) => {
                 editor.updateBlock(block, {
                     type: 'video',
                     props: { ...block.props, aspectRatio: ratio },
@@ -195,7 +202,7 @@ export const VideoBlock = createReactBlockSpec(
                     showMoreMenu={false}
                 >
                     <AspectRatioToolbar
-                        current={block.props.aspectRatio}
+                        current={block.props.aspectRatio as AspectRatio}
                         onChange={handleAspectChange}
                     />
                     <ToolbarSeparator />
@@ -289,7 +296,5 @@ export const VideoBlock = createReactBlockSpec(
 );
 
 export default VideoBlock;
-
-
 
 

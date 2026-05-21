@@ -28,16 +28,29 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring", stiffness: 300, damping: 24 }
+    transition: { type: "spring" as const, stiffness: 300, damping: 24 }
   }
 };
 
+interface PinterestBoard {
+  id: string | number;
+  name: string;
+  description?: string | null;
+  slug: string;
+  cover_image_url?: any;
+  is_active?: boolean;
+  board_url?: string | null;
+}
+
 const BoardsList = () => {
-  const [boards, setBoards] = useState([]);
+  const [boards, setBoards] = useState<PinterestBoard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [deleteModal, setDeleteModal] = useState({
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    boardToDelete: PinterestBoard | null;
+  }>({
     isOpen: false,
     boardToDelete: null
   });
@@ -68,7 +81,7 @@ const BoardsList = () => {
     board.slug.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDeleteClick = (board) => {
+  const handleDeleteClick = (board: PinterestBoard) => {
     setDeleteModal({
       isOpen: true,
       boardToDelete: board
@@ -190,7 +203,7 @@ const BoardsList = () => {
               variants={itemVariants}
               layout
               whileHover={{ y: -4, scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              transition={{ type: "spring" as const, stiffness: 400, damping: 25 }}
             >
               <Card className="overflow-hidden flex flex-col group h-full hover:shadow-md transition-all">
                 <div className="aspect-video w-full bg-muted relative overflow-hidden">
@@ -205,7 +218,7 @@ const BoardsList = () => {
                       ? board.cover_image_url 
                       : { hero: { url: board.cover_image_url } };
                     
-                    const { imageUrl, alt } = extractImage(imageSlot, 'hero', 1200);
+                    const { imageUrl, imageAlt } = extractImage(imageSlot, 'hero', 1200);
                     const previewUrl = toAdminImageUrl(imageUrl);
 
                     if (!previewUrl) return (
@@ -217,13 +230,13 @@ const BoardsList = () => {
                     return (
                       <img 
                         src={previewUrl} 
-                        alt={alt || board.name}
+                        alt={imageAlt || board.name}
                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
                       />
                     );
                   })()}
                   <div className="absolute top-2 right-2">
-                    <Badge variant={board.is_active ? "success" : "secondary"}>
+                    <Badge variant={board.is_active ? "default" : "secondary"}>
                       {board.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>

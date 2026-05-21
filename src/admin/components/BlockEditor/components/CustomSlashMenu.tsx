@@ -1,17 +1,47 @@
 import React from 'react';
+import type { ReactNode } from 'react';
 import { X, Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function CustomSlashMenu({ items, selectedIndex, onItemClick, editor }) {
+type SlashMenuItem = {
+    title: string;
+    subtext?: string;
+    group?: string;
+    icon?: ReactNode;
+    actualIndex?: number;
+    [key: string]: unknown;
+};
+
+type CustomSlashMenuProps = {
+    items?: SlashMenuItem[];
+    selectedIndex?: number;
+    onItemClick?: (item: SlashMenuItem) => void;
+    editor?: {
+        _tiptapEditor?: {
+            state?: {
+                selection?: {
+                    $from?: {
+                        parent?: {
+                            textContent?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+};
+
+export default function CustomSlashMenu({ items, selectedIndex, onItemClick, editor }: CustomSlashMenuProps) {
+    const menuItems = items ?? [];
     const groupedItems = React.useMemo(() => {
-        const groups = {};
-        items.forEach((item, index) => {
+        const groups: Record<string, Array<SlashMenuItem & { actualIndex: number }>> = {};
+        menuItems.forEach((item, index) => {
             const groupName = item.group || 'General';
             if (!groups[groupName]) groups[groupName] = [];
             groups[groupName].push({ ...item, actualIndex: index });
         });
         return groups;
-    }, [items]);
+    }, [menuItems]);
 
     return (
         <div className="z-[9999] min-w-[720px] overflow-hidden rounded-2xl border border-border/60 bg-popover/95 backdrop-blur-xl p-0 shadow-xl animate-in fade-in zoom-in-95 duration-200">
@@ -25,7 +55,7 @@ export default function CustomSlashMenu({ items, selectedIndex, onItemClick, edi
             </div>
 
             <div className="max-h-[450px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300">
-                {items.length > 0 ? (
+                {menuItems.length > 0 ? (
                     <div className="p-2 space-y-4">
                         {Object.entries(groupedItems).map(([group, groupItems]) => (
                             <div key={group} className="space-y-1.5 px-1">
@@ -44,7 +74,7 @@ export default function CustomSlashMenu({ items, selectedIndex, onItemClick, edi
                                                         ? 'bg-primary/5 shadow-[0_4px_12px_rgba(var(--primary-rgb),0.1)] ring-1 ring-primary/20'
                                                         : 'hover:bg-muted active:scale-[0.98]'
                                                 )}
-                                                onClick={() => onItemClick(item)}
+                                                onClick={() => onItemClick?.(item)}
                                             >
                                                 <div className={cn(
                                                     'flex-shrink-0 size-9 rounded-lg flex items-center justify-center transition-colors',

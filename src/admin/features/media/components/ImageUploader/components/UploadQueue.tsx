@@ -7,13 +7,13 @@ import { Button } from '@/ui/button';
 import { Badge } from '@/ui/badge';
 import { Link, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import DropZone from '../DropZone';
+import DropZone, { type DropZoneProps } from '../DropZone';
 
 interface UploadQueueItem {
   id: string;
   status: 'pending' | 'uploading' | 'done' | 'error' | 'skipped';
   type: 'url' | 'file';
-  previewUrl?: string;
+  previewUrl?: string | null;
   finalName?: string;
   name: string;
 }
@@ -24,7 +24,7 @@ interface UploadQueueProps {
   onStart: () => void;
   onRemove: (id: string) => void;
   onRetry: (id: string) => void;
-  dropZoneProps: Record<string, unknown>;
+  dropZoneProps: DropZoneProps;
 }
 
 export default function UploadQueue({

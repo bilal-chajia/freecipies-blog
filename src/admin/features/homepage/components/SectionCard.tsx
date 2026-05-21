@@ -12,6 +12,17 @@ import { Switch } from '@/ui/switch';
 import { Badge } from '@/ui/badge';
 import { ChevronDown } from 'lucide-react';
 
+interface SectionCardProps {
+    title: string;
+    description?: string;
+    icon?: React.ComponentType<{ className?: string }> | React.ComponentType;
+    enabled?: boolean;
+    onEnabledChange?: (checked: boolean) => void;
+    children?: React.ReactNode;
+    className?: string;
+    defaultExpanded?: boolean;
+}
+
 const SectionCard = ({
     title,
     description,
@@ -21,7 +32,7 @@ const SectionCard = ({
     children,
     className,
     defaultExpanded = true,
-}) => {
+}: SectionCardProps) => {
     const [isExpanded, setIsExpanded] = React.useState(defaultExpanded);
 
     return (

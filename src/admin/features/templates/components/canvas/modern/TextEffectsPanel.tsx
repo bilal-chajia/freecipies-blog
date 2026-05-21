@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
 import { useUIStore } from '@admin/features/templates/store/useUIStore';
 import { ChevronLeft, Settings2 } from 'lucide-react';
 import ColorPicker from '@admin/components/ColorPicker';
+import type { TextElement } from '@admin/features/templates/store/useEditorStore';
 
 // Effect presets configuration
 const EFFECT_PRESETS = [
@@ -22,19 +23,26 @@ const EFFECT_PRESETS = [
     { id: 'background', label: 'Background', style: { backgroundColor: '#facc15', padding: '4px 8px', borderRadius: '4px' } },
 ];
 
+interface TextEffectsPanelProps {
+    selectedElement: TextElement | null;
+    updateElement: (id: string, updates: Partial<TextElement>) => void;
+    onClose: () => void;
+}
+
 const TextEffectsPanel = ({
     selectedElement,
     updateElement,
     onClose
-}) => {
+}: TextEffectsPanelProps) => {
     const { theme } = useUIStore();
     const isDark = theme === 'dark';
-    const [openPopoverId, setOpenPopoverId] = useState(null);
+    const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
     const currentEffect = selectedElement?.effect?.type || 'none';
-    const effectParams = selectedElement?.effect || {};
+    const effectParams = (selectedElement?.effect || {}) as any;
 
-    const handleEffectSelect = (effectId) => {
+    const handleEffectSelect = (effectId: string) => {
+        if (!selectedElement) return;
         if (currentEffect === effectId && effectId !== 'none') {
             // Toggle popover if already selected
             setOpenPopoverId(openPopoverId === effectId ? null : effectId);
@@ -42,7 +50,7 @@ const TextEffectsPanel = ({
             // Apply effect and open popover
             updateElement(selectedElement.id, {
                 effect: {
-                    type: effectId,
+                    type: effectId as any,
                     offset: 50,
                     direction: 45,
                     blur: 50,
@@ -59,16 +67,17 @@ const TextEffectsPanel = ({
         }
     };
 
-    const updateParam = (key, value) => {
+    const updateParam = (key: string, value: unknown) => {
+        if (!selectedElement) return;
         updateElement(selectedElement.id, {
             effect: {
                 ...selectedElement.effect,
                 [key]: value
-            }
+            } as any
         });
     };
 
-    const renderSettings = (effectId) => {
+    const renderSettings = (effectId: string) => {
         const showOffset = ['shadow', 'lift', 'splice', 'echo', 'glitch'].includes(effectId);
         const showDirection = ['shadow'].includes(effectId);
         const showBlur = ['shadow', 'lift', 'neon'].includes(effectId);

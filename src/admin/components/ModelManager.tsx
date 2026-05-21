@@ -26,6 +26,38 @@ import { cn } from '@/lib/utils';
 import api from '@/services/api';
 import { BulkImportModels } from './BulkImportModels';
 
+export type ManagedModel = {
+    id: string;
+    name: string;
+    description?: string | null;
+    contextWindow?: number | null;
+    maxTokens?: number | null;
+    enabled?: boolean;
+    deprecated?: boolean;
+};
+
+type ModelManagerProps = {
+    provider: string;
+    models?: ManagedModel[];
+    onUpdate?: () => void | Promise<void>;
+    isAddDialogOpen?: boolean;
+    onAddDialogChange?: (open: boolean) => void;
+    hideHeaderActions?: boolean;
+};
+
+type ModelFormData = {
+    id: string;
+    name: string;
+    description: string;
+    contextWindow: string;
+    maxTokens: string;
+};
+
+type DeleteModalState = {
+    isOpen: boolean;
+    modelToDelete: string | null;
+};
+
 export function ModelManager({
     provider,
     models = [],
@@ -33,18 +65,18 @@ export function ModelManager({
     isAddDialogOpen: externalIsAddOpen,
     onAddDialogChange: externalSetIsAddOpen,
     hideHeaderActions = false
-}) {
+}: ModelManagerProps) {
     const [isExpanded, setIsExpanded] = useState(false);
-    const [editingModel, setEditingModel] = useState(null);
+    const [editingModel, setEditingModel] = useState<ManagedModel | null>(null);
     const [internalIsAddDialogOpen, setInternalIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(null);
-    const [deleteModal, setDeleteModal] = useState({ isOpen: false, modelToDelete: null });
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const [deleteModal, setDeleteModal] = useState<DeleteModalState>({ isOpen: false, modelToDelete: null });
 
     const isAddDialogOpen = externalIsAddOpen !== undefined ? externalIsAddOpen : internalIsAddDialogOpen;
     const setIsAddDialogOpen = externalSetIsAddOpen || setInternalIsAddDialogOpen;
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<ModelFormData>({
         id: '',
         name: '',
         description: '',
@@ -62,7 +94,7 @@ export function ModelManager({
                 maxTokens: formData.maxTokens ? parseInt(formData.maxTokens) : undefined,
             });
 
-            if (response.ok) {
+            if (response.status >= 200 && response.status < 300) {
                 setIsAddDialogOpen(false);
                 setFormData({ id: '', name: '', description: '', contextWindow: '', maxTokens: '' });
                 onUpdate?.();
@@ -73,6 +105,7 @@ export function ModelManager({
     };
 
     const handleUpdateModel = async () => {
+        if (!editingModel) return;
         try {
             const response = await api.put(`/admin/ai/models/${provider}/${editingModel.id}`, {
                 name: formData.name,
@@ -81,7 +114,7 @@ export function ModelManager({
                 maxTokens: formData.maxTokens ? parseInt(formData.maxTokens) : undefined,
             });
 
-            if (response.ok) {
+            if (response.status >= 200 && response.status < 300) {
                 setIsEditDialogOpen(false);
                 setEditingModel(null);
                 setFormData({ id: '', name: '', description: '', contextWindow: '', maxTokens: '' });
@@ -92,10 +125,10 @@ export function ModelManager({
         }
     };
 
-    const handleToggleModel = async (modelId) => {
+    const handleToggleModel = async (modelId: string) => {
         try {
             const response = await api.patch(`/admin/ai/models/${provider}/${modelId}/toggle`);
-            if (response.ok) {
+            if (response.status >= 200 && response.status < 300) {
                 onUpdate?.();
             }
         } catch (error) {
@@ -103,7 +136,7 @@ export function ModelManager({
         }
     };
 
-    const handleDeleteModel = (modelId) => {
+    const handleDeleteModel = (modelId: string) => {
         setDeleteModal({ isOpen: true, modelToDelete: modelId });
     };
 
@@ -114,7 +147,7 @@ export function ModelManager({
         setIsDeleting(modelId);
         try {
             const response = await api.delete(`/admin/ai/models/${provider}/${modelId}`);
-            if (response.ok) {
+            if (response.status >= 200 && response.status < 300) {
                 onUpdate?.();
             }
         } catch (error) {
@@ -125,7 +158,7 @@ export function ModelManager({
         }
     };
 
-    const openEditDialog = (model) => {
+    const openEditDialog = (model: ManagedModel) => {
         setEditingModel(model);
         setFormData({
             id: model.id,

@@ -50,14 +50,15 @@ export const GET: APIRoute = async ({ request }) => {
 
         // Transform for roundup cards
         const items = result.items.map(article => {
+            const articleData = article as any;
             // Parse roundup JSON for item count
             let itemCount = 0;
-            if ((article as Record<string, unknown>).roundupJson) {
+            if (articleData.roundupJson) {
                 try {
-                    const roundupData = typeof (article as Record<string, unknown>).roundupJson === 'string'
-                        ? JSON.parse((article as Record<string, unknown>).roundupJson as string)
-                        : (article as Record<string, unknown>).roundupJson;
-                    itemCount = (roundupData as Record<string, unknown>).items?.length || 0;
+                    const roundupData = typeof articleData.roundupJson === 'string'
+                        ? JSON.parse(articleData.roundupJson as string)
+                        : articleData.roundupJson;
+                    itemCount = (roundupData as { items?: unknown[] }).items?.length || 0;
                 } catch {
                     itemCount = 0;
                 }
@@ -82,11 +83,11 @@ export const GET: APIRoute = async ({ request }) => {
                 headline: article.headline,
                 shortDescription: article.shortDescription,
                 thumbnail,
-                categoryLabel: (article as Record<string, unknown>).categoryLabel,
-                categorySlug: (article as Record<string, unknown>).categorySlug,
-                categoryColor: (article as Record<string, unknown>).categoryColor,
-                authorName: (article as Record<string, unknown>).authorName,
-                authorSlug: (article as Record<string, unknown>).authorSlug,
+                categoryLabel: articleData.categoryLabel,
+                categorySlug: articleData.categorySlug,
+                categoryColor: articleData.categoryColor,
+                authorName: articleData.authorName,
+                authorSlug: articleData.authorSlug,
                 publishedAt: article.publishedAt,
                 // Roundup-specific
                 itemCount,

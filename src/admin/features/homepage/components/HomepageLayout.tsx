@@ -38,6 +38,26 @@ const homepageSections = [
 // Fixed header height to ensure alignment
 const HEADER_HEIGHT = 'h-10';
 
+interface SectionStatusItem {
+    key: string;
+    label: string;
+    enabled: boolean;
+}
+
+interface HomepageLayoutProps {
+    children: React.ReactNode;
+    activeSection?: string;
+    sectionStatus?: SectionStatusItem[];
+    headerTabs?: React.ReactNode;
+    onSave: () => void;
+    onReset?: () => void;
+    onPreview?: () => void;
+    saving?: boolean;
+    saveDisabled?: boolean;
+    saveLabel?: string;
+    hasChanges?: boolean;
+}
+
 /**
  * HomepageLayout - 2-panel layout using Gutenberg design tokens
  */
@@ -53,12 +73,12 @@ export default function HomepageLayout({
     saveDisabled = false,
     saveLabel = 'Publish',
     hasChanges = true,
-}) {
+}: HomepageLayoutProps) {
     const navigate = useNavigate();
     const { section = 'hero' } = useParams();
     const currentSection = activeSection || section;
 
-    const handleSectionClick = (sectionId) => {
+    const handleSectionClick = (sectionId: string) => {
         navigate(`/homepage/${sectionId}`);
     };
 

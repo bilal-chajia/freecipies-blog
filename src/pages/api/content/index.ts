@@ -4,6 +4,7 @@ import { getArticles } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateQuery, z } from '@shared/validation';
+import { parseCachedCard, cleanCardImages } from '@modules/articles/utils/cached-fields';
 
 export const prerender = false;
 
@@ -89,17 +90,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
         // Transform items for card display (use cached fields if available)
         const items = result.items.map(article => {
-            // Parse cached card JSON if available
-            let cachedCard = null;
-            if (article.cachedCardJson) {
-                try {
-                    cachedCard = typeof article.cachedCardJson === 'string'
-                        ? JSON.parse(article.cachedCardJson)
-                        : article.cachedCardJson;
-                } catch {
-                    cachedCard = null;
-                }
-            }
+            const articleData = article as any;
+            
+            // Parse and clean cached card JSON if available
+            const cachedCard = cleanCardImages(parseCachedCard(article.cachedCardJson));
 
             // Parse images for thumbnail
             let thumbnail = null;
@@ -108,7 +102,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
                     const images = typeof article.imagesJson === 'string'
                         ? JSON.parse(article.imagesJson)
                         : article.imagesJson;
-                    thumbnail = images.thumbnail || images.hero;
+                    const rawThumbnail = images.thumbnail || images.hero;
+                    if (rawThumbnail) {
+                        const cleanedObj = cleanCardImages({ image: rawThumbnail });
+                        thumbnail = cleanedObj.image;
+                    }
                 } catch {
                     thumbnail = null;
                 }
@@ -122,11 +120,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 headline: article.headline,
                 shortDescription: article.shortDescription,
                 thumbnail,
-                categoryLabel: (article as Record<string, unknown>).categoryLabel,
-                categorySlug: (article as Record<string, unknown>).categorySlug,
-                categoryColor: (article as Record<string, unknown>).categoryColor,
-                authorName: (article as Record<string, unknown>).authorName,
-                authorSlug: (article as Record<string, unknown>).authorSlug,
+                categoryLabel: articleData.categoryLabel,
+                categorySlug: articleData.categorySlug,
+                categoryColor: articleData.categoryColor,
+                authorName: articleData.authorName,
+                authorSlug: articleData.authorSlug,
                 publishedAt: article.publishedAt,
                 isOnline: article.isOnline,
                 // Type-specific fields from cache

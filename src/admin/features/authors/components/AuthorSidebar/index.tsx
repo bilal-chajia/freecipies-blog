@@ -6,7 +6,12 @@ import SEOSection from './SEOSection';
 import SocialLinksSection from './SocialLinksSection';
 
 interface AuthorSidebarProps {
-  formData: Record<string, unknown>;
+  formData: {
+    isOnline?: boolean;
+    isFeatured?: boolean;
+    sortOrder?: number;
+    role?: string;
+  };
   onInputChange: (field: string, value: unknown) => void;
   onSave: () => void;
   saving: boolean;

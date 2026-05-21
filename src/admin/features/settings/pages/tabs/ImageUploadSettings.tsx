@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/alert';
 import { AlertCircle, CheckCircle2, Image as ImageIcon, Zap, Layers } from 'lucide-react';
 import { toast } from 'sonner';
-import { ASPECT_RATIO_OPTIONS } from '../../../../../shared/constants/image-upload';
+import { ASPECT_RATIO_OPTIONS, type ImageUploadSettings as ImageSettingsType } from '../../../../../shared/constants/image-upload';
 import { Button } from '@/ui/button';
 import ConfirmationModal from '@/ui/confirmation-modal';
 import { Input } from '@/ui/input';
@@ -19,7 +19,7 @@ interface ImageUploadSettingsProps {
 
 const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) => {
   const { settings, updateSettings, resetSettings, isLoading, defaults } = useImageUploadSettings();
-  const [localSettings, setLocalSettings] = useState<Record<string, unknown>>(settings || {});
+  const [localSettings, setLocalSettings] = useState<ImageSettingsType>(settings || defaults);
   const [authors, setAuthors] = useState<Array<Record<string, unknown>>>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -62,27 +62,27 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
   }, []);
 
   const handleChange = (key: string, value: unknown) => {
-    setLocalSettings(prev => ({ ...prev, [key]: value }));
+    setLocalSettings(prev => ({ ...prev, [key]: value } as ImageSettingsType));
   };
 
   const handleEncodingChange = (key: string, value: unknown) => {
     setLocalSettings(prev => ({
       ...prev,
       encoding: {
-        ...(prev?.encoding as Record<string, unknown> || (defaults?.encoding as Record<string, unknown>)),
+        ...(prev?.encoding || defaults?.encoding),
         [key]: value,
       },
-    }));
+    } as ImageSettingsType));
   };
 
   const handleVariantWidthChange = (key: string, value: unknown) => {
     setLocalSettings(prev => ({
       ...prev,
       variant_widths: {
-        ...(prev?.variant_widths as Record<string, unknown> || (defaults?.variant_widths as Record<string, unknown>)),
+        ...(prev?.variant_widths || defaults?.variant_widths),
         [key]: value,
       },
-    }));
+    } as ImageSettingsType));
   };
 
   const buildDefaultCredit = (authorId: string) => {
@@ -90,10 +90,10 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
     const author = authors.find(item => String(item.id) === String(authorId));
     if (!author?.id || !author?.name || !author?.slug) return null;
     return {
-      type: 'author',
+      type: 'author' as const,
       id: Number(author.id),
-      name: author.name,
-      slug: author.slug,
+      name: author.name as string,
+      slug: author.slug as string,
       avatar: null,
     };
   };
@@ -163,7 +163,9 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
     setIsSaving(true);
     try {
       const newSettings = await resetSettings();
-      setLocalSettings(newSettings);
+      if (newSettings) {
+        setLocalSettings(newSettings);
+      }
       toast.success('Settings reset to defaults');
       setStatus('success', 'Settings reset to defaults.');
       setHasChanges(false);
@@ -194,8 +196,8 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
     return <div className="p-8 text-center text-muted-foreground">Loading settings...</div>;
   }
 
-  const encoding = (localSettings?.encoding as Record<string, unknown>) || {};
-  const variantWidths = (localSettings?.variant_widths as Record<string, number>) || {};
+  const encoding = localSettings?.encoding || defaults?.encoding;
+  const variantWidths = localSettings?.variant_widths || defaults?.variant_widths;
 
   return (
     <div className="space-y-6 w-full max-w-none animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -230,10 +232,10 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
                   <span>WebP Quality</span>
                   <span className="font-normal text-xs text-muted-foreground">Balance between size and quality for WebP images.</span>
                 </Label>
-                <span className="font-mono text-sm bg-muted px-2 py-0.5 rounded">{(encoding.webp_quality as number) ?? 80}%</span>
+                <span className="font-mono text-sm bg-muted px-2 py-0.5 rounded">{encoding.webp_quality}%</span>
               </div>
               <Slider
-                value={[(encoding.webp_quality as number) ?? 80]}
+                value={[encoding.webp_quality]}
                 min={10}
                 max={100}
                 step={5}
@@ -248,10 +250,10 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
                   <span>AVIF Quality</span>
                   <span className="font-normal text-xs text-muted-foreground">Newer format with better compression. Usually requires lower values than WebP.</span>
                 </Label>
-                <span className="font-mono text-sm bg-muted px-2 py-0.5 rounded">{(encoding.avif_quality as number) ?? 70}%</span>
+                <span className="font-mono text-sm bg-muted px-2 py-0.5 rounded">{encoding.avif_quality}%</span>
               </div>
               <Slider
-                value={[(encoding.avif_quality as number) ?? 70]}
+                value={[encoding.avif_quality]}
                 min={10}
                 max={100}
                 step={5}
@@ -273,7 +275,7 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
             <div className="space-y-1">
               <Label>Default Aspect Ratio</Label>
               <Select
-                value={(localSettings?.default_aspect_ratio as string) ?? 'free'}
+                value={localSettings.default_aspect_ratio ?? 'free'}
                 onValueChange={(val) => handleChange('default_aspect_ratio', val)}
               >
                 <SelectTrigger>
@@ -293,7 +295,7 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
             <div className="space-y-1">
               <Label>Default Output Format</Label>
               <Select
-                value={(encoding.format as string) ?? 'webp'}
+                value={encoding.format ?? 'webp'}
                 onValueChange={(val) => handleEncodingChange('format', val)}
               >
                 <SelectTrigger>
@@ -310,7 +312,7 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
             <div className="space-y-1">
               <Label>Default Credit Author</Label>
               <Select
-                value={localSettings?.default_credit ? String((localSettings.default_credit as Record<string, unknown>).id ?? 'none') : 'none'}
+                value={localSettings.default_credit?.id ? String(localSettings.default_credit.id) : 'none'}
                 onValueChange={(val) => handleChange('default_credit', buildDefaultCredit(val))}
               >
                 <SelectTrigger>
@@ -335,7 +337,7 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
                   id="max-file-size"
                   name="maxFileSizeMB"
                   type="number"
-                  value={(localSettings?.max_file_size_mb as number) ?? 50}
+                  value={localSettings.max_file_size_mb ?? 50}
                   onChange={(e) => handleChange('max_file_size_mb', parseInt(e.target.value))}
                   className="h-8 w-full pr-8"
                 />

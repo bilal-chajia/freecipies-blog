@@ -19,8 +19,13 @@ import {
     Zhipu,
 } from '@lobehub/icons';
 
+interface ProviderIconProps {
+    provider: string;
+    className?: string;
+}
+
 // Map provider ID to icon component using .Avatar
-export const ProviderIcon = ({ provider, className = "w-6 h-6" }) => {
+export const ProviderIcon = ({ provider, className = "w-6 h-6" }: ProviderIconProps) => {
     // Extract numeric size
     const sizeMatch = className.match(/w-(\d+)/);
     const size = sizeMatch ? parseInt(sizeMatch[1]) * 4 : 24;

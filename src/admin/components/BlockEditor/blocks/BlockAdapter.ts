@@ -7,6 +7,13 @@
 import type { ContentBlock } from '@modules/articles/types/content-blocks.types';
 import type { AppBlock } from '../types/editor.types';
 
+export interface BlockAdapterContext {
+    recipeJson?: unknown;
+    faqsJson?: unknown;
+    imagesData?: unknown;
+    roundupJson?: unknown;
+}
+
 /**
  * Adapter interface for custom blocks.
  *
@@ -17,7 +24,7 @@ export interface BlockAdapter<T extends ContentBlock = ContentBlock> {
     type: string;
 
     /** Convert a ContentBlock into a partial AppBlock for the editor. */
-    toEditor(block: T): Partial<AppBlock>;
+    toEditor(block: T, context?: BlockAdapterContext): Partial<AppBlock>;
 
     /** Convert an AppBlock back into a ContentBlock. Returns null on failure. */
     fromEditor(block: AppBlock): T | null;

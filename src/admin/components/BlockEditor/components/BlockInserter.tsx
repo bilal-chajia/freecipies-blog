@@ -16,6 +16,9 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
+    type DragEndEvent,
+    type DragOverEvent,
+    type DragStartEvent,
 } from '@dnd-kit/core';
 import {
     SortableContext,
@@ -50,6 +53,7 @@ import {
     ListTree,
     BookOpen,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Input } from '@/ui/input';
@@ -63,6 +67,56 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
 
+type StructureItem = {
+    id: string;
+    type: string;
+    label?: string;
+    icon?: LucideIcon;
+    parentId?: string | null;
+    level?: number;
+    depth?: number;
+};
+
+type DropTarget = {
+    targetId: string;
+    position: 'before' | 'after';
+};
+
+type ConvertBlockOptions = {
+    type: string;
+    level?: number;
+};
+
+type BlockAction = 'duplicate' | 'add-before' | 'add-after' | 'delete';
+
+type SortableStructureItemProps = {
+    item: StructureItem;
+    activeBlockId?: string | null;
+    onSelectBlock?: (blockId: string) => void;
+    onConvertBlock?: (blockId: string, options: ConvertBlockOptions) => void;
+    onBlockAction?: (action: BlockAction, blockId: string) => void;
+    dropTarget?: DropTarget | null;
+    isSortableEnabled: boolean;
+    indentDepth: number;
+    showConvertOptions: boolean;
+};
+
+type PanelTab = 'list' | 'outline';
+
+type BlockInserterProps = {
+    isOpen?: boolean;
+    onClose?: () => void;
+    onInsertBlock?: (blockType: string) => void;
+    onConvertBlock?: (blockId: string, options: ConvertBlockOptions) => void;
+    contentType?: 'article' | 'recipe' | 'roundup';
+    structureItems?: StructureItem[];
+    activeBlockId?: string | null;
+    onSelectBlock?: (blockId: string) => void;
+    onReorderBlock?: (activeId: string, overId: string, position: 'before' | 'after') => void;
+    onBlockAction?: (action: BlockAction, blockId: string) => void;
+    className?: string;
+};
+
 function SortableStructureItem({
     item,
     activeBlockId,
@@ -73,7 +127,7 @@ function SortableStructureItem({
     isSortableEnabled,
     indentDepth,
     showConvertOptions,
-}) {
+}: SortableStructureItemProps) {
     const isActive = activeBlockId === item.id;
     const isDropTarget = dropTarget?.targetId === item.id;
     const dropPosition = isDropTarget ? dropTarget.position : null;
@@ -248,11 +302,11 @@ export default function BlockInserter({
     onReorderBlock,
     onBlockAction,
     className,
-}) {
+}: BlockInserterProps) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [panelTab, setPanelTab] = useState('list');
-    const [dropTarget, setDropTarget] = useState(null);
-    const [expandedCategories, setExpandedCategories] = useState(
+    const [panelTab, setPanelTab] = useState<PanelTab>('list');
+    const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+    const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(
         blockCategories.reduce((acc, cat) => ({ ...acc, [cat.id]: true }), {})
     );
 
@@ -281,14 +335,14 @@ export default function BlockInserter({
             .filter(cat => cat.blocks.length > 0);
     }, [searchQuery, contentType]);
 
-    const toggleCategory = (categoryId) => {
+    const toggleCategory = (categoryId: string) => {
         setExpandedCategories(prev => ({
             ...prev,
             [categoryId]: !prev[categoryId],
         }));
     };
 
-    const handleBlockClick = (blockType) => {
+    const handleBlockClick = (blockType: string) => {
         onInsertBlock?.(blockType);
     };
 
@@ -315,12 +369,12 @@ export default function BlockInserter({
 
     const isSortableEnabled = Boolean(onReorderBlock) && panelTab === 'list';
 
-    const handleDragStart = useCallback((event) => {
+    const handleDragStart = useCallback((_event: DragStartEvent) => {
         if (!isSortableEnabled) return;
         setDropTarget(null);
     }, [isSortableEnabled]);
 
-    const handleDragOver = useCallback((event) => {
+    const handleDragOver = useCallback((event: DragOverEvent) => {
         if (!isSortableEnabled) return;
         const activeId = event.active?.id;
         const overId = event.over?.id;
@@ -328,23 +382,23 @@ export default function BlockInserter({
             setDropTarget(null);
             return;
         }
-        const activeItem = structureItems.find((item) => item.id === activeId);
-        const overItem = structureItems.find((item) => item.id === overId);
+        const activeItem = structureItems.find((item) => item.id === String(activeId));
+        const overItem = structureItems.find((item) => item.id === String(overId));
         if (!activeItem || !overItem || activeItem.parentId !== overItem.parentId) {
             setDropTarget(null);
             return;
         }
-        const activeIndex = visibleStructureItems.findIndex((item) => item.id === activeId);
-        const overIndex = visibleStructureItems.findIndex((item) => item.id === overId);
+        const activeIndex = visibleStructureItems.findIndex((item) => item.id === String(activeId));
+        const overIndex = visibleStructureItems.findIndex((item) => item.id === String(overId));
         const position = activeIndex < overIndex ? 'after' : 'before';
-        setDropTarget({ targetId: overId, position });
+        setDropTarget({ targetId: String(overId), position });
     }, [isSortableEnabled, structureItems, visibleStructureItems]);
 
     const handleDragCancel = useCallback(() => {
         setDropTarget(null);
     }, []);
 
-    const handleDragEnd = useCallback((event) => {
+    const handleDragEnd = useCallback((event: DragEndEvent) => {
         if (!isSortableEnabled) return;
         const activeId = event.active?.id;
         const overId = event.over?.id;
@@ -354,18 +408,18 @@ export default function BlockInserter({
             return;
         }
 
-        const activeItem = structureItems.find((item) => item.id === activeId);
-        const overItem = structureItems.find((item) => item.id === overId);
+        const activeItem = structureItems.find((item) => item.id === String(activeId));
+        const overItem = structureItems.find((item) => item.id === String(overId));
         if (!activeItem || !overItem || activeItem.parentId !== overItem.parentId) {
             setDropTarget(null);
             return;
         }
 
-        const activeIndex = visibleStructureItems.findIndex((item) => item.id === activeId);
-        const overIndex = visibleStructureItems.findIndex((item) => item.id === overId);
+        const activeIndex = visibleStructureItems.findIndex((item) => item.id === String(activeId));
+        const overIndex = visibleStructureItems.findIndex((item) => item.id === String(overId));
         const position = activeIndex < overIndex ? 'after' : 'before';
         setDropTarget(null);
-        onReorderBlock?.(activeId, overId, position);
+        onReorderBlock?.(String(activeId), String(overId), position);
     }, [isSortableEnabled, onReorderBlock, structureItems, visibleStructureItems]);
 
     if (!isOpen) return null;

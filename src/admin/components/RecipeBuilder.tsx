@@ -26,6 +26,29 @@ import {
     DialogFooter,
 } from "@/ui/dialog";
 import { articlesAPI } from '@/services/api';
+import { migrateRecipeJson } from '@modules/articles/types/recipes.types';
+import type {
+    AggregateRating,
+    DietType,
+    IngredientGroup,
+    IngredientItem,
+    InstructionSection,
+    InstructionStep,
+    NutritionInfo,
+    RecipeJson,
+} from '@modules/articles/types/recipes.types';
+
+type EditableInstructionStep = InstructionStep & { _timerManual?: boolean };
+type EditableInstructionSection = Omit<InstructionSection, 'steps'> & { steps: EditableInstructionStep[] };
+type EditableRecipeJson = Omit<RecipeJson, 'instructions'> & { instructions: EditableInstructionSection[] };
+type RecipeBuilderProps = {
+    value?: string;
+    onChange: (value: string) => void;
+};
+type RecipeField = keyof EditableRecipeJson;
+type MoveDirection = 'up' | 'down';
+type NutritionField = keyof NutritionInfo;
+type RatingField = keyof AggregateRating;
 
 /**
  * Default recipe matching the unified RecipeJson schema.
@@ -36,7 +59,7 @@ import { articlesAPI } from '@/services/api';
  * 
  * @see recipes.types.ts DEFAULT_RECIPE_JSON
  */
-const defaultRecipe = {
+const defaultRecipe: EditableRecipeJson = {
     // Time (minutes) — null = not set
     prep: null,
     cook: null,
@@ -72,81 +95,12 @@ const defaultRecipe = {
  * Handles: flat string ingredients, old `group` key, ISO time strings,
  * old field names (course→recipeCategory, cuisine→recipeCuisine).
  */
-function migrateRecipeData(parsed) {
-    const result = { ...defaultRecipe, ...parsed };
-
-    // Migrate ISO time strings → numeric minutes
-    if (!result.prep && parsed.prepTime) {
-        result.prep = parseInt(parsed.prepTime) || null;
-    }
-    if (!result.cook && parsed.cookTime) {
-        result.cook = parseInt(parsed.cookTime) || null;
-    }
-    if (!result.total && parsed.totalTime) {
-        result.total = parseInt(parsed.totalTime) || null;
-    }
-
-    // Ensure servings is numeric
-    if (typeof result.servings === 'string') {
-        result.servings = parseInt(result.servings) || null;
-    }
-
-    // Migrate old field names
-    if (!result.recipeCategory && parsed.course) {
-        result.recipeCategory = parsed.course;
-    }
-    if (!result.recipeCuisine && parsed.cuisine) {
-        result.recipeCuisine = parsed.cuisine;
-    }
-
-    // Migrate ingredients
-    let ingredients = parsed.ingredients || [];
-    if (ingredients.length > 0 && typeof ingredients[0] === 'string') {
-        ingredients = [{ group_title: 'Ingredients', items: ingredients.map(text => ({ name: text, amount: 0, unit: '' })) }];
-    } else if (ingredients.length > 0 && ingredients[0].group !== undefined) {
-        ingredients = ingredients.map(g => ({
-            group_title: g.group || g.group_title || 'Ingredients',
-            items: (g.items || []).map(item => typeof item === 'string' ? { name: item, amount: 0, unit: '' } : item),
-        }));
-    }
-    result.ingredients = ingredients;
-
-    // Migrate instructions
-    let instructions = parsed.instructions || [];
-    if (instructions.length > 0 && instructions[0].text !== undefined && !instructions[0].steps) {
-        instructions = [{ section_title: 'Steps', steps: instructions.map(i => ({ text: typeof i === 'string' ? i : (i.text || '') })) }];
-    } else if (instructions.length > 0 && instructions[0].group !== undefined) {
-        instructions = instructions.map(g => ({
-            section_title: g.group || g.section_title || 'Steps',
-            steps: (g.steps || []).map(step => typeof step === 'string' ? { text: step } : step),
-        }));
-    }
-    result.instructions = instructions;
-
-    // Migrate old top-level calories
-    if (!result.nutrition && parsed.calories) {
-        result.nutrition = { calories: parseInt(parsed.calories) };
-    }
-
-    // Ensure arrays
-    result.keywords = result.keywords || [];
-    result.suitableForDiet = result.suitableForDiet || [];
-    result.tips = result.tips || [];
-    result.equipment = result.equipment || [];
-
-    // Clean up legacy keys
-    delete result.prepTime;
-    delete result.cookTime;
-    delete result.totalTime;
-    delete result.course;
-    delete result.cuisine;
-    delete result.calories;
-
-    return result;
+function migrateRecipeData(parsed: Record<string, unknown>): EditableRecipeJson {
+    return migrateRecipeJson(parsed as Parameters<typeof migrateRecipeJson>[0]) as EditableRecipeJson;
 }
 
 // Diet options from Schema.org
-const dietOptions = [
+const dietOptions: Array<{ value: DietType; label: string }> = [
     { value: 'VeganDiet', label: 'Vegan' },
     { value: 'VegetarianDiet', label: 'Vegetarian' },
     { value: 'GlutenFreeDiet', label: 'Gluten-Free' },
@@ -159,14 +113,14 @@ const dietOptions = [
     { value: 'HalalDiet', label: 'Halal' },
 ];
 
-export default function RecipeBuilder({ value, onChange }) {
-    const [data, setData] = useState(defaultRecipe);
+export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
+    const [data, setData] = useState<EditableRecipeJson>(defaultRecipe);
     const [nutritionOpen, setNutritionOpen] = useState(false);
     const [tipsOpen, setTipsOpen] = useState(false);
     const [equipmentOpen, setEquipmentOpen] = useState(false);
-    const [equipmentCatalog, setEquipmentCatalog] = useState([]);
+    const [equipmentCatalog, setEquipmentCatalog] = useState<unknown[]>([]);
     const [equipmentDetecting, setEquipmentDetecting] = useState(false);
-    const [detectedEquipment, setDetectedEquipment] = useState([]);
+    const [detectedEquipment, setDetectedEquipment] = useState<unknown[]>([]);
     const [jsonError, setJsonError] = useState('');
     const [jsonMode, setJsonMode] = useState(false);
     const [jsonEditValue, setJsonEditValue] = useState('');
@@ -190,7 +144,7 @@ export default function RecipeBuilder({ value, onChange }) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...articlesAPI.getAuthHeaders?.() || {}
+                    Authorization: localStorage.getItem('admin_token') ? `Bearer ${localStorage.getItem('admin_token')}` : '',
                 },
                 body: JSON.stringify({
                     prompt: `Generate a complete recipe for: ${aiPrompt}. Include ingredients with amounts and units, step-by-step instructions, prep time, cook time, servings, difficulty, and nutrition facts.`,
@@ -215,7 +169,7 @@ export default function RecipeBuilder({ value, onChange }) {
                 setAiError(result.error || 'Failed to generate recipe');
             }
         } catch (err) {
-            setAiError('Network error: ' + err.message);
+            setAiError('Network error: ' + (err instanceof Error ? err.message : 'Unknown error'));
         } finally {
             setAiLoading(false);
         }
@@ -224,7 +178,7 @@ export default function RecipeBuilder({ value, onChange }) {
     useEffect(() => {
         try {
             if (value && value !== '{}') {
-                const parsed = JSON.parse(value);
+                const parsed = JSON.parse(value) as Record<string, unknown>;
                 // Use migration logic to normalize legacy data formats
                 const migratedData = migrateRecipeData(parsed);
                 setData(migratedData);
@@ -234,19 +188,19 @@ export default function RecipeBuilder({ value, onChange }) {
         }
     }, [value]);
 
-    const updateData = (updates) => {
+    const updateData = (updates: Partial<EditableRecipeJson>) => {
         const newData = { ...data, ...updates };
         setData(newData);
         onChange(JSON.stringify(newData, null, 2));
     };
 
-    const handleInputChange = (field, val) => {
+    const handleInputChange = (field: RecipeField, val: EditableRecipeJson[RecipeField]) => {
         updateData({ [field]: val });
     };
 
-    const handleNumberChange = (field, val) => {
+    const handleNumberChange = (field: RecipeField, val: string) => {
         const num = val === '' ? null : parseInt(val);
-        updateData({ [field]: isNaN(num) ? null : num });
+        updateData({ [field]: num === null || Number.isNaN(num) ? null : num } as Partial<EditableRecipeJson>);
     };
 
     // --- Ingredients ---
@@ -263,7 +217,7 @@ export default function RecipeBuilder({ value, onChange }) {
         updateData({ ingredients: newIngredients });
     };
 
-    const removeIngredient = (groupIndex, itemIndex) => {
+    const removeIngredient = (groupIndex: number, itemIndex: number) => {
         const newIngredients = [...data.ingredients];
         if (newIngredients[groupIndex]) {
             newIngredients[groupIndex] = {
@@ -274,7 +228,7 @@ export default function RecipeBuilder({ value, onChange }) {
         updateData({ ingredients: newIngredients });
     };
 
-    const updateIngredient = (groupIndex, itemIndex, field, val) => {
+    const updateIngredient = (groupIndex: number, itemIndex: number, field: keyof IngredientItem, val: IngredientItem[keyof IngredientItem]) => {
         const newIngredients = [...data.ingredients];
         if (newIngredients[groupIndex]) {
             const newItems = [...(newIngredients[groupIndex].items || [])];
@@ -284,7 +238,7 @@ export default function RecipeBuilder({ value, onChange }) {
         updateData({ ingredients: newIngredients });
     };
 
-    const moveIngredient = (groupIndex, itemIndex, direction) => {
+    const moveIngredient = (groupIndex: number, itemIndex: number, direction: MoveDirection) => {
         const items = getIngredientItems(groupIndex);
         const newIndex = direction === 'up' ? itemIndex - 1 : itemIndex + 1;
         if (newIndex < 0 || newIndex >= items.length) return;
@@ -310,7 +264,7 @@ export default function RecipeBuilder({ value, onChange }) {
         updateData({ instructions: newInstructions });
     };
 
-    const removeInstruction = (sectionIndex, stepIndex) => {
+    const removeInstruction = (sectionIndex: number, stepIndex: number) => {
         const newInstructions = [...data.instructions];
         if (newInstructions[sectionIndex]) {
             newInstructions[sectionIndex] = {
@@ -322,7 +276,7 @@ export default function RecipeBuilder({ value, onChange }) {
     };
 
     // Parse timer (minutes) from instruction text — EN + FR, ranges, combined h+m, seconds
-    const parseTimerFromText = (text) => {
+    const parseTimerFromText = (text: string): number | null => {
         if (!text) return null;
         const t = text.toLowerCase();
 
@@ -372,7 +326,7 @@ export default function RecipeBuilder({ value, onChange }) {
         return null;
     };
 
-    const updateInstruction = (sectionIndex, stepIndex, field, val) => {
+    const updateInstruction = (sectionIndex: number, stepIndex: number, field: keyof EditableInstructionStep, val: EditableInstructionStep[keyof EditableInstructionStep]) => {
         const newInstructions = [...data.instructions];
         if (newInstructions[sectionIndex]) {
             const newSteps = [...(newInstructions[sectionIndex].steps || [])];
@@ -380,9 +334,9 @@ export default function RecipeBuilder({ value, onChange }) {
 
             // Auto-extract timer when text changes (unless user manually set timer)
             if (field === 'text') {
-                const extracted = parseTimerFromText(val);
+                const extracted = parseTimerFromText(typeof val === 'string' ? val : '');
                 if (extracted) step.timer = extracted;
-                else if (!step._timerManual) step.timer = null;
+                else if (!step._timerManual) step.timer = undefined;
             }
 
             // Mark manual timer edits
@@ -396,7 +350,7 @@ export default function RecipeBuilder({ value, onChange }) {
         updateData({ instructions: newInstructions });
     };
 
-    const moveInstruction = (sectionIndex, stepIndex, direction) => {
+    const moveInstruction = (sectionIndex: number, stepIndex: number, direction: MoveDirection) => {
         const steps = getInstructionSteps(sectionIndex);
         const newIndex = direction === 'up' ? stepIndex - 1 : stepIndex + 1;
         if (newIndex < 0 || newIndex >= steps.length) return;
@@ -413,29 +367,29 @@ export default function RecipeBuilder({ value, onChange }) {
         updateData({ tips: [...(data.tips || []), ''] });
     };
 
-    const removeTip = (index) => {
+    const removeTip = (index: number) => {
         updateData({ tips: data.tips.filter((_, i) => i !== index) });
     };
 
-    const updateTip = (index, val) => {
+    const updateTip = (index: number, val: string) => {
         const newTips = [...data.tips];
         newTips[index] = val;
         updateData({ tips: newTips });
     };
 
     // --- Nutrition ---
-    const updateNutrition = (field, val) => {
+    const updateNutrition = (field: NutritionField, val: string) => {
         const num = val === '' ? undefined : parseFloat(val);
         updateData({
             nutrition: {
                 ...data.nutrition,
-                [field]: isNaN(num) ? undefined : num
+                [field]: num === undefined || Number.isNaN(num) ? undefined : num
             }
         });
     };
 
     // --- Rating ---
-    const handleRatingChange = (field, val) => {
+    const handleRatingChange = (field: RatingField, val: string) => {
         const num = val === '' ? 0 : parseFloat(val);
         const currentRating = data.aggregateRating || { ratingValue: 5, ratingCount: 1 };
         updateData({
@@ -447,7 +401,7 @@ export default function RecipeBuilder({ value, onChange }) {
     };
 
     // --- Diet ---
-    const toggleDiet = (diet) => {
+    const toggleDiet = (diet: DietType) => {
         const current = data.suitableForDiet || [];
         const updated = current.includes(diet)
             ? current.filter(d => d !== diet)
@@ -559,12 +513,13 @@ export default function RecipeBuilder({ value, onChange }) {
                         <Button
                             onClick={() => {
                                 try {
-                                    const parsed = JSON.parse(jsonEditValue);
-                                    setData(parsed);
-                                    onChange(JSON.stringify(parsed, null, 2));
-                                    setJsonError('');
-                                } catch (e) {
-                                    setJsonError('Invalid JSON: ' + e.message);
+                                const parsed = JSON.parse(jsonEditValue) as Record<string, unknown>;
+                                const migrated = migrateRecipeData(parsed);
+                                setData(migrated);
+                                onChange(JSON.stringify(migrated, null, 2));
+                                setJsonError('');
+                            } catch (e) {
+                                setJsonError('Invalid JSON: ' + (e instanceof Error ? e.message : 'Unknown error'));
                                 }
                             }}
                         >
@@ -864,4 +819,3 @@ export default function RecipeBuilder({ value, onChange }) {
         </div>
     );
 }
-

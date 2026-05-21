@@ -6,6 +6,13 @@ import { ScrollArea } from '@/ui/scroll-area';
 import useEditorStore from '@admin/features/templates/store/useEditorStore';
 import { useUIStore } from '@admin/features/templates/store/useUIStore';
 import ConfirmationModal from '@/ui/confirmation-modal';
+import { toast } from 'sonner';
+
+interface FontItem {
+    name: string;
+    url: string;
+    filename: string;
+}
 
 /**
  * FontsPanel - Font management section for Text tab
@@ -16,11 +23,11 @@ const FontsPanel = () => {
     const { theme } = useUIStore();
     const isDark = theme === 'dark';
 
-    const [fonts, setFonts] = useState([]);
+    const [fonts, setFonts] = useState<FontItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const fileInputRef = useRef(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const customFonts = useEditorStore(state => state.customFonts);
     const addCustomFont = useEditorStore(state => state.addCustomFont);
@@ -71,7 +78,7 @@ const FontsPanel = () => {
     }, []);
 
     // Handle font upload
-    const handleUpload = async (e) => {
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -115,7 +122,12 @@ const FontsPanel = () => {
     };
 
     // Confirmation State
-    const [confirmState, setConfirmState] = useState({
+    const [confirmState, setConfirmState] = useState<{
+        isOpen: boolean;
+        data: FontItem | null;
+        title: string;
+        description: string;
+    }>({
         isOpen: false,
         data: null,
         title: '',
@@ -132,7 +144,7 @@ const FontsPanel = () => {
     };
 
     // Handle font delete
-    const executeDeleteFont = async (font) => {
+    const executeDeleteFont = async (font: FontItem) => {
         try {
             const response = await fetch(`/api/upload-font?filename=${encodeURIComponent(font.filename)}`, {
                 method: 'DELETE',
@@ -152,7 +164,7 @@ const FontsPanel = () => {
         }
     };
 
-    const handleDelete = (font) => {
+    const handleDelete = (font: FontItem) => {
         setConfirmState({
             isOpen: true,
             data: font,

@@ -74,7 +74,7 @@ export interface TextElement extends BaseElement {
   fontWeight?: string | number;
   fontStyle?: string;
   color?: string;
-  textAlign?: 'left' | 'center' | 'right';
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
   verticalAlign?: 'top' | 'middle' | 'bottom';
   lineHeight?: number;
   letterSpacing?: number;
@@ -151,6 +151,7 @@ export interface TemplateState {
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
+  elements_json?: string | EditorElement[] | null;
 }
 
 export interface HistoryState {

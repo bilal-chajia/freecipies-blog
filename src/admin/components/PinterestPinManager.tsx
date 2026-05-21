@@ -1,25 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, X, Star, GripVertical, Eye, Plus, Trash2, Edit2, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import ConfirmationModal from '@/ui/confirmation-modal';
+import api from '@admin/services/api-client';
 
-const PinterestPinManager = ({ articleId }) => {
-  const [pins, setPins] = useState([]);
-  const [boards, setBoards] = useState([]);
-const [saving, setSaving] = useState(false);
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, pinToDelete: null });
+type PinterestPin = {
+  id: string | number;
+  title: string;
+  description: string;
+  image_url: string;
+  image_alt?: string;
+  image_width: number;
+  image_height: number;
+  board_id?: string | number | null;
+  is_primary: boolean | number;
+  sort_order: number;
+};
+
+type PinterestBoard = {
+  id: string | number;
+  name: string;
+  is_active: boolean | number;
+};
+
+type PinFormData = {
+  title: string;
+  description: string;
+  image_url: string;
+  image_alt: string;
+  image_width: number;
+  image_height: number;
+  board_id: string;
+  is_primary: boolean;
+  sort_order: number;
+};
+
+type PinterestPinManagerProps = {
+  articleId?: string | number | null;
+};
+
+const emptyFormData: PinFormData = {
+  title: '',
+  description: '',
+  image_url: '',
+  image_alt: '',
+  image_width: 1000,
+  image_height: 1500,
+  board_id: '',
+  is_primary: false,
+  sort_order: 0
+};
+
+const PinterestPinManager = ({ articleId }: PinterestPinManagerProps) => {
+  const [pins, setPins] = useState<PinterestPin[]>([]);
+  const [boards, setBoards] = useState<PinterestBoard[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; pinToDelete: PinterestPin['id'] | null }>({ isOpen: false, pinToDelete: null });
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingPin, setEditingPin] = useState(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    image_url: '',
-    image_alt: '',
-    image_width: 1000,
-    image_height: 1500,
-    board_id: '',
-    is_primary: false,
-    sort_order: 0
-  });
+  const [editingPin, setEditingPin] = useState<PinterestPin | null>(null);
+  const [formData, setFormData] = useState<PinFormData>(emptyFormData);
 
   useEffect(() => {
     fetchBoards();
@@ -30,8 +69,8 @@ const [saving, setSaving] = useState(false);
 
   const fetchBoards = async () => {
     try {
-      const response = await fetch('/api/pinterest-boards');
-      const data = await response.json();
+      const response = await api.get('/pinterest-boards');
+      const data = response.data;
       setBoards(data.data?.boards || data.boards || []);
     } catch (error) {
       toast.error('Failed to load boards');
@@ -41,8 +80,8 @@ const [saving, setSaving] = useState(false);
   const fetchPins = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/pins?article_id=${articleId}`);
-      const data = await response.json();
+      const response = await api.get('/pins', { params: { article_id: articleId } });
+      const data = response.data;
       setPins(data.data?.pins || data.pins || []);
     } catch (error) {
       toast.error('Failed to load pins');
@@ -51,8 +90,8 @@ const [saving, setSaving] = useState(false);
     }
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -102,7 +141,7 @@ const [saving, setSaving] = useState(false);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!formData.title || !formData.description || !formData.image_url) {
@@ -113,32 +152,17 @@ const [saving, setSaving] = useState(false);
     try {
       setLoading(true);
 
-      const url = '/api/pins';
-      const method = editingPin ? 'PUT' : 'POST';
-
       const payload = editingPin
         ? { ...formData, id: editingPin.id }
         : { ...formData, article_id: articleId };
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      if (editingPin) {
+        await api.put('/pins', payload);
+      } else {
+        await api.post('/pins', payload);
+      }
 
-      if (!response.ok) throw new Error('Failed to save pin');
-
-      setFormData({
-        title: '',
-        description: '',
-        image_url: '',
-        image_alt: '',
-        image_width: 1000,
-        image_height: 1500,
-        board_id: '',
-        is_primary: false,
-        sort_order: 0
-      });
+      setFormData(emptyFormData);
       setShowAddForm(false);
       setEditingPin(null);
       await fetchPins();
@@ -151,7 +175,7 @@ const [saving, setSaving] = useState(false);
     }
   };
 
-  const handleEdit = (pin) => {
+  const handleEdit = (pin: PinterestPin) => {
     setEditingPin(pin);
     setFormData({
       title: pin.title,
@@ -160,14 +184,14 @@ const [saving, setSaving] = useState(false);
       image_alt: pin.image_alt || '',
       image_width: pin.image_width,
       image_height: pin.image_height,
-      board_id: pin.board_id || '',
+      board_id: pin.board_id ? String(pin.board_id) : '',
       is_primary: pin.is_primary === 1,
       sort_order: pin.sort_order
     });
     setShowAddForm(true);
   };
 
-  const handleDeletePin = (pinId) => {
+  const handleDeletePin = (pinId: PinterestPin['id']) => {
     setDeleteModal({ isOpen: true, pinToDelete: pinId });
   };
 
@@ -176,11 +200,7 @@ const [saving, setSaving] = useState(false);
     if (!pinId) return;
     try {
       setLoading(true);
-      const response = await fetch(`/api/pins?id=${pinId}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) throw new Error('Failed to delete pin');
+      await api.delete('/pins', { params: { id: pinId } });
       await fetchPins();
     } catch (error) {
       toast.error('Failed to delete pin');
@@ -190,22 +210,16 @@ const [saving, setSaving] = useState(false);
     }
   };
 
-  const handleSetPrimary = async (pinId) => {
+  const handleSetPrimary = async (pinId: PinterestPin['id']) => {
     const pin = pins.find(p => p.id === pinId);
     if (!pin) return;
 
     try {
       setLoading(true);
-      const response = await fetch('/api/pins', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...pin,
-          is_primary: true
-        })
+      await api.put('/pins', {
+        ...pin,
+        is_primary: true
       });
-
-      if (!response.ok) throw new Error('Failed to set primary pin');
       await fetchPins();
     } catch (error) {
       toast.error('Failed to set primary pin');
@@ -218,17 +232,7 @@ const [saving, setSaving] = useState(false);
   const cancelEdit = () => {
     setShowAddForm(false);
     setEditingPin(null);
-    setFormData({
-      title: '',
-      description: '',
-      image_url: '',
-      image_alt: '',
-      image_width: 1000,
-      image_height: 1500,
-      board_id: '',
-      is_primary: false,
-      sort_order: 0
-    });
+    setFormData(emptyFormData);
   };
 
   if (!articleId) {
@@ -463,7 +467,7 @@ const [saving, setSaving] = useState(false);
                     <Edit2 className="size-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(pin.id)}
+                    onClick={() => handleDeletePin(pin.id)}
                     className="flex-1 flex items-center justify-center p-2 rounded-md border border-border text-muted-foreground hover:bg-card hover:text-destructive transition-colors"
                     title="Delete pin"
                     disabled={loading}

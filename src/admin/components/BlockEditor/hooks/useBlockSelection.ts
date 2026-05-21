@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { CUSTOM_BLOCK_TYPES } from '../utils/constants';
+import { getEditorDomElement } from '../utils/editorView';
 
 interface BlockSelectionProps {
     editor: Record<string, unknown> | null;
@@ -28,10 +29,14 @@ export function useBlockSelection({
     onForceSelectHandled,
     moveActionBlockIdRef,
 }: BlockSelectionProps) {
+    const onSelectedBlockChangeRef = useRef(onSelectedBlockChange);
+    const onForceSelectHandledRef = useRef(onForceSelectHandled);
     const activeBlockIdRef = useRef(activeBlockId);
     const toolbarActionBlockIdRef = useRef<string | null>(null);
     const lastPointerBlockIdRef = useRef<string | null>(null);
 
+    useEffect(() => { onSelectedBlockChangeRef.current = onSelectedBlockChange; }, [onSelectedBlockChange]);
+    useEffect(() => { onForceSelectHandledRef.current = onForceSelectHandled; }, [onForceSelectHandled]);
     useEffect(() => { activeBlockIdRef.current = activeBlockId; }, [activeBlockId]);
 
     // Main selection change handler
@@ -57,7 +62,7 @@ export function useBlockSelection({
                 const moveBlock = (editor as Record<string, (id: string) => unknown>).getBlock?.(moveId) || null;
                 if (moveBlock) {
                     setActiveBlockId(moveId);
-                    onSelectedBlockChange?.(moveBlock as Record<string, unknown>);
+                    onSelectedBlockChangeRef.current?.(moveBlock as Record<string, unknown>);
                     if (!CUSTOM_BLOCK_TYPES.has((moveBlock as Record<string, string>).type)) {
                         requestAnimationFrame(() => {
                             try { (editor as Record<string, (id: string, pos: string) => void>).setTextCursorPosition?.(moveId, 'start'); } catch {}
@@ -73,59 +78,88 @@ export function useBlockSelection({
                 const toolbarBlock = (editor as Record<string, (id: string) => unknown>).getBlock?.(toolbarId) || null;
                 if (toolbarBlock) {
                     setActiveBlockId(toolbarId);
-                    onSelectedBlockChange?.(toolbarBlock as Record<string, unknown>);
+                    onSelectedBlockChangeRef.current?.(toolbarBlock as Record<string, unknown>);
                     toolbarActionBlockIdRef.current = null;
                     return;
                 }
                 toolbarActionBlockIdRef.current = null;
             }
 
-            // Priority 3: Focus outside editor — preserve current selection
+            // Priority 3: Active Block Focus/Click Lock
+            const currentActiveId = activeBlockIdRef.current;
             const activeElement = document.activeElement;
             const editorWrapper = wrapperRef.current;
+
+            if (currentActiveId && editorWrapper) {
+                const activeBlockDom = editorWrapper.querySelector(`[data-block="${currentActiveId}"]`);
+                
+                // If focus is inside the currently selected custom block's DOM subtree, strictly lock selection!
+                if (activeBlockDom && activeElement instanceof HTMLElement) {
+                    if (activeBlockDom === activeElement || activeBlockDom.contains(activeElement)) {
+                        return; // Lock and preserve selection
+                    }
+                }
+                
+                // If the pointer just clicked inside the active custom block, preserve the selection
+                if (lastPointerBlockIdRef.current === currentActiveId) {
+                    return; // Lock and preserve selection
+                }
+            }
+
+            // Priority 4: Focus inside custom block form controls (when focusing/clicking a block not yet active)
             if (activeElement instanceof HTMLElement && editorWrapper) {
-                if (!editorWrapper.contains(activeElement)) {
-                    const currentActiveId = activeBlockIdRef.current;
-                    if (currentActiveId && (editor as Record<string, (id: string) => unknown>).getBlock?.(currentActiveId)) {
-                        let cursorBlock = null;
-                        try { cursorBlock = (editor as Record<string, () => { block: Record<string, unknown> }>).getTextCursorPosition?.().block; } catch {}
-                        if (cursorBlock && cursorBlock.id !== currentActiveId) {
-                            setActiveBlockId(cursorBlock.id);
-                            onSelectedBlockChange?.(cursorBlock);
+                const customBlock = activeElement.closest('.wp-block--custom');
+                if (customBlock) {
+                    const customBlockId = customBlock.getAttribute('data-block');
+                    if (customBlockId) {
+                        if (currentActiveId !== customBlockId) {
+                            setActiveBlockId(customBlockId);
+                            const block = (editor as Record<string, (id: string) => unknown>).getBlock?.(customBlockId) || null;
+                            if (block) {
+                                onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
+                            }
                         }
                         return;
                     }
                 }
             }
 
-            // Priority 4: Pointer-down on custom block
+            // Priority 5: Pointer-down manual selection
             const manualId = lastPointerBlockIdRef.current;
             if (manualId) {
                 const manualBlock = (editor as Record<string, (id: string) => unknown>).getBlock?.(manualId) || null;
                 setActiveBlockId(manualId);
-                onSelectedBlockChange?.(manualBlock as Record<string, unknown> | null);
+                onSelectedBlockChangeRef.current?.(manualBlock as Record<string, unknown> | null);
                 lastPointerBlockIdRef.current = null;
                 return;
             }
 
-            // Priority 5: Natural cursor position
+            // Priority 6: Focus completely outside the editor (e.g. sidebar, page title input)
+            // Preserve the active block instead of falling back to natural cursor
+            if (activeElement instanceof HTMLElement && editorWrapper && !editorWrapper.contains(activeElement)) {
+                return;
+            }
+
+            // Priority 7: Natural cursor position
             let block: Record<string, unknown> | null = null;
-            try { block = (editor as Record<string, () => { block: Record<string, unknown> }>).getTextCursorPosition?.().block; } catch {
+            try { 
+                block = (editor as Record<string, () => { block: Record<string, unknown> }>).getTextCursorPosition?.().block; 
+            } catch {
                 const domId = getBlockIdFromDom();
                 if (domId) {
                     const domBlock = (editor as Record<string, (id: string) => unknown>).getBlock?.(domId) || null;
                     setActiveBlockId(domId);
-                    onSelectedBlockChange?.(domBlock as Record<string, unknown> | null);
+                    onSelectedBlockChangeRef.current?.(domBlock as Record<string, unknown> | null);
                     lastPointerBlockIdRef.current = null;
                     return;
                 }
             }
 
             const nextBlockId = block?.id as string | undefined || null;
-            if (nextBlockId !== activeBlockId) {
+            if (nextBlockId !== currentActiveId) {
                 if (forceSelectBlockId && nextBlockId && nextBlockId !== forceSelectBlockId) return;
                 setActiveBlockId(nextBlockId);
-                onSelectedBlockChange?.(block || null);
+                onSelectedBlockChangeRef.current?.(block || null);
             }
             lastPointerBlockIdRef.current = null;
         };
@@ -133,9 +167,9 @@ export function useBlockSelection({
         handleSelection();
         const unsubscribe = (editor as Record<string, (cb: () => void) => (() => void) | void>).onSelectionChange?.(handleSelection);
         return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
-    }, [editor, onSelectedBlockChange, activeBlockId, forceSelectBlockId]);
+    }, [editor, activeBlockId, forceSelectBlockId]);
 
-    // PointerDown handler for custom blocks, move buttons, toolbar
+    // PointerDown and FocusIn handlers for custom blocks, move buttons, toolbar
     useEffect(() => {
         const wrapper = wrapperRef.current;
         if (!wrapper) return undefined;
@@ -165,7 +199,7 @@ export function useBlockSelection({
                     if (blockId !== activeBlockId) {
                         const block = (editor as Record<string, (id: string) => unknown> | null)?.getBlock?.(blockId);
                         setActiveBlockId(blockId);
-                        if (block) onSelectedBlockChange?.(block as Record<string, unknown>);
+                        if (block) onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
                     }
                     return;
                 }
@@ -173,9 +207,30 @@ export function useBlockSelection({
             lastPointerBlockIdRef.current = null;
         };
 
+        const handleFocusIn = (event: FocusEvent) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+
+            const customBlock = target.closest('.wp-block--custom');
+            if (customBlock) {
+                const blockId = customBlock.getAttribute('data-block');
+                if (blockId) {
+                    if (blockId !== activeBlockIdRef.current) {
+                        setActiveBlockId(blockId);
+                        const block = (editor as Record<string, (id: string) => unknown> | null)?.getBlock?.(blockId);
+                        if (block) onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
+                    }
+                }
+            }
+        };
+
         wrapper.addEventListener('pointerdown', handlePointerDown, true);
-        return () => wrapper.removeEventListener('pointerdown', handlePointerDown, true);
-    }, [activeBlockId, editor, onSelectedBlockChange]);
+        wrapper.addEventListener('focusin', handleFocusIn, true);
+        return () => {
+            wrapper.removeEventListener('pointerdown', handlePointerDown, true);
+            wrapper.removeEventListener('focusin', handleFocusIn, true);
+        };
+    }, [activeBlockId, editor]);
 
     // Force select from parent (e.g. List View click)
     useEffect(() => {
@@ -184,21 +239,21 @@ export function useBlockSelection({
         const block = (editor as Record<string, (id: string) => unknown>).getBlock?.(forceSelectBlockId) || null;
         if (block) {
             setActiveBlockId(forceSelectBlockId);
-            onSelectedBlockChange?.(block as Record<string, unknown>);
+            onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
             try {
                 const currentPos = (editor as Record<string, () => { block?: { id: string } }>).getTextCursorPosition?.();
                 if (currentPos?.block?.id !== forceSelectBlockId) {
                     (editor as Record<string, (id: string, pos: string) => void>).setTextCursorPosition?.(forceSelectBlockId, 'start');
                 }
             } catch {}
-            onForceSelectHandled?.();
+            onForceSelectHandledRef.current?.();
         }
-    }, [forceSelectBlockId, editor, activeBlockId, onSelectedBlockChange, onForceSelectHandled]);
+    }, [forceSelectBlockId, editor, activeBlockId]);
 
     // Data-selected attribute sync
     useEffect(() => {
-        if (!(editor as Record<string, HTMLElement | null> | null)?.domElement) return;
-        const root = (editor as Record<string, HTMLElement>).domElement;
+        const root = getEditorDomElement(editor);
+        if (!root) return;
         const prev = root.querySelector('[data-selected="true"]');
         if (prev) prev.removeAttribute('data-selected');
         if (activeBlockId) {
@@ -215,12 +270,13 @@ export function useBlockSelection({
 
     // Prevent link navigation inside editor
     useEffect(() => {
-        if (!(editor as Record<string, HTMLElement | null> | null)?.domElement) return;
+        const editorDom = getEditorDomElement(editor);
+        if (!editorDom) return;
         const handle = (event: MouseEvent) => {
             const target = event.target;
             if (!(target instanceof HTMLElement)) return;
             const link = target.closest('a');
-            if (!link || !(editor as Record<string, HTMLElement>).domElement.contains(link)) return;
+            if (!link || !editorDom.contains(link)) return;
             event.preventDefault();
             event.stopPropagation();
         };

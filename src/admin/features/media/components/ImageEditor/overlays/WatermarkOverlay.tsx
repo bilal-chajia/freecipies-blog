@@ -1,5 +1,19 @@
 import React from 'react';
 
+interface WatermarkOverlayProps {
+    watermarkType: string;
+    watermarkOpacity: number;
+    watermarkRepeat: string;
+    watermarkPosition: string;
+    watermarkScale: number;
+    watermarkRotation: number;
+    watermarkSpacingH: number;
+    watermarkSpacingV: number;
+    customWatermark: HTMLImageElement | null;
+    aspect: number | null;
+    watermarkDensity: number;
+}
+
 const WatermarkOverlay = ({
     watermarkType,
     watermarkOpacity,
@@ -11,9 +25,11 @@ const WatermarkOverlay = ({
     watermarkSpacingV,
     customWatermark,
     aspect,
-    watermarkDensity // Keeping this prop although not explicitly used in the logic below, it was in state
-}) => {
+    watermarkDensity
+}: WatermarkOverlayProps) => {
     if (watermarkType === 'none') return null;
+
+    const safeAspect = aspect ?? 1;
 
     return (
         <div
@@ -25,9 +41,9 @@ const WatermarkOverlay = ({
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 // Match the crop area's aspect ratio and max dimensions
-                width: aspect >= 1 ? 'auto' : `calc(min(100%, 100vh * ${aspect}))`,
-                height: aspect >= 1 ? `calc(min(100%, 100vw / ${aspect}))` : 'auto',
-                aspectRatio: aspect || 1,
+                width: safeAspect >= 1 ? 'auto' : `calc(min(100%, 100vh * ${safeAspect}))`,
+                height: safeAspect >= 1 ? `calc(min(100%, 100vw / ${safeAspect}))` : 'auto',
+                aspectRatio: safeAspect,
                 maxWidth: '100%',
                 maxHeight: '100%',
                 opacity: watermarkOpacity,

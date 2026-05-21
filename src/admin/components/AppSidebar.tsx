@@ -59,8 +59,9 @@ import {
 } from "@/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/ui/avatar";
 import { useUIStore, useAuthStore } from "../store/useStore";
+import { clearAllAdminCache } from "../services/api-client";
 
-const itemStyles = {
+const itemStyles: Record<string, string> = {
   Dashboard: "text-blue-600",
   Homepage: "text-teal-600",
   Content: "text-slate-600",
@@ -163,11 +164,13 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
   };
 
   // Check if any item in a group is active
-  const isGroupActive = (items: NavItem[]): boolean => items.some((item) => isActive(item.url));
+  const isGroupActive = (items: NavItem[]): boolean =>
+    items.some((item) => isActive(item.url) || (item.items ? isGroupActive(item.items) : false));
 
   const handleLogout = () => {
     clearAuth();
     localStorage.removeItem("admin_token");
+    clearAllAdminCache();
     navigate("/login", { replace: true });
   };
 
@@ -211,7 +214,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                           isActive={isActive(item.url)}
                           tooltip={item.title}
                         >
-                          <Link to={item.url}>
+                            <Link to={item.url ?? "#"}>
                             <item.icon className={itemStyles[item.title]} />
                             <span>{item.title}</span>
                           </Link>
@@ -271,7 +274,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                                     {item.items.map((subItem) => (
                                       <SidebarMenuSubItem key={subItem.title}>
                                         <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                                          <Link to={subItem.url}>
+                                          <Link to={subItem.url ?? "#"}>
                                             <subItem.icon className={`h-3.5 w-3.5 ${itemStyles[subItem.title] || ""}`} />
                                             <span>{subItem.title}</span>
                                           </Link>
@@ -289,7 +292,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                                 asChild
                                 isActive={isActive(item.url)}
                               >
-                                <Link to={item.url}>
+                                <Link to={item.url ?? "#"}>
                                 <item.icon className={itemStyles[item.title]} />
                                   <span>{item.title}</span>
                                 </Link>

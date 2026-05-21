@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getBlockInfo, getNearestBlockPos } from '@blocknote/core';
+import { getEditorDomElement, getEditorProseMirrorView } from '../utils/editorView';
 
 interface InsertHandleState {
     blockId: string;
@@ -24,8 +25,9 @@ export function useInsertHandle({ editor, wrapperRef, canvasRef }: InsertHandleP
     const [insertHandle, setInsertHandle] = useState<InsertHandleState | null>(null);
 
     useEffect(() => {
-        if (!(editor as Record<string, unknown> | null)?.prosemirrorView || !wrapperRef.current) return;
-        const root = (editor as Record<string, { dom?: HTMLElement }>).prosemirrorView?.dom || (editor as Record<string, HTMLElement | null>).domElement;
+        const prosemirrorView = getEditorProseMirrorView<{ dom?: HTMLElement }>(editor);
+        if (!prosemirrorView || !wrapperRef.current) return;
+        const root = prosemirrorView.dom || getEditorDomElement(editor);
         const wrapper = wrapperRef.current;
         const canvas = canvasRef.current;
 
@@ -74,25 +76,30 @@ export function useInsertHandle({ editor, wrapperRef, canvasRef }: InsertHandleP
             const edgeThreshold = 25;
 
             if (!blockId || !rect) {
-                const view = (editor as Record<string, { posAtCoords?: (coords: { left: number; top: number }) => { pos: number } | null }>).prosemirrorView;
+                const view = getEditorProseMirrorView<{
+                    state: { doc: Parameters<typeof getNearestBlockPos>[0] };
+                    nodeDOM: (pos: number) => unknown;
+                    domAtPos: (pos: number) => { node: unknown };
+                    posAtCoords?: (coords: { left: number; top: number }) => { pos: number } | null;
+                }>(editor);
                 const coords = view?.posAtCoords?.({
                     left: event.clientX,
                     top: event.clientY,
                 });
-                if (!coords) {
+                if (!coords || !view) {
                     if (!isOverButton && !hideTimeout) {
                         hideTimeout = setTimeout(() => { setInsertHandle(null); hideTimeout = null; }, 400);
                     }
                     return;
                 }
-                const nearest = getNearestBlockPos((view as unknown as { state: { doc: unknown } }).state.doc, coords.pos);
+                const nearest = getNearestBlockPos(view.state.doc, coords.pos);
                 if (!nearest) {
                     if (!isOverButton && !hideTimeout) {
                         hideTimeout = setTimeout(() => { setInsertHandle(null); hideTimeout = null; }, 400);
                     }
                     return;
                 }
-                const info = getBlockInfo(nearest);
+                const info = getBlockInfo(nearest) as { bnBlock: { beforePos: number; node?: { attrs?: Record<string, string> } } } | undefined;
                 blockId = (info?.bnBlock?.node?.attrs as Record<string, string> | undefined)?.id || null;
 
                 if (blockId) {
@@ -103,15 +110,15 @@ export function useInsertHandle({ editor, wrapperRef, canvasRef }: InsertHandleP
                     }
                 }
 
-                if (!blockId) {
+                if (!blockId || !info) {
                     if (!isOverButton && !hideTimeout) {
                         hideTimeout = setTimeout(() => { setInsertHandle(null); hideTimeout = null; }, 400);
                     }
                     return;
                 }
-                let dom = (view as unknown as { nodeDOM: (pos: number) => unknown }).nodeDOM((info as unknown as { bnBlock: { beforePos: number } }).bnBlock.beforePos + 1) || (view as unknown as { nodeDOM: (pos: number) => unknown }).nodeDOM((info as unknown as { bnBlock: { beforePos: number } }).bnBlock.beforePos);
+                let dom = (view.nodeDOM(info.bnBlock.beforePos + 1) || view.nodeDOM(info.bnBlock.beforePos)) as HTMLElement | null | undefined;
                 if (!(dom instanceof HTMLElement)) {
-                    const domAtPos = (view as unknown as { domAtPos: (pos: number) => { node: unknown } }).domAtPos(coords.pos).node;
+                    const domAtPos = view.domAtPos(coords.pos).node;
                     dom = domAtPos instanceof HTMLElement ? domAtPos.closest('.bn-block-content') : null;
                 }
                 if (!(dom instanceof HTMLElement)) {

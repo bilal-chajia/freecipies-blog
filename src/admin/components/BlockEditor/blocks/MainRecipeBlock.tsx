@@ -5,6 +5,7 @@ import RecipeBuilder from "../../RecipeBuilder";
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
 import { useBlockSelection } from '../selection-context';
+import { useBlockEditorSourceData } from '../source-data-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 
 /**
@@ -27,6 +28,12 @@ export const MainRecipeBlock = createReactBlockSpec(
   {
     render: (props) => {
       const { block, editor } = props;
+      const { recipeJson, onRecipeChange } = useBlockEditorSourceData();
+      const currentRecipeJson = typeof recipeJson === 'string'
+        ? recipeJson
+        : recipeJson
+          ? JSON.stringify(recipeJson)
+          : block.props.recipeJson;
       const { isSelected, selectBlock } = useBlockSelection(block.id);
       const {
         moveUp: moveBlockUp,
@@ -44,20 +51,13 @@ export const MainRecipeBlock = createReactBlockSpec(
         isDragging,
       } = useBlockDragHandle(block.id);
 
-      // Parse recipe from props
-      let recipe = null;
-      try {
-        recipe = block.props.recipeJson ? JSON.parse(block.props.recipeJson) : null;
-      } catch {
-        recipe = null;
-      }
-
-      const handleChange = (newValue) => {
+      const handleChange = (newValue: string) => {
+        onRecipeChange?.(newValue);
         editor.updateBlock(block, {
           type: 'mainRecipe',
           props: {
             ...block.props,
-            recipeJson: JSON.stringify(newValue),
+            recipeJson: newValue,
           },
         });
       };
@@ -93,7 +93,7 @@ export const MainRecipeBlock = createReactBlockSpec(
         >
           <div className="wp-main-recipe-block border border-border rounded-lg p-4 bg-card shadow-sm">
             <RecipeBuilder
-              value={recipe}
+              value={currentRecipeJson}
               onChange={handleChange}
             />
           </div>

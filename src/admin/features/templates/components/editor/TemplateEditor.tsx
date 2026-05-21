@@ -354,7 +354,7 @@ const TemplateEditor: React.FC = () => {
                     toast.success('Template created!');
                 }
             } else {
-                response = await templatesAPI.update(template.slug, templateData);
+                response = await templatesAPI.update(template.slug || '', templateData);
                 saveSuccess = response.data?.success !== false;
                 if (saveSuccess) {
                     // Upload thumbnail for existing templates

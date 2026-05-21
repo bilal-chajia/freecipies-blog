@@ -9,15 +9,22 @@ import type { AppBlock } from '../../types/editor.types';
 export const MainRecipeAdapter: BlockAdapter<MainRecipeBlockType> = {
   type: 'main_recipe',
 
-  toEditor(): Partial<AppBlock> {
+  toEditor(_block, context): Partial<AppBlock> {
+    const recipeJson = typeof context?.recipeJson === 'string'
+      ? context.recipeJson
+      : JSON.stringify(context?.recipeJson ?? {});
+
     return {
       type: 'mainRecipe',
-      props: {},
+      props: {
+        recipeJson,
+      },
     };
   },
 
-  fromEditor(): MainRecipeBlockType {
+  fromEditor(block: AppBlock): MainRecipeBlockType {
     return {
+      ...(typeof block.id === 'string' ? { id: block.id } : {}),
       type: 'main_recipe',
     };
   },

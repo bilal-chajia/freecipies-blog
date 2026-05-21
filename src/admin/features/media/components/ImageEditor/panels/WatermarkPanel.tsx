@@ -6,6 +6,28 @@ import { Separator } from '@/ui/separator';
 import { Grid3X3, Square, Image as ImageIcon } from 'lucide-react';
 import { WATERMARK_POSITIONS } from '../constants';
 
+interface WatermarkPanelProps {
+    watermarkType: string;
+    watermarkRepeat: string;
+    watermarkPosition: string;
+    watermarkScale: number;
+    watermarkOpacity: number;
+    watermarkRotation: number;
+    watermarkSpacingH: number;
+    watermarkSpacingV: number;
+    fileInputRef: React.RefObject<HTMLInputElement | null>;
+    onWatermarkTypeChange: (type: string) => void;
+    onWatermarkRepeatChange: (repeat: string) => void;
+    onWatermarkPositionChange: (position: string) => void;
+    onWatermarkScaleChange: (scale: number) => void;
+    onWatermarkOpacityChange: (opacity: number) => void;
+    onWatermarkRotationChange: (rotation: number) => void;
+    onWatermarkSpacingHChange: (spacing: number) => void;
+    onWatermarkSpacingVChange: (spacing: number) => void;
+    onWatermarkUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    saveToHistory: () => void;
+}
+
 /**
  * WatermarkPanel - Handles watermark settings
  */
@@ -29,7 +51,7 @@ const WatermarkPanel = ({
     onWatermarkSpacingVChange,
     onWatermarkUpload,
     saveToHistory
-}) => {
+}: WatermarkPanelProps) => {
     return (
         <div className="space-y-4">
             <div className="space-y-2">

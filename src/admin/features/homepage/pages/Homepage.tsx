@@ -20,13 +20,14 @@ import {
   SeoSection
 } from './sections';
 import { toast } from 'sonner';
+import type { HomepageFormData } from '../types';
 
 const Homepage = () => {
   const { section = 'hero' } = useParams();
   const { homepage, loading, error, setHomepage } = useHomepageStore();
   const [saving, setSaving] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<HomepageFormData>({
     // Hero Section
     hero: {
       enabled: true,
@@ -128,15 +129,15 @@ const Homepage = () => {
   // Load homepage settings
   useEffect(() => {
     if (homepage && Object.keys(homepage).length > 0) {
-      setFormData(prev => ({ ...prev, ...homepage }));
+      setFormData(prev => ({ ...prev, ...(homepage as Partial<HomepageFormData>) }));
     }
   }, [homepage]);
 
-  const handleNestedInputChange = (sectionKey, field, value) => {
+  const handleNestedInputChange = (sectionKey: keyof HomepageFormData, field: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [sectionKey]: {
-        ...prev[sectionKey],
+        ...(prev[sectionKey] as Record<string, unknown>),
         [field]: value
       }
     }));

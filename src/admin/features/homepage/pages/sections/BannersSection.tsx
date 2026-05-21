@@ -10,7 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/ui/switch';
 import { Label } from '@/ui/label';
 
-const BannerConfig = ({ banner, bannerKey, formData, handleBannerChange }) => (
+import type { BannerConfigData, HomepageFormData, HomepageSectionProps } from '../../types';
+
+interface BannerConfigProps {
+    banner: BannerConfigData;
+    bannerKey: 'banner1' | 'banner2';
+    formData: HomepageFormData;
+    handleBannerChange: (bannerKey: 'banner1' | 'banner2', field: keyof BannerConfigData, value: unknown) => void;
+}
+
+const BannerConfig = ({ banner, bannerKey, formData, handleBannerChange }: BannerConfigProps) => (
     <div className="space-y-3 p-3 rounded-md border border-border/40 bg-muted/20">
         <div className="flex items-center justify-between">
             <Label className="text-xs font-semibold">Banner {bannerKey === 'banner1' ? '1' : '2'}</Label>
@@ -100,8 +109,8 @@ const BannerConfig = ({ banner, bannerKey, formData, handleBannerChange }) => (
     </div>
 );
 
-const BannersSection = ({ formData, handleNestedInputChange }) => {
-    const handleBannerChange = (bannerKey, field, value) => {
+const BannersSection = ({ formData, handleNestedInputChange }: HomepageSectionProps) => {
+    const handleBannerChange = (bannerKey: 'banner1' | 'banner2', field: keyof BannerConfigData, value: unknown) => {
         handleNestedInputChange('banners', bannerKey, {
             ...formData.banners[bannerKey],
             [field]: value

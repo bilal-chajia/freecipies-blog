@@ -18,7 +18,7 @@ interface ConfirmUploadInput {
   name?: string;
   altText?: string;
   caption?: string;
-  credit?: string;
+  credit?: Record<string, unknown> | null;
   aspectRatio?: string | null;
   focalPoint?: { x: number; y: number };
   mimeType?: string;
@@ -144,7 +144,7 @@ export const equipmentAPI = {
 /*  MEDIA API                                                         */
 /* ------------------------------------------------------------------ */
 
-interface UploadVariantOptions {
+export interface UploadVariantOptions {
   filename?: string;
   variantName: string;
   baseName: string;

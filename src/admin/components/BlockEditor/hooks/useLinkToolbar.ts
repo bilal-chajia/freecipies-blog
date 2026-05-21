@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { getEditorDomElement } from '../utils/editorView';
 
 interface LinkToolbarState {
     open: boolean;
@@ -32,7 +33,7 @@ export function useLinkToolbar({ editor, wrapperRef, activeBlockId }: LinkToolba
         mode: 'buttons',
     });
     const linkToolbarRef = useRef(linkToolbar);
-    const [activeStyles, setActiveStyles] = useState<Record<string, boolean>>({});
+    const [activeStyles, setActiveStyles] = useState<Record<string, boolean | string>>({});
 
     useEffect(() => { linkToolbarRef.current = linkToolbar; }, [linkToolbar]);
 
@@ -56,7 +57,8 @@ export function useLinkToolbar({ editor, wrapperRef, activeBlockId }: LinkToolba
                 return;
             }
             const anchorNode = selection.anchorNode;
-            if (anchorNode && (editor as Record<string, HTMLElement | null>).domElement && !(editor as Record<string, HTMLElement | null>).domElement!.contains(anchorNode)) {
+            const editorDom = getEditorDomElement(editor);
+            if (anchorNode && editorDom && !editorDom.contains(anchorNode)) {
                 setLinkToolbar((prev) => (prev.open ? { ...prev, open: false, mode: 'buttons', selection: null } : prev));
                 setActiveStyles({});
                 return;
@@ -79,7 +81,7 @@ export function useLinkToolbar({ editor, wrapperRef, activeBlockId }: LinkToolba
             const left = rect.left - wrapperRect.left + rect.width / 2;
             const top = rect.top - wrapperRect.top - 10;
             const url = (editor as Record<string, () => string>).getSelectedLinkUrl?.() || '';
-            const selectionState = (editor as Record<string, { _tiptapEditor?: { state?: { selection?: { from: number; to: number } } } }>)._tiptapEditor?.state?.selection;
+            const selectionState = (editor as { _tiptapEditor?: { state?: { selection?: { from: number; to: number } } } })._tiptapEditor?.state?.selection;
             const selectionRange = selectionState ? { from: selectionState.from, to: selectionState.to } : null;
             setLinkToolbar({
                 open: true,
@@ -90,7 +92,7 @@ export function useLinkToolbar({ editor, wrapperRef, activeBlockId }: LinkToolba
                 selection: selectionRange,
                 mode: 'buttons',
             });
-            setActiveStyles((editor as Record<string, () => Record<string, boolean>>).getActiveStyles?.() || {});
+            setActiveStyles((editor as Record<string, () => Record<string, boolean | string>>).getActiveStyles?.() || {});
         };
 
         handleSelection();

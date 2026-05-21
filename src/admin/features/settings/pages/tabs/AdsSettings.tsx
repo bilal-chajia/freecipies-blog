@@ -55,7 +55,7 @@ interface AdSettingsConfig {
     targetByTags: boolean;
 }
 
-interface AdsFormData {
+interface AdsFormData extends Record<string, unknown> {
     adsEnabled: boolean;
     adNetwork: string;
     ezoic: EzoicConfig;
@@ -71,7 +71,7 @@ interface AdsSettingsProps {
 }
 
 const AdsSettings = ({ formData, handleInputChange }: AdsSettingsProps) => {
-    const fd = formData as unknown as AdsFormData;
+    const fd = formData as AdsFormData;
 
     return (
         <div className="space-y-6">

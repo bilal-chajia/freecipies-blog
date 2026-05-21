@@ -2,7 +2,7 @@
 import type { HydratedArticle } from "@modules/articles";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import RatingSystem from "./content/RatingSystem";
-import { normalizeRecipeForRender } from "@site/utils/recipe-render";
+import { parseCachedRecipe, parseCachedRating } from "@modules/articles/utils/cached-fields";
 import FormattedDate from "./FormattedDate.astro";
 
 
@@ -36,16 +36,15 @@ const image = {
   style: selected.imageStyle,
 };
 
-// Parse recipeJson if it's a string
-const recipe = normalizeRecipeForRender('recipeJson' in article && article.recipeJson
-  ? typeof article.recipeJson === "string"
-    ? JSON.parse(article.recipeJson)
-    : article.recipeJson
-  : null);
+const cachedRecipe = parseCachedRecipe(article.cachedRecipeJson);
+const cachedRating = parseCachedRating(article.cachedRatingJson);
 
-const ratingValue = recipe?.aggregate_rating?.rating_value ?? null;
-const ratingCount = recipe?.aggregate_rating?.rating_count ?? 0;
+const ratingValue = cachedRating?.rating_value ?? cachedRating?.ratingValue ?? null;
+const ratingCount = cachedRating?.rating_count ?? cachedRating?.ratingCount ?? 0;
 const hasRating = ratingValue !== null && ratingCount > 0;
+
+const prep = cachedRecipe?.prep_time_minutes ?? cachedRecipe?.prepTimeMinutes ?? null;
+const recipe = cachedRecipe ? { prep } : null;
 const authorLabel = article.authorName || article.authorSlug || "Unknown";
 const showBookmark = article.type === "recipe";
 ---

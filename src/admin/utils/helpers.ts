@@ -102,6 +102,7 @@ interface VariantEntry {
   height?: number;
   url: string;
   size_bytes?: number;
+  sizeBytes?: number;
 }
 
 interface NormalizedVariant {
@@ -131,7 +132,7 @@ const normalizeVariantEntry = (variant: VariantEntry | null | undefined): Normal
     url: variant.url,
   };
 
-  const sizeBytes = variant.size_bytes ?? (variant as Record<string, unknown>).sizeBytes;
+  const sizeBytes = variant.size_bytes ?? variant.sizeBytes;
   if (typeof sizeBytes === 'number') {
     result.size_bytes = sizeBytes;
   }
@@ -208,7 +209,7 @@ export const buildImageSlotFromMedia = (item: MediaItem | null | undefined, over
   }
 
   const alt = overrides.alt ?? item?.altText ?? item?.alt ?? '';
-  const placeholder = overrides.placeholder ?? (parsed as Record<string, unknown>)?.placeholder ?? item?.placeholder ?? '';
+  const placeholder = (overrides.placeholder ?? (parsed as Record<string, unknown>)?.placeholder ?? item?.placeholder ?? '') as string;
   const aspectRatio = overrides.aspectRatio ?? item?.aspectRatio ?? item?.aspect_ratio;
   const focalPointRaw = overrides.focal_point ?? item?.focalPointJson ?? item?.focal_point_json;
   const focalPoint = ((): FocalPoint | undefined => {
@@ -376,11 +377,12 @@ export const sortByKey = <T extends SortableByKey>(arr: T[], key: keyof T, order
   return [...arr].sort((a, b) => {
     const aVal = a[key];
     const bVal = b[key];
-    if (order === 'asc') {
-      return aVal > bVal ? 1 : -1;
-    } else {
-      return aVal < bVal ? 1 : -1;
-    }
+    if (aVal == null) return order === 'asc' ? 1 : -1;
+    if (bVal == null) return order === 'asc' ? -1 : 1;
+    if (aVal === bVal) return 0;
+    return order === 'asc'
+      ? (aVal as any) > (bVal as any) ? 1 : -1
+      : (aVal as any) < (bVal as any) ? 1 : -1;
   });
 };
 

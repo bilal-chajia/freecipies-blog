@@ -9,4 +9,5 @@
 
 export { default as ImagePickerField } from './ImagePickerField';
 export { default as ArticlePicker } from './ArticlePicker';
+export type { ArticlePickerValue, ArticlePickerProps } from './ArticlePicker';
 export { default as LinkSelector } from './LinkSelector';

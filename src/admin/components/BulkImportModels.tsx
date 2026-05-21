@@ -20,11 +20,41 @@ import {
 } from '@/ui/dialog';
 import api from '@/services/api';
 
-export function BulkImportModels({ provider, onSuccess, iconOnly = false }) {
+type BulkImportModelsProps = {
+    provider: string;
+    onSuccess?: () => void | Promise<void>;
+    iconOnly?: boolean;
+};
+
+type ImportModelInput = {
+    id: string;
+    name: string;
+    description?: string;
+    contextWindow?: number;
+    maxTokens?: number;
+};
+
+type ImportResult = {
+    type: 'success' | 'warning' | 'error';
+    message: string;
+    errors?: string[];
+};
+
+type ApiErrorLike = {
+    message?: string;
+};
+
+function isImportModelInput(value: unknown): value is ImportModelInput {
+    if (!value || typeof value !== 'object') return false;
+    const model = value as Partial<ImportModelInput>;
+    return typeof model.id === 'string' && typeof model.name === 'string';
+}
+
+export function BulkImportModels({ provider, onSuccess, iconOnly = false }: BulkImportModelsProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [importing, setImporting] = useState(false);
     const [jsonInput, setJsonInput] = useState('');
-    const [result, setResult] = useState(null);
+    const [result, setResult] = useState<ImportResult | null>(null);
 
     const exampleJson = JSON.stringify([
         {
@@ -48,7 +78,7 @@ export function BulkImportModels({ provider, onSuccess, iconOnly = false }) {
 
         try {
             // Parse JSON
-            const models = JSON.parse(jsonInput);
+            const models = JSON.parse(jsonInput) as unknown;
 
             if (!Array.isArray(models)) {
                 setResult({
@@ -60,7 +90,7 @@ export function BulkImportModels({ provider, onSuccess, iconOnly = false }) {
 
             // Validate each model
             for (const model of models) {
-                if (!model.id || !model.name) {
+                if (!isImportModelInput(model)) {
                     setResult({
                         type: 'error',
                         message: 'Each model must have "id" and "name" fields'
@@ -74,9 +104,10 @@ export function BulkImportModels({ provider, onSuccess, iconOnly = false }) {
             // Import each model
             let successCount = 0;
             let errorCount = 0;
-            const errors = [];
+            const errors: string[] = [];
 
             for (const model of models) {
+                if (!isImportModelInput(model)) continue;
                 try {
                     const response = await api.post(`/admin/ai/models/${provider}`, {
                         id: model.id,
@@ -86,7 +117,7 @@ export function BulkImportModels({ provider, onSuccess, iconOnly = false }) {
                         maxTokens: model.maxTokens,
                     });
 
-                    if (response.ok) {
+                    if (response.status >= 200 && response.status < 300) {
                         successCount++;
                     } else {
                         errorCount++;
@@ -94,7 +125,8 @@ export function BulkImportModels({ provider, onSuccess, iconOnly = false }) {
                     }
                 } catch (err) {
                     errorCount++;
-                    errors.push(`${model.id}: ${err.message}`);
+                    const error = err as ApiErrorLike;
+                    errors.push(`${model.id}: ${error.message || 'Failed'}`);
                 }
             }
 
@@ -116,9 +148,10 @@ export function BulkImportModels({ provider, onSuccess, iconOnly = false }) {
             }
 
         } catch (err) {
+            const error = err as ApiErrorLike;
             setResult({
                 type: 'error',
-                message: `Invalid JSON: ${err.message}`
+                message: `Invalid JSON: ${error.message || 'Unknown error'}`
             });
         } finally {
             setImporting(false);

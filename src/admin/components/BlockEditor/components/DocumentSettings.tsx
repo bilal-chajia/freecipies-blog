@@ -9,6 +9,8 @@
  */
 
 import { useState } from 'react';
+import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     ChevronDown,
@@ -35,6 +37,39 @@ import { extractImage, getImageSrcSet } from '@shared/utils';
 import { buildImageStyle, toAdminImageUrl, toAdminSrcSet } from '../../../utils/helpers';
 import TagSelector from '../../TagSelector';
 
+type SelectOption = {
+    id: string | number;
+    label?: string;
+    name?: string;
+    color?: string | null;
+    style_json?: string | Record<string, unknown> | null;
+    styleJson?: string | Record<string, unknown> | null;
+    style?: string | Record<string, unknown> | null;
+};
+
+type EditorFormData = Record<string, unknown> & {
+    categoryId?: string | number | null;
+    authorId?: string | number | null;
+    isOnline?: boolean;
+    isFavorite?: boolean;
+    publishedAt?: string;
+    selectedTags?: Array<string | number>;
+    metaTitle?: string;
+    metaDescription?: string;
+    canonicalUrl?: string;
+    imageUrl?: string;
+    imageAlt?: string;
+    heroUrl?: string;
+    heroAlt?: string;
+    headline?: string;
+    shortDescription?: string;
+    tldr?: string;
+    introduction?: string;
+    summary?: string;
+};
+
+type InputChangeHandler = (field: string, value: unknown) => void;
+
 /**
  * Collapsible Section Component
  */
@@ -44,6 +79,12 @@ function SettingsSection({
     defaultOpen = false,
     children,
     className
+}: {
+    title: string;
+    icon?: LucideIcon;
+    defaultOpen?: boolean;
+    children: ReactNode;
+    className?: string;
 }) {
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -97,6 +138,14 @@ function ChipSelect({
     searchPlaceholder = 'Search...',
     popoverClassName,
     buttonClassName,
+}: {
+    value?: string | number | null;
+    options: SelectOption[];
+    onChange: (value: string | number) => void;
+    placeholder?: string;
+    searchPlaceholder?: string;
+    popoverClassName?: string;
+    buttonClassName?: string;
 }) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
@@ -104,7 +153,7 @@ function ChipSelect({
     const filtered = options.filter((option) =>
         option.label?.toLowerCase().includes(query.trim().toLowerCase())
     );
-    const getOptionColor = (option) => {
+    const getOptionColor = (option: SelectOption) => {
         if (option?.color) return option.color;
         const style = option?.style_json ?? option?.styleJson ?? option?.style;
         if (!style) return null;
@@ -116,7 +165,7 @@ function ChipSelect({
                 return null;
             }
         }
-        return style?.color || null;
+        return typeof style === 'object' ? style?.color as string | null : null;
     };
 
     return (
@@ -185,6 +234,11 @@ function StatusSection({
     onInputChange,
     categories,
     authors,
+}: {
+    formData: EditorFormData;
+    onInputChange: InputChangeHandler;
+    categories?: SelectOption[];
+    authors?: SelectOption[];
 }) {
     return (
         <div className="space-y-2">
@@ -215,9 +269,9 @@ function StatusSection({
                             <SelectValue placeholder="Select author" />
                         </SelectTrigger>
                         <SelectContent>
-                            {(authors || []).map((author) => (
+                            {(authors || []).map((author: SelectOption) => (
                                 <SelectItem key={author.id} value={String(author.id)}>
-                                    {author.name}
+                                    {author.name || author.label}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -275,13 +329,13 @@ function StatusSection({
 /**
  * Tags Section
  */
-function TagsSectionContent({ formData, onInputChange, tags }) {
+function TagsSectionContent({ formData, onInputChange, tags }: { formData: EditorFormData; onInputChange: InputChangeHandler; tags?: SelectOption[] }) {
     return (
         <div className="structure-item flex-col items-start gap-3">
             <TagSelector
-                tags={tags}
-                selectedTags={formData.selectedTags}
-                onTagsChange={(newTags) => onInputChange('selectedTags', newTags)}
+                tags={tags ?? []}
+                selectedTags={formData.selectedTags ?? []}
+                onTagsChange={(newTags: Array<string | number>) => onInputChange('selectedTags', newTags)}
                 containerClassName="w-full space-y-2"
                 buttonClassName="h-7 text-[11px]"
                 popoverClassName="w-[260px]"
@@ -295,7 +349,7 @@ function TagsSectionContent({ formData, onInputChange, tags }) {
 /**
  * SEO Section
  */
-function SEOSectionContent({ formData, onInputChange, isEditMode }) {
+function SEOSectionContent({ formData, onInputChange, isEditMode }: { formData: EditorFormData; onInputChange: InputChangeHandler; isEditMode?: boolean }) {
     const metaTitleLength = (formData.metaTitle || '').length;
     const metaDescLength = (formData.metaDescription || '').length;
 
@@ -363,17 +417,23 @@ function MediaSectionContent({
     onInputChange,
     onImageRemove,
     onMediaDialogOpen,
+}: {
+    formData: EditorFormData;
+    imagesData?: string | Record<string, any> | null;
+    onInputChange: InputChangeHandler;
+    onImageRemove?: (slot: string) => void;
+    onMediaDialogOpen: (slot: string) => void;
 }) {
-    const featured = extractImage(imagesData, 'thumbnail', 720);
-    const featuredSrcSet = toAdminSrcSet(getImageSrcSet(imagesData, 'thumbnail'));
-    const featuredUrl = toAdminImageUrl(featured.imageUrl || formData.imageUrl);
-    const featuredAlt = formData.imageAlt || featured.imageAlt || 'Featured';
+    const featured = extractImage(imagesData as any, 'thumbnail', 720);
+    const featuredSrcSet = toAdminSrcSet(getImageSrcSet(imagesData as any, 'thumbnail'));
+    const featuredUrl = toAdminImageUrl(featured.imageUrl || (typeof formData.imageUrl === 'string' ? formData.imageUrl : undefined));
+    const featuredAlt = (typeof formData.imageAlt === 'string' ? formData.imageAlt : undefined) || featured.imageAlt || 'Featured';
     const featuredStyle = buildImageStyle(featured);
 
-    const hero = extractImage(imagesData, 'hero', 1200);
-    const heroSlotSrcSet = toAdminSrcSet(getImageSrcSet(imagesData, 'hero'));
-    const heroUrl = toAdminImageUrl(hero.imageUrl || formData.heroUrl);
-    const heroAlt = formData.heroAlt || hero.imageAlt || 'Hero';
+    const hero = extractImage(imagesData as any, 'hero', 1200);
+    const heroSlotSrcSet = toAdminSrcSet(getImageSrcSet(imagesData as any, 'hero'));
+    const heroUrl = toAdminImageUrl(hero.imageUrl || (typeof formData.heroUrl === 'string' ? formData.heroUrl : undefined));
+    const heroAlt = (typeof formData.heroAlt === 'string' ? formData.heroAlt : undefined) || hero.imageAlt || 'Hero';
     const heroStyle = buildImageStyle(hero);
 
     return (
@@ -504,7 +564,7 @@ function MediaSectionContent({
 /**
  * Excerpts Section
  */
-function ExcerptsSectionContent({ formData, onInputChange }) {
+function ExcerptsSectionContent({ formData, onInputChange }: { formData: EditorFormData; onInputChange: InputChangeHandler }) {
     return (
         <div className="space-y-2">
             <div className="structure-item flex-col items-start gap-2">
@@ -581,6 +641,16 @@ export default function DocumentSettings({
     categories,
     authors,
     isEditMode,
+}: {
+    formData: EditorFormData;
+    onInputChange: InputChangeHandler;
+    imagesData?: string | Record<string, any> | null;
+    onImageRemove?: (slot: string) => void;
+    onMediaDialogOpen: (slot: string) => void;
+    tags?: SelectOption[];
+    categories?: SelectOption[];
+    authors?: SelectOption[];
+    isEditMode?: boolean;
 }) {
     return (
         <div className="relative">

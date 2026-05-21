@@ -4,6 +4,7 @@ import RoundupLayout from "@layouts/RoundupLayout.astro";
 import SEO from "@components/SEO.astro";
 import { getArticleBySlug, getArticleById } from "@modules/articles";
 import { extractImage } from "@shared/utils";
+import { parseJsonLdArray } from "@modules/articles/utils/cached-fields";
 
 export const prerender = false;
 
@@ -33,13 +34,13 @@ try {
   console.error(`Error fetching roundup (${slug}):`, error);
 }
 
-// Author and category are already hydrated via hydrateArticle() from cached JSON columns
-const author = (roundup as any).author || null;
-const category = (roundup as any).category || null;
-
 if (!roundup) {
   return Astro.redirect("/404");
 }
+
+// Author and category are already hydrated via hydrateArticle() from cached JSON columns
+const author = (roundup as any).author || null;
+const category = (roundup as any).category || null;
 
 const heroSlot = extractImage(roundup.imagesJson, "hero", 1200);
 const heroThumb = extractImage(roundup.imagesJson, "thumbnail", 1200);
@@ -47,9 +48,7 @@ const heroImage = heroSlot.imageUrl ? heroSlot : heroThumb;
 
 const pageTitle = roundup.metaTitle || roundup.headline;
 const pageDescription = roundup.metaDescription || roundup.shortDescription;
-const jsonldSchemas = typeof roundup.jsonldJson === 'string'
-  ? JSON.parse(roundup.jsonldJson || '[]')
-  : (roundup.jsonldJson || []);
+const jsonldSchemas = parseJsonLdArray(roundup.jsonldJson);
 ---
 
 <RoundupLayout article={roundup} author={author} category={category}>

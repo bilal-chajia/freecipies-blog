@@ -8,6 +8,7 @@ import {
   hydrateCategories,
 } from "@shared/utils/hydration";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import { parseCachedCard } from "@modules/articles/utils/cached-fields";
 
 export const prerender = false;
 
@@ -72,6 +73,8 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
           <div class="roundups-grid">
             {roundups.map((roundup) => {
               const { selected, srcSet } = getCardImage(roundup);
+              const cachedCard = parseCachedCard(roundup.cachedCardJson);
+              const itemCount = cachedCard?.item_count ?? 0;
               return (
                 <article class="roundup-card">
                   <a href={`/roundups/${roundup.slug}`} class="card-image-link">
@@ -89,7 +92,7 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
                     )}
                     <div class="card-overlay">
                       <span class="item-count">
-                        {Array.isArray(roundup.roundupJson?.items) ? roundup.roundupJson.items.length : 0} Items
+                        {itemCount} Items
                       </span>
                     </div>
                   </a>

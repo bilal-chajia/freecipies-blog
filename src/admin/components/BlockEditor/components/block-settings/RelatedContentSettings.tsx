@@ -9,7 +9,67 @@ import { getImageSlot } from '@shared/utils';
 import { getBestVariantUrl } from '@shared/types/images';
 import { parseJsonArray, clampNumber } from './helpers';
 
-const RELATED_TYPE_LABELS = {
+type RelatedType = 'recipe' | 'article' | 'roundup';
+
+type RelatedMode = 'manual' | 'auto';
+
+type RelatedLayout = 'grid' | 'carousel' | 'list';
+
+type RelatedItem = {
+    id: string | number;
+    slug?: string;
+    headline?: string;
+    label?: string;
+    categoryName?: string | null;
+    categoryColor?: string | null;
+    thumbnail?: NonNullable<ReturnType<typeof getImageSlot>>;
+    total_time?: number;
+    difficulty?: string;
+    reading_time?: number;
+    item_count?: number;
+};
+
+type SearchResultItem = RelatedItem & {
+    imagesJson?: string | null;
+    categoryLabel?: string | null;
+    category?: {
+        label?: string | null;
+        color?: string | null;
+    } | null;
+    totalTimeMinutes?: number;
+    difficultyLabel?: string;
+    readingTimeMinutes?: number;
+    roundupJson?: string | { items?: unknown[] } | null;
+};
+
+type RelatedBlockProps = {
+    title?: string;
+    layout?: RelatedLayout;
+    mode?: RelatedMode;
+    limit?: number | string;
+    recipesJson?: string;
+    articlesJson?: string;
+    roundupsJson?: string;
+};
+
+type RelatedSelectedBlock = {
+    id: string;
+    props: RelatedBlockProps;
+};
+
+type RelatedContext = {
+    categorySlug?: string;
+    tagSlugs?: string[];
+    currentSlug?: string;
+};
+
+type RelatedContentSettingsProps = {
+    selectedBlock: RelatedSelectedBlock;
+    relatedContext?: RelatedContext | null;
+    updateProps: (updates: Partial<RelatedBlockProps>) => void;
+};
+
+const RELATED_TYPE_LABELS: Record<RelatedType, string> = {
     recipe: 'Recipe',
     article: 'Article',
     roundup: 'Roundup',
@@ -19,10 +79,10 @@ function RelatedContentSettings({
     selectedBlock,
     relatedContext,
     updateProps,
-}) {
-    const [activeType, setActiveType] = useState('recipe');
+}: RelatedContentSettingsProps) {
+    const [activeType, setActiveType] = useState<RelatedType>('recipe');
     const [searchTerm, setSearchTerm] = useState('');
-    const [results, setResults] = useState([]);
+    const [results, setResults] = useState<SearchResultItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [limitError, setLimitError] = useState('');
@@ -31,10 +91,10 @@ function RelatedContentSettings({
     const mode = selectedBlock.props.mode || 'manual';
     const limitValue = clampNumber(selectedBlock.props.limit ?? 4, 1, 20, 4);
 
-    const itemsByType = useMemo(() => ({
-        recipe: parseJsonArray(selectedBlock.props.recipesJson),
-        article: parseJsonArray(selectedBlock.props.articlesJson),
-        roundup: parseJsonArray(selectedBlock.props.roundupsJson),
+    const itemsByType = useMemo<Record<RelatedType, RelatedItem[]>>(() => ({
+        recipe: parseJsonArray(selectedBlock.props.recipesJson) as RelatedItem[],
+        article: parseJsonArray(selectedBlock.props.articlesJson) as RelatedItem[],
+        roundup: parseJsonArray(selectedBlock.props.roundupsJson) as RelatedItem[],
     }), [
         selectedBlock.props.recipesJson,
         selectedBlock.props.articlesJson,
@@ -71,12 +131,12 @@ function RelatedContentSettings({
                 const response = await articlesAPI.getAll({
                     search: term,
                     type: activeType,
-                    status: 'online',
+                    status: 'all',
                     limit: 8,
                 });
                 const data = response.data?.data || response.data || [];
                 if (isActive) {
-                    setResults(Array.isArray(data) ? data : []);
+                    setResults(Array.isArray(data) ? data as SearchResultItem[] : []);
                 }
             } catch {
                 if (isActive) {
@@ -94,9 +154,9 @@ function RelatedContentSettings({
         };
     }, [searchTerm, activeType, mode]);
 
-    const buildRelatedItem = (item, type) => {
+    const buildRelatedItem = (item: SearchResultItem, type: RelatedType): RelatedItem => {
         const headline = item.headline || item.label || item.slug || '';
-        const relatedItem = {
+        const relatedItem: RelatedItem = {
             id: item.id,
             slug: item.slug,
             headline,
@@ -146,7 +206,7 @@ function RelatedContentSettings({
         return relatedItem;
     };
 
-    const setItemsForType = (type, items) => {
+    const setItemsForType = (type: RelatedType, items: RelatedItem[]) => {
         const nextJson = JSON.stringify(items || []);
         if (type === 'recipe') {
             updateProps({ recipesJson: nextJson });
@@ -157,7 +217,7 @@ function RelatedContentSettings({
         }
     };
 
-    const addItem = (item) => {
+    const addItem = (item: SearchResultItem) => {
         if (!item?.id) return;
         if (activeItems.some((existing) => existing.id === item.id)) return;
         if (activeItems.length >= limitValue) {
@@ -169,7 +229,7 @@ function RelatedContentSettings({
         setItemsForType(activeType, nextItems);
     };
 
-    const removeItem = (type, id) => {
+    const removeItem = (type: RelatedType, id: string | number) => {
         const list = itemsByType[type] || [];
         const nextItems = list.filter((item) => item.id !== id);
         setLimitError('');
@@ -188,19 +248,19 @@ function RelatedContentSettings({
         setLoading(true);
         setError('');
         try {
-            const collected = [];
-            const seen = new Set();
+            const collected: SearchResultItem[] = [];
+            const seen = new Set<string | number>();
 
             for (const tag of tagList) {
                 if (collected.length >= limitValue) break;
                 const response = await articlesAPI.getAll({
                     type: activeType,
-                    status: 'online',
+                    status: 'all',
                     limit: limitValue + 2,
                     tag,
                 });
                 const data = response.data?.data || response.data || [];
-                const items = Array.isArray(data) ? data : [];
+                const items = Array.isArray(data) ? data as SearchResultItem[] : [];
                 for (const item of items) {
                     if (item?.slug === currentSlug) continue;
                     if (!item?.id || seen.has(item.id)) continue;
@@ -213,12 +273,12 @@ function RelatedContentSettings({
             if (collected.length < limitValue && categorySlug) {
                 const response = await articlesAPI.getAll({
                     type: activeType,
-                    status: 'online',
+                    status: 'all',
                     limit: limitValue + 4,
                     category: categorySlug,
                 });
                 const data = response.data?.data || response.data || [];
-                const items = Array.isArray(data) ? data : [];
+                const items = Array.isArray(data) ? data as SearchResultItem[] : [];
                 for (const item of items) {
                     if (item?.slug === currentSlug) continue;
                     if (!item?.id || seen.has(item.id)) continue;
@@ -237,11 +297,11 @@ function RelatedContentSettings({
         }
     };
 
-    const getThumbnailUrl = (item) => {
+    const getThumbnailUrl = (item: SearchResultItem) => {
         if (!item) return '';
         const slot = getImageSlot(item.imagesJson, 'thumbnail')
                     || getImageSlot(item.imagesJson, 'hero');
-        return getBestVariantUrl(slot) || slot?.url || '';
+        return slot ? getBestVariantUrl(slot) || '' : '';
     };
 
     return (
@@ -262,7 +322,7 @@ function RelatedContentSettings({
                 <div className="ml-auto w-[170px]">
                     <Select
                         value={selectedBlock.props.layout || 'grid'}
-                        onValueChange={(val) => updateProps({ layout: val })}
+                        onValueChange={(val) => updateProps({ layout: val as RelatedLayout })}
                     >
                         <SelectTrigger className="h-8 text-sm w-full">
                             <SelectValue placeholder="Select layout" />
@@ -280,7 +340,7 @@ function RelatedContentSettings({
                 <div className="ml-auto w-[170px]">
                     <Select
                         value={mode}
-                        onValueChange={(val) => updateProps({ mode: val })}
+                        onValueChange={(val) => updateProps({ mode: val as RelatedMode })}
                     >
                         <SelectTrigger className="h-8 text-sm w-full">
                             <SelectValue placeholder="Select mode" />
@@ -309,7 +369,7 @@ function RelatedContentSettings({
             <div className="structure-item items-center">
                 <span className="structure-item-label">Type</span>
                 <div className="ml-auto flex flex-nowrap justify-end gap-1.5">
-                    {Object.keys(RELATED_TYPE_LABELS).map((type) => (
+                    {(Object.keys(RELATED_TYPE_LABELS) as RelatedType[]).map((type) => (
                         <button
                             key={type}
                             type="button"

@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, FileText, Settings, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,7 +24,30 @@ import { ChevronDown } from 'lucide-react';
 /**
  * Collapsible Section Component for sidebar panels
  */
-function SidebarSection({ title, defaultOpen = true, children }) {
+type SettingsTab = 'document' | 'block' | 'ai';
+
+type SidebarSelectedBlock = {
+    id?: string | null;
+    type?: string;
+};
+
+type SettingsSidebarProps = {
+    isOpen?: boolean;
+    onClose?: () => void;
+    activeTab?: SettingsTab;
+    onTabChange?: (tab: SettingsTab) => void;
+    documentSettings?: ReactNode;
+    blockSettings?: ReactNode;
+    aiSettings?: ReactNode;
+    selectedBlock?: SidebarSelectedBlock | null;
+    className?: string;
+};
+
+function SidebarSection({ title, defaultOpen = true, children }: {
+    title: ReactNode;
+    defaultOpen?: boolean;
+    children: ReactNode;
+}) {
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     return (
@@ -62,10 +86,10 @@ export default function SettingsSidebar({
     aiSettings,
     selectedBlock,
     className,
-}) {
+}: SettingsSidebarProps) {
     const [tab, setTab] = useState(activeTab ?? 'document');
     const resolvedTab = activeTab ?? tab;
-    const lastSelectedIdRef = useRef(null);
+    const lastSelectedIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         if (activeTab !== undefined && activeTab !== tab) {
@@ -88,7 +112,7 @@ export default function SettingsSidebar({
         if (tab !== 'block') setTab('block');
     }, [selectedBlock?.id, activeTab, tab, onTabChange]);
 
-    const handleTabChange = (value) => {
+    const handleTabChange = (value: SettingsTab) => {
         setTab(value);
         onTabChange?.(value);
     };

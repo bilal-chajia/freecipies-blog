@@ -8,6 +8,7 @@ import { getCategories } from "@modules/categories";
 import { getAuthors } from "@modules/authors";
 import { hydrateCategory } from "@shared/utils/hydration";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import { parseCachedRecipe } from "@modules/articles/utils/cached-fields";
 import { getPublicHomepageSettings, getStories } from "@server/site-data";
 import type { HydratedArticle } from "@modules/articles/types";
 import type { HydratedCategory } from "@modules/categories/types/categories.types";
@@ -197,6 +198,8 @@ const { selected, srcSet } = getRecipeImage(recipe, 600, "hero");
               {popularRecipes.map((recipe: HydratedArticle) => {
 const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 600px) 100vw, (max-width: 1024px) 50vw, 25vw";
+                const cachedRecipe = parseCachedRecipe(recipe.cachedRecipeJson);
+                const cookTime = cachedRecipe?.cook_time_minutes ?? cachedRecipe?.cookTimeMinutes ?? null;
                 return (
                 <article class="foxiz-card">
                   <a href={getRecipeUrl(recipe)} class="foxiz-card-image">
@@ -232,13 +235,13 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                           {recipe.categoryLabel}
                         </a>
                       )}
-                      {(recipe as any).recipeJson?.cookTime && (
+                      {cookTime && (
                         <span class="foxiz-tag">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
                             <path d="M12 6v6l4 2"/>
                           </svg>
-                          {(recipe as any).recipeJson.cookTime}
+                          {`${cookTime} min`}
                         </span>
                       )}
                     </div>
@@ -364,6 +367,8 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
               {moreRecipes.map((recipe: HydratedArticle) => {
 const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 768px) 50vw, 25vw";
+                const cachedRecipe = parseCachedRecipe(recipe.cachedRecipeJson);
+                const prepTime = cachedRecipe?.prep_time_minutes ?? cachedRecipe?.prepTimeMinutes ?? null;
                 return (
                 <a href={getRecipeUrl(recipe)} class="recipe-card-vertical">
                   <div class="card-image-wrapper">
@@ -389,7 +394,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                   <div class="card-body">
                     <h3 class="card-title">{recipe.headline}</h3>
                     <div class="card-meta">
-                      {(recipe as any).recipeJson?.prepTime && (
+                      {prepTime && (
                         <span class="meta-item">
                           <svg
                             viewBox="0 0 24 24"
@@ -400,7 +405,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                             <circle cx="12" cy="12" r="10" />
                             <path d="M12 6v6l4 2" />
                           </svg>
-                          {(recipe as any).recipeJson.prepTime}
+                          {`${prepTime} min`}
                         </span>
                       )}
                     </div>

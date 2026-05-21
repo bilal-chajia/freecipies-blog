@@ -13,6 +13,7 @@
  */
 
 import { forwardRef, useCallback, useState } from 'react';
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +30,18 @@ import { cn } from '@/lib/utils';
  * @property {boolean} [showToolbarOnHover] - Show toolbar on hover (default: false)
  */
 
-const BlockWrapper = forwardRef(({
+interface BlockWrapperProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onClick'> {
+    isSelected?: boolean;
+    toolbar?: ReactNode;
+    children: ReactNode;
+    blockType?: string;
+    blockId?: string;
+    ariaLabel?: string;
+    showToolbarOnHover?: boolean;
+    onClick?: (event: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => void;
+}
+
+const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(({
     isSelected = false,
     toolbar,
     children,
@@ -51,22 +63,23 @@ const BlockWrapper = forwardRef(({
         setIsHovered(false);
     }, []);
 
-    const handleClick = useCallback((e) => {
+    const handleClick = useCallback((_event: MouseEvent<HTMLDivElement>) => {
         // Always trigger selection on click to ensure focus is restored
         // particularly for custom blocks where focus might be lost but state is still 'selected'
-        onClick?.();
+        onClick?.(_event);
     }, [onClick]);
 
-    const handleKeyDown = useCallback((e) => {
+    const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>) => {
         // Don't intercept keyboard events from form elements
-        const tag = e.target?.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) {
+        const target = e.target as HTMLElement | null;
+        const tag = target?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
             return;
         }
         // Select block on Enter or Space
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            onClick?.();
+            onClick?.(e);
         }
     }, [onClick]);
 
@@ -148,6 +161,11 @@ export function useBlockWrapperProps({
     blockId,
     isSelected = false,
     className = '',
+}: {
+    blockType: string;
+    blockId?: string;
+    isSelected?: boolean;
+    className?: string;
 }) {
     return {
         role: 'document',

@@ -7,7 +7,7 @@
 import type { ContentBlock, ContentDocument } from '@modules/content-blocks';
 import { normalizeContentDocument } from '@modules/content-blocks';
 import type { AppBlock } from '../types/editor.types';
-import type { BlockAdapter } from '../blocks/BlockAdapter';
+import type { BlockAdapter, BlockAdapterContext } from '../blocks/BlockAdapter';
 import { getBlockAdapter } from '../blocks/BlockAdapter';
 import { registerAllBlockAdapters } from '../blocks/adapters';
 import { parseInlineMarkdown, extractText } from './inlineContent';
@@ -59,6 +59,26 @@ const editorTypeToListStyle: Record<string, 'ordered' | 'unordered' | 'checklist
     checkListItem:    'checklist',
 };
 
+function createUniqueEditorId(baseId: unknown, index: number, usedIds: Set<string>): string {
+    const rawBase = typeof baseId === 'string' && baseId.trim()
+        ? baseId.trim()
+        : `block-${index}`;
+
+    if (!usedIds.has(rawBase)) {
+        usedIds.add(rawBase);
+        return rawBase;
+    }
+
+    let suffix = 2;
+    let nextId = `${rawBase}-${suffix}`;
+    while (usedIds.has(nextId)) {
+        suffix += 1;
+        nextId = `${rawBase}-${suffix}`;
+    }
+    usedIds.add(nextId);
+    return nextId;
+}
+
 // ── Public API ──────────────────────────────────────────────────────────────
 
 /**
@@ -67,34 +87,36 @@ const editorTypeToListStyle: Record<string, 'ordered' | 'unordered' | 'checklist
  * only so local drafts/seeds do not crash the editor during development.
  */
 export function contentJsonToBlocks(
-    contentJson: unknown
+    contentJson: unknown,
+    context: BlockAdapterContext = {}
 ): AppBlock[] | undefined {
     if (!contentJson) return undefined;
 
     try {
         const { blocks } = normalizeContentDocument(contentJson);
-        const rawBlocks: any[] = [];
+        const rawBlocks: AppBlock[] = [];
+        const usedEditorIds = new Set<string>();
 
         for (let i = 0; i < blocks.length; i++) {
             const block = blocks[i];
             if (!block || typeof block !== 'object') continue;
 
-            const id = block.id || `block-${i}`;
+            const id = createUniqueEditorId(block.id, i, usedEditorIds);
             const contentType = block.type as string;
             const adapter = getBlockAdapter(contentType);
 
             if (adapter) {
-                const partial = adapter.toEditor(block);
+                const partial = adapter.toEditor(block, context);
                 // List blocks expand into multiple editor items
-                if (contentType === 'list' && Array.isArray((block as any).items)) {
-                    const listItems = (block as any).items.map((item: any, j: number) => ({
-                        id: `${id}-${j}`,
+                if (contentType === 'list' && Array.isArray((block as { items?: unknown[] }).items)) {
+                    const listItems = ((block as { items?: unknown[] }).items || []).map((item: unknown, j: number) => ({
+                        id: createUniqueEditorId(`${id}-${j}`, i + j, usedEditorIds),
                         ...partial,
                         content: parseInlineMarkdown(typeof item === 'string' ? item : ''),
-                    }));
+                    } as AppBlock));
                     rawBlocks.push(...listItems);
                 } else {
-                    rawBlocks.push({ id, ...partial });
+                    rawBlocks.push({ id, ...partial } as AppBlock);
                 }
             } else {
                 // Fallback: unknown block types become paragraphs
@@ -102,21 +124,21 @@ export function contentJsonToBlocks(
                 rawBlocks.push({
                     id,
                     type: 'paragraph',
-                    content: parseInlineMarkdown((block as any).text || `[${contentType}]`),
-                });
+                    content: parseInlineMarkdown((block as { text?: string }).text || `[${contentType}]`),
+                } as AppBlock);
             }
         }
 
         const cleanBlocks = rawBlocks.filter(
-            (b) => b && typeof b === 'object' && typeof b.type === 'string'
+            (b): b is AppBlock => !!(b && typeof b === 'object' && typeof b.type === 'string')
         );
 
         return cleanBlocks.length > 0
-            ? (cleanBlocks as unknown as AppBlock[])
-            : ([{ id: 'init-0', type: 'paragraph', props: {}, content: [], children: [] }] as unknown as AppBlock[]);
+            ? cleanBlocks
+            : [{ id: 'init-0', type: 'paragraph', props: {}, content: [], children: [] }];
     } catch (error) {
         console.error('[conversion] Error converting contentJson to blocks:', error);
-        return [{ id: 'error-0', type: 'paragraph', props: {}, content: [], children: [] }] as unknown as AppBlock[];
+        return [{ id: 'error-0', type: 'paragraph', props: {}, content: [], children: [] }];
     }
 }
 
@@ -161,7 +183,10 @@ export function blocksToContentJson(blocks: AppBlock[]): ContentDocument {
         if (adapter) {
             const contentBlock = adapter.fromEditor(block);
             if (contentBlock) {
-                result.push(contentBlock as any);
+                result.push({
+                    id: block.id,
+                    ...contentBlock,
+                } as any);
             }
         } else {
             // Fallback: unknown editor types become paragraphs if they have text

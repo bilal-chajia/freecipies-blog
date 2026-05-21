@@ -56,8 +56,18 @@ export async function verifyAuthToken(
   try {
     const secretKey = new TextEncoder().encode(secret);
     const { payload } = await jwtVerify(token, secretKey);
-
-    return payload as unknown as AuthToken;
+    if (
+      typeof payload.sub === 'string' &&
+      (payload.role === 'admin' || payload.role === 'editor' || payload.role === 'viewer')
+    ) {
+      return {
+        sub: payload.sub,
+        role: payload.role,
+        exp: typeof payload.exp === 'number' ? payload.exp : 0,
+        iat: typeof payload.iat === 'number' ? payload.iat : 0,
+      };
+    }
+    return null;
   } catch (error) {
     // Token is invalid or expired
     return null;

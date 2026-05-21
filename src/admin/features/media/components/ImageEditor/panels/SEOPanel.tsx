@@ -13,6 +13,45 @@ import { Wand2, Loader2, Sparkles } from 'lucide-react';
 
 import { QUALITY_PRESETS } from '../constants';
 
+interface PuterChatResponse {
+    message?: {
+        content?: string;
+    };
+    text?: string;
+}
+
+interface PuterChatOptions {
+    model?: string;
+}
+
+interface Puter {
+    ai: {
+        chat: (prompt: string, image: string, options?: PuterChatOptions) => Promise<string | PuterChatResponse>;
+    };
+}
+
+declare global {
+    interface Window {
+        puter?: Puter;
+    }
+}
+
+export interface AuthorOption {
+    slug: string;
+    name: string;
+}
+
+interface SEOPanelProps {
+    altText: string;
+    selectedAuthor: string;
+    authors: AuthorOption[];
+    compressionQuality: string;
+    imageUrl: string | null;
+    onAltTextChange: (val: string) => void;
+    onSelectedAuthorChange: (val: string) => void;
+    onCompressionQualityChange: (val: string) => void;
+}
+
 const SEOPanel = ({
     altText,
     selectedAuthor,
@@ -22,7 +61,7 @@ const SEOPanel = ({
     onAltTextChange,
     onSelectedAuthorChange,
     onCompressionQualityChange,
-}) => {
+}: SEOPanelProps) => {
     const [generating, setGenerating] = useState(false);
     const [puterLoaded, setPuterLoaded] = useState(false);
     const [error, setError] = useState('');
@@ -56,6 +95,10 @@ const SEOPanel = ({
 - Focused on the main subject
 - Good for SEO and accessibility
 - Just return the alt text, no quotes or explanations`;
+
+            if (!window.puter) {
+                throw new Error('AI not loaded');
+            }
 
             const response = await window.puter.ai.chat(prompt, imageUrl, {
                 model: 'gpt-4o-mini'

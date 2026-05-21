@@ -3,7 +3,8 @@ import { settingsAPI } from '../services/api';
 import {
   IMAGE_UPLOAD_DEFAULTS as DEFAULTS,
   IMAGE_SETTINGS_CACHE_KEY as CACHE_KEY,
-  IMAGE_SETTINGS_CACHE_TTL as CACHE_TTL
+  IMAGE_SETTINGS_CACHE_TTL as CACHE_TTL,
+  type ImageUploadSettings
 } from '../../shared/constants/image-upload';
 
 const DEBUG = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV;
@@ -22,12 +23,6 @@ function hasLocalStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 }
 
-interface ImageUploadSettings {
-  max_file_size_mb: number;
-  variant_widths: number[];
-  encoding: string;
-  [key: string]: unknown;
-}
 
 interface ApiResponse {
   success?: boolean;
@@ -42,7 +37,7 @@ function normalizeSettings(payload: unknown): ImageUploadSettings | null {
   while (current && typeof current === 'object' && depth < 4) {
     const obj = current as Record<string, unknown>;
     if ('max_file_size_mb' in obj && 'variant_widths' in obj && 'encoding' in obj) {
-      return obj as ImageUploadSettings;
+      return current as ImageUploadSettings;
     }
     if ('success' in obj && 'data' in obj) {
       current = obj.data;

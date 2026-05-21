@@ -9,8 +9,43 @@ import { equipmentAPI } from '../../../../services/api';
 import { Badge } from '@/ui/badge';
 import { Checkbox } from '@/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/ui/collapsible';
+import type {
+    DietType,
+    DifficultyLevel,
+    CostLevel,
+    InstructionSection,
+    NutritionInfo,
+    RecipeJson,
+} from '@modules/articles/types/recipes.types';
 
-const DIET_OPTIONS = [
+type SidebarEquipmentItem = {
+    id?: string | number;
+    name: string;
+    required?: boolean;
+    notes?: string;
+    affiliateUrl?: string;
+    affiliate_url?: string;
+    matchedBy?: string;
+    confidence?: number;
+};
+
+type SidebarRecipeJson = Omit<RecipeJson, 'equipment'> & {
+    equipment: SidebarEquipmentItem[];
+};
+
+type DetectionResult = {
+    found: number;
+    added: number;
+    matches: SidebarEquipmentItem[];
+    error?: boolean;
+};
+
+type RecipeSettingsSidebarProps = {
+    recipe?: string | SidebarRecipeJson | null;
+    setRecipe?: (value: string | SidebarRecipeJson) => void;
+};
+
+const DIET_OPTIONS: Array<{ value: DietType; label: string }> = [
     { value: 'VeganDiet', label: 'Vegan' },
     { value: 'VegetarianDiet', label: 'Vegetarian' },
     { value: 'GlutenFreeDiet', label: 'Gluten-Free' },
@@ -22,40 +57,40 @@ const DIET_OPTIONS = [
     { value: 'KosherDiet', label: 'Kosher' },
     { value: 'HalalDiet', label: 'Halal' },
 ];
-function RecipeSettingsSidebar({ recipe, setRecipe }) {
+function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps) {
     const [nutritionOpen, setNutritionOpen] = useState(false);
     const [equipmentOpen, setEquipmentOpen] = useState(false);
     const [equipmentDetecting, setEquipmentDetecting] = useState(false);
-    const [detectionResult, setDetectionResult] = useState(null);
-    const [detectedItemsToSelect, setDetectedItemsToSelect] = useState(null);
-    const [selectedNewIds, setSelectedNewIds] = useState(new Set());
+    const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
+    const [detectedItemsToSelect, setDetectedItemsToSelect] = useState<SidebarEquipmentItem[] | null>(null);
+    const [selectedNewIds, setSelectedNewIds] = useState<Set<number>>(new Set());
 
     // Parse recipe data
-    const data = useMemo(() => {
+    const data = useMemo<Partial<SidebarRecipeJson>>(() => {
         if (!recipe) return {};
         if (typeof recipe === 'string') {
-            try { return JSON.parse(recipe); } catch { return {}; }
+            try { return JSON.parse(recipe) as Partial<SidebarRecipeJson>; } catch { return {}; }
         }
         return recipe;
     }, [recipe]);
 
-    const updateField = (field, value) => {
+    const updateField = <K extends keyof SidebarRecipeJson>(field: K, value: SidebarRecipeJson[K]) => {
         const newData = { ...data, [field]: value };
-        setRecipe(typeof recipe === 'string' ? JSON.stringify(newData, null, 2) : newData);
+        setRecipe?.(typeof recipe === 'string' ? JSON.stringify(newData, null, 2) : newData as SidebarRecipeJson);
     };
 
-    const updateNumberField = (field, val) => {
+    const updateNumberField = (field: keyof SidebarRecipeJson, val: string) => {
         const num = val === '' ? null : parseInt(val);
-        updateField(field, isNaN(num) ? null : num);
+        updateField(field, (num === null || Number.isNaN(num) ? null : num) as SidebarRecipeJson[keyof SidebarRecipeJson]);
     };
 
-    const updateNutrition = (field, val) => {
+    const updateNutrition = (field: keyof NutritionInfo, val: string) => {
         const num = val === '' ? undefined : parseFloat(val);
-        const newNutrition = { ...(data.nutrition || {}), [field]: isNaN(num) ? undefined : num };
+        const newNutrition = { ...(data.nutrition || {}), [field]: num === undefined || Number.isNaN(num) ? undefined : num };
         updateField('nutrition', newNutrition);
     };
 
-    const toggleDiet = (diet) => {
+    const toggleDiet = (diet: DietType) => {
         const current = data.suitableForDiet || [];
         const updated = current.includes(diet)
             ? current.filter(d => d !== diet)
@@ -156,7 +191,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }) {
                         <Label className="text-xs">Difficulty</Label>
                         <Select
                             value={data.difficulty || 'Medium'}
-                            onValueChange={(value) => updateField('difficulty', value)}
+                            onValueChange={(value) => updateField('difficulty', value as DifficultyLevel)}
                         >
                             <SelectTrigger className="h-8 text-sm">
                                 <SelectValue />
@@ -172,7 +207,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }) {
                         <Label className="text-xs">Estimated Cost</Label>
                         <Input
                             value={data.estimatedCost || ''}
-                            onChange={(e) => updateField('estimatedCost', e.target.value)}
+                            onChange={(e) => updateField('estimatedCost', e.target.value as CostLevel)}
                             placeholder="$10-15"
                             className="h-8 text-sm"
                         />
@@ -200,7 +235,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }) {
             {/* Nutrition */}
             <SettingsSection title="Nutrition" icon={Settings}>
                 <div className="grid grid-cols-2 gap-3">
-                    {[
+                    {([
                         { key: 'calories', label: 'Calories', ph: '320' },
                         { key: 'fatContent', label: 'Fat (g)', ph: '15' },
                         { key: 'saturatedFatContent', label: 'Sat. Fat (g)', ph: '3' },
@@ -210,7 +245,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }) {
                         { key: 'proteinContent', label: 'Protein (g)', ph: '4' },
                         { key: 'sodiumContent', label: 'Sodium (mg)', ph: '220' },
                         { key: 'cholesterolContent', label: 'Chol. (mg)', ph: '25' },
-                    ].map(({ key, label, ph }) => (
+                    ] as Array<{ key: keyof NutritionInfo; label: string; ph: string }>).map(({ key, label, ph }) => (
                         <div key={key} className="space-y-1">
                             <Label className="text-xs">{label}</Label>
                             <Input
@@ -251,19 +286,19 @@ function RecipeSettingsSidebar({ recipe, setRecipe }) {
                                 setDetectionResult(null);
                                 setDetectedItemsToSelect(null);
                                 try {
-                                    const allText = (data.instructions || []).map(section =>
-                                        (section.steps || []).map(s => s.text || '').join(' ')
+                                    const allText = (data.instructions || []).map((section: InstructionSection) =>
+                                        (section.steps || []).map((s) => s.text || '').join(' ')
                                     ).join(' ');
                                     if (!allText.trim()) {
                                         setDetectionResult({ found: 0, added: 0, matches: [] });
                                         return;
                                     }
                                     const res = await equipmentAPI.match(allText);
-                                    const matched = res.data?.data || res.data || [];
-                                    const existingNames = new Set((data.equipment || []).map(e => e.name.toLowerCase()));
+                                    const matched = (res.data?.data || res.data || []) as SidebarEquipmentItem[];
+                                    const existingNames = new Set((data.equipment || []).map((e) => e.name.toLowerCase()));
                                     const newItems = matched
-                                        .filter(m => !existingNames.has(m.name.toLowerCase()))
-                                        .map(m => ({
+                                        .filter((m) => !existingNames.has(m.name.toLowerCase()))
+                                        .map((m) => ({
                                             id: m.id,
                                             name: m.name,
                                             required: true,
@@ -277,7 +312,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }) {
                                         // Show selection UI instead of adding directly
                                         setDetectedItemsToSelect(newItems);
                                         // Select all by default
-                                        setSelectedNewIds(new Set(newItems.map((_, i) => i)));
+                                        setSelectedNewIds(new Set(newItems.map((_item, i) => i)));
                                     } else {
                                         // Fallback if no NEW items were found
                                         setDetectionResult({
@@ -324,7 +359,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }) {
                                         if (selectedNewIds.size === detectedItemsToSelect.length) {
                                             setSelectedNewIds(new Set());
                                         } else {
-                                            setSelectedNewIds(new Set(detectedItemsToSelect.map((_, i) => i)));
+                                            setSelectedNewIds(new Set(detectedItemsToSelect.map((_item, i) => i)));
                                         }
                                     }}
                                 >
@@ -362,8 +397,8 @@ function RecipeSettingsSidebar({ recipe, setRecipe }) {
                                     disabled={selectedNewIds.size === 0}
                                     onClick={() => {
                                         const selectedItems = detectedItemsToSelect
-                                            .filter((_, i) => selectedNewIds.has(i))
-                                            .map(item => ({
+                                            .filter((_item, i) => selectedNewIds.has(i))
+                                            .map((item) => ({
                                                 name: item.name,
                                                 required: item.required,
                                                 notes: item.notes,
@@ -453,4 +488,3 @@ function RecipeSettingsSidebar({ recipe, setRecipe }) {
 }
 
 export default RecipeSettingsSidebar;
-

@@ -20,7 +20,21 @@ import {
  * Updates the block using the editor instance.
  */
 
-export default function BlockSettings({ editor, selectedBlock: initialSelectedBlock, relatedContext, recipeData, onRecipeChange }) {
+export interface BlockSettingsProps {
+    editor: any;
+    selectedBlock: any;
+    relatedContext: any;
+    recipeData?: any;
+    onRecipeChange?: (recipe: any) => void;
+}
+
+export default function BlockSettings({
+    editor,
+    selectedBlock: initialSelectedBlock,
+    relatedContext,
+    recipeData,
+    onRecipeChange
+}: BlockSettingsProps) {
     const [, setBlockVersion] = useState(0);
     // NOTE: ImageBlock owns its own MediaDialog/ImageUploader.
     // We dispatch custom events to the block instead of mounting a second dialog.
@@ -45,7 +59,7 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
 
     if (!selectedBlock) return null;
 
-    const updateBlock = (updates) => {
+    const updateBlock = (updates: any) => {
         if (!editor || !selectedBlock) return;
         const currentBlock = editor.getBlock(selectedBlock.id) || selectedBlock;
         // Always preserve the block type to prevent BlockNote from replacing
@@ -54,7 +68,7 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
         setBlockVersion((prev) => prev + 1);
     };
 
-    const updateProps = (props) => {
+    const updateProps = (props: any) => {
         const currentBlock = editor?.getBlock(selectedBlock.id) || selectedBlock;
         updateBlock({ type: currentBlock.type, props: { ...currentBlock.props, ...props } });
     };
@@ -82,7 +96,7 @@ export default function BlockSettings({ editor, selectedBlock: initialSelectedBl
     };
 
     const faqItems = selectedBlock.type === 'faqSection'
-        ? parseJsonArray(selectedBlock.props.items)
+        ? parseJsonArray(selectedBlock.props.itemsJson)
         : [];
     const tableHeaders = selectedBlock.type === 'simpleTable'
         ? parseJsonArray(selectedBlock.props.headersJson)

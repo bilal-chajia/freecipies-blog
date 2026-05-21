@@ -7,7 +7,6 @@
 import type { D1Database } from '@cloudflare/workers-types';
 import {
     getSettingValue,
-    invalidateSettingCache,
     upsertSetting,
 } from '@modules/settings/services/settings.service';
 import type { SettingsCacheStore } from '@modules/settings/services/settings.service';
@@ -358,7 +357,12 @@ export async function saveMenuDocument(
     });
 
     if (location === 'header') {
-        await invalidateSettingCache(options?.cache, getMenuKey('mobile'));
+        // Active write-through: since mobile menu can fall back to the header menu,
+        // actively derive and store the updated mobile menu in the KV cache too
+        const mobileDoc = await getMenuDocument(db, 'mobile', options);
+        if (options?.cache) {
+            await options.cache.put(`site_settings:v1:${getMenuKey('mobile')}`, JSON.stringify(mobileDoc));
+        }
     }
 
     return true;

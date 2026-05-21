@@ -14,7 +14,21 @@ export const POST: APIRoute = async ({ request }) => {
     const adminUser = env.ADMIN_USERNAME || import.meta.env.ADMIN_USERNAME;
     const adminPass = env.ADMIN_PASSWORD || import.meta.env.ADMIN_PASSWORD;
 
+    console.log('[DEBUG LOGIN] Received:', { username, passwordLength: password?.length });
+    console.log('[DEBUG LOGIN] Env Config:', { 
+      hasSecret: !!jwtSecret, 
+      adminUser, 
+      adminPass,
+      envKeys: Object.keys(env || {}),
+      metaEnvKeys: Object.keys(import.meta.env || {})
+    });
+
     if (!jwtSecret || !adminUser || !adminPass) {
+      console.error('[DEBUG LOGIN] Missing config keys:', {
+        jwtSecret: !!jwtSecret,
+        adminUser: !!adminUser,
+        adminPass: !!adminPass
+      });
       const { body, status, headers } = formatErrorResponse(
         new AppError(ErrorCodes.INTERNAL_ERROR, 'Server configuration error', 500)
       );

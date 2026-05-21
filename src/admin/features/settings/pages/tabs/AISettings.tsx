@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import api from '@/services/api';
 import { ProviderIcon } from '@/components/icons/ProviderIcons';
 import { ModelManager } from '@/components/ModelManager';
+import type { ManagedModel } from '@/components/ModelManager';
 import { MigrateModelsButton } from '@/components/MigrateModelsButton';
 import { BulkImportModels } from '@/components/BulkImportModels';
 
@@ -117,7 +118,7 @@ const PROVIDER_CONFIG: Record<string, ProviderConfigItem> = {
 interface ProviderSettings {
     apiKey: string;
     enabled: boolean;
-    availableModels?: unknown[];
+    availableModels?: ManagedModel[];
 }
 
 interface AISettingsState {

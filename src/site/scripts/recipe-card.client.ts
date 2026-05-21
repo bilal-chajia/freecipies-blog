@@ -404,7 +404,8 @@
           label.removeAttribute("class"); // no checkbox pseudo
           ingList.appendChild(label);
         }
-        ((g.items || []) as Record<string, unknown>[]).forEach((item: Record<string, unknown>) => {
+        ((g.items || []) as Record<string, unknown>[]).forEach((rawItem: Record<string, unknown>) => {
+          const item = rawItem as { amount?: string | number; unit?: string; name?: string; prep?: string };
           const li = document.createElement("li");
           const amtStr = item.amount
             ? `<span class="cm-ing-amount">${esc(String(item.amount))}</span>`
@@ -481,14 +482,15 @@
 
         // Build step HTML
         const html = allSteps
-          .map((step, idx) => {
+          .map((rawStep, idx) => {
+            const step = rawStep as { timer?: number; text?: string; name?: string; tip?: string };
             const n = idx + 1;
-            const dur = step.timer ? step.timer * 60 : parseDuration(step.text);
+            const dur = step.timer ? step.timer * 60 : parseDuration(step.text || "");
             const durMin = Math.round(dur / 60);
             return (
               `<div class="cook-step" data-step="${n}" data-duration="${dur}"${n !== 1 ? " hidden" : ""}>` +
               `<div class="step-counter">Step ${n} of ${totalSteps}</div>` +
-              `<h3>${esc(step.text)}</h3>` +
+              `<h3>${esc(step.text || "")}</h3>` +
               (step.name && !step.name.match(/^Step \d+$/)
                 ? `<p>${esc(step.name)}</p>`
                 : "") +
@@ -597,8 +599,9 @@
           showStep(1);
           // Wake lock
           if ("wakeLock" in navigator) {
-            (navigator as any).wakeLock
-              .request("screen")
+            const wakeLock = (navigator as Navigator & { wakeLock?: { request(type: "screen"): Promise<WakeLockSentinel> } }).wakeLock;
+            wakeLock
+              ?.request("screen")
               .then((s: WakeLockSentinel) => {
                 wakeLockSentinel = s;
               })

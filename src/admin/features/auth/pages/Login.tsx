@@ -33,8 +33,9 @@ const Login = () => {
         password: formData.password,
       });
 
-      if (response.data.token && response.data.user) {
-        const { user, token } = response.data;
+      const payload = response.data.data;
+      if (payload && payload.token && payload.user) {
+        const { user, token } = payload;
         setAuth(user, token);
         localStorage.setItem('admin_token', token);
         navigate('/');

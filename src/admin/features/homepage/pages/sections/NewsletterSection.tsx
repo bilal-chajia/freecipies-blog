@@ -7,12 +7,9 @@ import { FormField } from '@admin/features/settings/components';
 import { SectionCard } from '@admin/features/homepage/components';
 import { Mail } from 'lucide-react';
 
-interface NewsletterSectionProps {
-  formData: Record<string, unknown>;
-  handleNestedInputChange: (field: string, value: unknown) => void;
-}
+import type { HomepageSectionProps } from '../../types';
 
-const NewsletterSection = ({ formData, handleNestedInputChange }: NewsletterSectionProps) => {
+const NewsletterSection = ({ formData, handleNestedInputChange }: HomepageSectionProps) => {
     return (
         <SectionCard
             title="Newsletter"

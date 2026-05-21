@@ -28,8 +28,10 @@ import BlockToolbar from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
 
+type DividerStyle = 'solid' | 'dashed' | 'dotted' | 'double';
+
 // Divider style definitions
-const dividerStyles = [
+const dividerStyles: Array<{ value: DividerStyle; label: string; borderStyle: DividerStyle }> = [
     { value: 'solid', label: 'Solid', borderStyle: 'solid' },
     { value: 'dashed', label: 'Dashed', borderStyle: 'dashed' },
     { value: 'dotted', label: 'Dotted', borderStyle: 'dotted' },
@@ -39,7 +41,10 @@ const dividerStyles = [
 /**
  * Style Selector Toolbar
  */
-function DividerStyleToolbar({ currentStyle, onChange }) {
+function DividerStyleToolbar({ currentStyle, onChange }: {
+    currentStyle: DividerStyle;
+    onChange: (style: DividerStyle) => void;
+}) {
     const styleConfig = dividerStyles.find(s => s.value === currentStyle) || dividerStyles[0];
 
     return (
@@ -107,10 +112,10 @@ export const DividerBlock = createReactBlockSpec(
     {
         render: (props) => {
             const { block, editor } = props;
-            const style = block.props.style || 'solid';
+            const style = (block.props.style || 'solid') as DividerStyle;
             const { isSelected, selectBlock } = useBlockSelection(block.id);
 
-            const handleStyleChange = (newStyle) => {
+            const handleStyleChange = (newStyle: DividerStyle) => {
                 editor.updateBlock(block, {
                     type: 'divider',
                     props: { ...block.props, style: newStyle },
@@ -191,7 +196,6 @@ export const DividerBlock = createReactBlockSpec(
 );
 
 export default DividerBlock;
-
 
 
 
