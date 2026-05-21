@@ -13,6 +13,8 @@ export type MediaLibraryItem = MediaRecord & {
   url?: string;
   mime_type?: string;
   created_at?: string;
+  aspect_ratio?: string | null;
+  alt_text?: string | null;
 };
 
 export const isMediaItemImage = (item: MediaLibraryItem): boolean => {

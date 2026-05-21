@@ -11,9 +11,17 @@ interface OptimizedImageProps {
   item: MediaLibraryItem;
   className?: string;
   priority?: boolean;
+  width?: number;
+  height?: number;
 }
 
-export const OptimizedImage = ({ item, className = "", priority = false }: OptimizedImageProps) => {
+export const OptimizedImage = ({
+  item,
+  className = "",
+  priority = false,
+  width: propWidth,
+  height: propHeight
+}: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const parsed = parseVariantsJson(item);
   const placeholder = parsed?.placeholder;
@@ -22,8 +30,8 @@ export const OptimizedImage = ({ item, className = "", priority = false }: Optim
   // Build srcset from available variants
   let srcset = '';
   let src = item.url || '';
-  let width: number | undefined = undefined;
-  let height: number | undefined = undefined;
+  let width: number | undefined = propWidth;
+  let height: number | undefined = propHeight;
 
   if (variants) {
     const srcsetParts: string[] = [];
@@ -37,15 +45,29 @@ export const OptimizedImage = ({ item, className = "", priority = false }: Optim
     const selectedVariant = getVariantForContainer(slot, 'thumbnail', 'lg');
     if (selectedVariant) {
       src = resolveVariantUrl(selectedVariant) || src;
-      width = selectedVariant.width;
-      height = selectedVariant.height;
+      if (!width) width = selectedVariant.width;
+      if (!height) height = selectedVariant.height;
     }
   }
 
   // Fallback to item URL if calculation failed
   if (!src) src = item.url || '';
 
-  // Defensive fallbacks to prevent empty width/height attributes
+  // Dynamic dimension fallback using aspect_ratio database column (preventing CLS)
+  if (!width || !height) {
+    const ratioStr = item.aspect_ratio ?? item.aspectRatio;
+    if (ratioStr && ratioStr.includes(':')) {
+      const [wPart, hPart] = ratioStr.split(':').map(Number);
+      if (wPart > 0 && hPart > 0) {
+        // Compute proportional dimensions relative to 300px base width
+        const baseWidth = 300;
+        if (!width) width = baseWidth;
+        if (!height) height = Math.round((baseWidth * hPart) / wPart);
+      }
+    }
+  }
+
+  // Defensive fallbacks to prevent empty width/height attributes under any circumstance
   const finalWidth = width || 150;
   const finalHeight = height || 150;
 
@@ -65,7 +87,7 @@ export const OptimizedImage = ({ item, className = "", priority = false }: Optim
         sizes="180px"
         width={finalWidth}
         height={finalHeight}
-        alt={item.altText || item.name}
+        alt={item.alt_text ?? item.altText ?? item.name}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}
         className={`w-full h-full object-cover transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
