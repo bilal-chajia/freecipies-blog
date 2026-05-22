@@ -148,7 +148,7 @@ END;
 
 -- 2. TAXONOMIES (Structure du site)
 
---           - SQL: High-frequency filtering (slug, parent, is_online).
+--           - SQL: High-frequency filtering (slug, parent, workflow_status).
 --           - JSON: Rich content payloads (images with variants, config).
 --
 -- Contract: docs/CATEGORIES_TABLE_CONTRACT.md
