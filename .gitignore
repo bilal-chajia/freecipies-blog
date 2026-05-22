@@ -87,6 +87,7 @@ db/DATABASE_SCHEMA.md
 # Temporary test and audit outputs
 temp_res.html
 lighthouse-*.json
+video record/
 
 # Expanded Local environment variables
 .env.local

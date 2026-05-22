@@ -95,19 +95,23 @@ export default function MetadataPanel({
 
         {/* Caption */}
         <div className="space-y-1">
-          <Label htmlFor="caption" className="text-xs font-medium">Caption</Label>
+          <Label htmlFor="caption" className="text-xs font-medium">
+            Caption <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="caption"
             value={metadata.caption}
             onChange={(e) => onMetadataChange({ ...metadata, caption: e.target.value })}
-            placeholder="Optional caption"
+            placeholder="Visible caption"
             className="h-8 text-sm"
           />
         </div>
 
         {/* Credit (Author) */}
         <div className="space-y-1">
-          <Label htmlFor="credit" className="text-xs font-medium">Credit</Label>
+          <Label htmlFor="credit" className="text-xs font-medium">
+            Credit <span className="text-destructive">*</span>
+          </Label>
           <Select
             value={metadata.creditAuthorId || ''}
             onValueChange={(value) => onMetadataChange({ ...metadata, creditAuthorId: value })}

@@ -7,9 +7,11 @@ import type { AxiosRequestConfig } from 'axios';
 
 interface UploadVariantInput {
   upload_key?: string;
+  uploadKey?: string;
   width?: number;
   height?: number;
   size_bytes?: number;
+  sizeBytes?: number;
 }
 
 interface ConfirmUploadInput {
@@ -41,14 +43,16 @@ interface StoredUploadVariant {
 
 const toStoredUploadVariant = (variant: UploadVariantInput | undefined | null): StoredUploadVariant | undefined => {
   if (!variant) return undefined;
-  if (!variant.upload_key || !variant.width || !variant.height) return undefined;
+  const uploadKey = variant.upload_key ?? variant.uploadKey;
+  if (!uploadKey || !variant.width || !variant.height) return undefined;
   const out: StoredUploadVariant = {
-    upload_key: variant.upload_key,
+    upload_key: uploadKey,
     width: variant.width,
     height: variant.height,
   };
-  if (typeof variant.size_bytes === 'number') {
-    out.size_bytes = variant.size_bytes;
+  const sizeBytes = variant.size_bytes ?? variant.sizeBytes;
+  if (typeof sizeBytes === 'number') {
+    out.size_bytes = sizeBytes;
   }
   return out;
 };

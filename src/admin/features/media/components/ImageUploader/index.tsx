@@ -584,8 +584,12 @@ export default function ImageUploader({
 
   const numericAspect = useMemo(() => ASPECT_RATIOS[aspect], [aspect]);
   const canUpload = useMemo(() =>
-    selectedFile && metadata.filename.trim() && metadata.altText.trim() && selectedCredit,
-    [selectedFile, metadata.filename, metadata.altText, selectedCredit]
+    selectedFile
+    && metadata.filename.trim()
+    && metadata.altText.trim()
+    && metadata.caption.trim()
+    && selectedCredit,
+    [selectedFile, metadata.filename, metadata.altText, metadata.caption, selectedCredit]
   );
 
   return (
