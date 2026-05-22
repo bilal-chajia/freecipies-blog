@@ -173,15 +173,15 @@ const TagsList = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="flex flex-col gap-2">
-          <div className="h-8 w-64 bg-muted rounded-lg" />
-          <div className="h-4 w-96 bg-muted rounded-md" />
+      <div className="space-y-4 animate-pulse">
+        <div className="flex flex-col gap-1">
+          <div className="h-6 w-48 bg-muted rounded-md" />
+          <div className="h-4 w-80 bg-muted rounded-md" />
         </div>
-        <div className="h-12 w-full bg-muted rounded-xl" />
+        <div className="h-9 w-full bg-muted rounded-lg" />
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {[...Array(10)].map((_, i) => (
-            <div key={i} className="h-32 bg-muted rounded-2xl" />
+            <div key={i} className="h-28 bg-muted rounded-lg" />
           ))}
         </div>
       </div>
@@ -189,39 +189,39 @@ const TagsList = () => {
   }
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-4 pb-6">
       {/* Premium Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
-            <Tag className="size-4" />
+          <div className="flex items-center gap-2 text-primary font-semibold text-xs mb-0.5 uppercase tracking-wider">
+            <Tag className="size-3.5" />
             Metatags & Logic
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-balance">Content Tags</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl font-bold tracking-tight text-balance">Content Tags</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             System labels to aggregate content and power smart recommendations.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => setIsCreatingNew(true)} className="h-11 px-6 gap-2 shadow-sm rounded-xl" disabled={isCreatingNew}>
-            <Plus className="size-4" />
+          <Button onClick={() => setIsCreatingNew(true)} className="h-9 px-4 gap-2 shadow-xs rounded-lg" disabled={isCreatingNew}>
+            <Plus className="size-3.5" />
             New Label
           </Button>
         </div>
       </div>
 
       {/* Modern Search Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center">
+      <div className="flex flex-col sm:flex-row gap-3 items-center">
         <div className="relative flex-1 w-full max-w-xl">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground opacity-60" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground opacity-60" />
           <Input
             placeholder="Search tags by label or slug..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-12 pl-10 border-none bg-card shadow-sm ring-1 ring-border/50 rounded-xl focus-visible:ring-primary/50 transition-all"
+            className="h-9 pl-9 border border-border/80 bg-card rounded-lg focus-visible:ring-primary/50 transition-all"
           />
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-accent/50 rounded-lg border border-border/30 ml-auto">
+        <div className="flex items-center gap-2 px-2.5 py-1 bg-accent/50 rounded-lg border border-border/30 ml-auto">
           <span className="text-xs font-bold text-muted-foreground">{tags.length}</span>
           <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">Registered Tags</span>
         </div>
@@ -239,35 +239,35 @@ const TagsList = () => {
           {/* Create New Block */}
           {isCreatingNew && (
             <motion.div layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-              <Card className="p-5 border-2 border-primary/20 bg-primary/5 shadow-lg rounded-2xl flex flex-col gap-4">
+              <Card className="p-4 border border-primary/30 bg-primary/5 shadow-xs rounded-lg flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">New Label</span>
                   <button onClick={handleCancelNew} className="text-muted-foreground hover:text-foreground transition-colors">
-                    <X className="size-4" />
+                    <X className="size-3.5" />
                   </button>
                 </div>
                 <Input
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   placeholder="Enter tag name..."
-                  className="h-8 px-3 bg-background border-none ring-1 ring-border/50 text-sm font-bold"
+                  className="h-8 px-2 bg-background border border-border/80 text-sm font-bold rounded-md"
                   autoFocus
                 />
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <button
-                      className="h-8 w-8 rounded-full border-2 border-background shadow-md overflow-hidden ring-1 ring-border/40"
+                      className="h-7 w-7 rounded-md border border-border/80 shadow-xs overflow-hidden"
                       style={{ backgroundColor: newTagColor }}
                       onClick={() => setShowNewColorPicker(!showNewColorPicker)}
                     />
                     {showNewColorPicker && (
-                      <div className="absolute top-10 left-0 z-50">
+                      <div className="absolute top-9 left-0 z-50">
                         <ColorPicker color={newTagColor} onChange={(val) => setNewTagColor(val || '#ff6b35')} onClose={() => setShowNewColorPicker(false)} />
                       </div>
                     )}
                   </div>
                   <div className="flex-1" />
-                  <Button size="sm" className="h-8 px-4 font-bold text-[11px] uppercase tracking-wider" onClick={handleCreateTag} disabled={!newTagName.trim() || saving}>
+                  <Button size="sm" className="h-8 px-3 font-bold text-[10px] uppercase tracking-wider rounded-md" onClick={handleCreateTag} disabled={!newTagName.trim() || saving}>
                     Create
                   </Button>
                 </div>
@@ -294,19 +294,19 @@ const TagsList = () => {
                 layout
                 className="h-full"
               >
-                <Card className={`group p-5 rounded-2xl border border-border/50 shadow-sm transition-all duration-300 h-full flex flex-col ${editingId === tag.slug ? 'ring-2 ring-primary/20 border-primary/40 bg-accent/20' : 'hover:shadow-md hover:border-primary/20 bg-card'}`}>
+                <Card className={`group p-4 rounded-lg border border-border/80 shadow-xs transition-all duration-200 h-full flex flex-col ${editingId === tag.slug ? 'ring-1 ring-primary/30 border-primary/40 bg-accent/10' : 'hover:border-border hover:bg-accent/5 bg-card'}`}>
                   {editingId === tag.slug ? (
                     <div className="flex flex-col gap-3 h-full">
                       <Input
                         value={editingName}
                         onChange={(e) => setEditingName(e.target.value)}
-                        className="h-8 px-3 bg-background border-none ring-1 ring-border/50 text-sm font-bold"
+                        className="h-8 px-2 bg-background border border-border/80 text-sm font-bold rounded-md"
                         autoFocus
                       />
                       <div className="flex items-center gap-2">
                         <div className="relative">
                           <button
-                            className="h-7 w-7 rounded-full border-2 border-background shadow-sm ring-1 ring-border/40"
+                            className="h-7 w-7 rounded-md border border-border/80 shadow-xs"
                             style={{ backgroundColor: editingColor }}
                             onClick={() => setShowEditColorPicker(!showEditColorPicker)}
                           />
@@ -317,28 +317,28 @@ const TagsList = () => {
                           )}
                         </div>
                         <div className="flex-1" />
-                        <button onClick={handleCancelEdit} className="p-1.5 hover:bg-muted rounded-lg transition-colors">
-                          <X className="size-4" />
+                        <button onClick={handleCancelEdit} className="p-1.5 hover:bg-muted rounded-md transition-colors">
+                          <X className="size-3.5" />
                         </button>
-                        <button onClick={handleSaveEdit} disabled={!editingName.trim() || saving} className="p-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors">
-                          <Check className="size-4" />
+                        <button onClick={handleSaveEdit} disabled={!editingName.trim() || saving} className="p-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
+                          <Check className="size-3.5" />
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-col h-full relative">
-                      <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-start justify-between mb-3">
                         <div
-                          className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm"
+                          className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest"
                           style={{ backgroundColor: tag.color, color: getContrastColor(tag.color) }}
                         >
                           {tag.name}
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => handleStartEdit(tag)} className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors">
+                          <button onClick={() => handleStartEdit(tag)} className="p-1 hover:bg-primary/10 hover:text-primary rounded-md transition-colors">
                             <Edit className="size-3.5" />
                           </button>
-                          <button onClick={() => setDeleteModal({ isOpen: true, tagToDelete: tag })} className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors">
+                          <button onClick={() => setDeleteModal({ isOpen: true, tagToDelete: tag })} className="p-1 hover:bg-destructive/10 hover:text-destructive rounded-md transition-colors">
                             <Trash2 className="size-3.5" />
                           </button>
                         </div>

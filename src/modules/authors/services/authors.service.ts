@@ -31,13 +31,13 @@ async function refreshAuthorArticleCaches(db: D1Database | DrizzleDb, articleIds
  */
 export async function getAuthors(
   db: D1Database | DrizzleDb,
-  options?: { isOnline?: boolean }
+  options?: { workflowStatus?: 'draft' | 'published' | 'archived' }
 ): Promise<Author[]> {
   const drizzle = getDb(db);
 
   const conditions = [isNull(authors.deletedAt)];
-  if (options?.isOnline !== undefined) {
-    conditions.push(eq(authors.isOnline, options.isOnline));
+  if (options?.workflowStatus !== undefined) {
+    conditions.push(eq(authors.workflowStatus, options.workflowStatus));
   }
 
   return await drizzle
@@ -156,24 +156,7 @@ export async function deleteAuthorById(db: D1Database | DrizzleDb, id: number): 
   return true;
 }
 
-/**
- * Toggle isOnline status by ID
- */
-export async function toggleOnlineById(db: D1Database | DrizzleDb, id: number): Promise<Author | null> {
-  const drizzle = getDb(db);
 
-  const author = await getAuthorById(db, id);
-  if (!author) return null;
-
-  await drizzle.update(authors)
-    .set({
-      isOnline: !author.isOnline,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(authors.id, id));
-
-  return getAuthorById(db, id);
-}
 
 /**
  * Toggle isFeatured status by ID

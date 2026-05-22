@@ -74,21 +74,21 @@ const AdminLayout: React.FC = () => {
   const isPanelLayout = isSettingsPage || isHomepagePage;
 
   const headerClassName = isPanelLayout
-    ? "flex h-12 shrink-0 items-center justify-between border-b px-2"
-    : "flex h-12 shrink-0 items-center justify-between border-b px-4";
+    ? "flex h-11 shrink-0 items-center justify-between border-b px-3 bg-card"
+    : "flex h-11 shrink-0 items-center justify-between border-b px-4 bg-card";
   const insetClassName = isEditorPage || isPanelLayout
-    ? "min-h-0 overflow-hidden h-[100svh]"
-    : "h-svh overflow-hidden flex flex-col";
+    ? "min-h-0 overflow-hidden h-[100svh] bg-background"
+    : "h-svh overflow-hidden flex flex-col bg-background";
   const mainClassName = isPanelLayout
     ? "flex-1 overflow-hidden min-h-0 flex flex-col"
     : isEditorPage
-      ? "flex-1 overflow-hidden px-3 py-4 min-h-0 flex flex-col"
-      : "flex-1 overflow-auto overscroll-y-contain p-6";
+      ? "flex-1 overflow-hidden min-h-0 flex flex-col"
+      : "flex-1 overflow-auto overscroll-y-contain p-4 lg:p-6 bg-background";
   const contentClassName = isPanelLayout
     ? "w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col"
     : isEditorPage
       ? "mx-auto w-full max-w-none flex-1 min-h-0 overflow-hidden flex flex-col"
-      : "mx-auto max-w-6xl";
+      : "mx-auto max-w-7xl";
 
   return (
     <SidebarProvider>

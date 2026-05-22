@@ -17,7 +17,7 @@ export const CreateAuthorSchema = z.object({
   bio: z.string().max(5000).optional(),
   avatarUrl: z.string().url('Invalid avatar URL').optional(),
   socialLinks: z.record(z.string(), z.string()).optional(),
-  isOnline: z.boolean().optional(),
+  workflowStatus: z.enum(['draft', 'published', 'archived']).optional(),
   sortOrder: z.number().int().min(0).optional(),
   seoJson: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
   configJson: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),

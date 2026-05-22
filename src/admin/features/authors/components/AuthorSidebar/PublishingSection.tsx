@@ -4,10 +4,11 @@ import { Label } from '@/ui/label';
 import { Switch } from '@/ui/switch';
 import { Input } from '@/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 
 interface PublishingSectionProps {
   formData: {
-    isOnline?: boolean;
+    workflowStatus?: string;
     isFeatured?: boolean;
     sortOrder?: number;
   };
@@ -40,18 +41,21 @@ export default function PublishingSection({
                 </Button>
 
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor="isOnline" className="text-sm font-medium">Visibility</Label>
-                        <div className="flex items-center gap-2">
-                            <span className={`text-xs font-medium ${formData.isOnline ? 'text-success' : 'text-muted-foreground'}`}>
-                                {formData.isOnline ? 'Live' : 'Hidden'}
-                            </span>
-                            <Switch
-                                id="isOnline"
-                                checked={formData.isOnline}
-                                onCheckedChange={(checked) => onInputChange('isOnline', checked)}
-                            />
-                        </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="workflowStatus" className="text-sm font-medium">Status</Label>
+                        <Select
+                            value={formData.workflowStatus || 'draft'}
+                            onValueChange={(value) => onInputChange('workflowStatus', value)}
+                        >
+                            <SelectTrigger id="workflowStatus" className="h-8">
+                                <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="draft">Draft</SelectItem>
+                                <SelectItem value="published">Published</SelectItem>
+                                <SelectItem value="archived">Archived</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="flex items-center justify-between">

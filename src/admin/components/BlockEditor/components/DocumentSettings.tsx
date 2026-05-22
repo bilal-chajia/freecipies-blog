@@ -50,7 +50,7 @@ type SelectOption = {
 type EditorFormData = Record<string, unknown> & {
     categoryId?: string | number | null;
     authorId?: string | number | null;
-    isOnline?: boolean;
+    workflowStatus?: string;
     isFavorite?: boolean;
     publishedAt?: string;
     selectedTags?: Array<string | number>;
@@ -281,17 +281,22 @@ function StatusSection({
 
             <div className="structure-item">
                 <Globe className="structure-item-icon" />
-                <span className="structure-item-label">Status</span>
-                <Badge
-                    variant={formData.isOnline ? 'default' : 'secondary'}
-                    className={cn(
-                        'ml-auto cursor-pointer text-xs',
-                        formData.isOnline ? 'bg-green-600 hover:bg-green-700' : ''
-                    )}
-                    onClick={() => onInputChange('isOnline', !formData.isOnline)}
+                <span className="structure-item-label mr-2">Status</span>
+                <Select
+                    value={(formData.workflowStatus as string) || 'draft'}
+                    onValueChange={(val) => onInputChange('workflowStatus', val)}
                 >
-                    {formData.isOnline ? 'Online' : 'Draft'}
-                </Badge>
+                    <SelectTrigger className="h-8 w-[120px] ml-auto text-xs">
+                        <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="in_review">In Review</SelectItem>
+                        <SelectItem value="scheduled">Scheduled</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="structure-item">

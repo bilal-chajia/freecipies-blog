@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, X } from 'lucide-react';
 import { DateRangePicker } from '@/ui/date-range-picker';
 import { Button } from '@/ui/button';
@@ -75,6 +75,13 @@ const ArticleFilters = ({
     tags,
     fixedType
 }: ArticleFiltersProps) => {
+    const [searchValue, setSearchValue] = useState(localFilters.search);
+
+    // Sync back when filters are cleared externally (e.g. "Clear Filters" button)
+    useEffect(() => {
+        setSearchValue(localFilters.search);
+    }, [localFilters.search]);
+
     const activeFilterCount = Object.entries(localFilters).filter(([key, value]) => {
         if (fixedType && key === 'type') return false;
         return value !== '' && value !== 'all' && (!Array.isArray(value) || value.length > 0);
@@ -97,8 +104,11 @@ const ArticleFilters = ({
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-60" />
                     <Input
                         placeholder="Search for articles, authors, or content..."
-                        value={localFilters.search}
-                        onChange={(e) => onFilterChange('search', e.target.value)}
+                        value={searchValue}
+                        onChange={(e) => {
+                            setSearchValue(e.target.value);
+                            onFilterChange('search', e.target.value);
+                        }}
                         className="pl-10 h-11 bg-card border-none shadow-sm ring-1 ring-border/50 focus-visible:ring-primary/50 text-sm rounded-xl transition-all"
                     />
                 </div>

@@ -99,26 +99,26 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
   });
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-4 pb-6">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
-            <ImageIcon className="size-4" />
+          <div className="flex items-center gap-2 text-primary font-semibold text-xs mb-0.5 uppercase tracking-wider">
+            <ImageIcon className="size-3.5" />
             Assets & CDN
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-balance">Media Library</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl font-bold tracking-tight text-balance">Media Library</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Centralized repository for high-fidelity images, videos, and documentation.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <Button
-            className="h-11 px-6 gap-2 shadow-sm rounded-xl"
+            className="h-9 px-4 gap-2 shadow-xs rounded-lg"
             onClick={() => setShowUploadDialog(true)}
           >
-            <Upload className="size-4" />
+            <Upload className="size-3.5" />
             Upload Assets
           </Button>
         </div>
@@ -132,16 +132,16 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background/95 backdrop-blur-xl border border-border/60 shadow-2xl rounded-2xl px-5 py-3"
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background/95 backdrop-blur-xl border border-border/80 shadow-xs rounded-lg px-4 py-2.5"
           >
             <span className="text-sm font-semibold text-muted-foreground tabular-nums">
               {selectedMedia.length} selected
             </span>
             <div className="w-px h-5 bg-border/60" />
-            <Button variant="ghost" size="sm" onClick={clearSelection} className="h-9 px-4 rounded-xl">
+            <Button variant="ghost" size="sm" onClick={clearSelection} className="h-8 px-3 rounded-md">
               <X className="size-3.5 mr-1.5" /> Clear
             </Button>
-            <Button onClick={handleBulkDelete} size="sm" variant="destructive" className="h-9 px-4 gap-1.5 rounded-xl">
+            <Button onClick={handleBulkDelete} size="sm" variant="destructive" className="h-8 px-3 gap-1.5 rounded-md">
               <Trash2 className="h-3.5 w-3.5" /> Delete
             </Button>
           </motion.div>
@@ -149,24 +149,24 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
       </AnimatePresence>
 
       {/* Control Tools Bar */}
-      <div className="flex flex-col xl:flex-row gap-4">
+      <div className="flex flex-col xl:flex-row gap-3">
         <div className="relative flex-1 group">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-60 group-hover:text-primary transition-colors duration-300" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground opacity-60 group-hover:text-primary transition-colors duration-300" />
           <Input
             placeholder="Search assets by name, tag, or metadata..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 pl-10 border-none bg-card shadow-sm ring-1 ring-border/50 rounded-2xl focus-visible:ring-primary/50 transition-all text-xs"
+            className="h-9 pl-9 border border-border/80 bg-card rounded-lg focus-visible:ring-primary/50 transition-all text-xs"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-35 h-9 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
-              <Filter className="size-3.5 mr-2 opacity-60" />
+            <SelectTrigger className="w-35 h-9 border border-border/80 bg-card rounded-lg text-xs font-bold shadow-xs">
+              <Filter className="size-3.5 mr-1.5 opacity-60" />
               <SelectValue placeholder="Type" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl">
+            <SelectContent className="rounded-lg">
               <SelectItem value="all">All Assets</SelectItem>
               <SelectItem value="image">Imagery</SelectItem>
               <SelectItem value="video">Motion</SelectItem>
@@ -175,11 +175,11 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
           </Select>
 
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-37.5 h-9 border-none ring-1 ring-border/50 bg-card rounded-2xl text-xs font-bold">
-              <RefreshCw className="h-3.5 w-3.5 mr-2 opacity-60" />
+            <SelectTrigger className="w-37.5 h-9 border border-border/80 bg-card rounded-lg text-xs font-bold shadow-xs">
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5 opacity-60" />
               <SelectValue placeholder="Sorted By" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl">
+            <SelectContent className="rounded-lg">
               <SelectItem value="created_at">Recent Activity</SelectItem>
               <SelectItem value="name">Alphanumeric</SelectItem>
             </SelectContent>
@@ -196,11 +196,11 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
             className="w-42.5"
           />
 
-          <div className="flex p-1 bg-accent/50 rounded-2xl border border-border/30 h-9">
-            <Button variant="ghost" onClick={() => setViewMode('grid')} className={`h-full w-10 p-0 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
+          <div className="flex p-0.5 bg-accent/50 rounded-lg border border-border/30 h-9">
+            <Button variant="ghost" onClick={() => setViewMode('grid')} className={`h-full w-9 p-0 rounded-md transition-all ${viewMode === 'grid' ? 'bg-card shadow-xs text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
               <Grid className="size-4" />
             </Button>
-            <Button variant="ghost" onClick={() => setViewMode('list')} className={`h-full w-10 p-0 rounded-xl transition-all ${viewMode === 'list' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
+            <Button variant="ghost" onClick={() => setViewMode('list')} className={`h-full w-9 p-0 rounded-md transition-all ${viewMode === 'list' ? 'bg-card shadow-xs text-primary' : 'text-muted-foreground hover:bg-card/40'}`}>
               <List className="size-4" />
             </Button>
           </div>
@@ -208,7 +208,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
       </div>
 
       {/* Main Library Display */}
-      <div className="min-h-125 bg-accent/20 rounded-[40px] p-6 border border-border/30">
+      <div className="min-h-125 bg-accent/5 rounded-lg p-4 border border-border/80 shadow-xs">
         <AnimatePresence mode="wait">
           {viewMode === 'grid' ? (
             <MediaGrid

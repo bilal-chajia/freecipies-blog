@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ request }) => {
         // Build query options - always filter by type='roundup'
         const options: Record<string, unknown> = {
             type: 'roundup',
-            isOnline: true,
+            workflowStatus: 'published',
             limit,
             offset,
         };

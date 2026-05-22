@@ -84,7 +84,7 @@ export interface ArticleQueryOptions {
   dateFrom?: string;
   dateTo?: string;
   publishedAfter?: Date;
-  isOnline?: boolean;
+  workflowStatus?: string;
   search?: string;
   sortBy?: 'publishedAt' | 'title' | 'viewCount';
   sortOrder?: 'asc' | 'desc';
@@ -109,8 +109,10 @@ export async function getArticles(
   // Filter soft-deleted
   conditions.push(isNull(articles.deletedAt));
 
-  if (options?.isOnline === true) {
-    conditions.push(eq(articles.isOnline, true));
+  if (options?.workflowStatus) {
+    if (options.workflowStatus !== 'all') {
+      conditions.push(eq(articles.workflowStatus, options.workflowStatus));
+    }
   }
 
   if (options?.type) {
@@ -512,25 +514,36 @@ export async function deleteArticleById(db: D1Database | DrizzleDb, id: number):
 }
 
 /**
- * Toggle online status by ID
+ * Set workflow status by ID
  */
-export async function toggleOnlineById(db: D1Database | DrizzleDb, id: number): Promise<{ isOnline: boolean } | null> {
+export async function setWorkflowStatusById(
+  db: D1Database | DrizzleDb,
+  id: number,
+  status: 'draft' | 'in_review' | 'scheduled' | 'published' | 'archived'
+): Promise<{ workflowStatus: string } | null> {
   const drizzle = getDb(db);
 
   const current = await drizzle.query.articles.findFirst({
     where: and(eq(articles.id, id), isNull(articles.deletedAt)),
-    columns: { isOnline: true }
+    columns: { id: true }
   });
 
   if (!current) return null;
 
-  const newValue = !current.isOnline;
+  const updateFields: any = {
+    workflowStatus: status,
+    updatedAt: new Date().toISOString()
+  };
+
+  if (status === 'published') {
+    updateFields.publishedAt = new Date().toISOString();
+  }
 
   await drizzle.update(articles)
-    .set({ isOnline: newValue, updatedAt: new Date().toISOString() })
+    .set(updateFields)
     .where(eq(articles.id, id));
 
-  return { isOnline: newValue };
+  return { workflowStatus: status };
 }
 
 /**
@@ -701,7 +714,7 @@ export async function getPopularArticles(
     })
     .from(articles)
     .leftJoin(categories, eq(articles.categoryId, categories.id))
-    .where(eq(articles.isOnline, true))
+    .where(and(eq(articles.workflowStatus, 'published'), isNull(articles.deletedAt)))
     .orderBy(desc(articles.viewCount), desc(articles.createdAt))
     .limit(limit);
 

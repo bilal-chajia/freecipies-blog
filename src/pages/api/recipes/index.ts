@@ -37,10 +37,9 @@ export const GET: APIRoute = async ({ request }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        // Build query options - always filter by type='recipe'
         const options: ArticleQueryOptions = {
             type: 'recipe',
-            isOnline: true,
+            workflowStatus: 'published',
             limit,
             offset,
         };

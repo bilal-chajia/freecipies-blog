@@ -269,7 +269,7 @@ Rules:
 - Article ordering inside a category page uses `article_sort_by` and
   `article_sort_order`.
 - Category page article lists must include only public active articles:
-  `articles.is_online = 1` and `articles.deleted_at IS NULL`.
+  `articles.workflow_status = 'published'` and `articles.deleted_at IS NULL`.
 - Category page article lists must filter by `articles.category_id`.
 - `show_filters` controls category-page filter UI only; it does not change the
   source of category/tag relationships.

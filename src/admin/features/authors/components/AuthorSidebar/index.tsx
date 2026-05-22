@@ -7,7 +7,7 @@ import SocialLinksSection from './SocialLinksSection';
 
 interface AuthorSidebarProps {
   formData: {
-    isOnline?: boolean;
+    workflowStatus?: string;
     isFeatured?: boolean;
     sortOrder?: number;
     role?: string;

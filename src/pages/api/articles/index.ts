@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
 
   // Validate all query params (pagination + filters) via Zod
-  const { page, limit, offset, slug, category, author, tag, type, status, search, dateFrom, dateTo } = validateQuery(url.searchParams, ArticleListQuery);
+  const { page, limit, offset, slug, category, author, tag, type, workflowStatus, search, dateFrom, dateTo } = validateQuery(url.searchParams, ArticleListQuery);
 
   try {
     const db = env.DB;
@@ -36,23 +36,12 @@ export const GET: APIRoute = async ({ request }) => {
       return new Response(body, { status: httpStatus, headers });
     }
 
-    // Determine isOnline filter based on status param
-    let isOnlineFilter: boolean | undefined;
-    if (status === 'online') {
-      isOnlineFilter = true;
-    } else if (status === 'offline') {
-      isOnlineFilter = false;
-    } else {
-      // 'all' or not specified - show all articles
-      isOnlineFilter = undefined;
-    }
-
     const articles = await getArticles(db, {
       type: type || undefined,
       categorySlug: category || undefined,
       authorSlug: author || undefined,
       tagSlug: tag || undefined,
-      isOnline: isOnlineFilter,
+      workflowStatus: workflowStatus || undefined,
       search: search || undefined,
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,

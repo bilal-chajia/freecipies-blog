@@ -107,15 +107,15 @@ const BoardsList = () => {
 
   // Skeleton board card
   const SkeletonBoard = () => (
-    <div className="border rounded-lg p-4 animate-pulse">
-      <div className="aspect-video w-full bg-muted relative overflow-hidden rounded-t-lg" />
-      <div className="p-4">
-        <div className="h-6 w-32 bg-muted rounded mb-2" />
+    <div className="border border-border/80 bg-card rounded-lg p-3 animate-pulse shadow-xs">
+      <div className="aspect-video w-full bg-muted relative overflow-hidden rounded-md" />
+      <div className="p-3">
+        <div className="h-5 w-32 bg-muted rounded mb-2" />
         <div className="h-4 w-full bg-muted rounded mb-3" />
         <div className="h-4 w-24 bg-muted rounded mb-4" />
         <div className="flex gap-2">
-          <div className="h-8 w-16 bg-muted rounded" />
-          <div className="h-8 w-18 bg-muted rounded" />
+          <div className="h-7 w-14 bg-muted rounded" />
+          <div className="h-7 w-16 bg-muted rounded" />
         </div>
       </div>
     </div>
@@ -123,15 +123,15 @@ const BoardsList = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="h-8 w-44 bg-muted rounded animate-pulse" />
+          <div className="h-6 w-36 bg-muted rounded animate-pulse" />
           <div className="flex gap-2">
-            <div className="h-10 w-24 bg-muted rounded animate-pulse" />
-            <div className="h-10 w-28 bg-muted rounded animate-pulse" />
+            <div className="h-9 w-20 bg-muted rounded animate-pulse" />
+            <div className="h-9 w-24 bg-muted rounded animate-pulse" />
           </div>
         </div>
-        <div className="h-10 w-full bg-muted rounded animate-pulse" />
+        <div className="h-9 w-full bg-muted rounded animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
             <SkeletonBoard key={i} />
@@ -154,26 +154,26 @@ const BoardsList = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-6">
       {/* Search Bar + Buttons */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <div className="relative flex-1">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 size-3.5 text-muted-foreground opacity-60"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <Input
             type="text"
             placeholder="Search boards..."
-            className="pl-10"
+            className="h-9 pl-9 border border-border/80 bg-card rounded-lg focus-visible:ring-primary/50 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button variant="outline" onClick={loadBoards}>
-          <RefreshCw className="w-4 h-4 mr-2" />
+        <Button variant="outline" size="sm" onClick={loadBoards} className="h-9 px-3 rounded-lg border border-border/80 shadow-xs">
+          <RefreshCw className="size-3.5 mr-1.5 animate-spin-slow" />
           Refresh
         </Button>
         <Link to="/pinterest/boards/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button size="sm" className="h-9 px-4 rounded-lg shadow-xs">
+            <Plus className="size-3.5 mr-1.5" />
             New Board
           </Button>
         </Link>
@@ -202,15 +202,13 @@ const BoardsList = () => {
               key={board.id}
               variants={itemVariants}
               layout
-              whileHover={{ y: -4, scale: 1.02 }}
-              transition={{ type: "spring" as const, stiffness: 400, damping: 25 }}
             >
-              <Card className="overflow-hidden flex flex-col group h-full hover:shadow-md transition-all">
+              <Card className="overflow-hidden flex flex-col group h-full rounded-lg border border-border/80 bg-card shadow-xs hover:border-border hover:bg-accent/5 transition-all duration-200">
                 <div className="aspect-video w-full bg-muted relative overflow-hidden">
                   {(() => {
                     if (!board.cover_image_url) return (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
-                        <ImageIcon size={40} />
+                        <ImageIcon size={32} />
                       </div>
                     );
 
@@ -223,7 +221,7 @@ const BoardsList = () => {
 
                     if (!previewUrl) return (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
-                        <ImageIcon size={40} />
+                        <ImageIcon size={32} />
                       </div>
                     );
 
@@ -231,50 +229,50 @@ const BoardsList = () => {
                       <img 
                         src={previewUrl} 
                         alt={imageAlt || board.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                       />
                     );
                   })()}
                   <div className="absolute top-2 right-2">
-                    <Badge variant={board.is_active ? "default" : "secondary"}>
+                    <Badge variant={board.is_active ? "default" : "secondary"} className="rounded-md px-1.5 py-0.5 text-[9px] uppercase tracking-wider">
                       {board.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 </div>
                 
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-lg line-clamp-1">{board.name}</CardTitle>
+                <CardHeader className="p-3 pb-1">
+                  <CardTitle className="text-sm font-bold line-clamp-1">{board.name}</CardTitle>
                 </CardHeader>
                 
-                <CardContent className="p-4 pt-0 flex-1">
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                <CardContent className="p-3 pt-0 flex-1">
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">
                     {board.description || 'No description'}
                   </p>
-                  <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/60">
                     <span>Slug: {board.slug}</span>
                   </div>
                 </CardContent>
 
-                <CardFooter className="p-4 pt-0 gap-2">
+                <CardFooter className="p-3 pt-0 gap-1.5 mt-auto">
                   <Link to={`/pinterest/boards/${board.slug}`}>
-                    <Button size="sm" variant="outline" className="h-8">
-                      <Edit className="w-4 h-4 mr-1" />
+                    <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs rounded-md border border-border/80 shadow-xs">
+                      <Edit className="size-3.5 mr-1" />
                       Edit
                     </Button>
                   </Link>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 text-destructive hover:text-destructive"
+                    className="h-7 px-2.5 text-xs rounded-md border border-border/80 shadow-xs text-destructive hover:text-destructive hover:bg-destructive/5"
                     onClick={() => handleDeleteClick(board)}
                   >
-                    <Trash2 className="w-4 h-4 mr-1" />
+                    <Trash2 className="size-3.5 mr-1" />
                     Delete
                   </Button>
                   {board.board_url && (
                     <a href={board.board_url} target="_blank" rel="noopener noreferrer" className="ml-auto">
-                      <Button size="sm" variant="ghost" className="h-8 px-2">
-                        <ExternalLink className="w-4 h-4" />
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-md hover:bg-accent/10">
+                        <ExternalLink className="size-3.5" />
                       </Button>
                     </a>
                   )}

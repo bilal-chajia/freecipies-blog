@@ -16,10 +16,10 @@ export const GET: APIRoute = async ({ url }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        // Optional filter by isOnline status
-        const isOnlineParam = url.searchParams.get('isOnline');
-        const options = isOnlineParam !== null
-            ? { isOnline: isOnlineParam === 'true' }
+        // Optional filter by workflow status
+        const workflowStatusParam = url.searchParams.get('workflow_status') || url.searchParams.get('workflowStatus');
+        const options = workflowStatusParam !== null
+            ? { workflowStatus: workflowStatusParam as 'draft' | 'published' | 'archived' }
             : undefined;
 
         const authors = await getAuthors(env.DB, options);

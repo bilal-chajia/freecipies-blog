@@ -30,6 +30,19 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }: Cate
     await onUpdate(category.slug, { [field]: value });
   };
 
+  const handleCycleStatus = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isUpdating || localUpdating) return;
+    
+    let nextStatus: 'draft' | 'published' | 'archived' = 'draft';
+    if (category.workflowStatus === 'draft') nextStatus = 'published';
+    else if (category.workflowStatus === 'published') nextStatus = 'archived';
+    else if (category.workflowStatus === 'archived') nextStatus = 'draft';
+    
+    await onUpdate(category.slug, { workflowStatus: nextStatus });
+  };
+
   const handleColorChange = (newColor: string | null) => {
     if (newColor) setPendingColor(newColor);
   };
@@ -63,7 +76,7 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }: Cate
   return (
     <Link to={`/categories/${category.slug}`} className="block">
       <Card
-        className="group relative overflow-hidden bg-accent/50 hover:ring-2 hover:ring-primary/40 transition-all duration-300 aspect-square rounded-2xl cursor-pointer shadow-sm p-0"
+        className="group relative overflow-hidden bg-accent/50 hover:border-primary/60 hover:shadow-xs transition-all duration-300 aspect-square rounded-lg cursor-pointer shadow-none p-0"
         style={{ border: `1px solid ${badgeColor}` }}
       >
         {/* Background Image */}
@@ -119,17 +132,22 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }: Cate
 
         {/* Status Toggle (Top Left) */}
         <button
-          className={`absolute top-2 left-2 z-20 p-1.5 rounded-full backdrop-blur-sm shadow-sm transition-colors ${category.isOnline
-            ? 'bg-emerald-500/90 hover:bg-emerald-600'
-            : 'bg-zinc-700/90 hover:bg-emerald-500'
-            }`}
-          onClick={(e) => handleToggle('isOnline', !category.isOnline, e)}
-          title={category.isOnline ? 'Online' : 'Offline'}
+          className={`absolute top-2 left-2 z-20 p-1.5 rounded-full backdrop-blur-sm shadow-sm transition-colors ${
+            category.workflowStatus === 'published'
+              ? 'bg-emerald-500/90 hover:bg-emerald-600'
+              : category.workflowStatus === 'archived'
+              ? 'bg-zinc-700/90 hover:bg-zinc-800'
+              : 'bg-yellow-500/90 hover:bg-yellow-600'
+          }`}
+          onClick={handleCycleStatus}
+          title={`Status: ${category.workflowStatus || 'draft'} (Click to cycle)`}
         >
-          {category.isOnline ? (
+          {category.workflowStatus === 'published' ? (
             <Eye className="h-3 w-3 text-white" />
-          ) : (
+          ) : category.workflowStatus === 'archived' ? (
             <EyeOff className="h-3 w-3 text-white/70" />
+          ) : (
+            <EyeOff className="h-3 w-3 text-white" />
           )}
         </button>
 

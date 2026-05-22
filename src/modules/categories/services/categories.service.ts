@@ -31,14 +31,14 @@ async function refreshCategoryArticleCaches(db: D1Database | DrizzleDb, articleI
  */
 export async function getCategories(
   db: D1Database | DrizzleDb,
-  options?: { isOnline?: boolean; parentId?: number | null }
+  options?: { workflowStatus?: 'draft' | 'published' | 'archived'; parentId?: number | null }
 ): Promise<Category[]> {
   const drizzle = getDb(db);
 
   const conditions = [isNull(categories.deletedAt)];
 
-  if (options?.isOnline !== undefined) {
-    conditions.push(eq(categories.isOnline, options.isOnline));
+  if (options?.workflowStatus !== undefined) {
+    conditions.push(eq(categories.workflowStatus, options.workflowStatus));
   }
 
   if (options?.parentId !== undefined) {

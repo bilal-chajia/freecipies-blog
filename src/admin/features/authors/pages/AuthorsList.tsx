@@ -24,6 +24,7 @@ import {
 } from '@/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
 import { Badge } from '@/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import { authorsAPI } from '../../../services/api';
 import ConfirmationModal from '@/ui/confirmation-modal';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -63,14 +64,11 @@ const AuthorsList = () => {
 
     try {
       setLoading(true);
-      setError('');
       const response = await authorsAPI.getAll();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const authorsData = (response.data as any)?.data || (response.data as any) || [];
-      setAuthors(Array.isArray(authorsData) ? authorsData : []);
+      const loadedAuthors = (response.data as any)?.data || response.data;
+      setAuthors(Array.isArray(loadedAuthors) ? loadedAuthors : []);
     } catch {
-      setError('Failed to load authors. Please try again.');
-      setAuthors([]);
+      setError('Failed to fetch authors');
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
@@ -92,9 +90,26 @@ const AuthorsList = () => {
       setAuthors(authors.map(author =>
         author.slug === authorSlug ? { ...author, [field]: value } : author
       ));
-      toast.success(`${field === 'isOnline' ? 'Visibility' : 'Featured status'} updated`);
+      toast.success('Featured status updated');
     } catch {
       toast.error('Failed to update author');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleStatusChange = async (authorSlug: string, status: string) => {
+    if (updating) return;
+    setUpdating(authorSlug);
+
+    try {
+      await authorsAPI.update(authorSlug, { workflowStatus: status });
+      setAuthors(authors.map(author =>
+        author.slug === authorSlug ? { ...author, workflowStatus: status } : author
+      ));
+      toast.success('Author status updated');
+    } catch {
+      toast.error('Failed to update author status');
     } finally {
       setUpdating(null);
     }
@@ -116,35 +131,35 @@ const AuthorsList = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="flex flex-col gap-2">
-          <div className="h-8 w-64 bg-muted rounded-lg" />
-          <div className="h-4 w-96 bg-muted rounded-md" />
+      <div className="space-y-4 animate-pulse">
+        <div className="flex flex-col gap-1.5">
+          <div className="h-6 w-48 bg-muted rounded-md" />
+          <div className="h-3 w-80 bg-muted rounded-md" />
         </div>
-        <div className="h-12 w-full bg-muted rounded-xl" />
-        <div className="bg-card rounded-2xl border border-border/50 h-[400px]" />
+        <div className="h-9 w-full bg-muted rounded-lg" />
+        <div className="bg-card rounded-lg border border-border/50 h-[400px]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-4 pb-6">
       {/* Premium Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
         <div>
-          <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
-            <Users className="h-4 w-4" />
+          <div className="flex items-center gap-1.5 text-muted-foreground font-semibold text-[10px] mb-0.5 uppercase tracking-wider">
+            <Users className="h-3.5 w-3.5" />
             Team & Contributors
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-balance">Author Management</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl font-bold tracking-tight text-balance">Author Management</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Manage your content creators, their profiles, and featured status.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link to="/authors/new">
-            <Button className="h-11 px-6 gap-2 shadow-sm rounded-xl">
-              <Plus className="h-4 w-4" />
+            <Button className="h-9 px-4 gap-2 shadow-sm rounded-lg text-xs">
+              <Plus className="h-3.5 w-3.5" />
               Add New Author
             </Button>
           </Link>
@@ -153,18 +168,18 @@ const AuthorsList = () => {
 
       {/* Modern Search Actions */}
       <div className="relative w-full max-w-2xl">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-60" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground opacity-60" />
         <Input
           placeholder="Filter authors by name, role, or contact info..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="h-12 pl-10 border-none bg-card shadow-sm ring-1 ring-border/50 rounded-xl focus-visible:ring-primary/50 transition-all"
+          className="h-9 pl-9 border border-border/80 bg-card shadow-xs rounded-lg text-xs focus-visible:ring-primary/20 focus-visible:ring-offset-0 transition-all"
         />
       </div>
 
       {/* Authors Content */}
       <div className="grid grid-cols-1 gap-4">
-        <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-lg border border-border/80 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
@@ -172,7 +187,7 @@ const AuthorsList = () => {
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Author Details</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hidden md:table-cell">Contact</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hidden lg:table-cell text-center">Featured</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-center">Visibility</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-center">Status</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-right">Actions</th>
                 </tr>
               </thead>
@@ -237,18 +252,21 @@ const AuthorsList = () => {
                           </div>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-3">
-                            <Switch
-                              checked={!!author.isOnline}
-                              onCheckedChange={(checked) => handleToggle(author.slug, 'isOnline', checked)}
+                          <div className="flex items-center justify-center">
+                            <Select
+                              value={author.workflowStatus || 'draft'}
+                              onValueChange={(val) => handleStatusChange(author.slug, val)}
                               disabled={updating === author.slug}
-                              className="data-[state=checked]:bg-emerald-500"
-                            />
-                            {author.isOnline ? (
-                              <Badge variant="secondary" className="bg-success/10 text-success border-none text-[10px] font-bold uppercase">Live</Badge>
-                            ) : (
-                              <Badge variant="secondary" className="bg-muted text-muted-foreground border-none text-[10px] font-bold uppercase">Hidden</Badge>
-                            )}
+                            >
+                              <SelectTrigger className="h-7 w-28 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="draft">Draft</SelectItem>
+                                <SelectItem value="published">Published</SelectItem>
+                                <SelectItem value="archived">Archived</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-right">

@@ -170,7 +170,7 @@ const RedirectsList = () => {
     };
 
     const RedirectForm = ({ onCancel }: { onCancel: () => void }) => (
-        <Card className="p-6 border-2 border-primary/20 bg-primary/5 shadow-lg rounded-2xl space-y-4 mb-6">
+        <Card className="p-4 border border-border/80 bg-card shadow-xs rounded-lg space-y-3 mb-4">
             <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">
                     {isCreatingNew ? 'New Redirect Rule' : 'Edit Redirect Rule'}
@@ -252,40 +252,53 @@ const RedirectsList = () => {
     );
 
     if (loading) {
-        return <div className="p-8 text-center animate-pulse text-muted-foreground">Loading redirects...</div>;
+        return (
+            <div className="space-y-4 animate-pulse">
+                <div className="flex flex-col gap-1">
+                    <div className="h-6 w-48 bg-muted rounded-md" />
+                    <div className="h-4 w-80 bg-muted rounded-md" />
+                </div>
+                <div className="h-9 w-full bg-muted rounded-lg" />
+                <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="h-14 w-full bg-muted rounded-lg" />
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="space-y-8 pb-8">
+        <div className="space-y-4 pb-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
-                        <ArrowRightLeft className="size-4" />
+                    <div className="flex items-center gap-2 text-primary font-semibold text-xs mb-0.5 uppercase tracking-wider">
+                        <ArrowRightLeft className="size-3.5" />
                         Traffic Management
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tight text-balance">Redirects</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h1 className="text-xl font-bold tracking-tight text-balance">Redirects</h1>
+                    <p className="text-xs text-muted-foreground mt-0.5">
                         Handle 301 and 302 redirects from old URLs to new paths.
                     </p>
                 </div>
-                <Button onClick={handleStartCreate} className="h-11 px-6 gap-2 shadow-sm rounded-xl" disabled={isCreatingNew}>
-                    <Plus className="size-4" />
+                <Button onClick={handleStartCreate} className="h-9 px-4 gap-2 shadow-xs rounded-lg" disabled={isCreatingNew}>
+                    <Plus className="size-3.5" />
                     New Redirect
                 </Button>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
                 <div className="relative flex-1 w-full max-w-xl">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground opacity-60" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground opacity-60" />
                     <Input
                         placeholder="Search paths or notes..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-11 pl-10 bg-card rounded-xl"
+                        className="h-9 pl-9 border border-border/80 bg-card rounded-lg focus-visible:ring-primary/50"
                     />
                 </div>
                 <Select value={filterActive} onValueChange={setFilterActive}>
-                    <SelectTrigger className="w-40 h-11 rounded-xl bg-card">
+                    <SelectTrigger className="w-40 h-9 rounded-lg border border-border/80 bg-card shadow-xs">
                         <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -322,11 +335,11 @@ const RedirectsList = () => {
                                 {editingId === item.id ? (
                                     <RedirectForm onCancel={handleCancel} />
                                 ) : (
-                                    <Card className={`group p-4 rounded-xl border transition-all duration-300 ${!item.isActive ? 'opacity-60 grayscale-[0.5] bg-muted/30' : 'bg-card'}`}>
+                                    <Card className={`group p-3 rounded-lg border border-border/80 shadow-xs transition-all duration-200 ${!item.isActive ? 'opacity-60 grayscale-[0.5] bg-muted/30' : 'bg-card hover:border-border hover:bg-accent/5'}`}>
                                         <div className="flex flex-col md:flex-row md:items-center gap-4">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <Badge className={Number(item.statusCode) >= 307 ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}>
+                                                    <Badge className={`rounded-md px-1.5 py-0.5 text-[10px] ${Number(item.statusCode) >= 307 ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}>
                                                         {item.statusCode}
                                                     </Badge>
                                                     <span className="font-mono text-sm font-bold truncate block flex-1">
@@ -356,11 +369,11 @@ const RedirectsList = () => {
                                                 </div>
                                             </div>
                                             
-                                            <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                                            <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm" 
-                                                    className={`h-8 w-8 p-0 rounded-full ${item.isActive ? 'text-emerald-500 bg-emerald-500/10' : 'text-muted-foreground bg-muted'}`}
+                                                    className={`h-7 w-7 p-0 rounded-md ${item.isActive ? 'text-emerald-500 bg-emerald-500/10' : 'text-muted-foreground bg-muted'}`}
                                                     onClick={() => handleToggleActive(item)}
                                                     title={item.isActive ? 'Deactivate' : 'Activate'}
                                                 >
@@ -369,7 +382,7 @@ const RedirectsList = () => {
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm" 
-                                                    className="h-8 w-8 p-0"
+                                                    className="h-7 w-7 p-0 rounded-md"
                                                     onClick={() => handleStartEdit(item)}
                                                 >
                                                     <Edit className="size-3.5" />
@@ -377,7 +390,7 @@ const RedirectsList = () => {
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm" 
-                                                    className="h-8 w-8 p-0 hover:text-destructive hover:bg-destructive/10"
+                                                    className="h-7 w-7 p-0 rounded-md hover:text-destructive hover:bg-destructive/10"
                                                     onClick={() => setDeleteModal({ isOpen: true, item })}
                                                 >
                                                     <Trash2 className="size-3.5" />

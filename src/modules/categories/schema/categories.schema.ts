@@ -34,7 +34,7 @@ export const categories = sqliteTable('categories', {
   
   // 6. SYSTEM & METRICS
   sortOrder: integer('sort_order').default(0),
-  isOnline: integer('is_online', { mode: 'boolean' }).default(false),
+  workflowStatus: text('workflow_status').default('draft'),
   cachedPostCount: integer('cached_post_count').default(0),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
@@ -42,7 +42,7 @@ export const categories = sqliteTable('categories', {
 }, (table) => [
   index('idx_categories_slug').on(table.slug),
   index('idx_categories_parent').on(table.parentId),
-  index('idx_categories_display').on(table.isOnline, table.sortOrder),
+  index('idx_categories_display').on(table.workflowStatus, table.sortOrder),
   index('idx_categories_featured').on(table.isFeatured),
   index('idx_categories_active').on(table.deletedAt),
 ]);

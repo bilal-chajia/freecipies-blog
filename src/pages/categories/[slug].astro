@@ -55,7 +55,7 @@ const currentPage = Math.max(
 let allCategories: any[] = [];
 try {
   if (env.DB) {
-    const raw = await getCategories(env.DB, { isOnline: true });
+    const raw = await getCategories(env.DB, { workflowStatus: 'published' });
     allCategories = hydrateCategories(raw);
   }
 } catch (e) {
@@ -94,7 +94,7 @@ try {
   if (env.DB) {
     const result = await getArticles(env.DB, {
       categorySlug: slug,
-      isOnline: true,
+      workflowStatus: 'published',
       limit: perPage,
       offset,
       sortBy,
@@ -116,7 +116,7 @@ if (currentPage === 1 && headerStyle === "hero" && showFeaturedRecipe) {
       const candidate = await getArticleById(env.DB, category.featuredArticleId);
       if (
         candidate &&
-        (candidate as any).isOnline &&
+        (candidate as any).workflowStatus === 'published' &&
         (candidate as any).categoryId === category.id
       ) {
         featuredArticle = candidate;
@@ -145,14 +145,14 @@ if (articles.length === 0 && otherCategories.length > 0) {
   for (const otherCat of otherCategories.slice(0, 2)) {
     const { items: others } = await getArticles(env.DB, {
       categorySlug: otherCat.slug,
-      isOnline: true,
+      workflowStatus: 'published',
       limit: 2,
       sortBy: "publishedAt",
       sortOrder: "desc",
     });
     featuredFromOthers = [...featuredFromOthers, ...others];
   }
-  }
+}
 
 // Base URL for pagination
 const baseUrl = `/categories/${slug}`;

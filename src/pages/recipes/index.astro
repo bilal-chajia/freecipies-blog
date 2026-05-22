@@ -43,7 +43,7 @@ try {
     totalRecipes = result.total;
 
     // Get all categories and tags for filters
-    const rawCategories = await getCategories(env.DB, { isOnline: true });
+    const rawCategories = await getCategories(env.DB, { workflowStatus: 'published' });
     const rawTags = await getTags(env.DB);
     categories = hydrateCategories(rawCategories);
     tags = hydrateTags(rawTags);

@@ -238,10 +238,11 @@ CREATE TABLE IF NOT EXISTS categories (
     -- LIMIT: Recommend max 4-6 featured categories for UX.
     is_featured BOOLEAN DEFAULT 0,
 
-    -- Visibility toggle.
-    -- 0 = Draft (hidden from public, visible in Admin).
-    -- 1 = Published (visible to all users).
-    is_online BOOLEAN DEFAULT 0,
+    -- Visibility and publication workflow status.
+    -- 'draft'     : hidden from public, visible in Admin.
+    -- 'published' : visible to all users.
+    -- 'archived'  : soft-archived, hidden from active queries.
+    workflow_status TEXT DEFAULT 'draft' CHECK (workflow_status IN ('draft', 'published', 'archived')),
 
     -- 7. DERIVED METRICS
 
@@ -276,7 +277,7 @@ END;
 
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);                 -- Routing
 CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories(parent_id);          -- Hierarchy
-CREATE INDEX IF NOT EXISTS idx_categories_display ON categories(is_online, sort_order); -- Menus
+CREATE INDEX IF NOT EXISTS idx_categories_display ON categories(workflow_status, sort_order); -- Menus
 CREATE INDEX IF NOT EXISTS idx_categories_featured ON categories(is_featured);      -- Home Page Widgets
 CREATE INDEX IF NOT EXISTS idx_categories_active ON categories(deleted_at);         -- Soft delete filter
 
@@ -365,11 +366,12 @@ CREATE TABLE IF NOT EXISTS authors (
     -- 0 = Standard author (default).
     is_featured BOOLEAN DEFAULT 0,
 
-    -- Visibility toggle for public author profile/listing surfaces.
-    -- 0 = Hidden/Draft (not shown on author public pages).
-    -- 1 = Published author profile/listing.
+    -- Visibility and publication workflow status for public author profile/listing surfaces.
+    -- 'draft'     : hidden from author public pages.
+    -- 'published' : visible to all users.
+    -- 'archived'  : soft-archived, hidden from active queries.
     -- NOTE: Existing article bylines can still render from article caches.
-    is_online BOOLEAN DEFAULT 0,
+    workflow_status TEXT DEFAULT 'draft' CHECK (workflow_status IN ('draft', 'published', 'archived')),
 
     -- 9. LIST ORDER
 
@@ -413,7 +415,7 @@ CREATE INDEX IF NOT EXISTS idx_authors_slug ON authors(slug);     -- Routing
 CREATE INDEX IF NOT EXISTS idx_authors_role ON authors(role);     -- Team Page Filtering
 CREATE INDEX IF NOT EXISTS idx_authors_email ON authors(email);   -- Admin Lookups
 CREATE INDEX IF NOT EXISTS idx_authors_featured ON authors(is_featured);  -- Featured Authors Widget
-CREATE INDEX IF NOT EXISTS idx_authors_display ON authors(is_online, sort_order);  -- Team Page
+CREATE INDEX IF NOT EXISTS idx_authors_display ON authors(workflow_status, sort_order);  -- Team Page
 CREATE INDEX IF NOT EXISTS idx_authors_active ON authors(deleted_at);  -- Soft delete filter
 
 
@@ -784,13 +786,9 @@ CREATE TABLE IF NOT EXISTS articles (
 
     scheduled_at DATETIME NULL,
     -- Optional scheduled publish date/time (UTC).
-    -- Your app can flip is_online + workflow_status when this time is reached.
+    -- Your app can flip workflow_status when this time is reached.
 
     -- 11. SYSTEM & ACCESS CONTROL
-
-    is_online   BOOLEAN DEFAULT 0,
-    -- 0 = not publicly visible; 1 = visible (subject to access_level).
-    -- Typically true only for 'published' items.
 
     is_favorite BOOLEAN DEFAULT 0,
     -- Flag for homepage "featured" or curated rails.
@@ -826,9 +824,9 @@ CREATE INDEX IF NOT EXISTS idx_articles_type
 -- Fast lookup by slug for routing.
 
 CREATE INDEX IF NOT EXISTS idx_articles_feed
-    ON articles(is_online, published_at DESC);
+    ON articles(workflow_status, published_at DESC);
 -- Main feed index:
---   WHERE is_online = 1
+--   WHERE workflow_status = 'published'
 --   ORDER BY published_at DESC
 
 CREATE INDEX IF NOT EXISTS idx_articles_cat
@@ -866,8 +864,8 @@ END;
 -- 2) Auto-set published_at when article first goes online
 CREATE TRIGGER IF NOT EXISTS trg_articles_set_published_at
 AFTER UPDATE ON articles
-WHEN NEW.is_online = 1
-  AND (OLD.is_online IS NULL OR OLD.is_online = 0)
+WHEN NEW.workflow_status = 'published'
+  AND (OLD.workflow_status IS NULL OR OLD.workflow_status != 'published')
   AND NEW.published_at IS NULL
 BEGIN
   UPDATE articles
@@ -875,17 +873,6 @@ BEGIN
   WHERE id = NEW.id;
 END;
 -- Ensures first go-live time is recorded automatically.
-
--- 3) Keep workflow_status consistent when marking online
-CREATE TRIGGER IF NOT EXISTS trg_articles_online_workflow
-AFTER UPDATE ON articles
-WHEN NEW.is_online = 1 AND NEW.workflow_status != 'published'
-BEGIN
-  UPDATE articles
-  SET workflow_status = 'published'
-  WHERE id = NEW.id;
-END;
--- If something is online, its workflow_status is forced to 'published'.
 
 -- 4) Soft delete guard: convert DELETE into soft delete
 CREATE TRIGGER IF NOT EXISTS trg_articles_prevent_delete
@@ -1861,7 +1848,7 @@ BEGIN
 END;
 
 -- AUTHOR AND CATEGORY POST COUNT TRIGGERS
--- Conditions: is_online = 1 AND deleted_at IS NULL.
+-- Conditions: workflow_status = 'published' AND deleted_at IS NULL.
 
 CREATE TRIGGER IF NOT EXISTS update_author_count_on_insert
 AFTER INSERT ON articles
@@ -1870,21 +1857,21 @@ BEGIN
   SET cached_post_count = (
     SELECT COUNT(*) FROM articles
     WHERE author_id = NEW.author_id
-    AND is_online = 1
+    AND workflow_status = 'published'
     AND deleted_at IS NULL
   )
   WHERE id = NEW.author_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS update_author_count_on_update
-AFTER UPDATE OF author_id, is_online, deleted_at ON articles
+AFTER UPDATE OF author_id, workflow_status, deleted_at ON articles
 BEGIN
   -- Update old author
   UPDATE authors
   SET cached_post_count = (
     SELECT COUNT(*) FROM articles
     WHERE author_id = OLD.author_id
-    AND is_online = 1
+    AND workflow_status = 'published'
     AND deleted_at IS NULL
   )
   WHERE id = OLD.author_id;
@@ -1894,7 +1881,7 @@ BEGIN
   SET cached_post_count = (
     SELECT COUNT(*) FROM articles
     WHERE author_id = NEW.author_id
-    AND is_online = 1
+    AND workflow_status = 'published'
     AND deleted_at IS NULL
   )
   WHERE id = NEW.author_id;
@@ -1907,7 +1894,7 @@ BEGIN
   SET cached_post_count = (
     SELECT COUNT(*) FROM articles
     WHERE author_id = OLD.author_id
-    AND is_online = 1
+    AND workflow_status = 'published'
     AND deleted_at IS NULL
   )
   WHERE id = OLD.author_id;
@@ -1920,21 +1907,21 @@ BEGIN
   SET cached_post_count = (
     SELECT COUNT(*) FROM articles
     WHERE category_id = NEW.category_id
-    AND is_online = 1
+    AND workflow_status = 'published'
     AND deleted_at IS NULL
   )
   WHERE id = NEW.category_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS update_category_count_on_update
-AFTER UPDATE OF category_id, is_online, deleted_at ON articles
+AFTER UPDATE OF category_id, workflow_status, deleted_at ON articles
 BEGIN
   -- Update old category
   UPDATE categories
   SET cached_post_count = (
     SELECT COUNT(*) FROM articles
     WHERE category_id = OLD.category_id
-    AND is_online = 1
+    AND workflow_status = 'published'
     AND deleted_at IS NULL
   )
   WHERE id = OLD.category_id;
@@ -1944,7 +1931,7 @@ BEGIN
   SET cached_post_count = (
     SELECT COUNT(*) FROM articles
     WHERE category_id = NEW.category_id
-    AND is_online = 1
+    AND workflow_status = 'published'
     AND deleted_at IS NULL
   )
   WHERE id = NEW.category_id;
@@ -1957,7 +1944,7 @@ BEGIN
   SET cached_post_count = (
     SELECT COUNT(*) FROM articles
     WHERE category_id = OLD.category_id
-    AND is_online = 1
+    AND workflow_status = 'published'
     AND deleted_at IS NULL
   )
   WHERE id = OLD.category_id;
@@ -1965,7 +1952,7 @@ END;
 
 
 -- TAG POST COUNT TRIGGERS
--- Source of truth: articles_to_tags junction + articles (is_online=1, deleted_at IS NULL).
+-- Source of truth: articles_to_tags junction + articles (workflow_status='published', deleted_at IS NULL).
 
 CREATE TRIGGER IF NOT EXISTS update_tag_count_on_link_insert
 AFTER INSERT ON articles_to_tags
@@ -1975,7 +1962,7 @@ BEGIN
     SELECT COUNT(*) FROM articles_to_tags att
     JOIN articles a ON a.id = att.article_id
     WHERE att.tag_id = NEW.tag_id
-    AND a.is_online = 1
+    AND a.workflow_status = 'published'
     AND a.deleted_at IS NULL
   )
   WHERE id = NEW.tag_id;
@@ -1989,21 +1976,21 @@ BEGIN
     SELECT COUNT(*) FROM articles_to_tags att
     JOIN articles a ON a.id = att.article_id
     WHERE att.tag_id = OLD.tag_id
-    AND a.is_online = 1
+    AND a.workflow_status = 'published'
     AND a.deleted_at IS NULL
   )
   WHERE id = OLD.tag_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS update_tag_counts_on_article_status
-AFTER UPDATE OF is_online, deleted_at ON articles
+AFTER UPDATE OF workflow_status, deleted_at ON articles
 BEGIN
   UPDATE tags
   SET cached_post_count = (
     SELECT COUNT(*) FROM articles_to_tags att
     JOIN articles a ON a.id = att.article_id
     WHERE att.tag_id = tags.id
-    AND a.is_online = 1
+    AND a.workflow_status = 'published'
     AND a.deleted_at IS NULL
   )
   WHERE id IN (SELECT tag_id FROM articles_to_tags WHERE article_id = NEW.id);

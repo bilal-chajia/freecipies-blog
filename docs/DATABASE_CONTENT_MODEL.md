@@ -61,7 +61,7 @@ Derived/cache fields:
 
 Workflow/system:
 
-- `workflow_status`, `scheduled_at`, `is_online`, `is_favorite`, `access_level`, `view_count`, `published_at`, `deleted_at`
+- `workflow_status`, `scheduled_at`, `is_favorite`, `access_level`, `view_count`, `published_at`, `deleted_at`
 
 ### `media`
 
@@ -88,7 +88,7 @@ Important fields:
 - page content: `headline`, `collection_title`, `short_description`
 - visuals: `images_json`, `color`
 - configuration: `seo_json`
-- cache/lifecycle: `cached_post_count`, `is_online`, `deleted_at`
+- cache/lifecycle: `cached_post_count`, `workflow_status`, `deleted_at`
 
 `articles.category_id` is required and uses `ON DELETE RESTRICT`.
 
@@ -103,7 +103,7 @@ Important fields:
 - identity: `slug`, `name`, `email`
 - public profile: `job_title`, `headline`, `subtitle`, `short_description`, `introduction`
 - visuals/social/AI/SEO: `images_json`, `bio_json`, `persona_json`, `seo_json`
-- workflow/cache: `role`, `is_online`, `is_featured`, `cached_post_count`, `deleted_at`
+- workflow/cache: `role`, `workflow_status`, `is_featured`, `cached_post_count`, `deleted_at`
 
 `articles.author_id` is required and uses `ON DELETE RESTRICT`.
 
@@ -201,7 +201,6 @@ Article lifecycle triggers:
 
 - `trg_articles_updated_at`: updates `updated_at`
 - `trg_articles_set_published_at`: sets first publish timestamp
-- `trg_articles_online_workflow`: syncs online articles to `published`
 - `trg_articles_prevent_delete`: converts hard delete into soft delete
 
 Search triggers:
@@ -213,13 +212,13 @@ Search triggers:
 
 Category count triggers:
 
-- update `categories.cached_post_count` for online, non-deleted articles
+- update `categories.cached_post_count` for published, non-deleted articles
 
 Tag count triggers:
 
 - `update_tag_count_on_link_insert`: updates `tags.cached_post_count` when an article/tag link is inserted
 - `update_tag_count_on_link_delete`: updates `tags.cached_post_count` when an article/tag link is deleted
-- `update_tag_counts_on_article_status`: refreshes linked tag counts when article online/deleted status changes
+- `update_tag_counts_on_article_status`: refreshes linked tag counts when article workflow/deleted status changes
 
 Application-managed equipment snapshots:
 

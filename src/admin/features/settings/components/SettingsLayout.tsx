@@ -90,11 +90,11 @@ export default function SettingsLayout({
         exit={{ x: -200, opacity: 0 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
         style={{ width: '200px' }}
-        className="wp-block-inserter h-full min-h-0 overflow-hidden bg-[var(--wp-inserter-bg)] border-r border-[var(--wp-inserter-border)] flex flex-col flex-shrink-0"
+        className="wp-block-inserter h-full min-h-0 overflow-hidden bg-card border-r border-border flex flex-col flex-shrink-0"
       >
         {/* Left Panel Header - FIXED HEIGHT */}
-        <div className={cn(HEADER_HEIGHT, 'flex items-center px-2.5 border-b border-border flex-shrink-0')}>
-          <span className="text-sm font-semibold">Settings</span>
+        <div className={cn(HEADER_HEIGHT, 'flex items-center px-4 border-b border-border flex-shrink-0 bg-card')}>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Settings</span>
         </div>
 
         {/* Nav Items */}
@@ -108,10 +108,13 @@ export default function SettingsLayout({
                   key={item.id}
                   type="button"
                   onClick={() => handleTabClick(item.id)}
-                  className={cn('structure-item', isActive && 'is-active')}
+                  className={cn(
+                    'flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-xs font-medium transition-colors hover:bg-muted/80',
+                    isActive ? 'bg-primary/8 text-primary font-semibold border-r-2 border-primary' : 'text-muted-foreground'
+                  )}
                 >
-                  <Icon className="structure-item-icon" />
-                  <span className="structure-item-label">{item.label}</span>
+                  <Icon className={cn('size-4 transition-colors', isActive ? 'text-primary' : 'text-muted-foreground/70')} />
+                  <span>{item.label}</span>
                 </button>
               );
             })}

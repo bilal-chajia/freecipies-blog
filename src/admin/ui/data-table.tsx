@@ -35,6 +35,12 @@ interface DataTableProps<TData> {
   onSortingChange?: (sorting: SortingState) => void;
   onFilteringChange?: (filters: { globalFilter: string; columnFilters: ColumnFiltersState }) => void;
   className?: string;
+  manualPagination?: boolean;
+  pageIndex?: number;
+  pageCount?: number;
+  totalCount?: number;
+  onPageChange?: (pageIndex: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }
 
 function DataTable<TData>({
@@ -54,6 +60,12 @@ function DataTable<TData>({
   onSortingChange,
   onFilteringChange,
   className = '',
+  manualPagination = false,
+  pageIndex = 0,
+  pageCount,
+  totalCount,
+  onPageChange,
+  onPageSizeChange,
 }: DataTableProps<TData>) {
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -87,24 +99,49 @@ function DataTable<TData>({
         ]
       : columns,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: !manualPagination && enableFiltering ? getFilteredRowModel() : undefined,
+    getPaginationRowModel: !manualPagination ? getPaginationRowModel() : undefined,
     getSortedRowModel: getSortedRowModel(),
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
+    manualPagination,
+    pageCount,
     state: {
       rowSelection,
       columnFilters,
       globalFilter,
       sorting,
+      ...(manualPagination ? { pagination: { pageIndex, pageSize } } : {}),
     },
-    initialState: {
-      pagination: {
-        pageSize,
-      },
-    },
+    onPaginationChange: manualPagination
+      ? (updater) => {
+          if (typeof updater === 'function') {
+            const nextState = updater({ pageIndex, pageSize });
+            if (nextState.pageIndex !== pageIndex && onPageChange) {
+              onPageChange(nextState.pageIndex);
+            }
+            if (nextState.pageSize !== pageSize && onPageSizeChange) {
+              onPageSizeChange(nextState.pageSize);
+            }
+          } else {
+            if (updater.pageIndex !== pageIndex && onPageChange) {
+              onPageChange(updater.pageIndex);
+            }
+            if (updater.pageSize !== pageSize && onPageSizeChange) {
+              onPageSizeChange(updater.pageSize);
+            }
+          }
+        }
+      : undefined,
+    initialState: manualPagination
+      ? undefined
+      : {
+          pagination: {
+            pageSize,
+          },
+        },
   });
 
   React.useEffect(() => {
@@ -228,16 +265,16 @@ function DataTable<TData>({
         </Table>
       </div>
 
-      {enablePagination && table.getRowCount() > pageSize && (
+      {enablePagination && (manualPagination ? (totalCount ?? 0) > pageSize : table.getRowCount() > pageSize) && (
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <p className="text-sm font-medium">
               Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
               {Math.min(
                 (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getRowCount()
+                manualPagination ? (totalCount ?? 0) : table.getRowCount()
               )}{' '}
-              of {table.getRowCount()} results
+              of {manualPagination ? (totalCount ?? 0) : table.getRowCount()} results
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -248,6 +285,7 @@ function DataTable<TData>({
                 onValueChange={(value: string) => {
                   table.setPageSize(Number(value));
                 }}
+                disabled={loading}
               >
                 <SelectTrigger className="h-8 w-[70px]">
                   <SelectValue placeholder={table.getState().pagination.pageSize} />
@@ -266,7 +304,7 @@ function DataTable<TData>({
                 variant="outline"
                 className="h-8 w-8 p-0"
                 onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
+                disabled={!table.getCanPreviousPage() || loading}
               >
                 <span className="sr-only">Go to first page</span>
                 <ChevronDown className="h-4 w-4 rotate-90" />
@@ -275,7 +313,7 @@ function DataTable<TData>({
                 variant="outline"
                 className="h-8 w-8 p-0"
                 onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                disabled={!table.getCanPreviousPage() || loading}
               >
                 <span className="sr-only">Go to previous page</span>
                 <ChevronDown className="h-4 w-4" />
@@ -287,7 +325,7 @@ function DataTable<TData>({
                 variant="outline"
                 className="h-8 w-8 p-0"
                 onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                disabled={!table.getCanNextPage() || loading}
               >
                 <span className="sr-only">Go to next page</span>
                 <ChevronUp className="h-4 w-4" />
@@ -296,7 +334,7 @@ function DataTable<TData>({
                 variant="outline"
                 className="h-8 w-8 p-0"
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
+                disabled={!table.getCanNextPage() || loading}
               >
                 <span className="sr-only">Go to last page</span>
                 <ChevronUp className="h-4 w-4 rotate-90" />

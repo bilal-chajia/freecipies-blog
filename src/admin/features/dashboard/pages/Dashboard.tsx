@@ -138,6 +138,8 @@ const Dashboard = () => {
       } catch (error) {
       }
     } catch (error) {
+
+
       toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
@@ -180,44 +182,44 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-40 w-full bg-muted rounded-xl" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-4 animate-pulse">
+        <div className="h-24 w-full bg-muted rounded-lg" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-32 bg-muted rounded-xl" />
+            <div key={i} className="h-24 bg-muted rounded-lg" />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 h-80 bg-muted rounded-xl" />
-          <div className="h-80 bg-muted rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 h-80 bg-muted rounded-lg" />
+          <div className="h-80 bg-muted rounded-lg" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-dashboard space-y-6 pb-8">
+    <div className="admin-dashboard space-y-4 pb-6">
       {/* Dashboard command header */}
-      <div className="relative overflow-hidden rounded-lg border bg-card p-6 shadow-sm">
-        <div className="absolute inset-y-0 right-0 w-1/3 bg-[linear-gradient(90deg,transparent,hsl(var(--primary)/0.08))]" />
+      <div className="relative overflow-hidden rounded-lg border border-border/80 bg-card p-4 shadow-xs">
+        <div className="absolute inset-y-0 right-0 w-1/3 bg-[linear-gradient(90deg,transparent,hsl(var(--primary)/0.04))]" />
         
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <Calendar className="size-4" />
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+              <Calendar className="size-3.5" />
               <span>{formatDate(new Date(), 'EEEE, MMMM do')}</span>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-balance">
+            <h1 className="text-xl font-bold tracking-tight text-balance">
               Welcome back, <span className="text-primary">{user?.name || 'Admin'}</span>
             </h1>
-            <p className="text-muted-foreground max-w-xl">
+            <p className="text-xs text-muted-foreground max-w-xl">
               Your content performance is looking strong. You've reached <span className="font-semibold text-foreground">{formatNumber(stats.totalViews)}</span> total views this month.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/articles/new">
-              <Button size="lg" className="h-10 rounded-md px-5 gap-2 shadow-sm transition-all">
-                <Plus className="size-5" />
+              <Button size="sm" className="h-9 rounded-lg px-4 gap-1.5 shadow-xs transition-all duration-200">
+                <Plus className="size-3.5" />
                 Create Content
               </Button>
             </Link>
@@ -228,18 +230,18 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (
-          <Card key={stat.title} className="relative overflow-hidden rounded-lg border bg-card shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-              <div className="rounded-md border bg-muted p-2">
-                <stat.icon className="size-4 text-primary" />
+          <Card key={stat.title} className="relative overflow-hidden rounded-lg border border-border/80 bg-card shadow-xs hover:border-border hover:bg-accent/5 transition-all duration-200 group">
+            <CardHeader className="flex flex-row items-center justify-between p-3.5 pb-1 space-y-0">
+              <CardTitle className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider">{stat.title}</CardTitle>
+              <div className="size-7 bg-muted/40 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors duration-200">
+                <stat.icon className="size-3.5" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+            <CardContent className="p-3.5 pt-0">
+              <div className="text-xl font-bold tracking-tight">{stat.value}</div>
+              <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
                 {stat.trendUp !== null && (
-                  <span className={stat.trendUp ? "text-success font-medium" : "text-destructive font-medium"}>
+                  <span className={stat.trendUp ? "text-success font-semibold" : "text-destructive font-semibold"}>
                     {stat.trend}
                   </span>
                 )}
@@ -248,37 +250,39 @@ const Dashboard = () => {
               </p>
             </CardContent>
             {stat.link && (
-              <Link to={stat.link} className="absolute inset-x-0 bottom-0 h-1 bg-primary/20 hover:bg-primary transition-colors" />
+              <Link to={stat.link} className="absolute inset-0 z-10" aria-label={`Go to ${stat.title}`} />
             )}
           </Card>
         ))}
       </div>
 
       {/* Chart Section & Recent Lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Growth Chart */}
-        <Card className="lg:col-span-2 rounded-lg shadow-sm">
-          <CardHeader className="flex flex-col gap-1 pb-4">
+        <Card className="lg:col-span-2 rounded-lg border border-border/80 bg-card shadow-xs">
+          <CardHeader className="flex flex-col gap-1 p-4 pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg">Performance Overview</CardTitle>
-                <CardDescription>Views and content growth over time</CardDescription>
+                <CardTitle className="text-sm font-bold">Performance Overview</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Views and content growth over time</CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1">
-                  <TrendingUp className="size-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-primary">+24% Growth</span>
+              <div>
+                <div className="flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary">
+                  <TrendingUp className="size-3" />
+                  <span>+24% Growth</span>
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="aspect-auto h-[350px] w-full pt-4">
+          <CardContent className="p-4 pt-1">
+            <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full">
               <AreaChart
                 data={chartData}
                 margin={{
                   left: -20,
                   right: 12,
+                  top: 10,
+                  bottom: 0,
                 }}
               >
                 <defs>
@@ -286,7 +290,7 @@ const Dashboard = () => {
                     <stop
                       offset="5%"
                       stopColor="var(--color-views)"
-                      stopOpacity={0.3}
+                      stopOpacity={0.15}
                     />
                     <stop
                       offset="95%"
@@ -301,13 +305,13 @@ const Dashboard = () => {
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  className="text-muted-foreground font-medium"
+                  className="text-[10px] text-muted-foreground/80 font-bold"
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  className="text-muted-foreground font-medium"
+                  className="text-[10px] text-muted-foreground/80 font-bold"
                 />
                 <ChartTooltip
                   cursor={false}
@@ -318,37 +322,37 @@ const Dashboard = () => {
                   type="monotone"
                   fill="url(#fillViews)"
                   stroke="var(--color-views)"
-                  strokeWidth={3}
-                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  strokeWidth={2}
+                  activeDot={{ r: 4, strokeWidth: 0 }}
                 />
               </AreaChart>
             </ChartContainer>
           </CardContent>
-          <CardFooter className="flex-col items-start gap-2 text-sm border-t pt-4">
-            <div className="flex gap-2 font-medium leading-none">
-              Content views increased by 15.2% this month <TrendingUp className="size-4" />
+          <CardFooter className="flex-row items-center justify-between text-xs border-t border-border/50 p-3 bg-muted/10 rounded-b-lg">
+            <div className="flex items-center gap-1 font-semibold text-foreground/90">
+              Content views increased by 15.2% this month <TrendingUp className="size-3.5 text-success" />
             </div>
-            <div className="leading-none text-muted-foreground">
+            <div className="text-muted-foreground">
               Showing total views for the last 7 months
             </div>
           </CardFooter>
         </Card>
 
         {/* Popular Content */}
-        <Card className="rounded-lg shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="rounded-lg border border-border/80 bg-card shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
             <div>
-              <CardTitle className="text-lg">Popular Content</CardTitle>
-              <CardDescription>Highest performing articles</CardDescription>
+              <CardTitle className="text-sm font-bold">Popular Content</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">Highest performing articles</CardDescription>
             </div>
-            <UtensilsCrossed className="size-5 text-muted-foreground" />
+            <UtensilsCrossed className="size-4 text-muted-foreground/60" />
           </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
+          <CardContent className="p-4 pt-1 space-y-3">
+            <div className="space-y-2.5">
               {popularArticles.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 space-y-3 opacity-50">
-                  <FileText className="size-10 text-muted-foreground" />
-                  <p className="text-sm">No performance data yet</p>
+                <div className="flex flex-col items-center justify-center py-10 space-y-2 opacity-40">
+                  <FileText className="size-8 text-muted-foreground" />
+                  <p className="text-xs">No performance data yet</p>
                 </div>
               ) : (
                 popularArticles.map((article, index) => (
@@ -357,35 +361,35 @@ const Dashboard = () => {
                     to={`/articles/${article.slug}`}
                     className="group block"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-sm font-semibold text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted/40 text-[10px] font-bold text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary">
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
+                        <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
                           {article.label}
                         </p>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Eye className="size-3" />
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground/80">
+                          <span className="flex items-center gap-1">
+                            <Eye className="size-2.5" />
                             {formatNumber(article.viewCount)}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-                          <span className="text-xs text-muted-foreground">
+                          <span>
                             {article.categoryLabel}
                           </span>
                         </div>
                       </div>
-                      <ArrowUpRight className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                      <ArrowUpRight className="size-3.5 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-all -translate-x-1 group-hover:translate-x-0" />
                     </div>
                   </Link>
                 ))
               )}
             </div>
           </CardContent>
-          <CardFooter className="pt-0">
+          <CardFooter className="p-3 pt-0 border-t border-border/40 mt-auto bg-muted/5 rounded-b-lg">
             <Link to="/articles" className="w-full">
-              <Button variant="ghost" className="w-full text-muted-foreground hover:text-primary text-xs h-8">
+              <Button variant="ghost" className="w-full text-muted-foreground hover:text-primary text-[11px] h-7 font-bold">
                 View detailed analytics
               </Button>
             </Link>
@@ -393,56 +397,56 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Secondary Grid (Recent + Tasks/Notes?) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-3 rounded-lg shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
+      {/* Secondary Grid (Recent Activity) */}
+      <div className="grid grid-cols-1 gap-4">
+        <Card className="rounded-lg border border-border/80 bg-card shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
             <div>
-              <CardTitle className="text-lg">Recent Content Activity</CardTitle>
-              <CardDescription>Latest updates to your blog and recipes</CardDescription>
+              <CardTitle className="text-sm font-bold">Recent Content Activity</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">Latest updates to your blog and recipes</CardDescription>
             </div>
             <Link to="/articles">
-              <Button variant="outline" size="sm">View All</Button>
+              <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs rounded-md shadow-xs border border-border/80 bg-card">View All</Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-1">
             <div className="relative w-full overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="text-muted-foreground border-b uppercase text-[10px] font-bold tracking-wider">
-                  <tr>
-                    <th className="pb-3 text-left font-medium">Article</th>
-                    <th className="pb-3 text-left font-medium hidden sm:table-cell">Category</th>
-                    <th className="pb-3 text-left font-medium hidden md:table-cell">Status</th>
-                    <th className="pb-3 text-right font-medium">Date</th>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border/60">
+                    <th className="pb-2 px-3 text-[9px] font-bold text-muted-foreground/80 uppercase tracking-wider">Article</th>
+                    <th className="pb-2 px-3 text-[9px] font-bold text-muted-foreground/80 uppercase tracking-wider hidden sm:table-cell">Category</th>
+                    <th className="pb-2 px-3 text-[9px] font-bold text-muted-foreground/80 uppercase tracking-wider hidden md:table-cell">Status</th>
+                    <th className="pb-2 px-3 text-right text-[9px] font-bold text-muted-foreground/80 uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/50">
+                <tbody className="divide-y divide-border/40">
                   {recentArticles.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={4} className="py-8 text-center text-xs text-muted-foreground">
                         No recent activity found.
                       </td>
                     </tr>
                   ) : (
                     recentArticles.map((article) => (
-                      <tr key={article.id} className="group hover:bg-accent/50 transition-colors">
-                        <td className="py-3 pr-4">
-                          <Link to={`/articles/edit/${article.id}`} className="font-medium hover:text-primary transition-colors block truncate max-w-[200px] sm:max-w-md">
+                      <tr key={article.id} className="group hover:bg-accent/40 transition-colors">
+                        <td className="py-2.5 px-3 text-xs">
+                          <Link to={`/articles/edit/${article.id}`} className="font-semibold hover:text-primary transition-colors block truncate max-w-[200px] sm:max-w-md">
                             {article.label}
                           </Link>
                         </td>
-                        <td className="py-3 pr-4 hidden sm:table-cell">
-                          <span className="px-2 py-0.5 rounded-full bg-accent text-[10px] font-semibold text-accent-foreground">
+                        <td className="py-2.5 px-3 hidden sm:table-cell text-xs">
+                          <span className="px-1.5 py-0.5 rounded bg-muted/80 text-[9px] font-bold text-muted-foreground border border-border/40 uppercase tracking-wider">
                             {article.categoryLabel}
                           </span>
                         </td>
-                        <td className="py-3 pr-4 hidden md:table-cell">
+                        <td className="py-2.5 px-3 hidden md:table-cell text-xs">
                            <div className="flex items-center gap-1.5">
-                             <div className={`size-1.5 rounded-full ${article.status === 'online' ? 'bg-success' : 'bg-warning'}`} />
-                             <span className="capitalize text-xs">{article.status}</span>
+                             <div className={`size-1.5 rounded-full ${article.status === 'online' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                             <span className="capitalize text-[11px] font-medium">{article.status}</span>
                            </div>
                         </td>
-                        <td className="py-3 text-right text-muted-foreground text-xs whitespace-nowrap">
+                        <td className="py-2.5 px-3 text-right text-muted-foreground text-[11px] font-mono whitespace-nowrap">
                           {formatRelativeTime(article.createdAt)}
                         </td>
                       </tr>

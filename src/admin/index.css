@@ -72,6 +72,9 @@
  * ======================================== */
 [data-surface="admin"] * {
   border-color: hsl(var(--border));
+  transition-property: color, background-color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html {
@@ -131,11 +134,18 @@ body {
 [data-surface="admin"] th {
   color: hsl(var(--muted-foreground));
   font-size: 0.75rem;
-  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem !important;
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 [data-surface="admin"] td {
   vertical-align: middle;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
 }
 
 /* ========================================

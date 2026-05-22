@@ -419,7 +419,7 @@ export function transformCategoryRequestBody(body: any): any {
   const dbColumns = new Set([
     'slug', 'label', 'parentId', 'depth', 'headline', 'collectionTitle',
     'shortDescription', 'imagesJson', 'color', 'isFeatured',
-    'seoJson', 'sortOrder', 'isOnline',
+    'seoJson', 'sortOrder', 'workflowStatus',
     'cachedPostCount', 'createdAt', 'updatedAt', 'deletedAt',
   ]);
   for (const key of Object.keys(transformed)) {

@@ -16,7 +16,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
           slug, label, headline, short_description, 
           images_json, published_at, author_slug, category_slug
         FROM articles 
-        WHERE is_online = 1 
+        WHERE workflow_status = 'published' AND deleted_at IS NULL
         ORDER BY published_at DESC 
         LIMIT 50
       `).all();

@@ -160,9 +160,8 @@ Rules:
 
 | Column | Purpose |
 | --- | --- |
-| `workflow_status` | Editorial state: `draft`, `in_review`, `scheduled`, `published`, `archived`. |
+| `workflow_status` | Editorial state: `draft`, `in_review`, `scheduled`, `published`, `archived`. Publicly visible only if `published` (and `deleted_at IS NULL`). |
 | `scheduled_at` | Future publish time in UTC. |
-| `is_online` | Public visibility flag. |
 | `is_favorite` | Editorial curation flag for featured rails/homepage. |
 | `access_level` | Access policy: `0` public, `1` members, `2` premium. |
 | `view_count` | Simple global view counter. |
@@ -170,13 +169,12 @@ Rules:
 
 Rules:
 
-- `is_online = 1` means the article is eligible for public visibility, subject to `access_level`.
+- An article is eligible for public visibility when `workflow_status = 'published'`, subject to `access_level` and `deleted_at IS NULL`.
 - An article should not be published unless required source payloads for its `type` are present and valid:
   - all public articles require valid `images_json` and `content_json`;
   - recipes require valid `recipe_json`;
   - roundups require valid `roundup_json`; `content_json.main_roundup` controls where the list renders.
-- Triggers force online articles to `workflow_status = "published"`.
-- `published_at` is set automatically the first time an article goes online.
+- `published_at` is set automatically by trigger the first time an article transitions to `workflow_status = 'published'`.
 
 ## Lifecycle
 

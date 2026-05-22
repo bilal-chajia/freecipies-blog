@@ -61,24 +61,6 @@ import { Avatar, AvatarFallback } from "@/ui/avatar";
 import { useUIStore, useAuthStore } from "../store/useStore";
 import { clearAllAdminCache } from "../services/api-client";
 
-const itemStyles: Record<string, string> = {
-  Dashboard: "text-blue-600",
-  Homepage: "text-teal-600",
-  Content: "text-slate-600",
-  "Blog Posts": "text-sky-600",
-  Recipes: "text-emerald-600",
-  Roundups: "text-violet-600",
-  Categories: "text-amber-600",
-  Authors: "text-indigo-600",
-  Tags: "text-cyan-600",
-  Equipment: "text-orange-600",
-  Boards: "text-rose-600",
-  Templates: "text-fuchsia-600",
-  Settings: "text-slate-600",
-  Media: "text-blue-600",
-  Redirects: "text-zinc-600",
-};
-
 // Navigation data structure
 const navGroups = [
   {
@@ -215,7 +197,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                           tooltip={item.title}
                         >
                             <Link to={item.url ?? "#"}>
-                            <item.icon className={itemStyles[item.title]} />
+                            <item.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
                             <span>{item.title}</span>
                           </Link>
                         </SidebarMenuButton>
@@ -234,7 +216,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                     tooltip={group.title}
                   >
                     <Link to={group.url}>
-                      <group.icon className={itemStyles[group.title]} />
+                      <group.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
                       <span>{group.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -250,7 +232,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton tooltip={group.title}>
-                        <group.icon className={itemStyles[group.title]} />
+                        <group.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
                         <span>{group.title}</span>
                         <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                       </SidebarMenuButton>
@@ -264,7 +246,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                               <SidebarMenuSubItem>
                                 <CollapsibleTrigger asChild>
                                   <SidebarMenuSubButton className="cursor-pointer">
-                                    <item.icon className={itemStyles[item.title]} />
+                                    <item.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
                                     <span>{item.title}</span>
                                     <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/submenu:rotate-90" />
                                   </SidebarMenuSubButton>
@@ -275,7 +257,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                                       <SidebarMenuSubItem key={subItem.title}>
                                         <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                                           <Link to={subItem.url ?? "#"}>
-                                            <subItem.icon className={`h-3.5 w-3.5 ${itemStyles[subItem.title] || ""}`} />
+                                            <subItem.icon className="h-3.5 w-3.5 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
                                             <span>{subItem.title}</span>
                                           </Link>
                                         </SidebarMenuSubButton>
@@ -293,7 +275,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                                 isActive={isActive(item.url)}
                               >
                                 <Link to={item.url ?? "#"}>
-                                <item.icon className={itemStyles[item.title]} />
+                                <item.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
                                   <span>{item.title}</span>
                                 </Link>
                               </SidebarMenuSubButton>

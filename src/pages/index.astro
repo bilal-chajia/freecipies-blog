@@ -30,11 +30,11 @@ try {
   allRecipes = recipes;
 
   // Get categories
-  const rawCategories = await getCategories(env.DB, { isOnline: true });
+  const rawCategories = await getCategories(env.DB, { workflowStatus: 'published' });
   categories = rawCategories.map(hydrateCategory);
 
   // Get featured author for About section
-  const allAuthors = await getAuthors(env.DB, { isOnline: true });
+  const allAuthors = await getAuthors(env.DB, { workflowStatus: 'published' });
   featuredAuthor = allAuthors.find(a => a.isFeatured) || allAuthors[0] || null;
 } catch (error) {
   console.error("Error fetching data for homepage:", error);

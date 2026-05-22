@@ -19,10 +19,10 @@ export const GET: APIRoute = async ({ site }) => {
 
     try {
         const [recipesResult, categoriesResult, tagsResult, authorsResult] = await Promise.all([
-            getArticles(env.DB, { type: 'recipe', limit: 1000 }),
-            getCategories(env.DB, { isOnline: true }),
+            getArticles(env.DB, { type: 'recipe', workflowStatus: 'published', limit: 1000 }),
+            getCategories(env.DB, { workflowStatus: 'published' }),
             getTags(env.DB),
-            getAuthors(env.DB, { isOnline: true })
+            getAuthors(env.DB, { workflowStatus: 'published' })
         ]);
 
         recipes = recipesResult.items;

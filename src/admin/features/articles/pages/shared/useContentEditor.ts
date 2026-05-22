@@ -47,7 +47,7 @@ interface ArticleData {
   imageAlt?: string | null;
   heroUrl?: string | null;
   heroAlt?: string | null;
-  isOnline: boolean;
+  workflowStatus: string;
   isFavorite: boolean;
   publishedAt?: string | null;
   tags?: TagItem[];
@@ -87,7 +87,7 @@ interface FormData {
   imageAlt: string;
   heroUrl: string;
   heroAlt: string;
-  isOnline: boolean;
+  workflowStatus: string;
   isFavorite: boolean;
   publishedAt: string;
   selectedTags: number[];
@@ -159,7 +159,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
         imageAlt: '',
         heroUrl: '',
         heroAlt: '',
-        isOnline: false,
+        workflowStatus: 'draft',
         isFavorite: false,
         publishedAt: '',
         selectedTags: [],
@@ -293,7 +293,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
                     imageAlt: parsedImages?.thumbnail?.alt || article.imageAlt || '',
                     heroUrl: article.heroUrl || '',
                     heroAlt: parsedImages?.hero?.alt || article.heroAlt || '',
-                    isOnline: article.isOnline,
+                    workflowStatus: article.workflowStatus || 'draft',
                     isFavorite: article.isFavorite,
                     publishedAt: article.publishedAt || '',
                     selectedTags: article.tags?.map(t => t.id) || [],

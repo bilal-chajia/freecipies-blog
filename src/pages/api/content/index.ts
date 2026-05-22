@@ -14,10 +14,10 @@ const ContentListQuery = z.object({
     category: z.string().optional(),
     author: z.string().optional(),
     search: z.string().optional(),
-    online: z.enum(['true', 'false']).optional(),
+    workflowStatus: z.enum(['draft', 'in_review', 'scheduled', 'published', 'archived', 'all']).optional(),
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().min(1).max(100).default(12),
-}).transform(({ page, limit, type, category, author, search, online }) => ({
+}).transform(({ page, limit, type, category, author, search, workflowStatus }) => ({
     page,
     limit,
     offset: (page - 1) * limit,
@@ -25,7 +25,7 @@ const ContentListQuery = z.object({
     category,
     author,
     search,
-    online,
+    workflowStatus,
 }));
 
 /**
@@ -45,7 +45,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
 
     // Validate all query parameters
-    const { page, limit, offset, type, category, author, search, online: onlineParam } = validateQuery(url.searchParams, ContentListQuery);
+    const { page, limit, offset, type, category, author, search, workflowStatus: workflowStatusParam } = validateQuery(url.searchParams, ContentListQuery);
 
     try {
         const db = env.DB;
@@ -79,11 +79,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
             options.search = search.trim();
         }
 
-        // Online status filter (default to true for public API)
-        if (onlineParam === 'false') {
-            options.isOnline = false;
-        } else if (onlineParam === 'true' || !onlineParam) {
-            options.isOnline = true;
+        // Workflow status filter (default to 'published' for public API)
+        if (workflowStatusParam && workflowStatusParam !== 'all') {
+            options.workflowStatus = workflowStatusParam;
+        } else if (!workflowStatusParam) {
+            options.workflowStatus = 'published';
         }
 
         const result = await getArticles(db, options);
@@ -126,7 +126,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 authorName: articleData.authorName,
                 authorSlug: articleData.authorSlug,
                 publishedAt: article.publishedAt,
-                isOnline: article.isOnline,
+                workflowStatus: article.workflowStatus,
                 // Type-specific fields from cache
                 ...(cachedCard || {}),
             };

@@ -112,18 +112,18 @@ const CategoriesList = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="flex flex-col gap-2">
-          <div className="h-8 w-64 bg-muted rounded-lg" />
-          <div className="h-4 w-96 bg-muted rounded-md" />
+      <div className="space-y-4 animate-pulse">
+        <div className="flex flex-col gap-1.5">
+          <div className="h-6 w-48 bg-muted rounded-md" />
+          <div className="h-3 w-80 bg-muted rounded-md" />
         </div>
-        <div className="flex gap-4">
-          <div className="h-11 flex-1 bg-muted rounded-xl" />
-          <div className="h-11 w-36 bg-muted rounded-xl" />
+        <div className="flex gap-3">
+          <div className="h-9 flex-1 bg-muted rounded-lg" />
+          <div className="h-9 w-28 bg-muted rounded-lg" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {[...Array(12)].map((_, i) => (
-            <div key={i} className="aspect-square bg-muted rounded-2xl" />
+            <div key={i} className="aspect-square bg-muted rounded-lg" />
           ))}
         </div>
       </div>
@@ -131,23 +131,23 @@ const CategoriesList = () => {
   }
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-4 pb-6">
       {/* Premium Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
         <div>
-          <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
-            <FolderTree className="h-4 w-4" />
+          <div className="flex items-center gap-1.5 text-muted-foreground font-semibold text-[10px] mb-0.5 uppercase tracking-wider">
+            <FolderTree className="h-3.5 w-3.5" />
             Taxonomy Management
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-balance">Content Categories</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl font-bold tracking-tight text-balance">Content Categories</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Organize your recipes and articles into logical groups for better discoverability.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link to="/categories/new">
-            <Button className="h-11 px-6 gap-2 shadow-sm rounded-xl">
-              <Plus className="h-4 w-4" />
+            <Button className="h-9 px-4 gap-2 shadow-sm rounded-lg text-xs">
+              <Plus className="h-3.5 w-3.5" />
               New Category
             </Button>
           </Link>
@@ -155,25 +155,25 @@ const CategoriesList = () => {
       </div>
 
       {/* Modern Search Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center">
+      <div className="flex flex-col sm:flex-row gap-3 items-center">
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-60" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground opacity-60" />
           <Input
             placeholder="Search categories by name or slug..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-12 pl-10 border-none bg-card shadow-sm ring-1 ring-border/50 rounded-xl focus-visible:ring-primary/50 transition-all"
+            className="h-9 pl-9 border border-border/80 bg-card shadow-xs rounded-lg text-xs focus-visible:ring-primary/20 focus-visible:ring-offset-0 transition-all"
           />
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" className="h-12 px-4 gap-2 rounded-xl bg-card border-none ring-1 ring-border/50">
-            <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Grid View</span>
+          <Button variant="outline" className="h-9 px-3 gap-2 rounded-lg bg-card border border-border/80 text-xs">
+            <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium">Grid View</span>
           </Button>
-          <div className="h-6 w-px bg-border/50 mx-1 hidden sm:block" />
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/50 rounded-lg border border-border/30">
+          <div className="h-5 w-px bg-border/50 mx-1 hidden sm:block" />
+          <div className="flex items-center gap-1 px-2 py-1 bg-secondary rounded-md border border-border/80">
             <span className="text-xs font-bold text-muted-foreground">{categories.length}</span>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">Total</span>
+            <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60">Total</span>
           </div>
         </div>
       </div>

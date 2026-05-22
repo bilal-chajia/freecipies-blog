@@ -15,7 +15,7 @@ export const getStories = async (options?: { db?: D1Database }): Promise<StoryPa
     oneDayAgo.setHours(oneDayAgo.getHours() - 24);
 
     const result = await getArticles(db, {
-      isOnline: true,
+      workflowStatus: 'published',
       publishedAfter: oneDayAgo,
       limit: 15,
     });

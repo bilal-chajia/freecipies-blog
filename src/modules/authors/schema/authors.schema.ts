@@ -37,7 +37,7 @@ export const authors = sqliteTable('authors', {
   seoJson: text('seo_json').default('{}'),
   
   // 7. SYSTEM & METRICS
-  isOnline: integer('is_online', { mode: 'boolean' }).default(false),
+  workflowStatus: text('workflow_status').default('draft'),
   isFeatured: integer('is_featured', { mode: 'boolean' }).default(false),
   sortOrder: integer('sort_order').default(0),
   cachedPostCount: integer('cached_post_count').default(0),
@@ -49,7 +49,7 @@ export const authors = sqliteTable('authors', {
   index('idx_authors_role').on(table.role),
   index('idx_authors_email').on(table.email),
   index('idx_authors_featured').on(table.isFeatured),
-  index('idx_authors_display').on(table.isOnline, table.sortOrder),
+  index('idx_authors_display').on(table.workflowStatus, table.sortOrder),
   index('idx_authors_active').on(table.deletedAt),
 ]);
 

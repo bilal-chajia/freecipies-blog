@@ -39,8 +39,8 @@ The `categories` row is the source of truth for category identity, hierarchy, di
 | `color` | no | Admin/design | Category accent color. Stored as hex, default `#ff6600ff`. |
 | `seo_json` | no | Admin/SEO | Category SEO overrides. Empty object means derive from base fields. |
 | `is_featured` | no | Admin/editorial | Homepage/sidebar feature flag. |
-| `is_online` | no | Admin/workflow | Public category visibility. |
-| `cached_post_count` | no | App/DB | Denormalized count of online, non-deleted articles in this category. |
+| `workflow_status` | no | Admin/workflow | Public category visibility: `draft`, `published`, `archived`. Publicly visible only if `published` (and `deleted_at IS NULL`). |
+| `cached_post_count` | no | App/DB | Denormalized count of published, non-deleted articles in this category. |
 | `created_at` | no | DB | UTC creation timestamp. |
 | `updated_at` | no | DB | Updated by SQL trigger. |
 | `deleted_at` | no | App | Soft delete marker. Active queries must filter `deleted_at IS NULL`. |
@@ -182,7 +182,7 @@ Public Astro:
 
 - Category pages route by `slug`.
 - Article cards use `articles.cached_category_json` instead of joining `categories`.
-- Navigation reads online, non-deleted categories ordered by `sort_order`.
+- Navigation reads published, non-deleted categories ordered by `sort_order`.
 
 ## Validation Rules
 
@@ -192,7 +192,7 @@ Public Astro:
 - `parent_id`: must not create cycles.
 - `depth`: app-maintained and must match the hierarchy.
 - `images_json` and `seo_json`: valid JSON.
-- Public queries: `deleted_at IS NULL`; public navigation also requires `is_online = 1`.
+- Public queries: `deleted_at IS NULL`; public navigation also requires `workflow_status = 'published'`.
 
 ## Category Page Settings
 
@@ -216,7 +216,7 @@ It is not the same as `article_sort_order`.
 
 ## Cache Rules
 
-- `cached_post_count` counts online, non-deleted articles in the category.
+- `cached_post_count` counts published, non-deleted articles in the category.
 - Article-side `cached_category_json` should include only the fields needed for cards/search:
 
 ```json

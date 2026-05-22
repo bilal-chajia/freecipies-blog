@@ -70,7 +70,7 @@ interface CategoryFormData {
   showHeroCta: boolean;
   heroCtaText: string;
   heroCtaLink: string;
-  isOnline: boolean;
+  workflowStatus: string;
   isFeatured: boolean;
   displayOrder: number;
   color: string;
@@ -189,7 +189,7 @@ const CategoryEditor = () => {
     showHeroCta: true,
     heroCtaText: '',
     heroCtaLink: '',
-    isOnline: false,
+    workflowStatus: 'draft',
     isFeatured: false,
     displayOrder: 0,
     color: '#ff6b35ff',
@@ -379,7 +379,7 @@ const CategoryEditor = () => {
           showHeroCta: category.showHeroCta ?? true,
           heroCtaText: category.heroCtaText || '',
           heroCtaLink: category.heroCtaLink || '',
-          isOnline: category.isOnline || false,
+          workflowStatus: category.workflowStatus || 'draft',
           isFeatured: category.isFeatured || category.isFavorite || false,
           displayOrder: Number.isFinite(Number(category.sortOrder)) ? Number(category.sortOrder) : 0,
           color: category.color || '#ff6b35ff',
@@ -1118,17 +1118,23 @@ const CategoryEditor = () => {
                   <p className="text-xs text-muted-foreground">Color used for category badges</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium">Online</p>
-                      <p className="text-xs text-muted-foreground">Visible on site</p>
-                    </div>
-                    <Switch
-                      checked={formData.isOnline}
-                      onCheckedChange={(checked: boolean) => handleChange('isOnline', checked)}
-                    />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="workflowStatus" className="text-sm font-medium">Status</Label>
+                    <Select
+                      value={formData.workflowStatus}
+                      onValueChange={(value) => handleChange('workflowStatus', value)}
+                    >
+                      <SelectTrigger id="workflowStatus" className="h-10">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div className="flex items-center justify-between rounded-md border px-3 py-2 h-[52px] mt-auto">
                     <div>
                       <p className="text-sm font-medium">Featured</p>
                       <p className="text-xs text-muted-foreground">Show in featured blocks</p>

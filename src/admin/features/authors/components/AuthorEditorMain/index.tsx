@@ -12,7 +12,7 @@ interface AuthorFormData {
   email: string;
   jobTitle: string;
   shortDescription: string;
-  isOnline: boolean;
+  workflowStatus: string;
   isFeatured: boolean;
   sortOrder: number;
   role: string;

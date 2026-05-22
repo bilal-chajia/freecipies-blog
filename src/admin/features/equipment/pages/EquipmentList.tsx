@@ -240,7 +240,7 @@ const EquipmentList = () => {
         onCancel: () => void;
     }
     const EquipmentForm = ({ onCancel }: EquipmentFormProps) => (
-        <Card className="p-6 border-2 border-primary/20 bg-primary/5 shadow-lg rounded-2xl space-y-4">
+        <Card className="p-4 border border-border/80 bg-card shadow-xs rounded-lg space-y-3">
             <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">
                     {isCreatingNew ? 'New Equipment' : 'Edit Equipment'}
@@ -362,15 +362,15 @@ const EquipmentList = () => {
     // ─── Loading skeleton ─────────────────────────────────────
     if (loading) {
         return (
-            <div className="space-y-6 animate-pulse">
-                <div className="flex flex-col gap-2">
-                    <div className="h-8 w-64 bg-muted rounded-lg" />
-                    <div className="h-4 w-96 bg-muted rounded-md" />
+            <div className="space-y-4 animate-pulse">
+                <div className="flex flex-col gap-1">
+                    <div className="h-6 w-48 bg-muted rounded-md" />
+                    <div className="h-4 w-80 bg-muted rounded-md" />
                 </div>
-                <div className="h-12 w-full bg-muted rounded-xl" />
+                <div className="h-9 w-full bg-muted rounded-lg" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[...Array(6)].map((_, i) => (
-                        <div key={i} className="h-40 bg-muted rounded-2xl" />
+                        <div key={i} className="h-36 bg-muted rounded-lg" />
                     ))}
                 </div>
             </div>
@@ -378,38 +378,38 @@ const EquipmentList = () => {
     }
 
     return (
-        <div className="space-y-8 pb-8">
+        <div className="space-y-4 pb-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1 uppercase tracking-wider">
-                        <Wrench className="size-4" />
+                    <div className="flex items-center gap-2 text-primary font-semibold text-xs mb-0.5 uppercase tracking-wider">
+                        <Wrench className="size-3.5" />
                         Affiliate Catalog
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tight text-balance">Equipment</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h1 className="text-xl font-bold tracking-tight text-balance">Equipment</h1>
+                    <p className="text-xs text-muted-foreground mt-0.5">
                         Kitchen tools & equipment with affiliate links. Auto-detected in recipe instructions.
                     </p>
                 </div>
-                <Button onClick={handleStartCreate} className="h-11 px-6 gap-2 shadow-sm rounded-xl" disabled={isCreatingNew}>
-                    <Plus className="size-4" />
+                <Button onClick={handleStartCreate} className="h-9 px-4 gap-2 shadow-xs rounded-lg" disabled={isCreatingNew}>
+                    <Plus className="size-3.5" />
                     Add Equipment
                 </Button>
             </div>
 
             {/* Search & Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
                 <div className="relative flex-1 w-full max-w-xl">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground opacity-60" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground opacity-60" />
                     <Input
                         placeholder="Search by name, brand, or slug..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-12 pl-10 border-none bg-card shadow-sm ring-1 ring-border/50 rounded-xl focus-visible:ring-primary/50 transition-all"
+                        className="h-9 pl-9 border border-border/80 bg-card rounded-lg focus-visible:ring-primary/50 transition-all"
                     />
                 </div>
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger className="w-40 h-12 rounded-xl border-none bg-card shadow-sm ring-1 ring-border/50">
+                    <SelectTrigger className="w-40 h-9 rounded-lg border border-border/80 bg-card shadow-xs">
                         <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
@@ -419,7 +419,7 @@ const EquipmentList = () => {
                         ))}
                     </SelectContent>
                 </Select>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-accent/50 rounded-lg border border-border/30 ml-auto">
+                <div className="flex items-center gap-2 px-2.5 py-1 bg-accent/50 rounded-lg border border-border/30 ml-auto">
                     <span className="text-xs font-bold text-muted-foreground">{items.length}</span>
                     <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">Items</span>
                 </div>
@@ -457,11 +457,11 @@ const EquipmentList = () => {
                                 {editingSlug === item.slug ? (
                                     <EquipmentForm onCancel={handleCancel} />
                                 ) : (
-                                    <Card className="group p-5 rounded-2xl border border-border/50 shadow-sm transition-all duration-300 h-full flex flex-col hover:shadow-md hover:border-primary/20 bg-card">
+                                    <Card className="group p-4 rounded-lg border border-border/80 shadow-xs transition-all duration-200 h-full flex flex-col hover:border-border hover:bg-accent/5 bg-card">
                                         <div className="flex items-start justify-between mb-3">
                                             {/* Image thumbnail */}
                                             {(item.image?.url || item.image?.variants?.md?.url) && (
-                                                <div className="w-10 h-10 rounded-lg border overflow-hidden bg-muted flex-shrink-0 mr-3">
+                                                <div className="w-10 h-10 rounded-md border border-border/80 overflow-hidden bg-muted flex-shrink-0 mr-3">
                                                     <img
                                                         src={item.image?.variants?.md?.url || item.image?.url}
                                                         alt={item.name}
@@ -486,13 +486,13 @@ const EquipmentList = () => {
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
                                                 <button
                                                     onClick={() => handleStartEdit(item)}
-                                                    className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+                                                    className="p-1 hover:bg-primary/10 hover:text-primary rounded-md transition-colors"
                                                 >
                                                     <Edit className="size-3.5" />
                                                 </button>
                                                 <button
                                                     onClick={() => setDeleteModal({ isOpen: true, item })}
-                                                    className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors"
+                                                    className="p-1 hover:bg-destructive/10 hover:text-destructive rounded-md transition-colors"
                                                 >
                                                     <Trash2 className="size-3.5" />
                                                 </button>

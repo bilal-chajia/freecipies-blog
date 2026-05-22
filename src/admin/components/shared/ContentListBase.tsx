@@ -56,7 +56,7 @@ type ContentListItem = {
     viewCount?: number;
     authorAvatar?: string;
     authorName?: string;
-    isOnline?: boolean;
+    workflowStatus?: string;
     publishedAt?: string;
     createdAt?: string;
     [key: string]: unknown;
@@ -106,12 +106,18 @@ const ContentListBase = ({
 }: ContentListBaseProps) => {
     const navigate = useNavigate();
 
-    const { articles: rawArticles, filters, pagination, setArticles, setFilters, setPagination } = useArticlesStore();
-    const articles = rawArticles as ContentListItem[];
+    const articles = useArticlesStore((s) => s.articles) as ContentListItem[];
+    const filters = useArticlesStore((s) => s.filters);
+    const pagination = useArticlesStore((s) => s.pagination);
+    const setArticles = useArticlesStore((s) => s.setArticles);
+    const setFilters = useArticlesStore((s) => s.setFilters);
+    const setPagination = useArticlesStore((s) => s.setPagination);
+
     const { categories, setCategories } = useCategoriesStore();
     const { authors, setAuthors } = useAuthorsStore();
     const { tags, setTags } = useTagsStore();
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [selectedRows, setSelectedRows] = useState<ContentListItem[]>([]);
     const [localFilters, setLocalFilters] = useState<ContentFilters>({
         search: '',
@@ -188,16 +194,18 @@ const ContentListBase = ({
 
                 setArticles(articlesData);
                 setPagination({
-                    ...pagination,
                     total: paginationData.total || articlesData.length,
-                    totalPages: paginationData.totalPages || Math.ceil(articlesData.length / pagination.limit),
+                    totalPages: paginationData.totalPages || Math.ceil((paginationData.total || 0) / pagination.limit),
                 });
+                setError(null);
             } else {
                 setArticles([]);
+                setError(response.data.message || 'Failed to load content');
             }
         } catch (error) {
             toast.error('Failed to load content');
             setArticles([]);
+            setError('Failed to load content');
         } finally {
             setLoading(false);
         }
@@ -228,10 +236,11 @@ const ContentListBase = ({
         }
     };
 
-    const handleToggleOnline = async (id: string | number) => {
+    const handleToggleOnline = async (id: string | number, currentStatus?: string) => {
         try {
-            await articlesAPI.toggleOnline(id);
-            toast.success('Status updated');
+            const nextStatus = currentStatus === 'published' ? 'draft' : 'published';
+            await articlesAPI.setWorkflowStatus(id, nextStatus);
+            toast.success(`Moved to ${nextStatus === 'published' ? 'Published' : 'Drafts'}`);
             loadArticles();
         } catch (error) {
             toast.error('Failed to update status');
@@ -240,6 +249,7 @@ const ContentListBase = ({
 
     const debouncedSearch = useMemo(
         () => debounce((value: string) => {
+            setLocalFilters(prev => ({ ...prev, search: value }));
             setFilters({ search: value });
             setPagination({ page: 1 });
         }, 500),
@@ -255,13 +265,13 @@ const ContentListBase = ({
         }
 
         const key = keyOrObj;
-        setLocalFilters(prev => ({ ...prev, [key]: value }));
 
         if (key === 'search') {
             if (typeof value === 'string') {
                 debouncedSearch(value);
             }
         } else {
+            setLocalFilters(prev => ({ ...prev, [key]: value }));
             setFilters({ [key]: value } as Parameters<typeof setFilters>[0]);
             setPagination({ page: 1 });
         }
@@ -361,17 +371,31 @@ const ContentListBase = ({
             },
         },
         {
-            accessorKey: 'status',
+            accessorKey: 'workflowStatus',
             header: 'Status',
             cell: ({ row }: { row: Row<ContentListItem> }) => {
-                const isOnline = row.original.isOnline;
+                const status = row.original.workflowStatus || 'draft';
+                const statusColors: Record<string, string> = {
+                    published: 'bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20',
+                    draft: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20',
+                    in_review: 'bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500/20',
+                    scheduled: 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20',
+                    archived: 'bg-gray-500/10 text-gray-500 border-gray-500/20 hover:bg-gray-500/20',
+                };
+                const statusLabels: Record<string, string> = {
+                    published: 'Published',
+                    draft: 'Draft',
+                    in_review: 'In Review',
+                    scheduled: 'Scheduled',
+                    archived: 'Archived',
+                };
                 return (
                     <Badge
                         variant="secondary"
-                        className={`gap-1 px-2.5 py-0.5 font-medium ${isOnline ? "bg-success/10 text-success border-success/20" : ""}`}
+                        className={`gap-1 px-2.5 py-0.5 font-medium ${statusColors[status] || ''}`}
                     >
-                        {isOnline ? <CheckCircle2 className="size-3" /> : <Clock className="size-3" />}
-                        {isOnline ? 'Published' : 'Draft'}
+                        {status === 'published' ? <CheckCircle2 className="size-3" /> : <Clock className="size-3" />}
+                        {statusLabels[status] || status}
                     </Badge>
                 );
             },
@@ -424,8 +448,8 @@ const ContentListBase = ({
                                     <ExternalLink className="size-4 mr-2" />
                                     View Live Site
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleToggleOnline(item.id)}>
-                                    {item.isOnline ? (
+                                <DropdownMenuItem onClick={() => handleToggleOnline(item.id, item.workflowStatus as string)}>
+                                    {item.workflowStatus === 'published' ? (
                                         <>
                                             <EyeOff className="size-4 mr-2" />
                                             Move to Drafts
@@ -461,16 +485,16 @@ const ContentListBase = ({
     ], [navigate, editPathPrefix, livePathPrefix, editIdField]);
 
     return (
-        <div className="space-y-6 pb-8">
+        <div className="space-y-4 pb-6">
             {/* Premium Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-balance">{title}</h1>
-                    <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                    <h1 className="text-xl font-bold tracking-tight text-balance">{title}</h1>
+                    <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button className="h-10 px-6 gap-2 shadow-sm" onClick={() => navigate(newButtonPath)}>
-                        <Plus className="size-4" />
+                    <Button className="h-9 px-4 gap-2 shadow-sm text-xs" onClick={() => navigate(newButtonPath)}>
+                        <Plus className="size-3.5" />
                         {newButtonLabel}
                     </Button>
                 </div>
@@ -478,25 +502,25 @@ const ContentListBase = ({
 
             {/* Mini Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-primary/5 border-none shadow-none ring-1 ring-primary/20">
-                    <CardContent className="pt-4 flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-xs font-semibold text-primary uppercase tracking-wider">{statsLabel}</p>
-                            <p className="text-2xl font-bold">{pagination.total}</p>
+                <Card className="border border-border/80 bg-card rounded-lg shadow-xs">
+                    <CardContent className="p-3.5 flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{statsLabel}</p>
+                            <p className="text-xl font-bold">{pagination.total}</p>
                         </div>
-                        <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                            <TypeIcon className="size-5" />
+                        <div className="p-1.5 bg-muted rounded-md text-muted-foreground">
+                            <TypeIcon className="size-4" />
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-success/5 border-none shadow-none ring-1 ring-success/20">
-                    <CardContent className="pt-4 flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-xs font-semibold text-success uppercase tracking-wider">Published</p>
-                            <p className="text-2xl font-bold">{(articles as ContentListItem[]).filter(a => a.isOnline).length}</p>
+                <Card className="border border-border/80 bg-card rounded-lg shadow-xs">
+                    <CardContent className="p-3.5 flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Published</p>
+                            <p className="text-xl font-bold">{(articles as ContentListItem[]).filter(a => a.workflowStatus === 'published').length}</p>
                         </div>
-                        <div className="p-2 bg-success/10 rounded-lg text-success">
-                            <CheckCircle2 className="size-5" />
+                        <div className="p-1.5 bg-muted rounded-md text-muted-foreground">
+                            <CheckCircle2 className="size-4" />
                         </div>
                     </CardContent>
                 </Card>
@@ -521,21 +545,21 @@ const ContentListBase = ({
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center justify-between bg-primary/10 border border-primary/20 p-3 rounded-xl shadow-sm"
+                        className="flex items-center justify-between bg-secondary/40 border border-border/80 p-2.5 rounded-lg shadow-xs"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                            <div className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">
                                 {selectedRows.length}
                             </div>
-                            <span className="text-sm font-medium text-primary">
+                            <span className="text-xs font-medium text-foreground">
                                 {selectedRows.length} items selected
                             </span>
                         </div>
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="h-8 border-primary/30 text-primary hover:bg-primary/20">
+                            <Button variant="outline" size="sm" className="h-7 px-3 text-xs border-border/80">
                                 Bulk Status
                             </Button>
-                            <Button variant="destructive" size="sm" className="h-8 shadow-sm">
+                            <Button variant="destructive" size="sm" className="h-7 px-3 text-xs shadow-sm">
                                 Delete Selected
                             </Button>
                         </div>
@@ -551,16 +575,23 @@ const ContentListBase = ({
                         actionHref={newButtonPath}
                     />
                 ) : (
-                    <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
+                    <div className="bg-card rounded-lg border border-border/80 shadow-xs overflow-hidden">
                         <DataTable
                             columns={columns}
                             data={articles}
                             loading={loading}
+                            error={error}
                             enableRowSelection={true}
-                            enableSorting={true}
+                            enableSorting={false}
                             enableFiltering={false}
                             enablePagination={true}
+                            manualPagination={true}
+                            pageIndex={pagination.page - 1}
                             pageSize={pagination.limit}
+                            pageCount={pagination.totalPages}
+                            totalCount={pagination.total}
+                            onPageChange={(idx) => setPagination({ page: idx + 1 })}
+                            onPageSizeChange={(size) => setPagination({ page: 1, limit: size })}
                             pageSizeOptions={[10, 20, 50]}
                             onRowSelectionChange={handleRowSelectionChange}
                         />

@@ -54,7 +54,6 @@ export const articles = sqliteTable('articles', {
   scheduledAt: text('scheduled_at'),
 
   // System
-  isOnline: integer('is_online', { mode: 'boolean' }).default(false),
   isFavorite: integer('is_favorite', { mode: 'boolean' }).default(false),
   accessLevel: integer('access_level').default(0),
   viewCount: integer('view_count').default(0),
@@ -67,7 +66,6 @@ export const articles = sqliteTable('articles', {
   index('idx_articles_type').on(table.type),
   index('idx_articles_category').on(table.categoryId),
   index('idx_articles_author').on(table.authorId),
-  index('idx_articles_online').on(table.isOnline),
   index('idx_articles_favorite').on(table.isFavorite),
   index('idx_articles_published').on(table.publishedAt),
   index('idx_articles_views').on(table.viewCount),

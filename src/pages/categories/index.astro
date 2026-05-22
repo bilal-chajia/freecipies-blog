@@ -8,7 +8,7 @@ import { extractImage, getImageSrcSet } from "@shared/utils";
 let categories: any[] = [];
 
 try {
-  const rawCategories = await getCategories(env.DB, { isOnline: true });
+  const rawCategories = await getCategories(env.DB, { workflowStatus: 'published' });
   categories = rawCategories.map(hydrateCategory);
 } catch (error) {
   console.error("Categories index: Error fetching categories:", error);

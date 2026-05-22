@@ -24,7 +24,7 @@ interface FormData {
   email: string;
   jobTitle: string;
   shortDescription: string;
-  isOnline: boolean;
+  workflowStatus: string;
   isFeatured: boolean;
   sortOrder: number;
   role: string;
@@ -59,7 +59,7 @@ const AuthorEditor = () => {
     email: '',
     jobTitle: '',
     shortDescription: '',
-    isOnline: false,
+    workflowStatus: 'draft',
     isFeatured: false,
     sortOrder: 0,
     role: 'guest',
@@ -110,7 +110,7 @@ const AuthorEditor = () => {
           email: author.email || '',
           jobTitle: author.jobTitle || author.job || '',
           shortDescription: author.shortDescription || '',
-          isOnline: author.isOnline || false,
+          workflowStatus: author.workflowStatus || 'draft',
           isFeatured: author.isFeatured || false,
           sortOrder: author.sortOrder || 0,
           role: author.role || 'guest',
@@ -234,7 +234,7 @@ const AuthorEditor = () => {
         slug: formData.slug,
         jobTitle: formData.jobTitle,
         shortDescription: formData.shortDescription,
-        isOnline: formData.isOnline,
+        workflowStatus: formData.workflowStatus,
         isFeatured: formData.isFeatured,
         sortOrder: formData.sortOrder,
         role: formData.role,

@@ -25,14 +25,14 @@ try {
   if (env.DB) {
     const result = await getArticles(env.DB, {
       type: "roundup",
-      isOnline: true,
+      workflowStatus: "published",
       limit,
       offset,
     });
     roundups = result.items;
     totalRoundups = result.total;
 
-    const rawCategories = await getCategories(env.DB, { isOnline: true });
+    const rawCategories = await getCategories(env.DB, { workflowStatus: "published" });
     categories = hydrateCategories(rawCategories);
   }
 } catch (error) {

@@ -84,7 +84,7 @@ export const articlesAPI = {
   create: (data: unknown) => api.post('/articles', data),
   update: (id: number | string, data: unknown) => api.put(`/admin/articles/${id}`, data),
   delete: (id: number | string) => api.delete(`/admin/articles/${id}`),
-  toggleOnline: (id: number | string) => api.patch(`/admin/articles/${id}?action=toggle-online`),
+  setWorkflowStatus: (id: number | string, status: string) => api.patch(`/admin/articles/${id}?action=set-workflow-status`, { status }),
   toggleFavorite: (id: number | string) => api.patch(`/admin/articles/${id}?action=toggle-favorite`),
 };
 

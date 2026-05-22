@@ -22,7 +22,6 @@ export const CreateTagSchema = z.object({
   label: LabelField,
   shortDescription: DescriptionField,
   color: HexColorField,
-  isOnline: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
   seoJson: JsonField,
   configJson: JsonField,

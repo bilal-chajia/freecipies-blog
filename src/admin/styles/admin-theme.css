@@ -32,15 +32,15 @@
 
     --border: #e2e8f0;
     --border-strong: #cbd5e1;
-    --border-subtle: #f1f5f9;
+    --border-subtle: #f8fafc;
 
     --shadow-color: 15 23 42;
-    --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.05);
-    --shadow-md: 0 4px 12px rgba(var(--shadow-color), 0.08);
-    --shadow-lg: 0 10px 24px rgba(var(--shadow-color), 0.1);
-    --shadow-xl: 0 16px 42px rgba(var(--shadow-color), 0.14);
-    --shadow-hover: 0 10px 28px rgba(var(--shadow-color), 0.12);
-    --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.03);
+    --shadow-md: 0 2px 8px rgba(var(--shadow-color), 0.05);
+    --shadow-lg: 0 8px 20px rgba(var(--shadow-color), 0.06);
+    --shadow-xl: 0 12px 30px rgba(var(--shadow-color), 0.08);
+    --shadow-hover: 0 4px 16px rgba(var(--shadow-color), 0.07);
+    --shadow-focus: 0 0 0 2px rgba(37, 99, 235, 0.15);
 
     --font-sans: Inter, "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-serif: Georgia, "Times New Roman", serif;
@@ -93,15 +93,15 @@
 
     --border: #1e293b;
     --border-strong: #334155;
-    --border-subtle: #0f172a;
+    --border-subtle: #090d16;
 
     --shadow-color: 2 6 23;
-    --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.3);
-    --shadow-md: 0 4px 12px rgba(var(--shadow-color), 0.35);
-    --shadow-lg: 0 10px 24px rgba(var(--shadow-color), 0.4);
-    --shadow-xl: 0 16px 42px rgba(var(--shadow-color), 0.45);
-    --shadow-hover: 0 10px 28px rgba(var(--shadow-color), 0.4);
-    --shadow-focus: 0 0 0 3px rgba(96, 165, 250, 0.28);
+    --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.15);
+    --shadow-md: 0 2px 8px rgba(var(--shadow-color), 0.2);
+    --shadow-lg: 0 8px 20px rgba(var(--shadow-color), 0.25);
+    --shadow-xl: 0 12px 30px rgba(var(--shadow-color), 0.3);
+    --shadow-hover: 0 4px 16px rgba(var(--shadow-color), 0.25);
+    --shadow-focus: 0 0 0 2px rgba(96, 165, 250, 0.28);
 
     --background: 222 47% 4%;
     --foreground: 210 40% 98%;

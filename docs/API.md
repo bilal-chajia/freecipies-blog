@@ -119,7 +119,7 @@ List articles with pagination and filters.
 | `category` | string  | -             | Category slug                  |
 | `author`   | string  | -             | Author slug                    |
 | `tag`      | string  | -             | Tag slug (comma-separated)     |
-| `online`   | boolean | `true`        | Visibility filter              |
+| `workflowStatus` | string  | -             | Visibility filter (`draft`, `in_review`, `scheduled`, `published`, `archived`, `all`) |
 | `featured` | boolean | -             | Featured articles only         |
 | `search`   | string  | -             | Full-text search               |
 
@@ -346,7 +346,7 @@ Update article. **Requires Auth.**
 {
   "headline": "Updated Title",
   "shortDescription": "Updated description...",
-  "isOnline": true
+  "isFavorite": true
 }
 ```
 

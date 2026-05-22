@@ -40,8 +40,8 @@ The `authors` row is the source of truth for public author identity, profile con
 | `bio_json` | no | Admin/editorial | Public author page content, expertise labels, and intentional public social/contact links. |
 | `persona_json` | no | Admin/AI | Private AI/editorial persona instructions for this author. Never rendered publicly by default. |
 | `seo_json` | publish-required | Admin/SEO | Author profile SEO payload. SQL default is `{}`, but public authors must store the complete v1 shape before publish. |
-| `is_featured` | no | Admin/editorial | Featured author eligibility flag. Public featured surfaces still require `is_online = 1` and `deleted_at IS NULL`. |
-| `is_online` | no | Admin/workflow | Public author profile/listing visibility. Does not erase article bylines already stored in article caches. |
+| `is_featured` | no | Admin/editorial | Featured author eligibility flag. Public featured surfaces still require `workflow_status = 'published'` and `deleted_at IS NULL`. |
+| `workflow_status` | no | Admin/workflow | Public author profile/listing visibility: `draft`, `published`, `archived`. Publicly visible only if `published` (and `deleted_at IS NULL`). Does not erase article bylines already stored in article caches. |
 | `sort_order` | no | Admin/navigation | Team/author-list ordering; lower values render first. Not related to article ordering. |
 | `cached_post_count` | no | App | Denormalized count of online, non-deleted articles where `articles.author_id = authors.id`. |
 | `created_at` | no | DB | UTC creation timestamp. |
@@ -81,13 +81,13 @@ The `authors` row is the source of truth for public author identity, profile con
 ### Workflow And Metrics
 
 - `is_featured` only controls eligibility for featured-author surfaces. Public
-  featured rendering must also require `is_online = 1` and `deleted_at IS NULL`.
-- `is_online` controls whether the author profile and author listings are
+  featured rendering must also require `workflow_status = 'published'` and `deleted_at IS NULL`.
+- `workflow_status` controls whether the author profile and author listings are
   publicly visible. Existing article pages can still render their saved
   `cached_author_json` byline when an author is later taken offline.
 - `sort_order` controls author/team listing order only.
 - `cached_post_count` counts public articles authored by this author:
-  `articles.is_online = 1` and `articles.deleted_at IS NULL`.
+  `articles.workflow_status = 'published'` and `articles.deleted_at IS NULL`.
 - `deleted_at` is the lifecycle archive marker. Because articles reference
   authors, deletion workflows must soft delete instead of hard deleting linked
   authors.
@@ -320,15 +320,16 @@ Public Astro:
 ## Validation Rules
 
 - `slug`: required, unique, lowercase kebab-case.
+- `slug`: required, unique, lowercase kebab-case.
 - `name`: required public display name.
 - `email`: required, unique, internal by default.
 - `short_description`: required.
 - `role`: one of `guest`, `staff`, `editor`, `admin`.
 - `images_json`, `bio_json`, `persona_json`, `seo_json`: valid JSON.
-- Public authors (`is_online = 1`) require complete `seo_json`.
+- Public authors (`workflow_status = 'published'`) require complete `seo_json`.
 - Authors used for AI-assisted content generation require `persona_json`.
 - Social URLs must be valid URLs.
-- Public queries: `deleted_at IS NULL`; public profile listings also require `is_online = 1`.
+- Public queries: `deleted_at IS NULL`; public profile listings also require `workflow_status = 'published'`.
 
 ## Cache Rules
 
@@ -388,7 +389,7 @@ Rules:
   links should render.
 - `social_links[]` must not use the older `platform` key.
 - `cached_author_json` must not become a full author profile cache.
-- `cached_author_json` must not store `email`, `role`, `is_online`,
+- `cached_author_json` must not store `email`, `role`, `workflow_status`,
   `is_featured`, `sort_order`, `cached_post_count`, `bio_json.content`,
   `persona_json`, `seo_json`, admin-only fields, private contact data, or
   moderation/workflow fields.
