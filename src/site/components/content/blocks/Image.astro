@@ -80,7 +80,7 @@ const alignmentStyles = {
   right: { marginLeft: "auto", marginRight: "0" },
 }[alignment];
 
-const widthProp = block.width;
+const widthProp = block.width || 512;
 let parsedWidth: string | undefined = undefined;
 if (widthProp !== undefined && widthProp !== null) {
   const widthStr = String(widthProp).trim();
