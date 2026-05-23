@@ -361,6 +361,31 @@ export const ImageBlock = createReactBlockSpec(
                 right: 'ml-auto',
             }[alignment];
 
+            const widthProp = block.props.width;
+            let parsedWidth: string | undefined = undefined;
+            if (widthProp !== undefined && widthProp !== null) {
+                const widthStr = String(widthProp).trim();
+                if (widthStr !== '') {
+                    if (/^\d+$/.test(widthStr)) {
+                        parsedWidth = `${widthStr}px`;
+                    } else {
+                        parsedWidth = widthStr;
+                    }
+                }
+            }
+
+            const numericWidth = typeof block.props.width === 'number'
+                ? block.props.width
+                : /^\d+$/.test(String(block.props.width))
+                    ? parseInt(String(block.props.width), 10)
+                    : undefined;
+
+            const numericHeight = typeof block.props.height === 'number'
+                ? block.props.height
+                : /^\d+$/.test(String(block.props.height))
+                    ? parseInt(String(block.props.height), 10)
+                    : undefined;
+
             const toolbar = isOverlayOpen ? null : (
                 <BlockToolbar
                     blockIcon={Image}
@@ -412,19 +437,25 @@ export const ImageBlock = createReactBlockSpec(
                             pointerEvents: isDragging ? 'none' : undefined,
                         }}
                     >
-                        <div className="border rounded-lg overflow-hidden bg-card">
+                        <div
+                            className={cn(
+                                'border rounded-lg overflow-hidden bg-card transition-all duration-200',
+                                alignmentClass
+                            )}
+                            style={{
+                                width: parsedWidth,
+                                maxWidth: '100%',
+                            }}
+                        >
                             {/* Image */}
                             <div className="relative">
                                 <img
                                     src={block.props.url}
                                     alt={block.props.alt}
-                                    width={block.props.width || undefined}
-                                    height={block.props.height || undefined}
-                                    className={cn(
-                                        'max-w-full h-auto',
-                                        alignmentClass
-                                    )}
-                                    style={{ display: 'block' }}
+                                    width={numericWidth || undefined}
+                                    height={numericHeight || undefined}
+                                    className="w-full h-auto block"
+                                    loading="lazy"
                                 />
                             </div>
 
