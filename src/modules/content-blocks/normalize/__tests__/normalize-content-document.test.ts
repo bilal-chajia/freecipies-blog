@@ -94,6 +94,24 @@ describe('normalizeContentDocument', () => {
       { id: 'paragraph', type: 'paragraph', text: 'Visible' },
     ]);
   });
+
+  it('keeps canonical marker blocks position-only', () => {
+    const document = normalizeContentDocument({
+      version: 1,
+      kind: 'content_document',
+      blocks: [
+        { id: 'recipe', type: 'main_recipe', recipe_json: { title: 'Nope' } },
+        { id: 'roundup', type: 'main_roundup', items: [{ title: 'Nope' }] },
+        { id: 'faq', type: 'main_faq', faqs: [{ question: 'Nope' }] },
+      ],
+    });
+
+    expect(document.blocks).toEqual([
+      { id: 'recipe', type: 'main_recipe' },
+      { id: 'roundup', type: 'main_roundup' },
+      { id: 'faq', type: 'main_faq' },
+    ]);
+  });
 });
 
 describe('ContentDocumentInputSchema', () => {

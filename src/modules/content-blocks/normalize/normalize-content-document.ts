@@ -105,6 +105,18 @@ function normalizeRelatedItems(block: Record<string, unknown>): unknown[] {
 function normalizeLegacyType(block: Record<string, unknown>): Record<string, unknown> {
   const type = block.type;
 
+  if (type === 'roundupList' || type === 'roundup_list' || type === 'main_roundup') {
+    return { id: block.id, type: 'main_roundup' };
+  }
+
+  if (type === 'mainRecipe' || type === 'main_recipe') {
+    return { id: block.id, type: 'main_recipe' };
+  }
+
+  if (type === 'faqSection' || type === 'faq_section' || type === 'main_faq') {
+    return { id: block.id, type: 'main_faq' };
+  }
+
   if (type === 'alert') {
     const props = asRecord(block.props);
     return {
@@ -125,13 +137,6 @@ function normalizeLegacyType(block: Record<string, unknown>): Record<string, unk
     };
   }
 
-  if (type === 'faqSection') {
-    return {
-      id: block.id,
-      type: 'main_faq',
-    };
-  }
-
   if (type === 'relatedContent') {
     return {
       id: block.id,
@@ -140,24 +145,6 @@ function normalizeLegacyType(block: Record<string, unknown>): Record<string, unk
       layout: stringValue(block.layout) ?? 'grid',
       limit: numberValue(block.limit),
       items: normalizeRelatedItems(block),
-    };
-  }
-
-  if (type === 'roundupList' || type === 'roundup_list') {
-    return {
-      id: block.id,
-      type: 'main_roundup',
-    };
-  }
-
-  if (type === 'mainRecipe') {
-    return { id: block.id, type: 'main_recipe' };
-  }
-
-  if (type === 'faq_section') {
-    return {
-      id: block.id,
-      type: 'main_faq',
     };
   }
 

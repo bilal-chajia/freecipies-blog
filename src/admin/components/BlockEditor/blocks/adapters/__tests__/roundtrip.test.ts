@@ -448,4 +448,47 @@ describe('BlockEditor hydrated marker blocks', () => {
       ],
     });
   });
+
+  it('strips marker display payloads when saving content_json', () => {
+    const saved = blocksToContentJson([
+      {
+        id: 'recipe-marker',
+        type: 'mainRecipe',
+        props: {
+          title: 'Editor display title',
+          recipeJson: '{"ingredients":[]}',
+        },
+        content: [],
+        children: [],
+      },
+      {
+        id: 'roundup-marker',
+        type: 'roundupList',
+        props: {
+          itemsJson: '[{"title":"Editor only"}]',
+        },
+        content: [],
+        children: [],
+      },
+      {
+        id: 'faq-marker',
+        type: 'faqSection',
+        props: {
+          faqsJson: '[{"question":"Editor only","answer":"No save"}]',
+        },
+        content: [],
+        children: [],
+      },
+    ] as any);
+
+    expect(saved).toEqual({
+      version: 1,
+      kind: 'content_document',
+      blocks: [
+        { id: 'recipe-marker', type: 'main_recipe' },
+        { id: 'roundup-marker', type: 'main_roundup' },
+        { id: 'faq-marker', type: 'main_faq' },
+      ],
+    });
+  });
 });
