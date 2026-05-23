@@ -22,6 +22,7 @@ import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/Blo
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+import { parseJsonProp, stringifyJsonProp } from './shared/block-props';
 
 type TableRow = string[];
 type InsertIndicator = {
@@ -37,17 +38,7 @@ type TableUpdates = {
     rowsJson?: string;
 };
 
-const parseList = <T extends unknown[]>(value: string, fallback: T): T => {
-    if (!value) return fallback;
-    try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed as T : fallback;
-    } catch {
-        return fallback;
-    }
-};
-
-const toJson = (value: TableRow | TableRow[]) => JSON.stringify(value || []);
+const toJson = (value: TableRow | TableRow[]) => stringifyJsonProp(value || []);
 
 const normalizeRows = (rows: TableRow[], columns: number): TableRow[] => {
     if (!Array.isArray(rows)) return [];
@@ -90,11 +81,11 @@ export const TableBlock = createReactBlockSpec(
             } = useBlockDragHandle(block.id);
 
             const headers = useMemo(
-                () => parseList<TableRow>(block.props.headersJson, []),
+                () => parseJsonProp<TableRow>(block.props.headersJson, []),
                 [block.props.headersJson]
             );
             const rows = useMemo(
-                () => parseList<TableRow[]>(block.props.rowsJson, []),
+                () => parseJsonProp<TableRow[]>(block.props.rowsJson, []),
                 [block.props.rowsJson]
             );
             const [rowInsert, setRowInsert] = useState<InsertIndicator | null>(null);

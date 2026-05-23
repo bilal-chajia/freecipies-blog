@@ -30,37 +30,57 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
-import { parseVariantsJson, getVariantMap, resolveVariantUrl, stripStorageKeys, type ParsedMediaVariantsJson } from '@shared/types/images';
 import { ImageUploader, MediaDialog } from '@admin/features/media/components';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
 import { useBlockEditorSourceData } from '../source-data-context';
+import { buildContentImageSelection } from '../utils/image-selection';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+import {
+    IMAGE_BLOCK_OPEN_MEDIA_EVENT,
+    IMAGE_BLOCK_OPEN_UPLOADER_EVENT,
+} from './shared/image-block-events';
 
 type ImageUploadData = {
-    id?: string | number;
+    id?: string | number | null;
     url?: string;
-    altText?: string;
-    caption?: string;
+    name?: string | null;
+    altText?: string | null;
+    alt_text?: string | null;
+    alt?: string | null;
+    caption?: string | null;
     credit?: unknown;
+    placeholder?: string | null;
+    aspectRatio?: string | null;
+    aspect_ratio?: string | null;
+    focalPoint?: { x?: number; y?: number } | null;
+    focal_point?: { x?: number; y?: number } | null;
     width?: number;
     height?: number;
-    variants?: Record<string, { url?: string; width?: number; height?: number }>;
+    variants?: unknown;
+    variantsJson?: unknown;
+    variants_json?: unknown;
 };
 
 type MediaSelectItem = {
-    id?: string | number;
+    id?: string | number | null;
     url?: string;
-    altText?: string;
-    alt_text?: string;
-    name?: string;
-    caption?: string;
+    altText?: string | null;
+    alt_text?: string | null;
+    alt?: string | null;
+    name?: string | null;
+    caption?: string | null;
     credit?: unknown;
+    placeholder?: string | null;
+    aspectRatio?: string | null;
+    aspect_ratio?: string | null;
+    focalPoint?: { x?: number; y?: number } | null;
+    focal_point?: { x?: number; y?: number } | null;
     width?: number;
     height?: number;
-    variantsJson?: string;
-    variants_json?: string;
+    variantsJson?: unknown;
+    variants_json?: unknown;
     variants?: unknown;
 };
 
@@ -151,16 +171,16 @@ export const ImageBlock = createReactBlockSpec(
                 selectBlock();
             }, [selectBlock]);
 
-            const scheduleBlockSelection = useCallback((blockId: string) => {
-                if (!blockId) return;
-                requestAnimationFrame(() => {
-                    try {
-                        editor.setTextCursorPosition(blockId, 'start');
-                    } catch {
-                        // Ignore if selection fails while dialog is closing.
-                    }
-                });
-            }, [editor]);
+            const openMediaDialog = useCallback(() => {
+                autoOpenedRef.current = true;
+                selectBlock();
+                window.setTimeout(() => setMediaDialogOpen(true), 0);
+            }, [selectBlock]);
+
+            const openUploaderDialog = useCallback(() => {
+                selectBlock();
+                window.setTimeout(() => setUploaderOpen(true), 0);
+            }, [selectBlock]);
 
             useEffect(() => {
                 if (block.props.url) return;
@@ -195,124 +215,68 @@ export const ImageBlock = createReactBlockSpec(
                 const onOpenMedia = (e: Event) => {
                     const event = e as ImageBlockOpenEvent;
                     if (event.detail?.blockId === block.id) {
-                        autoOpenedRef.current = true;
-                        selectBlock();
-                        setMediaDialogOpen(true);
+                        openMediaDialog();
                     }
                 };
                 const onOpenUploader = (e: Event) => {
                     const event = e as ImageBlockOpenEvent;
                     if (event.detail?.blockId === block.id) {
-                        selectBlock();
-                        setUploaderOpen(true);
+                        openUploaderDialog();
                     }
                 };
-                document.addEventListener('imageblock:open-media', onOpenMedia);
-                document.addEventListener('imageblock:open-uploader', onOpenUploader);
+                document.addEventListener(IMAGE_BLOCK_OPEN_MEDIA_EVENT, onOpenMedia);
+                document.addEventListener(IMAGE_BLOCK_OPEN_UPLOADER_EVENT, onOpenUploader);
                 return () => {
-                    document.removeEventListener('imageblock:open-media', onOpenMedia);
-                    document.removeEventListener('imageblock:open-uploader', onOpenUploader);
+                    document.removeEventListener(IMAGE_BLOCK_OPEN_MEDIA_EVENT, onOpenMedia);
+                    document.removeEventListener(IMAGE_BLOCK_OPEN_UPLOADER_EVENT, onOpenUploader);
                 };
-            }, [block.id, selectBlock]);
-
-            const getCreditName = useCallback((creditJson: unknown, fallback = '') => {
-                if (!creditJson || creditJson === '{}') return fallback || '';
-                try {
-                    const parsed = typeof creditJson === 'string' ? JSON.parse(creditJson) : creditJson;
-                    return parsed?.type === 'author' && parsed?.name ? parsed.name : fallback || '';
-                } catch {
-                    return fallback || '';
-                }
-            }, []);
-
+            }, [block.id, openMediaDialog, openUploaderDialog]);
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data: ImageUploadData) => {
-                const variants = data.variants || {};
-                const url = resolveVariantUrl(variants.md) || resolveVariantUrl(variants.sm) || resolveVariantUrl(variants.lg) || data.url;
-                const bestVariant = variants.md || variants.lg || variants.original;
                 const currentBlock = editor.getBlock(block.id) || block;
-                const imageRef = typeof currentBlock.props.imageRef === 'string' && currentBlock.props.imageRef
-                    ? currentBlock.props.imageRef
-                    : `body-image-${data.id || block.id}`;
-                onImagesChange?.(upsertContentImageSlot(imagesData, imageRef, {
-                    media_id: typeof data.id === 'number' ? data.id : Number(data.id) || data.id || imageRef,
-                    alt: data.altText || '',
-                    caption: data.caption || '',
-                    credit: data.credit || null,
-                    variants,
-                }));
+                const selection = buildContentImageSelection({
+                    item: data,
+                    currentProps: currentBlock.props,
+                    fallbackBlockId: block.id,
+                });
+                onImagesChange?.(upsertContentImageSlot(imagesData, selection.imageRef, selection.slot));
 
                 editor.updateBlock(currentBlock, {
                     type: 'customImage',
-                    props: {
-                        ...currentBlock.props,
-                        imageRef,
-                        url,
-                        mediaId: data.id?.toString() || '',
-                        alt: data.altText || '',
-                        caption: data.caption || '',
-                        credit: getCreditName(JSON.stringify(data.credit || {})),
-                        creditJson: data.credit && typeof data.credit === 'object' ? JSON.stringify(data.credit) : '{}',
-                        width: bestVariant?.width || data.width || 512,
-                        height: bestVariant?.height || data.height || 300,
-                        variantsJson: JSON.stringify(variants),
-                    },
+                    props: selection.props,
                 });
-                setInputUrl(url || '');
+                setInputUrl(typeof selection.props.url === 'string' ? selection.props.url : '');
                 setUploaderOpen(false);
                 
                 // Ensure the block is visually selected after upload
                 setTimeout(() => {
                     selectBlock();
-                    scheduleBlockSelection(currentBlock.id);
                 }, 50);
-            }, [block, editor, getCreditName, imagesData, onImagesChange, scheduleBlockSelection, selectBlock]);
+            }, [block, editor, imagesData, onImagesChange, selectBlock]);
 
             // Handle media selection from MediaDialog
             const handleMediaSelect = useCallback((item: MediaSelectItem) => {
-                const parsed = parseVariantsJson(item);
-                const storageVariants = parsed?.variants || {};
-                const variants = stripStorageKeys(storageVariants);
-                const url = variants.md?.url || variants.sm?.url || variants.lg?.url || variants.xs?.url || item.url;
-                const bestVariant = variants.md || variants.lg || variants.sm || variants.xs || variants.original;
                 const currentBlock = editor.getBlock(block.id) || block;
-                const imageRef = typeof currentBlock.props.imageRef === 'string' && currentBlock.props.imageRef
-                    ? currentBlock.props.imageRef
-                    : `body-image-${item.id || block.id}`;
-                onImagesChange?.(upsertContentImageSlot(imagesData, imageRef, {
-                    media_id: typeof item.id === 'number' ? item.id : Number(item.id) || item.id || imageRef,
-                    alt: item.altText || item.alt_text || item.name || '',
-                    caption: item.caption || '',
-                    credit: item.credit || null,
-                    variants,
-                }));
+                const selection = buildContentImageSelection({
+                    item,
+                    currentProps: currentBlock.props,
+                    fallbackBlockId: block.id,
+                });
+                onImagesChange?.(upsertContentImageSlot(imagesData, selection.imageRef, selection.slot));
 
                 editor.updateBlock(currentBlock, {
                     type: 'customImage',
-                    props: {
-                        ...currentBlock.props,
-                        imageRef,
-                        url,
-                        mediaId: item.id?.toString() || '',
-                        alt: item.altText || item.alt_text || item.name || '',
-                        caption: item.caption || '',
-                        credit: getCreditName(JSON.stringify(item.credit || {})),
-                        creditJson: item.credit && typeof item.credit === 'object' ? JSON.stringify(item.credit) : '{}',
-                        width: bestVariant?.width || item.width || 512,
-                        height: bestVariant?.height || item.height || 0,
-                        variantsJson: JSON.stringify(variants),
-                    },
+                    props: selection.props,
                 });
-                setInputUrl(url || '');
+                setInputUrl(typeof selection.props.url === 'string' ? selection.props.url : '');
                 setMediaDialogOpen(false);
                 
                 // Ensure the block is visually selected after selection
                 setTimeout(() => {
                     selectBlock();
-                    scheduleBlockSelection(currentBlock.id);
                 }, 50);
-            }, [block, editor, getCreditName, imagesData, onImagesChange, scheduleBlockSelection, selectBlock]);
+            }, [block, editor, imagesData, onImagesChange, selectBlock]);
 
 
 
@@ -356,9 +320,7 @@ export const ImageBlock = createReactBlockSpec(
                                         onMouseDown={(e) => { e.stopPropagation(); }}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            autoOpenedRef.current = true;
-                                            selectBlock();
-                                            setMediaDialogOpen(true);
+                                            openMediaDialog();
                                         }}
                                         className="gap-2"
                                     >
@@ -372,11 +334,13 @@ export const ImageBlock = createReactBlockSpec(
                             </div>
                         </BlockWrapper>
 
-                        <ImageUploader
-                            open={uploaderOpen}
-                            onOpenChange={setUploaderOpen}
-                            onUploadComplete={(data) => handleUploadComplete(data as ImageUploadData)}
-                        />
+                        {uploaderOpen && (
+                            <ImageUploader
+                                open={uploaderOpen}
+                                onOpenChange={setUploaderOpen}
+                                onUploadComplete={(data) => handleUploadComplete(data as ImageUploadData)}
+                            />
+                        )}
 
                         <MediaDialog
                             open={mediaDialogOpen}
@@ -412,7 +376,7 @@ export const ImageBlock = createReactBlockSpec(
                         label="Replace image"
                         onClick={(event) => {
                             event.stopPropagation();
-                            setMediaDialogOpen(true);
+                            openMediaDialog();
                         }}
                     />
                     <ToolbarButton
@@ -431,72 +395,80 @@ export const ImageBlock = createReactBlockSpec(
             );
 
             return (
-                <BlockWrapper
-                    ref={setDragNodeRef}
-                    isSelected={isSelected}
-                    toolbar={toolbar}
-                    onClick={handleSelect}
-                    onFocus={handleSelect}
-                    onPointerDownCapture={handleSelect}
-                    blockType="image"
-                    blockId={block.id}
-                    className="my-4"
-                    style={{
-                        ...dragStyle,
-                        opacity: isDragging ? 0.5 : undefined,
-                        pointerEvents: isDragging ? 'none' : undefined,
-                    }}
-                >
-                    <div className="border rounded-lg overflow-hidden bg-card">
-                        {/* Image */}
-                        <div className="relative">
-                            <img
-                                src={block.props.url}
-                                alt={block.props.alt}
-                                width={block.props.width || undefined}
-                                height={block.props.height || undefined}
-                                className={cn(
-                                    'max-w-full h-auto',
-                                    alignmentClass
+                <>
+                    <BlockWrapper
+                        ref={setDragNodeRef}
+                        isSelected={isSelected}
+                        toolbar={toolbar}
+                        onClick={handleSelect}
+                        onFocus={handleSelect}
+                        onPointerDownCapture={handleSelect}
+                        blockType="image"
+                        blockId={block.id}
+                        className="my-4"
+                        style={{
+                            ...dragStyle,
+                            opacity: isDragging ? 0.5 : undefined,
+                            pointerEvents: isDragging ? 'none' : undefined,
+                        }}
+                    >
+                        <div className="border rounded-lg overflow-hidden bg-card">
+                            {/* Image */}
+                            <div className="relative">
+                                <img
+                                    src={block.props.url}
+                                    alt={block.props.alt}
+                                    width={block.props.width || undefined}
+                                    height={block.props.height || undefined}
+                                    className={cn(
+                                        'max-w-full h-auto',
+                                        alignmentClass
+                                    )}
+                                    style={{ display: 'block' }}
+                                />
+                            </div>
+
+                            {/* Caption & Credit */}
+                            <div className="p-2 space-y-1 bg-muted/20">
+                                <input
+                                    type="text"
+                                    value={block.props.caption || ''}
+                                    onChange={(e) => editor.updateBlock(block, {
+                                        type: 'customImage',
+                                        props: { ...block.props, caption: e.target.value }
+                                    })}
+                                    placeholder="Write a caption..."
+                                    className={cn(
+                                        'w-full text-center text-sm',
+                                        'bg-transparent border-none',
+                                        'text-muted-foreground placeholder:text-muted-foreground/50',
+                                        'focus:outline-none focus:ring-0'
+                                    )}
+                                    ref={captionRef}
+                                />
+
+                                {block.props.credit && (
+                                    <div className="w-full text-center text-xs text-muted-foreground/70">
+                                        {block.props.credit}
+                                    </div>
                                 )}
-                                style={{ display: 'block' }}
-                            />
+                            </div>
                         </div>
+                    </BlockWrapper>
 
-                        {/* Caption & Credit */}
-                        <div className="p-2 space-y-1 bg-muted/20">
-                            <input
-                                type="text"
-                                value={block.props.caption || ''}
-                                onChange={(e) => editor.updateBlock(block, {
-                                    type: 'customImage',
-                                    props: { ...block.props, caption: e.target.value }
-                                })}
-                                placeholder="Write a caption..."
-                                className={cn(
-                                    'w-full text-center text-sm',
-                                    'bg-transparent border-none',
-                                    'text-muted-foreground placeholder:text-muted-foreground/50',
-                                    'focus:outline-none focus:ring-0'
-                                )}
-                                ref={captionRef}
-                            />
-
-                            {block.props.credit && (
-                                <div className="w-full text-center text-xs text-muted-foreground/70">
-                                    {block.props.credit}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Media dialogs */}
                     <MediaDialog
                         open={mediaDialogOpen}
                         onOpenChange={setMediaDialogOpen}
                         onSelect={handleMediaSelect}
                     />
-                </BlockWrapper>
+                    {uploaderOpen && (
+                        <ImageUploader
+                            open={uploaderOpen}
+                            onOpenChange={setUploaderOpen}
+                            onUploadComplete={(data) => handleUploadComplete(data as ImageUploadData)}
+                        />
+                    )}
+                </>
             );
         },
     }

@@ -12,6 +12,11 @@ import {
     parseJsonArray,
     clampNumber,
 } from './block-settings/helpers';
+import {
+    IMAGE_BLOCK_OPEN_MEDIA_EVENT,
+    IMAGE_BLOCK_OPEN_UPLOADER_EVENT,
+    dispatchImageBlockEvent,
+} from '../blocks/shared/image-block-events';
 
 /**
  * Block Settings Component
@@ -76,17 +81,13 @@ export default function BlockSettings({
     /** Tells the ImageBlock to open its own Media Library dialog. */
     const openBlockMediaDialog = () => {
         if (!selectedBlock?.id) return;
-        document.dispatchEvent(
-            new CustomEvent('imageblock:open-media', { detail: { blockId: selectedBlock.id } })
-        );
+        dispatchImageBlockEvent(IMAGE_BLOCK_OPEN_MEDIA_EVENT, { blockId: selectedBlock.id });
     };
 
     /** Tells the ImageBlock to open its own Image Uploader dialog. */
     const openBlockUploaderDialog = () => {
         if (!selectedBlock?.id) return;
-        document.dispatchEvent(
-            new CustomEvent('imageblock:open-uploader', { detail: { blockId: selectedBlock.id } })
-        );
+        dispatchImageBlockEvent(IMAGE_BLOCK_OPEN_UPLOADER_EVENT, { blockId: selectedBlock.id });
     };
 
     const deleteBlock = () => {
