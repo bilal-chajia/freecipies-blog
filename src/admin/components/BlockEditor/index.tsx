@@ -33,6 +33,8 @@ import { contentJsonToBlocks, blocksToContentJson } from './utils/conversion';
 import { getEditorDomElement } from './utils/editorView';
 import CustomSlashMenu from './components/CustomSlashMenu';
 import CustomSideMenu from './components/CustomSideMenu';
+import { useBlockEditorHydration } from './hooks/useBlockEditorHydration';
+import { useBlockEditorInlineActions } from './hooks/useBlockEditorInlineActions';
 
 // Hooks
 import { useEditorStateManager } from './hooks/useEditorStateManager';
@@ -42,15 +44,6 @@ import { useInsertHandle } from './hooks/useInsertHandle';
 import { useCanvasDragDrop } from './hooks/useCanvasDragDrop';
 
 import type { BlockEditorProps } from './utils/types';
-
-const SOURCE_HYDRATED_EDITOR_TYPES = new Set([
-  'customImage',
-  'beforeAfter',
-  'faqSection',
-  'mainRecipe',
-  'relatedContent',
-  'simpleTable',
-]);
 
 export default function BlockEditor({
   value,
@@ -79,7 +72,7 @@ export default function BlockEditor({
   const lastEmittedValueRef = useRef('');
   const lastSerializedRef = useRef('');
   const moveActionBlockIdRef = useRef<string | null>(null);
-  const [viewReady, setViewReady] = useState(false);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const hydrationContext = useMemo(() => ({
     recipeJson,
     onRecipeChange,
@@ -89,15 +82,6 @@ export default function BlockEditor({
     onImagesChange,
     roundupJson,
   }), [recipeJson, onRecipeChange, faqsJson, onFaqsChange, imagesData, onImagesChange, roundupJson]);
-  const sourceDataSignature = useMemo(
-    () => JSON.stringify({
-      recipeJson,
-      faqsJson,
-      imagesData,
-      roundupJson,
-    }),
-    [recipeJson, faqsJson, imagesData, roundupJson]
-  );
 
   // --- Editor instance ---
   const initialContent = useMemo(() => contentJsonToBlocks(value, hydrationContext) as any, []);
@@ -107,101 +91,23 @@ export default function BlockEditor({
     domAttributes: { editor: { class: 'min-h-[32rem] pb-[30vh]' } },
     uploadFile: async (file: File) => URL.createObjectURL(file),
   });
-  const mountedEditor = viewReady ? editor : null;
+
+  const { viewReady, mountedEditor } = useBlockEditorHydration({
+    editor,
+    value,
+    hydrationContext,
+    lastEmittedValueRef,
+    lastSerializedRef,
+    activeBlockId,
+    onEditorReady,
+  });
 
   const SlashMenuComponent = useMemo(
     () => (props: Record<string, unknown>) => <CustomSlashMenu {...props} editor={editor} />,
     [editor]
   );
 
-  useEffect(() => {
-    setViewReady(false);
-
-    let frame = 0;
-    let cancelled = false;
-
-    const waitForView = () => {
-      if (cancelled) return;
-      if (getEditorDomElement(editor)) {
-        setViewReady(true);
-        return;
-      }
-      frame = requestAnimationFrame(waitForView);
-    };
-
-    frame = requestAnimationFrame(waitForView);
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(frame);
-    };
-  }, [editor]);
-
-  useEffect(() => {
-    if (mountedEditor && onEditorReady) onEditorReady(mountedEditor);
-  }, [mountedEditor, onEditorReady]);
-
-  // External value sync (echo-safe)
-  useEffect(() => {
-    async function updateContent() {
-      if (!mountedEditor || !value) return;
-      const sv = typeof value === 'string' ? value : JSON.stringify(value);
-      if (sv === lastEmittedValueRef.current) return;
-      const cur = mountedEditor.document;
-      const isEmpty = cur.length === 0 || (cur.length === 1 && cur[0].type === 'paragraph' && (!cur[0].content || cur[0].content.length === 0));
-      let pv: any = value;
-      if (typeof value === 'string') { try { pv = JSON.parse(value); } catch { pv = null; } }
-      const hasBlocks = Array.isArray(pv) ? pv.length > 0 : (pv as Record<string, any> | null)?.blocks?.length > 0;
-      if (isEmpty && hasBlocks) {
-        const nb = contentJsonToBlocks(value, hydrationContext) as any;
-        if (nb && nb.length > 0) {
-          lastEmittedValueRef.current = sv;
-          lastSerializedRef.current = sv;
-          await mountedEditor.replaceBlocks(mountedEditor.document, nb);
-        }
-      }
-    }
-    updateContent();
-  }, [mountedEditor, value, hydrationContext]);
-
-  useEffect(() => {
-    if (!mountedEditor || !value) return;
-
-    const hydratedBlocks = contentJsonToBlocks(value, hydrationContext) as any[] | undefined;
-    if (!hydratedBlocks?.length) return;
-
-    for (const hydratedBlock of hydratedBlocks) {
-      if (!hydratedBlock?.id || !SOURCE_HYDRATED_EDITOR_TYPES.has(String(hydratedBlock.type))) {
-        continue;
-      }
-
-      const currentBlock = mountedEditor.getBlock(hydratedBlock.id);
-      if (!currentBlock || currentBlock.type !== hydratedBlock.type) {
-        continue;
-      }
-
-      const currentProps = JSON.stringify(currentBlock.props || {});
-      const nextProps = JSON.stringify(hydratedBlock.props || {});
-      if (currentProps === nextProps) {
-        continue;
-      }
-
-      try {
-        mountedEditor.updateBlock(currentBlock, {
-          type: hydratedBlock.type,
-          props: {
-            ...currentBlock.props,
-            ...hydratedBlock.props,
-          },
-        });
-      } catch {
-        // The view can disappear during route changes; the next mount will hydrate from source data.
-      }
-    }
-  }, [mountedEditor, value, hydrationContext, sourceDataSignature]);
-
   // --- State ---
-  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
 
   // --- Hooks ---
   const { structureItems, structureItemsRef } = useEditorStateManager({
@@ -233,42 +139,13 @@ export default function BlockEditor({
   if (!editor) return null;
 
   // --- Render helpers ---
-  const applyLink = () => {
-    const selectedText = linkToolbar.text || editor.getSelectedText();
-    if (!selectedText || !linkToolbar.url) return;
-    const sr = linkToolbar.selection;
-    if (sr && (editor as Record<string, any>)._tiptapEditor?.commands?.setTextSelection) {
-      (editor as Record<string, any>)._tiptapEditor.commands.setTextSelection(sr);
-    }
-    editor.createLink(linkToolbar.url, selectedText);
-    editor.focus();
-    setLinkToolbar((prev) => ({ ...prev, open: false, mode: 'buttons' }));
-  };
-
-  const insertParagraphAtHandle = () => {
-    if (!insertHandle) return;
-    let targetId = insertHandle.blockId;
-    let placement = insertHandle.placement;
-    const block = editor.getBlock(targetId) as Record<string, any> | undefined;
-    if (block?.parentId) {
-      let current = block;
-      while (current.parentId) {
-        const parent = editor.getBlock(current.parentId) as Record<string, any> | undefined;
-        if (!parent) break;
-        current = parent;
-        targetId = current.id;
-      }
-      placement = 'after';
-    }
-    const inserted = editor.insertBlocks([{ type: 'paragraph' }], targetId, placement);
-    if (inserted?.[0]?.id) {
-      editor.setTextCursorPosition(inserted[0].id, 'start');
-      editor.focus();
-      const sm = editor.getExtension('suggestionMenu') as Record<string, any> | undefined;
-      if (sm) sm.openSuggestionMenu('/');
-    }
-    setInsertHandle(null);
-  };
+  const { applyLink, insertParagraphAtHandle } = useBlockEditorInlineActions({
+    editor,
+    linkToolbar,
+    setLinkToolbar,
+    insertHandle,
+    setInsertHandle,
+  });
 
   return (
     <RelatedContentProvider value={relatedContext}>
