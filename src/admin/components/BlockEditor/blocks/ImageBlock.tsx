@@ -232,6 +232,50 @@ export const ImageBlock = createReactBlockSpec(
                 };
             }, [block.id, openMediaDialog, openUploaderDialog]);
 
+            // Sync block properties to imagesData source-of-truth when modified
+            useEffect(() => {
+                if (!block.props.url || !block.props.imageRef) return;
+                
+                const images = parseImagesData(imagesData);
+                const contentImages = parseImagesData(images.content_images);
+                const currentSlot = contentImages[block.props.imageRef] as Record<string, unknown> | undefined;
+                
+                const currentWidth = currentSlot?.width;
+                const currentAlignment = currentSlot?.alignment;
+                const currentCaption = currentSlot?.caption;
+                const currentAlt = currentSlot?.alt;
+                
+                const hasChanged = 
+                    currentWidth !== block.props.width ||
+                    currentAlignment !== block.props.alignment ||
+                    currentCaption !== block.props.caption ||
+                    currentAlt !== block.props.alt;
+                    
+                if (hasChanged) {
+                    const updatedSlot = {
+                        ...(currentSlot || {}),
+                        width: typeof block.props.width === 'number'
+                            ? block.props.width
+                            : /^\d+$/.test(String(block.props.width))
+                                ? parseInt(String(block.props.width), 10)
+                                : block.props.width,
+                        alignment: block.props.alignment,
+                        caption: block.props.caption,
+                        alt: block.props.alt,
+                    };
+                    onImagesChange?.(upsertContentImageSlot(imagesData, block.props.imageRef, updatedSlot));
+                }
+            }, [
+                block.props.url,
+                block.props.imageRef,
+                block.props.width,
+                block.props.alignment,
+                block.props.caption,
+                block.props.alt,
+                imagesData,
+                onImagesChange
+            ]);
+
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data: ImageUploadData) => {
                 const currentBlock = editor.getBlock(block.id) || block;
