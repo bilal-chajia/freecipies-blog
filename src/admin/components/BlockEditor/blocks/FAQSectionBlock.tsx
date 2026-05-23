@@ -326,35 +326,47 @@ export const FAQSectionBlock = createReactBlockSpec(
       );
 
       const updateItems = (newItems: FAQItem[]) => {
-        const currentFaqs = parseFaqDocument(faqsJson);
-        onFaqsChange?.(JSON.stringify({
-          heading: currentFaqs.heading || block.props.title || 'Frequently Asked Questions',
-          intro: currentFaqs.intro ?? null,
-          items: newItems.map((item) => ({
-            question: item.q,
-            answer: item.a,
-          })),
-        }, null, 2));
-        editor.updateBlock(block, {
-          type: 'faqSection',
-          props: { ...block.props, itemsJson: JSON.stringify(newItems) },
-        });
+        if (onFaqsChange) {
+          const currentFaqs = parseFaqDocument(faqsJson);
+          onFaqsChange(JSON.stringify({
+            heading: currentFaqs.heading || block.props.title || 'Frequently Asked Questions',
+            intro: currentFaqs.intro ?? null,
+            items: newItems.map((item) => ({
+              question: item.q,
+              answer: item.a,
+            })),
+          }, null, 2));
+        } else {
+          editor.updateBlock(block, {
+            type: 'faqSection',
+            props: {
+              ...block.props,
+              itemsJson: JSON.stringify(newItems),
+            },
+          });
+        }
       };
 
       const updateTitle = (newTitle: string) => {
-        const currentFaqs = parseFaqDocument(faqsJson);
-        onFaqsChange?.(JSON.stringify({
-          heading: newTitle,
-          intro: currentFaqs.intro ?? null,
-          items: items.map((item) => ({
-            question: item.q,
-            answer: item.a,
-          })),
-        }, null, 2));
-        editor.updateBlock(block, {
-          type: 'faqSection',
-          props: { ...block.props, title: newTitle },
-        });
+        if (onFaqsChange) {
+          const currentFaqs = parseFaqDocument(faqsJson);
+          onFaqsChange(JSON.stringify({
+            heading: newTitle,
+            intro: currentFaqs.intro ?? null,
+            items: items.map((item) => ({
+              question: item.q,
+              answer: item.a,
+            })),
+          }, null, 2));
+        } else {
+          editor.updateBlock(block, {
+            type: 'faqSection',
+            props: {
+              ...block.props,
+              title: newTitle,
+            },
+          });
+        }
       };
 
       const addItem = () => {

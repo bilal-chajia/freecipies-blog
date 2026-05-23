@@ -44,12 +44,7 @@ export function useBlockEditorHydration({
   const [viewReady, setViewReady] = useState(false);
   const mountedEditor = viewReady ? editor : null;
 
-  // BlockNote reads initialContent only during editor creation; later value sync is handled below.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const initialContent = useMemo(
-    () => contentJsonToBlocks(value, hydrationContext) as any,
-    []
-  );
+  // BlockNote hydration and synchronization is handled below.
 
   const sourceDataSignature = useMemo(
     () => JSON.stringify({
@@ -147,5 +142,5 @@ export function useBlockEditorHydration({
     }
   }, [mountedEditor, value, hydrationContext, sourceDataSignature, activeBlockId]);
 
-  return { initialContent, viewReady, mountedEditor };
+  return { viewReady, mountedEditor };
 }
