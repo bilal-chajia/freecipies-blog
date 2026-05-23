@@ -27,6 +27,8 @@ interface Props {
     alt?: string;
     caption?: string;
     credit?: RenderableAuthorCredit;
+    width?: number | string;
+    alignment?: "left" | "center" | "right";
   };
 }
 
@@ -70,9 +72,36 @@ const avatarVariant =
 const avatarUrl = resolveVariantUrl(avatarVariant);
 const imageCaption = block.caption || "";
 const hasBodyMeta = Boolean(imageCaption || authorCredit);
+
+const alignment = block.alignment || "center";
+const alignmentStyles = {
+  left: { marginRight: "auto", marginLeft: "0" },
+  center: { marginLeft: "auto", marginRight: "auto" },
+  right: { marginLeft: "auto", marginRight: "0" },
+}[alignment];
+
+const widthProp = block.width;
+let parsedWidth: string | undefined = undefined;
+if (widthProp !== undefined && widthProp !== null) {
+  const widthStr = String(widthProp).trim();
+  if (widthStr !== "") {
+    if (/^\d+$/.test(widthStr)) {
+      parsedWidth = `${widthStr}px`;
+    } else {
+      parsedWidth = widthStr;
+    }
+  }
+}
 ---
 
-<figure class="content-image">
+<figure
+  class="content-image"
+  style={{
+    width: parsedWidth,
+    maxWidth: "100%",
+    ...alignmentStyles,
+  }}
+>
   <img
     src={imgUrl}
     alt={block.alt || ""}
