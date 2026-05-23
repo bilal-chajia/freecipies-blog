@@ -24,30 +24,10 @@ import { useBlockSelection } from '../selection-context';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 import { parseJsonProp, stringifyJsonProp } from './shared/block-props';
 
-type TableRow = string[];
-type InsertIndicator = {
-    index: number;
-    top: number;
-    left: number;
-    width?: number;
-    height?: number;
-};
-
-type TableUpdates = {
-    headersJson?: string;
-    rowsJson?: string;
-};
+import type { TableRow, InsertIndicator, TableUpdates } from './table/TableBlock.types';
+import { DEFAULT_HEADERS, normalizeRows } from './table/TableBlock.defaults';
 
 const toJson = (value: TableRow | TableRow[]) => stringifyJsonProp(value || []);
-
-const normalizeRows = (rows: TableRow[], columns: number): TableRow[] => {
-    if (!Array.isArray(rows)) return [];
-    return rows.map((row) => {
-        const next = Array.isArray(row) ? [...row] : [];
-        while (next.length < columns) next.push('');
-        return next.slice(0, columns);
-    });
-};
 
 export const TableBlock = createReactBlockSpec(
     {
@@ -91,7 +71,7 @@ export const TableBlock = createReactBlockSpec(
             const [rowInsert, setRowInsert] = useState<InsertIndicator | null>(null);
             const [colInsert, setColInsert] = useState<InsertIndicator | null>(null);
 
-            const safeHeaders = headers.length > 0 ? headers : ['Column 1', 'Column 2'];
+            const safeHeaders = headers.length > 0 ? headers : DEFAULT_HEADERS;
             const safeRows = normalizeRows(rows, safeHeaders.length);
 
             const updateBlockProps = (updates: TableUpdates) => {
