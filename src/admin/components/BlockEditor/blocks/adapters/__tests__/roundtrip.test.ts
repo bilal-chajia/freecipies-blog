@@ -491,4 +491,18 @@ describe('BlockEditor hydrated marker blocks', () => {
       ],
     });
   });
+
+  it('does not save unknown custom block props into content_json', () => {
+    const saved = blocksToContentJson([
+      {
+        id: 'unknown',
+        type: 'unknownCustom',
+        props: { r2_key: 'private/key.webp', url: '/api/images/x.webp' },
+        content: [{ type: 'text', text: '', styles: {} }],
+        children: [],
+      },
+    ] as any);
+
+    expect(saved.blocks).toEqual([]);
+  });
 });

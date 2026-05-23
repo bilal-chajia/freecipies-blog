@@ -16,38 +16,38 @@ import { parseInlineMarkdown, extractText } from './inlineContent';
 registerAllBlockAdapters();
 
 // ── Reverse map: editor block type → adapter ───────────────────────────────
+const EDITOR_TYPE_TO_CONTENT_TYPE: Record<string, string> = {
+  paragraph: 'paragraph',
+  heading: 'heading',
+  customImage: 'image',
+  video: 'video',
+  alert: 'tip_box',
+  blockquote: 'blockquote',
+  bulletListItem: 'list',
+  numberedListItem: 'list',
+  checkListItem: 'list',
+  faqSection: 'main_faq',
+  relatedContent: 'related_content',
+  divider: 'divider',
+  simpleTable: 'table',
+  beforeAfter: 'before_after',
+  roundupList: 'main_roundup',
+  mainRecipe: 'main_recipe',
+};
+
 let editorTypeToAdapter: Map<string, BlockAdapter> | null = null;
 
 function getEditorTypeMap(): Map<string, BlockAdapter> {
-    if (editorTypeToAdapter) return editorTypeToAdapter;
-    editorTypeToAdapter = new Map();
-    // Hardcoded mapping — kept in sync with adapter implementations
-    const mapping: Record<string, string> = {
-        'paragraph':        'paragraph',
-        'heading':          'heading',
-        'customImage':      'image',
-        'video':            'video',
-        'alert':            'tip_box',
-        'blockquote':       'blockquote',
-        'bulletListItem':   'list',
-        'numberedListItem': 'list',
-        'checkListItem':    'list',
-        'faqSection':       'main_faq',
-        'relatedContent':   'related_content',
-        'divider':          'divider',
-        'simpleTable':      'table',
-        'beforeAfter':      'before_after',
-        'roundupList': 'main_roundup',
-        'mainRecipe': 'main_recipe',
-  };
+  if (editorTypeToAdapter) return editorTypeToAdapter;
+  editorTypeToAdapter = new Map();
 
-    for (const [editorType, contentType] of Object.entries(mapping)) {
-        const adapter = getBlockAdapter(contentType);
-        if (adapter) {
-            editorTypeToAdapter.set(editorType, adapter);
-        }
+  for (const [editorType, contentType] of Object.entries(EDITOR_TYPE_TO_CONTENT_TYPE)) {
+    const adapter = getBlockAdapter(contentType);
+    if (adapter) {
+      editorTypeToAdapter.set(editorType, adapter);
     }
-    return editorTypeToAdapter;
+  }
+  return editorTypeToAdapter;
 }
 
 // ── List grouping helpers ───────────────────────────────────────────────────
