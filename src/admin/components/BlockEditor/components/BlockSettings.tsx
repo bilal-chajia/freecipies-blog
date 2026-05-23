@@ -8,6 +8,7 @@ import { SettingsSection } from './DocumentSettings';
 import RelatedContentSettings from './block-settings/RelatedContentSettings';
 import RecipeSettingsSidebar from './block-settings/RecipeSettingsSidebar';
 import RoundupListSettings from './block-settings/RoundupListSettings';
+import BlockSettingsRouter from './block-settings/BlockSettingsRouter';
 import {
     parseJsonArray,
     clampNumber,
@@ -554,16 +555,14 @@ export default function BlockSettings({
                 </SettingsSection>
             )}
 
-            {selectedBlock.type === 'mainRecipe' && (
-                <RecipeSettingsSidebar recipe={recipeData} setRecipe={onRecipeChange} />
-            )}
-
-            {selectedBlock.type === 'roundupList' && (
-                <RoundupListSettings
-                    selectedBlock={selectedBlock}
-                    updateProps={updateProps}
-                />
-            )}
+            <BlockSettingsRouter
+                selectedBlock={selectedBlock}
+                updateProps={updateProps}
+                recipeData={recipeData}
+                onRecipeChange={onRecipeChange}
+            >
+                {null}
+            </BlockSettingsRouter>
 
             {!isHandled && hasTextAlignment && (
                 <SettingsSection title="Text Settings" icon={Type} defaultOpen>
