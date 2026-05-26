@@ -1,17 +1,8 @@
 import { getVariantMap, parseVariantsJson, resolveVariantUrl } from '@shared/types/images';
 import type { ResolvedImageVariant } from '@shared/types/images';
 
-export const parseJsonArray = (value: unknown) => {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    if (typeof value !== 'string') return [];
-    try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
-        return [];
-    }
-};
+export { parseJsonArray } from '../../utils/json';
+
 
 export const clampNumber = (value: unknown, min: number, max: number, fallback: number) => {
     const parsed = Number.parseInt(String(value), 10);
