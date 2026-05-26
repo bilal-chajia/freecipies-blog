@@ -8,7 +8,7 @@
  * https://developer.wordpress.org/block-editor/
  */
 
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import React from 'react';
 import { cn } from '@/lib/utils';
 import Editor from '@monaco-editor/react';
@@ -58,18 +58,35 @@ type GutenbergEditorMainProps = {
  * WordPress-style inline title input
  */
 function TitleInput({ value, onChange, placeholder = "Add title", className, containerClassName }: TitleInputProps) {
+    const [localVal, setLocalVal] = React.useState(value || '');
+
+    React.useEffect(() => {
+        setLocalVal(value || '');
+    }, [value]);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            if (localVal !== (value || '')) {
+                onChange(localVal);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [localVal, onChange, value]);
+
     return (
         <div className={cn("wp-block-post-title-wrapper", containerClassName)}>
             <input
+                id="gutenberg-title"
+                name="title"
                 type="text"
-                value={value || ''}
-                onChange={(e) => onChange(e.target.value)}
+                value={localVal}
+                onChange={(e) => setLocalVal(e.target.value)}
                 placeholder={placeholder}
                 className={cn(
-                    'w-full bg-transparent border-none outline-none',
+                    'w-full bg-transparent border-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
                     'text-4xl md:text-5xl font-bold leading-tight',
                     'placeholder:text-muted-foreground/40',
-                    'focus:outline-none focus:ring-0',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
                     className
                 )}
                 style={{
@@ -87,15 +104,17 @@ function HeadlineInput({ value, onChange, placeholder = "Add headline..." }: Hea
     return (
         <div className="wp-block-headline-wrapper mt-4">
             <input
+                id="gutenberg-headline"
+                name="headline"
                 type="text"
                 value={value || ''}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
                 className={cn(
-                    'w-full bg-transparent border-none outline-none',
+                    'w-full bg-transparent border-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
                     'text-xl md:text-2xl text-muted-foreground leading-relaxed',
                     'placeholder:text-muted-foreground/30',
-                    'focus:outline-none focus:ring-0'
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
                 )}
             />
         </div>
@@ -149,6 +168,7 @@ export default function GutenbergEditorMain({
     placeholder = 'Start writing...',
     jsonHeight = '70vh',
 }: GutenbergEditorMainProps) {
+    const shouldReduceMotion = useReducedMotion();
     return (
         <>
             <motion.div
@@ -159,7 +179,7 @@ export default function GutenbergEditorMain({
                 )}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
             >
                 {/* Block Editor or JSON Editor */}
                 <div className="gutenberg-block-editor">

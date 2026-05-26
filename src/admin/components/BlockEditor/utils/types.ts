@@ -5,6 +5,7 @@ export type InlineNode = InlineContent<any, any>;
 
 export interface BlockIconMap {
   [key: string]: LucideIcon | ((level?: number) => LucideIcon);
+  heading: (level?: number) => LucideIcon;
   default: LucideIcon;
 }
 

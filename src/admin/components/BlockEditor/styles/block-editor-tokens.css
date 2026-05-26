@@ -92,7 +92,7 @@
     /* ========================================
    * Typography
    * ======================================== */
-    --wp-editor-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    --wp-editor-font-family: var(--font-sans);
     --wp-editor-font-size: 16px;
     --wp-editor-line-height: 1.6;
 
@@ -119,6 +119,40 @@
     --wp-z-inserter: 90;
     --wp-z-sidebar: 80;
     --wp-z-popover: 110;
+
+    /* ========================================
+   * Custom Alert Block Tokens (Light Mode)
+   * ======================================== */
+    --alert-tip-bg: linear-gradient(180deg, #f2fcf5 0%, #ffffff 100%);
+    --alert-tip-border: #e2e8f0;
+    --alert-tip-icon-color: #10b981;
+    --alert-tip-icon-bg: rgba(16, 185, 129, 0.12);
+    --alert-tip-title: #0f172a;
+    --alert-tip-subtitle: #475569;
+
+    --alert-warning-bg: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+    --alert-warning-border: #e2e8f0;
+    --alert-warning-icon-color: #f59e0b;
+    --alert-warning-icon-bg: rgba(245, 158, 11, 0.12);
+    --alert-warning-title: #0f172a;
+    --alert-warning-subtitle: #475569;
+
+    --alert-info-bg: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+    --alert-info-border: #e2e8f0;
+    --alert-info-icon-color: #3b82f6;
+    --alert-info-icon-bg: rgba(59, 130, 246, 0.12);
+    --alert-info-title: #0f172a;
+    --alert-info-subtitle: #475569;
+
+    --alert-note-bg: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    --alert-note-border: #e2e8f0;
+    --alert-note-icon-color: #64748b;
+    --alert-note-icon-bg: rgba(100, 116, 139, 0.12);
+    --alert-note-title: #0f172a;
+    --alert-note-subtitle: #475569;
+
+    /* Radial Grid dot color (Very subtle accessibility texture) */
+    --editor-grid-dot: rgba(15, 23, 42, 0.05);
 }
 
 /* ========================================
@@ -216,48 +250,35 @@
 
 /* Disable any default BlockNote/ProseMirror selection outlines & overlays.
    ProseMirror marks atom nodes (content:"none" blocks) as ProseMirror-selectednode
-   which triggers a native browser selection highlight making content invisible. */
+   which triggers a native browser selection highlight making content invisible.
+   user-select: none on parent + children prevents the native highlight overlay. */
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode {
     outline: none !important;
     box-shadow: none !important;
     background: transparent !important;
-    -webkit-user-select: none !important;
-    user-select: none !important;
 }
 
-/* Force form inputs inside selected blocks to remain visible.
-   The browser node-selection marks <input> values as "selected text",
-   causing them to disappear. Only inputs/textareas need color reset. */
+/* Force ALL children inside selected nodes to remain fully visible.
+   Do NOT set user-select: auto here — that undoes the parent's user-select: none
+   and re-enables the native selection highlight that makes text invisible. */
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode * {
+    -webkit-user-select: none;
+    user-select: none;
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Form inputs need user-select: auto so the user can type and select text,
+   plus caret and color revert */
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode input,
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode textarea,
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode select {
-    -webkit-text-fill-color: initial !important;
-    color: revert !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-    user-select: auto !important;
     -webkit-user-select: auto !important;
+    user-select: auto !important;
+    color: inherit !important;
     caret-color: auto !important;
-}
-
-/* Other elements only need opacity/pointer-events fix, NOT color override.
-   Overriding color on buttons breaks styled components (e.g. dark bg + white text). */
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode button,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode label,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode span,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode div,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode p,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode h1,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode h2,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode h3 {
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-    user-select: auto !important;
-    -webkit-user-select: auto !important;
-    /* Ensure default cursor unless explicitly overridden */
-    cursor: default;
 }
 
 /* Explicitly allow pointer cursor for buttons and interactive elements */
@@ -272,7 +293,6 @@
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode *::selection {
     background: transparent !important;
     color: inherit !important;
-    -webkit-text-fill-color: inherit !important;
 }
 
 .block-editor-wrapper .block-editor-block-list__block,
@@ -757,8 +777,10 @@
     }
 
     .wp-block,
+    .wp-block--custom,
     .wp-block-toolbar,
-    .wp-block-placeholder {
+    .wp-block-placeholder,
+    .block-editor-wrapper .bn-editor [data-block-root="true"]::after {
         transition: none !important;
         animation: none !important;
     }
@@ -849,4 +871,42 @@
         --wp-canvas-padding-y: 12px;
         --wp-title-font-size: 1.75rem;
     }
+}
+
+.dark,
+[data-surface="admin"].dark,
+[data-surface="admin"] .dark {
+    /* ========================================
+   * Custom Alert Block Tokens (Dark Mode)
+   * ======================================== */
+    --alert-tip-bg: linear-gradient(180deg, #091e14 0%, #020a06 100%);
+    --alert-tip-border: rgba(16, 185, 129, 0.4);
+    --alert-tip-icon-color: #34d399;
+    --alert-tip-icon-bg: rgba(52, 211, 153, 0.2);
+    --alert-tip-title: #a7f3d0;
+    --alert-tip-subtitle: #34d399;
+
+    --alert-warning-bg: linear-gradient(180deg, #241805 0%, #0d0801 100%);
+    --alert-warning-border: rgba(245, 158, 11, 0.4);
+    --alert-warning-icon-color: #fbbf24;
+    --alert-warning-icon-bg: rgba(251, 191, 36, 0.2);
+    --alert-warning-title: #fef08a;
+    --alert-warning-subtitle: #fbbf24;
+
+    --alert-info-bg: linear-gradient(180deg, #051329 0%, #010612 100%);
+    --alert-info-border: rgba(59, 130, 246, 0.4);
+    --alert-info-icon-color: #60a5fa;
+    --alert-info-icon-bg: rgba(96, 165, 250, 0.2);
+    --alert-info-title: #93c5fd;
+    --alert-info-subtitle: #60a5fa;
+
+    --alert-note-bg: linear-gradient(180deg, #131924 0%, #07090e 100%);
+    --alert-note-border: rgba(148, 163, 184, 0.4);
+    --alert-note-icon-color: #94a3b8;
+    --alert-note-icon-bg: rgba(148, 163, 184, 0.2);
+    --alert-note-title: #f1f5f9;
+    --alert-note-subtitle: #cbd5e1;
+
+    /* Radial Grid dot color in dark mode (Highly subtle 4% opacity to minimize visual noise) */
+    --editor-grid-dot: rgba(255, 255, 255, 0.04);
 }

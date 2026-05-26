@@ -3,6 +3,11 @@ import type { TableBlock } from '@modules/articles/types/content-blocks.types';
 import type { AppBlock } from '../../types/editor.types';
 import { parseJsonArray } from '../../utils/json';
 
+function defaultHeadersForRows(rows: string[][]): string[] {
+    const columnCount = rows.reduce((max, row) => Math.max(max, Array.isArray(row) ? row.length : 0), 0);
+    return Array.from({ length: Math.max(1, columnCount) }, (_, index) => `Column ${index + 1}`);
+}
+
 export const TableAdapter: BlockAdapter<TableBlock> = {
     type: 'table',
 
@@ -41,7 +46,7 @@ export const TableAdapter: BlockAdapter<TableBlock> = {
         return {
             ...(typeof block.id === 'string' ? { id: block.id } : {}),
             type: 'table',
-            headers: normalizedHeaders.length > 0 ? normalizedHeaders : ['Column 1'],
+            headers: normalizedHeaders.length > 0 ? normalizedHeaders : defaultHeadersForRows(normalizedRows),
             rows: normalizedRows.length > 0 ? normalizedRows : [],
         };
     },

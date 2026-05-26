@@ -15,8 +15,8 @@ import { useEditorViewportLock } from './useEditorViewportLock';
 
 // Gutenberg components
 import {
-    BlockInserter,
-    SettingsSidebar,
+    LeftPanel,
+    RightPanel,
     DocumentSettings,
     BlockSettings,
 } from '@/components/BlockEditor/components';
@@ -316,7 +316,7 @@ export function GutenbergEditorShell({
                 {/* Left: Block Inserter */}
                 <AnimatePresence>
                     {inserterOpen && (
-                        <BlockInserter
+                        <LeftPanel
                             isOpen={inserterOpen}
                             onClose={() => setInserterOpen(false)}
                             onInsertBlock={handleInsertBlock}
@@ -441,7 +441,7 @@ export function GutenbergEditorShell({
                 {/* Right: Settings Sidebar */}
                 <AnimatePresence>
                     {sidebarOpen && (
-                        <SettingsSidebar
+                        <RightPanel
                             isOpen={sidebarOpen}
                             onClose={() => setSidebarOpen(false)}
                             selectedBlock={selectedBlock}

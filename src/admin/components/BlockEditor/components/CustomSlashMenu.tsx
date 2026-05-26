@@ -31,8 +31,63 @@ type CustomSlashMenuProps = {
     };
 };
 
+const shortcutMapping: Record<string, string> = {
+    'Image': 'Img',
+    'Video': 'Vid',
+    'Before / After': 'B/A',
+    'Alert Box': 'Box',
+    'FAQ Section': 'FAQ',
+    'Related Content': 'Link',
+    'Table': 'Tbl',
+    'Divider': 'Div',
+    'Roundup List': 'Rnd',
+    'Recipe Details': 'Rec',
+    'Text': 'T',
+    'Heading 1': 'H1',
+    'Heading 2': 'H2',
+    'Heading 3': 'H3',
+    'Heading 4': 'H4',
+    'Heading 5': 'H5',
+    'Heading 6': 'H6',
+    'Bullet List': 'List',
+    'Numbered List': 'Num',
+    'Quote': 'Q',
+};
+
+function HighlightMatch({ text, query }: { text: string; query: string }) {
+    if (!query) return <span>{text}</span>;
+    const parts = text.split(new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'));
+    return (
+        <span>
+            {parts.map((part, index) => 
+                part.toLowerCase() === query.toLowerCase()
+                    ? <span key={index} className="bg-primary/20 text-primary font-semibold px-0.5 rounded">{part}</span>
+                    : <span key={index}>{part}</span>
+            )}
+        </span>
+    );
+}
+
 export default function CustomSlashMenu({ items, selectedIndex, onItemClick, editor }: CustomSlashMenuProps) {
     const menuItems = items ?? [];
+    const selectedRef = React.useRef<HTMLButtonElement>(null);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    // Scroll active item into view
+    React.useEffect(() => {
+        if (selectedRef.current) {
+            selectedRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+            });
+        }
+    }, [selectedIndex]);
+
+    // Extract search query
+    const query = React.useMemo(() => {
+        return editor?._tiptapEditor?.state?.selection?.$from?.parent?.textContent?.split('/').pop() || '';
+    }, [editor, menuItems]);
+
     const groupedItems = React.useMemo(() => {
         const groups: Record<string, Array<SlashMenuItem & { actualIndex: number }>> = {};
         menuItems.forEach((item, index) => {
@@ -44,74 +99,93 @@ export default function CustomSlashMenu({ items, selectedIndex, onItemClick, edi
     }, [menuItems]);
 
     return (
-        <div className="z-[9999] min-w-[720px] overflow-hidden rounded-2xl border border-border/60 bg-popover/95 backdrop-blur-xl p-0 shadow-xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                    Insert a block
+        <div 
+            ref={containerRef}
+            className="z-[9999] w-[330px] overflow-hidden rounded-xl border border-border/80 bg-background/95 backdrop-blur-md p-0 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+        >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border/40 bg-muted/40 select-none">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                    Blocks
                 </span>
-                <span className="text-[10px] text-muted-foreground bg-background border border-border px-1.5 py-0.5 rounded shadow-sm">
+                <span className="text-[9px] text-muted-foreground/80 bg-background border border-border px-1.5 py-0.5 rounded shadow-sm font-semibold">
                     Esc to close
                 </span>
             </div>
 
-            <div className="max-h-[450px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300">
+            {/* List area */}
+            <div className="max-h-[380px] overflow-y-auto overflow-x-hidden p-2 space-y-4 scrollbar-thin">
                 {menuItems.length > 0 ? (
-                    <div className="p-2 space-y-4">
-                        {Object.entries(groupedItems).map(([group, groupItems]) => (
-                            <div key={group} className="space-y-1.5 px-1">
-                                <div className="px-2 pb-1 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-tighter">
-                                    {group}
-                                </div>
-                                <div className="grid grid-cols-3 gap-1.5">
-                                    {groupItems.map((item) => {
-                                        const isSelected = item.actualIndex === selectedIndex;
-                                        return (
-                                            <button
-                                                key={item.title + item.actualIndex}
-                                                className={cn(
-                                                    'group flex items-start gap-3 w-full text-left p-2.5 rounded-xl transition-all duration-150 relative',
-                                                    isSelected
-                                                        ? 'bg-primary/5 shadow-[0_4px_12px_rgba(var(--primary-rgb),0.1)] ring-1 ring-primary/20'
-                                                        : 'hover:bg-muted active:scale-[0.98]'
-                                                )}
-                                                onClick={() => onItemClick?.(item)}
-                                            >
-                                                <div className={cn(
-                                                    'flex-shrink-0 size-9 rounded-lg flex items-center justify-center transition-colors',
-                                                    isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
-                                                )}>
-                                                    {item.icon || <Type className="size-4" />}
-                                                </div>
-                                                <div className="flex-1 min-w-0 pr-1">
-                                                    <div className={cn(
-                                                        'text-sm font-medium leading-none truncate mb-1',
-                                                        isSelected ? 'text-primary' : 'text-foreground'
-                                                    )}>
-                                                        {item.title}
-                                                    </div>
-                                                    <div className="text-[11px] text-muted-foreground/70 leading-tight line-clamp-1">
-                                                        {item.subtext || 'Insert this block'}
-                                                    </div>
-                                                </div>
-                                                {isSelected && (
-                                                    <div className="absolute right-2 top-2">
-                                                        <div className="size-1.5 rounded-full bg-primary animate-pulse" />
-                                                    </div>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                    Object.entries(groupedItems).map(([group, groupItems]) => (
+                        <div key={group} className="space-y-1">
+                            {/* Group Title */}
+                            <div className="px-2 pb-1 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                                {group}
                             </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="px-4 py-8 text-center">
-                        <div className="size-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
-                            <X className="size-6 text-muted-foreground/30" />
+                            
+                            {/* Group Items */}
+                            <div className="flex flex-col gap-0.5">
+                                {groupItems.map((item) => {
+                                    const isSelected = item.actualIndex === selectedIndex;
+                                    const shortcut = shortcutMapping[item.title];
+                                    return (
+                                        <button
+                                            key={item.title + item.actualIndex}
+                                            ref={isSelected ? selectedRef : null}
+                                            className={cn(
+                                                'group flex items-center gap-3 w-full text-left px-2.5 py-2 rounded-lg transition-all duration-100 relative border border-transparent cursor-pointer',
+                                                isSelected
+                                                    ? 'bg-primary/10 border-primary/20 shadow-[0_2px_8px_rgba(var(--primary-rgb),0.04)]'
+                                                    : 'hover:bg-muted/80'
+                                            )}
+                                            onClick={() => onItemClick?.(item)}
+                                        >
+                                            {/* Icon */}
+                                            <div className={cn(
+                                                'flex-shrink-0 size-8 rounded-lg flex items-center justify-center transition-all duration-100',
+                                                isSelected 
+                                                    ? 'bg-primary text-primary-foreground' 
+                                                    : 'bg-muted text-muted-foreground group-hover:bg-muted-foreground/10'
+                                            )}>
+                                                {item.icon || <Type className="size-4" />}
+                                            </div>
+
+                                            {/* Labels */}
+                                            <div className="flex-1 min-w-0 pr-1 select-none">
+                                                <div className={cn(
+                                                    'text-xs font-semibold leading-none truncate mb-1',
+                                                    isSelected ? 'text-primary' : 'text-foreground'
+                                                )}>
+                                                    <HighlightMatch text={item.title} query={query} />
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground/60 leading-normal truncate">
+                                                    {item.subtext || 'Insert block'}
+                                                </div>
+                                            </div>
+
+                                            {/* Keyboard shortcut or active indicator */}
+                                            {shortcut ? (
+                                                <span className={cn(
+                                                    "text-[9px] border px-1.5 py-0.5 rounded font-mono select-none ml-auto transition-colors",
+                                                    isSelected 
+                                                        ? "text-primary/70 border-primary/20 bg-background" 
+                                                        : "text-muted-foreground/60 border-border/40 bg-muted/30 group-hover:bg-background"
+                                                )}>
+                                                    {shortcut}
+                                                </span>
+                                            ) : isSelected && (
+                                                <div className="size-1.5 rounded-full bg-primary animate-pulse ml-auto" />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <p className="text-sm font-medium text-muted-foreground italic">
-                            No blocks found for "{editor?._tiptapEditor?.state?.selection?.$from?.parent?.textContent?.split('/').pop() || ''}"
+                    ))
+                ) : (
+                    <div className="px-4 py-8 text-center select-none">
+                        <p className="text-xs font-medium text-muted-foreground italic">
+                            No blocks found matching "{query}"
                         </p>
                     </div>
                 )}

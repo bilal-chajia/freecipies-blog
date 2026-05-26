@@ -116,6 +116,8 @@ export function useBlockEditorHydration({
 
   useEffect(() => {
     if (!mountedEditor || !value) return;
+    const serializedValue = typeof value === 'string' ? value : JSON.stringify(value);
+    if (serializedValue === lastEmittedValueRef.current) return;
     const hydratedBlocks = contentJsonToBlocks(value, hydrationContext) as any[] | undefined;
     if (!hydratedBlocks?.length) return;
     const editorRoot = getEditorDomElement(mountedEditor);

@@ -17,7 +17,7 @@ import { Label } from '@/ui/label';
 import { Switch } from '@/ui/switch';
 import { Textarea } from '@/ui/textarea';
 import { cn } from '@/lib/utils';
-import { SidebarSection } from '@/components/BlockEditor/components/SettingsSidebar';
+import { SidebarSection } from '@/components/BlockEditor/components/RightPanel';
 import { ArticlePicker, LinkSelector } from '@/components/pickers';
 import type { ArticlePickerValue } from '@/components/pickers';
 import { resolveVariantUrl } from '@shared/types/images';

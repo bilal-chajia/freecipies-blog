@@ -12,10 +12,11 @@
  * https://developer.wordpress.org/block-editor/getting-started/fundamentals/block-wrapper/
  */
 
-import { forwardRef, useCallback, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { useBlockEditorStore } from '../store/blockEditorStore';
 
 /**
  * @typedef {Object} BlockWrapperProps
@@ -41,6 +42,8 @@ interface BlockWrapperProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
     onClick?: (event: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => void;
 }
 
+const EMPTY_ERRORS: string[] = [];
+
 const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(({
     isSelected = false,
     toolbar,
@@ -54,6 +57,18 @@ const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(({
     ...props
 }, ref) => {
     const [isHovered, setIsHovered] = useState(false);
+    const shouldReduceMotion = useReducedMotion();
+    const localRef = useRef<HTMLDivElement>(null);
+    const [toolbarBelow, setToolbarBelow] = useState(false);
+    const errors = useBlockEditorStore((state) => state.blockErrors[blockId || ''] || EMPTY_ERRORS);
+
+    useImperativeHandle(ref, () => localRef.current!);
+
+    useEffect(() => {
+        if (!localRef.current) return;
+        const rect = localRef.current.getBoundingClientRect();
+        setToolbarBelow(rect.top < 60);
+    }, [isSelected]);
 
     const handleMouseEnter = useCallback(() => {
         setIsHovered(true);
@@ -70,13 +85,8 @@ const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(({
     }, [onClick]);
 
     const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>) => {
-        // Don't intercept keyboard events from form elements
         const target = e.target as HTMLElement | null;
-        const tag = target?.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
-            return;
-        }
-        // Select block on Enter or Space
+        if (target?.closest('input, textarea, button, a, [contenteditable="true"]')) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onClick?.(e);
@@ -88,9 +98,9 @@ const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(({
 
     return (
         <div
-            ref={ref}
+            ref={localRef}
             role="document"
-            tabIndex={0}
+            tabIndex={-1}
             aria-label={ariaLabel || `Block: ${blockType}`}
             data-block={blockId}
             data-block-type={blockType}
@@ -105,12 +115,16 @@ const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(({
                 isSelected && 'is-selected',
 
                 // Custom wrapper styles
-                'relative outline-none',
+                'relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
                 'transition-shadow duration-[var(--wp-transition-duration)] ease-[var(--wp-transition-timing)]',
 
                 className
             )}
-            onClick={handleClick}
+            onClick={(e) => {
+                if (e.target === e.currentTarget || (e.target as HTMLElement).dataset.blockSurface === 'true') {
+                    handleClick(e);
+                }
+            }}
             onKeyDown={handleKeyDown}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -119,12 +133,20 @@ const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(({
             {/* Block Toolbar - appears above the block when selected */}
             <AnimatePresence>
                 {showToolbar && toolbar && (
-                    <div className="wp-block-toolbar-wrap" onClick={(e) => e.stopPropagation()}>
+                    <div
+                        className="wp-block-toolbar-wrap"
+                        style={{
+                            top: toolbarBelow
+                                ? 'calc(100% + var(--wp-toolbar-gap))'
+                                : undefined,
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <motion.div
                             initial={{ opacity: 0, y: 4 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 4 }}
-                            transition={{ duration: 0.12, ease: 'easeOut' }}
+                            transition={{ duration: shouldReduceMotion ? 0 : 0.12, ease: 'easeOut' }}
                             className="wp-block-toolbar"
                         >
                             {toolbar}
@@ -134,8 +156,18 @@ const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(({
             </AnimatePresence>
 
             {/* Block Content */}
-            <div className="wp-block__content">
+            <div data-block-surface="true" className="wp-block__content">
                 {children}
+                {errors.length > 0 && (
+                    <div className="mt-2 text-[11px] text-destructive bg-destructive/5 border border-destructive/10 p-2 rounded-md flex flex-col gap-1 select-none">
+                        {errors.map((err, idx) => (
+                            <div key={idx} className="flex items-center gap-1.5 font-medium">
+                                <span className="w-1 h-1 bg-destructive rounded-full shrink-0" />
+                                {err}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -144,41 +176,3 @@ const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(({
 BlockWrapper.displayName = 'BlockWrapper';
 
 export default BlockWrapper;
-
-/**
- * Hook to generate block wrapper props
- * Similar to WordPress useBlockProps()
- * 
- * @param {Object} options
- * @param {string} options.blockType
- * @param {string} options.blockId
- * @param {boolean} options.isSelected
- * @param {string} [options.className]
- * @returns {Object} Props to spread on the block wrapper
- */
-export function useBlockWrapperProps({
-    blockType,
-    blockId,
-    isSelected = false,
-    className = '',
-}: {
-    blockType: string;
-    blockId?: string;
-    isSelected?: boolean;
-    className?: string;
-}) {
-    return {
-        role: 'document',
-        tabIndex: 0,
-        'aria-label': `Block: ${blockType}`,
-        'data-block': blockId,
-        'data-block-type': blockType,
-        'data-selected': isSelected,
-        className: cn(
-            'wp-block',
-            'block-editor-block-list__block',
-            isSelected && 'is-selected',
-            className
-        ),
-    };
-}

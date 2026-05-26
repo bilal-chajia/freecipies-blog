@@ -6,7 +6,7 @@
  */
 
 // Core block components
-export { default as BlockWrapper, useBlockWrapperProps } from './BlockWrapper';
+export { default as BlockWrapper } from './BlockWrapper';
 
 export {
     default as BlockToolbar,
@@ -27,8 +27,8 @@ export {
 } from './BlockPlaceholder';
 
 // Layout components
-export { default as BlockInserter } from './BlockInserter';
-export { default as SettingsSidebar } from './SettingsSidebar';
+export { default as LeftPanel } from './LeftPanel';
+export { default as RightPanel } from './RightPanel';
 export {
     default as GutenbergEditorLayout,
     ContentCanvas,

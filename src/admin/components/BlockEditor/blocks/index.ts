@@ -10,13 +10,13 @@ export {
 } from './BlockAdapter';
 
 // Existing blocks (refactored)
-export { Alert } from './TipBoxBlock';
-export { VideoBlock } from './VideoBlock';
-export { ImageBlock } from './ImageBlock';
-export { FAQSectionBlock } from './FAQSectionBlock';
-export { DividerBlock } from './DividerBlock';
+export { default as Alert } from './TipBoxBlock';
+export { default as VideoBlock } from './VideoBlock';
+export { default as ImageBlock } from './ImageBlock';
+export { default as FAQSectionBlock } from './FAQSectionBlock';
+export { default as DividerBlock } from './DividerBlock';
 export { MainRecipeBlock } from './MainRecipeBlock';
 export { RoundupListBlock } from './RoundupListBlock';
 export { RelatedContentBlock } from './RelatedContentBlock';
-export { TableBlock } from './TableBlock';
-export { BeforeAfterBlock } from './BeforeAfterBlock';
+export { default as TableBlock } from './TableBlock';
+export { default as BeforeAfterBlock } from './BeforeAfterBlock';

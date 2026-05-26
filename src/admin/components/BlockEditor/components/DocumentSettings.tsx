@@ -77,50 +77,56 @@ function SettingsSection({
     title,
     icon: Icon,
     defaultOpen = false,
+    isOpen: controlledIsOpen,
+    onToggle,
     children,
     className
 }: {
     title: string;
     icon?: LucideIcon;
     defaultOpen?: boolean;
+    /** Controlled mode: pass isOpen + onToggle for accordion behavior */
+    isOpen?: boolean;
+    onToggle?: () => void;
     children: ReactNode;
     className?: string;
 }) {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+    const isControlled = controlledIsOpen !== undefined;
+    const isOpen = isControlled ? controlledIsOpen : uncontrolledOpen;
+    const handleToggle = isControlled
+        ? onToggle!
+        : () => setUncontrolledOpen(prev => !prev);
 
     return (
         <div className={cn('border-b border-border', className)}>
-            <div className="px-4 py-2">
-                <button
-                    type="button"
-                    onClick={() => setIsOpen(!isOpen)}
+            <button
+                type="button"
+                onClick={handleToggle}
+                className="flex items-center justify-between w-full py-3 px-4 hover:bg-muted/30 transition-colors text-left cursor-pointer"
+            >
+                <div className="flex items-center gap-2 min-w-0">
+                    {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0" />}
+                    <span className="text-xs font-semibold text-foreground select-none">{title}</span>
+                </div>
+                <ChevronDown
                     className={cn(
-                        'structure-item w-full justify-between',
-                        isOpen && 'is-active'
+                        'w-3.5 h-3.5 text-muted-foreground transition-transform duration-200',
+                        isOpen && 'rotate-180'
                     )}
-                >
-                    <div className="flex items-center gap-2 min-w-0">
-                        {Icon && <Icon className="structure-item-icon" />}
-                        <span className="structure-item-label">{title}</span>
-                    </div>
-                    <ChevronDown
-                        className={cn(
-                            'w-4 h-4 text-muted-foreground transition-transform',
-                            isOpen && 'rotate-180'
-                        )}
-                    />
-                </button>
-            </div>
-            <AnimatePresence>
+                />
+            </button>
+            <AnimatePresence initial={false}>
                 {isOpen && (
                     <motion.div
+                        key="content"
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                        transition={{ duration: 0.18, ease: [0.04, 0.62, 0.23, 0.98] }}
                         className="overflow-hidden"
                     >
-                        <div className="px-4 pb-4">
+                        <div className="px-4 pb-4 pt-1">
                             {children}
                         </div>
                     </motion.div>
@@ -241,26 +247,30 @@ function StatusSection({
     authors?: SelectOption[];
 }) {
     return (
-        <div className="space-y-2">
-            <div className="structure-item">
-                <FolderOpen className="structure-item-icon" />
-                <span className="structure-item-label">Category</span>
-                <div className="ml-auto w-[170px]">
+        <div className="space-y-2.5">
+            <div className="flex items-center justify-between py-1 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <FolderOpen className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                    <span className="text-xs font-medium text-muted-foreground select-none">Category</span>
+                </div>
+                <div className="w-[170px] shrink-0">
                     <ChipSelect
                         value={formData.categoryId}
                         options={categories || []}
                         onChange={(value) => onInputChange('categoryId', value)}
                         placeholder="Select category"
                         searchPlaceholder="Search categories..."
-                        buttonClassName="h-8 text-xs"
+                        buttonClassName="h-8 text-xs w-full"
                     />
                 </div>
             </div>
 
-            <div className="structure-item">
-                <User className="structure-item-icon" />
-                <span className="structure-item-label">Author</span>
-                <div className="ml-auto w-[170px]">
+            <div className="flex items-center justify-between py-1 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <User className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                    <span className="text-xs font-medium text-muted-foreground select-none">Author</span>
+                </div>
+                <div className="w-[170px] shrink-0">
                     <Select
                         value={formData.authorId ? String(formData.authorId) : undefined}
                         onValueChange={(value) => onInputChange('authorId', value)}
@@ -279,52 +289,60 @@ function StatusSection({
                 </div>
             </div>
 
-            <div className="structure-item">
-                <Globe className="structure-item-icon" />
-                <span className="structure-item-label mr-2">Status</span>
-                <Select
-                    value={(formData.workflowStatus as string) || 'draft'}
-                    onValueChange={(val) => onInputChange('workflowStatus', val)}
-                >
-                    <SelectTrigger className="h-8 w-[120px] ml-auto text-xs">
-                        <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="in_review">In Review</SelectItem>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="published">Published</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
-                    </SelectContent>
-                </Select>
+            <div className="flex items-center justify-between py-1 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <Globe className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                    <span className="text-xs font-medium text-muted-foreground select-none">Status</span>
+                </div>
+                <div className="w-[120px] shrink-0">
+                    <Select
+                        value={(formData.workflowStatus as string) || 'draft'}
+                        onValueChange={(val) => onInputChange('workflowStatus', val)}
+                    >
+                        <SelectTrigger className="h-8 w-full text-xs">
+                            <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="in_review">In Review</SelectItem>
+                            <SelectItem value="scheduled">Scheduled</SelectItem>
+                            <SelectItem value="published">Published</SelectItem>
+                            <SelectItem value="archived">Archived</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
-            <div className="structure-item">
-                <Star className={cn('structure-item-icon', formData.isFavorite ? 'text-yellow-500' : '')} />
-                <span className="structure-item-label">Favorite</span>
+            <div className="flex items-center justify-between py-1 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <Star className={cn('w-3.5 h-3.5 text-muted-foreground/70 shrink-0', formData.isFavorite ? 'text-yellow-500 fill-yellow-500' : '')} />
+                    <span className="text-xs font-medium text-muted-foreground select-none">Favorite</span>
+                </div>
                 <button
                     type="button"
                     onClick={() => onInputChange('isFavorite', !formData.isFavorite)}
                     className={cn(
-                        'ml-auto flex items-center justify-center',
-                        'h-8 w-8 rounded-md transition-colors',
+                        'flex items-center justify-center shrink-0',
+                        'h-8 w-8 rounded-md transition-colors border border-input/60 cursor-pointer',
                         formData.isFavorite
-                            ? 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100'
+                            ? 'text-yellow-500 bg-yellow-50/50 border-yellow-200 hover:bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900/50'
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     )}
                 >
-                    <Star className={cn('h-4 w-4', formData.isFavorite ? 'fill-current' : '')} />
+                    <Star className={cn('h-3.5 w-3.5', formData.isFavorite ? 'fill-current' : '')} />
                 </button>
             </div>
 
-            <div className="structure-item">
-                <Calendar className="structure-item-icon" />
-                <span className="structure-item-label">Publish date</span>
+            <div className="flex items-center justify-between py-1 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                    <span className="text-xs font-medium text-muted-foreground select-none">Publish date</span>
+                </div>
                 <Input
                     type="datetime-local"
                     value={formData.publishedAt || ''}
                     onChange={(e) => onInputChange('publishedAt', e.target.value)}
-                    className="ml-auto h-8 text-xs w-[180px]"
+                    className="h-8 text-xs w-[180px] shrink-0"
                 />
             </div>
         </div>
@@ -336,12 +354,16 @@ function StatusSection({
  */
 function TagsSectionContent({ formData, onInputChange, tags }: { formData: EditorFormData; onInputChange: InputChangeHandler; tags?: SelectOption[] }) {
     return (
-        <div className="structure-item flex-col items-start gap-3">
+        <div className="flex items-start gap-3">
+            <div className="flex h-7 shrink-0 items-center gap-2 text-xs font-semibold text-foreground">
+                <Tag className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                <span className="select-none text-xs font-semibold">Tags</span>
+            </div>
             <TagSelector
                 tags={tags ?? []}
                 selectedTags={formData.selectedTags ?? []}
                 onTagsChange={(newTags: Array<string | number>) => onInputChange('selectedTags', newTags)}
-                containerClassName="w-full space-y-2"
+                containerClassName="min-w-0 flex-1 space-y-2"
                 buttonClassName="h-7 text-[11px]"
                 popoverClassName="w-[260px]"
                 badgeClassName="text-[10px] px-1.5 py-0.5"
@@ -359,54 +381,54 @@ function SEOSectionContent({ formData, onInputChange, isEditMode }: { formData: 
     const metaDescLength = (formData.metaDescription || '').length;
 
     return (
-        <div className="space-y-2">
-            <div className="structure-item flex-col items-start gap-2">
+        <div className="space-y-3">
+            <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                    <Label htmlFor="metaTitle" className="text-xs font-medium">Meta Title</Label>
+                    <Label htmlFor="metaTitle" className="text-xs font-semibold text-muted-foreground select-none">Meta Title</Label>
                     <span className={cn(
                         'text-[10px]',
-                        metaTitleLength > 60 ? 'text-destructive' : 'text-muted-foreground'
+                        metaTitleLength > 60 ? 'text-destructive' : 'text-muted-foreground/60'
                     )}>
                         {metaTitleLength}/60
                     </span>
                 </div>
                 <Input
                     id="metaTitle"
-                    value={formData.metaTitle}
+                    value={formData.metaTitle || ''}
                     onChange={(e) => onInputChange('metaTitle', e.target.value)}
                     placeholder="SEO title"
-                    className="text-sm h-8"
+                    className="text-xs h-8"
                 />
             </div>
 
-            <div className="structure-item flex-col items-start gap-2">
+            <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                    <Label htmlFor="metaDescription" className="text-xs font-medium">Meta Description</Label>
+                    <Label htmlFor="metaDescription" className="text-xs font-semibold text-muted-foreground select-none">Meta Description</Label>
                     <span className={cn(
                         'text-[10px]',
-                        metaDescLength > 160 ? 'text-destructive' : 'text-muted-foreground'
+                        metaDescLength > 160 ? 'text-destructive' : 'text-muted-foreground/60'
                     )}>
                         {metaDescLength}/160
                     </span>
                 </div>
                 <Textarea
                     id="metaDescription"
-                    value={formData.metaDescription}
+                    value={formData.metaDescription || ''}
                     onChange={(e) => onInputChange('metaDescription', e.target.value)}
                     placeholder="SEO description"
                     rows={2}
-                    className="text-sm resize-none"
+                    className="text-xs resize-none"
                 />
             </div>
 
-            <div className="structure-item flex-col items-start gap-2">
-                <Label htmlFor="canonicalUrl" className="text-xs font-medium">Canonical URL</Label>
+            <div className="flex flex-col gap-1.5">
+                <Label htmlFor="canonicalUrl" className="text-xs font-semibold text-muted-foreground select-none">Canonical URL</Label>
                 <Input
                     id="canonicalUrl"
-                    value={formData.canonicalUrl}
+                    value={formData.canonicalUrl || ''}
                     onChange={(e) => onInputChange('canonicalUrl', e.target.value)}
                     placeholder="https://..."
-                    className="text-sm h-8"
+                    className="text-xs h-8"
                 />
             </div>
         </div>
@@ -442,23 +464,23 @@ function MediaSectionContent({
     const heroStyle = buildImageStyle(hero);
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-4">
             {/* Featured Image */}
-            <div className="structure-item flex-col items-start gap-2">
-                <Label className="text-xs font-medium">Featured Image</Label>
-                <div className="w-full space-y-2 max-w-[240px]">
+            <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground select-none">Featured Image</Label>
+                <div className="w-full space-y-2">
                     {featuredUrl ? (
-                        <div className="relative group">
+                        <div className="relative group overflow-hidden rounded-md border border-border">
                             <img
                                 src={featuredUrl}
                                 alt={featuredAlt}
                                 srcSet={featuredSrcSet || undefined}
                                 sizes="280px"
-                                className="w-full aspect-video object-cover rounded-md border"
+                                className="w-full aspect-video object-cover"
                                 style={featuredStyle}
                             />
                             <div className={cn(
-                                'absolute inset-0 bg-black/60 rounded-md',
+                                'absolute inset-0 bg-black/60',
                                 'opacity-0 group-hover:opacity-100 transition-opacity',
                                 'flex items-center justify-center gap-2'
                             )}>
@@ -466,7 +488,7 @@ function MediaSectionContent({
                                     size="sm"
                                     variant="secondary"
                                     onClick={() => onMediaDialogOpen('image')}
-                                    className="h-7 text-xs"
+                                    className="h-7 text-xs cursor-pointer"
                                 >
                                     Replace
                                 </Button>
@@ -474,7 +496,7 @@ function MediaSectionContent({
                                     size="sm"
                                     variant="secondary"
                                     onClick={() => onImageRemove?.('image')}
-                                    className="h-7 text-xs"
+                                    className="h-7 text-xs cursor-pointer"
                                 >
                                     Remove
                                 </Button>
@@ -485,40 +507,40 @@ function MediaSectionContent({
                             type="button"
                             onClick={() => onMediaDialogOpen('image')}
                             className={cn(
-                                'w-full aspect-video border-2 border-dashed rounded-md',
-                                'flex flex-col items-center justify-center gap-2',
+                                'w-full aspect-video border border-dashed rounded-md',
+                                'flex flex-col items-center justify-center gap-2 cursor-pointer',
                                 'hover:bg-muted/50 hover:border-primary/30 transition-colors'
                             )}
                         >
-                            <Image className="w-6 h-6 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">Set featured image</span>
+                            <Image className="w-5 h-5 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground select-none">Set featured image</span>
                         </button>
                     )}
                     <Input
                         placeholder="Alt text"
-                        value={formData.imageAlt}
+                        value={formData.imageAlt || ''}
                         onChange={(e) => onInputChange('imageAlt', e.target.value)}
-                        className="text-sm h-8"
+                        className="text-xs h-8"
                     />
                 </div>
             </div>
 
             {/* Hero Image */}
-            <div className="structure-item flex-col items-start gap-2">
-                <Label className="text-xs font-medium">Hero Image</Label>
-                <div className="w-full space-y-2 max-w-[240px]">
+            <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground select-none">Hero Image</Label>
+                <div className="w-full space-y-2">
                     {heroUrl ? (
-                        <div className="relative group">
+                        <div className="relative group overflow-hidden rounded-md border border-border">
                             <img
                                 src={heroUrl}
                                 alt={heroAlt}
                                 srcSet={heroSlotSrcSet || undefined}
                                 sizes="280px"
-                                className="w-full aspect-video object-cover rounded-md border"
+                                className="w-full aspect-video object-cover"
                                 style={heroStyle}
                             />
                             <div className={cn(
-                                'absolute inset-0 bg-black/60 rounded-md',
+                                'absolute inset-0 bg-black/60',
                                 'opacity-0 group-hover:opacity-100 transition-opacity',
                                 'flex items-center justify-center gap-2'
                             )}>
@@ -526,7 +548,7 @@ function MediaSectionContent({
                                     size="sm"
                                     variant="secondary"
                                     onClick={() => onMediaDialogOpen('hero')}
-                                    className="h-7 text-xs"
+                                    className="h-7 text-xs cursor-pointer"
                                 >
                                     Replace
                                 </Button>
@@ -534,7 +556,7 @@ function MediaSectionContent({
                                     size="sm"
                                     variant="secondary"
                                     onClick={() => onImageRemove?.('hero')}
-                                    className="h-7 text-xs"
+                                    className="h-7 text-xs cursor-pointer"
                                 >
                                     Remove
                                 </Button>
@@ -545,20 +567,20 @@ function MediaSectionContent({
                             type="button"
                             onClick={() => onMediaDialogOpen('hero')}
                             className={cn(
-                                'w-full aspect-video border-2 border-dashed rounded-md',
-                                'flex flex-col items-center justify-center gap-2',
+                                'w-full aspect-video border border-dashed rounded-md',
+                                'flex flex-col items-center justify-center gap-2 cursor-pointer',
                                 'hover:bg-muted/50 hover:border-primary/30 transition-colors'
                             )}
                         >
-                            <Image className="w-6 h-6 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">Set Hero Image</span>
+                            <Image className="w-5 h-5 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground select-none">Set Hero Image</span>
                         </button>
                     )}
                     <Input
                         placeholder="Alt text"
-                        value={formData.heroAlt}
+                        value={formData.heroAlt || ''}
                         onChange={(e) => onInputChange('heroAlt', e.target.value)}
-                        className="text-sm h-8"
+                        className="text-xs h-8"
                     />
                 </div>
             </div>
@@ -571,62 +593,62 @@ function MediaSectionContent({
  */
 function ExcerptsSectionContent({ formData, onInputChange }: { formData: EditorFormData; onInputChange: InputChangeHandler }) {
     return (
-        <div className="space-y-2">
-            <div className="structure-item flex-col items-start gap-2">
-                <Label htmlFor="headline" className="text-xs font-medium">Headline</Label>
+        <div className="space-y-3">
+            <div className="flex flex-col gap-1.5">
+                <Label htmlFor="headline" className="text-xs font-semibold text-muted-foreground select-none">Headline</Label>
                 <Input
                     id="headline"
-                    value={formData.headline}
+                    value={formData.headline || ''}
                     onChange={(e) => onInputChange('headline', e.target.value)}
                     placeholder="Short subtitle for the post"
-                    className="text-sm h-8"
+                    className="text-xs h-8"
                 />
             </div>
-            <div className="structure-item flex-col items-start gap-2">
-                <Label htmlFor="shortDescription" className="text-xs font-medium">Short Description</Label>
+            <div className="flex flex-col gap-1.5">
+                <Label htmlFor="shortDescription" className="text-xs font-semibold text-muted-foreground select-none">Short Description</Label>
                 <Textarea
                     id="shortDescription"
-                    value={formData.shortDescription}
+                    value={formData.shortDescription || ''}
                     onChange={(e) => onInputChange('shortDescription', e.target.value)}
                     placeholder="Brief description for listings"
                     rows={2}
-                    className="text-sm resize-none"
+                    className="text-xs resize-none"
                 />
             </div>
 
-            <div className="structure-item flex-col items-start gap-2">
-                <Label htmlFor="tldr" className="text-xs font-medium">TL;DR</Label>
+            <div className="flex flex-col gap-1.5">
+                <Label htmlFor="tldr" className="text-xs font-semibold text-muted-foreground select-none">TL;DR</Label>
                 <Textarea
                     id="tldr"
-                    value={formData.tldr}
+                    value={formData.tldr || ''}
                     onChange={(e) => onInputChange('tldr', e.target.value)}
                     placeholder="Too long; didn't read"
                     rows={2}
-                    className="text-sm resize-none"
+                    className="text-xs resize-none"
                 />
             </div>
 
-            <div className="structure-item flex-col items-start gap-2">
-                <Label htmlFor="introduction" className="text-xs font-medium">Introduction</Label>
+            <div className="flex flex-col gap-1.5">
+                <Label htmlFor="introduction" className="text-xs font-semibold text-muted-foreground select-none">Introduction</Label>
                 <Textarea
                     id="introduction"
-                    value={formData.introduction}
+                    value={formData.introduction || ''}
                     onChange={(e) => onInputChange('introduction', e.target.value)}
                     placeholder="Article introduction"
                     rows={2}
-                    className="text-sm resize-none"
+                    className="text-xs resize-none"
                 />
             </div>
 
-            <div className="structure-item flex-col items-start gap-2">
-                <Label htmlFor="summary" className="text-xs font-medium">Summary</Label>
+            <div className="flex flex-col gap-1.5">
+                <Label htmlFor="summary" className="text-xs font-semibold text-muted-foreground select-none">Summary</Label>
                 <Textarea
                     id="summary"
-                    value={formData.summary}
+                    value={formData.summary || ''}
                     onChange={(e) => onInputChange('summary', e.target.value)}
                     placeholder="Article summary"
                     rows={2}
-                    className="text-sm resize-none"
+                    className="text-xs resize-none"
                 />
             </div>
         </div>
@@ -657,18 +679,35 @@ export default function DocumentSettings({
     authors?: SelectOption[];
     isEditMode?: boolean;
 }) {
+    const sections = ['post', 'tags', 'media', 'seo', 'excerpts'] as const;
+    type SectionId = typeof sections[number];
+    const [openSection, setOpenSection] = useState<SectionId>('post');
+
+    const toggle = (id: SectionId) =>
+        setOpenSection(prev => (prev === id ? ('' as SectionId) : id));
+
     return (
         <div className="relative">
-            <SettingsSection title="Post" icon={Globe} defaultOpen>
+            <SettingsSection
+                title="Post"
+                icon={Globe}
+                isOpen={openSection === 'post'}
+                onToggle={() => toggle('post')}
+            >
                 <StatusSection
-                    formData={formData}
-                    onInputChange={onInputChange}
-                    categories={categories}
-                    authors={authors}
+                     formData={formData}
+                     onInputChange={onInputChange}
+                     categories={categories}
+                     authors={authors}
                 />
             </SettingsSection>
 
-            <SettingsSection title="Tags" icon={Tag} defaultOpen>
+            <SettingsSection
+                title="Tags"
+                icon={Tag}
+                isOpen={openSection === 'tags'}
+                onToggle={() => toggle('tags')}
+            >
                 <TagsSectionContent
                     formData={formData}
                     onInputChange={onInputChange}
@@ -676,7 +715,12 @@ export default function DocumentSettings({
                 />
             </SettingsSection>
 
-            <SettingsSection title="Featured Media" icon={Image}>
+            <SettingsSection
+                title="Featured Media"
+                icon={Image}
+                isOpen={openSection === 'media'}
+                onToggle={() => toggle('media')}
+            >
                 <MediaSectionContent
                     formData={formData}
                     imagesData={imagesData}
@@ -686,7 +730,12 @@ export default function DocumentSettings({
                 />
             </SettingsSection>
 
-            <SettingsSection title="SEO" icon={Search}>
+            <SettingsSection
+                title="SEO"
+                icon={Search}
+                isOpen={openSection === 'seo'}
+                onToggle={() => toggle('seo')}
+            >
                 <SEOSectionContent
                     formData={formData}
                     onInputChange={onInputChange}
@@ -694,7 +743,12 @@ export default function DocumentSettings({
                 />
             </SettingsSection>
 
-            <SettingsSection title="Excerpts" icon={FileText}>
+            <SettingsSection
+                title="Excerpts"
+                icon={FileText}
+                isOpen={openSection === 'excerpts'}
+                onToggle={() => toggle('excerpts')}
+            >
                 <ExcerptsSectionContent
                     formData={formData}
                     onInputChange={onInputChange}

@@ -335,6 +335,34 @@ describe('RelatedContentAdapter partitioning and full mapping', () => {
 });
 
 describe('BlockEditor hydrated marker blocks', () => {
+  it('saves a newly inserted table with the same default columns shown in the editor', () => {
+    const saved = blocksToContentJson([
+      {
+        id: 'new-table',
+        type: 'simpleTable',
+        props: {
+          headersJson: '[]',
+          rowsJson: '[["",""]]',
+        },
+        content: [],
+        children: [],
+      },
+    ] as any);
+
+    expect(saved).toEqual({
+      version: 1,
+      kind: 'content_document',
+      blocks: [
+        {
+          id: 'new-table',
+          type: 'table',
+          headers: ['Column 1', 'Column 2'],
+          rows: [['', '']],
+        },
+      ],
+    });
+  });
+
   it('hydrates table blocks with the JSON props consumed by TableBlock', () => {
     const blocks = contentJsonToBlocks({
       version: 1,

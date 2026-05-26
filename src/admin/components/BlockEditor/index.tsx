@@ -42,7 +42,8 @@ import { useBlockSelection } from './hooks/useBlockSelection';
 import { useLinkToolbar } from './hooks/useLinkToolbar';
 import { useInsertHandle } from './hooks/useInsertHandle';
 import { useCanvasDragDrop } from './hooks/useCanvasDragDrop';
-
+import { useBlockEditorStore } from './store/blockEditorStore';
+import { useUIStore } from '../../store/useStore';
 import type { BlockEditorProps } from './utils/types';
 
 export default function BlockEditor({
@@ -73,6 +74,17 @@ export default function BlockEditor({
   const lastSerializedRef = useRef('');
   const moveActionBlockIdRef = useRef<string | null>(null);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  
+  // --- Zustand Store Bindings ---
+  const setEditor = useBlockEditorStore((state) => state.setEditor);
+  const storeSetActiveBlock = useBlockEditorStore((state) => state.setActiveBlock);
+  const theme = useUIStore((state) => state.theme);
+
+  const handleSetActiveBlockId = useCallback((id: string | null) => {
+    setActiveBlockId(id);
+    storeSetActiveBlock(id);
+  }, [storeSetActiveBlock]);
+
   const hydrationContext = useMemo(() => ({
     recipeJson,
     onRecipeChange,
@@ -102,6 +114,12 @@ export default function BlockEditor({
     onEditorReady,
   });
 
+  useEffect(() => {
+    if (mountedEditor) {
+      setEditor(mountedEditor);
+    }
+  }, [mountedEditor, setEditor]);
+
   const SlashMenuComponent = useMemo(
     () => (props: Record<string, unknown>) => <CustomSlashMenu {...props} editor={editor} />,
     [editor]
@@ -116,7 +134,7 @@ export default function BlockEditor({
   });
 
   const { toolbarActionBlockIdRef } = useBlockSelection({
-    editor: mountedEditor as any, wrapperRef, activeBlockId, setActiveBlockId,
+    editor: mountedEditor as any, wrapperRef, activeBlockId, setActiveBlockId: handleSetActiveBlockId,
     onSelectedBlockChange, forceSelectBlockId, onForceSelectHandled,
     moveActionBlockIdRef,
   });
@@ -128,7 +146,7 @@ export default function BlockEditor({
     useInsertHandle({ editor: mountedEditor as any, wrapperRef, canvasRef });
 
   const { canvasSensors, handleCanvasDragStart, handleCanvasDragEnd, handleCanvasDragCancel } =
-    useCanvasDragDrop({ editor: mountedEditor as any, structureItemsRef, setActiveBlockId });
+    useCanvasDragDrop({ editor: mountedEditor as any, structureItemsRef, setActiveBlockId: handleSetActiveBlockId });
 
   const relatedContext = useMemo(() => ({
     categorySlug: context?.categorySlug || null,
@@ -155,7 +173,7 @@ export default function BlockEditor({
           <div className="block-editor-main flex min-h-0">
             <div ref={canvasRef} className="block-editor-canvas flex-1 min-h-0 relative">
               <DndContext sensors={canvasSensors} onDragStart={handleCanvasDragStart} onDragEnd={handleCanvasDragEnd} onDragCancel={handleCanvasDragCancel}>
-                <BlockNoteViewWithPortal editor={editor as any} theme="light" sideMenu={false} slashMenu={false} formattingToolbar={false} linkToolbar={false} placeholder={placeholder}>
+                <BlockNoteViewWithPortal editor={editor as any} theme={theme} sideMenu={false} slashMenu={false} formattingToolbar={false} linkToolbar={false} placeholder={placeholder}>
                   {viewReady && (
                     <>
                       <SuggestionMenuController
@@ -177,7 +195,7 @@ export default function BlockEditor({
                     <button type="button" className={cn('inline-link-button', linkToolbar.mode === 'link' && 'is-active')} onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'link', url: prev.url || 'https://' }))} title="Insert link"><LinkIcon className="size-4" /></button>
                     {linkToolbar.mode === 'link' && (
                       <div className="inline-link-input">
-                        <input type="url" value={linkToolbar.url} onChange={(e) => setLinkToolbar((prev) => ({ ...prev, url: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyLink(); } if (e.key === 'Escape') { e.preventDefault(); setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' })); } }} className="inline-link-input-field" placeholder="https://" autoFocus />
+                        <input id="inline-link-url" name="inline_link_url" type="url" value={linkToolbar.url} onChange={(e) => setLinkToolbar((prev) => ({ ...prev, url: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyLink(); } if (e.key === 'Escape') { e.preventDefault(); setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' })); } }} className="inline-link-input-field" placeholder="https://" autoFocus />
                         <button type="button" className="inline-link-action" onClick={applyLink} title="Apply link"><Check className="size-4" /></button>
                         <button type="button" className="inline-link-action" onClick={() => setLinkToolbar((prev) => ({ ...prev, mode: 'buttons' }))} title="Cancel"><X className="size-4" /></button>
                       </div>

@@ -12,14 +12,14 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PanelLeft, PanelRight, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
-import BlockInserter from './BlockInserter';
-import SettingsSidebar from './SettingsSidebar';
+import LeftPanel from './LeftPanel';
+import RightPanel from './RightPanel';
 
 type GutenbergContentType = 'article' | 'recipe' | 'roundup' | 'menu';
 
@@ -73,6 +73,7 @@ export default function GutenbergEditorLayout({
     const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
     const [sidebarTab, setSidebarTab] = useState<'document' | 'block' | 'ai'>('document');
     const isMobile = useIsMobile();
+    const shouldReduceMotion = useReducedMotion();
 
     // Auto-close sidebars on mobile
     useEffect(() => {
@@ -81,14 +82,6 @@ export default function GutenbergEditorLayout({
             setSidebarOpen(false);
         }
     }, [isMobile]);
-
-    // Auto-open sidebar when a block is selected
-    useEffect(() => {
-        if (selectedBlock) {
-            setSidebarOpen(true);
-            setSidebarTab('block');
-        }
-    }, [selectedBlock?.id]);
 
     const toggleInserter = useCallback(() => {
         setInserterOpen(prev => !prev);
@@ -118,7 +111,7 @@ export default function GutenbergEditorLayout({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
                         className="fixed inset-0 bg-black/50 z-40"
                         onClick={() => {
                             setInserterOpen(false);
@@ -175,10 +168,10 @@ export default function GutenbergEditorLayout({
                 </Tooltip>
             </div>
 
-            {/* Left Panel: Block Inserter */}
+            {/* Left Panel */}
             <AnimatePresence>
                 {inserterOpen && (
-                    <BlockInserter
+                    <LeftPanel
                         isOpen={inserterOpen}
                         onClose={toggleInserter}
                         onInsertBlock={handleInsertBlock}
@@ -202,10 +195,10 @@ export default function GutenbergEditorLayout({
                 </div>
             </div>
 
-            {/* Right Panel: Settings Sidebar */}
+            {/* Right Panel */}
             <AnimatePresence>
                 {sidebarOpen && (
-                    <SettingsSidebar
+                    <RightPanel
                         isOpen={sidebarOpen}
                         onClose={toggleSidebar}
                         activeTab={sidebarTab}

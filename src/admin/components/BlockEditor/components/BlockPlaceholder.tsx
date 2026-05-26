@@ -15,7 +15,7 @@
 import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes, ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
 
@@ -46,13 +46,14 @@ const BlockPlaceholder = forwardRef<HTMLDivElement, BlockPlaceholderProps>(({
     withIllustration = false,
     ...props
 }, ref) => {
+    const shouldReduceMotion = useReducedMotion();
     return (
         <motion.div
             ref={ref}
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.15, ease: 'easeOut' }}
             className={cn(
                 'wp-block-placeholder',
                 'flex flex-col items-center justify-center gap-3',
@@ -186,7 +187,7 @@ export function PlaceholderInput({
                     'flex-1 h-9 px-3',
                     'bg-background border border-input rounded-md',
                     'text-sm placeholder:text-muted-foreground',
-                    'focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent'
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus:border-transparent',
                 )}
                 {...props}
             />

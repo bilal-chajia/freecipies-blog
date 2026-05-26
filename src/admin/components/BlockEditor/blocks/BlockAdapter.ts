@@ -44,7 +44,8 @@ export const blockAdapters = new Map<string, BlockAdapter>();
  * @param adapter - The BlockAdapter implementation to register.
  */
 export function registerBlockAdapter(adapter: BlockAdapter): void {
-    if (blockAdapters.has(adapter.type)) {
+    const existing = blockAdapters.get(adapter.type);
+    if (existing && existing !== adapter) {
         console.warn(`[BlockAdapter] Overwriting existing adapter for type "${adapter.type}"`);
     }
     blockAdapters.set(adapter.type, adapter);

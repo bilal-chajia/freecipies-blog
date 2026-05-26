@@ -103,7 +103,7 @@ type SortableStructureItemProps = {
 
 type PanelTab = 'list' | 'outline';
 
-type BlockInserterProps = {
+type LeftPanelProps = {
     isOpen?: boolean;
     onClose?: () => void;
     onInsertBlock?: (blockType: string) => void;
@@ -290,7 +290,7 @@ const blockCategories = [
 /**
  * Block Inserter Panel
  */
-export default function BlockInserter({
+export default function LeftPanel({
     isOpen = true,
     onClose,
     onInsertBlock,
@@ -302,7 +302,7 @@ export default function BlockInserter({
     onReorderBlock,
     onBlockAction,
     className,
-}: BlockInserterProps) {
+}: LeftPanelProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [panelTab, setPanelTab] = useState<PanelTab>('list');
     const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
