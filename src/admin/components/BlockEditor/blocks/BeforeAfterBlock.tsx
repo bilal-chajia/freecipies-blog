@@ -14,47 +14,20 @@
 
 import { createReactBlockSpec } from '@blocknote/react';
 import { useMemo, useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import {
-    Image as ImageIcon,
-    Trash2,
     SplitSquareHorizontal,
     GalleryHorizontal
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { parseVariantsJson, getVariantMap, getBestVariantUrl } from '@shared/types/images';
-import { Button } from '@/ui/button';
+import { parseVariantsJson, getVariantMap } from '@shared/types/images';
 import { MediaDialog } from '@admin/features/media/components';
 import BlockToolbar, { ToolbarButton } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
+import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 import { useBlockSelection } from '../selection-context';
 import { useBlockEditorSourceData } from '../source-data-context';
-
-type ImageSlotKey = 'before' | 'after';
-
-type BeforeAfterSlot = {
-    media_id?: number | string;
-    alt?: string;
-    label?: string;
-    variants?: unknown;
-};
-
-type MediaDialogItem = {
-    id: number | string;
-    altText?: string | null;
-    alt_text?: string | null;
-    name?: string | null;
-};
-
-type BeforeAfterUpdates = {
-    layout?: 'slider' | 'side_by_side';
-    beforeImageRef?: string;
-    afterImageRef?: string;
-    beforeJson?: string;
-    afterJson?: string;
-};
+import ImageSlotEditor from './before-after/ImageSlotEditor';
+import type { ImageSlotKey, BeforeAfterSlot, MediaDialogItem, BeforeAfterUpdates } from './before-after/BeforeAfterBlock.types';
 
 function parseImagesData(value: unknown): Record<string, unknown> {
     if (!value) return {};
@@ -137,11 +110,6 @@ export const BeforeAfterBlock = createReactBlockSpec(
                 updateBlockProps({ [`${slotKey}Json`]: toJson(nextSlot) });
             };
 
-            const resolvePreview = (slot: BeforeAfterSlot | null) => {
-                if (!slot?.variants) return '';
-                return getBestVariantUrl(slot as Parameters<typeof getBestVariantUrl>[0]) || '';
-            };
-
             const handleSelect = (item: MediaDialogItem) => {
                 if (!activeSlot) return;
                 const parsed = parseVariantsJson(item as Parameters<typeof parseVariantsJson>[0]);
@@ -166,126 +134,30 @@ export const BeforeAfterBlock = createReactBlockSpec(
                 setActiveSlot(null);
             };
 
-            const renderSlot = (slotKey: ImageSlotKey, slotData: BeforeAfterSlot | null) => {
-                const preview = resolvePreview(slotData);
-                const label = slotData?.label || (slotKey === 'before' ? 'Before' : 'After');
-
-                return (
-                    <div className="space-y-2">
-                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            {label}
-                        </div>
-                        <div className={cn(
-                            'border rounded-lg p-3 bg-muted/30 space-y-2',
-                            'transition-colors',
-                            isSelected && 'border-border'
-                        )}>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <span>{slotData?.media_id ? `Media #${slotData.media_id}` : 'No image selected'}</span>
-                                {slotData?.media_id && isSelected && (
-                                    <button
-                                        type="button"
-                                        onClick={() => updateSlot(slotKey, null)}
-                                        className="inline-flex items-center gap-1 text-destructive hover:underline"
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                        Remove
-                                    </button>
-                                )}
-                            </div>
-                            <div className={cn(
-                                'w-full h-40 rounded-md overflow-hidden',
-                                'bg-background border border-dashed border-border',
-                                'flex items-center justify-center'
-                            )}>
-                                {preview ? (
-                                    <img src={preview} alt={slotData?.alt || ''} className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="flex flex-col items-center text-xs text-muted-foreground">
-                                        <ImageIcon className="w-5 h-5 mb-1" />
-                                        Select image
-                                    </div>
-                                )}
-                            </div>
-                            {isSelected && (
-                                <>
-                                    <div className="flex items-center justify-center">
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => {
-                                                setActiveSlot(slotKey);
-                                                setMediaDialogOpen(true);
-                                            }}
-                                            className="gap-1 text-xs"
-                                        >
-                                            <ImageIcon className="w-3 h-3" />
-                                            Choose image
-                                        </Button>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        <input
-                                            type="text"
-                                            value={slotData?.alt || ''}
-                                            onChange={(e) => updateSlot(slotKey, { ...slotData, alt: e.target.value })}
-                                            placeholder="Alt text"
-                                            className={cn(
-                                                'w-full px-2 py-1 text-xs',
-                                                'bg-background border border-input rounded-md',
-                                                'focus:outline-none focus:ring-2 focus:ring-ring'
-                                            )}
-                                        />
-                                        <input
-                                            type="text"
-                                            value={slotData?.label || ''}
-                                            onChange={(e) => updateSlot(slotKey, { ...slotData, label: e.target.value })}
-                                            placeholder="Label (optional)"
-                                            className={cn(
-                                                'w-full px-2 py-1 text-xs',
-                                                'bg-background border border-input rounded-md',
-                                                'focus:outline-none focus:ring-2 focus:ring-ring'
-                                            )}
-                                        />
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                );
+            const handleChooseImage = (slotKey: ImageSlotKey) => {
+                setActiveSlot(slotKey);
+                setMediaDialogOpen(true);
             };
 
             const currentLayout = layouts.find(l => l.value === block.props.layout) || layouts[0];
 
-            const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const {
-                attributes: dragAttributes,
-                listeners: dragListeners,
-                setNodeRef: setDragNodeRef,
-                transform: dragTransform,
-                isDragging,
-            } = useDraggable({ id: block.id, disabled: mediaDialogOpen });
-            const dragHandleProps = { ...dragAttributes, ...dragListeners };
-            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
+            const { moveUp, moveDown, remove } = useBlockActionPrimitives({
+                editor,
+                blockId: block.id,
+                onSelect: () => requestAnimationFrame(() => selectBlock()),
+            });
+            const { dragHandleProps, setDragNodeRef, dragStyle, isDragging } = useBlockDragHandle(block.id, {
+                disabled: mediaDialogOpen,
+            });
 
             const toolbar = (
                 <BlockToolbar
                     blockIcon={SplitSquareHorizontal}
                     blockLabel="Before / After"
-                    onMoveUp={moveBlockUp}
-                    onMoveDown={moveBlockDown}
+                    onMoveUp={moveUp}
+                    onMoveDown={moveDown}
                     dragHandleProps={dragHandleProps}
-                    onDelete={() => editor.removeBlocks([block])}
+                    onDelete={remove}
                     showMoreMenu={false}
                 >
                     {layouts.map((layout) => (
@@ -307,8 +179,6 @@ export const BeforeAfterBlock = createReactBlockSpec(
                         isSelected={isSelected}
                         toolbar={toolbar}
                         onClick={selectBlock}
-                        onFocus={selectBlock}
-                        onPointerDownCapture={selectBlock}
                         blockType="before-after"
                         blockId={block.id}
                         className="my-2"
@@ -334,8 +204,22 @@ export const BeforeAfterBlock = createReactBlockSpec(
 
                             {/* Slots */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {renderSlot('before', before)}
-                                {renderSlot('after', after)}
+                                <ImageSlotEditor
+                                    blockId={block.id}
+                                    slotKey="before"
+                                    slotData={before}
+                                    isSelected={isSelected}
+                                    onUpdateSlot={updateSlot}
+                                    onChooseImage={handleChooseImage}
+                                />
+                                <ImageSlotEditor
+                                    blockId={block.id}
+                                    slotKey="after"
+                                    slotData={after}
+                                    isSelected={isSelected}
+                                    onUpdateSlot={updateSlot}
+                                    onChooseImage={handleChooseImage}
+                                />
                             </div>
                         </div>
                     </BlockWrapper>
