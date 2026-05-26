@@ -1014,6 +1014,11 @@ const navItems = [
     background: var(--bg-inset);
     border-color: var(--success-text);
     color: var(--success-text);
+    transform: scale(1.05);
+  }
+
+  .servings-btn:active {
+    transform: scale(0.92);
   }
 
   /* :has() selector - Highlight control when value is not default */
@@ -1074,12 +1079,17 @@ const navItems = [
     font-weight: 600;
     color: var(--text-tertiary);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--transition-fast, 150ms) var(--ease-default, ease);
   }
 
   .preset-btn:hover {
     background: var(--bg-inset);
     color: var(--text);
+    transform: translateY(-1px);
+  }
+
+  .preset-btn:active {
+    transform: translateY(0) scale(0.95);
   }
 
   .preset-btn.active {

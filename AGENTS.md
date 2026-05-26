@@ -100,6 +100,10 @@ The `docs/` directory contains the canonical system contracts. **Always consult 
 
 ## Agent Behavior
 
+### Foundational Behavior
+
+- **Start of Conversation**: At the start of every new conversation, the agent MUST immediately read [.agent/skills/karpathy-rules/SKILL.md](file:///c:/Users/Poste/Desktop/SaaS%20Astro/freecipies-blog/.agent/skills/karpathy-rules/SKILL.md) to initialize behavioral guidelines regarding assumptions, simplicity, surgical changes, and goal-driven execution.
+
 ### Research first
 
 1. Use `list_dir` and `grep_search` before reading a full file.
@@ -116,6 +120,10 @@ The `docs/` directory contains the canonical system contracts. **Always consult 
 - **Never run `pnpm build` without asking.**
 - **Never open the browser without explicit permission.**
 - **Never modify `docs/` contracts without explicit permission** — they are the architectural source of truth.
+
+### Executing Plans
+
+- **Use Caveman Mode on executing plans and thinking.** When executing steps in an approved implementation plan, and during general reasoning/response, communicate using ultra-compressed "caveman mode" (as defined in the caveman skill) to save tokens and keep updates extremely brief and direct.
 
 ## Reference Files
 

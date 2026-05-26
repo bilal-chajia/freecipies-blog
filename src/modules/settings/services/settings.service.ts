@@ -157,11 +157,14 @@ export async function getSettingsByCategory(db: D1Database | DrizzleDb, category
  * Get dashboard statistics (aggregated data for admin dashboard)
  */
 export async function getDashboardStats(db: D1Database | DrizzleDb): Promise<{
-  articles: number;
-  categories: number;
-  authors: number;
-  tags: number;
-  totalViews: number;
+  total_articles: number;
+  total_recipes: number;
+  total_categories: number;
+  total_authors: number;
+  total_tags: number;
+  total_views: number;
+  articles_over_time: { month: string; articles: number; views: number }[];
+  trends: { articles: string | null; recipes: string | null; views: string | null; authors: string | null } | null;
 }> {
   // Get the underlying D1Database for raw SQL queries
   const d1 = 'prepare' in db ? db : (db as any).client as D1Database;
@@ -169,19 +172,64 @@ export async function getDashboardStats(db: D1Database | DrizzleDb): Promise<{
   // Use raw SQL for cross-table aggregation
   const result = await d1.prepare(`
     SELECT
-      (SELECT COUNT(*) FROM articles WHERE deleted_at IS NULL) as articles,
-      (SELECT COUNT(*) FROM categories WHERE deleted_at IS NULL) as categories,
-      (SELECT COUNT(*) FROM authors WHERE deleted_at IS NULL) as authors,
-      (SELECT COUNT(*) FROM tags WHERE deleted_at IS NULL) as tags,
+      (SELECT COUNT(*) FROM articles WHERE deleted_at IS NULL) as total_articles,
+      (SELECT COUNT(*) FROM articles WHERE deleted_at IS NULL AND type = 'recipe') as total_recipes,
+      (SELECT COUNT(*) FROM categories WHERE deleted_at IS NULL) as total_categories,
+      (SELECT COUNT(*) FROM authors WHERE deleted_at IS NULL) as total_authors,
+      (SELECT COUNT(*) FROM tags WHERE deleted_at IS NULL) as total_tags,
       (SELECT COALESCE(SUM(view_count), 0) FROM articles WHERE deleted_at IS NULL) as total_views
-  `).first<{ articles: number; categories: number; authors: number; tags: number; total_views: number }>();
+  `).first<{
+    total_articles: number;
+    total_recipes: number;
+    total_categories: number;
+    total_authors: number;
+    total_tags: number;
+    total_views: number;
+  }>();
+
+  // Articles created per month over the last 6 months
+  const timeSeriesResult = await d1.prepare(`
+    SELECT
+      strftime('%Y-%m', created_at) as month,
+      COUNT(*) as articles
+    FROM articles
+    WHERE deleted_at IS NULL
+      AND created_at >= date('now', '-5 months', 'start of month')
+    GROUP BY strftime('%Y-%m', created_at)
+    ORDER BY month ASC
+  `).all<{ month: string; articles: number }>();
+
+  // Normalize month labels (YYYY-MM -> Mon)
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const articlesOverTime = (timeSeriesResult.results || []).map((row) => {
+    const [year, monthNum] = row.month.split('-');
+    const label = monthNames[parseInt(monthNum, 10) - 1];
+    return {
+      month: label,
+      articles: row.articles,
+      views: 0, // No historical view data available; honest placeholder
+    };
+  });
+
+  // Backfill missing months with zero so the chart always has 6 points
+  const now = new Date();
+  const expectedMonths: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    expectedMonths.push(monthNames[d.getMonth()]);
+  }
+  const monthMap = new Map(articlesOverTime.map((r) => [r.month, r]));
+  const backfilled = expectedMonths.map((m) => monthMap.get(m) || { month: m, articles: 0, views: 0 });
 
   return {
-    articles: result?.articles || 0,
-    categories: result?.categories || 0,
-    authors: result?.authors || 0,
-    tags: result?.tags || 0,
-    totalViews: result?.total_views || 0,
+    total_articles: result?.total_articles || 0,
+    total_recipes: result?.total_recipes || 0,
+    total_categories: result?.total_categories || 0,
+    total_authors: result?.total_authors || 0,
+    total_tags: result?.total_tags || 0,
+    total_views: result?.total_views || 0,
+    articles_over_time: backfilled,
+    trends: null, // Historical trends require time-series tables we don't yet have
   };
 }
 

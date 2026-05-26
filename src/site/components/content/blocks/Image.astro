@@ -79,26 +79,12 @@ const alignmentStyles = {
   center: { marginLeft: "auto", marginRight: "auto" },
   right: { marginLeft: "auto", marginRight: "0" },
 }[alignment];
-
-const widthProp = block.width || imgVariant?.width || 512;
-let parsedWidth: string | undefined = undefined;
-if (widthProp !== undefined && widthProp !== null) {
-  const widthStr = String(widthProp).trim();
-  if (widthStr !== "") {
-    if (/^\d+$/.test(widthStr)) {
-      parsedWidth = `${widthStr}px`;
-    } else {
-      parsedWidth = widthStr;
-    }
-  }
-}
 ---
 
 <figure
   class="content-image"
   style={{
-    width: parsedWidth,
-    maxWidth: "100%",
+    maxWidth: "calc(100% - 8rem)",
     ...alignmentStyles,
   }}
 >

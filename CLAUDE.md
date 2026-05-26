@@ -168,6 +168,11 @@ Use these MCP tools before web search:
 - `konva-documentation` — for Konva canvas editor
 - `google-developer-knowledge` — for Cloudflare/Google APIs
 
+## Foundational Behavior
+
+- **Start of Conversation**: At the start of every new conversation, the agent MUST immediately read [.agent/skills/karpathy-rules/SKILL.md](file:///c:/Users/Poste/Desktop/SaaS%20Astro/freecipies-blog/.agent/skills/karpathy-rules/SKILL.md) to initialize behavioral guidelines regarding assumptions, simplicity, surgical changes, and goal-driven execution.
+- **Use Caveman Mode**: On executing plans and general thinking/responses, communicate using ultra-compressed "caveman mode" (as defined in the caveman skill) to save tokens.
+
 ## Safety
 
 - **Never run `pnpm build` without asking.**
