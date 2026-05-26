@@ -1,11 +1,9 @@
 /**
  * Block Inserter Component
  * 
- * Left panel in the WordPress Block Editor layout.
- * Provides a searchable list of available blocks that can be inserted into the editor.
- * 
- * Based on WordPress Block Editor design:
- * https://developer.wordpress.org/block-editor/
+ * Left panel in the Block Editor layout.
+ * Displays List View (draggable document tree) and Outline (clickable TOC).
+ * Fully refactored to consume Zustand store state and sport a premium glassmorphic UI.
  */
 
 import { useCallback, useMemo, useState } from 'react';
@@ -22,84 +20,18 @@ import {
 } from '@dnd-kit/core';
 import {
     SortableContext,
-    useSortable,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import {
-    Search,
-    X,
-    ChevronDown,
-    Type,
-    Image,
-    Video,
-    Table2,
-    HelpCircle,
-    LayoutGrid,
-    Minus,
-    Lightbulb,
-    SplitSquareHorizontal,
-    Hash,
-    FileText,
-    List,
-    Quote,
-    Code,
-    Utensils,
-    GripVertical,
-    MoreVertical,
-    Copy,
-    Trash2,
-    Plus,
     ListTree,
     BookOpen,
+    PanelLeftClose,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
-import { Input } from '@/ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
-import { renderInlineMarkdownHtml } from '../utils/safeInlineHtml';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
-
-type StructureItem = {
-    id: string;
-    type: string;
-    label?: string;
-    icon?: LucideIcon;
-    parentId?: string | null;
-    level?: number;
-    depth?: number;
-};
-
-type DropTarget = {
-    targetId: string;
-    position: 'before' | 'after';
-};
-
-type ConvertBlockOptions = {
-    type: string;
-    level?: number;
-};
-
-type BlockAction = 'duplicate' | 'add-before' | 'add-after' | 'delete';
-
-type SortableStructureItemProps = {
-    item: StructureItem;
-    activeBlockId?: string | null;
-    onSelectBlock?: (blockId: string) => void;
-    onConvertBlock?: (blockId: string, options: ConvertBlockOptions) => void;
-    onBlockAction?: (action: BlockAction, blockId: string) => void;
-    dropTarget?: DropTarget | null;
-    isSortableEnabled: boolean;
-    indentDepth: number;
-    showConvertOptions: boolean;
-};
+import { useBlockEditorStore, type StructureItem } from '../store/blockEditorStore';
+import { SortableStructureItem, type DropTarget } from './left-panel/SortableStructureItem';
+import type { BlockAction, ConvertBlockOptions } from './left-panel/StructureActionsMenu';
 
 type PanelTab = 'list' | 'outline';
 
@@ -117,234 +49,58 @@ type LeftPanelProps = {
     className?: string;
 };
 
-function SortableStructureItem({
-    item,
-    activeBlockId,
-    onSelectBlock,
-    onConvertBlock,
-    onBlockAction,
-    dropTarget,
-    isSortableEnabled,
-    indentDepth,
-    showConvertOptions,
-}: SortableStructureItemProps) {
-    const isActive = activeBlockId === item.id;
-    const isDropTarget = dropTarget?.targetId === item.id;
-    const dropPosition = isDropTarget ? dropTarget.position : null;
-    const Icon = item.icon || FileText;
-
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        setActivatorNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({
-        id: item.id,
-        disabled: !isSortableEnabled,
-    });
-
-    return (
-        <div
-            ref={setNodeRef}
-            className={cn(
-                'structure-item group',
-                isActive && 'is-active',
-                isDragging && 'opacity-60',
-                dropPosition === 'before' && 'border-t border-primary/60',
-                dropPosition === 'after' && 'border-b border-primary/60'
-            )}
-            style={{
-                paddingLeft: `${12 + indentDepth * 14}px`,
-                transform: CSS.Transform.toString(transform),
-                transition,
-            }}
-            onClick={() => onSelectBlock?.(item.id)}
-        >
-            <div className="structure-item-content flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-                <button
-                    ref={setActivatorNodeRef}
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground cursor-grab"
-                    onClick={(event) => event.stopPropagation()}
-                    title={isSortableEnabled ? 'Drag to reorder' : 'Reorder disabled'}
-                    {...attributes}
-                    {...listeners}
-                >
-                    <GripVertical className="w-3.5 h-3.5 shrink-0 structure-item-grip" />
-                </button>
-                <Icon className="structure-item-icon" />
-                <span
-                    className="structure-item-label"
-                    title={item.label ? item.label.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1') : ''}
-                    dangerouslySetInnerHTML={{ __html: renderInlineMarkdownHtml(item.label, { allowStyles: true, preserveLineBreaks: false }) }}
-                />
-            </div>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <button
-                        type="button"
-                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
-                        onClick={(event) => event.stopPropagation()}
-                        title="Block actions"
-                    >
-                        <MoreVertical className="w-4 h-4" />
-                    </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                        onClick={() => onBlockAction?.('duplicate', item.id)}
-                    >
-                        <Copy className="w-4 h-4 mr-2" />
-                        Duplicate
-                    </DropdownMenuItem>
-                    {showConvertOptions && (
-                        <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                onClick={() => onConvertBlock?.(item.id, { type: 'paragraph' })}
-                            >
-                                Paragraph
-                            </DropdownMenuItem>
-                            {[2, 3, 4, 5, 6].map((level) => (
-                                <DropdownMenuItem
-                                    key={`heading-${item.id}-${level}`}
-                                    onClick={() => onConvertBlock?.(item.id, { type: 'heading', level })}
-                                >
-                                    Heading {level}
-                                </DropdownMenuItem>
-                            ))}
-                        </>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                        onClick={() => onBlockAction?.('add-before', item.id)}
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add before
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        onClick={() => onBlockAction?.('add-after', item.id)}
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add after
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => onBlockAction?.('delete', item.id)}
-                    >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-    );
-}
-
-// Block categories with their blocks
-const blockCategories = [
-    {
-        id: 'text',
-        label: 'Text',
-        blocks: [
-            { type: 'paragraph', icon: Type, label: 'Paragraph', description: 'Start with basic text' },
-            { type: 'heading', icon: Hash, label: 'Heading', description: 'Add a heading' },
-            { type: 'list', icon: List, label: 'List', description: 'Create a bulleted or numbered list' },
-            { type: 'quote', icon: Quote, label: 'Quote', description: 'Add a quote' },
-            { type: 'code', icon: Code, label: 'Code', description: 'Display code snippets' },
-        ],
-    },
-    {
-        id: 'media',
-        label: 'Media',
-        blocks: [
-            { type: 'customImage', icon: Image, label: 'Image', description: 'Insert an image' },
-            { type: 'video', icon: Video, label: 'Video', description: 'Embed a video' },
-            { type: 'beforeAfter', icon: SplitSquareHorizontal, label: 'Before/After', description: 'Compare two images' },
-        ],
-    },
-    {
-        id: 'content',
-        label: 'Content',
-        blocks: [
-            { type: 'alert', icon: Lightbulb, label: 'Tip Box', description: 'Add a callout or tip' },
-            { type: 'faqSection', icon: HelpCircle, label: 'FAQ', description: 'Add frequently asked questions' },
-            { type: 'simpleTable', icon: Table2, label: 'Table', description: 'Insert a table' },
-            { type: 'relatedContent', icon: LayoutGrid, label: 'Related Content', description: 'Show related items' },
-            { type: 'divider', icon: Minus, label: 'Divider', description: 'Add a horizontal line' },
-        ],
-    },
-    {
-        id: 'recipe',
-        label: 'Recipe',
-        blocks: [
-            { type: 'mainRecipe', icon: Utensils, label: 'Recipe Details', description: 'The main recipe editor for this post' },
-        ],
-    },
-];
-
 /**
- * Block Inserter Panel
+ * Left Panel
  */
 export default function LeftPanel({
-    isOpen = true,
+    isOpen: _isOpen,
     onClose,
-    onInsertBlock,
     onConvertBlock,
-    contentType = 'article', // article, recipe, roundup
-    structureItems = [],
-    activeBlockId = null,
+    structureItems: _propStructureItems,
+    activeBlockId: _propActiveBlockId,
     onSelectBlock,
     onReorderBlock,
     onBlockAction,
     className,
 }: LeftPanelProps) {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [panelTab, setPanelTab] = useState<PanelTab>('list');
+    const [panelTab, setPanelTab] = useState<PanelTab>('outline');
     const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
-    const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(
-        blockCategories.reduce((acc, cat) => ({ ...acc, [cat.id]: true }), {})
-    );
 
-    // Filter blocks based on content type
-    const filteredCategories = useMemo(() => {
-        return blockCategories
-            .filter(cat => {
-                // Hide recipe category for non-recipe content
-                if (cat.id === 'recipe' && contentType !== 'recipe') return false;
-                return true;
-            })
-            .map(cat => ({
-                ...cat,
-                blocks: cat.blocks.filter(block => {
-                    // Filter by search query
-                    if (searchQuery) {
-                        const query = searchQuery.toLowerCase();
-                        return (
-                            block.label.toLowerCase().includes(query) ||
-                            block.description.toLowerCase().includes(query)
-                        );
+    // Consume Zustand Store values with granular selectors for optimized performance
+    const isOpen = useBlockEditorStore(s => _isOpen ?? s.inserterOpen);
+    const storeStructureItems = useBlockEditorStore(s => s.structureItems);
+    const structureItems = _propStructureItems ?? storeStructureItems;
+    const activeBlockId = useBlockEditorStore(s => _propActiveBlockId ?? s.activeBlockId);
+    const storeSetActiveBlock = useBlockEditorStore(s => s.setActiveBlock);
+    const setInserterOpen = useBlockEditorStore(s => s.setInserterOpen);
+    const editor = useBlockEditorStore(s => s.editor);
+
+    const handleClose = useCallback(() => {
+        if (onClose) {
+            onClose();
+        } else {
+            setInserterOpen(false);
+        }
+    }, [onClose, setInserterOpen]);
+
+    const handleSelectBlock = useCallback((blockId: string) => {
+        if (onSelectBlock) {
+            onSelectBlock(blockId);
+        } else {
+            storeSetActiveBlock(blockId);
+            // Smoothly scroll and focus block on outline click
+            if (editor) {
+                try {
+                    editor.setTextCursorPosition(blockId, 'start');
+                    editor.focus();
+                    const el = document.querySelector(`[data-block="${blockId}"]`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
-                    return true;
-                }),
-            }))
-            .filter(cat => cat.blocks.length > 0);
-    }, [searchQuery, contentType]);
-
-    const toggleCategory = (categoryId: string) => {
-        setExpandedCategories(prev => ({
-            ...prev,
-            [categoryId]: !prev[categoryId],
-        }));
-    };
-
-    const handleBlockClick = (blockType: string) => {
-        onInsertBlock?.(blockType);
-    };
+                } catch {}
+            }
+        }
+    }, [onSelectBlock, storeSetActiveBlock, editor]);
 
     const outlineItems = useMemo(
         () => structureItems.filter((item) => item.type === 'heading'),
@@ -354,7 +110,7 @@ export default function LeftPanel({
     const visibleStructureItems = useMemo(() => {
         let items = panelTab === 'outline' ? outlineItems : structureItems;
 
-        // Filter out trailing empty paragraph if it exists (common system-added block)
+        // Filter out trailing empty paragraph if it exists
         if (panelTab === 'list' && items.length > 1) {
             const last = items[items.length - 1];
             if (last.type === 'paragraph' && (!last.label || last.label.trim() === '')) {
@@ -363,6 +119,7 @@ export default function LeftPanel({
         }
         return items;
     }, [panelTab, outlineItems, structureItems]);
+
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
     );
@@ -430,97 +187,120 @@ export default function LeftPanel({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -280, opacity: 0 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            style={{ width: '270px' }}
+            style={{ width: '280px' }}
             className={cn(
-                'wp-block-inserter',
-                'h-full min-h-0 overflow-hidden',
-                'bg-[var(--wp-inserter-bg)] border-r border-[var(--wp-inserter-border)]',
-                'flex flex-col',
+                'wp-block-inserter relative h-full min-h-0 overflow-hidden flex flex-col',
+                'bg-background/80 backdrop-blur-md border-r border-border/80 shadow-2xl',
                 className
             )}
         >
-            <div className="px-3 py-2 border-b border-border">
-                <div className="structure-tabs justify-between w-full">
-                    <div className="flex items-center gap-1">
+            <div className="h-11 border-b border-border/50 bg-background/60">
+                <div className="relative flex h-full items-center w-full px-2">
+                    {/* Tabs — centered */}
+                    <div className="flex h-full items-center justify-center flex-1 gap-1">
                         <button
                             type="button"
-                            className={cn('structure-tab', panelTab === 'list' && 'is-active')}
+                            className={cn(
+                                'relative flex h-11 items-center gap-1.5 px-3 text-xs font-semibold transition-all duration-200',
+                                panelTab === 'list' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                            )}
                             onClick={() => setPanelTab('list')}
                         >
-                            <ListTree className="w-3.5 h-3.5" />
+                            <ListTree className="w-3.5 h-3.5 shrink-0" />
                             List View
+                            {panelTab === 'list' && (
+                                <motion.span
+                                    layoutId="left-panel-tab-indicator"
+                                    className="absolute inset-x-0 bottom-0 h-0.5 bg-primary rounded-full"
+                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                />
+                            )}
                         </button>
                         <button
                             type="button"
-                            className={cn('structure-tab', panelTab === 'outline' && 'is-active')}
+                            className={cn(
+                                'relative flex h-11 items-center gap-1.5 px-3 text-xs font-semibold transition-all duration-200',
+                                panelTab === 'outline' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                            )}
                             onClick={() => setPanelTab('outline')}
                         >
-                            <BookOpen className="w-3.5 h-3.5" />
+                            <BookOpen className="w-3.5 h-3.5 shrink-0" />
                             Outline
+                            {panelTab === 'outline' && (
+                                <motion.span
+                                    layoutId="left-panel-tab-indicator"
+                                    className="absolute inset-x-0 bottom-0 h-0.5 bg-primary rounded-full"
+                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                />
+                            )}
                         </button>
                     </div>
-                    {onClose && (
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className={cn(
-                                'flex items-center justify-center',
-                                'w-7 h-7 rounded-sm',
-                                'text-muted-foreground hover:text-foreground',
-                                'hover:bg-muted'
-                            )}
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    )}
+
+                    {/* Close button — absolute right */}
+                    <button
+                        type="button"
+                        onClick={handleClose}
+                        className="absolute right-2 group flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-200 cursor-pointer shrink-0"
+                        aria-label="Close panel"
+                    >
+                        <PanelLeftClose className="w-4 h-4 transition-all duration-200 group-hover:text-primary group-hover:scale-110" />
+                    </button>
                 </div>
             </div>
 
-
-
-            <ScrollArea className="flex-1 min-h-0">
-                {(
-                    <div className="structure-panel-list">
-                        {visibleStructureItems.length === 0 ? (
-                            <div className="structure-empty">No blocks yet.</div>
-                        ) : (
-                            <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragStart={handleDragStart}
-                                onDragOver={handleDragOver}
-                                onDragEnd={handleDragEnd}
-                                onDragCancel={handleDragCancel}
+            <ScrollArea className="flex-1 min-h-0 py-2">
+                <div className="structure-panel-list">
+                    {visibleStructureItems.length === 0 ? (
+                        <div className="structure-empty text-center py-8 text-xs text-muted-foreground font-medium animate-pulse">
+                            No headings or blocks yet.
+                        </div>
+                    ) : (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragStart={handleDragStart}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                            onDragCancel={handleDragCancel}
+                        >
+                            <SortableContext
+                                items={visibleStructureItems.map((item) => item.id)}
+                                strategy={verticalListSortingStrategy}
                             >
-                                <SortableContext
-                                    items={visibleStructureItems.map((item) => item.id)}
-                                    strategy={verticalListSortingStrategy}
-                                >
+                                <AnimatePresence initial={false}>
                                     {visibleStructureItems.map((item) => {
                                         const isOutline = panelTab === 'outline';
                                         const headingDepth = Math.max(0, (item.level || 2) - 2);
                                         const indentDepth = isOutline ? headingDepth : (item.depth || 0);
                                         const showConvertOptions = item.type === 'heading' || item.type === 'paragraph';
                                         return (
-                                            <SortableStructureItem
+                                            <motion.div
                                                 key={item.id}
-                                                item={item}
-                                                activeBlockId={activeBlockId}
-                                                onSelectBlock={onSelectBlock}
-                                                onConvertBlock={onConvertBlock}
-                                                onBlockAction={onBlockAction}
-                                                dropTarget={dropTarget}
-                                                isSortableEnabled={isSortableEnabled}
-                                                indentDepth={indentDepth}
-                                                showConvertOptions={showConvertOptions}
-                                            />
+                                                initial={{ opacity: 0, y: -4 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                transition={{ duration: 0.15 }}
+                                            >
+                                                <SortableStructureItem
+                                                    item={item}
+                                                    activeBlockId={activeBlockId}
+                                                    onSelectBlock={handleSelectBlock}
+                                                    onConvertBlock={onConvertBlock}
+                                                    onBlockAction={onBlockAction}
+                                                    dropTarget={dropTarget}
+                                                    isSortableEnabled={isSortableEnabled}
+                                                    indentDepth={indentDepth}
+                                                    showConvertOptions={showConvertOptions}
+                                                    isOutlineView={isOutline}
+                                                />
+                                            </motion.div>
                                         );
                                     })}
-                                </SortableContext>
-                            </DndContext>
-                        )}
-                    </div>
-                )}
+                                </AnimatePresence>
+                            </SortableContext>
+                        </DndContext>
+                    )}
+                </div>
             </ScrollArea>
         </motion.div>
     );
