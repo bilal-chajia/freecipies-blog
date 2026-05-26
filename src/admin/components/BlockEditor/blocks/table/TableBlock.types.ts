@@ -7,8 +7,3 @@ export interface InsertIndicator {
   width?: number;
   height?: number;
 }
-
-export interface TableUpdates {
-  headersJson?: string;
-  rowsJson?: string;
-}
