@@ -13,13 +13,8 @@ import { createReactBlockSpec } from '@blocknote/react';
 import {
   HelpCircle,
   Plus,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
-  GripVertical
 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   DndContext,
   closestCenter,
@@ -34,10 +29,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-  useSortable,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import type { CSSProperties, Ref } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
 import { Badge } from '@/ui/badge';
@@ -45,35 +37,13 @@ import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/Blo
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockSelection } from '../selection-context';
 import { useBlockEditorSourceData } from '../source-data-context';
-import { toInlineMarkdownHtml } from '../utils/safeInlineHtml';
 import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+import SortableFAQItem from './faq/SortableFAQItem';
+import type { FAQItem, FAQItemField, IndexState } from './faq/FAQBlock.types';
 
 /**
  * Parse FAQ items from the itemsJson prop.
  */
-type FAQItem = {
-  q: string;
-  a: string;
-};
-
-type IndexState = Record<number, boolean>;
-
-type FAQItemField = keyof FAQItem;
-
-type SortableFAQItemProps = {
-  idx: number;
-  item: FAQItem;
-  isSelected: boolean;
-  expanded: IndexState;
-  editing: IndexState;
-  onToggleExpand: (idx: number) => void;
-  onUpdateItem: (idx: number, field: FAQItemField, value: string) => void;
-  onRemoveItem: (idx: number) => void;
-  onStartEditing: (idx: number) => void;
-  onStopEditing: (idx: number) => void;
-  answerRef: Ref<HTMLTextAreaElement>;
-};
-
 function parseItems(itemsJson: string): FAQItem[] {
   try {
     const parsed = JSON.parse(itemsJson || '[]');
@@ -104,165 +74,7 @@ function parseFaqDocument(value: unknown): Record<string, unknown> {
   }
 }
 
-/**
- * Sortable FAQ Item Component
- */
-function SortableFAQItem({
-  idx,
-  item,
-  isSelected,
-  expanded,
-  editing,
-  onToggleExpand,
-  onUpdateItem,
-  onRemoveItem,
-  onStartEditing,
-  onStopEditing,
-  answerRef,
-}: SortableFAQItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: `faq-item-${idx}` });
-
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 10 : 1,
-    position: 'relative',
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "p-4 group bg-card",
-        isDragging && "shadow-lg border-primary/20",
-        !isDragging && "hover:bg-muted/30"
-      )}
-    >
-      <div className="flex items-start gap-2">
-        {/* Drag handle - only when selected */}
-        {isSelected && (
-          <div
-            className="mt-1 text-muted-foreground/50 cursor-grab active:cursor-grabbing hover:text-primary transition-colors p-1 -m-1"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="w-4 h-4" />
-          </div>
-        )}
-
-        {/* Expand toggle */}
-        <button
-          onClick={() => onToggleExpand(idx)}
-          className="mt-1 text-muted-foreground hover:text-foreground"
-        >
-          {expanded[idx]
-            ? <ChevronDown className="w-4 h-4" />
-            : <ChevronRight className="w-4 h-4" />
-          }
-        </button>
-
-        {/* Question/Answer */}
-        <div className="flex-1 space-y-2 min-w-0">
-          <input
-            type="text"
-            value={item.q}
-            onChange={(e) => onUpdateItem(idx, 'q', e.target.value)}
-            placeholder="Question"
-            className={cn(
-              'w-full font-medium text-sm',
-              'bg-transparent border-none p-0',
-              'focus:outline-none focus:ring-0',
-              'placeholder:text-muted-foreground/50'
-            )}
-          />
-
-          <AnimatePresence>
-            {expanded[idx] && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                {editing[idx] ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-end">
-                      <button
-                        type="button"
-                        onClick={() => onStopEditing(idx)}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        Done
-                      </button>
-                    </div>
-                    <textarea
-                      ref={answerRef}
-                      value={item.a}
-                      onChange={(e) => onUpdateItem(idx, 'a', e.target.value)}
-                      placeholder="Answer (supports [text](url) for links)"
-                      className={cn(
-                        'w-full text-sm text-muted-foreground',
-                        'bg-muted/50 border border-input rounded-md',
-                        'p-2 resize-y min-h-[80px]',
-                        'focus:outline-none focus:ring-2 focus:ring-ring'
-                      )}
-                    />
-                  </div>
-                ) : (
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => onStartEditing(idx)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onStartEditing(idx);
-                      }
-                    }}
-                    className={cn(
-                      'text-sm text-muted-foreground',
-                      'cursor-pointer hover:bg-muted/50 rounded p-1 -m-1',
-                      '[&_a]:text-primary [&_a]:underline'
-                    )}
-                    dangerouslySetInnerHTML={
-                      toInlineMarkdownHtml(item.a || 'Click to add an answer...')
-                    }
-                  />
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Delete button */}
-        {isSelected && (
-          <button
-            onClick={() => onRemoveItem(idx)}
-            className={cn(
-              'text-muted-foreground/50',
-              'hover:text-destructive',
-              'opacity-0 group-hover:opacity-100',
-              'transition-opacity p-1 -m-1'
-            )}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export const FAQSectionBlock = createReactBlockSpec(
+const FAQSectionBlock = createReactBlockSpec(
   {
     type: 'faqSection',
     propSchema: {
@@ -450,8 +262,6 @@ export const FAQSectionBlock = createReactBlockSpec(
           isSelected={isSelected}
           toolbar={toolbar}
           onClick={selectBlock}
-          onFocus={selectBlock}
-          onPointerDownCapture={selectBlock}
           blockType="faq"
           blockId={block.id}
           className="my-6"
@@ -465,16 +275,19 @@ export const FAQSectionBlock = createReactBlockSpec(
             {/* Header */}
             <div className="bg-muted/50 p-4 border-b flex items-center justify-between">
               <input
+                id={`faq-title-${block.id}`}
+                name={`faq-title-${block.id}`}
                 type="text"
                 value={title}
                 onChange={(e) => updateTitle(e.target.value)}
                 className={cn(
                   'text-lg font-semibold flex-1',
                   'bg-transparent border-none p-0',
-                  'focus:outline-none focus:ring-0',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
                   'placeholder:text-muted-foreground/50'
                 )}
                 placeholder="FAQ Section Title"
+                aria-label="FAQ Section Title"
               />
               <Badge variant="outline" className="ml-2 font-mono whitespace-nowrap opacity-70 group-hover:opacity-100 transition-opacity">
                 {items.length} Q
@@ -512,6 +325,7 @@ export const FAQSectionBlock = createReactBlockSpec(
                     {items.map((item, idx) => (
                       <SortableFAQItem
                         key={`faq-item-${idx}`}
+                        blockId={block.id}
                         idx={idx}
                         item={item}
                         isSelected={isSelected}
