@@ -17,6 +17,7 @@ import { Input } from './input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { Checkbox } from './checkbox';
+import { Skeleton } from './skeleton';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
@@ -194,52 +195,55 @@ function DataTable<TData>({
         </div>
       )}
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id} className={(header.column.columnDef.meta as any)?.className}>
-                      {header.isPlaceholder ? null : (
-                        <div
-                          className={
-                            header.column.getCanSort()
-                              ? 'flex items-center space-x-2 cursor-pointer select-none hover:bg-muted/50 rounded px-2 py-1'
-                              : ''
-                          }
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {header.column.getCanSort() && (
-                            <div className="flex items-center">
-                              {{
-                                asc: <ChevronUp className="h-4 w-4" />,
-                                desc: <ChevronDown className="h-4 w-4" />,
-                              }[header.column.getIsSorted() as string] ?? (
-                                <ChevronsUpDown className="h-4 w-4 opacity-50" />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                return (
+                  <TableHead key={header.id} className={(header.column.columnDef.meta as any)?.className}>
+                    {header.isPlaceholder ? null : (
+                      <div
+                        className={
+                          header.column.getCanSort()
+                            ? 'flex items-center space-x-2 cursor-pointer select-none hover:bg-muted/50 rounded px-2 py-1'
+                            : ''
+                        }
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanSort() && (
+                          <div className="flex items-center">
+                            {{
+                              asc: <ChevronUp className="h-4 w-4" />,
+                              desc: <ChevronDown className="h-4 w-4" />,
+                            }[header.column.getIsSorted() as string] ?? (
+                              <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={table.getAllColumns().length} className="h-24 text-center">
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                    <span className="ml-2">Loading...</span>
-                  </div>
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 5 }).map((_, rowIndex) => (
+                <TableRow key={`skeleton-row-${rowIndex}`}>
+                  {table.getHeaderGroups()[0]?.headers.map((header) => (
+                    <TableCell
+                      key={`skeleton-cell-${rowIndex}-${header.id}`}
+                      className={(header.column.columnDef.meta as any)?.className}
+                    >
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
@@ -263,7 +267,6 @@ function DataTable<TData>({
             )}
           </TableBody>
         </Table>
-      </div>
 
       {enablePagination && (manualPagination ? (totalCount ?? 0) > pageSize : table.getRowCount() > pageSize) && (
         <div className="flex items-center justify-between">

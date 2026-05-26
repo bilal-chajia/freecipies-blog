@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, ChevronsUpDown, Search, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { LoadingState } from '@/components/ui/LoadingState';
 import { cn } from "@/lib/utils";
 import { Button } from "@/ui/button";
 import {
@@ -108,7 +109,7 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
                     <CommandList>
                         {loading && (
                             <div className="flex items-center justify-center py-6">
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                <LoadingState variant="inline" />
                             </div>
                         )}
                         {!loading && results.length === 0 && query.length >= 2 && (

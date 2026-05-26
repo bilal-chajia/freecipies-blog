@@ -130,13 +130,28 @@ export default function TagSelector({
                                                 type="button"
                                                 onClick={() => handleSelect(tag.id)}
                                                 className={cn(
-                                                    "inline-flex items-center rounded-full border transition-colors",
+                                                    "inline-flex items-center rounded-full border transition-colors font-medium",
                                                     chipSizeClass,
                                                     isSelected
-                                                        ? "bg-primary text-primary-foreground border-primary"
+                                                        ? ""
                                                         : "bg-muted/60 text-foreground border-transparent hover:bg-muted"
                                                 )}
-                                                style={tagColor ? { borderColor: tagColor } : undefined}
+                                                style={isSelected
+                                                    ? tagColor 
+                                                        ? { 
+                                                            backgroundColor: `${tagColor}15`, 
+                                                            color: tagColor, 
+                                                            borderColor: `${tagColor}30` 
+                                                          }
+                                                        : {
+                                                            backgroundColor: "var(--brand-primary-light)",
+                                                            color: "var(--brand-primary)",
+                                                            borderColor: "rgba(37, 99, 235, 0.2)"
+                                                          }
+                                                    : tagColor 
+                                                        ? { borderColor: `${tagColor}40` } 
+                                                        : undefined
+                                                }
                                             >
                                                 {tag.label}
                                             </button>
@@ -182,9 +197,17 @@ export default function TagSelector({
                         return (
                             <Badge
                                 key={tagId}
-                                variant="secondary"
-                                className={cn("px-2 py-1 gap-1", badgeClassName)}
-                                style={tagColor ? { borderColor: tagColor } : undefined}
+                                variant="outline"
+                                className={cn("px-2 py-1 gap-1 border font-medium", badgeClassName)}
+                                style={tagColor ? { 
+                                    backgroundColor: `${tagColor}15`, 
+                                    color: tagColor, 
+                                    borderColor: `${tagColor}30` 
+                                } : {
+                                    backgroundColor: "var(--brand-primary-light)",
+                                    color: "var(--brand-primary)",
+                                    borderColor: "rgba(37, 99, 235, 0.2)"
+                                }}
                             >
                                 {getTagLabel(tagId)}
                                 <button

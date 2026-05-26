@@ -58,21 +58,23 @@ import {
   DropdownMenuTrigger,
 } from "@/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/ui/avatar";
+import { Switch } from "@/ui/switch";
+import { cn } from "@/lib/utils";
 import { useUIStore, useAuthStore } from "../store/useStore";
 import { clearAllAdminCache } from "../services/api-client";
 
 // Navigation data structure
-const navGroups = [
+const navGroups: NavGroup[] = [
   {
     title: "Main",
     items: [
       { title: "Dashboard", url: "/", icon: LayoutDashboard },
       { title: "Homepage", url: "/homepage", icon: Home },
+      { title: "Media Library", url: "/media", icon: Image },
     ],
   },
   {
     title: "Blog",
-    icon: FileText,
     items: [
       {
         title: "Content",
@@ -82,7 +84,7 @@ const navGroups = [
           { title: "Blog Posts", url: "/articles", icon: FileText },
           { title: "Recipes", url: "/recipes", icon: Utensils },
           { title: "Roundups", url: "/roundups", icon: Layers },
-        ]
+        ],
       },
       { title: "Categories", url: "/categories", icon: FolderOpen },
       { title: "Authors", url: "/authors", icon: Users },
@@ -99,14 +101,9 @@ const navGroups = [
     ],
   },
   {
-    title: "Settings",
-    icon: Settings,
-    url: "/settings/general",  // Single link - sub-navigation handled by SettingsLayout
-  },
-  {
-    title: "General",
+    title: "System",
     items: [
-      { title: "Media", url: "/media", icon: Image },
+      { title: "Settings", url: "/settings/general", icon: Settings },
       { title: "Redirects", url: "/redirects", icon: ArrowRightLeft },
     ],
   },
@@ -125,7 +122,148 @@ interface NavGroup {
   title: string;
   icon?: React.ElementType;
   url?: string;
-  items?: NavItem[];
+  items: NavItem[];
+}
+
+function CollapsedSubmenu({ item, ItemIcon }: { item: NavItem; ItemIcon?: React.ElementType }) {
+  const [open, setOpen] = React.useState(false);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    timerRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 150);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+      <DropdownMenuTrigger asChild>
+        <SidebarMenuButton
+          tooltip={undefined}
+          className="cursor-pointer"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          {ItemIcon && <ItemIcon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
+          <span>{item.title}</span>
+        </SidebarMenuButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        side="right"
+        align="start"
+        sideOffset={8}
+        className="min-w-48"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {item.items?.map((subItem) => {
+          const SubItemIcon = subItem.icon;
+          return (
+            <DropdownMenuItem key={subItem.title} asChild>
+              <Link to={subItem.url ?? "#"} className="w-full flex items-center gap-2 cursor-pointer">
+                {SubItemIcon && <SubItemIcon className="h-4 w-4 text-muted-foreground/80" />}
+                <span>{subItem.title}</span>
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function CollapsedGroup({ group }: { group: NavGroup }) {
+  const [open, setOpen] = React.useState(false);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    timerRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 150);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const GroupIcon = group.icon;
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+      <DropdownMenuTrigger asChild>
+        <SidebarMenuButton
+          tooltip={undefined}
+          className="cursor-pointer"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          {GroupIcon && <GroupIcon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
+          <span>{group.title}</span>
+        </SidebarMenuButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        side="right"
+        align="start"
+        sideOffset={8}
+        className="min-w-48"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <DropdownMenuLabel>{group.title}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {group.items.map((item) => {
+          const ItemIcon = item.icon;
+          if (item.isSubmenu) {
+            return (
+              <React.Fragment key={item.title}>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal py-1 px-2">{item.title}</DropdownMenuLabel>
+                {item.items?.map((subItem) => {
+                  const SubItemIcon = subItem.icon;
+                  return (
+                    <DropdownMenuItem key={subItem.title} asChild>
+                      <Link to={subItem.url ?? "#"} className="w-full flex items-center gap-2 cursor-pointer pl-4">
+                        {SubItemIcon && <SubItemIcon className="h-4 w-4 text-muted-foreground/80" />}
+                        <span>{subItem.title}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </React.Fragment>
+            );
+          }
+          return (
+            <DropdownMenuItem key={item.title} asChild>
+              <Link to={item.url ?? "#"} className="w-full flex items-center gap-2 cursor-pointer">
+                {ItemIcon && <ItemIcon className="h-4 w-4 text-muted-foreground/80" />}
+                <span>{item.title}</span>
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 interface AppSidebarProps extends React.ComponentPropsWithoutRef<typeof Sidebar> {}
@@ -142,6 +280,9 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
   const isActive = (url: string | undefined): boolean => {
     if (!url) return false;
     if (url === "/") return location.pathname === url;
+    if (url.startsWith("/settings")) {
+      return location.pathname.startsWith("/settings");
+    }
     return location.pathname === url || location.pathname.startsWith(url + "/");
   };
 
@@ -189,20 +330,62 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                 <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {group.items.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive(item.url)}
-                          tooltip={item.title}
-                        >
+                    {group.items.map((item) => {
+                      const ItemIcon = item.icon;
+                      return item.isSubmenu ? (
+                        isCollapsed ? (
+                          <SidebarMenuItem key={item.title}>
+                            <CollapsedSubmenu item={item} ItemIcon={ItemIcon} />
+                          </SidebarMenuItem>
+                        ) : (
+                          <Collapsible
+                            key={item.title}
+                            defaultOpen={item.items?.some((sub) => isActive(sub.url))}
+                            className="group/submenu w-full"
+                          >
+                            <SidebarMenuItem>
+                              <CollapsibleTrigger asChild>
+                                <SidebarMenuButton tooltip={item.title} className="cursor-pointer">
+                                  {ItemIcon && <ItemIcon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
+                                  <span>{item.title}</span>
+                                  <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/submenu:rotate-90" />
+                                </SidebarMenuButton>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub className="ml-2 border-l border-border/50">
+                                  {item.items?.map((subItem) => {
+                                    const SubItemIcon = subItem.icon;
+                                    return (
+                                      <SidebarMenuSubItem key={subItem.title}>
+                                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                                          <Link to={subItem.url ?? "#"}>
+                                            {SubItemIcon && <SubItemIcon className="h-3.5 w-3.5 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
+                                            <span>{subItem.title}</span>
+                                          </Link>
+                                        </SidebarMenuSubButton>
+                                      </SidebarMenuSubItem>
+                                    );
+                                  })}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </SidebarMenuItem>
+                          </Collapsible>
+                        )
+                      ) : (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive(item.url)}
+                            tooltip={item.title}
+                          >
                             <Link to={item.url ?? "#"}>
-                            <item.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                              {ItemIcon && <ItemIcon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </>
@@ -216,78 +399,90 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                     tooltip={group.title}
                   >
                     <Link to={group.url}>
-                      <group.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
+                      {group.icon && <group.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
                       <span>{group.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
-            ) : group.items ? (
+            ) : (
               /* Collapsible group */
-              <Collapsible
-                defaultOpen={isGroupActive(group.items)}
-                className="group/collapsible"
-              >
+              isCollapsed ? (
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton tooltip={group.title}>
-                        <group.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
-                        <span>{group.title}</span>
-                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {group.items.map((item) => (
-                          item.isSubmenu ? (
-                            // Nested submenu (e.g., Content > Articles/Recipes/Roundups)
-                            <Collapsible key={item.title} defaultOpen={item.items?.some(sub => isActive(sub.url))} className="group/submenu">
-                              <SidebarMenuSubItem>
-                                <CollapsibleTrigger asChild>
-                                  <SidebarMenuSubButton className="cursor-pointer">
-                                    <item.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
-                                    <span>{item.title}</span>
-                                    <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/submenu:rotate-90" />
-                                  </SidebarMenuSubButton>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                  <SidebarMenuSub className="ml-2 border-l border-border/50">
-                                    {item.items.map((subItem) => (
-                                      <SidebarMenuSubItem key={subItem.title}>
-                                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                                          <Link to={subItem.url ?? "#"}>
-                                            <subItem.icon className="h-3.5 w-3.5 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
-                                            <span>{subItem.title}</span>
-                                          </Link>
-                                        </SidebarMenuSubButton>
-                                      </SidebarMenuSubItem>
-                                    ))}
-                                  </SidebarMenuSub>
-                                </CollapsibleContent>
-                              </SidebarMenuSubItem>
-                            </Collapsible>
-                          ) : (
-                            // Regular menu item
-                            <SidebarMenuSubItem key={item.title}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={isActive(item.url)}
-                              >
-                                <Link to={item.url ?? "#"}>
-                                <item.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />
-                                  <span>{item.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          )
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
+                    <CollapsedGroup group={group} />
                   </SidebarMenuItem>
                 </SidebarMenu>
-              </Collapsible>
-            ) : null}
+              ) : (
+                <Collapsible
+                  defaultOpen={isGroupActive(group.items)}
+                  className="group/collapsible"
+                >
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton tooltip={group.title}>
+                          {group.icon && <group.icon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
+                          <span>{group.title}</span>
+                          <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {group.items.map((item) => {
+                            const ItemIcon = item.icon;
+                            return item.isSubmenu ? (
+                              // Nested submenu (e.g., Content > Articles/Recipes/Roundups)
+                              <Collapsible key={item.title} defaultOpen={item.items?.some(sub => isActive(sub.url))} className="group/submenu">
+                                <SidebarMenuSubItem>
+                                  <CollapsibleTrigger asChild>
+                                    <SidebarMenuSubButton className="cursor-pointer">
+                                      {ItemIcon && <ItemIcon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
+                                      <span>{item.title}</span>
+                                      <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/submenu:rotate-90" />
+                                    </SidebarMenuSubButton>
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent>
+                                    <SidebarMenuSub className="ml-2 border-l border-border/50">
+                                      {item.items?.map((subItem) => {
+                                        const SubItemIcon = subItem.icon;
+                                        return (
+                                          <SidebarMenuSubItem key={subItem.title}>
+                                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                                              <Link to={subItem.url ?? "#"}>
+                                                {SubItemIcon && <SubItemIcon className="h-3.5 w-3.5 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
+                                                <span>{subItem.title}</span>
+                                              </Link>
+                                            </SidebarMenuSubButton>
+                                          </SidebarMenuSubItem>
+                                        );
+                                      })}
+                                    </SidebarMenuSub>
+                                  </CollapsibleContent>
+                                </SidebarMenuSubItem>
+                              </Collapsible>
+                            ) : (
+                              // Regular menu item
+                              <SidebarMenuSubItem key={item.title}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={isActive(item.url)}
+                                >
+                                  <Link to={item.url ?? "#"}>
+                                    {ItemIcon && <ItemIcon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
+                                    <span>{item.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            );
+                          })}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </Collapsible>
+              )
+            )}
           </SidebarGroup>
         ))}
       </SidebarContent>
@@ -297,14 +492,20 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
         <SidebarMenu>
           {/* Theme Toggle */}
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={toggleTheme} tooltip="Toggle Theme">
-              {theme === "dark" ? (
-                <Sun className="size-4" />
-              ) : (
-                <Moon className="size-4" />
+            <div className={cn(
+              "flex items-center px-3 py-2",
+              isCollapsed ? "justify-center px-0" : "justify-between"
+            )}>
+              {!isCollapsed && (
+                <span className="text-xs font-medium text-muted-foreground">Theme</span>
               )}
-              <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-            </SidebarMenuButton>
+              <Switch
+                checked={theme === 'dark'}
+                onCheckedChange={toggleTheme}
+                aria-label="Toggle dark mode"
+                className={isCollapsed ? "h-5 w-9" : undefined}
+              />
+            </div>
           </SidebarMenuItem>
 
           {/* User Dropdown */}

@@ -3,68 +3,8 @@
  * Uses design tokens from src/shared/design-tokens.css
  * ======================================== */
 
-/* Block Editor Animations */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-primary) 40%, transparent);
-  }
-  70% {
-    box-shadow: 0 0 0 8px transparent;
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-/* Slide In Animation */
-.slide-in {
-  animation: slideIn var(--transition-base) var(--ease-out);
-}
-
-/* Fade In Animation */
-.fade-in {
-  animation: fadeIn var(--transition-base) var(--ease-out);
-}
-
-/* Scale In Animation */
-.scale-in {
-  animation: scaleIn var(--transition-spring) var(--ease-spring);
-}
-
-/* Pulse ring for focus/active states */
-.pulse-ring {
-  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
 
 /* Spin animation */
@@ -80,6 +20,8 @@
 
 .block-editor:focus-within {
   outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 /* Empty block placeholder */
@@ -154,34 +96,6 @@
 
 .image-upload-overlay:hover {
   opacity: 1;
-}
-
-/* Loading skeleton */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--neutral-100) 25%,
-    var(--neutral-200) 50%,
-    var(--neutral-100) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-md);
-}
-
-.dark .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--neutral-800) 25%,
-    var(--neutral-700) 50%,
-    var(--neutral-800) 75%
-  );
-  background-size: 200% 100%;
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
 }
 
 /* Recipe builder styles */
@@ -285,4 +199,18 @@
   .block-editor-toolbar {
     display: none !important;
   }
+}
+
+/* Custom Blocks width and centering override in the Editor */
+.wp-block--custom {
+  max-width: min(840px, calc(100% - 6rem)) !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Constraint parent ProseMirror wrappers for all custom blocks to center the blue selection outline */
+.block-editor-wrapper .bn-editor [data-block-root="true"]:has(.wp-block--custom) {
+  max-width: min(840px, calc(100% - 6rem)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }

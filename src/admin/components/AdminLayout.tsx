@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useLocation, Link } from "react-router-dom";
 import { AnimatedOutlet } from "./AnimatedOutlet";
+import PageLoader from "./PageLoader";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -94,45 +95,49 @@ const AdminLayout: React.FC = () => {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className={insetClassName}>
-        <header className={headerClassName}>
-          <Breadcrumb>
-            <BreadcrumbList>
-              {breadcrumbs.map((crumb, index) => (
-                <React.Fragment key={crumb.path}>
-                  {index > 0 && <BreadcrumbSeparator />}
-                  <BreadcrumbItem>
-                    {index === breadcrumbs.length - 1 ? (
-                      <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink asChild>
-                        <Link to={crumb.path}>
-                          {crumb.label}
-                        </Link>
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                </React.Fragment>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
+        {!isEditorPage && (
+          <header className={headerClassName}>
+            <Breadcrumb>
+              <BreadcrumbList>
+                {breadcrumbs.map((crumb, index) => (
+                  <React.Fragment key={crumb.path}>
+                    {index > 0 && <BreadcrumbSeparator />}
+                    <BreadcrumbItem>
+                      {index === breadcrumbs.length - 1 ? (
+                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink asChild>
+                          <Link to={crumb.path}>
+                            {crumb.label}
+                          </Link>
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                  </React.Fragment>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-2 text-xs text-muted-foreground"
-            onClick={() => setSearchOpen(true)}
-          >
-            <Search className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Search...</span>
-            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </Button>
-        </header>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-2 text-xs text-muted-foreground"
+              onClick={() => setSearchOpen(true)}
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Search...</span>
+              <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </Button>
+          </header>
+        )}
 
         <main className={mainClassName}>
           <div className={contentClassName}>
-            <AnimatedOutlet />
+            <React.Suspense fallback={<PageLoader />}>
+              <AnimatedOutlet />
+            </React.Suspense>
           </div>
         </main>
       </SidebarInset>

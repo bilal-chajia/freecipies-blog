@@ -228,6 +228,9 @@ const ContentListBase = ({
         try {
             await articlesAPI.delete(deleteModal.itemToDelete);
             toast.success('Item deleted successfully');
+            setCategories([]);
+            setAuthors([]);
+            setTags([]);
             loadArticles();
         } catch (error) {
             toast.error('Failed to delete item');
@@ -241,6 +244,9 @@ const ContentListBase = ({
             const nextStatus = currentStatus === 'published' ? 'draft' : 'published';
             await articlesAPI.setWorkflowStatus(id, nextStatus);
             toast.success(`Moved to ${nextStatus === 'published' ? 'Published' : 'Drafts'}`);
+            setCategories([]);
+            setAuthors([]);
+            setTags([]);
             loadArticles();
         } catch (error) {
             toast.error('Failed to update status');
@@ -333,7 +339,7 @@ const ContentListBase = ({
                             <div className="flex items-center gap-2">
                                 <Link
                                     to={`${editPathPrefix}/${item[editIdField]}`}
-                                    className="font-semibold text-foreground hover:text-primary transition-colors truncate max-w-[280px]"
+                                    className="font-semibold text-foreground hover:text-primary transition-colors truncate max-w-[280px] focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none rounded-sm"
                                 >
                                     {item.label}
                                 </Link>

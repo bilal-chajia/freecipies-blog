@@ -303,7 +303,7 @@ export function useImageUploadSettings(): UseImageUploadSettingsReturn {
       return data;
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error(String(e));
-      if (err.name === 'AbortError') {
+      if (err.name === 'AbortError' || err.name === 'CanceledError' || err.message === 'canceled') {
         return null;
       }
       console.error('Failed to fetch image upload settings:', e);

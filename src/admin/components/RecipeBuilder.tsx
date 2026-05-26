@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
@@ -125,6 +125,20 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
     const [jsonMode, setJsonMode] = useState(false);
     const [jsonEditValue, setJsonEditValue] = useState('');
 
+    const lastPropagatedValueRef = useRef<string>('');
+    const onChangeRef = useRef(onChange);
+    onChangeRef.current = onChange;
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Clean up timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
+
     // AI Generation state
     const [aiDialogOpen, setAiDialogOpen] = useState(false);
     const [aiPrompt, setAiPrompt] = useState('');
@@ -162,7 +176,10 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
                     instructions: generated.instructions || defaultRecipe.instructions,
                 };
                 setData(newData);
-                onChange(JSON.stringify(newData, null, 2));
+                const serialized = JSON.stringify(newData, null, 2);
+                lastPropagatedValueRef.current = serialized;
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                onChange(serialized);
                 setAiDialogOpen(false);
                 setAiPrompt('');
             } else {
@@ -176,6 +193,9 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
     };
 
     useEffect(() => {
+        if (value === lastPropagatedValueRef.current) {
+            return;
+        }
         try {
             if (value && value !== '{}') {
                 const parsed = JSON.parse(value) as Record<string, unknown>;
@@ -189,9 +209,21 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
     }, [value]);
 
     const updateData = (updates: Partial<EditableRecipeJson>) => {
-        const newData = { ...data, ...updates };
-        setData(newData);
-        onChange(JSON.stringify(newData, null, 2));
+        setData(prevData => {
+            const newData = { ...prevData, ...updates };
+
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+
+            timeoutRef.current = setTimeout(() => {
+                const serialized = JSON.stringify(newData, null, 2);
+                lastPropagatedValueRef.current = serialized;
+                onChangeRef.current(serialized);
+            }, 300);
+
+            return newData;
+        });
     };
 
     const handleInputChange = (field: RecipeField, val: EditableRecipeJson[RecipeField]) => {
@@ -513,13 +545,16 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
                         <Button
                             onClick={() => {
                                 try {
-                                const parsed = JSON.parse(jsonEditValue) as Record<string, unknown>;
-                                const migrated = migrateRecipeData(parsed);
-                                setData(migrated);
-                                onChange(JSON.stringify(migrated, null, 2));
-                                setJsonError('');
-                            } catch (e) {
-                                setJsonError('Invalid JSON: ' + (e instanceof Error ? e.message : 'Unknown error'));
+                                    const parsed = JSON.parse(jsonEditValue) as Record<string, unknown>;
+                                    const migrated = migrateRecipeData(parsed);
+                                    setData(migrated);
+                                    const serialized = JSON.stringify(migrated, null, 2);
+                                    lastPropagatedValueRef.current = serialized;
+                                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                                    onChange(serialized);
+                                    setJsonError('');
+                                } catch (e) {
+                                    setJsonError('Invalid JSON: ' + (e instanceof Error ? e.message : 'Unknown error'));
                                 }
                             }}
                         >
@@ -549,11 +584,13 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
                     {/* Rating & Social Proof */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-primary/5 border border-primary/10 rounded-xl">
                         <div className="space-y-2">
-                            <Label className="flex items-center gap-2 text-primary">
+                            <Label htmlFor="recipe-rating-value" className="flex items-center gap-2 text-primary">
                                 <Star className="size-4 fill-primary" /> Recipe Rating (0-5)
                             </Label>
                             <div className="flex items-center gap-3">
                                 <Input
+                                    id="recipe-rating-value"
+                                    name="recipe_rating_value"
                                     type="number"
                                     step="0.1"
                                     min="0"
@@ -572,8 +609,10 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>Total Votes / Reviews</Label>
+                            <Label htmlFor="recipe-rating-count">Total Votes / Reviews</Label>
                             <Input
+                                id="recipe-rating-count"
+                                name="recipe_rating_count"
                                 type="number"
                                 min="0"
                                 value={data.aggregateRating?.ratingCount ?? ''}
