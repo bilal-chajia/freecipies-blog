@@ -151,7 +151,7 @@ const ArticleFilters = ({
                                 value={localFilters.type}
                                 onValueChange={(value) => onFilterChange('type', value)}
                             >
-                                <SelectTrigger className="h-8 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg">
+                                <SelectTrigger className="h-10 bg-card border-none shadow-sm ring-1 ring-border/50 rounded-lg">
                                     <SelectValue placeholder="All Types" />
                                 </SelectTrigger>
                                 <SelectContent>

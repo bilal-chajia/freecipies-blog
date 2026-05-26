@@ -329,8 +329,12 @@ const TagsList = () => {
                     <div className="flex flex-col h-full relative">
                       <div className="flex items-start justify-between mb-3">
                         <div
-                          className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest"
-                          style={{ backgroundColor: tag.color, color: getContrastColor(tag.color) }}
+                          className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border"
+                          style={{ 
+                            backgroundColor: `${tag.color}15`, 
+                            color: tag.color, 
+                            borderColor: `${tag.color}30` 
+                          }}
                         >
                           {tag.name}
                         </div>

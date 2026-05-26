@@ -89,11 +89,12 @@ export default function HomepageLayout({
         <div className="wp-gutenberg-layout flex h-full w-full overflow-hidden relative">
             {/* Left Panel: Navigation */}
             <motion.div
-                initial={{ x: -280, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -280, opacity: 0 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="wp-block-inserter w-[280px] h-full min-h-0 overflow-hidden bg-[var(--wp-inserter-bg)] border-r border-[var(--wp-inserter-border)] flex flex-col flex-shrink-0"
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                style={{ width: '220px' }}
+                className="wp-block-inserter w-[220px] h-full min-h-0 overflow-hidden bg-[var(--wp-inserter-bg)] border-r border-[var(--wp-inserter-border)] flex flex-col flex-shrink-0"
             >
                 {/* Left Panel Header */}
                 <div className={cn(HEADER_HEIGHT, 'flex items-center justify-between px-2.5 border-b border-border flex-shrink-0')}>
@@ -121,16 +122,40 @@ export default function HomepageLayout({
                                     key={item.id}
                                     type="button"
                                     onClick={() => handleSectionClick(item.id)}
-                                    className={cn('structure-item', isActive && 'is-active')}
-                                >
-                                    <Icon className="structure-item-icon" />
-                                    <span className="structure-item-label">{item.label}</span>
-                                    {status && (
-                                        <span className={cn(
-                                            'ml-auto w-1.5 h-1.5 rounded-full',
-                                            status.enabled ? 'bg-green-500' : 'bg-muted-foreground/30'
-                                        )} />
+                                    className={cn(
+                                        'structure-item group relative overflow-hidden transition-colors',
+                                        isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
                                     )}
+                                >
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="homepage-active-tab"
+                                            className="absolute inset-0 bg-[var(--primary-muted)] rounded-md z-0"
+                                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                        />
+                                    )}
+                                    <div className="flex items-center gap-2 w-full relative z-10 min-w-0">
+                                        <Icon
+                                            className={cn(
+                                                'structure-item-icon transition-all duration-200 group-hover:scale-110 shrink-0',
+                                                isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                                            )}
+                                        />
+                                        <span
+                                            className={cn(
+                                                'structure-item-label transition-transform duration-200 group-hover:translate-x-0.5',
+                                                isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
+                                            )}
+                                        >
+                                            {item.label}
+                                        </span>
+                                        {status && (
+                                            <span className={cn(
+                                                'ml-auto w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-200 group-hover:scale-110',
+                                                status.enabled ? 'bg-green-500' : 'bg-muted-foreground/30'
+                                            )} />
+                                        )}
+                                    </div>
                                 </button>
                             );
                         })}

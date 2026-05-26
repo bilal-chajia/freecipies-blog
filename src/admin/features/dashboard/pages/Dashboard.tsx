@@ -64,24 +64,10 @@ interface StatCard {
   link?: string;
 }
 
-const chartData: ChartDataPoint[] = [
-  { month: "Jan", articles: 45, views: 2400 },
-  { month: "Feb", articles: 52, views: 3200 },
-  { month: "Mar", articles: 48, views: 2800 },
-  { month: "Apr", articles: 61, views: 4100 },
-  { month: "May", articles: 55, views: 3900 },
-  { month: "Jun", articles: 67, views: 5200 },
-  { month: "Jul", articles: 72, views: 6100 },
-];
-
 const chartConfig = {
-  views: {
-    label: "Views",
-    color: "hsl(var(--primary))",
-  },
   articles: {
     label: "Articles",
-    color: "hsl(var(--secondary))",
+    color: "hsl(var(--primary))",
   },
 };
 
@@ -95,6 +81,13 @@ const Dashboard = () => {
     totalTags: 0,
     totalViews: 0,
   });
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [trends, setTrends] = useState<{
+    articles: string | null;
+    recipes: string | null;
+    views: string | null;
+    authors: string | null;
+  } | null>(null);
   const [recentArticles, setRecentArticles] = useState<ArticleSummary[]>([]);
   const [popularArticles, setPopularArticles] = useState<ArticleSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,9 +104,24 @@ const Dashboard = () => {
       try {
         const statsRes = await statsAPI.getDashboard();
         if (statsRes.data) {
-          setStats(statsRes.data);
+          const d = statsRes.data;
+          setStats({
+            totalArticles: d.total_articles ?? 0,
+            totalRecipes: d.total_recipes ?? 0,
+            totalCategories: d.total_categories ?? 0,
+            totalAuthors: d.total_authors ?? 0,
+            totalTags: d.total_tags ?? 0,
+            totalViews: d.total_views ?? 0,
+          });
+          if (d.articles_over_time) {
+            setChartData(d.articles_over_time);
+          }
+          if (d.trends) {
+            setTrends(d.trends);
+          }
         }
       } catch (error) {
+        // Silently fail; empty state is handled below
       }
 
       // Load recent articles
@@ -138,8 +146,6 @@ const Dashboard = () => {
       } catch (error) {
       }
     } catch (error) {
-
-
       toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
@@ -151,31 +157,31 @@ const Dashboard = () => {
       title: 'Total Articles',
       value: stats.totalArticles,
       icon: FileText,
-      trend: '+12%',
-      trendUp: true,
+      trend: trends?.articles ?? '—',
+      trendUp: trends?.articles ? trends.articles.startsWith('+') : null,
       link: '/articles',
     },
     {
       title: 'Recipes',
       value: stats.totalRecipes,
       icon: UtensilsCrossed,
-      trend: '+5%',
-      trendUp: true,
+      trend: trends?.recipes ?? '—',
+      trendUp: trends?.recipes ? trends.recipes.startsWith('+') : null,
       link: '/articles?type=recipe',
     },
     {
       title: 'Total Views',
       value: formatNumber(stats.totalViews),
       icon: Eye,
-      trend: '+24%',
-      trendUp: true,
+      trend: trends?.views ?? '—',
+      trendUp: trends?.views ? trends.views.startsWith('+') : null,
     },
     {
       title: 'Authors',
       value: stats.totalAuthors,
       icon: Users,
-      trend: 'Static',
-      trendUp: null,
+      trend: trends?.authors ?? '—',
+      trendUp: trends?.authors ? trends.authors.startsWith('+') : null,
       link: '/authors',
     },
   ];
@@ -213,7 +219,11 @@ const Dashboard = () => {
               Welcome back, <span className="text-primary">{user?.name || 'Admin'}</span>
             </h1>
             <p className="text-xs text-muted-foreground max-w-xl">
-              Your content performance is looking strong. You've reached <span className="font-semibold text-foreground">{formatNumber(stats.totalViews)}</span> total views this month.
+              {stats.totalViews === 0 ? (
+                "Start creating content to track your performance."
+              ) : (
+                <>Your content performance is looking strong. You've reached <span className="font-semibold text-foreground">{formatNumber(stats.totalViews)}</span> total views this month.</>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -267,10 +277,12 @@ const Dashboard = () => {
                 <CardDescription className="text-xs text-muted-foreground">Views and content growth over time</CardDescription>
               </div>
               <div>
-                <div className="flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary">
-                  <TrendingUp className="size-3" />
-                  <span>+24% Growth</span>
-                </div>
+                {stats.totalViews > 0 && (
+                  <div className="flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary">
+                    <TrendingUp className="size-3" />
+                    <span>+24% Growth</span>
+                  </div>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -308,9 +320,11 @@ const Dashboard = () => {
                   className="text-[10px] text-muted-foreground/80 font-bold"
                 />
                 <YAxis
+                  domain={[0, 'auto']}
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
+                  tickFormatter={(value) => value.toLocaleString()}
                   className="text-[10px] text-muted-foreground/80 font-bold"
                 />
                 <ChartTooltip
@@ -318,10 +332,10 @@ const Dashboard = () => {
                   content={<ChartTooltipContent indicator="dot" />}
                 />
                 <Area
-                  dataKey="views"
+                  dataKey="articles"
                   type="monotone"
                   fill="url(#fillViews)"
-                  stroke="var(--color-views)"
+                  stroke="var(--color-articles)"
                   strokeWidth={2}
                   activeDot={{ r: 4, strokeWidth: 0 }}
                 />
@@ -330,10 +344,16 @@ const Dashboard = () => {
           </CardContent>
           <CardFooter className="flex-row items-center justify-between text-xs border-t border-border/50 p-3 bg-muted/10 rounded-b-lg">
             <div className="flex items-center gap-1 font-semibold text-foreground/90">
-              Content views increased by 15.2% this month <TrendingUp className="size-3.5 text-success" />
+              {stats.totalViews > 0 ? (
+                <>
+                  Content views increased this month <TrendingUp className="size-3.5 text-success" />
+                </>
+              ) : (
+                "Start publishing to see growth metrics"
+              )}
             </div>
             <div className="text-muted-foreground">
-              Showing total views for the last 7 months
+              Showing articles published over the last 6 months
             </div>
           </CardFooter>
         </Card>

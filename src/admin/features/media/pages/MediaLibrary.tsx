@@ -327,15 +327,17 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
       )}
 
       {/* New ImageUploader Component with Bulk Upload Support */}
-      <ImageUploader
-        open={showUploadDialog}
-        onOpenChange={setShowUploadDialog}
-        onUploadComplete={() => {
-          loadMedia();
-        }}
-        variantSizes={variantSizes}
-        allowMultiple={true}
-      />
+      {showUploadDialog && (
+        <ImageUploader
+          open={showUploadDialog}
+          onOpenChange={setShowUploadDialog}
+          onUploadComplete={() => {
+            loadMedia();
+          }}
+          variantSizes={variantSizes}
+          allowMultiple={true}
+        />
+      )}
     </div>
   );
 };

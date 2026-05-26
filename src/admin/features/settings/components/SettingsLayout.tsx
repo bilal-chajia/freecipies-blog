@@ -10,7 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Button } from '@/ui/button';
-import { Save, RefreshCw, Zap } from 'lucide-react';
+import { Save, RefreshCw, Zap, Settings } from 'lucide-react';
 import {
   Globe,
   Search,
@@ -85,16 +85,19 @@ export default function SettingsLayout({
     <div className="wp-gutenberg-layout flex h-full w-full overflow-hidden relative">
       {/* Left Panel: Navigation */}
       <motion.div
-        initial={{ x: -200, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -200, opacity: 0 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-        style={{ width: '200px' }}
-        className="wp-block-inserter h-full min-h-0 overflow-hidden bg-card border-r border-border flex flex-col flex-shrink-0"
+        initial={{ opacity: 0, x: -16 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -16 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        style={{ width: '220px' }}
+        className="wp-block-inserter w-[220px] h-full min-h-0 overflow-hidden bg-[var(--wp-inserter-bg)] border-r border-[var(--wp-inserter-border)] flex flex-col flex-shrink-0"
       >
-        {/* Left Panel Header - FIXED HEIGHT */}
-        <div className={cn(HEADER_HEIGHT, 'flex items-center px-4 border-b border-border flex-shrink-0 bg-card')}>
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Settings</span>
+        {/* Left Panel Header */}
+        <div className={cn(HEADER_HEIGHT, 'flex items-center justify-between px-2.5 border-b border-border flex-shrink-0')}>
+          <div className="flex items-center gap-2">
+            <Settings className="size-4 text-primary" />
+            <span className="text-sm font-semibold">Settings</span>
+          </div>
         </div>
 
         {/* Nav Items */}
@@ -109,12 +112,33 @@ export default function SettingsLayout({
                   type="button"
                   onClick={() => handleTabClick(item.id)}
                   className={cn(
-                    'flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-xs font-medium transition-colors hover:bg-muted/80',
-                    isActive ? 'bg-primary/8 text-primary font-semibold border-r-2 border-primary' : 'text-muted-foreground'
+                    'structure-item group relative overflow-hidden transition-colors',
+                    isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
                   )}
                 >
-                  <Icon className={cn('size-4 transition-colors', isActive ? 'text-primary' : 'text-muted-foreground/70')} />
-                  <span>{item.label}</span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="settings-active-tab"
+                      className="absolute inset-0 bg-[var(--primary-muted)] rounded-md z-0"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  <div className="flex items-center gap-2 w-full relative z-10 min-w-0">
+                    <Icon
+                      className={cn(
+                        'structure-item-icon transition-all duration-200 group-hover:scale-110 shrink-0',
+                        isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'structure-item-label transition-transform duration-200 group-hover:translate-x-0.5',
+                        isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
                 </button>
               );
             })}

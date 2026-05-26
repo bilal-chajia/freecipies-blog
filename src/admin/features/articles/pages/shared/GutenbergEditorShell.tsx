@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Eye, Save, Loader2, Menu, Settings, LayoutTemplate, Code } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
+import { ChevronRight, Eye, Save, Loader2, LayoutTemplate, Code, PanelLeftOpen, PanelRightOpen } from 'lucide-react';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
-import { Badge } from '@/ui/badge';
 import { Label } from '@/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 
@@ -22,7 +22,9 @@ import {
 } from '@/components/BlockEditor/components';
 import AISettings from '@/components/BlockEditor/components/AISettings';
 import GutenbergEditorMain, { TitleInput } from '@/components/BlockEditor/components/GutenbergEditorMain';
+import EditorStats from '@/components/BlockEditor/components/EditorStats';
 import { insertBlockFromInserter } from '@/components/BlockEditor/utils/insert-block';
+import { useBlockEditorStore } from '@/components/BlockEditor/store/blockEditorStore';
 
 // Existing components
 import { MediaDialog } from '@admin/features/media/components';
@@ -39,7 +41,6 @@ export function GutenbergEditorShell({
     slug,
     contentType,
     backPath,
-    titleLabel,
 }: GutenbergEditorShellProps) {
     const navigate = useNavigate();
     const [editorInstance, setEditorInstance] = useState<any | null>(null);
@@ -80,9 +81,13 @@ export function GutenbergEditorShell({
         openMediaDialog,
     } = editor;
 
-    // Layout state
-    const [inserterOpen, setInserterOpen] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    // Layout state (Zustand store)
+    const {
+        inserterOpen,
+        sidebarOpen,
+        setInserterOpen,
+        setSidebarOpen,
+    } = useBlockEditorStore();
     const [previewOpen, setPreviewOpen] = useState(false);
 
     const canvasWidthClass = (!sidebarOpen && !inserterOpen)
@@ -122,8 +127,11 @@ export function GutenbergEditorShell({
         currentSlug: formData.slug,
     }), [categorySlug, tagSlugs, formData.slug]);
 
-    // Page title
-    const title = isEditMode ? `Edit ${titleLabel}` : `New ${titleLabel}`;
+    const sectionLabel = contentType === 'recipe'
+        ? 'Recipes'
+        : contentType === 'roundup'
+            ? 'Roundups'
+            : 'Blog Posts';
 
     // Handle block insertion from inserter
     const handleInsertBlock = useCallback((blockType: any) => {
@@ -170,12 +178,7 @@ export function GutenbergEditorShell({
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                >
-                    <Loader2 className="h-12 w-12 text-primary" />
-                </motion.div>
+                <LoadingState variant="editor" />
             </div>
         );
     }
@@ -185,71 +188,85 @@ export function GutenbergEditorShell({
             {/* Header */}
             <header className={cn(
                 'flex items-center justify-between',
-                'px-4 py-2 border-b bg-background',
+                'h-14 px-4 border-b bg-background',
                 'shrink-0'
             )}>
-                {/* Left: Back + Title */}
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => navigate(backPath)}
-                        className="h-8 w-8"
+                <nav className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/')}
+                        className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                    </Button>
-                    <div>
-                        <Badge variant="secondary" className="text-[11px] px-2 py-0.5">
-                            {title}
-                        </Badge>
-                    </div>
-                </div>
-
-                <div className="flex-1 flex justify-center px-4 min-w-0">
+                        Dashboard
+                    </button>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/70" />
+                    <button
+                        type="button"
+                        onClick={() => navigate(backPath)}
+                        className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                        {sectionLabel}
+                    </button>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/70" />
                     <TitleInput
                         value={formData.label}
                         onChange={(value) => handleInputChange('label', value)}
                         placeholder="Add title"
-                        containerClassName="w-full max-w-[520px]"
-                        className="text-lg md:text-xl font-semibold"
+                        containerClassName="min-w-0 flex-1 max-w-[560px]"
+                        className="truncate !text-sm !font-semibold !leading-6"
                     />
-                </div>
+                </nav>
 
                 {/* Right: Actions */}
-                <div className="flex items-center gap-2">
-                    <div className="flex bg-muted/50 p-0.5 rounded-lg border">
+                <div className="ml-4 flex shrink-0 items-center gap-2">
+                    {/* Autosave Status — Dot only */}
+                    <div className="flex items-center justify-center w-8 h-8 select-none" title={saving ? 'Sauvegarde...' : 'Brouillon synchronisé'}>
+                        <span className="relative flex h-2 w-2">
+                            {saving ? (
+                                <>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </>
+                            )}
+                        </span>
+                    </div>
+
+                    {/* View Modes */}
+                    <div className="flex items-center gap-1 border-r border-border/60 pr-2 mr-1">
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button
-                                    type="button"
+                                <Button
+                                    variant={viewMode === 'visual' ? 'secondary' : 'ghost'}
+                                    size="icon"
                                     onClick={() => setViewMode('visual')}
-                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'visual'
-                                        ? 'bg-background shadow-sm text-foreground'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                        }`}
+                                    className={cn("h-8 w-8 rounded-md", viewMode === 'visual' && "text-primary bg-primary/10 hover:bg-primary/20 hover:text-primary")}
                                 >
-                                    <LayoutTemplate className="h-3.5 w-3.5" />
-                                </button>
+                                    <LayoutTemplate className="w-4 h-4" />
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent>Visual Editor</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button
-                                    type="button"
+                                <Button
+                                    variant={viewMode === 'json' ? 'secondary' : 'ghost'}
+                                    size="icon"
                                     onClick={() => setViewMode('json')}
-                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'json'
-                                        ? 'bg-background shadow-sm text-foreground'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                        }`}
+                                    className={cn("h-8 w-8 rounded-md", viewMode === 'json' && "text-primary bg-primary/10 hover:bg-primary/20 hover:text-primary")}
                                 >
-                                    <Code className="h-3.5 w-3.5" />
-                                </button>
+                                    <Code className="w-4 h-4" />
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent>JSON Data</TooltipContent>
                         </Tooltip>
                     </div>
+
                     {/* Preview */}
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -267,7 +284,7 @@ export function GutenbergEditorShell({
 
                     {/* Save */}
                     <Button
-                        onClick={handleSave}
+                        onClick={() => handleSave(editorInstance)}
                         disabled={saving}
                         size="sm"
                         className="h-8 gap-1.5"
@@ -294,26 +311,46 @@ export function GutenbergEditorShell({
             {/* Main 3-Panel Layout */}
             <div className="flex-1 flex overflow-hidden min-h-0 relative">
                 {!inserterOpen && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute left-2 top-2 z-20 h-8 w-8"
-                        onClick={() => setInserterOpen(true)}
-                    >
-                        <Menu className="w-4 h-4" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                    "absolute left-3 top-[10px] z-30 h-9 w-9",
+                                    "rounded-xl bg-background/85 backdrop-blur-md shadow-sm",
+                                    "hover:bg-background hover:text-primary hover:shadow-md hover:scale-105 active:scale-95",
+                                    "transition-all duration-200 ease-out"
+                                )}
+                                onClick={() => setInserterOpen(true)}
+                            >
+                                <PanelLeftOpen className="h-4.5 w-4.5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">Show structure panel</TooltipContent>
+                    </Tooltip>
                 )}
                 {!sidebarOpen && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-2 top-2 z-20 h-8 w-8"
-                        onClick={() => setSidebarOpen(true)}
-                    >
-                        <Settings className="w-4 h-4" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                    "absolute right-3 top-[10px] z-30 h-9 w-9",
+                                    "rounded-xl bg-background/85 backdrop-blur-md shadow-sm",
+                                    "hover:bg-background hover:text-primary hover:shadow-md hover:scale-105 active:scale-95",
+                                    "transition-all duration-200 ease-out"
+                                )}
+                                onClick={() => setSidebarOpen(true)}
+                            >
+                                <PanelRightOpen className="h-4.5 w-4.5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">Show settings panel</TooltipContent>
+                    </Tooltip>
                 )}
-                {/* Left: Block Inserter */}
+                {/* Left Panel */}
                 <AnimatePresence>
                     {inserterOpen && (
                         <LeftPanel
@@ -333,19 +370,61 @@ export function GutenbergEditorShell({
 
                 {/* Center: Content Canvas */}
                 <main className={cn(
-                    'flex-1 overflow-y-auto overflow-x-hidden min-h-0 gutenberg-canvas-scroll',
-                    'bg-[var(--wp-canvas-bg)]'
+                    'flex-1 min-h-0 flex flex-col overflow-hidden',
+                    'bg-slate-50/40 bg-[radial-gradient(var(--editor-grid-dot)_1px,transparent_1px)] [background-size:16px_16px] dark:bg-background'
                 )}>
-                    <div className={cn(
-                        'mx-auto py-8 px-6 w-full',
-                        canvasWidthClass
-                    )}>
-                        {contentType === 'roundup' ? (
-                            <div className="mb-8">
-                                <Label className="text-lg font-semibold mb-4 block">Introduction</Label>
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    Set the stage for your roundup with an introduction.
-                                </p>
+                    <div className="flex h-11 shrink-0 items-center justify-center border-b border-border/60 bg-background/80 px-4">
+                        <EditorStats editor={editorInstance} className="shrink-0" />
+                    </div>
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden gutenberg-canvas-scroll">
+                        <div className={cn(
+                            'mx-auto py-8 px-6 w-full',
+                            canvasWidthClass
+                        )}>
+                            {contentType === 'roundup' ? (
+                                <div className="mb-8">
+                                    <Label className="text-lg font-semibold mb-4 block">Introduction</Label>
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        Set the stage for your roundup with an introduction.
+                                    </p>
+                                    <GutenbergEditorMain
+                                        formData={formData as any}
+                                        onInputChange={(field, value) => handleInputChange(field as any, value)}
+                                        contentJson={contentJson}
+                                        setContentJson={setContentJson}
+                                        validateJSON={validateJSON}
+                                        relatedContext={relatedContext}
+                                        onEditorReady={setEditorInstance}
+                                        viewMode={viewMode}
+                                        contentType="roundup"
+                                        placeholder="Introduce your roundup..."
+                                        jsonHeight="50vh"
+                                        sidebarOpen={sidebarOpen}
+                                        onStructureUpdate={handleStructureUpdate as any}
+                                        onSelectedBlockChange={setSelectedBlock as any}
+                                        forceSelectBlockId={forceSelectBlockId}
+                                        onForceSelectHandled={handleClearForceSelect}
+                                        blockEditorProps={{
+                                            roundupJson,
+                                            onRoundupChange: (newValue: any) => {
+                                                const nextValue = newValue ?? '';
+                                                setRoundupJson(nextValue);
+                                                validateJSON('roundup', nextValue);
+                                            },
+                                            faqsJson,
+                                            onFaqsChange: (newValue: any) => {
+                                                const nextValue = Array.isArray(newValue)
+                                                    ? JSON.stringify(newValue, null, 2)
+                                                    : (newValue ?? '[]');
+                                                setFaqsJson(nextValue);
+                                                validateJSON('faqs', nextValue);
+                                            },
+                                            imagesData,
+                                            onImagesChange: setImagesData,
+                                        }}
+                                    />
+                                </div>
+                            ) : (
                                 <GutenbergEditorMain
                                     formData={formData as any}
                                     onInputChange={(field, value) => handleInputChange(field as any, value)}
@@ -355,90 +434,53 @@ export function GutenbergEditorShell({
                                     relatedContext={relatedContext}
                                     onEditorReady={setEditorInstance}
                                     viewMode={viewMode}
-                                    contentType="roundup"
-                                    placeholder="Introduce your roundup..."
-                                    jsonHeight="50vh"
+                                    contentType={contentType}
+                                    placeholder={contentType === 'recipe' ? "Add additional content..." : "Start writing your article..."}
                                     sidebarOpen={sidebarOpen}
                                     onStructureUpdate={handleStructureUpdate as any}
                                     onSelectedBlockChange={setSelectedBlock as any}
                                     forceSelectBlockId={forceSelectBlockId}
                                     onForceSelectHandled={handleClearForceSelect}
-                                    blockEditorProps={{
-                                        roundupJson,
-                                        onRoundupChange: (newValue: any) => {
-                                            const nextValue = newValue ?? '';
-                                            setRoundupJson(nextValue);
-                                            validateJSON('roundup', nextValue);
-                                        },
-                                        faqsJson,
-                                        onFaqsChange: (newValue: any) => {
-                                            const nextValue = Array.isArray(newValue)
-                                                ? JSON.stringify(newValue, null, 2)
-                                                : (newValue ?? '[]');
-                                            setFaqsJson(nextValue);
-                                            validateJSON('faqs', nextValue);
-                                        },
-                                        imagesData,
-                                        onImagesChange: setImagesData,
-                                    }}
+                                    blockEditorProps={
+                                        contentType === 'recipe'
+                                            ? {
+                                                recipeJson,
+                                                onRecipeChange: (newValue: any) => {
+                                                    const nextValue = newValue ?? '';
+                                                    setRecipeJson(nextValue);
+                                                    validateJSON('recipe', nextValue);
+                                                },
+                                                faqsJson,
+                                                onFaqsChange: (newValue: any) => {
+                                                    const nextValue = Array.isArray(newValue)
+                                                        ? JSON.stringify(newValue, null, 2)
+                                                        : (newValue ?? '[]');
+                                                    setFaqsJson(nextValue);
+                                                    validateJSON('faqs', nextValue);
+                                                },
+                                                imagesData,
+                                                onImagesChange: setImagesData,
+                                            }
+                                            : {
+                                                faqsJson,
+                                                onFaqsChange: (newValue: any) => {
+                                                    const nextValue = Array.isArray(newValue)
+                                                        ? JSON.stringify(newValue, null, 2)
+                                                        : (newValue ?? '[]');
+                                                    setFaqsJson(nextValue);
+                                                    validateJSON('faqs', nextValue);
+                                                },
+                                                imagesData,
+                                                onImagesChange: setImagesData,
+                                            }
+                                    }
                                 />
-                            </div>
-                        ) : (
-                            <GutenbergEditorMain
-                                formData={formData as any}
-                                onInputChange={(field, value) => handleInputChange(field as any, value)}
-                                contentJson={contentJson}
-                                setContentJson={setContentJson}
-                                validateJSON={validateJSON}
-                                relatedContext={relatedContext}
-                                onEditorReady={setEditorInstance}
-                                viewMode={viewMode}
-                                contentType={contentType}
-                                placeholder={contentType === 'recipe' ? "Add additional content..." : "Start writing your article..."}
-                                sidebarOpen={sidebarOpen}
-                                onStructureUpdate={handleStructureUpdate as any}
-                                onSelectedBlockChange={setSelectedBlock as any}
-                                forceSelectBlockId={forceSelectBlockId}
-                                onForceSelectHandled={handleClearForceSelect}
-                                blockEditorProps={
-                                    contentType === 'recipe'
-                                        ? {
-                                            recipeJson,
-                                            onRecipeChange: (newValue: any) => {
-                                                const nextValue = newValue ?? '';
-                                                setRecipeJson(nextValue);
-                                                validateJSON('recipe', nextValue);
-                                            },
-                                            faqsJson,
-                                            onFaqsChange: (newValue: any) => {
-                                                const nextValue = Array.isArray(newValue)
-                                                    ? JSON.stringify(newValue, null, 2)
-                                                    : (newValue ?? '[]');
-                                                setFaqsJson(nextValue);
-                                                validateJSON('faqs', nextValue);
-                                            },
-                                            imagesData,
-                                            onImagesChange: setImagesData,
-                                        }
-                                        : {
-                                            faqsJson,
-                                            onFaqsChange: (newValue: any) => {
-                                                const nextValue = Array.isArray(newValue)
-                                                    ? JSON.stringify(newValue, null, 2)
-                                                    : (newValue ?? '[]');
-                                                setFaqsJson(nextValue);
-                                                validateJSON('faqs', nextValue);
-                                            },
-                                            imagesData,
-                                            onImagesChange: setImagesData,
-                                        }
-                                }
-                            />
-                        )}
+                            )}
+                        </div>
                     </div>
                 </main>
 
-                {/* Right: Settings Sidebar */}
+                {/* Right Panel */}
                 <AnimatePresence>
                     {sidebarOpen && (
                         <RightPanel

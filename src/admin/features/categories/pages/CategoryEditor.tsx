@@ -23,6 +23,7 @@ import ColorPicker from '@/components/ColorPicker';
 import { extractImage, getImageSrcSet } from '@shared/utils';
 import { buildImageStyle, toAdminImageUrl, toAdminSrcSet } from '../../../utils/helpers';
 import { toast } from 'sonner';
+import { useCategoriesStore } from '@/store/useStore';
 
 type CategoryImageSlot = {
   url?: string | null;
@@ -522,6 +523,7 @@ const CategoryEditor = () => {
         await categoriesAPI.create(categoryData);
       }
 
+      useCategoriesStore.getState().setCategories([]);
 
       navigate('/categories', { state: { refresh: Date.now() } });
     } catch (err) {

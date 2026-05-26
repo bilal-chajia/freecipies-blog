@@ -3,9 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../../../services/api';
 import { buildImageSlotFromMedia, generateSlug, isValidJSON } from '../../../../utils/helpers';
+import type { AppEditor } from '@admin/components/BlockEditor/schema';
+import { blocksToContentJson } from '@admin/components/BlockEditor/utils/conversion';
+import { flattenBlocks } from '@admin/components/BlockEditor/utils/blockHelpers';
+import { DEFAULT_HEADERS, normalizeRows } from '@admin/components/BlockEditor/blocks/table/TableBlock.defaults';
+import type { TableRow } from '@admin/components/BlockEditor/blocks/table/TableBlock.types';
 
 const EMPTY_CONTENT_DOCUMENT = '{"version":1,"kind":"content_document","blocks":[]}';
 const EMPTY_FAQS_DOCUMENT = '{"heading":"Frequently Asked Questions","intro":null,"items":[]}';
+
+function parseTableJson<T>(value: unknown, fallback: T): T {
+    if (typeof value !== 'string') return (value ?? fallback) as T;
+    try {
+        const parsed = JSON.parse(value);
+        return (parsed ?? fallback) as T;
+    } catch {
+        return fallback;
+    }
+}
+
+
 
 interface ApiResponse<T = unknown> {
   data: {
@@ -437,12 +454,41 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = async (editorInstance?: AppEditor | null) => {
+        let finalContentJson = contentJson;
+        let finalRecipeJson = recipeJson;
+        let finalRoundupJson = roundupJson;
+        let finalFaqsJson = faqsJson;
+
+        // Synchronously blur any active input/textarea to trigger their local draft commits (like SimpleTable)
+        if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
+            console.log('[handleSave] Blurring active element:', document.activeElement.id);
+            (document.activeElement as HTMLElement).blur();
+        }
+
+        if (editorInstance) {
+            const docBlocks = editorInstance.document;
+            console.log('[handleSave] docBlocks after blur:', JSON.stringify(docBlocks));
+            const contentObj = blocksToContentJson(docBlocks as any[]);
+            finalContentJson = JSON.stringify(contentObj, null, 2);
+
+            const flatBlocks = flattenBlocks(docBlocks as any[]);
+            const hasRoundupList = flatBlocks.some(({ block }) => block.type === 'roundupList' || block.type === 'main_roundup');
+            const hasFaqSection = flatBlocks.some(({ block }) => block.type === 'faqSection' || block.type === 'main_faq');
+
+            if (!hasRoundupList && contentType === 'roundup') {
+                finalRoundupJson = '{"list_type":"ItemList","items":[]}';
+            }
+            if (!hasFaqSection) {
+                finalFaqsJson = EMPTY_FAQS_DOCUMENT;
+            }
+        }
+
         const jsonFields: Record<string, string> = {
-            content: contentJson,
-            recipe: recipeJson,
-            roundup: roundupJson,
-            faqs: faqsJson,
+            content: finalContentJson,
+            recipe: finalRecipeJson,
+            roundup: finalRoundupJson,
+            faqs: finalFaqsJson,
             keywords: keywordsJson,
             references: referencesJson,
             jsonld: jsonldJson,
@@ -478,21 +524,25 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             return;
         }
 
-        const data = {
+        const data: any = {
             ...restFormData,
             slug: computedSlug,
             headline: trimmedLabel,
             subtitle: headline?.trim() || null,
-            contentJson,
-            recipeJson,
-            roundupJson,
-            faqsJson,
+            contentJson: finalContentJson,
+            faqsJson: finalFaqsJson,
             keywordsJson,
             referencesJson,
             jsonldJson,
             mediaJson,
             imagesJson: JSON.stringify(imagesData),
         };
+
+        if (contentType === 'recipe') {
+            data.recipeJson = finalRecipeJson;
+        } else if (contentType === 'roundup') {
+            data.roundupJson = finalRoundupJson;
+        }
 
         try {
             setSaving(true);

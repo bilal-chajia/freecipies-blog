@@ -192,7 +192,7 @@ const AuthorsList = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence>
                   {filteredAuthors.length > 0 ? (
                     filteredAuthors.map((author) => (
                       <motion.tr

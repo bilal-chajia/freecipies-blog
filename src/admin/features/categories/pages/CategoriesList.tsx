@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import CategoryCard from './CategoryCard';
 import { toast } from 'sonner';
 import type { Category } from '@modules/categories/schema/categories.schema';
+import { useCategoriesStore } from '@/store/useStore';
 
 // Animation variants for staggered entrance
 const containerVariants = {
@@ -84,6 +85,7 @@ const CategoriesList = () => {
 
     try {
       await categoriesAPI.delete(deleteModal.categoryToDelete.slug);
+      useCategoriesStore.getState().setCategories([]);
       setCategories(categories.filter(cat => cat.slug !== deleteModal.categoryToDelete!.slug));
       setDeleteModal({ isOpen: false, categoryToDelete: null });
       toast.success('Category deleted successfully');
@@ -99,6 +101,7 @@ const CategoriesList = () => {
 
     try {
       await categoriesAPI.update(slug, data);
+      useCategoriesStore.getState().setCategories([]);
       setCategories(categories.map(cat =>
         cat.slug === slug ? { ...cat, ...data } : cat
       ));
@@ -179,14 +182,11 @@ const CategoriesList = () => {
       </div>
 
       {/* Categories Grid */}
-      <AnimatePresence mode="popLayout">
-        <motion.div
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          key={searchTerm}
-        >
+      <motion.div
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+        layout
+      >
+        <AnimatePresence>
           {filteredCategories.length === 0 ? (
             <div className="col-span-full">
               <EmptyState
@@ -202,10 +202,10 @@ const CategoriesList = () => {
               <motion.div
                 key={category.slug}
                 layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
               >
                 <CategoryCard
                   category={category}
@@ -216,8 +216,8 @@ const CategoriesList = () => {
               </motion.div>
             ))
           )}
-        </motion.div>
-      </AnimatePresence>
+        </AnimatePresence>
+      </motion.div>
 
       <ConfirmationModal
         isOpen={deleteModal.isOpen}

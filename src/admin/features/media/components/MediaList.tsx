@@ -1,5 +1,11 @@
 import { Button } from '@/ui/button';
-import { Check, Copy, Eye, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/ui/dropdown-menu';
+import { MoreHorizontal, Copy, Eye, Trash2, Check } from 'lucide-react';
 import { OptimizedImage } from './OptimizedImage';
 import {
   isMediaItemImage,
@@ -29,60 +35,110 @@ export const MediaList = ({
   handleCopyUrl
 }: MediaListProps) => {
   return (
-    <div className="bg-card rounded-2xl overflow-hidden">
-      {/* Table Header */}
-      <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border/40 bg-accent/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-        <div className="w-10 shrink-0" />
-        <div className="flex-1 min-w-0">Name</div>
-        <div className="w-20 text-center hidden sm:block">Size</div>
-        <div className="w-32 text-center hidden md:block">Date</div>
-        <div className="w-24 shrink-0" />
-      </div>
+    <div className="bg-card rounded-lg border border-border/80 shadow-xs overflow-hidden">
+      <table className="w-full text-left">
+        <thead>
+          <tr className="border-b border-border/50 bg-muted/30">
+            <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground w-12" />
+            <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Name</th>
+            <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hidden sm:table-cell w-28">Type</th>
+            <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hidden sm:table-cell w-24 text-center">Size</th>
+            <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hidden md:table-cell w-32 text-center">Date</th>
+            <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground w-16" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/40">
+          {filteredMedia.map((item) => {
+            const isSelected = selectedMedia.includes(item.id);
+            return (
+              <tr
+                key={item.id}
+                className={`hover:bg-accent/40 transition-colors group cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
+                onClick={() => onSelect ? onSelect(item) : toggleMediaSelection(item.id)}
+              >
+                {/* Preview */}
+                <td className="px-3 py-2.5 w-12">
+                  <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-accent/40 flex items-center justify-center shrink-0 border border-border/30">
+                    {isMediaItemImage(item) ? (
+                      <OptimizedImage item={item} className="object-cover w-full h-full" />
+                    ) : (
+                      <div className="scale-50">{getFileIcon(item.name)}</div>
+                    )}
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-primary/70 flex items-center justify-center">
+                        <Check className="size-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+                </td>
 
-      {/* Table Rows */}
-      {filteredMedia.map((item, index) => (
-        <div
-          key={item.id}
-          className={`group flex items-center gap-4 px-4 py-2.5 cursor-pointer transition-all duration-300 ease-out hover:bg-accent/30 ${index < filteredMedia.length - 1 ? 'border-b border-border/30' : ''} ${selectedMedia.includes(item.id) ? 'bg-primary/5 translate-x-2' : ''}`}
-          onClick={() => onSelect ? onSelect(item) : toggleMediaSelection(item.id)}
-        >
-          {/* Thumbnail */}
-          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-accent/40 flex items-center justify-center shrink-0 border border-border/30">
-            {isMediaItemImage(item) ? (
-              <OptimizedImage item={item} priority={index < 8} className="transition-transform duration-500 group-hover:scale-105" />
-            ) : (
-              <div className="scale-50">{getFileIcon(item.name)}</div>
-            )}
-            {selectedMedia.includes(item.id) && (
-              <div className="absolute inset-0 bg-primary/70 flex items-center justify-center">
-                <Check className="size-4 text-white" />
-              </div>
-            )}
-          </div>
+                {/* Name */}
+                <td className="px-3 py-2.5">
+                  <p className="text-sm font-medium text-foreground truncate max-w-[200px] md:max-w-xs">
+                    {item.name}
+                  </p>
+                  {item.altText && (
+                    <p className="text-[10px] text-muted-foreground truncate max-w-[200px] md:max-w-xs mt-0.5">
+                      {item.altText}
+                    </p>
+                  )}
+                </td>
 
-          {/* Name */}
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-          </div>
+                {/* Type */}
+                <td className="px-3 py-2.5 hidden sm:table-cell w-28">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {item.mimeType || item.mime_type || '—'}
+                  </span>
+                </td>
 
-          {/* Size */}
-          <div className="w-20 text-center hidden sm:block">
-            <span className="text-xs text-muted-foreground font-medium">{formatDisplayedSize(item)}</span>
-          </div>
+                {/* Size */}
+                <td className="px-3 py-2.5 hidden sm:table-cell w-24 text-center">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {formatDisplayedSize(item)}
+                  </span>
+                </td>
 
-          {/* Date */}
-          <div className="w-32 text-center hidden md:block">
-            <span className="text-xs text-muted-foreground font-medium">{formatDate(item.createdAt || item.created_at)}</span>
-          </div>
+                {/* Date */}
+                <td className="px-3 py-2.5 hidden md:table-cell w-32 text-center">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {formatDate(item.createdAt || item.created_at)}
+                  </span>
+                </td>
 
-          {/* Actions */}
-          <div className="w-24 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={(e) => { e.stopPropagation(); handleCopyUrl(getFullUrl(item)); }}><Copy className="size-3" /></Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={(e) => { e.stopPropagation(); window.open(getFullUrl(item), '_blank'); }}><Eye className="size-3" /></Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item.id, isBulk: false }); }}><Trash2 className="size-3" /></Button>
-          </div>
-        </div>
-      ))}
+                {/* Actions */}
+                <td className="px-3 py-2.5 w-16">
+                  <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                          <MoreHorizontal className="size-4 text-muted-foreground" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyUrl(getFullUrl(item)); }}>
+                          <Copy className="size-3.5 mr-2" />
+                          Copy URL
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(getFullUrl(item), '_blank'); }}>
+                          <Eye className="size-3.5 mr-2" />
+                          View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item.id, isBulk: false }); }}
+                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        >
+                          <Trash2 className="size-3.5 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 };

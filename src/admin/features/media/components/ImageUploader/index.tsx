@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import DropZone from './DropZone';
 import UploadQueue from './components/UploadQueue';
@@ -15,7 +16,6 @@ import VariantProgress from './VariantProgress';
 import { useImageUpload } from './hooks/useImageUpload';
 import { useUploadQueue } from './hooks/useUploadQueue';
 import { ASPECT_RATIOS } from './config';
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/ui/dialog';
 import { Button } from '@/ui/button';
 import { X, ArrowLeft, Upload } from 'lucide-react';
 import { authorsAPI } from '@admin/services/api';
@@ -574,13 +574,20 @@ export default function ImageUploader({
     onOpenChange(false);
   }, [abortUpload, previewUrl, onOpenChange]);
 
-  const handleDialogChange = useCallback((nextOpen: boolean) => {
-    if (nextOpen) {
-      onOpenChange(true);
-    } else {
-      handleClose();
-    }
-  }, [handleClose, onOpenChange]);
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [handleClose, open]);
 
   const numericAspect = useMemo(() => ASPECT_RATIOS[aspect], [aspect]);
   const canUpload = useMemo(() =>
@@ -592,11 +599,33 @@ export default function ImageUploader({
     [selectedFile, metadata.filename, metadata.altText, metadata.caption, selectedCredit]
   );
 
-  return (
-    <Dialog open={open} onOpenChange={handleDialogChange}>
-      <DialogContent
-        className="!max-w-6xl w-full max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-xl !top-[5vh] !translate-y-0"
-        showCloseButton={false}
+  if (!open || typeof document === 'undefined') {
+    return null;
+  }
+
+  const title = isUploading ? 'Uploading...' : selectedFile ? 'Edit & Upload' : 'Upload Image';
+  const description = isUploading
+    ? 'Processing...'
+    : selectedFile
+      ? 'Crop, set focal point, and add details'
+      : 'Select or drop an image file';
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-60 flex items-start justify-center overflow-y-auto bg-black/50 p-5"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          handleClose();
+        }
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="image-uploader-title"
+        aria-describedby="image-uploader-description"
+        className="relative top-[5vh] flex max-h-[90vh] w-full max-w-6xl flex-col gap-0 overflow-hidden rounded-xl bg-background p-0 shadow-xl"
+        onMouseDown={(event) => event.stopPropagation()}
       >
         {/* Header */}
         <header className="flex items-center justify-between px-4 py-3 border-b shrink-0">
@@ -607,16 +636,12 @@ export default function ImageUploader({
               </Button>
             )}
             <div>
-              <DialogTitle className="text-base font-semibold">
-                {isUploading ? 'Uploading...' : selectedFile ? 'Edit & Upload' : 'Upload Image'}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                {isUploading
-                  ? 'Processing...'
-                  : selectedFile
-                    ? 'Crop, set focal point, and add details'
-                    : 'Select or drop an image file'}
-              </DialogDescription>
+              <h2 id="image-uploader-title" className="text-base font-semibold">
+                {title}
+              </h2>
+              <p id="image-uploader-description" className="text-xs text-muted-foreground">
+                {description}
+              </p>
             </div>
           </div>
 
@@ -634,7 +659,7 @@ export default function ImageUploader({
                 </Button>
                 <Button
                   onClick={async () => {
-                    // Capture current state BEFORE navigation changes it
+                    // Capture current state before navigation changes it.
                     const capturedData = {
                       file: selectedFile,
                       cropArea: croppedAreaPixels,
@@ -646,10 +671,7 @@ export default function ImageUploader({
                     };
                     const capturedIndex = currentQueueIndex;
 
-                    // Move to next item FIRST (changes state)
                     await handleNextInQueue();
-
-                    // Then start background upload with captured data (non-blocking)
                     handleUploadInBackground(capturedIndex, capturedData);
                   }}
                   disabled={!canUpload}
@@ -673,11 +695,10 @@ export default function ImageUploader({
                 Upload
               </Button>
             )}
-            <DialogClose asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={handleClose}>
-                <X className="size-4" />
-              </Button>
-            </DialogClose>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={handleClose}>
+              <X className="size-4" />
+              <span className="sr-only">Close</span>
+            </Button>
           </div>
         </header>
 
@@ -791,19 +812,20 @@ export default function ImageUploader({
                   <span className="text-sm font-medium">
                     {queue.some(q => q.status === 'uploading')
                       ? `Uploading: ${queue.find(q => q.status === 'uploading')?.finalName || queue.find(q => q.status === 'uploading')?.name}`
-                      : '✅ Upload complete!'
+                      : 'Upload complete!'
                     }
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {queue.some(q => q.status === 'uploading') ? `${progress?.overall || 0}%` : '100%'}
                   </span>
                 </div>
-                <VariantProgress progress={queue.some(q => q.status === 'uploading') ? progress : { overall: 100, generating: 100, uploading: 100, finalizing: 100 }} />
+                <VariantProgress progress={progress} />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>,
+    document.body
   );
 }
