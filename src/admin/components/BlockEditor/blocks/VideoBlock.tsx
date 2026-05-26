@@ -121,7 +121,7 @@ function AspectRatioToolbar({ current, onChange }: {
     );
 }
 
-export const VideoBlock = createReactBlockSpec(
+const VideoBlock = createReactBlockSpec(
     {
         type: 'video',
         propSchema: {
@@ -223,8 +223,6 @@ export const VideoBlock = createReactBlockSpec(
                         isSelected={isSelected}
                         toolbar={toolbar}
                         onClick={selectBlock}
-                        onFocus={selectBlock}
-                        onPointerDownCapture={selectBlock}
                         blockType="video"
                         blockId={block.id}
                         className="my-2"
@@ -257,8 +255,6 @@ export const VideoBlock = createReactBlockSpec(
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={selectBlock}
-                    onFocus={selectBlock}
-                    onPointerDownCapture={selectBlock}
                     blockType="video"
                     blockId={block.id}
                     className="my-2"
@@ -283,11 +279,34 @@ export const VideoBlock = createReactBlockSpec(
                         />
                     </div>
 
-                    {/* Provider badge */}
-                    <div className="flex items-center gap-2 mt-2 px-1">
-                        <span className="text-xs text-muted-foreground capitalize">
-                            {block.props.provider}
+                    {/* Provider badge and Inline Aspect Ratio Switcher */}
+                    <div className="flex items-center justify-between mt-2 px-1 animate-in fade-in zoom-in-95 duration-200">
+                        <span className="text-xs text-muted-foreground capitalize bg-muted px-2 py-0.5 rounded border border-border/40 font-medium">
+                            {block.props.provider} embed
                         </span>
+                        
+                        {isSelected && (
+                            <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/40">
+                                {aspectRatios.map((ratio) => {
+                                    const isActive = block.props.aspectRatio === ratio.value;
+                                    return (
+                                        <button
+                                            key={ratio.value}
+                                            type="button"
+                                            onClick={() => handleAspectChange(ratio.value)}
+                                            className={cn(
+                                                "px-2.5 py-0.5 text-[10px] font-semibold rounded-md transition-all duration-200 cursor-pointer",
+                                                isActive 
+                                                    ? "bg-background text-foreground shadow-sm border border-border/10 font-bold scale-105" 
+                                                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground"
+                                            )}
+                                        >
+                                            {ratio.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </BlockWrapper>
             );

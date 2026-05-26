@@ -116,6 +116,22 @@ function upsertContentImageSlot(
     };
 }
 
+function patchContentImageSlot(
+    imagesData: unknown,
+    imageRef: unknown,
+    patch: Record<string, unknown>
+): Record<string, unknown> | null {
+    if (typeof imageRef !== 'string' || !imageRef) return null;
+    const images = parseImagesData(imagesData);
+    const contentImages = parseImagesData(images.content_images);
+    const currentSlot = contentImages[imageRef];
+    if (!currentSlot || typeof currentSlot !== 'object' || Array.isArray(currentSlot)) return null;
+    return upsertContentImageSlot(imagesData, imageRef, {
+        ...(currentSlot as Record<string, unknown>),
+        ...patch,
+    });
+}
+
 export const ImageBlock = createReactBlockSpec(
     {
         type: 'customImage',
@@ -232,44 +248,26 @@ export const ImageBlock = createReactBlockSpec(
                 };
             }, [block.id, openMediaDialog, openUploaderDialog]);
 
-            // Sync block properties to imagesData source-of-truth when modified
             useEffect(() => {
                 if (!block.props.url || !block.props.imageRef) return;
-                
+
                 const images = parseImagesData(imagesData);
                 const contentImages = parseImagesData(images.content_images);
                 const currentSlot = contentImages[block.props.imageRef] as Record<string, unknown> | undefined;
-                
-                const currentWidth = currentSlot?.width;
-                const currentAlignment = currentSlot?.alignment;
-                const currentCaption = currentSlot?.caption;
-                const currentAlt = currentSlot?.alt;
-                
-                const hasChanged = 
-                    currentWidth !== block.props.width ||
-                    currentAlignment !== block.props.alignment ||
-                    currentCaption !== block.props.caption ||
-                    currentAlt !== block.props.alt;
-                    
-                if (hasChanged) {
-                    const updatedSlot = {
-                        ...(currentSlot || {}),
-                        width: typeof block.props.width === 'number'
-                            ? block.props.width
-                            : /^\d+$/.test(String(block.props.width))
-                                ? parseInt(String(block.props.width), 10)
-                                : block.props.width,
-                        alignment: block.props.alignment,
-                        caption: block.props.caption,
-                        alt: block.props.alt,
-                    };
-                    onImagesChange?.(upsertContentImageSlot(imagesData, block.props.imageRef, updatedSlot));
-                }
+                if (!currentSlot) return;
+
+                const nextCaption = block.props.caption || '';
+                const nextAlt = block.props.alt || '';
+                if (currentSlot.caption === nextCaption && currentSlot.alt === nextAlt) return;
+
+                onImagesChange?.(upsertContentImageSlot(imagesData, block.props.imageRef, {
+                    ...currentSlot,
+                    caption: nextCaption,
+                    alt: nextAlt,
+                }));
             }, [
                 block.props.url,
                 block.props.imageRef,
-                block.props.width,
-                block.props.alignment,
                 block.props.caption,
                 block.props.alt,
                 imagesData,
@@ -330,6 +328,15 @@ export const ImageBlock = createReactBlockSpec(
                 setUploaderOpen(false);
             };
 
+            const handleCaptionChange = (caption: string) => {
+                editor.updateBlock(block, {
+                    type: 'customImage',
+                    props: { ...block.props, caption }
+                });
+                const nextImagesData = patchContentImageSlot(imagesData, block.props.imageRef, { caption });
+                if (nextImagesData) onImagesChange?.(nextImagesData);
+            };
+
             // Placeholder state - no image
             if (!block.props.url) {
                 return (
@@ -361,9 +368,7 @@ export const ImageBlock = createReactBlockSpec(
                                     <Button
                                         variant="default"
                                         size="sm"
-                                        onMouseDown={(e) => { e.stopPropagation(); }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
+                                        onClick={() => {
                                             openMediaDialog();
                                         }}
                                         className="gap-2"
@@ -400,23 +405,10 @@ export const ImageBlock = createReactBlockSpec(
             // Image display with toolbar
             const alignment = block.props.alignment || 'center';
             const alignmentClass = {
-                left: 'mr-auto',
+                left: 'mr-auto ml-0',
                 center: 'mx-auto',
-                right: 'ml-auto',
+                right: 'ml-auto mr-0',
             }[alignment];
-
-            const widthProp = block.props.width;
-            let parsedWidth: string | undefined = undefined;
-            if (widthProp !== undefined && widthProp !== null) {
-                const widthStr = String(widthProp).trim();
-                if (widthStr !== '') {
-                    if (/^\d+$/.test(widthStr)) {
-                        parsedWidth = `${widthStr}px`;
-                    } else {
-                        parsedWidth = widthStr;
-                    }
-                }
-            }
 
             const numericWidth = typeof block.props.width === 'number'
                 ? block.props.width
@@ -443,8 +435,7 @@ export const ImageBlock = createReactBlockSpec(
                     <ToolbarButton
                         icon={Edit3}
                         label="Replace image"
-                        onClick={(event) => {
-                            event.stopPropagation();
+                        onClick={() => {
                             openMediaDialog();
                         }}
                     />
@@ -474,23 +465,15 @@ export const ImageBlock = createReactBlockSpec(
                         onPointerDownCapture={handleSelect}
                         blockType="image"
                         blockId={block.id}
-                        className="my-4"
+                        className={cn("my-4", alignmentClass)}
                         style={{
                             ...dragStyle,
                             opacity: isDragging ? 0.5 : undefined,
                             pointerEvents: isDragging ? 'none' : undefined,
+                            maxWidth: 'calc(100% - 8rem)',
                         }}
                     >
-                        <div
-                            className={cn(
-                                'border rounded-lg overflow-hidden bg-card transition-all duration-200',
-                                alignmentClass
-                            )}
-                            style={{
-                                width: parsedWidth,
-                                maxWidth: '100%',
-                            }}
-                        >
+                        <div className="border rounded-lg overflow-hidden bg-card transition-all duration-200">
                             {/* Image */}
                             <div className="relative">
                                 <img
@@ -506,18 +489,18 @@ export const ImageBlock = createReactBlockSpec(
                             {/* Caption & Credit */}
                             <div className="p-2 space-y-1 bg-muted/20">
                                 <input
+                                    id={`image-caption-${block.id}`}
+                                    name={`image-caption-${block.id}`}
                                     type="text"
                                     value={block.props.caption || ''}
-                                    onChange={(e) => editor.updateBlock(block, {
-                                        type: 'customImage',
-                                        props: { ...block.props, caption: e.target.value }
-                                    })}
+                                    onChange={(e) => handleCaptionChange(e.target.value)}
                                     placeholder="Write a caption..."
+                                    aria-label="Image caption"
                                     className={cn(
                                         'w-full text-center text-sm',
                                         'bg-transparent border-none',
                                         'text-muted-foreground placeholder:text-muted-foreground/50',
-                                        'focus:outline-none focus:ring-0'
+                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
                                     )}
                                     ref={captionRef}
                                 />

@@ -305,26 +305,26 @@ function RelatedContentSettings({
     };
 
     return (
-        <div className="space-y-4">
-            <div className="structure-item">
-                <span className="structure-item-label">Title</span>
-                <div className="ml-auto w-[170px]">
+        <div className="space-y-3">
+            <div className="flex items-center justify-between py-1 gap-2">
+                <span className="text-xs font-medium text-muted-foreground select-none">Title</span>
+                <div className="w-[170px] shrink-0">
                     <Input
-                        className="h-8 text-sm w-full"
+                        className="h-8 text-xs w-full"
                         value={selectedBlock.props.title || ''}
                         onChange={(e) => updateProps({ title: e.target.value })}
                         placeholder="You might like"
                     />
                 </div>
             </div>
-            <div className="structure-item">
-                <span className="structure-item-label">Layout</span>
-                <div className="ml-auto w-[170px]">
+            <div className="flex items-center justify-between py-1 gap-2">
+                <span className="text-xs font-medium text-muted-foreground select-none">Layout</span>
+                <div className="w-[170px] shrink-0">
                     <Select
                         value={selectedBlock.props.layout || 'grid'}
                         onValueChange={(val) => updateProps({ layout: val as RelatedLayout })}
                     >
-                        <SelectTrigger className="h-8 text-sm w-full">
+                        <SelectTrigger className="h-8 text-xs w-full">
                             <SelectValue placeholder="Select layout" />
                         </SelectTrigger>
                         <SelectContent>
@@ -335,14 +335,14 @@ function RelatedContentSettings({
                     </Select>
                 </div>
             </div>
-            <div className="structure-item">
-                <span className="structure-item-label">Mode</span>
-                <div className="ml-auto w-[170px]">
+            <div className="flex items-center justify-between py-1 gap-2">
+                <span className="text-xs font-medium text-muted-foreground select-none">Mode</span>
+                <div className="w-[170px] shrink-0">
                     <Select
                         value={mode}
                         onValueChange={(val) => updateProps({ mode: val as RelatedMode })}
                     >
-                        <SelectTrigger className="h-8 text-sm w-full">
+                        <SelectTrigger className="h-8 text-xs w-full">
                             <SelectValue placeholder="Select mode" />
                         </SelectTrigger>
                         <SelectContent>
@@ -352,11 +352,11 @@ function RelatedContentSettings({
                     </Select>
                 </div>
             </div>
-            <div className="structure-item">
-                <span className="structure-item-label">Max items</span>
-                <div className="ml-auto w-[170px]">
+            <div className="flex items-center justify-between py-1 gap-2">
+                <span className="text-xs font-medium text-muted-foreground select-none">Max items</span>
+                <div className="w-[170px] shrink-0">
                     <Input
-                        className="h-8 text-sm w-full"
+                        className="h-8 text-xs w-full"
                         type="number"
                         min="1"
                         max="20"
@@ -366,17 +366,17 @@ function RelatedContentSettings({
                 </div>
             </div>
 
-            <div className="structure-item items-center">
-                <span className="structure-item-label">Type</span>
-                <div className="ml-auto flex flex-nowrap justify-end gap-1.5">
+            <div className="flex items-center justify-between py-1 gap-2">
+                <span className="text-xs font-medium text-muted-foreground select-none">Type</span>
+                <div className="flex flex-nowrap justify-end gap-1.5 shrink-0">
                     {(Object.keys(RELATED_TYPE_LABELS) as RelatedType[]).map((type) => (
                         <button
                             key={type}
                             type="button"
                             onClick={() => setActiveType(type)}
-                            className={`px-2.5 py-1 text-xs rounded-full border ${activeType === type
+                            className={`px-2.5 py-1 text-xs rounded-full border cursor-pointer ${activeType === type
                                 ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-background text-muted-foreground border-border'
+                                : 'bg-background text-muted-foreground border-border hover:bg-muted/55'
                                 }`}
                         >
                             {RELATED_TYPE_LABELS[type]}
@@ -386,11 +386,11 @@ function RelatedContentSettings({
             </div>
 
             {mode === 'manual' ? (
-                <div className="structure-item">
-                    <span className="structure-item-label">Search</span>
-                    <div className="ml-auto w-[170px]">
+                <div className="flex items-center justify-between py-1 gap-2">
+                    <span className="text-xs font-medium text-muted-foreground select-none">Search</span>
+                    <div className="w-[170px] shrink-0">
                         <Input
-                            className="h-8 text-sm w-full"
+                            className="h-8 text-xs w-full"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder={`Search ${RELATED_TYPE_LABELS[activeType].toLowerCase()}s...`}
@@ -399,15 +399,15 @@ function RelatedContentSettings({
                 </div>
             ) : (
                 <div className="space-y-2 text-xs text-muted-foreground break-words">
-                    <div className="structure-item flex-col items-start">
-                        <span className="structure-item-label">Auto</span>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs font-medium text-muted-foreground select-none">Auto</span>
                         <div className="w-full text-xs text-muted-foreground">
                             Category: {categorySlug || 'none'} · Tags: {Array.isArray(tagSlugs) && tagSlugs.length
                                 ? tagSlugs.join(', ')
                                 : 'none'}
                         </div>
                     </div>
-                    <Button variant="secondary" size="sm" className="w-full" onClick={runAutoSuggestions}>
+                    <Button variant="secondary" size="sm" className="w-full cursor-pointer" onClick={runAutoSuggestions}>
                         Refresh suggestions
                     </Button>
                 </div>

@@ -53,13 +53,7 @@ export const MainRecipeBlock = createReactBlockSpec(
 
       const handleChange = (newValue: string) => {
         onRecipeChange?.(newValue);
-        editor.updateBlock(block, {
-          type: 'mainRecipe',
-          props: {
-            ...block.props,
-            recipeJson: newValue,
-          },
-        });
+        selectBlock();
       };
 
       const toolbar = (
@@ -80,8 +74,6 @@ export const MainRecipeBlock = createReactBlockSpec(
           isSelected={isSelected}
           toolbar={toolbar}
           onClick={selectBlock}
-          onFocus={selectBlock}
-          onPointerDownCapture={selectBlock}
           blockType="main-recipe"
           blockId={block.id}
           className="my-4"
