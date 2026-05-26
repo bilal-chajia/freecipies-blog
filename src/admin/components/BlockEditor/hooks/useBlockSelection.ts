@@ -33,6 +33,7 @@ export function useBlockSelection({
     const onForceSelectHandledRef = useRef(onForceSelectHandled);
     const activeBlockIdRef = useRef(activeBlockId);
     const toolbarActionBlockIdRef = useRef<string | null>(null);
+    const isHandlingPointerRef = useRef(false);
     const lastPointerBlockIdRef = useRef<string | null>(null);
 
     useEffect(() => { onSelectedBlockChangeRef.current = onSelectedBlockChange; }, [onSelectedBlockChange]);
@@ -55,6 +56,7 @@ export function useBlockSelection({
         };
 
         const handleSelection = () => {
+            if (isHandlingPointerRef.current) return;
             // Priority 1: Move action (up/down buttons)
             if (moveActionBlockIdRef.current) {
                 const moveId = moveActionBlockIdRef.current;
@@ -64,9 +66,8 @@ export function useBlockSelection({
                     setActiveBlockId(moveId);
                     onSelectedBlockChangeRef.current?.(moveBlock as Record<string, unknown>);
                     if (!CUSTOM_BLOCK_TYPES.has((moveBlock as Record<string, string>).type)) {
-                        requestAnimationFrame(() => {
-                            try { (editor as Record<string, (id: string, pos: string) => void>).setTextCursorPosition?.(moveId, 'start'); } catch {}
-                        });
+                        // Cursor position intentionally NOT forced to 'start' after move
+                        // to prevent cursor jumps. Block remains selected via activeBlockId.
                     }
                     return;
                 }
@@ -142,8 +143,12 @@ export function useBlockSelection({
 
             // Priority 7: Natural cursor position
             let block: Record<string, unknown> | null = null;
-            try { 
-                block = (editor as Record<string, () => { block: Record<string, unknown> }>).getTextCursorPosition?.().block; 
+            try {
+                const pos = (editor as Record<string, () => { block: Record<string, unknown> }>).getTextCursorPosition?.();
+                block = pos?.block ?? null;
+                if (block && CUSTOM_BLOCK_TYPES.has((block as Record<string, string>).type)) {
+                    block = null;
+                }
             } catch {
                 const domId = getBlockIdFromDom();
                 if (domId) {
@@ -167,44 +172,94 @@ export function useBlockSelection({
         handleSelection();
         const unsubscribe = (editor as Record<string, (cb: () => void) => (() => void) | void>).onSelectionChange?.(handleSelection);
         return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
-    }, [editor, activeBlockId, forceSelectBlockId]);
+    }, [editor, forceSelectBlockId]);
 
     // PointerDown and FocusIn handlers for custom blocks, move buttons, toolbar
     useEffect(() => {
         const wrapper = wrapperRef.current;
         if (!wrapper) return undefined;
 
-        const handlePointerDown = (event: PointerEvent) => {
+        const restoreTableInputFocus = (target: HTMLInputElement) => {
+            window.setTimeout(() => {
+                if (!target.isConnected) return;
+                target.focus();
+                const cursor = target.value.length;
+                target.setSelectionRange(cursor, cursor);
+            }, 0);
+        };
+
+        const handleTableControlPointer = (event: PointerEvent | MouseEvent) => {
             const target = event.target;
             if (!(target instanceof HTMLElement)) return;
-
-            const moveButton = target.closest('button[aria-label="Move up"], button[aria-label="Move down"]');
-            if (moveButton) {
-                const blockRoot = moveButton.closest('[data-block]');
-                const blockId = blockRoot?.getAttribute('data-block');
-                if (blockId) moveActionBlockIdRef.current = blockId;
-                return;
+            if (!target.closest('[data-simple-table-control="true"]')) return;
+            if (target instanceof HTMLInputElement) {
+                restoreTableInputFocus(target);
             }
+        };
 
-            if (target.closest('.wp-block-toolbar-wrap') || target.closest('.wp-block-toolbar')) {
-                if (activeBlockId) toolbarActionBlockIdRef.current = activeBlockId;
-                return;
-            }
+        const handlePointerDown = (event: PointerEvent) => {
+            isHandlingPointerRef.current = true;
+            try {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const currentActiveId = activeBlockIdRef.current;
 
-            const customBlock = target.closest('.wp-block--custom');
-            if (customBlock) {
-                const blockId = customBlock.getAttribute('data-block');
-                if (blockId) {
-                    lastPointerBlockIdRef.current = blockId;
-                    if (blockId !== activeBlockId) {
-                        const block = (editor as Record<string, (id: string) => unknown> | null)?.getBlock?.(blockId);
-                        setActiveBlockId(blockId);
-                        if (block) onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
+                const tableControl = target.closest('[data-simple-table-control="true"]');
+                if (tableControl) {
+                    const blockRoot = target.closest('.wp-block--custom');
+                    const blockId = blockRoot?.getAttribute('data-block');
+                    if (blockId) {
+                        lastPointerBlockIdRef.current = blockId;
+                        if (blockId !== currentActiveId) {
+                            const block = (editor as Record<string, (id: string) => unknown> | null)?.getBlock?.(blockId);
+                            setActiveBlockId(blockId);
+                            if (block) onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
+                        }
+                    }
+
+                    if (target instanceof HTMLInputElement) {
+                        window.requestAnimationFrame(() => {
+                            if (!target.isConnected) return;
+                            if (document.activeElement !== target) {
+                                target.focus();
+                                const cursor = target.value.length;
+                                target.setSelectionRange(cursor, cursor);
+                            }
+                        });
                     }
                     return;
                 }
+
+                const moveButton = target.closest('button[aria-label="Move up"], button[aria-label="Move down"]');
+                if (moveButton) {
+                    const blockRoot = moveButton.closest('[data-block]');
+                    const blockId = blockRoot?.getAttribute('data-block');
+                    if (blockId) moveActionBlockIdRef.current = blockId;
+                    return;
+                }
+
+                if (target.closest('.wp-block-toolbar-wrap') || target.closest('.wp-block-toolbar')) {
+                    if (currentActiveId) toolbarActionBlockIdRef.current = currentActiveId;
+                    return;
+                }
+
+                const customBlock = target.closest('.wp-block--custom');
+                if (customBlock) {
+                    const blockId = customBlock.getAttribute('data-block');
+                    if (blockId) {
+                        lastPointerBlockIdRef.current = blockId;
+                        if (blockId !== currentActiveId) {
+                            const block = (editor as Record<string, (id: string) => unknown> | null)?.getBlock?.(blockId);
+                            setActiveBlockId(blockId);
+                            if (block) onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
+                        }
+                        return;
+                    }
+                }
+                lastPointerBlockIdRef.current = null;
+            } finally {
+                isHandlingPointerRef.current = false;
             }
-            lastPointerBlockIdRef.current = null;
         };
 
         const handleFocusIn = (event: FocusEvent) => {
@@ -224,13 +279,17 @@ export function useBlockSelection({
             }
         };
 
+        wrapper.addEventListener('pointerdown', handleTableControlPointer, true);
+        wrapper.addEventListener('mousedown', handleTableControlPointer, true);
         wrapper.addEventListener('pointerdown', handlePointerDown, true);
         wrapper.addEventListener('focusin', handleFocusIn, true);
         return () => {
+            wrapper.removeEventListener('pointerdown', handleTableControlPointer, true);
+            wrapper.removeEventListener('mousedown', handleTableControlPointer, true);
             wrapper.removeEventListener('pointerdown', handlePointerDown, true);
             wrapper.removeEventListener('focusin', handleFocusIn, true);
         };
-    }, [activeBlockId, editor]);
+    }, [editor]);
 
     // Force select from parent (e.g. List View click)
     useEffect(() => {
@@ -240,12 +299,14 @@ export function useBlockSelection({
         if (block) {
             setActiveBlockId(forceSelectBlockId);
             onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
-            try {
-                const currentPos = (editor as Record<string, () => { block?: { id: string } }>).getTextCursorPosition?.();
-                if (currentPos?.block?.id !== forceSelectBlockId) {
-                    (editor as Record<string, (id: string, pos: string) => void>).setTextCursorPosition?.(forceSelectBlockId, 'start');
-                }
-            } catch {}
+            if (!CUSTOM_BLOCK_TYPES.has((block as Record<string, string>).type)) {
+                try {
+                    const currentPos = (editor as Record<string, () => { block?: { id: string } }>).getTextCursorPosition?.();
+                    if (currentPos?.block?.id !== forceSelectBlockId) {
+                        (editor as Record<string, (id: string, pos: string) => void>).setTextCursorPosition?.(forceSelectBlockId, 'start');
+                    }
+                } catch {}
+            }
             onForceSelectHandledRef.current?.();
         }
     }, [forceSelectBlockId, editor, activeBlockId]);

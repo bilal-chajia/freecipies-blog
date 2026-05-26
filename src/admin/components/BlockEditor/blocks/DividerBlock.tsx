@@ -22,10 +22,9 @@ import {
     DropdownMenuTrigger,
 } from '@/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import BlockToolbar from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
+import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 import { useBlockSelection } from '../selection-context';
 
 type DividerStyle = 'solid' | 'dashed' | 'dotted' | 'double';
@@ -98,7 +97,7 @@ function DividerStyleToolbar({ currentStyle, onChange }: {
     );
 }
 
-export const DividerBlock = createReactBlockSpec(
+const DividerBlock = createReactBlockSpec(
     {
         type: 'divider',
         propSchema: {
@@ -122,36 +121,21 @@ export const DividerBlock = createReactBlockSpec(
                 });
             };
 
-            const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
-                requestAnimationFrame(() => selectBlock());
-            };
-
-            const {
-                attributes: dragAttributes,
-                listeners: dragListeners,
-                setNodeRef: setDragNodeRef,
-                transform: dragTransform,
-                isDragging,
-            } = useDraggable({ id: block.id });
-            const dragHandleProps = { ...dragAttributes, ...dragListeners };
-            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
+            const { moveUp, moveDown, remove } = useBlockActionPrimitives({
+                editor,
+                blockId: block.id,
+                onSelect: () => requestAnimationFrame(() => selectBlock()),
+            });
+            const { dragHandleProps, setDragNodeRef, dragStyle, isDragging } = useBlockDragHandle(block.id);
 
             const toolbar = (
                 <BlockToolbar
                     blockIcon={Minus}
                     blockLabel="Divider"
-                    onMoveUp={moveBlockUp}
-                    onMoveDown={moveBlockDown}
+                    onMoveUp={moveUp}
+                    onMoveDown={moveDown}
                     dragHandleProps={dragHandleProps}
-                    onDelete={() => editor.removeBlocks([block])}
+                    onDelete={remove}
                     showMoreMenu={false}
                 >
                     <DividerStyleToolbar
@@ -167,8 +151,6 @@ export const DividerBlock = createReactBlockSpec(
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={selectBlock}
-                    onFocus={selectBlock}
-                    onPointerDownCapture={selectBlock}
                     blockType="divider"
                     blockId={block.id}
                     className="py-4"
@@ -196,6 +178,5 @@ export const DividerBlock = createReactBlockSpec(
 );
 
 export default DividerBlock;
-
 
 

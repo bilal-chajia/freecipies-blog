@@ -92,7 +92,12 @@ export function useInsertHandle({ editor, wrapperRef, canvasRef }: InsertHandleP
                     }
                     return;
                 }
-                const nearest = getNearestBlockPos(view.state.doc, coords.pos);
+                let nearest: ReturnType<typeof getNearestBlockPos> | null = null;
+                try {
+                    nearest = getNearestBlockPos(view.state.doc, coords.pos);
+                } catch {
+                    nearest = null;
+                }
                 if (!nearest) {
                     if (!isOverButton && !hideTimeout) {
                         hideTimeout = setTimeout(() => { setInsertHandle(null); hideTimeout = null; }, 400);

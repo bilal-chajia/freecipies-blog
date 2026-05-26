@@ -16,9 +16,8 @@ import { createReactBlockSpec } from '@blocknote/react';
 import { defaultProps } from '@blocknote/core';
 import { AlertTriangle, Info, Lightbulb, AlertCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import type { FocusEvent, KeyboardEvent } from 'react';
+import { useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import {
     DropdownMenu,
@@ -29,6 +28,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import BlockToolbar from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
+import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
 import { useBlockSelection } from '../selection-context';
 
 // Alert type definitions
@@ -60,46 +60,46 @@ const alertConfig: Record<AlertType, AlertConfig> = {
     tip: {
         icon: Lightbulb,
         label: 'Tip',
-        bg: 'linear-gradient(180deg, #f2fcf5 0%, #ffffff 100%)',
-        borderColor: '#e5e7eb',
-        iconColor: '#10b981',
-        iconBg: 'rgba(16, 185, 129, 0.12)',
-        titleColor: '#111827',
-        subtitleColor: '#6b7280',
-        textColor: '#374151',
+        bg: 'var(--alert-tip-bg)',
+        borderColor: 'var(--alert-tip-border)',
+        iconColor: 'var(--alert-tip-icon-color)',
+        iconBg: 'var(--alert-tip-icon-bg)',
+        titleColor: 'var(--alert-tip-title)',
+        subtitleColor: 'var(--alert-tip-subtitle)',
+        textColor: 'var(--foreground)',
     },
     warning: {
         icon: AlertTriangle,
         label: 'Warning',
-        bg: 'linear-gradient(180deg, #fffbeb 0%, #ffffff 100%)',
-        borderColor: '#e5e7eb',
-        iconColor: '#f59e0b',
-        iconBg: 'rgba(245, 158, 11, 0.12)',
-        titleColor: '#111827',
-        subtitleColor: '#6b7280',
-        textColor: '#374151',
+        bg: 'var(--alert-warning-bg)',
+        borderColor: 'var(--alert-warning-border)',
+        iconColor: 'var(--alert-warning-icon-color)',
+        iconBg: 'var(--alert-warning-icon-bg)',
+        titleColor: 'var(--alert-warning-title)',
+        subtitleColor: 'var(--alert-warning-subtitle)',
+        textColor: 'var(--foreground)',
     },
     info: {
         icon: Info,
         label: 'Info',
-        bg: 'linear-gradient(180deg, #eff6ff 0%, #ffffff 100%)',
-        borderColor: '#e5e7eb',
-        iconColor: '#3b82f6',
-        iconBg: 'rgba(59, 130, 246, 0.12)',
-        titleColor: '#111827',
-        subtitleColor: '#6b7280',
-        textColor: '#374151',
+        bg: 'var(--alert-info-bg)',
+        borderColor: 'var(--alert-info-border)',
+        iconColor: 'var(--alert-info-icon-color)',
+        iconBg: 'var(--alert-info-icon-bg)',
+        titleColor: 'var(--alert-info-title)',
+        subtitleColor: 'var(--alert-info-subtitle)',
+        textColor: 'var(--foreground)',
     },
     note: {
         icon: AlertCircle,
         label: 'Note',
-        bg: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
-        borderColor: '#e5e7eb',
-        iconColor: '#64748b',
-        iconBg: 'rgba(100, 116, 139, 0.12)',
-        titleColor: '#111827',
-        subtitleColor: '#6b7280',
-        textColor: '#374151',
+        bg: 'var(--alert-note-bg)',
+        borderColor: 'var(--alert-note-border)',
+        iconColor: 'var(--alert-note-icon-color)',
+        iconBg: 'var(--alert-note-icon-bg)',
+        titleColor: 'var(--alert-note-title)',
+        subtitleColor: 'var(--alert-note-subtitle)',
+        textColor: 'var(--foreground)',
     },
 };
 
@@ -130,7 +130,7 @@ function AlertTypeToolbar({ currentType, onChange }: {
                                 'transition-colors duration-[var(--wp-transition-duration)]'
                             )}
                         >
-                            <Icon className={cn('w-4 h-4', config.iconColor)} />
+                            <Icon className="w-4 h-4" style={{ color: config.iconColor }} />
                             <span className="text-xs font-medium">{config.label}</span>
                         </button>
                     </DropdownMenuTrigger>
@@ -152,7 +152,7 @@ function AlertTypeToolbar({ currentType, onChange }: {
                                 currentType === type && 'bg-accent'
                             )}
                         >
-                            <TypeIcon className={cn('w-4 h-4', typeConfig.iconColor)} />
+                            <TypeIcon className="w-4 h-4" style={{ color: typeConfig.iconColor }} />
                             {typeConfig.label}
                         </DropdownMenuItem>
                     );
@@ -166,7 +166,7 @@ function AlertTypeToolbar({ currentType, onChange }: {
  * Alert Block Component
  * WordPress-style refactored with toolbar controls
  */
-export const Alert = createReactBlockSpec(
+const Alert = createReactBlockSpec(
     {
         type: 'alert',
         propSchema: {
@@ -190,6 +190,11 @@ export const Alert = createReactBlockSpec(
             const Icon = config.icon;
 
             const { isSelected, selectBlock } = useBlockSelection(block.id);
+            const contentRefRef = useRef(contentRef);
+            const editorRef = useRef(editor);
+
+            contentRefRef.current = contentRef;
+            editorRef.current = editor;
 
             const handleTypeChange = (newType: AlertType) => {
                 editor.updateBlock(block, {
@@ -198,36 +203,52 @@ export const Alert = createReactBlockSpec(
                 });
             };
 
-            const moveBlockUp = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksUp();
-                requestAnimationFrame(() => selectBlock());
-            };
+            const { moveUp, moveDown, remove } = useBlockActionPrimitives({
+                editor,
+                blockId: block.id,
+                onSelect: () => requestAnimationFrame(() => selectBlock()),
+            });
+            const { dragHandleProps, setDragNodeRef, dragStyle, isDragging } = useBlockDragHandle(block.id);
 
-            const moveBlockDown = () => {
-                editor.setTextCursorPosition(block.id, 'start');
-                editor.moveBlocksDown();
-                requestAnimationFrame(() => selectBlock());
-            };
+            const setElementRef = useCallback((node: AlertContentElement | null) => {
+                const latestContentRef = contentRefRef.current;
+                if (typeof latestContentRef === 'function') {
+                    latestContentRef(node);
+                } else if (latestContentRef && typeof latestContentRef === 'object') {
+                    (latestContentRef as MutableElementRef).current = node;
+                }
 
-            const {
-                attributes: dragAttributes,
-                listeners: dragListeners,
-                setNodeRef: setDragNodeRef,
-                transform: dragTransform,
-                isDragging,
-            } = useDraggable({ id: block.id });
-            const dragHandleProps = { ...dragAttributes, ...dragListeners };
-            const dragStyle = dragTransform ? { transform: CSS.Transform.toString(dragTransform) } : undefined;
+                if (node && !node.__pasteHandlerAttached) {
+                    node.__pasteHandlerAttached = true;
+                    node.addEventListener('paste', (e) => {
+                        const text = e.clipboardData?.getData('text/plain');
+                        if (text && text.includes('\n')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            let pmView = null;
+                            try {
+                                pmView = editorRef.current._tiptapEditor?.view ?? null;
+                            } catch {
+                                pmView = null;
+                            }
+                            if (pmView) {
+                                const { state, dispatch } = pmView;
+                                const tr = state.tr.insertText(text);
+                                dispatch(tr);
+                            }
+                        }
+                    }, true);
+                }
+            }, []);
 
             const toolbar = (
                 <BlockToolbar
                     blockIcon={Icon}
                     blockLabel={`${config.label} alert`}
-                    onMoveUp={moveBlockUp}
-                    onMoveDown={moveBlockDown}
+                    onMoveUp={moveUp}
+                    onMoveDown={moveDown}
                     dragHandleProps={dragHandleProps}
-                    onDelete={() => editor.removeBlocks([block])}
+                    onDelete={remove}
                     showMoreMenu={false}
                 >
                     <AlertTypeToolbar
@@ -243,8 +264,6 @@ export const Alert = createReactBlockSpec(
                     isSelected={isSelected}
                     toolbar={toolbar}
                     onClick={selectBlock}
-                    onFocus={selectBlock}
-                    onPointerDownCapture={selectBlock}
                     blockType="alert"
                     blockId={block.id}
                     className="my-2"
@@ -293,6 +312,8 @@ export const Alert = createReactBlockSpec(
                             <div className="flex-1 min-w-0 pt-[2px]">
                                 {/* Editable Title */}
                                 <input
+                                    id={`alert-title-${block.id}`}
+                                    name={`alert-title-${block.id}`}
                                     type="text"
                                     style={{
                                         display: 'block',
@@ -309,11 +330,8 @@ export const Alert = createReactBlockSpec(
                                         lineHeight: 1.2,
                                     }}
                                     placeholder="Title | Subtitle (optional)"
+                                    aria-label="Alert box title"
                                     defaultValue={block.props.title || ''}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onPointerDownCapture={(e) => e.stopPropagation()}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onFocus={(e) => e.stopPropagation()}
                                     onBlur={(e: FocusEvent<HTMLInputElement>) => {
                                         const newTitle = e.target.value.trim();
                                         if (newTitle !== (block.props.title || '')) {
@@ -324,7 +342,6 @@ export const Alert = createReactBlockSpec(
                                         }
                                     }}
                                     onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                                        e.stopPropagation();
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
                                             e.currentTarget.blur();
@@ -339,43 +356,38 @@ export const Alert = createReactBlockSpec(
                                     {block.props.title?.includes('|') ? block.props.title.split('|')[1].trim() : config.label}
                                 </div>
                             </div>
+
+                            {/* Inline Variant Tab-Bar (Only when selected) */}
+                            {isSelected && (
+                                <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border/40 ml-4 animate-in fade-in zoom-in-95 duration-200">
+                                    {alertTypes.map((type) => {
+                                        const typeConfig = alertConfig[type];
+                                        const isActive = alertType === type;
+                                        return (
+                                            <button
+                                                key={type}
+                                                type="button"
+                                                onClick={() => handleTypeChange(type)}
+                                                className={cn(
+                                                    "px-2.5 py-1 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap",
+                                                    isActive 
+                                                        ? "bg-background text-foreground shadow-sm scale-105 border border-border/10 font-bold" 
+                                                        : "text-muted-foreground hover:bg-background/40 hover:text-foreground"
+                                                )}
+                                            >
+                                                {typeConfig.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
                         {/* Content Area */}
                         <div style={{ padding: '24px' }}>
                             <div
-                                ref={(node: AlertContentElement | null) => {
-                                    // Attach BlockNote's contentRef
-                                    if (typeof contentRef === 'function') {
-                                        contentRef(node);
-                                    } else if (contentRef && typeof contentRef === 'object') {
-                                        (contentRef as MutableElementRef).current = node;
-                                    }
-                                    // Attach paste interceptor
-                                    if (node && !node.__pasteHandlerAttached) {
-                                        node.__pasteHandlerAttached = true;
-                                        node.addEventListener('paste', (e) => {
-                                            const text = e.clipboardData?.getData('text/plain');
-                                            if (text && text.includes('\n')) {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                // Insert as plain text via the editor's underlying ProseMirror view
-                                                let pmView = null;
-                                                try {
-                                                    pmView = editor._tiptapEditor?.view ?? null;
-                                                } catch {
-                                                    pmView = null;
-                                                }
-                                                if (pmView) {
-                                                    const { state, dispatch } = pmView;
-                                                    const tr = state.tr.insertText(text);
-                                                    dispatch(tr);
-                                                }
-                                            }
-                                        }, true);
-                                    }
-                                }}
-                                className="prose prose-sm max-w-none focus:outline-none text-foreground"
+                                ref={setElementRef}
+                                className="prose prose-sm max-w-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 text-foreground"
                             />
                         </div>
                     </div>
@@ -386,4 +398,3 @@ export const Alert = createReactBlockSpec(
 );
 
 export default Alert;
-

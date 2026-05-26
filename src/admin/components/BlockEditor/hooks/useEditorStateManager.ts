@@ -5,6 +5,7 @@ import { CUSTOM_BLOCK_TYPES } from '../utils/constants';
 import { blocksToContentJson } from '../utils/conversion';
 import { getEditorDomElement } from '../utils/editorView';
 import type { AppEditor } from '../schema';
+import { useBlockEditorStore } from '../store/blockEditorStore';
 
 type AnyBlock = Block<any, any, any>;
 
@@ -52,9 +53,13 @@ export function useEditorStateManager({
     const onStructureUpdateRef = useRef(onStructureUpdate);
     const onSelectedBlockChangeRef = useRef(onSelectedBlockChange);
     const onRoundupChangeRef = useRef(onRoundupChange);
+    const activeBlockIdRef = useRef(activeBlockId);
     const lastSerializedRef = useRef('');
     const lastEmittedValueRef = useRef('');
     const lastRoundupRef = useRef('');
+    const lastBlockStructureRef = useRef('');
+
+    const updateStructure = useBlockEditorStore((state) => state.updateStructure);
 
     const [structureItems, setStructureItems] = useState<StructureItem[]>([]);
     const structureItemsRef = useRef(structureItems);
@@ -64,6 +69,7 @@ export function useEditorStateManager({
     useEffect(() => { onStructureUpdateRef.current = onStructureUpdate; }, [onStructureUpdate]);
     useEffect(() => { onSelectedBlockChangeRef.current = onSelectedBlockChange; }, [onSelectedBlockChange]);
     useEffect(() => { onRoundupChangeRef.current = onRoundupChange; }, [onRoundupChange]);
+    useEffect(() => { activeBlockIdRef.current = activeBlockId; }, [activeBlockId]);
     useEffect(() => { structureItemsRef.current = structureItems; }, [structureItems]);
 
     // Clean up debounce timeout on unmount or editor change
@@ -92,8 +98,38 @@ export function useEditorStateManager({
                 icon: getBlockIcon(item.block),
             }));
             setStructureItems(nextItems);
+            updateStructure(nextItems);
 
-            const editorDom = getEditorDomElement(editor);
+            // --- Real-time Block-level Validation Loop ---
+            const storeSetBlockError = useBlockEditorStore.getState().setBlockError;
+            const storeClearBlockError = useBlockEditorStore.getState().clearBlockError;
+
+            flatBlocks.forEach(({ block }) => {
+                const errors: string[] = [];
+                if (block.type === 'video') {
+                    const props = block.props as Record<string, unknown>;
+                    if (props.url && (!props.provider || !props.videoId)) {
+                        errors.push("Invalid video URL. YouTube or Vimeo required.");
+                    }
+                }
+                if (block.type === 'customImage') {
+                    const props = block.props as Record<string, unknown>;
+                    if (!props.url && !props.mediaId) {
+                        errors.push("An image must be uploaded or selected.");
+                    }
+                }
+                if (errors.length > 0) {
+                    storeSetBlockError(block.id, errors);
+                } else {
+                    storeClearBlockError(block.id);
+                }
+            });
+
+            const blockStructure = flatBlocks.map(({ block }) => `${block.id}:${block.type}`).join('|');
+            const shouldSyncBlockAttributes = blockStructure !== lastBlockStructureRef.current;
+            lastBlockStructureRef.current = blockStructure;
+
+            const editorDom = shouldSyncBlockAttributes ? getEditorDomElement(editor) : null;
             if (editorDom) {
                 const blockIds = new Set(flatBlocks.map(({ block }) => block.id));
                 const customIds = new Set(
@@ -133,8 +169,9 @@ export function useEditorStateManager({
                 });
             }
 
-            if (onSelectedBlockChangeRef.current && activeBlockId) {
-                const activeBlock = flatBlocks.find(({ block }) => block.id === activeBlockId)?.block || null;
+            const currentActiveBlockId = activeBlockIdRef.current;
+            if (onSelectedBlockChangeRef.current && currentActiveBlockId) {
+                const activeBlock = flatBlocks.find(({ block }) => block.id === currentActiveBlockId)?.block || null;
                 onSelectedBlockChangeRef.current(activeBlock);
             }
 
@@ -205,7 +242,7 @@ export function useEditorStateManager({
                         onRoundupChangeRef.current(nextRoundup);
                     }
                 }
-            }, 300);
+            }, 800);
         };
 
         handleChange();
@@ -216,7 +253,7 @@ export function useEditorStateManager({
         return () => {
             if (typeof unsubscribe === 'function') unsubscribe();
         };
-    }, [editor, contentType, activeBlockId]);
+    }, [editor, contentType]);
 
     useEffect(() => {
         onStructureUpdateRef.current?.({
