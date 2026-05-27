@@ -281,6 +281,15 @@
     caret-color: auto !important;
 }
 
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode [data-simple-table-control="true"] {
+    -webkit-user-select: auto !important;
+    user-select: auto !important;
+    color: hsl(var(--foreground)) !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
 /* Explicitly allow pointer cursor for buttons and interactive elements */
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode button,
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode a,

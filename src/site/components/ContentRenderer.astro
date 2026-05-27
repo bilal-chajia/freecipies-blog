@@ -154,7 +154,7 @@ const standaloneRoundup =
   /* Unified block spacing — matches editor --wp-block-spacing: 1.25rem */
   .content-blocks {
     --block-spacing: 1.25rem;
-    font-family: "Source Sans 3", "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-sans);
     font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
     line-height: 1.6;
     color: var(--text);
@@ -220,16 +220,16 @@ const standaloneRoundup =
   .content-blocks > :global(.video-embed) {
     width: 100%;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
   }
 
   /* ── Premium Tip Box ── */
   .content-blocks :global(.tip-box-premium) {
     position: relative;
     background: var(--bg);
-    border: 1.5px solid var(--tip-accent, var(--success));
-    border-radius: 16px;
-    margin: 40px 0;
+    border: 1.5px solid var(--tip-accent, var(--accent-sage));
+    border-radius: var(--radius-lg);
+    margin: var(--space-8) 0;
     padding: 48px 32px 32px;
   }
 

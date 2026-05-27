@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import type { MouseEvent } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { InsertIndicator } from './TableBlock.types';
 
 export function useInsertIndicators(
@@ -17,7 +16,7 @@ export function useInsertIndicators(
         setColInsert(null);
     };
 
-    const updateHoverIndicators = (event: MouseEvent<HTMLDivElement>) => {
+    const updateHoverIndicators = useCallback((clientX: number, clientY: number) => {
         if (!isSelected) return;
         const wrapper = wrapperRef.current;
         const table = tableRef.current;
@@ -27,9 +26,9 @@ export function useInsertIndicators(
         const scrollLeft = wrapper.scrollLeft || 0;
         
         // x relative to scrolled coordinates (absolute children scroll with wrapperRef content)
-        const x = event.clientX - rect.left + scrollLeft;
+        const x = clientX - rect.left + scrollLeft;
         // y relative to container client coordinate (no vertical scroll on wrapperRef itself)
-        const y = event.clientY - rect.top;
+        const y = clientY - rect.top;
         const threshold = 8;
 
         const tableRect = table.getBoundingClientRect();
@@ -115,7 +114,27 @@ export function useInsertIndicators(
         } else {
             setColInsert(null);
         }
+    }, [isSelected, safeRowsLength, wrapperRef, tableRef]);
+
+    const updateHoverIndicatorsFromMouse = (event: React.MouseEvent<HTMLDivElement>) => {
+        updateHoverIndicators(event.clientX, event.clientY);
     };
+
+    useEffect(() => {
+        const wrapper = wrapperRef.current;
+        if (!isSelected || !wrapper) return undefined;
+
+        const handlePointerMove = (event: PointerEvent | MouseEvent) => {
+            updateHoverIndicators(event.clientX, event.clientY);
+        };
+
+        wrapper.addEventListener('pointermove', handlePointerMove, true);
+        wrapper.addEventListener('mousemove', handlePointerMove, true);
+        return () => {
+            wrapper.removeEventListener('pointermove', handlePointerMove, true);
+            wrapper.removeEventListener('mousemove', handlePointerMove, true);
+        };
+    }, [isSelected, updateHoverIndicators, wrapperRef]);
 
     useEffect(() => {
         if (!isSelected) {
@@ -126,7 +145,7 @@ export function useInsertIndicators(
     return {
         rowInsert,
         colInsert,
-        updateHoverIndicators,
+        updateHoverIndicators: updateHoverIndicatorsFromMouse,
         clearIndicators,
     };
 }

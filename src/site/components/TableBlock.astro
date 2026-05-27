@@ -45,35 +45,80 @@ const normalizedRows = safeRows.map((row) => {
   .content-table {
     width: 100%;
     overflow-x: auto;
-    margin: 1rem 0;
+    margin: var(--space-4) 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-sm);
+    background: var(--bg-elevated);
+    /* Clip zebra backgrounds to rounded corners */
+    overflow: hidden;
+  }
+
+  /* Sleek custom scrollbar */
+  .content-table::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .content-table::-webkit-scrollbar-track {
+    background: var(--bg-alt);
+  }
+
+  .content-table::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--radius-full);
+  }
+
+  .content-table::-webkit-scrollbar-thumb:hover {
+    background: var(--brand-primary);
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
     display: table;
     min-width: 100%;
   }
 
   th,
   td {
-    border: 1px solid var(--border);
-    padding: 0.6rem 0.75rem;
+    padding: var(--space-4.5) var(--space-6);
     text-align: left;
-    vertical-align: top;
+    vertical-align: middle;
   }
 
   th {
-    background: var(--bg-inset);
+    font-family: var(--font-serif);
     font-weight: 600;
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    border-bottom: 2.5px solid var(--brand-primary);
+    background: transparent;
+    text-align: center;
   }
 
-  tbody tr:nth-child(even) td {
-    background: var(--bg-alt);
+  td {
+    font-family: var(--font-sans);
+    color: var(--text-secondary);
+    border: none;
+    font-size: var(--text-sm);
+  }
+
+  tbody tr {
+    transition: background-color var(--transition-fast) var(--ease-default);
+  }
+
+  tbody tr:nth-child(even) {
+    background-color: var(--bg-alt);
+  }
+
+  tbody tr:hover {
+    background-color: var(--bg-hover);
   }
 
   tbody tr:hover td {
-    background: var(--bg-hover);
+    color: var(--text);
   }
 </style>

@@ -1,10 +1,52 @@
 import { Plus } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import type { InsertIndicator } from './TableBlock.types';
+import { createTableControlTriggerGuard } from './table-control-events';
 
-const stopTableButtonEvent = (event: React.SyntheticEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-};
+export interface CaptureButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    onTrigger: () => void;
+}
+
+export function CaptureButton({ onTrigger, children, ...props }: CaptureButtonProps) {
+    const onTriggerRef = useRef(onTrigger);
+    const triggerGuardRef = useRef(createTableControlTriggerGuard(() => onTriggerRef.current()));
+
+    useEffect(() => {
+        onTriggerRef.current = onTrigger;
+    }, [onTrigger]);
+
+    useEffect(() => () => triggerGuardRef.current.dispose(), []);
+
+    const stopControlEvent = (event: React.SyntheticEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.nativeEvent.stopImmediatePropagation?.();
+    };
+
+    const triggerFromPress = (event: React.SyntheticEvent<HTMLButtonElement>) => {
+        stopControlEvent(event);
+        triggerGuardRef.current();
+    };
+
+    return (
+        <button
+            type="button"
+            draggable={false}
+            {...props}
+            onPointerDownCapture={triggerFromPress}
+            onMouseDownCapture={triggerFromPress}
+            onClickCapture={stopControlEvent}
+            onDragStartCapture={stopControlEvent}
+            onKeyDownCapture={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    triggerFromPress(event);
+                }
+            }}
+        >
+            {children}
+        </button>
+    );
+}
 
 interface InsertIndicatorsProps {
     colInsert: InsertIndicator | null;
@@ -37,23 +79,15 @@ export function InsertIndicators({
                             width: 2,
                         }}
                     />
-                    <button
-                        type="button"
+                    <CaptureButton
                         data-simple-table-control="true"
-                        onPointerDownCapture={stopTableButtonEvent}
-                        onMouseDownCapture={stopTableButtonEvent}
-                        onPointerDown={stopTableButtonEvent}
-                        onMouseDown={stopTableButtonEvent}
-                        onClick={(event) => {
-                            stopTableButtonEvent(event);
-                            onInsertColumn(Math.min(colInsert.index, safeHeadersLength));
-                        }}
+                        onTrigger={() => onInsertColumn(Math.min(colInsert.index, safeHeadersLength))}
                         className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-background text-primary shadow-sm hover:bg-primary hover:text-primary-foreground"
                         style={{ top: Math.max(0, colInsert.top - 14), left: Math.max(0, colInsert.left - 9) }}
                         title="Insert column"
                     >
                         <Plus className="w-3 h-3 mx-auto" />
-                    </button>
+                    </CaptureButton>
                 </>
             )}
 
@@ -69,23 +103,15 @@ export function InsertIndicators({
                             height: 2,
                         }}
                     />
-                    <button
-                        type="button"
+                    <CaptureButton
                         data-simple-table-control="true"
-                        onPointerDownCapture={stopTableButtonEvent}
-                        onMouseDownCapture={stopTableButtonEvent}
-                        onPointerDown={stopTableButtonEvent}
-                        onMouseDown={stopTableButtonEvent}
-                        onClick={(event) => {
-                            stopTableButtonEvent(event);
-                            onInsertRow(Math.min(rowInsert.index, safeRowsLength));
-                        }}
+                        onTrigger={() => onInsertRow(Math.min(rowInsert.index, safeRowsLength))}
                         className="absolute z-20 w-5 h-5 rounded-full border border-primary/60 bg-background text-primary shadow-sm hover:bg-primary hover:text-primary-foreground"
                         style={{ left: Math.max(0, rowInsert.left - 14), top: Math.max(0, rowInsert.top - 9) }}
                         title="Insert row"
                     >
                         <Plus className="w-3 h-3 mx-auto" />
-                    </button>
+                    </CaptureButton>
                 </>
             )}
         </>

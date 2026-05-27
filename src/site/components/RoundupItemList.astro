@@ -262,7 +262,7 @@ const renderedItems = items.map((item, index) => {
   }
 
   .item-media {
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     box-shadow: var(--shadow-lg);
   }
@@ -300,7 +300,7 @@ const renderedItems = items.map((item, index) => {
     background: var(--bg-alt);
     border-left: 4px solid var(--brand-secondary);
     padding: 1.5rem;
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   }
 
   .note-label {
@@ -331,7 +331,7 @@ const renderedItems = items.map((item, index) => {
     background: var(--text);
     color: var(--text-inverse);
     padding: 0.875rem 2rem;
-    border-radius: 100px;
+    border-radius: var(--radius-full);
     font-weight: 700;
     text-decoration: none;
     transition: all 0.2s;

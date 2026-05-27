@@ -151,7 +151,7 @@ const contactHref = organization.contact_email ? `mailto:${organization.contact_
     color: var(--neutral-400);
     text-decoration: none;
     transition: color var(--transition-fast);
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
     border-radius: var(--radius-sm);
     outline: 2px solid transparent;
     outline-offset: 2px;
@@ -189,8 +189,8 @@ const contactHref = organization.contact_email ? `mailto:${organization.contact_
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: var(--space-11);
+    height: var(--space-11);
     border-radius: var(--radius-full);
     background: var(--neutral-800);
     border: 2px solid transparent;
@@ -225,13 +225,13 @@ const contactHref = organization.contact_email ? `mailto:${organization.contact_
 
   .footer-bottom p {
     color: var(--neutral-300);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     margin: 0;
   }
 
   .version {
     color: var(--neutral-500);
-    font-size: 0.85rem;
+    font-size: var(--text-xs);
   }
 
   /* prefers-contrast: high adjustments */

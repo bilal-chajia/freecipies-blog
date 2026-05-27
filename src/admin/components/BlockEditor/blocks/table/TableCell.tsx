@@ -1,8 +1,36 @@
 import { cn } from '@/lib/utils';
+import { useRef, useEffect } from 'react';
 
-const stopTableInputEvent = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
-};
+interface IsolatedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+
+export function IsolatedInput({ ...props }: IsolatedInputProps) {
+    const inputRef = useRef<HTMLInputElement | null>(null);
+
+    useEffect(() => {
+        const node = inputRef.current;
+        if (!node) return;
+
+        const stopNative = (e: Event) => {
+            e.stopPropagation();
+        };
+
+        node.addEventListener('mousedown', stopNative);
+        node.addEventListener('pointerdown', stopNative);
+        node.addEventListener('keydown', stopNative);
+        node.addEventListener('keyup', stopNative);
+        node.addEventListener('keypress', stopNative);
+
+        return () => {
+            node.removeEventListener('mousedown', stopNative);
+            node.removeEventListener('pointerdown', stopNative);
+            node.removeEventListener('keydown', stopNative);
+            node.removeEventListener('keyup', stopNative);
+            node.removeEventListener('keypress', stopNative);
+        };
+    }, []);
+
+    return <input ref={inputRef} {...props} />;
+}
 
 export function TableCell({
     cellId,
@@ -17,15 +45,12 @@ export function TableCell({
 }) {
     return (
         <td className="table-col border border-border p-2">
-            <input
+            <IsolatedInput
                 id={cellId}
                 name={cellId}
                 type="text"
                 data-simple-table-control="true"
                 value={value}
-                onPointerDown={stopTableInputEvent}
-                onMouseDown={stopTableInputEvent}
-                onKeyDown={stopTableInputEvent}
                 onChange={(e) => {
                     onChange(e.target.value);
                 }}

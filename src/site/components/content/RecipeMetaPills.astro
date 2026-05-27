@@ -233,7 +233,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
     padding: 0.5rem 0.875rem;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 20px;
+    border-radius: var(--radius-full);
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--neutral-700);
@@ -323,7 +323,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
   .diet-pill {
     background: var(--bg-hover);
     border-color: var(--border);
-    border-radius: 20px; /* Keep pill shape for this specific component */
+    border-radius: var(--radius-full); /* Keep pill shape for this specific component */
   }
 
   .diet-pill[data-diet="VeganDiet"],
@@ -351,7 +351,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
       background: var(--bg);
       padding: 0.75rem 0;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
     }
 
     .meta-pill {

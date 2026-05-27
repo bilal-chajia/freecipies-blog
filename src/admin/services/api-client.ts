@@ -18,6 +18,7 @@ const RETRY_CONFIG = {
 
 interface CustomAxiosConfig extends InternalAxiosRequestConfig {
   _retryCount?: number;
+  skipAdminCache?: boolean;
 }
 
 export const api: AxiosInstance = axios.create({
@@ -166,9 +167,10 @@ const transportAdapter = axios.getAdapter(api.defaults.adapter || axios.defaults
 api.defaults.adapter = async function (config: InternalAxiosRequestConfig): AxiosPromise {
   const url = config.url;
   const method = config.method ? config.method.toLowerCase() : '';
+  const skipAdminCache = Boolean((config as CustomAxiosConfig).skipAdminCache);
 
   // 1. Intercept GET requests for caching
-  if (method === 'get' && url && hasLocalStorage()) {
+  if (!skipAdminCache && method === 'get' && url && hasLocalStorage()) {
     const rule = CACHE_RULES.find((r) => r.match.test(url));
     if (rule) {
       const cacheKey = getCacheKeyForRequest(rule.namespace, url, config.params);
@@ -202,7 +204,7 @@ api.defaults.adapter = async function (config: InternalAxiosRequestConfig): Axio
   const response = await transportAdapter(config);
 
   // 3. Save successful GET responses to cache
-  if (method === 'get' && url && response.status === 200 && hasLocalStorage()) {
+  if (!skipAdminCache && method === 'get' && url && response.status === 200 && hasLocalStorage()) {
     const rule = CACHE_RULES.find((r) => r.match.test(url));
     if (rule) {
       const cacheKey = getCacheKeyForRequest(rule.namespace, url, config.params);

@@ -369,7 +369,7 @@ const breadcrumbItems = [
     padding: 0.75rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 600;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
     text-decoration: none;
@@ -428,7 +428,7 @@ const breadcrumbItems = [
 
   /* Description */
   .recipe-description {
-    font-family: "Source Sans 3", "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-sans);
     font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
     color: var(--text-secondary);
     line-height: 1.6;
@@ -444,7 +444,7 @@ const breadcrumbItems = [
     color: var(--text-tertiary);
     line-height: 1.6;
     margin: clamp(1rem, 2vw, 1.5rem) 0;
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   }
 
   .disclosure-notice strong {
@@ -455,14 +455,14 @@ const breadcrumbItems = [
   .hero-image {
     margin: 1.5rem 0;
     overflow: hidden;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
   }
 
   .hero-image img {
     width: 100%;
     height: auto;
     display: block;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
   }
 
   /* Recipe Meta Pills */
@@ -481,7 +481,7 @@ const breadcrumbItems = [
     gap: 0.5rem;
     background: var(--bg-inset);
     padding: 0.75rem 1rem;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     flex: 1;
     min-width: 120px;
   }
@@ -675,7 +675,7 @@ const breadcrumbItems = [
   .nutrition-item {
     background: var(--bg-inset);
     padding: 1rem;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     text-align: center;
   }
 
@@ -713,7 +713,7 @@ const breadcrumbItems = [
 
   .sidebar-widget {
     background: var(--bg-elevated);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 1.5rem;
     border: 1px solid var(--border-subtle);
   }

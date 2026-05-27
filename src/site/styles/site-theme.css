@@ -63,14 +63,7 @@
     --accent-sage-light: #e8f5e9;
     --accent-sage-text: #1b4332;
 
-    /* Radius Tokens */
-    --radius-xs: 0.25rem;
-    --radius-sm: 0.5rem;
-    --radius-md: 0.75rem;
-    --radius-lg: 1rem;
-    --radius-xl: 1.5rem;
-    --radius-2xl: 2rem;
-    --radius-full: 9999px;
+    /* Radius Tokens — inherited from design-tokens.css */
 
     /* Typography Aliases */
     --font-sans: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;

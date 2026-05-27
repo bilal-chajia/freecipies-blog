@@ -25,13 +25,38 @@ export function useTableDraft(editor: any, block: any) {
         return initialDraft;
     });
 
+    const isMountedRef = useRef(true);
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, []);
+
     const setDraft = (nextDraft: { headers: TableRow; rows: TableRow[] }) => {
+        if (!isMountedRef.current) return;
         setDraftState(nextDraft);
         draftMap.set(block.id, nextDraft);
     };
 
     const draftRef = useRef(draft);
     draftRef.current = draft;
+
+    const debouncedCommit = (currentDraft: { headers: TableRow; rows: TableRow[] }) => {
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+        debounceTimerRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+                commitDraft(currentDraft);
+            }
+        }, 400);
+    };
 
     const safeHeaders = draft.headers;
     const safeRows = draft.rows;
@@ -113,6 +138,21 @@ export function useTableDraft(editor: any, block: any) {
             propsHeaders !== lastCommitted.headersJson ||
             propsRows !== lastCommitted.rowsJson
         ) {
+            // Check if the incoming props are actually different from the current local draft.
+            // If they match our current local draft, it is not a genuine external change (like undo/redo),
+            // it's just the editor catching up to a local change that we didn't set isWaitingForCatchUp for!
+            const currentDraft = draftRef.current;
+            const draftHeadersStr = JSON.stringify(currentDraft.headers);
+            const draftRowsStr = JSON.stringify(currentDraft.rows);
+
+            if (propsHeaders === draftHeadersStr && propsRows === draftRowsStr) {
+                setLastCommittedProps({
+                    headersJson: propsHeaders,
+                    rowsJson: propsRows,
+                });
+                return;
+            }
+
             const parsedHeaders = parseJsonProp<TableRow>(propsHeaders, []);
             const reconciledHeaders = parsedHeaders.length > 0 ? parsedHeaders : DEFAULT_HEADERS;
             const parsedRows = parseJsonProp<TableRow[]>(propsRows, []);
@@ -180,6 +220,7 @@ export function useTableDraft(editor: any, block: any) {
         };
         draftRef.current = nextDraft;
         setDraft(nextDraft);
+        debouncedCommit(nextDraft);
     };
 
     const handleCellChange = (rIdx: number, cIdx: number, value: string) => {
@@ -197,6 +238,7 @@ export function useTableDraft(editor: any, block: any) {
         };
         draftRef.current = nextDraft;
         setDraft(nextDraft);
+        debouncedCommit(nextDraft);
     };
 
     const insertColumnAt = (index: number) => {

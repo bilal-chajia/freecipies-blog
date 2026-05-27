@@ -83,8 +83,8 @@ const toConfirmUploadPayload = (payload: ConfirmUploadInput) => ({
 
 export const articlesAPI = {
   getAll: (params: Record<string, unknown> = {}) => api.get('/articles', { params }),
-  getBySlug: (slug: string) => api.get(`/articles/${slug}`),
-  getById: (id: number | string) => api.get(`/admin/articles/${id}`),
+  getBySlug: (slug: string) => api.get(`/articles/${slug}`, { skipAdminCache: true } as AxiosRequestConfig),
+  getById: (id: number | string) => api.get(`/admin/articles/${id}`, { skipAdminCache: true } as AxiosRequestConfig),
   create: (data: unknown) => api.post('/articles', data),
   update: (id: number | string, data: unknown) => api.put(`/admin/articles/${id}`, data),
   delete: (id: number | string) => api.delete(`/admin/articles/${id}`),

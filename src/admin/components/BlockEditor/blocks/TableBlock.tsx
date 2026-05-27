@@ -24,11 +24,17 @@ import { useTableDraft } from './table/useTableDraft';
 import { useInsertIndicators } from './table/useInsertIndicators';
 import TableCell from './table/TableCell';
 import TableHeaderCell from './table/TableHeaderCell';
-import InsertIndicators from './table/InsertIndicators';
+import InsertIndicators, { CaptureButton } from './table/InsertIndicators';
 
-const stopTableButtonEvent = (event: React.SyntheticEvent) => {
+const stopTableSurfaceSelection = (event: React.SyntheticEvent, selectBlock: () => void) => {
+    const target = event.target;
+    if (target instanceof HTMLElement && target.closest('[data-simple-table-control="true"]')) {
+        return;
+    }
     event.preventDefault();
     event.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation?.();
+    selectBlock();
 };
 
 const TableBlock = createReactBlockSpec(
@@ -135,7 +141,12 @@ const TableBlock = createReactBlockSpec(
                         pointerEvents: isDragging ? 'none' : undefined,
                     }}
                 >
-                    <div className="border rounded-lg p-4 bg-card shadow-sm" contentEditable={false}>
+                    <div
+                        className="border rounded-lg p-4 bg-card shadow-sm"
+                        contentEditable={false}
+                        onPointerDownCapture={(event) => stopTableSurfaceSelection(event, selectBlock)}
+                        onMouseDownCapture={(event) => stopTableSurfaceSelection(event, selectBlock)}
+                    >
                         {/* Header */}
                         <div className="flex items-center gap-2 mb-3">
                             <Table2 className="w-4 h-4 text-muted-foreground" />
@@ -198,22 +209,14 @@ const TableBlock = createReactBlockSpec(
                                             ))}
                                             {isSelected && (
                                                 <td className="border border-border p-2 text-center">
-                                                    <button
-                                                        type="button"
+                                                    <CaptureButton
                                                         data-simple-table-control="true"
-                                                        onPointerDownCapture={stopTableButtonEvent}
-                                                        onMouseDownCapture={stopTableButtonEvent}
-                                                        onPointerDown={stopTableButtonEvent}
-                                                        onMouseDown={stopTableButtonEvent}
-                                                        onClick={(event) => {
-                                                            stopTableButtonEvent(event);
-                                                            removeRow(rowIndex);
-                                                        }}
+                                                        onTrigger={() => removeRow(rowIndex)}
                                                         className="text-muted-foreground hover:text-destructive"
                                                         title="Remove row"
                                                     >
                                                         <Trash2 className="w-3 h-3" />
-                                                    </button>
+                                                    </CaptureButton>
                                                 </td>
                                             )}
                                         </tr>

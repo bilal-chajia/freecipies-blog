@@ -64,19 +64,19 @@ const layoutClass =
   .recipe-list {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--space-6);
   }
 
   @media (min-width: 768px) {
     .recipe-list {
-      gap: 2rem;
+      gap: var(--space-8);
     }
   }
 
   /* Masonry Layout */
   .recipe-masonry {
     columns: 1;
-    column-gap: 1.5rem;
+    column-gap: var(--space-6);
   }
 
   @media (min-width: 640px) {
@@ -93,7 +93,7 @@ const layoutClass =
 
   .recipe-masonry :global(article) {
     break-inside: avoid;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--space-6);
   }
 
   /* Grid with featured first item */

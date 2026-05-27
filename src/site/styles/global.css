@@ -40,7 +40,7 @@
   --font-serif: var(--font-serif);
   --font-mono: var(--font-mono);
 
-  --radius-xs: calc(var(--radius-sm) - 2px);
+  --radius-xs: var(--radius-xs);
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
@@ -276,6 +276,7 @@
       --focus-ring-color: #000000;
       --focus-ring-width: 4px;
       --border: #000000;
+      --shadow-opacity: 0;
     }
 
     /* High contrast borders on interactive elements */
@@ -311,9 +312,10 @@
     .card,
     .recipe-list-card,
     .bookmark-chip,
-    .popular-recipes-widget {
+    .popular-recipes-widget,
+    .button {
       box-shadow: none !important;
-      border: 2px solid #000;
+      border: 2px solid currentColor;
     }
 
     /* Ensure links are underlined */
@@ -470,26 +472,7 @@
     padding-inline-end: 3rem;
   }
 
-  /* ========================================
-   * High Contrast Mode Support
-   * ======================================== */
 
-  @media (prefers-contrast: high) {
-    :root {
-      --border: #000000;
-      --shadow-opacity: 0;
-    }
-
-    .card,
-    .button,
-    .recipe-list-card {
-      border: 2px solid currentColor;
-    }
-
-    .bookmark-chip {
-      border: 2px solid currentColor;
-    }
-  }
 
   /* ========================================
    * @supports Feature Detection

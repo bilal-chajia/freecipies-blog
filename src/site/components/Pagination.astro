@@ -97,16 +97,16 @@ const hasNext = currentPage < totalPages;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    margin: 3rem 0 1rem;
+    gap: var(--space-2);
+    margin: var(--space-12) 0 var(--space-4);
   }
   
   .pagination-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--space-10);
+    height: var(--space-10);
     border-radius: var(--radius-md);
     background: var(--bg-elevated);
     border: 1px solid var(--border);
@@ -130,20 +130,20 @@ const hasNext = currentPage < totalPages;
   .pagination-pages {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: var(--space-1);
   }
   
   .pagination-page {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 2.5rem;
-    height: 2.5rem;
-    padding: 0 0.75rem;
+    min-width: var(--space-10);
+    height: var(--space-10);
+    padding: 0 var(--space-3);
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     font-weight: 500;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--text-secondary);
     transition: all var(--transition-fast) var(--ease-default);
   }
@@ -161,7 +161,7 @@ const hasNext = currentPage < totalPages;
   }
   
   .pagination-ellipsis {
-    padding: 0 0.5rem;
+    padding: 0 var(--space-2);
     color: var(--text-tertiary);
   }
   

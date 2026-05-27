@@ -201,7 +201,7 @@ const aspectRatio =
   .ba-grid img {
     width: 100%;
     display: block;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     object-fit: cover;
   }
 
@@ -219,7 +219,7 @@ const aspectRatio =
 
   .ba-images {
     position: relative;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--bg-inset);
     aspect-ratio: var(--ba-aspect, 16 / 9);
@@ -261,7 +261,7 @@ const aspectRatio =
     top: 50%;
     width: 34px;
     height: 34px;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: var(--bg-elevated);
     border: 2px solid var(--info);
     transform: translate(-50%, -50%);

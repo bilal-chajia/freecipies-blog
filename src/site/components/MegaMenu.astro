@@ -212,7 +212,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
         text-decoration: none;
         border: none;
         background: none;
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
         cursor: pointer;
         transition: all 0.2s ease;
     }
@@ -326,7 +326,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
     .featured-card {
         display: block;
         text-decoration: none;
-        border-radius: 12px;
+        border-radius: var(--radius-md);
         overflow: hidden;
         background: linear-gradient(135deg, var(--bg) 0%, var(--bg-alt) 100%);
         border: 1px solid var(--border-subtle);
