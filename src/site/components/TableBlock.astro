@@ -82,28 +82,32 @@ const normalizedRows = safeRows.map((row) => {
 
   th,
   td {
-    padding: var(--space-4.5) var(--space-6);
+    padding: var(--space-4) var(--space-6);
     text-align: left;
     vertical-align: middle;
   }
 
   th {
     font-family: var(--font-serif);
-    font-weight: 600;
+    font-weight: 700;
     font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--text-secondary);
-    border-bottom: 2.5px solid var(--brand-primary);
-    background: transparent;
-    text-align: left;
+    color: var(--text);
+    border-bottom: 2px solid var(--brand-primary);
+    background: var(--bg-alt);
   }
 
   td {
     font-family: var(--font-sans);
     color: var(--text-secondary);
-    border: none;
+    border-bottom: 1px solid var(--border-subtle);
     font-size: var(--text-sm);
+    line-height: 1.5;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
   }
 
   tbody tr {
