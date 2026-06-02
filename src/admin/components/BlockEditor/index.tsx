@@ -129,24 +129,24 @@ export default function BlockEditor({
 
   // --- Hooks ---
   const { structureItems, structureItemsRef } = useEditorStateManager({
-    editor: mountedEditor as any, onChange, onStructureUpdate, onSelectedBlockChange,
+    editor: mountedEditor, onChange, onStructureUpdate, onSelectedBlockChange,
     contentType, onRoundupChange, activeBlockId,
   });
 
   const { toolbarActionBlockIdRef } = useBlockSelection({
-    editor: mountedEditor as any, wrapperRef, activeBlockId, setActiveBlockId: handleSetActiveBlockId,
+    editor: mountedEditor, wrapperRef, activeBlockId, setActiveBlockId: handleSetActiveBlockId,
     onSelectedBlockChange, forceSelectBlockId, onForceSelectHandled,
     moveActionBlockIdRef,
   });
 
   const { linkToolbar, setLinkToolbar, activeStyles, setActiveStyles } =
-    useLinkToolbar({ editor: mountedEditor as any, wrapperRef, activeBlockId });
+    useLinkToolbar({ editor: mountedEditor, wrapperRef, activeBlockId });
 
   const { insertHandle, setInsertHandle } =
     useInsertHandle({ editor: mountedEditor as any, wrapperRef, canvasRef });
 
   const { canvasSensors, handleCanvasDragStart, handleCanvasDragEnd, handleCanvasDragCancel } =
-    useCanvasDragDrop({ editor: mountedEditor as any, structureItemsRef, setActiveBlockId: handleSetActiveBlockId });
+    useCanvasDragDrop({ editor: mountedEditor, structureItemsRef, setActiveBlockId: handleSetActiveBlockId });
 
   const relatedContext = useMemo(() => ({
     categorySlug: context?.categorySlug || null,
@@ -154,9 +154,9 @@ export default function BlockEditor({
     currentSlug: context?.currentSlug || null,
   }), [context]);
 
-  if (!editor) return null;
-
   // --- Render helpers ---
+  // Called unconditionally (before the early return below) to satisfy the
+  // Rules of Hooks — the callbacks guard against a missing editor themselves.
   const { applyLink, insertParagraphAtHandle } = useBlockEditorInlineActions({
     editor,
     linkToolbar,
@@ -165,10 +165,12 @@ export default function BlockEditor({
     setInsertHandle,
   });
 
+  if (!editor) return null;
+
   return (
     <RelatedContentProvider value={relatedContext}>
       <BlockEditorSourceDataProvider value={hydrationContext}>
-        <BlockSelectionProvider activeBlockId={activeBlockId} setActiveBlockId={setActiveBlockId}>
+        <BlockSelectionProvider activeBlockId={activeBlockId} setActiveBlockId={handleSetActiveBlockId}>
         <div ref={wrapperRef} className={cn('block-editor-wrapper relative', isSidebarOpen && 'sidebar-open', className)}>
           <div className="block-editor-main flex min-h-0">
             <div ref={canvasRef} className="block-editor-canvas flex-1 min-h-0 relative">

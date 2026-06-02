@@ -1,9 +1,9 @@
 import { createContext, useContext, useCallback } from 'react';
-import type { Dispatch, ReactNode, SetStateAction } from 'react';
+import type { ReactNode } from 'react';
 
 type BlockSelectionContextValue = {
     activeBlockId: string | null;
-    setActiveBlockId: Dispatch<SetStateAction<string | null>>;
+    setActiveBlockId: (id: string | null) => void;
 };
 
 const BlockSelectionContext = createContext<BlockSelectionContextValue>({
