@@ -16,6 +16,7 @@ import type {
     InstructionSection,
     NutritionInfo,
     RecipeJson,
+    RecipeVideo,
 } from '@modules/articles/types/recipes.types';
 
 type SidebarEquipmentItem = {
@@ -64,6 +65,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
     const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
     const [detectedItemsToSelect, setDetectedItemsToSelect] = useState<SidebarEquipmentItem[] | null>(null);
     const [selectedNewIds, setSelectedNewIds] = useState<Set<number>>(new Set());
+    const [keywordInput, setKeywordInput] = useState('');
 
     // Parse recipe data
     const data = useMemo<Partial<SidebarRecipeJson>>(() => {
@@ -88,6 +90,26 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
         const num = val === '' ? undefined : parseFloat(val);
         const newNutrition = { ...(data.nutrition || {}), [field]: num === undefined || Number.isNaN(num) ? undefined : num };
         updateField('nutrition', newNutrition);
+    };
+
+    const addKeyword = () => {
+        const v = keywordInput.trim().replace(/,+$/, '').trim();
+        setKeywordInput('');
+        if (!v) return;
+        const current = data.keywords || [];
+        if (current.includes(v)) return;
+        updateField('keywords', [...current, v]);
+    };
+
+    const removeKeyword = (index: number) => {
+        updateField('keywords', (data.keywords || []).filter((_, i) => i !== index));
+    };
+
+    const updateVideo = (field: keyof RecipeVideo, val: string) => {
+        const current: RecipeVideo = data.video || { url: '', name: '', duration: '' };
+        const next = { ...current, [field]: val };
+        const isEmpty = !next.url && !next.name && !next.description && !next.thumbnailUrl && !next.duration && !next.uploadDate;
+        updateField('video', isEmpty ? null : next);
     };
 
     const toggleDiet = (diet: DietType) => {
@@ -205,10 +227,50 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                     </div>
                     <div className="space-y-1">
                         <Label className="text-xs">Estimated Cost</Label>
-                        <Input
+                        <Select
                             value={data.estimatedCost || ''}
-                            onChange={(e) => updateField('estimatedCost', e.target.value as CostLevel)}
-                            placeholder="$10-15"
+                            onValueChange={(value) => updateField('estimatedCost', value as CostLevel)}
+                        >
+                            <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Select cost" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Budget">Budget</SelectItem>
+                                <SelectItem value="Moderate">Moderate</SelectItem>
+                                <SelectItem value="Premium">Premium</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">Keywords</Label>
+                        {(data.keywords || []).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-1">
+                                {(data.keywords || []).map((kw, i) => (
+                                    <Badge key={i} variant="secondary" className="gap-1 text-xs pr-1">
+                                        {kw}
+                                        <button
+                                            type="button"
+                                            className="hover:text-destructive"
+                                            onClick={() => removeKeyword(i)}
+                                            aria-label={`Remove ${kw}`}
+                                        >
+                                            <X className="size-3" />
+                                        </button>
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
+                        <Input
+                            value={keywordInput}
+                            onChange={(e) => setKeywordInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ',') {
+                                    e.preventDefault();
+                                    addKeyword();
+                                }
+                            }}
+                            onBlur={addKeyword}
+                            placeholder="Type a keyword, press Enter"
                             className="h-8 text-sm"
                         />
                     </div>
@@ -481,6 +543,68 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                             No equipment yet.
                         </p>
                     )}
+                </div>
+            </SettingsSection>
+
+            {/* Video */}
+            <SettingsSection title="Video" icon={Settings}>
+                <div className="space-y-3">
+                    <div className="space-y-1">
+                        <Label className="text-xs">Video URL</Label>
+                        <Input
+                            value={data.video?.url || ''}
+                            onChange={(e) => updateVideo('url', e.target.value)}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            className="h-8 text-sm"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">Title</Label>
+                        <Input
+                            value={data.video?.name || ''}
+                            onChange={(e) => updateVideo('name', e.target.value)}
+                            placeholder="How to make..."
+                            className="h-8 text-sm"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">Description</Label>
+                        <Input
+                            value={data.video?.description || ''}
+                            onChange={(e) => updateVideo('description', e.target.value)}
+                            placeholder="Short video description"
+                            className="h-8 text-sm"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">Thumbnail URL</Label>
+                        <Input
+                            value={data.video?.thumbnailUrl || ''}
+                            onChange={(e) => updateVideo('thumbnailUrl', e.target.value)}
+                            placeholder="https://.../thumb.jpg"
+                            className="h-8 text-sm"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs">Duration (ISO-8601)</Label>
+                            <Input
+                                value={data.video?.duration || ''}
+                                onChange={(e) => updateVideo('duration', e.target.value)}
+                                placeholder="PT2M30S"
+                                className="h-8 text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Upload Date</Label>
+                            <Input
+                                type="date"
+                                value={data.video?.uploadDate || ''}
+                                onChange={(e) => updateVideo('uploadDate', e.target.value)}
+                                className="h-8 text-sm"
+                            />
+                        </div>
+                    </div>
                 </div>
             </SettingsSection>
         </>
