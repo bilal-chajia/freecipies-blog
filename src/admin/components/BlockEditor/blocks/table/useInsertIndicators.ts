@@ -16,11 +16,15 @@ export function useInsertIndicators(
         setColInsert(null);
     };
 
-    const updateHoverIndicators = useCallback((clientX: number, clientY: number) => {
+    const updateHoverIndicators = useCallback((clientX: number, clientY: number, target?: Element | null) => {
         if (!isSelected) return;
         const wrapper = wrapperRef.current;
         const table = tableRef.current;
         if (!wrapper || !table) return;
+
+        if (target && target.closest('[data-simple-table-control="true"]')) {
+            return;
+        }
 
         const rect = wrapper.getBoundingClientRect();
         const scrollLeft = wrapper.scrollLeft || 0;
@@ -117,7 +121,8 @@ export function useInsertIndicators(
     }, [isSelected, safeRowsLength, wrapperRef, tableRef]);
 
     const updateHoverIndicatorsFromMouse = (event: React.MouseEvent<HTMLDivElement>) => {
-        updateHoverIndicators(event.clientX, event.clientY);
+        const target = event.target instanceof Element ? event.target : null;
+        updateHoverIndicators(event.clientX, event.clientY, target);
     };
 
     useEffect(() => {
@@ -125,7 +130,8 @@ export function useInsertIndicators(
         if (!isSelected || !wrapper) return undefined;
 
         const handlePointerMove = (event: PointerEvent | MouseEvent) => {
-            updateHoverIndicators(event.clientX, event.clientY);
+            const target = event.target instanceof Element ? event.target : null;
+            updateHoverIndicators(event.clientX, event.clientY, target);
         };
 
         wrapper.addEventListener('pointermove', handlePointerMove, true);

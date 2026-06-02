@@ -28,7 +28,7 @@ import InsertIndicators, { CaptureButton } from './table/InsertIndicators';
 
 const stopTableSurfaceSelection = (event: React.SyntheticEvent, selectBlock: () => void) => {
     const target = event.target;
-    if (target instanceof HTMLElement && target.closest('[data-simple-table-control="true"]')) {
+    if (target instanceof Element && target.closest('[data-simple-table-control="true"]')) {
         return;
     }
     event.preventDefault();
@@ -144,8 +144,16 @@ const TableBlock = createReactBlockSpec(
                     <div
                         className="border rounded-lg p-4 bg-card shadow-sm"
                         contentEditable={false}
-                        onPointerDownCapture={(event) => stopTableSurfaceSelection(event, selectBlock)}
-                        onMouseDownCapture={(event) => stopTableSurfaceSelection(event, selectBlock)}
+                        onPointerDownCapture={(event) => {
+                            if (!isSelected) {
+                                stopTableSurfaceSelection(event, selectBlock);
+                            }
+                        }}
+                        onMouseDownCapture={(event) => {
+                            if (!isSelected) {
+                                stopTableSurfaceSelection(event, selectBlock);
+                            }
+                        }}
                     >
                         {/* Header */}
                         <div className="flex items-center gap-2 mb-3">

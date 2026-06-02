@@ -6,7 +6,8 @@ import { DEFAULT_HEADERS, normalizeRows } from './TableBlock.defaults';
 // Module-level caches to preserve state across React NodeView unmounts/remounts during editor updates
 const draftMap = new Map<string, { headers: TableRow; rows: TableRow[] }>();
 const lastCommittedPropsMap = new Map<string, { headersJson: string; rowsJson: string }>();
-const isWaitingForCatchUpMap = new Map<string, boolean>();
+const colKeysMap = new Map<string, string[]>();
+const rowKeysMap = new Map<string, string[]>();
 
 export function useTableDraft(editor: any, block: any) {
     const [draft, setDraftState] = useState<{ headers: TableRow; rows: TableRow[] }>(() => {
@@ -61,37 +62,48 @@ export function useTableDraft(editor: any, block: any) {
     const safeHeaders = draft.headers;
     const safeRows = draft.rows;
 
-    // Stable keys for rows & columns to prevent React state pollution on mutate / undo-redo
-    const rowKeysRef = useRef<string[]>([]);
-    const colKeysRef = useRef<string[]>([]);
     const generateId = () => Math.random().toString(36).substring(2, 11);
 
-    // Align stable column keys
-    if (colKeysRef.current.length !== safeHeaders.length) {
-        const keys = colKeysRef.current;
-        if (keys.length < safeHeaders.length) {
-            while (keys.length < safeHeaders.length) {
-                keys.push(generateId());
+    // Retrieve or initialize cached stable keys from module-level store
+    const colKeys = (() => {
+        let keys = colKeysMap.get(block.id);
+        if (!keys) {
+            keys = [];
+            colKeysMap.set(block.id, keys);
+        }
+        return keys;
+    })();
+
+    const rowKeys = (() => {
+        let keys = rowKeysMap.get(block.id);
+        if (!keys) {
+            keys = [];
+            rowKeysMap.set(block.id, keys);
+        }
+        return keys;
+    })();
+
+    // Align stable column keys dynamically
+    if (colKeys.length !== safeHeaders.length) {
+        if (colKeys.length < safeHeaders.length) {
+            while (colKeys.length < safeHeaders.length) {
+                colKeys.push(generateId());
             }
         } else {
-            colKeysRef.current = keys.slice(0, safeHeaders.length);
+            colKeys.splice(safeHeaders.length);
         }
     }
 
-    // Align stable row keys
-    if (rowKeysRef.current.length !== safeRows.length) {
-        const keys = rowKeysRef.current;
-        if (keys.length < safeRows.length) {
-            while (keys.length < safeRows.length) {
-                keys.push(generateId());
+    // Align stable row keys dynamically
+    if (rowKeys.length !== safeRows.length) {
+        if (rowKeys.length < safeRows.length) {
+            while (rowKeys.length < safeRows.length) {
+                rowKeys.push(generateId());
             }
         } else {
-            rowKeysRef.current = keys.slice(0, safeRows.length);
+            rowKeys.splice(safeRows.length);
         }
     }
-
-    const colKeys = colKeysRef.current;
-    const rowKeys = rowKeysRef.current;
 
     // Track last committed block props to prevent recursive state updates or reset on typing
     const lastCommittedPropsRef = useRef<{ headersJson: string; rowsJson: string } | null>(null);
@@ -101,16 +113,6 @@ export function useTableDraft(editor: any, block: any) {
             rowsJson: block.props.rowsJson,
         };
     }
-
-    const isWaitingForCatchUpRef = useRef<boolean | null>(null);
-    if (isWaitingForCatchUpRef.current === null) {
-        isWaitingForCatchUpRef.current = isWaitingForCatchUpMap.get(block.id) || false;
-    }
-
-    const setWaitingForCatchUp = (val: boolean) => {
-        isWaitingForCatchUpRef.current = val;
-        isWaitingForCatchUpMap.set(block.id, val);
-    };
 
     const setLastCommittedProps = (newProps: { headersJson: string; rowsJson: string }) => {
         lastCommittedPropsRef.current = newProps;
@@ -124,23 +126,10 @@ export function useTableDraft(editor: any, block: any) {
         const lastCommitted = lastCommittedPropsRef.current;
         if (!lastCommitted) return;
 
-        if (isWaitingForCatchUpRef.current) {
-            if (
-                propsHeaders === lastCommitted.headersJson &&
-                propsRows === lastCommitted.rowsJson
-            ) {
-                setWaitingForCatchUp(false);
-            }
-            return;
-        }
-
         if (
             propsHeaders !== lastCommitted.headersJson ||
             propsRows !== lastCommitted.rowsJson
         ) {
-            // Check if the incoming props are actually different from the current local draft.
-            // If they match our current local draft, it is not a genuine external change (like undo/redo),
-            // it's just the editor catching up to a local change that we didn't set isWaitingForCatchUp for!
             const currentDraft = draftRef.current;
             const draftHeadersStr = JSON.stringify(currentDraft.headers);
             const draftRowsStr = JSON.stringify(currentDraft.rows);
@@ -192,16 +181,12 @@ export function useTableDraft(editor: any, block: any) {
                 headersJson: headersStr,
                 rowsJson: rowsStr,
             });
-            setWaitingForCatchUp(true);
 
-            const liveBlock = editor.getBlock(block.id);
-            const targetBlock = liveBlock || block;
-
-            editor.updateBlock(targetBlock, {
+            editor.updateBlock(block.id, {
+                // Preserve the block type: omitting it lets BlockNote replace a
+                // content:'none' custom block with a default heading on update.
                 type: 'simpleTable',
                 props: {
-                    ...block.props,
-                    ...(targetBlock.props || {}),
                     headersJson: headersStr,
                     rowsJson: rowsStr,
                 },
@@ -210,7 +195,6 @@ export function useTableDraft(editor: any, block: any) {
     };
 
     const handleHeaderChange = (cIdx: number, value: string) => {
-        setWaitingForCatchUp(false);
         const current = draftRef.current;
         const nextHeaders = [...current.headers];
         nextHeaders[cIdx] = value;
@@ -224,7 +208,6 @@ export function useTableDraft(editor: any, block: any) {
     };
 
     const handleCellChange = (rIdx: number, cIdx: number, value: string) => {
-        setWaitingForCatchUp(false);
         const current = draftRef.current;
         const nextRows = current.rows.map((row, idx) => {
             if (idx !== rIdx) return row;
@@ -251,8 +234,8 @@ export function useTableDraft(editor: any, block: any) {
             return next;
         });
 
-        // Track new stable key at target index
-        colKeysRef.current.splice(index, 0, generateId());
+        // Track new stable key at target index in cache
+        colKeys.splice(index, 0, generateId());
 
         const nextDraft = { headers: nextHeaders, rows: nextRows };
         draftRef.current = nextDraft;
@@ -274,8 +257,8 @@ export function useTableDraft(editor: any, block: any) {
             return next;
         });
 
-        // Remove stable key at target index
-        colKeysRef.current.splice(index, 1);
+        // Remove stable key at target index in cache
+        colKeys.splice(index, 1);
 
         const nextDraft = { headers: nextHeaders, rows: nextRows };
         draftRef.current = nextDraft;
@@ -286,7 +269,7 @@ export function useTableDraft(editor: any, block: any) {
     const addRow = () => {
         const current = draftRef.current;
         const nextRows = [...current.rows, Array(current.headers.length).fill('')];
-        rowKeysRef.current.push(generateId());
+        rowKeys.push(generateId());
         const nextDraft = { headers: current.headers, rows: nextRows };
         draftRef.current = nextDraft;
         setDraft(nextDraft);
@@ -298,8 +281,8 @@ export function useTableDraft(editor: any, block: any) {
         const nextRows = [...current.rows];
         nextRows.splice(index, 0, Array(current.headers.length).fill(''));
 
-        // Track new stable key at target index
-        rowKeysRef.current.splice(index, 0, generateId());
+        // Track new stable key at target index in cache
+        rowKeys.splice(index, 0, generateId());
 
         const nextDraft = { headers: current.headers, rows: nextRows };
         draftRef.current = nextDraft;
@@ -311,8 +294,8 @@ export function useTableDraft(editor: any, block: any) {
         const current = draftRef.current;
         const nextRows = current.rows.filter((_, i) => i !== index);
 
-        // Remove stable key at target index
-        rowKeysRef.current.splice(index, 1);
+        // Remove stable key at target index in cache
+        rowKeys.splice(index, 1);
 
         const nextDraft = { headers: current.headers, rows: nextRows };
         draftRef.current = nextDraft;
