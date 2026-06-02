@@ -4,6 +4,7 @@ import { Button } from '@/ui/button';
 import { SettingsSection } from './DocumentSettings';
 import AlignmentPicker from './block-settings/AlignmentPicker';
 import BlockSettingsRouter from './block-settings/BlockSettingsRouter';
+import { SETTINGS_PANEL_TYPES } from './block-settings/panels';
 
 export interface BlockSettingsProps {
     editor: any;
@@ -59,25 +60,8 @@ export default function BlockSettings({
         setBlockVersion((prev) => prev + 1);
     };
 
-    const handledTypes = new Set([
-        'heading',
-        'paragraph',
-        'customImage',
-        'alert',
-        'divider',
-        'faqSection',
-        'beforeAfter',
-        'simpleTable',
-        'video',
-        'relatedContent',
-        'featuredImage',
-        'title',
-        'headline',
-        'mainRecipe',
-        'roundupList',
-    ]);
     const hasTextAlignment = typeof selectedBlock.props?.textAlignment === 'string';
-    const isHandled = handledTypes.has(selectedBlock.type);
+    const isHandled = SETTINGS_PANEL_TYPES.has(selectedBlock.type);
 
     return (
         <div className="relative w-full overflow-x-hidden">
