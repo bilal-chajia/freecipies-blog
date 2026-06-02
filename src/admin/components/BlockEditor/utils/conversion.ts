@@ -10,30 +10,22 @@ import type { AppBlock } from '../types/editor.types';
 import type { BlockAdapter, BlockAdapterContext } from '../blocks/BlockAdapter';
 import { getBlockAdapter } from '../blocks/BlockAdapter';
 import { registerAllBlockAdapters } from '../blocks/adapters';
+import { EDITOR_TYPE_TO_CONTENT_TYPE } from '../blocks/registry';
 import { parseInlineMarkdown, extractText } from './inlineContent';
 
 // ── Init: register all adapters on module load ──────────────────────────────
 registerAllBlockAdapters();
 
-// ── Reverse map: editor block type → adapter ───────────────────────────────
-const EDITOR_TYPE_TO_CONTENT_TYPE: Record<string, string> = {
-  paragraph: 'paragraph',
-  heading: 'heading',
-  customImage: 'image',
-  video: 'video',
-  alert: 'tip_box',
-  blockquote: 'blockquote',
-  bulletListItem: 'list',
-  numberedListItem: 'list',
-  checkListItem: 'list',
-  faqSection: 'main_faq',
-  relatedContent: 'related_content',
-  divider: 'divider',
-  simpleTable: 'table',
-  beforeAfter: 'before_after',
-  roundupList: 'main_roundup',
-  mainRecipe: 'main_recipe',
-};
+if (import.meta.env?.DEV) {
+  // Guard: every content type declared in the registry must resolve to a
+  // registered adapter. Catches a typo'd registry contentType at startup.
+  const missing = [...new Set(Object.values(EDITOR_TYPE_TO_CONTENT_TYPE))].filter(
+    (contentType) => !getBlockAdapter(contentType)
+  );
+  if (missing.length) {
+    console.error('[conversion] Registry content types without a registered adapter:', missing);
+  }
+}
 
 let editorTypeToAdapter: Map<string, BlockAdapter> | null = null;
 
