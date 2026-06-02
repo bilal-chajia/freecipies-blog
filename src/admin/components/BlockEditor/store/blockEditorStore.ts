@@ -35,6 +35,7 @@ interface BlockEditorState {
   toggleSidebar: () => void;
   setSidebarTab: (tab: 'document' | 'block' | 'ai') => void;
   setActiveBlock: (blockId: string | null, blockType?: string) => void;
+  resetActiveBlock: () => void;
   updateStructure: (items: StructureItem[]) => void;
   setBlockError: (blockId: string, errors: string[]) => void;
   clearBlockError: (blockId: string) => void;
@@ -76,6 +77,7 @@ export const useBlockEditorStore = create<BlockEditorState>((set) => ({
       sidebarTab: state.sidebarTab === 'ai' ? 'ai' : 'block', // Preserve AI tab if already in AI mode
     };
   }),
+  resetActiveBlock: () => set({ activeBlockId: null, selectedBlock: null }),
   updateStructure: (items) => set({ structureItems: items }),
   setBlockError: (blockId, errors) => set((state) => ({
     blockErrors: { ...state.blockErrors, [blockId]: errors }

@@ -12,7 +12,7 @@
  * - useCanvasDragDrop: DnD canvas-level block reordering
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BlockNoteViewWithPortal } from './BlockNoteViewWithPortal';
 import { DndContext } from '@dnd-kit/core';
 import {
@@ -73,15 +73,15 @@ export default function BlockEditor({
   const lastEmittedValueRef = useRef('');
   const lastSerializedRef = useRef('');
   const moveActionBlockIdRef = useRef<string | null>(null);
-  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
-  
   // --- Zustand Store Bindings ---
+  // The store is the single source of truth for the active block selection.
+  const activeBlockId = useBlockEditorStore((state) => state.activeBlockId);
   const setEditor = useBlockEditorStore((state) => state.setEditor);
   const storeSetActiveBlock = useBlockEditorStore((state) => state.setActiveBlock);
+  const resetActiveBlock = useBlockEditorStore((state) => state.resetActiveBlock);
   const theme = useUIStore((state) => state.theme);
 
   const handleSetActiveBlockId = useCallback((id: string | null) => {
-    setActiveBlockId(id);
     storeSetActiveBlock(id);
   }, [storeSetActiveBlock]);
 
@@ -119,6 +119,10 @@ export default function BlockEditor({
       setEditor(mountedEditor);
     }
   }, [mountedEditor, setEditor]);
+
+  // The selection store is a singleton; clear it when this editor unmounts so a
+  // stale selection from a previous article does not leak into the next one.
+  useEffect(() => () => resetActiveBlock(), [resetActiveBlock]);
 
   const SlashMenuComponent = useMemo(
     () => (props: Record<string, unknown>) => <CustomSlashMenu {...props} editor={editor} />,
