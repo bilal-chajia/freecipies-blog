@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Block } from '@blocknote/core';
 import { flattenBlocks, groupConsecutiveBlocks, getBlockLabel, getBlockIcon } from '../utils/blockHelpers';
-import { CUSTOM_BLOCK_TYPES } from '../utils/constants';
 import { blocksToContentJson } from '../utils/conversion';
 import { buildRoundupJson } from '../blocks/roundup-serialization';
-import { getEditorDomElement } from '../utils/editorView';
 import type { AppEditor } from '../schema';
 import { useBlockEditorStore } from '../store/blockEditorStore';
 
@@ -64,7 +62,6 @@ export function useEditorStateManager({
     const onRoundupChangeRef = useRef(onRoundupChange);
     const activeBlockIdRef = useRef(activeBlockId);
     const lastRoundupRef = useRef('');
-    const lastBlockStructureRef = useRef('');
 
     const updateStructure = useBlockEditorStore((state) => state.updateStructure);
 
@@ -132,49 +129,9 @@ export function useEditorStateManager({
                 }
             });
 
-            const blockStructure = flatBlocks.map(({ block }) => `${block.id}:${block.type}`).join('|');
-            const shouldSyncBlockAttributes = blockStructure !== lastBlockStructureRef.current;
-            lastBlockStructureRef.current = blockStructure;
-
-            const editorDom = shouldSyncBlockAttributes ? getEditorDomElement(editor) : null;
-            if (editorDom) {
-                const blockIds = new Set(flatBlocks.map(({ block }) => block.id));
-                const customIds = new Set(
-                    flatBlocks
-                        .filter(({ block }) => CUSTOM_BLOCK_TYPES.has(block.type))
-                        .map(({ block }) => block.id)
-                );
-
-                editorDom.querySelectorAll('[data-id][data-block-root]').forEach((node) => {
-                    node.removeAttribute('data-block-root');
-                });
-                editorDom.querySelectorAll('[data-id][data-custom-block]').forEach((node) => {
-                    node.removeAttribute('data-custom-block');
-                });
-
-                const escapeSelector = (value: string) => {
-                    try { return CSS.escape(value); }
-                    catch { return value.replace(/["\\]/g, '\\$&'); }
-                };
-
-                const nodesById = new Map<string, Element[]>();
-                editorDom.querySelectorAll('[data-id]').forEach((node) => {
-                    const id = node.getAttribute('data-id');
-                    if (!id || !blockIds.has(id)) return;
-                    if (!nodesById.has(id)) nodesById.set(id, []);
-                    nodesById.get(id)!.push(node);
-                });
-
-                nodesById.forEach((nodes, id) => {
-                    const selector = `[data-id="${escapeSelector(id)}"]`;
-                    const rootNode = nodes.find((node) => !node.parentElement?.closest(selector)) || nodes[0];
-                    if (!rootNode) return;
-                    rootNode.setAttribute('data-block-root', 'true');
-                    if (customIds.has(id)) {
-                        rootNode.setAttribute('data-custom-block', 'true');
-                    }
-                });
-            }
+            // data-block-root is emitted declaratively via BlockNote domAttributes
+            // (see index.tsx) and data-custom-block is replaced by the CSS
+            // :has(.wp-block--custom) selector, so no imperative DOM sync here (PR6).
 
             const currentActiveBlockId = activeBlockIdRef.current;
             if (onSelectedBlockChangeRef.current && currentActiveBlockId) {

@@ -219,12 +219,12 @@
     box-shadow: 0 0 0 3px var(--wp-block-focus-ring);
 }
 
-.block-editor-wrapper .bn-editor [data-block-root="true"][data-custom-block="true"]::after {
+.block-editor-wrapper .bn-editor [data-block-root="true"]:has(.wp-block--custom)::after {
     outline-color: transparent;
     box-shadow: none;
 }
 
-.block-editor-wrapper .bn-editor [data-block-root="true"][data-custom-block="true"]:focus-visible::after {
+.block-editor-wrapper .bn-editor [data-block-root="true"]:has(.wp-block--custom):focus-visible::after {
     outline-color: transparent;
     box-shadow: none;
 }
@@ -277,15 +277,16 @@
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode select {
     -webkit-user-select: auto !important;
     user-select: auto !important;
-    color: inherit !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
     caret-color: auto !important;
 }
 
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode [data-simple-table-control="true"] {
     -webkit-user-select: auto !important;
     user-select: auto !important;
-    color: hsl(var(--foreground)) !important;
-    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
     opacity: 1 !important;
     pointer-events: auto !important;
 }
@@ -299,9 +300,13 @@
 
 /* Prevent browser ::selection highlight from hiding block content */
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode::selection,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode *::selection {
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode *::selection,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode input::selection,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode textarea::selection,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode [data-simple-table-control="true"]::selection {
     background: transparent !important;
-    color: inherit !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
 }
 
 .block-editor-wrapper .block-editor-block-list__block,

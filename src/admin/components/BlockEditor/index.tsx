@@ -100,7 +100,12 @@ export default function BlockEditor({
   const editor = useCreateBlockNote({
     schema,
     initialContent,
-    domAttributes: { editor: { class: 'min-h-[32rem] pb-[30vh]' } },
+    domAttributes: {
+      editor: { class: 'min-h-[32rem] pb-[30vh]' },
+      // Mark every block container as a block root declaratively (PR6) so the
+      // editor no longer rewrites data-block-root via querySelectorAll.
+      blockContainer: { 'data-block-root': 'true' },
+    },
     uploadFile: async (file: File) => URL.createObjectURL(file),
   });
 
