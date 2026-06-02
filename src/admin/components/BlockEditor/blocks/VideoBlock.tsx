@@ -27,8 +27,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
-import { useBlockSelection } from '../selection-context';
-import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+import { useCustomBlock } from './useCustomBlock';
 
 type VideoProvider = 'youtube' | 'vimeo';
 type AspectRatio = '16:9' | '4:3' | '1:1' | '9:16';
@@ -139,23 +138,17 @@ const VideoBlock = createReactBlockSpec(
         render: (props) => {
             const { block, editor } = props;
             const [inputUrl, setInputUrl] = useState<string>(block.props.url);
-            const { isSelected, selectBlock } = useBlockSelection(block.id);
             const hasVideo = block.props.provider && block.props.videoId;
             const {
+                isSelected, selectBlock,
                 moveUp: moveBlockUp,
                 moveDown: moveBlockDown,
                 remove: removeBlock,
-            } = useBlockActionPrimitives({
-                editor,
-                blockId: block.id,
-                onSelect: selectBlock,
-            });
-            const {
                 dragHandleProps,
                 setDragNodeRef,
                 dragStyle,
                 isDragging,
-            } = useBlockDragHandle(block.id);
+            } = useCustomBlock(block.id, editor);
 
             const handleUrlChange = (url: string) => {
                 setInputUrl(url);

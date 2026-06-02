@@ -24,8 +24,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import BlockToolbar from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
-import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
-import { useBlockSelection } from '../selection-context';
+import { useCustomBlock } from './useCustomBlock';
 
 type DividerStyle = 'solid' | 'dashed' | 'dotted' | 'double';
 
@@ -112,7 +111,11 @@ const DividerBlock = createReactBlockSpec(
         render: (props) => {
             const { block, editor } = props;
             const style = (block.props.style || 'solid') as DividerStyle;
-            const { isSelected, selectBlock } = useBlockSelection(block.id);
+            const {
+                isSelected, selectBlock,
+                moveUp, moveDown, remove,
+                dragHandleProps, setDragNodeRef, dragStyle, isDragging,
+            } = useCustomBlock(block.id, editor, { onSelectRaf: true });
 
             const handleStyleChange = (newStyle: DividerStyle) => {
                 editor.updateBlock(block, {
@@ -120,13 +123,6 @@ const DividerBlock = createReactBlockSpec(
                     props: { ...block.props, style: newStyle },
                 });
             };
-
-            const { moveUp, moveDown, remove } = useBlockActionPrimitives({
-                editor,
-                blockId: block.id,
-                onSelect: () => requestAnimationFrame(() => selectBlock()),
-            });
-            const { dragHandleProps, setDragNodeRef, dragStyle, isDragging } = useBlockDragHandle(block.id);
 
             const toolbar = (
                 <BlockToolbar

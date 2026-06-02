@@ -33,10 +33,9 @@ import { Button } from '@/ui/button';
 import { ImageUploader, MediaDialog } from '@admin/features/media/components';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
-import { useBlockSelection } from '../selection-context';
 import { useBlockEditorSourceData } from '../source-data-context';
 import { buildContentImageSelection } from '../utils/image-selection';
-import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+import { useCustomBlock } from './useCustomBlock';
 import {
     IMAGE_BLOCK_OPEN_MEDIA_EVENT,
     IMAGE_BLOCK_OPEN_UPLOADER_EVENT,
@@ -159,25 +158,19 @@ export const ImageBlock = createReactBlockSpec(
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
             const [inputUrl, setInputUrl] = useState(block.props.url || '');
 
-            const { isSelected, selectBlock } = useBlockSelection(block.id);
             const captionRef = useRef<HTMLInputElement | null>(null);
             const autoOpenedRef = useRef(false);
             const isOverlayOpen = mediaDialogOpen || uploaderOpen;
             const {
+                isSelected, selectBlock,
                 moveUp: moveBlockUp,
                 moveDown: moveBlockDown,
                 remove: removeBlock,
-            } = useBlockActionPrimitives({
-                editor,
-                blockId: block.id,
-                onSelect: selectBlock,
-            });
-            const {
                 dragHandleProps,
                 setDragNodeRef,
                 dragStyle,
                 isDragging,
-            } = useBlockDragHandle(block.id, { disabled: isOverlayOpen });
+            } = useCustomBlock(block.id, editor, { dragDisabled: isOverlayOpen });
             const handleSelect = useCallback((event: SyntheticEvent) => {
                 if (event?.target instanceof HTMLElement) {
                     if (event.target.closest('.wp-block-toolbar') || event.target.closest('.wp-block-toolbar-wrap')) {

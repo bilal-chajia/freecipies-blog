@@ -35,9 +35,8 @@ import { Button } from '@/ui/button';
 import { Badge } from '@/ui/badge';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
-import { useBlockSelection } from '../selection-context';
 import { useBlockEditorSourceData } from '../source-data-context';
-import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+import { useCustomBlock } from './useCustomBlock';
 import SortableFAQItem from './faq/SortableFAQItem';
 import type { FAQItem, FAQItemField, IndexState } from './faq/FAQBlock.types';
 
@@ -105,22 +104,16 @@ const FAQSectionBlock = createReactBlockSpec(
         ? sourceFaqs.heading
         : block.props.title || 'Frequently Asked Questions';
 
-      const { isSelected, selectBlock } = useBlockSelection(block.id);
       const {
+        isSelected, selectBlock,
         moveUp: moveBlockUp,
         moveDown: moveBlockDown,
         remove: removeBlock,
-      } = useBlockActionPrimitives({
-        editor,
-        blockId: block.id,
-        onSelect: selectBlock,
-      });
-      const {
         dragHandleProps,
         setDragNodeRef,
         dragStyle,
         isDragging,
-      } = useBlockDragHandle(block.id);
+      } = useCustomBlock(block.id, editor);
       const [expanded, setExpanded] = useState<IndexState>({});
       const [editing, setEditing] = useState<IndexState>({});
       const answerRefs = useRef<Record<number, HTMLTextAreaElement>>({});

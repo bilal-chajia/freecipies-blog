@@ -23,9 +23,8 @@ import { parseVariantsJson, getVariantMap } from '@shared/types/images';
 import { MediaDialog } from '@admin/features/media/components';
 import BlockToolbar, { ToolbarButton } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
-import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
-import { useBlockSelection } from '../selection-context';
 import { useBlockEditorSourceData } from '../source-data-context';
+import { useCustomBlock } from './useCustomBlock';
 import ImageSlotEditor from './before-after/ImageSlotEditor';
 import type { ImageSlotKey, BeforeAfterSlot, MediaDialogItem, BeforeAfterUpdates } from './before-after/BeforeAfterBlock.types';
 
@@ -95,9 +94,13 @@ export const BeforeAfterBlock = createReactBlockSpec(
             const { imagesData, onImagesChange } = useBlockEditorSourceData();
             const before = useMemo(() => parseSlot(block.props.beforeJson), [block.props.beforeJson]);
             const after = useMemo(() => parseSlot(block.props.afterJson), [block.props.afterJson]);
-            const { isSelected, selectBlock } = useBlockSelection(block.id);
             const [activeSlot, setActiveSlot] = useState<ImageSlotKey | null>(null);
             const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
+            const {
+                isSelected, selectBlock,
+                moveUp, moveDown, remove,
+                dragHandleProps, setDragNodeRef, dragStyle, isDragging,
+            } = useCustomBlock(block.id, editor, { onSelectRaf: true, dragDisabled: mediaDialogOpen });
 
             const updateBlockProps = (updates: BeforeAfterUpdates) => {
                 editor.updateBlock(block, {
@@ -140,15 +143,6 @@ export const BeforeAfterBlock = createReactBlockSpec(
             };
 
             const currentLayout = layouts.find(l => l.value === block.props.layout) || layouts[0];
-
-            const { moveUp, moveDown, remove } = useBlockActionPrimitives({
-                editor,
-                blockId: block.id,
-                onSelect: () => requestAnimationFrame(() => selectBlock()),
-            });
-            const { dragHandleProps, setDragNodeRef, dragStyle, isDragging } = useBlockDragHandle(block.id, {
-                disabled: mediaDialogOpen,
-            });
 
             const toolbar = (
                 <BlockToolbar

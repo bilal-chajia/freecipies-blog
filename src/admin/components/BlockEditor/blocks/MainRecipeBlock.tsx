@@ -4,9 +4,8 @@ import { Utensils } from 'lucide-react';
 import RecipeBuilder from "../../RecipeBuilder";
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
-import { useBlockSelection } from '../selection-context';
 import { useBlockEditorSourceData } from '../source-data-context';
-import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+import { useCustomBlock } from './useCustomBlock';
 
 /**
  * MainRecipeBlock
@@ -34,22 +33,16 @@ export const MainRecipeBlock = createReactBlockSpec(
         : recipeJson
           ? JSON.stringify(recipeJson)
           : block.props.recipeJson;
-      const { isSelected, selectBlock } = useBlockSelection(block.id);
       const {
+        isSelected, selectBlock,
         moveUp: moveBlockUp,
         moveDown: moveBlockDown,
         remove: removeBlock,
-      } = useBlockActionPrimitives({
-        editor,
-        blockId: block.id,
-        onSelect: selectBlock,
-      });
-      const {
         dragHandleProps,
         setDragNodeRef,
         dragStyle,
         isDragging,
-      } = useBlockDragHandle(block.id);
+      } = useCustomBlock(block.id, editor);
 
       const handleChange = (newValue: string) => {
         onRecipeChange?.(newValue);

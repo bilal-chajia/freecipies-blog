@@ -5,8 +5,7 @@ import { Button } from "@/ui/button";
 import { Badge } from "@/ui/badge";
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
-import { useBlockSelection } from '../selection-context';
-import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+import { useCustomBlock } from './useCustomBlock';
 import { getBestVariantUrl } from '@shared/types/images';
 
 type RoundupListItem = {
@@ -44,22 +43,16 @@ export const RoundupListBlock = createReactBlockSpec(
     {
         render: (props) => {
             const { block, editor } = props;
-            const { isSelected, selectBlock } = useBlockSelection(block.id);
             const {
+                isSelected, selectBlock,
                 moveUp: moveBlockUp,
                 moveDown: moveBlockDown,
                 remove: removeBlock,
-            } = useBlockActionPrimitives({
-                editor,
-                blockId: block.id,
-                onSelect: selectBlock,
-            });
-            const {
                 dragHandleProps,
                 setDragNodeRef,
                 dragStyle,
                 isDragging,
-            } = useBlockDragHandle(block.id);
+            } = useCustomBlock(block.id, editor);
 
             const items = useMemo<RoundupListItem[]>(() => {
                 try {

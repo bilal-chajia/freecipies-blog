@@ -28,8 +28,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import BlockToolbar from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
-import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
-import { useBlockSelection } from '../selection-context';
+import { useCustomBlock } from './useCustomBlock';
 
 // Alert type definitions
 type AlertType = 'tip' | 'warning' | 'info' | 'note';
@@ -189,7 +188,11 @@ const Alert = createReactBlockSpec(
             const config = alertConfig[alertType] || alertConfig.warning;
             const Icon = config.icon;
 
-            const { isSelected, selectBlock } = useBlockSelection(block.id);
+            const {
+                isSelected, selectBlock,
+                moveUp, moveDown, remove,
+                dragHandleProps, setDragNodeRef, dragStyle, isDragging,
+            } = useCustomBlock(block.id, editor, { onSelectRaf: true });
             const contentRefRef = useRef(contentRef);
             const editorRef = useRef(editor);
 
@@ -202,13 +205,6 @@ const Alert = createReactBlockSpec(
                     props: { ...block.props, type: newType },
                 });
             };
-
-            const { moveUp, moveDown, remove } = useBlockActionPrimitives({
-                editor,
-                blockId: block.id,
-                onSelect: () => requestAnimationFrame(() => selectBlock()),
-            });
-            const { dragHandleProps, setDragNodeRef, dragStyle, isDragging } = useBlockDragHandle(block.id);
 
             const setElementRef = useCallback((node: AlertContentElement | null) => {
                 const latestContentRef = contentRefRef.current;

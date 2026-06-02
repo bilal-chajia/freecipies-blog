@@ -17,8 +17,7 @@ import { useRef } from 'react';
 import { Table2, Trash2, Columns, Rows } from 'lucide-react';
 import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
-import { useBlockSelection } from '../selection-context';
-import { useBlockActionPrimitives, useBlockDragHandle } from './primitives';
+import { useCustomBlock } from './useCustomBlock';
 
 import { useTableDraft } from './table/useTableDraft';
 import { useInsertIndicators } from './table/useInsertIndicators';
@@ -51,22 +50,16 @@ const TableBlock = createReactBlockSpec(
             const { block, editor } = props;
             const wrapperRef = useRef<HTMLDivElement | null>(null);
             const tableRef = useRef<HTMLTableElement | null>(null);
-            const { isSelected, selectBlock } = useBlockSelection(block.id);
             const {
+                isSelected, selectBlock,
                 moveUp: moveBlockUp,
                 moveDown: moveBlockDown,
                 remove: removeBlock,
-            } = useBlockActionPrimitives({
-                editor,
-                blockId: block.id,
-                onSelect: selectBlock,
-            });
-            const {
                 dragHandleProps,
                 setDragNodeRef,
                 dragStyle,
                 isDragging,
-            } = useBlockDragHandle(block.id);
+            } = useCustomBlock(block.id, editor);
 
             const {
                 draft,
