@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getBlockInfo, getNearestBlockPos } from '@blocknote/core';
 import { getEditorDomElement, getEditorProseMirrorView } from '../utils/editorView';
+import type { AppEditor } from '../schema';
 
 interface InsertHandleState {
     blockId: string;
@@ -11,7 +12,7 @@ interface InsertHandleState {
 }
 
 interface InsertHandleProps {
-    editor: Record<string, unknown> | null;
+    editor: AppEditor | null;
     wrapperRef: React.RefObject<HTMLElement | null>;
     canvasRef: React.RefObject<HTMLElement | null>;
 }
@@ -25,6 +26,7 @@ export function useInsertHandle({ editor, wrapperRef, canvasRef }: InsertHandleP
     const [insertHandle, setInsertHandle] = useState<InsertHandleState | null>(null);
 
     useEffect(() => {
+        if (!editor) return;
         const prosemirrorView = getEditorProseMirrorView<{ dom?: HTMLElement }>(editor);
         if (!prosemirrorView || !wrapperRef.current) return;
         const root = prosemirrorView.dom || getEditorDomElement(editor);
@@ -65,8 +67,8 @@ export function useInsertHandle({ editor, wrapperRef, canvasRef }: InsertHandleP
             let blockId = blockOuter?.getAttribute('data-id') || null;
 
             if (blockId) {
-                const block = (editor as Record<string, (id: string) => unknown | null>).getBlock?.(blockId);
-                if (block && ['bulletListItem', 'numberedListItem', 'checkListItem'].includes((block as Record<string, string>).type)) {
+                const block = editor.getBlock(blockId);
+                if (block && ['bulletListItem', 'numberedListItem', 'checkListItem'].includes(block.type)) {
                     setInsertHandle(null);
                     return;
                 }
@@ -92,6 +94,15 @@ export function useInsertHandle({ editor, wrapperRef, canvasRef }: InsertHandleP
                     }
                     return;
                 }
+
+                // Guard: Avoid calling getNearestBlockPos on document boundaries to prevent flooding console warning logs
+                if (coords.pos <= 0 || coords.pos >= view.state.doc.content.size) {
+                    if (!isOverButton && !hideTimeout) {
+                        hideTimeout = setTimeout(() => { setInsertHandle(null); hideTimeout = null; }, 400);
+                    }
+                    return;
+                }
+
                 let nearest: ReturnType<typeof getNearestBlockPos> | null = null;
                 try {
                     nearest = getNearestBlockPos(view.state.doc, coords.pos);
@@ -108,8 +119,8 @@ export function useInsertHandle({ editor, wrapperRef, canvasRef }: InsertHandleP
                 blockId = (info?.bnBlock?.node?.attrs as Record<string, string> | undefined)?.id || null;
 
                 if (blockId) {
-                    const block = (editor as Record<string, (id: string) => unknown | null>).getBlock?.(blockId);
-                    if (block && ['bulletListItem', 'numberedListItem', 'checkListItem'].includes((block as Record<string, string>).type)) {
+                    const block = editor.getBlock(blockId);
+                    if (block && ['bulletListItem', 'numberedListItem', 'checkListItem'].includes(block.type)) {
                         setInsertHandle(null);
                         return;
                     }
@@ -158,8 +169,8 @@ export function useInsertHandle({ editor, wrapperRef, canvasRef }: InsertHandleP
             const handleBlockId = blockId;
             const handleRect = rect;
 
-            const allBlocks = (editor as Record<string, unknown[]>).document;
-            const flatIds = allBlocks.map((b) => (b as Record<string, string>).id);
+            const allBlocks = editor.document;
+            const flatIds = allBlocks.map((b) => b.id);
             const currentIndex = flatIds.indexOf(handleBlockId);
 
             let topPosition = (placement === 'before' ? handleRect.top : handleRect.bottom);

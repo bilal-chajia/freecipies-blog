@@ -148,7 +148,7 @@ export default function BlockEditor({
     useLinkToolbar({ editor: mountedEditor, wrapperRef, activeBlockId });
 
   const { insertHandle, setInsertHandle } =
-    useInsertHandle({ editor: mountedEditor as any, wrapperRef, canvasRef });
+    useInsertHandle({ editor: mountedEditor, wrapperRef, canvasRef });
 
   const { canvasSensors, handleCanvasDragStart, handleCanvasDragEnd, handleCanvasDragCancel } =
     useCanvasDragDrop({ editor: mountedEditor, structureItemsRef, setActiveBlockId: handleSetActiveBlockId });

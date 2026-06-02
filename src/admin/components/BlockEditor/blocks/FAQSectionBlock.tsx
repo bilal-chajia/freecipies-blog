@@ -40,25 +40,6 @@ import { useCustomBlock } from './useCustomBlock';
 import SortableFAQItem from './faq/SortableFAQItem';
 import type { FAQItem, FAQItemField, IndexState } from './faq/FAQBlock.types';
 
-/**
- * Parse FAQ items from the itemsJson prop.
- */
-function parseItems(itemsJson: string): FAQItem[] {
-  try {
-    const parsed = JSON.parse(itemsJson || '[]');
-    return Array.isArray(parsed)
-      ? parsed
-        .filter((item): item is Partial<FAQItem> => item && typeof item === 'object')
-        .map((item) => ({
-          q: typeof item.q === 'string' ? item.q : '',
-          a: typeof item.a === 'string' ? item.a : '',
-        }))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 function parseFaqDocument(value: unknown): Record<string, unknown> {
   if (!value) return {};
   if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
@@ -99,10 +80,14 @@ const FAQSectionBlock = createReactBlockSpec(
           };
         })
         : [];
-      const items = sourceItems.length > 0 ? sourceItems : parseItems(block.props.itemsJson);
+      // Source-data JSON (faqsJson) is the single source of truth (P6).
+      // block.props.itemsJson/title are a transient hydration mirror only and
+      // are never read back — falling back to them silently resurrects stale
+      // items after an intentional empty (the old P6b bug).
+      const items = sourceItems;
       const title = typeof sourceFaqs.heading === 'string' && sourceFaqs.heading
         ? sourceFaqs.heading
-        : block.props.title || 'Frequently Asked Questions';
+        : 'Frequently Asked Questions';
 
       const {
         isSelected, selectBlock,
