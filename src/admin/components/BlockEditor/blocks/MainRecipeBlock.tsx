@@ -27,12 +27,15 @@ export const MainRecipeBlock = createReactBlockSpec(
   {
     render: (props) => {
       const { block, editor } = props;
-      const { recipeJson, onRecipeChange } = useBlockEditorSourceData();
+      const { recipeJson, onRecipeChange, imagesData, onImagesChange } = useBlockEditorSourceData();
+      // Source-data JSON (recipeJson) is the single source of truth (P6).
+      // block.props.recipeJson is a transient hydration seed only and is never
+      // read back — falling back to it would resurrect a stale recipe.
       const currentRecipeJson = typeof recipeJson === 'string'
         ? recipeJson
         : recipeJson
           ? JSON.stringify(recipeJson)
-          : block.props.recipeJson;
+          : '{}';
       const {
         isSelected, selectBlock,
         moveUp: moveBlockUp,
@@ -80,6 +83,8 @@ export const MainRecipeBlock = createReactBlockSpec(
             <RecipeBuilder
               value={currentRecipeJson}
               onChange={handleChange}
+              imagesData={imagesData}
+              onImagesChange={onImagesChange}
             />
           </div>
         </BlockWrapper>

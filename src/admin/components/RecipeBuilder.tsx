@@ -3,9 +3,14 @@ import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 import { Textarea } from "@/ui/textarea";
-import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye, Sparkles, Loader2, Timer, Wrench, Zap, X, Star } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye, Sparkles, Loader2, Timer, Wrench, Zap, X, Star, ImagePlus } from "lucide-react";
 import { equipmentAPI } from '@/services/api';
 import { Badge } from '@/ui/badge';
+import { Checkbox } from '@/ui/checkbox';
+import { MediaDialog } from '@admin/features/media/components';
+import { buildContentImageSelection } from './BlockEditor/utils/image-selection';
+import { resolveVariantUrl } from '@shared/types/images';
+import type { MediaRecord } from '@modules/media/types/media.types';
 import {
     Select,
     SelectContent,
@@ -44,7 +49,46 @@ type EditableRecipeJson = Omit<RecipeJson, 'instructions'> & { instructions: Edi
 type RecipeBuilderProps = {
     value?: string;
     onChange: (value: string) => void;
+    /** Article images_json — needed to read/write step image slots (recipe_steps). */
+    imagesData?: unknown;
+    onImagesChange?: (next: unknown) => void;
 };
+
+function parseImagesObject(value: unknown): Record<string, unknown> {
+    if (!value) return {};
+    if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+    if (typeof value !== 'string') return {};
+    try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+    } catch {
+        return {};
+    }
+}
+
+/** Write a step image slot into images_json.recipe_steps[ref] (contract: RECIPE_JSON_CONTRACT). */
+function upsertRecipeStepSlot(imagesData: unknown, ref: string, slot: Record<string, unknown>): Record<string, unknown> {
+    const images = parseImagesObject(imagesData);
+    const recipeSteps = parseImagesObject(images.recipe_steps);
+    return { ...images, recipe_steps: { ...recipeSteps, [ref]: slot } };
+}
+
+/** Remove a step image slot from images_json.recipe_steps[ref]. */
+function removeRecipeStepSlot(imagesData: unknown, ref: string): Record<string, unknown> {
+    const images = parseImagesObject(imagesData);
+    const recipeSteps = { ...parseImagesObject(images.recipe_steps) };
+    delete recipeSteps[ref];
+    return { ...images, recipe_steps: recipeSteps };
+}
+
+/** Resolve a preview URL for a step image_ref from images_json.recipe_steps. */
+function getStepImagePreview(imagesData: unknown, ref: string | null | undefined): string | null {
+    if (!ref) return null;
+    const slot = parseImagesObject(parseImagesObject(parseImagesObject(imagesData).recipe_steps)[ref]);
+    const variants = parseImagesObject(slot.variants);
+    const selected = variants.sm || variants.md || variants.lg || variants.xs;
+    return resolveVariantUrl(selected as Parameters<typeof resolveVariantUrl>[0]) || null;
+}
 type RecipeField = keyof EditableRecipeJson;
 type MoveDirection = 'up' | 'down';
 type NutritionField = keyof NutritionInfo;
@@ -113,8 +157,9 @@ const dietOptions: Array<{ value: DietType; label: string }> = [
     { value: 'HalalDiet', label: 'Halal' },
 ];
 
-export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
+export default function RecipeBuilder({ value, onChange, imagesData, onImagesChange }: RecipeBuilderProps) {
     const [data, setData] = useState<EditableRecipeJson>(defaultRecipe);
+    const [stepMediaTarget, setStepMediaTarget] = useState<{ s: number; i: number } | null>(null);
     const [nutritionOpen, setNutritionOpen] = useState(false);
     const [tipsOpen, setTipsOpen] = useState(false);
     const [equipmentOpen, setEquipmentOpen] = useState(false);
@@ -297,6 +342,10 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
     };
 
     const removeInstruction = (sectionIndex: number, stepIndex: number) => {
+        // Drop the step's image slot from images_json.recipe_steps so it isn't orphaned.
+        const removedRef = data.instructions[sectionIndex]?.steps[stepIndex]?.image_ref;
+        if (removedRef) onImagesChange?.(removeRecipeStepSlot(imagesData, removedRef));
+
         const newInstructions = [...data.instructions];
         if (newInstructions[sectionIndex]) {
             newInstructions[sectionIndex] = {
@@ -392,6 +441,28 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
         const newInstructions = [...data.instructions];
         newInstructions[sectionIndex] = { ...newInstructions[sectionIndex], steps: newSteps };
         updateData({ instructions: newInstructions });
+    };
+
+    // --- Step images (images_json.recipe_steps) ---
+    const handleStepMediaSelect = (item: MediaRecord) => {
+        if (!stepMediaTarget) return;
+        const { s, i } = stepMediaTarget;
+        const existingRef = data.instructions[s]?.steps[i]?.image_ref || null;
+        const ref = existingRef || `recipe-step-${Math.random().toString(36).slice(2, 9)}`;
+        const selection = buildContentImageSelection({
+            item: item as Parameters<typeof buildContentImageSelection>[0]['item'],
+            currentProps: { imageRef: ref },
+            fallbackBlockId: ref,
+        });
+        onImagesChange?.(upsertRecipeStepSlot(imagesData, ref, selection.slot));
+        updateInstruction(s, i, 'image_ref', ref);
+        setStepMediaTarget(null);
+    };
+
+    const removeStepImage = (s: number, i: number) => {
+        const ref = data.instructions[s]?.steps[i]?.image_ref;
+        if (ref) onImagesChange?.(removeRecipeStepSlot(imagesData, ref));
+        updateInstruction(s, i, 'image_ref', null);
     };
 
     // --- Tips ---
@@ -699,6 +770,13 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
                                                 placeholder="all-purpose flour"
                                                 className="flex-1"
                                             />
+                                            <label className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0 cursor-pointer select-none">
+                                                <Checkbox
+                                                    checked={ing.isOptional ?? false}
+                                                    onCheckedChange={(checked) => updateIngredient(groupIndex, index, 'isOptional', checked === true)}
+                                                />
+                                                Optional
+                                            </label>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -778,6 +856,12 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
                                                 </Button>
                                             </div>
                                             <div className="flex-1 space-y-2">
+                                                <Input
+                                                    value={step.name || ''}
+                                                    onChange={(e) => updateInstruction(sectionIndex, stepIndex, 'name', e.target.value)}
+                                                    placeholder="Step title (optional)"
+                                                    className="h-8 text-sm font-medium"
+                                                />
                                                 <Textarea
                                                     value={step.text || ''}
                                                     onChange={(e) => updateInstruction(sectionIndex, stepIndex, 'text', e.target.value)}
@@ -795,6 +879,51 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
                                                         className="w-32 h-8 text-sm"
                                                     />
                                                     <span className="text-xs text-muted-foreground">min</span>
+                                                </div>
+                                                {onImagesChange && (() => {
+                                                    const preview = getStepImagePreview(imagesData, step.image_ref);
+                                                    return (
+                                                        <div className="flex items-center gap-2">
+                                                            {preview && (
+                                                                <img
+                                                                    src={preview}
+                                                                    alt=""
+                                                                    width={40}
+                                                                    height={40}
+                                                                    loading="lazy"
+                                                                    className="w-10 h-10 rounded object-cover border"
+                                                                />
+                                                            )}
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-8 text-xs gap-1.5"
+                                                                onClick={() => setStepMediaTarget({ s: sectionIndex, i: stepIndex })}
+                                                            >
+                                                                <ImagePlus className="size-3.5" /> {preview ? 'Change image' : 'Add image'}
+                                                            </Button>
+                                                            {preview && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="size-7 text-destructive hover:bg-destructive/10"
+                                                                    onClick={() => removeStepImage(sectionIndex, stepIndex)}
+                                                                >
+                                                                    <X className="size-3.5" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
+                                                <div className="flex items-start gap-2">
+                                                    <span className="text-sm mt-1.5">💡</span>
+                                                    <Textarea
+                                                        value={step.tip || ''}
+                                                        onChange={(e) => updateInstruction(sectionIndex, stepIndex, 'tip', e.target.value)}
+                                                        placeholder="Step tip (optional)"
+                                                        rows={1}
+                                                        className="text-sm"
+                                                    />
                                                 </div>
                                             </div>
                                             <Button
@@ -855,6 +984,12 @@ export default function RecipeBuilder({ value, onChange }: RecipeBuilderProps) {
 
                 </>
             )}
+
+            <MediaDialog
+                open={stepMediaTarget !== null}
+                onOpenChange={(open) => { if (!open) setStepMediaTarget(null); }}
+                onSelect={handleStepMediaSelect}
+            />
         </div>
     );
 }
