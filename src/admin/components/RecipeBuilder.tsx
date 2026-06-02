@@ -3,8 +3,7 @@ import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 import { Textarea } from "@/ui/textarea";
-import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye, Sparkles, Loader2, Timer, Wrench, Zap, X, Star, ImagePlus } from "lucide-react";
-import { equipmentAPI } from '@/services/api';
+import { Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Code, Eye, Sparkles, Loader2, Timer, X, Star, ImagePlus } from "lucide-react";
 import { Badge } from '@/ui/badge';
 import { Checkbox } from '@/ui/checkbox';
 import { MediaDialog } from '@admin/features/media/components';
@@ -30,16 +29,13 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/ui/dialog";
-import { articlesAPI } from '@/services/api';
 import { migrateRecipeJson } from '@modules/articles/types/recipes.types';
 import type {
     AggregateRating,
-    DietType,
     IngredientGroup,
     IngredientItem,
     InstructionSection,
     InstructionStep,
-    NutritionInfo,
     RecipeJson,
 } from '@modules/articles/types/recipes.types';
 
@@ -91,7 +87,6 @@ function getStepImagePreview(imagesData: unknown, ref: string | null | undefined
 }
 type RecipeField = keyof EditableRecipeJson;
 type MoveDirection = 'up' | 'down';
-type NutritionField = keyof NutritionInfo;
 type RatingField = keyof AggregateRating;
 
 /**
@@ -143,29 +138,10 @@ function migrateRecipeData(parsed: Record<string, unknown>): EditableRecipeJson 
     return migrateRecipeJson(parsed as Parameters<typeof migrateRecipeJson>[0]) as EditableRecipeJson;
 }
 
-// Diet options from Schema.org
-const dietOptions: Array<{ value: DietType; label: string }> = [
-    { value: 'VeganDiet', label: 'Vegan' },
-    { value: 'VegetarianDiet', label: 'Vegetarian' },
-    { value: 'GlutenFreeDiet', label: 'Gluten-Free' },
-    { value: 'DiabeticDiet', label: 'Diabetic' },
-    { value: 'LowCalorieDiet', label: 'Low Calorie' },
-    { value: 'LowFatDiet', label: 'Low Fat' },
-    { value: 'LowSaltDiet', label: 'Low Salt' },
-    { value: 'LowLactoseDiet', label: 'Low Lactose' },
-    { value: 'KosherDiet', label: 'Kosher' },
-    { value: 'HalalDiet', label: 'Halal' },
-];
-
 export default function RecipeBuilder({ value, onChange, imagesData, onImagesChange }: RecipeBuilderProps) {
     const [data, setData] = useState<EditableRecipeJson>(defaultRecipe);
     const [stepMediaTarget, setStepMediaTarget] = useState<{ s: number; i: number } | null>(null);
-    const [nutritionOpen, setNutritionOpen] = useState(false);
     const [tipsOpen, setTipsOpen] = useState(false);
-    const [equipmentOpen, setEquipmentOpen] = useState(false);
-    const [equipmentCatalog, setEquipmentCatalog] = useState<unknown[]>([]);
-    const [equipmentDetecting, setEquipmentDetecting] = useState(false);
-    const [detectedEquipment, setDetectedEquipment] = useState<unknown[]>([]);
     const [jsonError, setJsonError] = useState('');
     const [jsonMode, setJsonMode] = useState(false);
     const [jsonEditValue, setJsonEditValue] = useState('');
@@ -481,16 +457,6 @@ export default function RecipeBuilder({ value, onChange, imagesData, onImagesCha
     };
 
     // --- Nutrition ---
-    const updateNutrition = (field: NutritionField, val: string) => {
-        const num = val === '' ? undefined : parseFloat(val);
-        updateData({
-            nutrition: {
-                ...data.nutrition,
-                [field]: num === undefined || Number.isNaN(num) ? undefined : num
-            }
-        });
-    };
-
     // --- Rating ---
     const handleRatingChange = (field: RatingField, val: string) => {
         const num = val === '' ? 0 : parseFloat(val);
@@ -501,15 +467,6 @@ export default function RecipeBuilder({ value, onChange, imagesData, onImagesCha
                 [field]: isNaN(num) ? 0 : num
             }
         });
-    };
-
-    // --- Diet ---
-    const toggleDiet = (diet: DietType) => {
-        const current = data.suitableForDiet || [];
-        const updated = current.includes(diet)
-            ? current.filter(d => d !== diet)
-            : [...current, diet];
-        updateData({ suitableForDiet: updated });
     };
 
     return (

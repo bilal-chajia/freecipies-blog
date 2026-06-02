@@ -3,7 +3,7 @@ import { getVariantMap, parseVariantsJson, resolveVariantUrl } from '@shared/typ
 type VariantKey = 'xs' | 'sm' | 'md' | 'lg' | 'original';
 type Variant = {
   url?: string;
-  r2_key?: string;
+  r2_key?: string; // boundary-allow: input-only field, resolved to a public url via resolveVariantUrl; never persisted/exposed by admin
   r2Key?: string;
   width?: number;
   height?: number;

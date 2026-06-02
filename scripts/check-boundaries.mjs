@@ -3,6 +3,9 @@ import path from "node:path";
 
 const root = process.cwd();
 const sourceExtensions = new Set([".astro", ".js", ".jsx", ".ts", ".tsx"]);
+// Test files legitimately reference forbidden tokens (e.g. asserting r2_key is
+// never leaked), so they are excluded from boundary scanning.
+const testFilePattern = /(\.test\.|\.spec\.|[\\/]__tests__[\\/])/;
 
 const rules = [
   {
@@ -64,6 +67,7 @@ for (const rule of rules) {
   for (const file of files) {
     const extension = path.extname(file);
     if (!sourceExtensions.has(extension)) continue;
+    if (testFilePattern.test(file)) continue;
 
     if (rule.pathOnly) {
       if (rule.pattern.test(file)) {
@@ -75,7 +79,9 @@ for (const rule of rules) {
     const content = await readFile(path.join(root, file), "utf8");
     const lines = content.split(/\r?\n/);
     lines.forEach((line, index) => {
-      if (rule.pattern.test(line)) {
+      // A line may opt out with an inline `boundary-allow` comment when the
+      // match is a justified false positive.
+      if (rule.pattern.test(line) && !/boundary-allow/.test(line)) {
         violations.push({
           rule,
           file,
