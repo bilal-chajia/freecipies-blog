@@ -868,6 +868,44 @@ export function migrateNutrition(
     return result;
 }
 
+/**
+ * Map legacy / partial equipment entries to the canonical {@link EquipmentItem}
+ * shape so the editor loads a consistent list. `snapshot` is left untouched in
+ * the editor — catalog snapshots are (re)copied from the equipment table at
+ * article save time. `source_type` is derived from a numeric `equipment_id`.
+ *
+ * Legacy shapes handled: bare strings, old `{ name, affiliateUrl }` items.
+ */
+export function migrateEquipment(raw: unknown): EquipmentItem[] {
+    if (!Array.isArray(raw)) return [];
+    return raw.map((item, index): EquipmentItem => {
+        const fallbackId = `eq-${index + 1}`;
+        if (typeof item === 'string') {
+            return { id: fallbackId, equipment_id: null, label: item, required: true, notes: null, source_type: 'manual', snapshot: null };
+        }
+        if (!item || typeof item !== 'object') {
+            return { id: fallbackId, equipment_id: null, label: '', required: true, notes: null, source_type: 'manual', snapshot: null };
+        }
+        const it = item as Record<string, any>;
+        const rawEquipmentId = it.equipment_id ?? it.equipmentId;
+        const equipmentId = (typeof rawEquipmentId === 'number' && Number.isFinite(rawEquipmentId) && rawEquipmentId > 0)
+            ? rawEquipmentId
+            : null;
+        const sourceType: 'catalog' | 'manual' = equipmentId !== null ? 'catalog' : 'manual';
+        return {
+            id: typeof it.id === 'string' && it.id ? it.id : fallbackId,
+            equipment_id: equipmentId,
+            label: (typeof it.label === 'string' && it.label) ? it.label : (typeof it.name === 'string' ? it.name : ''),
+            required: typeof it.required === 'boolean' ? it.required : true,
+            notes: (typeof it.notes === 'string' && it.notes.trim() !== '') ? it.notes : null,
+            source_type: sourceType,
+            snapshot: (sourceType === 'catalog' && it.snapshot && typeof it.snapshot === 'object')
+                ? it.snapshot as RecipeEquipmentSnapshot
+                : null,
+        };
+    });
+}
+
 export function migrateRecipeJson(raw: Record<string, any>): RecipeJson {
     // Start with defaults, then overlay raw data
     const result: RecipeJson = { ...DEFAULT_RECIPE_JSON, ...raw };
@@ -966,7 +1004,7 @@ export function migrateRecipeJson(raw: Record<string, any>): RecipeJson {
     result.keywords = result.keywords || [];
     result.suitableForDiet = result.suitableForDiet || [];
     result.tips = result.tips || [];
-    result.equipment = result.equipment || [];
+    result.equipment = migrateEquipment(raw.equipment);
 
     // ── Clean up legacy keys from the spread ──
     delete (result as any).prepTime;

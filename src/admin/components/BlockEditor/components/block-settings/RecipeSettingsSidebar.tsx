@@ -13,34 +13,34 @@ import type {
     DietType,
     DifficultyLevel,
     CostLevel,
+    EquipmentItem,
     InstructionSection,
     NutritionInfo,
     RecipeJson,
     RecipeVideo,
 } from '@modules/articles/types/recipes.types';
 
-type SidebarEquipmentItem = {
-    id?: string | number;
-    name: string;
-    required?: boolean;
-    notes?: string;
-    affiliateUrl?: string;
-    affiliate_url?: string;
-    matchedBy?: string;
-    confidence?: number;
-};
-
-type SidebarRecipeJson = Omit<RecipeJson, 'equipment'> & {
-    equipment: SidebarEquipmentItem[];
-};
+type SidebarRecipeJson = RecipeJson;
 
 /** Numeric (flat) nutrition fields editable as plain number inputs. */
 type NutritionNumberKey = Exclude<keyof NutritionInfo, 'basis' | 'status' | 'serving_size'>;
 
+/** A catalog equipment row returned by the `/equipment?match=` endpoint. */
+type MatchedEquipment = {
+    id: number;
+    name: string;
+    slug?: string;
+    matchedBy?: string;
+    confidence?: number;
+};
+
+/** Canonical equipment item plus the transient `matchedBy` detection hint. */
+type DetectedEquipment = EquipmentItem & { matchedBy?: string };
+
 type DetectionResult = {
     found: number;
     added: number;
-    matches: SidebarEquipmentItem[];
+    matches: MatchedEquipment[];
     error?: boolean;
 };
 
@@ -66,7 +66,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
     const [equipmentOpen, setEquipmentOpen] = useState(false);
     const [equipmentDetecting, setEquipmentDetecting] = useState(false);
     const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
-    const [detectedItemsToSelect, setDetectedItemsToSelect] = useState<SidebarEquipmentItem[] | null>(null);
+    const [detectedItemsToSelect, setDetectedItemsToSelect] = useState<DetectedEquipment[] | null>(null);
     const [selectedNewIds, setSelectedNewIds] = useState<Set<number>>(new Set());
     const [keywordInput, setKeywordInput] = useState('');
 
@@ -107,6 +107,23 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
             ? { ...current, grams: val === '' ? 0 : (parseFloat(val) || 0) }
             : { ...current, label: val };
         setNutrition({ serving_size: next });
+    };
+
+    // ── Equipment ──────────────────────────────────────────────
+    const newEquipmentId = () => `eq-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+
+    const addEquipment = (item: EquipmentItem) => {
+        updateField('equipment', [...(data.equipment || []), item]);
+    };
+
+    const updateEquipmentItem = (index: number, patch: Partial<EquipmentItem>) => {
+        const updated = [...(data.equipment || [])];
+        updated[index] = { ...updated[index], ...patch };
+        updateField('equipment', updated);
+    };
+
+    const removeEquipment = (index: number) => {
+        updateField('equipment', (data.equipment || []).filter((_, i) => i !== index));
     };
 
     const addKeyword = () => {
@@ -401,18 +418,26 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                                         return;
                                     }
                                     const res = await equipmentAPI.match(allText);
-                                    const matched = (res.data?.data || res.data || []) as SidebarEquipmentItem[];
-                                    const existingNames = new Set((data.equipment || []).map((e) => e.name.toLowerCase()));
-                                    const newItems = matched
-                                        .filter((m) => !existingNames.has(m.name.toLowerCase()))
+                                    const matched = (res.data?.data || res.data || []) as MatchedEquipment[];
+                                    const existingCatalogIds = new Set(
+                                        (data.equipment || [])
+                                            .map((e) => e.equipment_id)
+                                            .filter((id): id is number => typeof id === 'number')
+                                    );
+                                    const existingLabels = new Set(
+                                        (data.equipment || []).map((e) => (e.label || '').toLowerCase())
+                                    );
+                                    const newItems: DetectedEquipment[] = matched
+                                        .filter((m) => !existingCatalogIds.has(m.id) && !existingLabels.has(m.name.toLowerCase()))
                                         .map((m) => ({
-                                            id: m.id,
-                                            name: m.name,
+                                            id: `eq-${m.slug || m.id}`,
+                                            equipment_id: m.id,
+                                            label: m.name,
                                             required: true,
-                                            notes: '',
-                                            affiliateUrl: m.affiliateUrl || m.affiliate_url || '',
+                                            notes: null,
+                                            source_type: 'catalog',
+                                            snapshot: null,
                                             matchedBy: m.matchedBy,
-                                            confidence: m.confidence,
                                         }));
 
                                     if (newItems.length > 0) {
@@ -444,7 +469,15 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                             size="sm"
                             className="gap-1.5 text-xs h-7"
                             onClick={() => {
-                                updateField('equipment', [...(data.equipment || []), { name: '', required: true, notes: '', affiliateUrl: '' }]);
+                                addEquipment({
+                                    id: newEquipmentId(),
+                                    equipment_id: null,
+                                    label: '',
+                                    required: true,
+                                    notes: null,
+                                    source_type: 'manual',
+                                    snapshot: null,
+                                });
                             }}
                         >
                             <Plus className="size-3" /> Add
@@ -488,7 +521,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                                             }}
                                         />
                                         <label htmlFor={`detect-${i}`} className="flex-1 text-xs cursor-pointer flex items-center gap-1.5">
-                                            {item.name}
+                                            {item.label}
                                             <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 ml-auto">
                                                 {item.matchedBy === 'name' ? '🟢' : item.matchedBy === 'keyword' ? '🟡' : '🔵'} {item.matchedBy}
                                             </Badge>
@@ -503,19 +536,18 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                                     className="h-7 text-xs flex-1"
                                     disabled={selectedNewIds.size === 0}
                                     onClick={() => {
-                                        const selectedItems = detectedItemsToSelect
+                                        const selectedItems: EquipmentItem[] = detectedItemsToSelect
                                             .filter((_item, i) => selectedNewIds.has(i))
-                                            .map((item) => ({
-                                                name: item.name,
-                                                required: item.required,
-                                                notes: item.notes,
-                                                affiliateUrl: item.affiliateUrl
-                                            }));
+                                            .map(({ matchedBy: _matchedBy, ...item }) => item);
                                         updateField('equipment', [...(data.equipment || []), ...selectedItems]);
                                         setDetectionResult({
                                             found: detectedItemsToSelect.length,
                                             added: selectedItems.length,
-                                            matches: detectedItemsToSelect.slice(0, 8)
+                                            matches: detectedItemsToSelect.slice(0, 8).map((item) => ({
+                                                id: item.equipment_id ?? 0,
+                                                name: item.label,
+                                                matchedBy: item.matchedBy,
+                                            })),
                                         });
                                         setDetectedItemsToSelect(null);
                                     }}
@@ -559,28 +591,42 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                     )}
 
                     {(data.equipment || []).map((item, index) => (
-                        <div key={index} className="flex items-center gap-1.5">
+                        <div key={item.id || index} className="rounded-md border p-2 space-y-1.5">
+                            <div className="flex items-center gap-1.5">
+                                <Input
+                                    value={item.label}
+                                    onChange={(e) => updateEquipmentItem(index, { label: e.target.value })}
+                                    placeholder="Name"
+                                    className="h-7 text-xs flex-1"
+                                />
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-7 text-destructive hover:bg-destructive/10 shrink-0"
+                                    onClick={() => removeEquipment(index)}
+                                >
+                                    <X className="size-3" />
+                                </Button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Checkbox
+                                    id={`eq-required-${item.id || index}`}
+                                    checked={item.required}
+                                    onCheckedChange={(checked) => updateEquipmentItem(index, { required: checked === true })}
+                                />
+                                <Label htmlFor={`eq-required-${item.id || index}`} className="text-xs cursor-pointer">
+                                    Required
+                                </Label>
+                                {item.source_type === 'catalog' && (
+                                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 ml-auto">catalog</Badge>
+                                )}
+                            </div>
                             <Input
-                                value={item.name}
-                                onChange={(e) => {
-                                    const updated = [...(data.equipment || [])];
-                                    updated[index] = { ...item, name: e.target.value };
-                                    updateField('equipment', updated);
-                                }}
-                                placeholder="Name"
-                                className="h-7 text-xs flex-1"
+                                value={item.notes ?? ''}
+                                onChange={(e) => updateEquipmentItem(index, { notes: e.target.value.trim() === '' ? null : e.target.value })}
+                                placeholder="Notes (optional)"
+                                className="h-7 text-xs"
                             />
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-7 text-destructive hover:bg-destructive/10 shrink-0"
-                                onClick={() => {
-                                    const updated = (data.equipment || []).filter((_, i) => i !== index);
-                                    updateField('equipment', updated);
-                                }}
-                            >
-                                <X className="size-3" />
-                            </Button>
                         </div>
                     ))}
                     {(data.equipment || []).length === 0 && (
