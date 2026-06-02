@@ -25,9 +25,9 @@ export const DATA_FIELD_SUGGESTIONS = [
 
     // Nutrition fields
     { path: 'recipeJson.nutrition.calories', label: 'Calories', type: 'text' },
-    { path: 'recipeJson.nutrition.proteinContent', label: 'Protein (g)', type: 'text' },
-    { path: 'recipeJson.nutrition.carbohydrateContent', label: 'Carbs (g)', type: 'text' },
-    { path: 'recipeJson.nutrition.fatContent', label: 'Fat (g)', type: 'text' },
+    { path: 'recipeJson.nutrition.protein_g', label: 'Protein (g)', type: 'text' },
+    { path: 'recipeJson.nutrition.total_carbohydrate_g', label: 'Carbs (g)', type: 'text' },
+    { path: 'recipeJson.nutrition.total_fat_g', label: 'Fat (g)', type: 'text' },
 ];
 
 /**

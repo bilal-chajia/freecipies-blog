@@ -34,6 +34,9 @@ type SidebarRecipeJson = Omit<RecipeJson, 'equipment'> & {
     equipment: SidebarEquipmentItem[];
 };
 
+/** Numeric (flat) nutrition fields editable as plain number inputs. */
+type NutritionNumberKey = Exclude<keyof NutritionInfo, 'basis' | 'status' | 'serving_size'>;
+
 type DetectionResult = {
     found: number;
     added: number;
@@ -86,10 +89,24 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
         updateField(field, (num === null || Number.isNaN(num) ? null : num) as SidebarRecipeJson[keyof SidebarRecipeJson]);
     };
 
-    const updateNutrition = (field: keyof NutritionInfo, val: string) => {
+    // Stamp the contract-required basis/status on every nutrition edit; the
+    // save-time normalizer drops them again if no real data was entered.
+    const setNutrition = (patch: Partial<NutritionInfo>) => {
+        const base = (data.nutrition || {}) as Partial<NutritionInfo>;
+        updateField('nutrition', { ...base, ...patch, basis: 'per_serving', status: 'validated' } as NutritionInfo);
+    };
+
+    const updateNutritionNumber = (field: NutritionNumberKey, val: string) => {
         const num = val === '' ? undefined : parseFloat(val);
-        const newNutrition = { ...(data.nutrition || {}), [field]: num === undefined || Number.isNaN(num) ? undefined : num };
-        updateField('nutrition', newNutrition);
+        setNutrition({ [field]: num === undefined || Number.isNaN(num) ? undefined : num } as Partial<NutritionInfo>);
+    };
+
+    const updateServingSize = (key: 'label' | 'grams', val: string) => {
+        const current = data.nutrition?.serving_size ?? { label: '', grams: 0 };
+        const next = key === 'grams'
+            ? { ...current, grams: val === '' ? 0 : (parseFloat(val) || 0) }
+            : { ...current, label: val };
+        setNutrition({ serving_size: next });
     };
 
     const addKeyword = () => {
@@ -296,41 +313,69 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
 
             {/* Nutrition */}
             <SettingsSection title="Nutrition" icon={Settings}>
-                <div className="grid grid-cols-2 gap-3">
+                {/* Serving basis */}
+                <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1 col-span-2">
+                        <Label className="text-xs">Serving Size</Label>
+                        <Input
+                            value={data.nutrition?.serving_size?.label ?? ''}
+                            onChange={(e) => updateServingSize('label', e.target.value)}
+                            placeholder="1 bowl"
+                            className="h-8 text-sm"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">Grams</Label>
+                        <Input
+                            type="number"
+                            value={data.nutrition?.serving_size?.grams ?? ''}
+                            onChange={(e) => updateServingSize('grams', e.target.value)}
+                            placeholder="320"
+                            className="h-8 text-sm"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-1 mt-3">
+                    <Label className="text-xs">Servings per Recipe</Label>
+                    <Input
+                        type="number"
+                        value={data.nutrition?.servings_per_recipe ?? ''}
+                        onChange={(e) => updateNutritionNumber('servings_per_recipe', e.target.value)}
+                        placeholder={data.servings ? String(data.servings) : '4'}
+                        className="h-8 text-sm"
+                    />
+                </div>
+
+                {/* Macros + micros */}
+                <div className="grid grid-cols-2 gap-3 mt-3">
                     {([
                         { key: 'calories', label: 'Calories', ph: '320' },
-                        { key: 'fatContent', label: 'Fat (g)', ph: '15' },
-                        { key: 'saturatedFatContent', label: 'Sat. Fat (g)', ph: '3' },
-                        { key: 'carbohydrateContent', label: 'Carbs (g)', ph: '40' },
-                        { key: 'sugarContent', label: 'Sugar (g)', ph: '12' },
-                        { key: 'fiberContent', label: 'Fiber (g)', ph: '2' },
-                        { key: 'proteinContent', label: 'Protein (g)', ph: '4' },
-                        { key: 'sodiumContent', label: 'Sodium (mg)', ph: '220' },
-                        { key: 'cholesterolContent', label: 'Chol. (mg)', ph: '25' },
-                    ] as Array<{ key: keyof NutritionInfo; label: string; ph: string }>).map(({ key, label, ph }) => (
+                        { key: 'total_fat_g', label: 'Fat (g)', ph: '15' },
+                        { key: 'saturated_fat_g', label: 'Sat. Fat (g)', ph: '3' },
+                        { key: 'trans_fat_g', label: 'Trans Fat (g)', ph: '0' },
+                        { key: 'total_carbohydrate_g', label: 'Carbs (g)', ph: '40' },
+                        { key: 'dietary_fiber_g', label: 'Fiber (g)', ph: '2' },
+                        { key: 'total_sugars_g', label: 'Sugar (g)', ph: '12' },
+                        { key: 'added_sugars_g', label: 'Added Sugar (g)', ph: '0' },
+                        { key: 'protein_g', label: 'Protein (g)', ph: '4' },
+                        { key: 'sodium_mg', label: 'Sodium (mg)', ph: '220' },
+                        { key: 'cholesterol_mg', label: 'Chol. (mg)', ph: '25' },
+                        { key: 'vitamin_d_mcg', label: 'Vit. D (mcg)', ph: '0' },
+                        { key: 'calcium_mg', label: 'Calcium (mg)', ph: '120' },
+                        { key: 'iron_mg', label: 'Iron (mg)', ph: '2' },
+                        { key: 'potassium_mg', label: 'Potassium (mg)', ph: '510' },
+                    ] as Array<{ key: NutritionNumberKey; label: string; ph: string }>).map(({ key, label, ph }) => (
                         <div key={key} className="space-y-1">
                             <Label className="text-xs">{label}</Label>
                             <Input
                                 type="number"
                                 value={data.nutrition?.[key] ?? ''}
-                                onChange={(e) => updateNutrition(key, e.target.value)}
+                                onChange={(e) => updateNutritionNumber(key, e.target.value)}
                                 placeholder={ph}
                                 className="h-8 text-sm"
                             />
                         </div>
                     ))}
-                </div>
-                <div className="space-y-1 mt-3">
-                    <Label className="text-xs">Serving Size</Label>
-                    <Input
-                        value={data.nutrition?.servingSize ?? ''}
-                        onChange={(e) => {
-                            const newNutrition = { ...(data.nutrition || {}), servingSize: e.target.value };
-                            updateField('nutrition', newNutrition);
-                        }}
-                        placeholder="1 serving (150g)"
-                        className="h-8 text-sm"
-                    />
                 </div>
             </SettingsSection>
 
