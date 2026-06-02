@@ -25,38 +25,9 @@ import BlockToolbar, { ToolbarButton } from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockEditorSourceData } from '../source-data-context';
 import { useCustomBlock } from './useCustomBlock';
+import { upsertContentImageSlot, patchContentImageSlot, removeContentImageSlot } from './shared/content-image-slots';
 import ImageSlotEditor from './before-after/ImageSlotEditor';
 import type { ImageSlotKey, BeforeAfterSlot, MediaDialogItem, BeforeAfterUpdates } from './before-after/BeforeAfterBlock.types';
-
-function parseImagesData(value: unknown): Record<string, unknown> {
-    if (!value) return {};
-    if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
-    if (typeof value !== 'string') return {};
-    try {
-        const parsed = JSON.parse(value);
-        return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-            ? parsed as Record<string, unknown>
-            : {};
-    } catch {
-        return {};
-    }
-}
-
-function upsertContentImageSlot(
-    imagesData: unknown,
-    imageRef: string,
-    slot: Record<string, unknown>
-): Record<string, unknown> {
-    const images = parseImagesData(imagesData);
-    const contentImages = parseImagesData(images.content_images);
-    return {
-        ...images,
-        content_images: {
-            ...contentImages,
-            [imageRef]: slot,
-        },
-    };
-}
 
 const parseSlot = (value: string): BeforeAfterSlot | null => {
     if (!value) return null;
@@ -83,6 +54,8 @@ export const BeforeAfterBlock = createReactBlockSpec(
             layout: { default: 'slider', values: ['slider', 'side_by_side'] },
             beforeImageRef: { default: '' },
             afterImageRef: { default: '' },
+            beforeLabel: { default: '' },
+            afterLabel: { default: '' },
             beforeJson: { default: '' },
             afterJson: { default: '' },
         },
@@ -110,7 +83,32 @@ export const BeforeAfterBlock = createReactBlockSpec(
             };
 
             const updateSlot = (slotKey: ImageSlotKey, nextSlot: BeforeAfterSlot | null) => {
-                updateBlockProps({ [`${slotKey}Json`]: toJson(nextSlot) });
+                const refProp = slotKey === 'before' ? block.props.beforeImageRef : block.props.afterImageRef;
+                const ref = typeof refProp === 'string' ? refProp : '';
+
+                if (!nextSlot) {
+                    // Removal: clear the render mirror + canonical slot, but KEEP the image
+                    // ref so fromEditor still serializes the block (it requires both refs).
+                    // The slot resolves empty -> "Select image" placeholder, no resurrection.
+                    updateBlockProps({ [`${slotKey}Json`]: '' } as BeforeAfterUpdates);
+                    if (ref && onImagesChange) onImagesChange(removeContentImageSlot(imagesData, ref));
+                    return;
+                }
+
+                // Render mirror (beforeJson/afterJson) + canonical label (-> content_json via fromEditor).
+                updateBlockProps({
+                    [`${slotKey}Json`]: toJson(nextSlot),
+                    [`${slotKey}Label`]: nextSlot.label ?? '',
+                } as BeforeAfterUpdates);
+
+                // Canonical alt/label live in images_json.content_images[ref] (single source of truth, P6).
+                if (ref && onImagesChange) {
+                    const patched = patchContentImageSlot(imagesData, ref, {
+                        alt: nextSlot.alt ?? '',
+                        label: nextSlot.label ?? '',
+                    });
+                    if (patched) onImagesChange(patched);
+                }
             };
 
             const handleSelect = (item: MediaDialogItem) => {
@@ -131,6 +129,7 @@ export const BeforeAfterBlock = createReactBlockSpec(
                 onImagesChange?.(upsertContentImageSlot(imagesData, imageRef, nextSlot));
                 updateBlockProps({
                     [`${activeSlot}ImageRef`]: imageRef,
+                    [`${activeSlot}Label`]: nextSlot.label,
                     [`${activeSlot}Json`]: toJson(nextSlot),
                 } as BeforeAfterUpdates);
                 setMediaDialogOpen(false);

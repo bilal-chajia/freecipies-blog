@@ -39,6 +39,17 @@ export function upsertContentImageSlot(
     };
 }
 
+export function removeContentImageSlot(
+    imagesData: unknown,
+    imageRef: unknown
+): Record<string, unknown> {
+    const images = parseImagesData(imagesData);
+    if (typeof imageRef !== 'string' || !imageRef) return images;
+    const contentImages = { ...parseImagesData(images.content_images) };
+    delete contentImages[imageRef];
+    return { ...images, content_images: contentImages };
+}
+
 export function patchContentImageSlot(
     imagesData: unknown,
     imageRef: unknown,
