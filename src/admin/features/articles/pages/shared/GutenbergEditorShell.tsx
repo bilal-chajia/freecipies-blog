@@ -505,6 +505,8 @@ export function GutenbergEditorShell({
                                     editor={editorInstance}
                                     selectedBlock={selectedBlock}
                                     relatedContext={relatedContext}
+                                    imagesData={imagesData}
+                                    onImagesChange={(next) => setImagesData(next as Record<string, unknown>)}
                                     recipeData={contentType === 'recipe' ? recipeJson : undefined}
                                     onRecipeChange={
                                         contentType === 'recipe'

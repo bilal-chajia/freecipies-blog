@@ -32,6 +32,8 @@ export interface BlockSettingsPanelProps {
   recipeData?: any;
   onRecipeChange?: (recipe: any) => void;
   relatedContext?: any;
+  imagesData?: unknown;
+  onImagesChange?: (next: unknown) => void;
 }
 
 export const BLOCK_SETTINGS_PANELS: Record<
@@ -71,8 +73,13 @@ export const BLOCK_SETTINGS_PANELS: Record<
   simpleTable: ({ selectedBlock }) => (
     <TableSettings selectedBlock={selectedBlock} />
   ),
-  customImage: ({ selectedBlock, updateProps }) => (
-    <ImageSettings selectedBlock={selectedBlock} updateProps={updateProps} />
+  customImage: ({ selectedBlock, updateProps, imagesData, onImagesChange }) => (
+    <ImageSettings
+      selectedBlock={selectedBlock}
+      updateProps={updateProps}
+      imagesData={imagesData}
+      onImagesChange={onImagesChange}
+    />
   ),
   beforeAfter: ({ selectedBlock, updateProps }) => (
     <BeforeAfterSettings selectedBlock={selectedBlock} updateProps={updateProps} />

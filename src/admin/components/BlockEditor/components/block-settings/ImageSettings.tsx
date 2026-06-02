@@ -2,20 +2,34 @@ import { Settings, FolderOpen, Upload } from 'lucide-react';
 import { Label } from '@/ui/label';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import { SettingsSection } from '../DocumentSettings';
 import {
     IMAGE_BLOCK_OPEN_MEDIA_EVENT,
     IMAGE_BLOCK_OPEN_UPLOADER_EVENT,
     dispatchImageBlockEvent,
 } from '../../blocks/shared/image-block-events';
+import { patchContentImageSlot } from '../../blocks/shared/content-image-slots';
 
 interface ImageSettingsProps {
     selectedBlock: any;
     updateProps: (props: Record<string, any>) => void;
+    imagesData?: unknown;
+    onImagesChange?: (next: unknown) => void;
 }
 
-export default function ImageSettings({ selectedBlock, updateProps }: ImageSettingsProps) {
+export default function ImageSettings({ selectedBlock, updateProps, imagesData, onImagesChange }: ImageSettingsProps) {
+    /**
+     * Caption/alt edits update the block props (for immediate inline display)
+     * and write through to the canonical images_json.content_images slot, which
+     * is the single source of truth (P6). No effect mirrors props -> slot.
+     */
+    const updateSlotField = (field: 'caption' | 'alt', value: string) => {
+        updateProps({ [field]: value });
+        const ref = selectedBlock?.props?.imageRef;
+        if (!ref || !onImagesChange) return;
+        const next = patchContentImageSlot(imagesData, ref, { [field]: value });
+        if (next) onImagesChange(next);
+    };
     /** Tells the ImageBlock to open its own Media Library dialog. */
     const openBlockMediaDialog = () => {
         if (!selectedBlock?.id) return;
@@ -58,27 +72,11 @@ export default function ImageSettings({ selectedBlock, updateProps }: ImageSetti
                 </div>
 
                 <div className="space-y-2">
-                    <Label className="text-xs">Alignment</Label>
-                    <Select
-                        value={selectedBlock.props.alignment || 'center'}
-                        onValueChange={(val) => updateProps({ alignment: val })}
-                    >
-                        <SelectTrigger className="h-8 text-sm w-full">
-                            <SelectValue placeholder="Select alignment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="left">Left</SelectItem>
-                            <SelectItem value="center">Center</SelectItem>
-                            <SelectItem value="right">Right</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
                     <Label className="text-xs">Caption</Label>
                     <Input
                         className="h-8 text-sm w-full"
                         value={selectedBlock.props.caption || ''}
-                        onChange={(e) => updateProps({ caption: e.target.value })}
+                        onChange={(e) => updateSlotField('caption', e.target.value)}
                         placeholder="Image caption"
                     />
                 </div>
@@ -87,7 +85,7 @@ export default function ImageSettings({ selectedBlock, updateProps }: ImageSetti
                     <Input
                         className="h-8 text-sm w-full"
                         value={selectedBlock.props.alt || ''}
-                        onChange={(e) => updateProps({ alt: e.target.value })}
+                        onChange={(e) => updateSlotField('alt', e.target.value)}
                         placeholder="Describe the image"
                     />
                 </div>

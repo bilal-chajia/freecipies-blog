@@ -12,6 +12,8 @@ export interface BlockSettingsProps {
     relatedContext: any;
     recipeData?: any;
     onRecipeChange?: (recipe: any) => void;
+    imagesData?: unknown;
+    onImagesChange?: (next: unknown) => void;
 }
 
 export default function BlockSettings({
@@ -19,7 +21,9 @@ export default function BlockSettings({
     selectedBlock: initialSelectedBlock,
     relatedContext,
     recipeData,
-    onRecipeChange
+    onRecipeChange,
+    imagesData,
+    onImagesChange
 }: BlockSettingsProps) {
     const [, setBlockVersion] = useState(0);
 
@@ -89,6 +93,8 @@ export default function BlockSettings({
                 recipeData={recipeData}
                 onRecipeChange={onRecipeChange}
                 relatedContext={relatedContext}
+                imagesData={imagesData}
+                onImagesChange={onImagesChange}
             >
                 {null}
             </BlockSettingsRouter>

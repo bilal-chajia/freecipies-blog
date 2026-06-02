@@ -41,7 +41,6 @@ export const ImageAdapter: BlockAdapter<ImageBlock> = {
                 width: typeof slot?.width === 'number' ? slot.width : 512,
                 height: typeof slot?.height === 'number' ? slot.height : 0,
                 variantsJson: JSON.stringify(variants),
-                alignment: 'center',
             },
         };
     },

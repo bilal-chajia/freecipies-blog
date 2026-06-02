@@ -35,6 +35,7 @@ import BlockToolbar, { ToolbarButton, ToolbarSeparator } from '../components/Blo
 import BlockWrapper from '../components/BlockWrapper';
 import { useBlockEditorSourceData } from '../source-data-context';
 import { buildContentImageSelection } from '../utils/image-selection';
+import { upsertContentImageSlot, patchContentImageSlot } from './shared/content-image-slots';
 import { useCustomBlock } from './useCustomBlock';
 import {
     IMAGE_BLOCK_OPEN_MEDIA_EVENT,
@@ -85,52 +86,6 @@ type MediaSelectItem = {
 
 type ImageBlockOpenEvent = globalThis.CustomEvent<{ blockId?: string }>;
 
-function parseImagesData(value: unknown): Record<string, unknown> {
-    if (!value) return {};
-    if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
-    if (typeof value !== 'string') return {};
-    try {
-        const parsed = JSON.parse(value);
-        return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-            ? parsed as Record<string, unknown>
-            : {};
-    } catch {
-        return {};
-    }
-}
-
-function upsertContentImageSlot(
-    imagesData: unknown,
-    imageRef: string,
-    slot: Record<string, unknown>
-): Record<string, unknown> {
-    const images = parseImagesData(imagesData);
-    const contentImages = parseImagesData(images.content_images);
-    return {
-        ...images,
-        content_images: {
-            ...contentImages,
-            [imageRef]: slot,
-        },
-    };
-}
-
-function patchContentImageSlot(
-    imagesData: unknown,
-    imageRef: unknown,
-    patch: Record<string, unknown>
-): Record<string, unknown> | null {
-    if (typeof imageRef !== 'string' || !imageRef) return null;
-    const images = parseImagesData(imagesData);
-    const contentImages = parseImagesData(images.content_images);
-    const currentSlot = contentImages[imageRef];
-    if (!currentSlot || typeof currentSlot !== 'object' || Array.isArray(currentSlot)) return null;
-    return upsertContentImageSlot(imagesData, imageRef, {
-        ...(currentSlot as Record<string, unknown>),
-        ...patch,
-    });
-}
-
 export const ImageBlock = createReactBlockSpec(
     {
         type: 'customImage',
@@ -145,7 +100,6 @@ export const ImageBlock = createReactBlockSpec(
             mediaId: { default: '' },
             variantsJson: { default: '{}' },
             imageRef: { default: '' },
-            alignment: { default: 'center' },
         },
         content: 'none',
     },
@@ -240,32 +194,6 @@ export const ImageBlock = createReactBlockSpec(
                     document.removeEventListener(IMAGE_BLOCK_OPEN_UPLOADER_EVENT, onOpenUploader);
                 };
             }, [block.id, openMediaDialog, openUploaderDialog]);
-
-            useEffect(() => {
-                if (!block.props.url || !block.props.imageRef) return;
-
-                const images = parseImagesData(imagesData);
-                const contentImages = parseImagesData(images.content_images);
-                const currentSlot = contentImages[block.props.imageRef] as Record<string, unknown> | undefined;
-                if (!currentSlot) return;
-
-                const nextCaption = block.props.caption || '';
-                const nextAlt = block.props.alt || '';
-                if (currentSlot.caption === nextCaption && currentSlot.alt === nextAlt) return;
-
-                onImagesChange?.(upsertContentImageSlot(imagesData, block.props.imageRef, {
-                    ...currentSlot,
-                    caption: nextCaption,
-                    alt: nextAlt,
-                }));
-            }, [
-                block.props.url,
-                block.props.imageRef,
-                block.props.caption,
-                block.props.alt,
-                imagesData,
-                onImagesChange
-            ]);
 
             // Handle upload complete from ImageUploader
             const handleUploadComplete = useCallback((data: ImageUploadData) => {
@@ -396,13 +324,6 @@ export const ImageBlock = createReactBlockSpec(
             }
 
             // Image display with toolbar
-            const alignment = block.props.alignment || 'center';
-            const alignmentClass = {
-                left: 'mr-auto ml-0',
-                center: 'mx-auto',
-                right: 'ml-auto mr-0',
-            }[alignment];
-
             const numericWidth = typeof block.props.width === 'number'
                 ? block.props.width
                 : /^\d+$/.test(String(block.props.width))
@@ -458,7 +379,7 @@ export const ImageBlock = createReactBlockSpec(
                         onPointerDownCapture={handleSelect}
                         blockType="image"
                         blockId={block.id}
-                        className={cn("my-4", alignmentClass)}
+                        className="my-4"
                         style={{
                             ...dragStyle,
                             opacity: isDragging ? 0.5 : undefined,
