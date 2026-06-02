@@ -131,6 +131,7 @@ export default function BlockEditor({
   const { structureItems, structureItemsRef } = useEditorStateManager({
     editor: mountedEditor, onChange, onStructureUpdate, onSelectedBlockChange,
     contentType, onRoundupChange, activeBlockId,
+    lastEmittedValueRef, lastSerializedRef,
   });
 
   const { toolbarActionBlockIdRef } = useBlockSelection({

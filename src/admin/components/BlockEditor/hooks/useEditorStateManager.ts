@@ -35,6 +35,12 @@ interface EditorStateManagerProps {
     contentType?: string;
     onRoundupChange?: (roundupJson: string) => void;
     activeBlockId: string | null;
+    /**
+     * Shared with useBlockEditorHydration so the hydration echo-guard can
+     * recognize the editor's own emitted value and skip re-hydrating it.
+     */
+    lastEmittedValueRef: React.MutableRefObject<string>;
+    lastSerializedRef: React.MutableRefObject<string>;
 }
 
 /**
@@ -49,14 +55,14 @@ export function useEditorStateManager({
     contentType,
     onRoundupChange,
     activeBlockId,
+    lastEmittedValueRef,
+    lastSerializedRef,
 }: EditorStateManagerProps) {
     const onChangeRef = useRef(onChange);
     const onStructureUpdateRef = useRef(onStructureUpdate);
     const onSelectedBlockChangeRef = useRef(onSelectedBlockChange);
     const onRoundupChangeRef = useRef(onRoundupChange);
     const activeBlockIdRef = useRef(activeBlockId);
-    const lastSerializedRef = useRef('');
-    const lastEmittedValueRef = useRef('');
     const lastRoundupRef = useRef('');
     const lastBlockStructureRef = useRef('');
 
