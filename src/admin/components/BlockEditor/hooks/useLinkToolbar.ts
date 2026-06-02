@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getEditorDomElement } from '../utils/editorView';
+import type { AppEditor } from '../schema';
 
 interface LinkToolbarState {
     open: boolean;
@@ -12,7 +13,7 @@ interface LinkToolbarState {
 }
 
 interface LinkToolbarProps {
-    editor: Record<string, unknown> | null;
+    editor: AppEditor | null;
     wrapperRef: React.RefObject<HTMLElement | null>;
     activeBlockId: string | null;
 }
@@ -44,7 +45,7 @@ export function useLinkToolbar({ editor, wrapperRef, activeBlockId }: LinkToolba
             if (linkToolbarRef.current.mode === 'link') {
                 return;
             }
-            const text = (editor as Record<string, () => string>).getSelectedText?.() || '';
+            const text = editor.getSelectedText() || '';
             if (!text) {
                 setLinkToolbar((prev) => (prev.open ? { ...prev, open: false, mode: 'buttons', selection: null } : prev));
                 setActiveStyles({});
@@ -80,7 +81,7 @@ export function useLinkToolbar({ editor, wrapperRef, activeBlockId }: LinkToolba
             const wrapperRect = wrapper.getBoundingClientRect();
             const left = rect.left - wrapperRect.left + rect.width / 2;
             const top = rect.top - wrapperRect.top - 10;
-            const url = (editor as Record<string, () => string>).getSelectedLinkUrl?.() || '';
+            const url = editor.getSelectedLinkUrl() || '';
             const selectionState = (editor as { _tiptapEditor?: { state?: { selection?: { from: number; to: number } } } })._tiptapEditor?.state?.selection;
             const selectionRange = selectionState ? { from: selectionState.from, to: selectionState.to } : null;
             setLinkToolbar({
@@ -92,11 +93,11 @@ export function useLinkToolbar({ editor, wrapperRef, activeBlockId }: LinkToolba
                 selection: selectionRange,
                 mode: 'buttons',
             });
-            setActiveStyles((editor as Record<string, () => Record<string, boolean | string>>).getActiveStyles?.() || {});
+            setActiveStyles((editor.getActiveStyles() || {}) as Record<string, boolean | string>);
         };
 
         handleSelection();
-        const unsubscribe = (editor as Record<string, (cb: () => void) => (() => void) | void>).onSelectionChange?.(handleSelection);
+        const unsubscribe = editor.onSelectionChange(handleSelection);
         return () => {
             if (typeof unsubscribe === 'function') unsubscribe();
         };

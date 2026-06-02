@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { CUSTOM_BLOCK_TYPES } from '../utils/constants';
 import { getEditorDomElement } from '../utils/editorView';
+import type { AppEditor } from '../schema';
 
 interface BlockSelectionProps {
-    editor: Record<string, unknown> | null;
+    editor: AppEditor | null;
     wrapperRef: React.RefObject<HTMLElement | null>;
     activeBlockId: string | null;
     setActiveBlockId: (id: string | null) => void;
@@ -40,6 +41,14 @@ export function useBlockSelection({
     useEffect(() => { onForceSelectHandledRef.current = onForceSelectHandled; }, [onForceSelectHandled]);
     useEffect(() => { activeBlockIdRef.current = activeBlockId; }, [activeBlockId]);
 
+    // Look up a block by id and return it in the loose shape the selection
+    // callbacks consume. Centralizes the single editor → Record bridge so the
+    // editor itself stays strongly typed as AppEditor.
+    const getBlockLoose = (id: string): Record<string, unknown> | null => {
+        const block = editor?.getBlock(id);
+        return block ? (block as unknown as Record<string, unknown>) : null;
+    };
+
     // Main selection change handler
     useEffect(() => {
         if (!editor) return undefined;
@@ -61,11 +70,11 @@ export function useBlockSelection({
             if (moveActionBlockIdRef.current) {
                 const moveId = moveActionBlockIdRef.current;
                 moveActionBlockIdRef.current = null;
-                const moveBlock = (editor as Record<string, (id: string) => unknown>).getBlock?.(moveId) || null;
+                const moveBlock = getBlockLoose(moveId);
                 if (moveBlock) {
                     setActiveBlockId(moveId);
-                    onSelectedBlockChangeRef.current?.(moveBlock as Record<string, unknown>);
-                    if (!CUSTOM_BLOCK_TYPES.has((moveBlock as Record<string, string>).type)) {
+                    onSelectedBlockChangeRef.current?.(moveBlock);
+                    if (!CUSTOM_BLOCK_TYPES.has(moveBlock.type as string)) {
                         // Cursor position intentionally NOT forced to 'start' after move
                         // to prevent cursor jumps. Block remains selected via activeBlockId.
                     }
@@ -76,10 +85,10 @@ export function useBlockSelection({
             // Priority 2: Toolbar action
             if (toolbarActionBlockIdRef.current) {
                 const toolbarId = toolbarActionBlockIdRef.current;
-                const toolbarBlock = (editor as Record<string, (id: string) => unknown>).getBlock?.(toolbarId) || null;
+                const toolbarBlock = getBlockLoose(toolbarId);
                 if (toolbarBlock) {
                     setActiveBlockId(toolbarId);
-                    onSelectedBlockChangeRef.current?.(toolbarBlock as Record<string, unknown>);
+                    onSelectedBlockChangeRef.current?.(toolbarBlock);
                     toolbarActionBlockIdRef.current = null;
                     return;
                 }
@@ -115,9 +124,9 @@ export function useBlockSelection({
                     if (customBlockId) {
                         if (currentActiveId !== customBlockId) {
                             setActiveBlockId(customBlockId);
-                            const block = (editor as Record<string, (id: string) => unknown>).getBlock?.(customBlockId) || null;
+                            const block = getBlockLoose(customBlockId);
                             if (block) {
-                                onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
+                                onSelectedBlockChangeRef.current?.(block);
                             }
                         }
                         return;
@@ -128,9 +137,9 @@ export function useBlockSelection({
             // Priority 5: Pointer-down manual selection
             const manualId = lastPointerBlockIdRef.current;
             if (manualId) {
-                const manualBlock = (editor as Record<string, (id: string) => unknown>).getBlock?.(manualId) || null;
+                const manualBlock = getBlockLoose(manualId);
                 setActiveBlockId(manualId);
-                onSelectedBlockChangeRef.current?.(manualBlock as Record<string, unknown> | null);
+                onSelectedBlockChangeRef.current?.(manualBlock);
                 lastPointerBlockIdRef.current = null;
                 return;
             }
@@ -144,17 +153,17 @@ export function useBlockSelection({
             // Priority 7: Natural cursor position
             let block: Record<string, unknown> | null = null;
             try {
-                const pos = (editor as Record<string, () => { block: Record<string, unknown> }>).getTextCursorPosition?.();
-                block = pos?.block ?? null;
-                if (block && CUSTOM_BLOCK_TYPES.has((block as Record<string, string>).type)) {
+                const cursorBlock = editor.getTextCursorPosition()?.block;
+                block = cursorBlock ? (cursorBlock as unknown as Record<string, unknown>) : null;
+                if (block && CUSTOM_BLOCK_TYPES.has(block.type as string)) {
                     block = null;
                 }
             } catch {
                 const domId = getBlockIdFromDom();
                 if (domId) {
-                    const domBlock = (editor as Record<string, (id: string) => unknown>).getBlock?.(domId) || null;
+                    const domBlock = getBlockLoose(domId);
                     setActiveBlockId(domId);
-                    onSelectedBlockChangeRef.current?.(domBlock as Record<string, unknown> | null);
+                    onSelectedBlockChangeRef.current?.(domBlock);
                     lastPointerBlockIdRef.current = null;
                     return;
                 }
@@ -170,7 +179,7 @@ export function useBlockSelection({
         };
 
         handleSelection();
-        const unsubscribe = (editor as Record<string, (cb: () => void) => (() => void) | void>).onSelectionChange?.(handleSelection);
+        const unsubscribe = editor.onSelectionChange(handleSelection);
         return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
     }, [editor, forceSelectBlockId]);
 
@@ -211,9 +220,9 @@ export function useBlockSelection({
                     if (blockId) {
                         lastPointerBlockIdRef.current = blockId;
                         if (blockId !== currentActiveId) {
-                            const block = (editor as Record<string, (id: string) => unknown> | null)?.getBlock?.(blockId);
+                            const block = getBlockLoose(blockId);
                             setActiveBlockId(blockId);
-                            if (block) onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
+                            if (block) onSelectedBlockChangeRef.current?.(block);
                         }
                     }
 
@@ -249,9 +258,9 @@ export function useBlockSelection({
                     if (blockId) {
                         lastPointerBlockIdRef.current = blockId;
                         if (blockId !== currentActiveId) {
-                            const block = (editor as Record<string, (id: string) => unknown> | null)?.getBlock?.(blockId);
+                            const block = getBlockLoose(blockId);
                             setActiveBlockId(blockId);
-                            if (block) onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
+                            if (block) onSelectedBlockChangeRef.current?.(block);
                         }
                         return;
                     }
@@ -295,15 +304,15 @@ export function useBlockSelection({
     useEffect(() => {
         if (!forceSelectBlockId || !editor) return;
         if (forceSelectBlockId === activeBlockId) return;
-        const block = (editor as Record<string, (id: string) => unknown>).getBlock?.(forceSelectBlockId) || null;
+        const block = getBlockLoose(forceSelectBlockId);
         if (block) {
             setActiveBlockId(forceSelectBlockId);
-            onSelectedBlockChangeRef.current?.(block as Record<string, unknown>);
-            if (!CUSTOM_BLOCK_TYPES.has((block as Record<string, string>).type)) {
+            onSelectedBlockChangeRef.current?.(block);
+            if (!CUSTOM_BLOCK_TYPES.has(block.type as string)) {
                 try {
-                    const currentPos = (editor as Record<string, () => { block?: { id: string } }>).getTextCursorPosition?.();
+                    const currentPos = editor.getTextCursorPosition();
                     if (currentPos?.block?.id !== forceSelectBlockId) {
-                        (editor as Record<string, (id: string, pos: string) => void>).setTextCursorPosition?.(forceSelectBlockId, 'start');
+                        editor.setTextCursorPosition(forceSelectBlockId, 'start');
                     }
                 } catch {}
             }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { LucideIcon } from 'lucide-react';
+import type { AppEditor } from '../schema';
 
 export type StructureItem = {
   id: string;
@@ -17,7 +18,7 @@ export type SelectedBlock = {
 };
 
 interface BlockEditorState {
-  editor: any | null; // BlockNote editor instance
+  editor: AppEditor | null; // BlockNote editor instance
   inserterOpen: boolean;
   sidebarOpen: boolean;
   sidebarTab: 'document' | 'block' | 'ai';
@@ -27,7 +28,7 @@ interface BlockEditorState {
   blockErrors: Record<string, string[]>;
   isSaving: boolean;
 
-  setEditor: (editor: any) => void;
+  setEditor: (editor: AppEditor | null) => void;
   setInserterOpen: (open: boolean) => void;
   toggleInserter: () => void;
   setSidebarOpen: (open: boolean) => void;

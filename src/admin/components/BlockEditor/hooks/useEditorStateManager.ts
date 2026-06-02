@@ -3,6 +3,7 @@ import type { Block } from '@blocknote/core';
 import { flattenBlocks, groupConsecutiveBlocks, getBlockLabel, getBlockIcon } from '../utils/blockHelpers';
 import { CUSTOM_BLOCK_TYPES } from '../utils/constants';
 import { blocksToContentJson } from '../utils/conversion';
+import { buildRoundupJson } from '../blocks/roundup-serialization';
 import { getEditorDomElement } from '../utils/editorView';
 import type { AppEditor } from '../schema';
 import { useBlockEditorStore } from '../store/blockEditorStore';
@@ -192,50 +193,7 @@ export function useEditorStateManager({
                 }
 
                  if (contentType === 'roundup' && onRoundupChangeRef.current) {
-                    const roundupItems = flatBlocks
-                        .filter(({ block }) => block.type === 'roundupList')
-                        .map(({ block }) => block)
-                        .flatMap((b) => {
-                            const props = b.props as Record<string, unknown> | undefined;
-                            if (!props) return [];
-                            if (typeof props.itemsJson === 'string') {
-                                try {
-                                    const parsed = JSON.parse(props.itemsJson);
-                                    if (Array.isArray(parsed)) return parsed;
-                                } catch {
-                                    // ignore and fall back
-                                }
-                            }
-                            if (Array.isArray(props.items)) {
-                                return props.items;
-                            }
-                            return [];
-                        })
-                        .map((item: unknown, idx: number) => {
-                            const it = item as Record<string, unknown>;
-                            return {
-                                position: idx + 1,
-                                source_type: it.source_type ?? it.sourceType ?? (it.external_url || it.externalUrl ? 'external_recipe' : 'internal_recipe'),
-                                article_id: it.article_id ?? it.articleId ?? null,
-                                slug: it.slug ?? '',
-                                external_url: it.external_url ?? it.externalUrl ?? '',
-                                title: it.title ?? '',
-                                subtitle: it.subtitle ?? '',
-                                description: it.description ?? '',
-                                note: it.note ?? '',
-                                image: it.image ?? null,
-                                recipe: it.recipe ?? null,
-                                rating: it.rating ?? null,
-                                author: it.author ?? null,
-                                category: it.category ?? null,
-                                tags: it.tags ?? [],
-                            };
-                        });
-
-                    const nextRoundup = JSON.stringify({
-                        list_type: 'ItemList',
-                        items: roundupItems
-                    }, null, 2);
+                    const nextRoundup = buildRoundupJson(flatBlocks.map(({ block }) => block));
 
                     if (nextRoundup !== lastRoundupRef.current) {
                         lastRoundupRef.current = nextRoundup;

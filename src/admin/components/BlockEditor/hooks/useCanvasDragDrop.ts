@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useSensors, useSensor, PointerSensor, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { moveBlockById } from '../blocks/primitives';
 import { getEditorDomElement } from '../utils/editorView';
+import type { AppEditor } from '../schema';
 
 interface StructureItem {
     id: string;
@@ -9,7 +10,7 @@ interface StructureItem {
 }
 
 interface CanvasDragDropProps {
-    editor: Record<string, unknown> | null;
+    editor: AppEditor | null;
     structureItemsRef: React.MutableRefObject<StructureItem[]>;
     setActiveBlockId: (id: string | null) => void;
 }
@@ -90,7 +91,7 @@ export function useCanvasDragDrop({ editor, structureItemsRef, setActiveBlockId 
         }
         moveActionBlockIdRef.current = draggedId;
         setActiveBlockId(draggedId);
-        (editor as Record<string, () => void>).focus?.();
+        editor.focus();
     }, [editor, structureItemsRef, setActiveBlockId]);
 
     const getBlockFromPoint = useCallback((x: number, y: number): { id: string; element: HTMLElement } | null => {

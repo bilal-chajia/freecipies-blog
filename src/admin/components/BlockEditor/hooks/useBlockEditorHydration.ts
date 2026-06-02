@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { contentJsonToBlocks } from '@admin/components/BlockEditor/utils/conversion';
 import { getEditorDomElement } from '@admin/components/BlockEditor/utils/editorView';
 import type { BlockAdapterContext } from '../blocks/BlockAdapter';
+import type { AppEditor } from '../schema';
 
 export interface BlockEditorHydrationContext extends BlockAdapterContext {
   onRecipeChange?: (nextValue: string) => void;
@@ -23,13 +24,13 @@ function escapeBlockIdSelector(blockId: string): string {
 }
 
 export interface BlockEditorHydrationOptions {
-  editor: any;
+  editor: AppEditor;
   value: unknown;
   hydrationContext: BlockEditorHydrationContext;
   lastEmittedValueRef: React.MutableRefObject<string>;
   lastSerializedRef: React.MutableRefObject<string>;
   activeBlockId: string | null;
-  onEditorReady?: (editor: any) => void;
+  onEditorReady?: (editor: AppEditor) => void;
 }
 
 export function useBlockEditorHydration({
