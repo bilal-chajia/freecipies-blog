@@ -1,23 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CaptureButton } from './InsertIndicators';
 import { IsolatedInput, renderInlineMarkdown } from './TableCell';
 
-export function TableHeaderCell({
+function TableHeaderCellComponent({
     cellId,
     value,
+    colIndex,
     onChange,
-    onBlur,
+    onCommit,
     isSelected,
     onRemove,
 }: {
     cellId: string;
     value: string;
-    onChange: (value: string) => void;
-    onBlur: () => void;
+    colIndex: number;
+    onChange: (colIndex: number, value: string) => void;
+    onCommit: () => void;
     isSelected: boolean;
-    onRemove: () => void;
+    onRemove: (colIndex: number) => void;
 }) {
     const [isEditing, setIsEditing] = useState(false);
     const isMountedRef = useRef(true);
@@ -39,13 +41,13 @@ export function TableHeaderCell({
                         type="text"
                         data-simple-table-control="true"
                         value={value}
-                        onChange={(e) => onChange(e.target.value)}
+                        onChange={(e) => onChange(colIndex, e.target.value)}
                         onBlur={() => {
                             // Defer blur handling to let click/pointerdown events on table controls complete first!
                             setTimeout(() => {
                                 if (isMountedRef.current) {
                                     setIsEditing(false);
-                                    onBlur();
+                                    onCommit();
                                 }
                             }, 100);
                         }}
@@ -69,7 +71,7 @@ export function TableHeaderCell({
                 {isSelected && (
                     <CaptureButton
                         data-simple-table-control="true"
-                        onTrigger={onRemove}
+                        onTrigger={() => onRemove(colIndex)}
                         className="absolute top-2 right-2 opacity-0 group-hover/header:opacity-100 hover:text-destructive text-muted-foreground bg-background/90 hover:bg-background border border-border/50 rounded p-1 shadow-sm transition-all duration-150 shrink-0 z-10 flex items-center justify-center cursor-pointer"
                         title="Remove column"
                     >
@@ -80,4 +82,6 @@ export function TableHeaderCell({
         </th>
     );
 }
+
+export const TableHeaderCell = memo(TableHeaderCellComponent);
 export default TableHeaderCell;

@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { useRef, useEffect, useState } from 'react';
+import { memo, useRef, useEffect, useState } from 'react';
 
 export function renderInlineMarkdown(text?: string): string {
     const source = String(text || '').trim();
@@ -103,16 +103,20 @@ export function IsolatedTextarea({ ...props }: IsolatedTextareaProps) {
     );
 }
 
-export function TableCell({
+function TableCellComponent({
     cellId,
     value,
+    rowIndex,
+    cellIndex,
     onChange,
-    onBlur,
+    onCommit,
 }: {
     cellId: string;
     value: string;
-    onChange: (value: string) => void;
-    onBlur: () => void;
+    rowIndex: number;
+    cellIndex: number;
+    onChange: (rowIndex: number, cellIndex: number, value: string) => void;
+    onCommit: () => void;
 }) {
     const [isEditing, setIsEditing] = useState(false);
     const isMountedRef = useRef(true);
@@ -133,14 +137,14 @@ export function TableCell({
                     data-simple-table-control="true"
                     value={value}
                     onChange={(e) => {
-                        onChange(e.target.value);
+                        onChange(rowIndex, cellIndex, e.target.value);
                     }}
                     onBlur={() => {
                         // Defer blur handling to let click/pointerdown events on table controls complete first!
                         setTimeout(() => {
                             if (isMountedRef.current) {
                                 setIsEditing(false);
-                                onBlur();
+                                onCommit();
                             }
                         }, 100);
                     }}
@@ -171,4 +175,6 @@ export function TableCell({
         </td>
     );
 }
+
+export const TableCell = memo(TableCellComponent);
 export default TableCell;

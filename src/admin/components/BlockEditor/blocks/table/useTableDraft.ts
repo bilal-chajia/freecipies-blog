@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseJsonProp } from '../shared/block-props';
 import type { TableRow } from './TableBlock.types';
 import { DEFAULT_HEADERS, normalizeRows } from './TableBlock.defaults';
@@ -340,6 +340,27 @@ export function useTableDraft(editor: any, block: any) {
         commitDraft(nextDraft);
     };
 
+    // Referentially-stable wrappers for the hot per-cell props. They always call
+    // the latest handler (which reads current block.props/draftRef) but never
+    // change identity, so memoized cells skip re-render when an unrelated cell
+    // changes. Without this, the inline arrows recreated each render would defeat
+    // React.memo on TableCell/TableHeaderCell.
+    const handlersRef = useRef({ handleHeaderChange, handleCellChange, commitDraft, removeColumn, draftRef });
+    handlersRef.current = { handleHeaderChange, handleCellChange, commitDraft, removeColumn, draftRef };
+
+    const onCellChange = useCallback((rIdx: number, cIdx: number, value: string) => {
+        handlersRef.current.handleCellChange(rIdx, cIdx, value);
+    }, []);
+    const onHeaderChange = useCallback((cIdx: number, value: string) => {
+        handlersRef.current.handleHeaderChange(cIdx, value);
+    }, []);
+    const onCommit = useCallback(() => {
+        handlersRef.current.commitDraft(handlersRef.current.draftRef.current);
+    }, []);
+    const onRemoveColumn = useCallback((cIdx: number) => {
+        handlersRef.current.removeColumn(cIdx);
+    }, []);
+
     return {
         draft,
         draftRef,
@@ -356,5 +377,10 @@ export function useTableDraft(editor: any, block: any) {
         insertRowAt,
         removeRow,
         commitDraft,
+        // stable per-cell handlers
+        onCellChange,
+        onHeaderChange,
+        onCommit,
+        onRemoveColumn,
     };
 }

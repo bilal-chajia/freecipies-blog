@@ -62,21 +62,19 @@ const TableBlock = createReactBlockSpec(
             } = useCustomBlock(block.id, editor);
 
             const {
-                draft,
-                draftRef,
                 safeHeaders,
                 safeRows,
                 colKeys,
                 rowKeys,
-                handleHeaderChange,
-                handleCellChange,
                 insertColumnAt,
                 addColumn,
-                removeColumn,
                 addRow,
                 insertRowAt,
                 removeRow,
-                commitDraft,
+                onCellChange,
+                onHeaderChange,
+                onCommit,
+                onRemoveColumn,
             } = useTableDraft(editor, block);
 
             const {
@@ -183,10 +181,11 @@ const TableBlock = createReactBlockSpec(
                                                 key={`h-${colKeys[index] || index}`}
                                                 cellId={`table-${block.id}-header-${index}`}
                                                 value={header}
-                                                onChange={(newValue) => handleHeaderChange(index, newValue)}
-                                                onBlur={() => commitDraft(draftRef.current)}
+                                                colIndex={index}
+                                                onChange={onHeaderChange}
+                                                onCommit={onCommit}
                                                 isSelected={isSelected}
-                                                onRemove={() => removeColumn(index)}
+                                                onRemove={onRemoveColumn}
                                             />
                                         ))}
                                         {isSelected && (
@@ -204,8 +203,10 @@ const TableBlock = createReactBlockSpec(
                                                     key={`c-${rowKeys[rowIndex] || rowIndex}-${colKeys[cellIndex] || cellIndex}`}
                                                     cellId={`table-${block.id}-cell-${rowIndex}-${cellIndex}`}
                                                     value={cell || ''}
-                                                    onChange={(newValue) => handleCellChange(rowIndex, cellIndex, newValue)}
-                                                    onBlur={() => commitDraft(draftRef.current)}
+                                                    rowIndex={rowIndex}
+                                                    cellIndex={cellIndex}
+                                                    onChange={onCellChange}
+                                                    onCommit={onCommit}
                                                 />
                                             ))}
                                             {isSelected && (
