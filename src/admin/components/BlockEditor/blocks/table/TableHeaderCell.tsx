@@ -2,7 +2,7 @@ import { memo, useState, useEffect, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CaptureButton } from './InsertIndicators';
-import { IsolatedInput, renderInlineMarkdown } from './TableCell';
+import { IsolatedInput, renderInlineMarkdown, caretOffsetFromClick } from './TableCell';
 
 function TableHeaderCellComponent({
     cellId,
@@ -23,6 +23,7 @@ function TableHeaderCellComponent({
 }) {
     const [isEditing, setIsEditing] = useState(false);
     const isMountedRef = useRef(true);
+    const caretRef = useRef<number | null>(null);
 
     useEffect(() => {
         isMountedRef.current = true;
@@ -41,6 +42,7 @@ function TableHeaderCellComponent({
                         type="text"
                         data-simple-table-control="true"
                         value={value}
+                        initialCaretOffset={caretRef.current ?? undefined}
                         onChange={(e) => onChange(colIndex, e.target.value)}
                         onBlur={() => {
                             // Defer blur handling to let click/pointerdown events on table controls complete first!
@@ -62,7 +64,10 @@ function TableHeaderCellComponent({
                 ) : (
                     <div
                         className="w-full px-2 py-1 pr-6 text-xs font-medium min-h-[26px] flex items-center text-foreground font-sans cursor-text break-words select-text hover:bg-muted/40 rounded transition-colors duration-150"
-                        onClick={() => setIsEditing(true)}
+                        onClick={(e) => {
+                            caretRef.current = caretOffsetFromClick(e.currentTarget, e.clientX, e.clientY);
+                            setIsEditing(true);
+                        }}
                         dangerouslySetInnerHTML={{
                             __html: renderInlineMarkdown(value) || '<span class="text-muted-foreground/40 italic">Empty header</span>'
                         }}

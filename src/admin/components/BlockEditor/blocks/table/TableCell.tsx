@@ -12,14 +12,60 @@ export function renderInlineMarkdown(text?: string): string {
         .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline font-medium hover:text-primary/80">$1</a>');
 }
 
-interface IsolatedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+interface CaretPosition { offsetNode: Node; offset: number; }
+type CaretFromPoint = {
+    caretPositionFromPoint?(x: number, y: number): CaretPosition | null;
+    caretRangeFromPoint?(x: number, y: number): Range | null;
+};
 
-export function IsolatedInput({ ...props }: IsolatedInputProps) {
+/**
+ * Character offset (within the rendered text) at a click point inside `container`.
+ * Lets a single click on the rendered cell place the caret where you clicked,
+ * instead of jumping to the end. Exact for plain text; may be slightly off when
+ * the cell renders markdown (the syntax chars aren't in the rendered text).
+ */
+export function caretOffsetFromClick(container: HTMLElement, clientX: number, clientY: number): number | null {
+    const doc = container.ownerDocument;
+    const caretDoc = doc as unknown as CaretFromPoint;
+    let node: Node | null = null;
+    let nodeOffset = 0;
+    if (caretDoc.caretPositionFromPoint) {
+        const pos = caretDoc.caretPositionFromPoint(clientX, clientY);
+        if (pos) { node = pos.offsetNode; nodeOffset = pos.offset; }
+    } else if (caretDoc.caretRangeFromPoint) {
+        const range = caretDoc.caretRangeFromPoint(clientX, clientY);
+        if (range) { node = range.startContainer; nodeOffset = range.startOffset; }
+    }
+    if (!node || !container.contains(node)) return null;
+    let offset = 0;
+    const walker = doc.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let current = walker.nextNode();
+    while (current) {
+        if (current === node) return offset + nodeOffset;
+        offset += (current.textContent || '').length;
+        current = walker.nextNode();
+    }
+    return offset;
+}
+
+function applyInitialCaret(node: HTMLInputElement | HTMLTextAreaElement | null, offset: number | undefined) {
+    if (!node || offset == null) return;
+    const pos = Math.max(0, Math.min(offset, node.value.length));
+    node.setSelectionRange(pos, pos);
+}
+
+interface IsolatedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    initialCaretOffset?: number;
+}
+
+export function IsolatedInput({ initialCaretOffset, ...props }: IsolatedInputProps) {
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         const node = inputRef.current;
         if (!node) return;
+
+        applyInitialCaret(node, initialCaretOffset);
 
         const stopNative = (e: Event) => {
             e.stopPropagation();
@@ -43,14 +89,18 @@ export function IsolatedInput({ ...props }: IsolatedInputProps) {
     return <input ref={inputRef} {...props} />;
 }
 
-interface IsolatedTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+interface IsolatedTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+    initialCaretOffset?: number;
+}
 
-export function IsolatedTextarea({ ...props }: IsolatedTextareaProps) {
+export function IsolatedTextarea({ initialCaretOffset, ...props }: IsolatedTextareaProps) {
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
     useEffect(() => {
         const node = textareaRef.current;
         if (!node) return;
+
+        applyInitialCaret(node, initialCaretOffset);
 
         const stopNative = (e: Event) => {
             e.stopPropagation();
@@ -120,6 +170,7 @@ function TableCellComponent({
 }) {
     const [isEditing, setIsEditing] = useState(false);
     const isMountedRef = useRef(true);
+    const caretRef = useRef<number | null>(null);
 
     useEffect(() => {
         isMountedRef.current = true;
@@ -136,6 +187,7 @@ function TableCellComponent({
                     name={cellId}
                     data-simple-table-control="true"
                     value={value}
+                    initialCaretOffset={caretRef.current ?? undefined}
                     onChange={(e) => {
                         onChange(rowIndex, cellIndex, e.target.value);
                     }}
@@ -164,7 +216,10 @@ function TableCellComponent({
     return (
         <td
             className="table-col border border-border p-2 cursor-text transition-colors duration-150 hover:bg-muted/30"
-            onClick={() => setIsEditing(true)}
+            onClick={(e) => {
+                caretRef.current = caretOffsetFromClick(e.currentTarget, e.clientX, e.clientY);
+                setIsEditing(true);
+            }}
         >
             <div
                 className="w-full px-2 py-1.5 text-xs min-h-[30px] flex items-center text-foreground font-sans break-words whitespace-pre-wrap select-text"

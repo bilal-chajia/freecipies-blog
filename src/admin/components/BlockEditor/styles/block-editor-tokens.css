@@ -324,9 +324,12 @@
 .block-editor-wrapper .bn-editor .wp-block--custom input::selection,
 .block-editor-wrapper .bn-editor .wp-block--custom textarea::selection,
 .block-editor-wrapper .bn-editor .wp-block--custom select::selection {
-    background: var(--brand-primary, #2563eb) !important;
-    color: #fff !important;
-    -webkit-text-fill-color: #fff !important;
+    /* Only override the background (literal color — var() in ::selection resolves
+       against :root where admin vars are undefined). Do NOT set
+       -webkit-text-fill-color here: forcing it prevents Chrome from painting the
+       ::selection background on <input>/<textarea>. Text color is left to the
+       inherited rules so highlighted glyphs stay readable. */
+    background-color: rgba(37, 99, 235, 0.4) !important;
 }
 
 .block-editor-wrapper .block-editor-block-list__block,
