@@ -111,7 +111,7 @@ const hasNext = currentPage < totalPages;
     background: var(--bg-elevated);
     border: 1px solid var(--border);
     color: var(--text-secondary);
-    transition: all var(--transition-fast) var(--ease-default);
+    transition: background-color var(--transition-fast) var(--ease-default), color var(--transition-fast) var(--ease-default), border-color var(--transition-fast) var(--ease-default);
   }
 
   
@@ -145,7 +145,7 @@ const hasNext = currentPage < totalPages;
     font-weight: 500;
     font-size: var(--text-sm);
     color: var(--text-secondary);
-    transition: all var(--transition-fast) var(--ease-default);
+    transition: background-color var(--transition-fast) var(--ease-default), color var(--transition-fast) var(--ease-default), border-color var(--transition-fast) var(--ease-default);
   }
   
   .pagination-page:hover:not(.active) {

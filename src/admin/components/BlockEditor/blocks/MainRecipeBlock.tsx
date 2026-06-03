@@ -73,11 +73,12 @@ export const MainRecipeBlock = createReactBlockSpec(
           blockType="main-recipe"
           blockId={block.id}
           className="my-4"
+          data-radius="lg"
           style={{
             ...dragStyle,
             opacity: isDragging ? 0.5 : undefined,
             pointerEvents: isDragging ? 'none' : undefined,
-          }}
+          } as React.CSSProperties}
         >
           <div className="wp-main-recipe-block border border-border rounded-lg p-4 bg-card shadow-sm">
             <RecipeBuilder

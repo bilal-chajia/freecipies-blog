@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
 import { memo, useRef, useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
+import { CaptureButton } from './InsertIndicators';
 
 export function renderInlineMarkdown(text?: string): string {
     const source = String(text || '').trim();
@@ -160,6 +162,9 @@ function TableCellComponent({
     cellIndex,
     onChange,
     onCommit,
+    isFirstCol,
+    isTableSelected,
+    onRemoveRow,
 }: {
     cellId: string;
     value: string;
@@ -167,6 +172,9 @@ function TableCellComponent({
     cellIndex: number;
     onChange: (rowIndex: number, cellIndex: number, value: string) => void;
     onCommit: () => void;
+    isFirstCol?: boolean;
+    isTableSelected?: boolean;
+    onRemoveRow?: () => void;
 }) {
     const [isEditing, setIsEditing] = useState(false);
     const isMountedRef = useRef(true);
@@ -181,7 +189,9 @@ function TableCellComponent({
 
     if (isEditing) {
         return (
-            <td className="table-col border border-border p-2">
+            <td className="table-col border border-border p-0 bg-background relative z-10">
+                {/* Focus ring overlay with rounded corners */}
+                <div className="absolute inset-[1px] pointer-events-none border-2 border-primary rounded-md z-20" />
                 <IsolatedTextarea
                     id={cellId}
                     name={cellId}
@@ -203,10 +213,8 @@ function TableCellComponent({
                     autoFocus
                     aria-label="Table cell content"
                     className={cn(
-                        'w-full px-2 py-1.5 text-xs font-sans text-foreground bg-background',
-                        'border border-input rounded-md min-h-[30px] block',
-                        'transition-colors duration-150 ease-in-out',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring',
+                        'w-full px-4 py-[14px] text-xs font-sans text-foreground bg-transparent',
+                        'border-none outline-none focus-visible:outline-none focus-visible:ring-0 resize-none min-h-[46px] block',
                     )}
                 />
             </td>
@@ -215,7 +223,7 @@ function TableCellComponent({
 
     return (
         <td
-            className="table-col border border-border p-2 cursor-text transition-colors duration-150 hover:bg-muted/30"
+            className="table-col border border-border p-2 cursor-text transition-colors duration-150 hover:bg-muted/30 relative group/cell"
             onClick={(e) => {
                 caretRef.current = caretOffsetFromClick(e.currentTarget, e.clientX, e.clientY);
                 setIsEditing(true);
@@ -227,6 +235,16 @@ function TableCellComponent({
                     __html: renderInlineMarkdown(value) || '<span class="text-muted-foreground/40 italic">Empty cell</span>'
                 }}
             />
+            {isTableSelected && isFirstCol && onRemoveRow && (
+                <CaptureButton
+                    data-simple-table-control="true"
+                    onTrigger={onRemoveRow}
+                    className="absolute left-[-28px] top-1/2 -translate-y-1/2 opacity-0 group-hover/cell:opacity-100 hover:text-destructive text-muted-foreground bg-background hover:bg-muted border border-border rounded p-1 shadow-sm transition-all duration-150 shrink-0 z-10 flex items-center justify-center cursor-pointer size-6 animate-in fade-in duration-150"
+                    title="Remove row"
+                >
+                    <Trash2 className="w-3.5 h-3.5" />
+                </CaptureButton>
+            )}
         </td>
     );
 }

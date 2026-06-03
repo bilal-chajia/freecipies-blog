@@ -232,20 +232,26 @@
 .wp-block--custom::after {
     content: '';
     position: absolute;
-    inset: calc(-1 * var(--wp-block-outline-offset));
-    border: 0;
-    outline: var(--wp-block-border-selected-width) solid transparent;
-    outline-offset: calc(-1 * var(--wp-block-outline-offset));
-    border-radius: var(--wp-block-border-radius);
+    inset: -2px;
+    border: var(--wp-block-border-selected-width) solid transparent;
+    border-radius: calc(var(--wp-block-border-radius) + 2px);
     pointer-events: none;
     transition:
-        outline-color var(--wp-transition-duration) var(--wp-transition-timing),
+        border-color var(--wp-transition-duration) var(--wp-transition-timing),
         box-shadow var(--wp-transition-duration) var(--wp-transition-timing);
+}
+
+.wp-block--custom[data-radius="lg"]::after {
+    border-radius: calc(var(--radius-lg) + 2px);
+}
+
+.wp-block--custom[data-radius="2xl"]::after {
+    border-radius: calc(var(--radius-2xl) + 2px);
 }
 
 .wp-block--custom.is-selected::after,
 .wp-block--custom[data-selected="true"]::after {
-    outline-color: var(--wp-block-border-selected);
+    border-color: var(--wp-block-border-selected);
 }
 
 /* Disable any default BlockNote/ProseMirror selection outlines & overlays.

@@ -47,6 +47,7 @@ content.json
 
 # AI coding tools
 .agents/
+.agent/
 .adal/
 .augment/
 .bob/
@@ -114,3 +115,8 @@ test-results/
 # General logs
 *.log
 logs/
+
+# Standalone Webwright tools
+/tools/
+/outputs/
+

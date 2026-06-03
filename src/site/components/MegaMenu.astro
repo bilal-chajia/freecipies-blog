@@ -214,7 +214,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
         background: none;
         border-radius: var(--radius-sm);
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     .nav-link:hover,
@@ -258,7 +258,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
             0 0 0 1px var(--border-subtle);
         opacity: 0;
         visibility: hidden;
-        transition: all 0.25s ease;
+        transition: background-color 0.25s ease, color 0.25s ease;
         z-index: 100;
         padding: 1.5rem;
     }
@@ -309,7 +309,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
         font-size: 0.9rem;
         color: var(--text-tertiary);
         text-decoration: none;
-        transition: all 0.15s ease;
+        transition: background-color 0.15s ease, color 0.15s ease;
     }
 
     .column-link:hover {
@@ -330,7 +330,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
         overflow: hidden;
         background: linear-gradient(135deg, var(--bg) 0%, var(--bg-alt) 100%);
         border: 1px solid var(--border-subtle);
-        transition: all 0.2s ease;
+        transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     .featured-card:hover {

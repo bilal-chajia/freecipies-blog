@@ -263,11 +263,12 @@ const Alert = createReactBlockSpec(
                     blockType="alert"
                     blockId={block.id}
                     className="my-2"
+                    data-radius="lg"
                     style={{
                         ...dragStyle,
                         opacity: isDragging ? 0.5 : undefined,
                         pointerEvents: isDragging ? 'none' : undefined,
-                    }}
+                    } as React.CSSProperties}
                 >
                     <div
                         style={{

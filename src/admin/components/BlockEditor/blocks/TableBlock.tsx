@@ -126,11 +126,12 @@ const TableBlock = createReactBlockSpec(
                     blockType="table"
                     blockId={block.id}
                     className="my-2"
+                    data-radius="lg"
                     style={{
                         ...dragStyle,
                         opacity: isDragging ? 0.5 : undefined,
                         pointerEvents: isDragging ? 'none' : undefined,
-                    }}
+                    } as React.CSSProperties}
                 >
                     <div
                         className="border rounded-lg p-4 bg-card shadow-sm"
@@ -159,7 +160,7 @@ const TableBlock = createReactBlockSpec(
 
                         <div
                             ref={wrapperRef}
-                            className="relative overflow-x-auto"
+                            className="relative overflow-x-auto overflow-y-hidden pb-2"
                             onMouseMove={updateHoverIndicators}
                             onMouseLeave={clearIndicators}
                         >
@@ -188,11 +189,6 @@ const TableBlock = createReactBlockSpec(
                                                 onRemove={onRemoveColumn}
                                             />
                                         ))}
-                                        {isSelected && (
-                                            <th className="table-action-col border border-border p-2 bg-muted/50 text-center text-xs text-muted-foreground">
-                                                Row
-                                            </th>
-                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -207,27 +203,18 @@ const TableBlock = createReactBlockSpec(
                                                     cellIndex={cellIndex}
                                                     onChange={onCellChange}
                                                     onCommit={onCommit}
+                                                    isFirstCol={cellIndex === 0}
+                                                    isTableSelected={isSelected}
+                                                    onRemoveRow={() => removeRow(rowIndex)}
                                                 />
                                             ))}
-                                            {isSelected && (
-                                                <td className="border border-border p-2 text-center">
-                                                    <CaptureButton
-                                                        data-simple-table-control="true"
-                                                        onTrigger={() => removeRow(rowIndex)}
-                                                        className="text-muted-foreground hover:text-destructive"
-                                                        title="Remove row"
-                                                    >
-                                                        <Trash2 className="w-3 h-3" />
-                                                    </CaptureButton>
-                                                </td>
-                                            )}
                                         </tr>
                                     ))}
                                     {safeRows.length === 0 && (
                                         <tr>
                                             <td
                                                 className="border border-border p-3 text-xs text-muted-foreground text-center"
-                                                colSpan={safeHeaders.length + (isSelected ? 1 : 0)}
+                                                colSpan={safeHeaders.length}
                                             >
                                                 No rows yet. Add one to start.
                                             </td>

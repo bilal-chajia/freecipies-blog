@@ -16,20 +16,8 @@
     --brand-gradient: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
     --brand-gradient-vertical: linear-gradient(180deg, #ff6b35 0%, #f7931e 100%);
 
-    /* Functional Colors (Light) */
-    --success: #10b981;
-    --success-bg: #ecfdf5;
-    --success-text: #065f46;
-    --warning: #f59e0b;
-    --warning-bg: #fffbeb;
-    --warning-text: #92400e;
-    --error: #ef4444;
-    --error-bg: #fef2f2;
-    --error-text: #991b1b;
+    /* Functional Colors (Light) — inherited from design-tokens.css */
     --error-hover: #dc2626;
-    --info: #3b82f6;
-    --info-bg: #eff6ff;
-    --info-text: #1e40af;
 
     --bg: #fffdf9;
     --bg-alt: #fff7ed;
@@ -119,9 +107,6 @@
     --info: #60a5fa;
     --info-bg: #1e3a8a;
     --info-text: #93c5fd;
-
-    /* Dark Mode Shadow Color */
-    --shadow-color: 0 0 0;
 
     --focus-ring-color: #ff8a80;
   }

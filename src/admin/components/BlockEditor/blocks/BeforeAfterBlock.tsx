@@ -13,7 +13,7 @@
  */
 
 import { createReactBlockSpec } from '@blocknote/react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
     SplitSquareHorizontal,
     GalleryHorizontal
@@ -28,6 +28,8 @@ import { useCustomBlock } from './useCustomBlock';
 import { upsertContentImageSlot, patchContentImageSlot, removeContentImageSlot } from './shared/content-image-slots';
 import ImageSlotEditor from './before-after/ImageSlotEditor';
 import type { ImageSlotKey, BeforeAfterSlot, MediaDialogItem, BeforeAfterUpdates } from './before-after/BeforeAfterBlock.types';
+import { BEFORE_AFTER_OPEN_MEDIA_EVENT } from './shared/before-after-events';
+import type { BeforeAfterOpenEvent } from './shared/before-after-events';
 
 const parseSlot = (value: string): BeforeAfterSlot | null => {
     if (!value) return null;
@@ -141,6 +143,19 @@ export const BeforeAfterBlock = createReactBlockSpec(
                 setMediaDialogOpen(true);
             };
 
+            useEffect(() => {
+                const onOpenMedia = (e: Event) => {
+                    const event = e as BeforeAfterOpenEvent;
+                    if (event.detail?.blockId === block.id && event.detail.slotKey) {
+                        handleChooseImage(event.detail.slotKey);
+                    }
+                };
+                document.addEventListener(BEFORE_AFTER_OPEN_MEDIA_EVENT, onOpenMedia);
+                return () => {
+                    document.removeEventListener(BEFORE_AFTER_OPEN_MEDIA_EVENT, onOpenMedia);
+                };
+            }, [block.id]);
+
             const currentLayout = layouts.find(l => l.value === block.props.layout) || layouts[0];
 
             const toolbar = (
@@ -175,28 +190,45 @@ export const BeforeAfterBlock = createReactBlockSpec(
                         blockType="before-after"
                         blockId={block.id}
                         className="my-2"
+                        data-radius="lg"
                         style={{
                             ...dragStyle,
                             opacity: isDragging ? 0.5 : undefined,
                             pointerEvents: isDragging ? 'none' : undefined,
-                        }}
+                        } as React.CSSProperties}
                     >
-                        <div className="border rounded-lg p-4 bg-card shadow-sm space-y-4">
-                            {/* Header */}
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <SplitSquareHorizontal className="w-4 h-4 text-muted-foreground" />
-                                    <h4 className="text-sm font-medium">Before / After</h4>
+                        {isSelected ? (
+                            <div className="border rounded-lg p-4 bg-card shadow-sm space-y-4">
+                                {/* Header */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <SplitSquareHorizontal className="w-4 h-4 text-muted-foreground" />
+                                        <h4 className="text-sm font-medium">Before / After</h4>
+                                    </div>
                                 </div>
-                                {!isSelected && (
-                                    <span className="text-xs text-muted-foreground capitalize">
-                                        {currentLayout.label}
-                                    </span>
-                                )}
-                            </div>
 
-                            {/* Slots */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Slots */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <ImageSlotEditor
+                                        blockId={block.id}
+                                        slotKey="before"
+                                        slotData={before}
+                                        isSelected={isSelected}
+                                        onUpdateSlot={updateSlot}
+                                        onChooseImage={handleChooseImage}
+                                    />
+                                    <ImageSlotEditor
+                                        blockId={block.id}
+                                        slotKey="after"
+                                        slotData={after}
+                                        isSelected={isSelected}
+                                        onUpdateSlot={updateSlot}
+                                        onChooseImage={handleChooseImage}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-4">
                                 <ImageSlotEditor
                                     blockId={block.id}
                                     slotKey="before"
@@ -214,7 +246,7 @@ export const BeforeAfterBlock = createReactBlockSpec(
                                     onChooseImage={handleChooseImage}
                                 />
                             </div>
-                        </div>
+                        )}
                     </BlockWrapper>
 
                     <MediaDialog

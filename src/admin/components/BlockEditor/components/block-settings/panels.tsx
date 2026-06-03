@@ -81,8 +81,13 @@ export const BLOCK_SETTINGS_PANELS: Record<
       onImagesChange={onImagesChange}
     />
   ),
-  beforeAfter: ({ selectedBlock, updateProps }) => (
-    <BeforeAfterSettings selectedBlock={selectedBlock} updateProps={updateProps} />
+  beforeAfter: ({ selectedBlock, updateProps, imagesData, onImagesChange }) => (
+    <BeforeAfterSettings
+      selectedBlock={selectedBlock}
+      updateProps={updateProps}
+      imagesData={imagesData}
+      onImagesChange={onImagesChange}
+    />
   ),
   featuredImage: ({ selectedBlock, updateProps }) => (
     <FeaturedImageSettings selectedBlock={selectedBlock} updateProps={updateProps} />

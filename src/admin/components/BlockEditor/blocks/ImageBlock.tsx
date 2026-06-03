@@ -271,11 +271,12 @@ export const ImageBlock = createReactBlockSpec(
                             blockType="image"
                             blockId={block.id}
                             className="my-2"
+                            data-radius="lg"
                             style={{
                                 ...dragStyle,
                                 opacity: isDragging ? 0.5 : undefined,
                                 pointerEvents: isDragging ? 'none' : undefined,
-                            }}
+                            } as React.CSSProperties}
                         >
                             <div className={cn(
                                 'wp-block-placeholder',
@@ -380,12 +381,13 @@ export const ImageBlock = createReactBlockSpec(
                         blockType="image"
                         blockId={block.id}
                         className="my-4"
+                        data-radius="lg"
                         style={{
                             ...dragStyle,
                             opacity: isDragging ? 0.5 : undefined,
                             pointerEvents: isDragging ? 'none' : undefined,
                             maxWidth: 'calc(100% - 8rem)',
-                        }}
+                        } as React.CSSProperties}
                     >
                         <div className="border rounded-lg overflow-hidden bg-card transition-all duration-200">
                             {/* Image */}

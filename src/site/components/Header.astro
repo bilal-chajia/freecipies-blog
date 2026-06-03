@@ -191,6 +191,8 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     position: sticky;
     top: 0;
     z-index: var(--z-sticky, 100);
+    will-change: transform;
+    contain: layout style paint;
     background: color-mix(in srgb, var(--bg) 92%, transparent);
     border-bottom: 1px solid var(--border);
     box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 72%, transparent);
@@ -277,7 +279,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     font-size: var(--text-sm);
     padding: 0.55rem 0.85rem;
     border-radius: var(--radius-full);
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
   }
 
   .nav-link:hover,
@@ -302,7 +304,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     height: var(--space-10);
     padding: 0;
     border-radius: var(--radius-full);
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -409,7 +411,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     cursor: pointer;
     padding: var(--space-2);
     border-radius: var(--radius-md);
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
   }
 
   .close-search:hover {
@@ -450,7 +452,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     border-radius: var(--radius-full);
     font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
   }
 
   .search-submit:hover {
@@ -512,6 +514,11 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     .nav-link {
       padding: 0.4rem 0.6rem;
       font-size: 0.9rem;
+    }
+  }
+  @media (max-width: 768px) {
+    .site-header {
+      backdrop-filter: blur(8px);
     }
   }
 </style>

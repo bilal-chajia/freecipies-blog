@@ -6,7 +6,7 @@
  * Fully refactored to consume Zustand store state and sport a premium glassmorphic UI.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     closestCenter,
@@ -65,6 +65,7 @@ export default function LeftPanel({
 }: LeftPanelProps) {
     const [panelTab, setPanelTab] = useState<PanelTab>('outline');
     const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+    const [draggedItems, setDraggedItems] = useState<StructureItem[] | null>(null);
 
     // Consume Zustand Store values with granular selectors for optimized performance
     const isOpen = useBlockEditorStore(s => _isOpen ?? s.inserterOpen);
@@ -120,6 +121,15 @@ export default function LeftPanel({
         return items;
     }, [panelTab, outlineItems, structureItems]);
 
+    const displayItems = useMemo(() => {
+        if (draggedItems) return draggedItems;
+        return visibleStructureItems;
+    }, [draggedItems, visibleStructureItems]);
+
+    useEffect(() => {
+        setDraggedItems(null);
+    }, [visibleStructureItems]);
+
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
     );
@@ -129,55 +139,61 @@ export default function LeftPanel({
     const handleDragStart = useCallback((_event: DragStartEvent) => {
         if (!isSortableEnabled) return;
         setDropTarget(null);
-    }, [isSortableEnabled]);
+        setDraggedItems([...visibleStructureItems]);
+    }, [isSortableEnabled, visibleStructureItems]);
 
     const handleDragOver = useCallback((event: DragOverEvent) => {
         if (!isSortableEnabled) return;
         const activeId = event.active?.id;
         const overId = event.over?.id;
         if (!activeId || !overId || activeId === overId) {
-            setDropTarget(null);
             return;
         }
         const activeItem = structureItems.find((item) => item.id === String(activeId));
         const overItem = structureItems.find((item) => item.id === String(overId));
         if (!activeItem || !overItem || activeItem.parentId !== overItem.parentId) {
             setDropTarget(null);
+            setDraggedItems([...visibleStructureItems]);
             return;
         }
         const activeIndex = visibleStructureItems.findIndex((item) => item.id === String(activeId));
         const overIndex = visibleStructureItems.findIndex((item) => item.id === String(overId));
         const position = activeIndex < overIndex ? 'after' : 'before';
         setDropTarget({ targetId: String(overId), position });
+
+        setDraggedItems((prev) => {
+            if (!prev) return prev;
+            const oldIdx = prev.findIndex((item) => item.id === String(activeId));
+            const newIdx = prev.findIndex((item) => item.id === String(overId));
+            if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return prev;
+            
+            const next = [...prev];
+            const [removed] = next.splice(oldIdx, 1);
+            next.splice(newIdx, 0, removed);
+            return next;
+        });
     }, [isSortableEnabled, structureItems, visibleStructureItems]);
 
     const handleDragCancel = useCallback(() => {
         setDropTarget(null);
+        setDraggedItems(null);
     }, []);
 
     const handleDragEnd = useCallback((event: DragEndEvent) => {
         if (!isSortableEnabled) return;
         const activeId = event.active?.id;
-        const overId = event.over?.id;
+        const finalTarget = dropTarget;
 
-        if (!activeId || !overId || activeId === overId) {
-            setDropTarget(null);
-            return;
-        }
-
-        const activeItem = structureItems.find((item) => item.id === String(activeId));
-        const overItem = structureItems.find((item) => item.id === String(overId));
-        if (!activeItem || !overItem || activeItem.parentId !== overItem.parentId) {
-            setDropTarget(null);
-            return;
-        }
-
-        const activeIndex = visibleStructureItems.findIndex((item) => item.id === String(activeId));
-        const overIndex = visibleStructureItems.findIndex((item) => item.id === String(overId));
-        const position = activeIndex < overIndex ? 'after' : 'before';
         setDropTarget(null);
-        onReorderBlock?.(String(activeId), String(overId), position);
-    }, [isSortableEnabled, onReorderBlock, structureItems, visibleStructureItems]);
+
+        if (!activeId || !finalTarget) {
+            setDraggedItems(null);
+            return;
+        }
+
+        // We do NOT clear draggedItems here to let the settling animation run smoothly
+        onReorderBlock?.(String(activeId), finalTarget.targetId, finalTarget.position);
+    }, [isSortableEnabled, onReorderBlock, dropTarget]);
 
     if (!isOpen) return null;
 
@@ -264,39 +280,30 @@ export default function LeftPanel({
                             onDragCancel={handleDragCancel}
                         >
                             <SortableContext
-                                items={visibleStructureItems.map((item) => item.id)}
+                                items={displayItems.map((item) => item.id)}
                                 strategy={verticalListSortingStrategy}
                             >
-                                <AnimatePresence initial={false}>
-                                    {visibleStructureItems.map((item) => {
-                                        const isOutline = panelTab === 'outline';
-                                        const headingDepth = Math.max(0, (item.level || 2) - 2);
-                                        const indentDepth = isOutline ? headingDepth : (item.depth || 0);
-                                        const showConvertOptions = item.type === 'heading' || item.type === 'paragraph';
-                                        return (
-                                            <motion.div
-                                                key={item.id}
-                                                initial={{ opacity: 0, y: -4 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, scale: 0.95 }}
-                                                transition={{ duration: 0.15 }}
-                                            >
-                                                <SortableStructureItem
-                                                    item={item}
-                                                    activeBlockId={activeBlockId}
-                                                    onSelectBlock={handleSelectBlock}
-                                                    onConvertBlock={onConvertBlock}
-                                                    onBlockAction={onBlockAction}
-                                                    dropTarget={dropTarget}
-                                                    isSortableEnabled={isSortableEnabled}
-                                                    indentDepth={indentDepth}
-                                                    showConvertOptions={showConvertOptions}
-                                                    isOutlineView={isOutline}
-                                                />
-                                            </motion.div>
-                                        );
-                                    })}
-                                </AnimatePresence>
+                                {displayItems.map((item) => {
+                                    const isOutline = panelTab === 'outline';
+                                    const headingDepth = Math.max(0, (item.level || 2) - 2);
+                                    const indentDepth = isOutline ? headingDepth : (item.depth || 0);
+                                    const showConvertOptions = item.type === 'heading' || item.type === 'paragraph';
+                                    return (
+                                        <SortableStructureItem
+                                            key={item.id}
+                                            item={item}
+                                            activeBlockId={activeBlockId}
+                                            onSelectBlock={handleSelectBlock}
+                                            onConvertBlock={onConvertBlock}
+                                            onBlockAction={onBlockAction}
+                                            dropTarget={dropTarget}
+                                            isSortableEnabled={isSortableEnabled}
+                                            indentDepth={indentDepth}
+                                            showConvertOptions={showConvertOptions}
+                                            isOutlineView={isOutline}
+                                        />
+                                    );
+                                })}
                             </SortableContext>
                         </DndContext>
                     )}

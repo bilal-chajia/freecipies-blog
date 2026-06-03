@@ -243,11 +243,12 @@ const FAQSectionBlock = createReactBlockSpec(
           blockType="faq"
           blockId={block.id}
           className="my-6"
+          data-radius="lg"
           style={{
             ...dragStyle,
             opacity: isDragging ? 0.5 : undefined,
             pointerEvents: isDragging ? 'none' : undefined,
-          }}
+          } as React.CSSProperties}
         >
           <div className="border rounded-lg overflow-hidden bg-card">
             {/* Header */}

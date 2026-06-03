@@ -93,11 +93,12 @@ export const RelatedContentBlock = createReactBlockSpec(
                     onClick={selectBlock}
                     blockType="related-content"
                     blockId={block.id}
+                    data-radius="lg"
                     style={{
                         ...dragStyle,
                         opacity: isDragging ? 0.5 : undefined,
                         pointerEvents: isDragging ? 'none' : undefined,
-                    }}
+                    } as React.CSSProperties}
                 >
                     <div className="border border-border rounded-lg p-4 bg-card shadow-sm">
                         <div className="flex items-center gap-2 mb-3">

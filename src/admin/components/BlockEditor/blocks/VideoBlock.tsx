@@ -219,11 +219,12 @@ const VideoBlock = createReactBlockSpec(
                         blockType="video"
                         blockId={block.id}
                         className="my-2"
+                        data-radius="lg"
                         style={{
                             ...dragStyle,
                             opacity: isDragging ? 0.5 : undefined,
                             pointerEvents: isDragging ? 'none' : undefined,
-                        }}
+                        } as React.CSSProperties}
                     >
                         <EmbedPlaceholder
                             icon={Video}
@@ -251,11 +252,12 @@ const VideoBlock = createReactBlockSpec(
                     blockType="video"
                     blockId={block.id}
                     className="my-2"
+                    data-radius="lg"
                     style={{
                         ...dragStyle,
                         opacity: isDragging ? 0.5 : undefined,
                         pointerEvents: isDragging ? 'none' : undefined,
-                    }}
+                    } as React.CSSProperties}
                 >
                     {/* Video embed */}
                     <div className={cn(

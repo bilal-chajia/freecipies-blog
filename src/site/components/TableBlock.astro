@@ -1,4 +1,6 @@
 ---
+import { renderInlineMarkdown } from './utils/markdown';
+
 const { headers, rows } = Astro.props as {
   headers?: string[];
   rows?: string[][];
@@ -23,7 +25,7 @@ const normalizedRows = safeRows.map((row) => {
         <thead>
           <tr>
             {safeHeaders.map((header) => (
-              <th>{header}</th>
+              <th set:html={renderInlineMarkdown(header)} />
             ))}
           </tr>
         </thead>
@@ -32,7 +34,7 @@ const normalizedRows = safeRows.map((row) => {
         {normalizedRows.map((row) => (
           <tr>
             {row.map((cell) => (
-              <td>{cell}</td>
+              <td set:html={renderInlineMarkdown(cell)} />
             ))}
           </tr>
         ))}
@@ -75,7 +77,7 @@ const normalizedRows = safeRows.map((row) => {
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: var(--text-sm);
+    font-size: var(--text-base);
     display: table;
     min-width: 100%;
   }
@@ -90,7 +92,7 @@ const normalizedRows = safeRows.map((row) => {
   th {
     font-family: var(--font-serif);
     font-weight: 700;
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text);
@@ -102,7 +104,7 @@ const normalizedRows = safeRows.map((row) => {
     font-family: var(--font-sans);
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-subtle);
-    font-size: var(--text-sm);
+    font-size: var(--text-base);
     line-height: 1.5;
   }
 

@@ -27,87 +27,57 @@ export default function ImageSlotEditor({
     const label = slotData?.label || (slotKey === 'before' ? 'Before' : 'After');
 
     return (
-        <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                {label}
-            </div>
-            <div className={cn(
-                'border rounded-lg p-3 bg-muted/30 space-y-2',
-                'transition-colors',
-                isSelected && 'border-border'
-            )}>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{slotData?.media_id ? `Media #${slotData.media_id}` : 'No image selected'}</span>
-                    {slotData?.media_id && isSelected && (
-                        <button
-                            type="button"
-                            onClick={() => onUpdateSlot(slotKey, null)}
-                            className="inline-flex items-center gap-1 text-destructive hover:underline"
-                        >
-                            <Trash2 className="w-3 h-3" />
-                            Remove
-                        </button>
-                    )}
-                </div>
-                <div className={cn(
-                    'w-full h-40 rounded-md overflow-hidden',
-                    'bg-background border border-dashed border-border',
-                    'flex items-center justify-center'
-                )}>
-                    {preview ? (
-                        <img src={preview} alt={slotData?.alt || ''} className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="flex flex-col items-center text-xs text-muted-foreground">
-                            <ImageIcon className="w-5 h-5 mb-1" />
-                            Select image
-                        </div>
-                    )}
-                </div>
-                {isSelected && (
-                    <>
-                        <div className="flex items-center justify-center">
+        <div className="relative w-full h-40 rounded-md overflow-hidden bg-muted border border-border group/slot">
+            {preview ? (
+                <>
+                    <img src={preview} alt={slotData?.alt || ''} className="w-full h-full object-cover animate-in fade-in duration-200" />
+                    {isSelected && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 opacity-0 group-hover/slot:opacity-100 transition-opacity duration-150">
                             <Button
                                 variant="secondary"
                                 size="sm"
                                 onClick={() => onChooseImage(slotKey)}
-                                className="gap-1 text-xs"
+                                className="h-7 text-[10px] gap-1 px-2.5 bg-background/90 hover:bg-background border-none shadow-sm"
                             >
                                 <ImageIcon className="w-3 h-3" />
-                                Choose image
+                                Replace
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => onUpdateSlot(slotKey, null)}
+                                className="h-7 text-[10px] gap-1 px-2.5 shadow-sm"
+                            >
+                                <Trash2 className="w-3 h-3" />
+                                Remove
                             </Button>
                         </div>
-                        <div className="grid grid-cols-1 gap-2">
-                            <input
-                                id={`ba-${blockId}-${slotKey}-alt`}
-                                name={`ba-${blockId}-${slotKey}-alt`}
-                                type="text"
-                                value={slotData?.alt || ''}
-                                onChange={(e) => onUpdateSlot(slotKey, { ...slotData, alt: e.target.value })}
-                                placeholder="Alt text"
-                                aria-label={`${label} alt text`}
-                                className={cn(
-                                    'w-full px-2 py-1 text-xs',
-                                    'bg-background border border-input rounded-md',
-                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-                                )}
-                            />
-                            <input
-                                id={`ba-${blockId}-${slotKey}-label`}
-                                name={`ba-${blockId}-${slotKey}-label`}
-                                type="text"
-                                value={slotData?.label || ''}
-                                onChange={(e) => onUpdateSlot(slotKey, { ...slotData, label: e.target.value })}
-                                placeholder="Label (optional)"
-                                aria-label={`${label} label`}
-                                className={cn(
-                                    'w-full px-2 py-1 text-xs',
-                                    'bg-background border border-input rounded-md',
-                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-                                )}
-                            />
-                        </div>
-                    </>
-                )}
+                    )}
+                </>
+            ) : (
+                <div className={cn(
+                    "w-full h-full flex flex-col items-center justify-center text-xs text-muted-foreground border border-dashed border-border/40 rounded-md p-4 transition-colors duration-150",
+                    isSelected && "bg-background border-primary/40"
+                )}>
+                    <ImageIcon className="w-5 h-5 mb-1 text-muted-foreground/60" />
+                    <span className="text-[10px] font-medium mb-1.5 uppercase tracking-wide">No image ({label})</span>
+                    {isSelected && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => onChooseImage(slotKey)}
+                            className="h-7 text-[10px] gap-1 px-2.5 bg-background hover:bg-muted border border-border/50 shadow-sm"
+                        >
+                            <ImageIcon className="w-3 h-3" />
+                            Choose Image
+                        </Button>
+                    )}
+                </div>
+            )}
+            
+            {/* Label floating badge */}
+            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-[2px] text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider select-none z-10 shadow-sm border border-white/10">
+                {label}
             </div>
         </div>
     );

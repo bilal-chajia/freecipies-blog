@@ -84,10 +84,11 @@ export const RoundupListBlock = createReactBlockSpec(
                     blockType="roundup-list"
                     blockId={block.id}
                     className="my-8"
+                    data-radius="2xl"
                     style={{
                         ...dragStyle,
                         opacity: isDragging ? 0.5 : undefined,
-                    }}
+                    } as React.CSSProperties}
                 >
                     <div className="bg-card border rounded-2xl overflow-hidden shadow-sm transition-all hover:border-primary/20">
                         {/* Group Header */}

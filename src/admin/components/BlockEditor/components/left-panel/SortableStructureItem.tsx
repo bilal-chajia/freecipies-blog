@@ -61,32 +61,41 @@ export function SortableStructureItem({
         <div
             ref={setNodeRef}
             className={cn(
-                'structure-item group relative select-none rounded-md mx-2 my-0.5 border border-transparent transition-all duration-200',
+                'structure-item group relative select-none rounded-md mx-2 my-0.5 border border-transparent',
                 isActive ? 'bg-primary/5 border-primary/20 shadow-sm' : 'hover:bg-muted/40',
                 isDragging && 'opacity-60 shadow-lg scale-95 border-dashed border-primary',
-                dropPosition === 'before' && 'border-t-2 border-primary/60 scale-[0.98]',
-                dropPosition === 'after' && 'border-b-2 border-primary/60 scale-[0.98]'
+                dropPosition && 'scale-[0.98]'
             )}
             style={{
                 paddingLeft: `${8 + indentDepth * 14}px`,
                 transform: CSS.Transform.toString(transform),
-                transition,
+                transition: isDragging
+                    ? 'none'
+                    : transition
+                        ? `${transition}, scale 200ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms cubic-bezier(0.2, 0, 0, 1)`
+                        : 'transform 200ms cubic-bezier(0.2, 0, 0, 1), scale 200ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms cubic-bezier(0.2, 0, 0, 1), background-color 200ms ease, border-color 200ms ease',
             }}
             onClick={() => onSelectBlock?.(item.id)}
         >
+            {dropPosition && (
+                <div
+                    className={cn(
+                        "absolute left-0 right-0 h-0.5 bg-primary pointer-events-none z-10 rounded-full",
+                        dropPosition === 'before' ? "top-0 -translate-y-0.5" : "bottom-0 translate-y-0.5"
+                    )}
+                />
+            )}
             <div className="structure-item-content flex items-center gap-2 py-0.5 min-w-0 flex-1 overflow-hidden">
                 {!isOutlineView && (
-                    <button
+                    <span
                         ref={setActivatorNodeRef}
-                        type="button"
-                        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing transition-colors"
-                        onClick={(event) => event.stopPropagation()}
+                        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing transition-colors flex items-center justify-center p-0.5"
                         title={isSortableEnabled ? 'Drag to reorder' : 'Reorder disabled'}
                         {...attributes}
                         {...listeners}
                     >
                         <GripVertical className="w-3 h-3 shrink-0 structure-item-grip opacity-40 group-hover:opacity-100 transition-opacity" />
-                    </button>
+                    </span>
                 )}
                 
                 {isOutlineView && item.type === 'heading' ? (

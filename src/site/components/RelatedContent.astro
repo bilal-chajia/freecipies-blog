@@ -405,7 +405,7 @@ const buildHref = (item: RenderItem) => {
     border: 1px solid #e5e7eb;
     text-decoration: none;
     color: inherit;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
   .rc-card:hover {
@@ -662,7 +662,7 @@ const buildHref = (item: RenderItem) => {
     top: 50%;
     transform: translateY(-50%) translateX(-8px);
     opacity: 0;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
   .rc-list-arrow svg {

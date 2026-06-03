@@ -581,7 +581,7 @@ const navItems = [
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
@@ -998,7 +998,7 @@ const navItems = [
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-fast, 150ms) var(--ease-default, ease);
+    transition: background-color var(--transition-fast, 150ms) var(--ease-default, ease), color var(--transition-fast, 150ms) var(--ease-default, ease), border-color var(--transition-fast, 150ms) var(--ease-default, ease), transform var(--transition-fast, 150ms) var(--ease-default, ease);
     outline: 2px solid transparent;
     outline-offset: 2px;
   }
@@ -1049,7 +1049,7 @@ const navItems = [
   .diet-badge {
     background: var(--success-bg);
     color: var(--success-text); /* Darkened from #059669 for accessibility */
-    transition: all 0.2s ease;
+    transition: filter 0.2s ease, transform 0.2s ease;
   }
 
   .diet-badge:hover {
@@ -1079,7 +1079,7 @@ const navItems = [
     font-weight: 600;
     color: var(--text-tertiary);
     cursor: pointer;
-    transition: all var(--transition-fast, 150ms) var(--ease-default, ease);
+    transition: background-color var(--transition-fast, 150ms) var(--ease-default, ease), color var(--transition-fast, 150ms) var(--ease-default, ease);
   }
 
   .preset-btn:hover {
@@ -1133,7 +1133,7 @@ const navItems = [
     border-radius: var(--radius-lg);
     text-decoration: none;
     color: var(--text-tertiary);
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
     min-width: 64px;
     border: 1px solid transparent;
   }
@@ -1151,7 +1151,7 @@ const navItems = [
   .nav-icon {
     width: 24px;
     height: 24px;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, transform 0.3s ease;
   }
 
   .nav-item:hover .nav-icon {
@@ -1387,7 +1387,7 @@ const navItems = [
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-fast, 150ms) var(--ease-default, ease);
+    transition: background-color var(--transition-fast, 150ms) var(--ease-default, ease), border-color var(--transition-fast, 150ms) var(--ease-default, ease);
   }
 
   /* Focus indicator for checkbox */
