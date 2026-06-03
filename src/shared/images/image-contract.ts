@@ -397,7 +397,13 @@ function normalizeSnapshotSlot(
   const caption = readString(source, 'caption');
   if (caption !== undefined) slot.caption = caption;
 
-  if ('credit' in source) slot.credit = source.credit;
+  if ('credit' in source) {
+    // Normalize the embedded author credit so its avatar variants are stored as
+    // r2_key (parseStoredAuthorCreditSnapshot strips resolved /api/images urls).
+    // Fall back to the raw value for non-author / string credits.
+    const normalizedCredit = parseStoredAuthorCreditSnapshot(source.credit);
+    slot.credit = normalizedCredit ?? source.credit;
+  }
 
   const placeholder = readString(source, 'placeholder');
   if (placeholder !== undefined) slot.placeholder = placeholder;
