@@ -92,7 +92,7 @@ export function useBlockEditorHydration({
         (current.length === 1 &&
           current[0].type === 'paragraph' &&
           (!current[0].content || current[0].content.length === 0));
-      let parsedValue: any = value;
+      let parsedValue: unknown = value;
       if (typeof value === 'string') {
         try {
           parsedValue = JSON.parse(value);

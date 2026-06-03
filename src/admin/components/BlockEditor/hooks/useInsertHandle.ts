@@ -3,7 +3,7 @@ import { getBlockInfo, getNearestBlockPos } from '@blocknote/core';
 import { getEditorDomElement, getEditorProseMirrorView } from '../utils/editorView';
 import type { AppEditor } from '../schema';
 
-interface InsertHandleState {
+export interface InsertHandleState {
     blockId: string;
     placement: 'before' | 'after';
     top: number;

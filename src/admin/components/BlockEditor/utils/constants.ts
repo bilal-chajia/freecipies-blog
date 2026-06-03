@@ -27,10 +27,6 @@ export const MAX_STRUCTURE_LABEL = 48;
 
 export const CUSTOM_BLOCK_TYPES = new Set<string>([
     ...CUSTOM_EDITOR_TYPES,
-    // Selection-only pseudo blocks that have no schema spec / adapter:
-    'title',
-    'headline',
-    'featuredImage',
 ]);
 
 export const BLOCK_TYPE_ICONS: BlockIconMap = {

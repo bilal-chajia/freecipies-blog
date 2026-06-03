@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { getEditorDomElement } from '../utils/editorView';
+import { getEditorDomElement, getEditorProseMirrorView } from '../utils/editorView';
 import type { AppEditor } from '../schema';
 
-interface LinkToolbarState {
+export interface LinkToolbarState {
     open: boolean;
     top: number;
     left: number;
@@ -82,7 +82,7 @@ export function useLinkToolbar({ editor, wrapperRef, activeBlockId }: LinkToolba
             const left = rect.left - wrapperRect.left + rect.width / 2;
             const top = rect.top - wrapperRect.top - 10;
             const url = editor.getSelectedLinkUrl() || '';
-            const selectionState = (editor as { _tiptapEditor?: { state?: { selection?: { from: number; to: number } } } })._tiptapEditor?.state?.selection;
+            const selectionState = getEditorProseMirrorView<{ state?: { selection?: { from: number; to: number } } }>(editor)?.state?.selection;
             const selectionRange = selectionState ? { from: selectionState.from, to: selectionState.to } : null;
             setLinkToolbar({
                 open: true,

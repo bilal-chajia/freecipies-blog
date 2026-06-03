@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { FileText, GripVertical } from 'lucide-react';
@@ -57,9 +58,23 @@ export function SortableStructureItem({
         disabled: !isSortableEnabled,
     });
 
+    // Keep the active row visible when selection comes from the canvas (a click
+    // on a block off-screen in the list). `nearest` is a no-op when already visible.
+    const itemRef = useRef<HTMLDivElement | null>(null);
+    const setRefs = useCallback((node: HTMLDivElement | null) => {
+        setNodeRef(node);
+        itemRef.current = node;
+    }, [setNodeRef]);
+
+    useEffect(() => {
+        if (isActive && !isDragging) {
+            itemRef.current?.scrollIntoView({ block: 'nearest' });
+        }
+    }, [isActive, isDragging]);
+
     return (
         <div
-            ref={setNodeRef}
+            ref={setRefs}
             className={cn(
                 'structure-item group relative select-none rounded-md mx-2 my-0.5 border border-transparent',
                 isActive ? 'bg-primary/5 border-primary/20 shadow-sm' : 'hover:bg-muted/40',

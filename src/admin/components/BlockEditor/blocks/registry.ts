@@ -51,6 +51,12 @@ export interface BlockDefinition {
   isCustom: boolean;
   /** Slash-menu metadata; omit for blocks not offered in the slash menu. */
   slash?: SlashMeta;
+  /**
+   * Optional per-block props validator. Returns an array of error messages
+   * (empty = valid). Dispatched by useEditorStateManager instead of a
+   * hardcoded per-type if-chain, so new blocks add their rules here.
+   */
+  validate?: (props: Record<string, unknown>) => string[];
 }
 
 /**
@@ -71,6 +77,8 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
       icon: ImageIcon,
       iconClassName: 'size-4 text-blue-500',
     },
+    validate: (props) =>
+      !props.url && !props.mediaId ? ['An image must be uploaded or selected.'] : [],
   },
   {
     editorType: 'video',
@@ -84,6 +92,10 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
       icon: Video,
       iconClassName: 'size-4 text-indigo-500',
     },
+    validate: (props) =>
+      props.url && (!props.provider || !props.videoId)
+        ? ['Invalid video URL. YouTube or Vimeo required.']
+        : [],
   },
   {
     editorType: 'beforeAfter',
@@ -214,3 +226,18 @@ export const CUSTOM_EDITOR_TYPES: string[] = BLOCK_REGISTRY.filter(
 export const SLASH_BLOCKS = BLOCK_REGISTRY.filter(
   (d): d is BlockDefinition & { slash: SlashMeta } => Boolean(d.slash)
 );
+
+/** editor block type → registry definition. */
+const EDITOR_TYPE_TO_DEFINITION: Record<string, BlockDefinition> =
+  Object.fromEntries(BLOCK_REGISTRY.map((d) => [d.editorType, d]));
+
+/**
+ * Run a block's registered props validator. Returns the error messages for the
+ * block (empty array when valid or when the type has no validator).
+ */
+export function validateBlockProps(
+  editorType: string,
+  props: Record<string, unknown>
+): string[] {
+  return EDITOR_TYPE_TO_DEFINITION[editorType]?.validate?.(props) ?? [];
+}

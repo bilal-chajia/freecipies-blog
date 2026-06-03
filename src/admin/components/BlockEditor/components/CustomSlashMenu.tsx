@@ -2,6 +2,7 @@ import React from 'react';
 import type { ReactNode } from 'react';
 import { X, Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getEditorProseMirrorView } from '../utils/editorView';
 
 type SlashMenuItem = {
     title: string;
@@ -16,19 +17,7 @@ type CustomSlashMenuProps = {
     items?: SlashMenuItem[];
     selectedIndex?: number;
     onItemClick?: (item: SlashMenuItem) => void;
-    editor?: {
-        _tiptapEditor?: {
-            state?: {
-                selection?: {
-                    $from?: {
-                        parent?: {
-                            textContent?: string;
-                        };
-                    };
-                };
-            };
-        };
-    };
+    editor?: unknown;
 };
 
 const shortcutMapping: Record<string, string> = {
@@ -85,7 +74,7 @@ export default function CustomSlashMenu({ items, selectedIndex, onItemClick, edi
 
     // Extract search query
     const query = React.useMemo(() => {
-        return editor?._tiptapEditor?.state?.selection?.$from?.parent?.textContent?.split('/').pop() || '';
+        return getEditorProseMirrorView<{ state?: { selection?: { $from?: { parent?: { textContent?: string } } } } }>(editor)?.state?.selection?.$from?.parent?.textContent?.split('/').pop() || '';
     }, [editor, menuItems]);
 
     const groupedItems = React.useMemo(() => {

@@ -1,29 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Block } from '@blocknote/core';
-import { flattenBlocks, groupConsecutiveBlocks, getBlockLabel, getBlockIcon } from '../utils/blockHelpers';
-import { blocksToContentJson } from '../utils/conversion';
-import { buildRoundupJson } from '../blocks/roundup-serialization';
+import { flattenBlocks } from '../utils/blockHelpers';
 import type { AppEditor } from '../schema';
 import { useBlockEditorStore } from '../store/blockEditorStore';
-
-type AnyBlock = Block<any, any, any>;
-
-interface BlockItem {
-    block: Record<string, unknown>;
-    depth: number;
-    parentId: string | null;
-    itemCount?: number;
-}
-
-interface StructureItem {
-    id: string;
-    type: string;
-    depth: number;
-    parentId: string | null;
-    level?: number;
-    label: string;
-    icon: any;
-}
+import {
+    buildStructureItems,
+    runBlockValidation,
+    emitSerializedContent,
+    type StructureItem,
+} from './editorStateManager.helpers';
 
 interface EditorStateManagerProps {
     editor: AppEditor | null;
@@ -91,43 +75,14 @@ export function useEditorStateManager({
         const handleChange = () => {
             const blocks = editor.document;
             const flatBlocks = flattenBlocks(blocks);
-            const groupedBlocks = groupConsecutiveBlocks(flatBlocks);
-            const nextItems = groupedBlocks.map((item) => ({
-                id: item.block.id,
-                type: item.block.type,
-                depth: item.depth,
-                parentId: item.parentId,
-                level: (item.block.props as Record<string, unknown> | undefined)?.level as number | undefined,
-                label: getBlockLabel(item.block, item.itemCount),
-                icon: getBlockIcon(item.block),
-            }));
+
+            // 1. Structure sync (sidebar outline + store).
+            const nextItems = buildStructureItems(flatBlocks);
             setStructureItems(nextItems);
             updateStructure(nextItems);
 
-            // --- Real-time Block-level Validation Loop ---
-            const storeSetBlockError = useBlockEditorStore.getState().setBlockError;
-            const storeClearBlockError = useBlockEditorStore.getState().clearBlockError;
-
-            flatBlocks.forEach(({ block }) => {
-                const errors: string[] = [];
-                if (block.type === 'video') {
-                    const props = block.props as Record<string, unknown>;
-                    if (props.url && (!props.provider || !props.videoId)) {
-                        errors.push("Invalid video URL. YouTube or Vimeo required.");
-                    }
-                }
-                if (block.type === 'customImage') {
-                    const props = block.props as Record<string, unknown>;
-                    if (!props.url && !props.mediaId) {
-                        errors.push("An image must be uploaded or selected.");
-                    }
-                }
-                if (errors.length > 0) {
-                    storeSetBlockError(block.id, errors);
-                } else {
-                    storeClearBlockError(block.id);
-                }
-            });
+            // 2. Real-time per-block validation (registry-driven).
+            runBlockValidation(flatBlocks);
 
             // data-block-root is emitted declaratively via BlockNote domAttributes
             // (see index.tsx) and data-custom-block is replaced by the CSS
@@ -139,30 +94,22 @@ export function useEditorStateManager({
                 onSelectedBlockChangeRef.current(activeBlock);
             }
 
-            // Debounce the heavy serialization and roundup updates to prevent typing lag
+            // 3. Debounce the heavy serialization + roundup emit to avoid typing lag.
             if (debounceTimeoutRef.current) {
                 clearTimeout(debounceTimeoutRef.current);
             }
 
             debounceTimeoutRef.current = setTimeout(() => {
-                if (onChangeRef.current) {
-                    const contentJson = blocksToContentJson(blocks);
-                    const serialized = JSON.stringify(contentJson, null, 2);
-                    if (serialized !== lastEmittedValueRef.current) {
-                        lastEmittedValueRef.current = serialized;
-                        lastSerializedRef.current = serialized;
-                        onChangeRef.current(serialized);
-                    }
-                }
-
-                 if (contentType === 'roundup' && onRoundupChangeRef.current) {
-                    const nextRoundup = buildRoundupJson(flatBlocks.map(({ block }) => block));
-
-                    if (nextRoundup !== lastRoundupRef.current) {
-                        lastRoundupRef.current = nextRoundup;
-                        onRoundupChangeRef.current(nextRoundup);
-                    }
-                }
+                emitSerializedContent({
+                    blocks,
+                    flatBlocks,
+                    contentType,
+                    onChange: onChangeRef.current,
+                    onRoundupChange: onRoundupChangeRef.current,
+                    lastEmittedValueRef,
+                    lastSerializedRef,
+                    lastRoundupRef,
+                });
             }, 800);
         };
 

@@ -304,6 +304,13 @@ function RelatedContentSettings({
         return slot ? getBestVariantUrl(slot) || '' : '';
     };
 
+    // Hide suggestions that are already selected so a picked item drops out of
+    // the list instead of lingering with a disabled "+".
+    const visibleResults = useMemo(
+        () => results.filter((item) => !activeItems.some((existing) => existing.id === item.id)),
+        [results, activeItems]
+    );
+
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between py-1 gap-2">
@@ -423,12 +430,11 @@ function RelatedContentSettings({
                 <div className="text-xs text-destructive">{limitError}</div>
             )}
 
-            {results.length > 0 && (
+            {visibleResults.length > 0 && (
                 <div className="space-y-2">
                     <Label className="text-xs">Suggestions</Label>
                     <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
-                        {results.map((item) => {
-                            const isSelected = activeItems.some((existing) => existing.id === item.id);
+                        {visibleResults.map((item) => {
                             const thumb = getThumbnailUrl(item);
                             return (
                                 <div
@@ -449,7 +455,6 @@ function RelatedContentSettings({
                                         variant="ghost"
                                         size="icon"
                                         className="h-7 w-7"
-                                        disabled={isSelected}
                                         onClick={() => addItem(item)}
                                     >
                                         <Plus className="h-4 w-4" />

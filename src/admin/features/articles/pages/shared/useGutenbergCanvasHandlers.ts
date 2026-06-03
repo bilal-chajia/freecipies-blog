@@ -4,9 +4,9 @@ const DEFAULT_SINGLETON_BLOCK_TYPES = ['roundupList'];
 
 // Custom blocks that don't support setTextCursorPosition
 const CUSTOM_BLOCK_TYPES = new Set([
-    'title', 'headline', 'customImage', 'alert', 'divider',
+    'customImage', 'alert', 'divider',
     'faqSection', 'beforeAfter', 'simpleTable', 'video',
-    'relatedContent', 'featuredImage', 'mainRecipe', 'roundupList',
+    'relatedContent', 'mainRecipe', 'roundupList',
 ]);
 
 interface EditorBlock {

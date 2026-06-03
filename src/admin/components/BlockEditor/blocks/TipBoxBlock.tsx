@@ -29,6 +29,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import BlockToolbar from '../components/BlockToolbar';
 import BlockWrapper from '../components/BlockWrapper';
 import { useCustomBlock } from './useCustomBlock';
+import { getEditorProseMirrorView } from '../utils/editorView';
 
 // Alert type definitions
 type AlertType = 'tip' | 'warning' | 'info' | 'note';
@@ -45,13 +46,16 @@ type AlertConfig = {
     textColor: string;
 };
 
-type AlertContentElement = HTMLDivElement & {
-    __pasteHandlerAttached?: boolean;
-};
+type AlertContentElement = HTMLDivElement;
 
 type MutableElementRef = {
     current: AlertContentElement | null;
 };
+
+// Tracks content nodes that already have the multiline-paste listener, so the
+// ref callback doesn't attach it twice on re-render (replaces a non-standard
+// `__pasteHandlerAttached` boolean stamped onto the DOM node).
+const pasteHandlerNodes = new WeakSet<HTMLElement>();
 
 const alertTypes: AlertType[] = ['tip', 'warning', 'info', 'note'];
 
@@ -200,9 +204,13 @@ const Alert = createReactBlockSpec(
             editorRef.current = editor;
 
             const handleTypeChange = (newType: AlertType) => {
-                editor.updateBlock(block, {
+                // Re-fetch the block by id: the toolbar dropdown is a portalled
+                // Radix menu, so the click can fire after a re-render has made the
+                // closed-over `block` stale — updateBlock would then no-op.
+                const current = editor.getBlock(block.id) ?? block;
+                editor.updateBlock(current, {
                     type: 'alert',
-                    props: { ...block.props, type: newType },
+                    props: { ...current.props, type: newType },
                 });
             };
 
@@ -214,23 +222,19 @@ const Alert = createReactBlockSpec(
                     (latestContentRef as MutableElementRef).current = node;
                 }
 
-                if (node && !node.__pasteHandlerAttached) {
-                    node.__pasteHandlerAttached = true;
+                if (node && !pasteHandlerNodes.has(node)) {
+                    pasteHandlerNodes.add(node);
                     node.addEventListener('paste', (e) => {
                         const text = e.clipboardData?.getData('text/plain');
                         if (text && text.includes('\n')) {
                             e.preventDefault();
                             e.stopPropagation();
-                            let pmView = null;
-                            try {
-                                pmView = editorRef.current._tiptapEditor?.view ?? null;
-                            } catch {
-                                pmView = null;
-                            }
+                            const pmView = getEditorProseMirrorView<{
+                                state: { tr: { insertText(text: string): unknown } };
+                                dispatch: (tr: unknown) => void;
+                            }>(editorRef.current);
                             if (pmView) {
-                                const { state, dispatch } = pmView;
-                                const tr = state.tr.insertText(text);
-                                dispatch(tr);
+                                pmView.dispatch(pmView.state.tr.insertText(text));
                             }
                         }
                     }, true);

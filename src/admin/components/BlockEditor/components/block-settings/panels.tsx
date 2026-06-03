@@ -15,7 +15,6 @@ import RecipeSettingsSidebar from './RecipeSettingsSidebar';
 import RoundupListSettings from './RoundupListSettings';
 import HeadingSettings from './HeadingSettings';
 import ParagraphSettings from './ParagraphSettings';
-import TitleHeadlineSettings from './TitleHeadlineSettings';
 import AlertSettings from './AlertSettings';
 import DividerSettings from './DividerSettings';
 import FAQSettings from './FAQSettings';
@@ -23,7 +22,6 @@ import VideoSettings from './VideoSettings';
 import TableSettings from './TableSettings';
 import ImageSettings from './ImageSettings';
 import BeforeAfterSettings from './BeforeAfterSettings';
-import FeaturedImageSettings from './FeaturedImageSettings';
 import RelatedContentSettings from './RelatedContentSettings';
 
 export interface BlockSettingsPanelProps {
@@ -51,12 +49,6 @@ export const BLOCK_SETTINGS_PANELS: Record<
   ),
   paragraph: ({ selectedBlock, updateProps }) => (
     <ParagraphSettings selectedBlock={selectedBlock} updateProps={updateProps} />
-  ),
-  title: ({ selectedBlock, updateProps }) => (
-    <TitleHeadlineSettings selectedBlock={selectedBlock} updateProps={updateProps} label="Title" />
-  ),
-  headline: ({ selectedBlock, updateProps }) => (
-    <TitleHeadlineSettings selectedBlock={selectedBlock} updateProps={updateProps} label="Headline" />
   ),
   alert: ({ selectedBlock, updateProps }) => (
     <AlertSettings selectedBlock={selectedBlock} updateProps={updateProps} />
@@ -88,9 +80,6 @@ export const BLOCK_SETTINGS_PANELS: Record<
       imagesData={imagesData}
       onImagesChange={onImagesChange}
     />
-  ),
-  featuredImage: ({ selectedBlock, updateProps }) => (
-    <FeaturedImageSettings selectedBlock={selectedBlock} updateProps={updateProps} />
   ),
   relatedContent: ({ selectedBlock, relatedContext, updateProps }) => (
     <RelatedContentSettings
