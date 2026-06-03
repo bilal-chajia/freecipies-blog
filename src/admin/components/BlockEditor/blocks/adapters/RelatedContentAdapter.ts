@@ -137,6 +137,31 @@ function mapToRelatedItem(item: RelatedContentItem): RelatedItem {
     return relatedItem;
 }
 
+/**
+ * Reduce a full image slot to the compact shape the content contract allows for
+ * related snapshots: { media_id, alt, variants: { xs, sm } }. The editor stores
+ * the full slot (caption, credit, width, height, focal_point, md/lg variants);
+ * leaving those in fails the strict server validation on save (400). Returns
+ * null when the slot can't form a valid compact image (then we omit it).
+ */
+function compactSnapshotImage(thumbnail: RelatedThumbnail | null | undefined): Record<string, unknown> | null {
+    if (!thumbnail) return null;
+    const mediaId = Number(thumbnail.media_id);
+    const alt = typeof thumbnail.alt === 'string' ? thumbnail.alt.trim() : '';
+    const variants = thumbnail.variants;
+    if (!Number.isInteger(mediaId) || mediaId <= 0 || !alt || !variants) return null;
+
+    const xs = variants.xs;
+    const sm = variants.sm;
+    if (!xs || typeof xs !== 'object' || !sm || typeof sm !== 'object') return null;
+
+    // Keep only media_id, alt and the xs/sm variants; the editor's slot also
+    // carries caption, credit, width, height, focal_point and md/lg variants,
+    // and leaving any of those in fails the strict compact-image contract on
+    // save (400). Variant objects are passed through untouched.
+    return { media_id: mediaId, alt, variants: { xs, sm } };
+}
+
 function mapToRelatedContentItem(item: RelatedItem, type: 'recipe' | 'article' | 'roundup'): RelatedContentItem {
     const article_id = Number(item.id);
     const snapshot: Record<string, any> = item.snapshot
@@ -161,8 +186,13 @@ function mapToRelatedContentItem(item: RelatedItem, type: 'recipe' | 'article' |
         };
     }
 
-    if (item.thumbnail) {
-        snapshot.image = item.thumbnail;
+    const compactImage = compactSnapshotImage(item.thumbnail);
+    if (compactImage) {
+        snapshot.image = compactImage;
+    } else {
+        // Drop any raw image carried over from a spread snapshot so it can't fail
+        // the strict compact-image validation on save.
+        delete snapshot.image;
     }
 
     if (type === 'recipe') {

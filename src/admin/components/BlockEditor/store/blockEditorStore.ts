@@ -64,7 +64,14 @@ export const useBlockEditorStore = create<BlockEditorState>((set) => ({
       const activeElement = typeof document !== 'undefined' ? document.activeElement : null;
       if (activeElement && state.activeBlockId) {
         const activeBlockDom = document.querySelector(`[data-block="${state.activeBlockId}"]`);
-        if (activeBlockDom && activeBlockDom.contains(activeElement)) {
+        // Keep the block selected while focus is inside it OR inside a Radix
+        // menu/popper it spawned (the floating toolbar's type dropdown). Without
+        // the menu check, opening the dropdown moves focus to its portal, the
+        // block deselects, the toolbar unmounts, and the menu closes instantly.
+        const inMenuPortal = activeElement.closest(
+          '[role="menu"],[data-radix-popper-content-wrapper]'
+        );
+        if ((activeBlockDom && activeBlockDom.contains(activeElement)) || inMenuPortal) {
           return {}; // Keep selection locked
         }
       }

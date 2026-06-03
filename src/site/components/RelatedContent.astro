@@ -11,7 +11,9 @@ type RelatedContentImageVariant = {
 type RelatedContentImage = {
   media_id: number;
   alt: string;
-  variants: Partial<Record<"sm" | "md", RelatedContentImageVariant>>;
+  // Per CONTENT_BLOCKS_CONTRACT, related snapshots copy the compact xs+sm
+  // variants. md is tolerated for forward-compatibility but not produced today.
+  variants: Partial<Record<"xs" | "sm" | "md", RelatedContentImageVariant>>;
 };
 
 type RelatedContentType = "recipe" | "article" | "roundup";
@@ -97,7 +99,11 @@ const groups = [
   ...(["recipe", "article", "roundup"] as const).map((type) => ({
     type,
     label: TYPE_LABELS[type],
-    items: withType(block.items?.filter((item) => item.content_type === type)),
+    // Raw items expose the kind via snapshot.type; content_type only exists
+    // after normalizeItem, so filter on the snapshot (with a legacy fallback).
+    items: withType(
+      block.items?.filter((item) => (item.snapshot?.type ?? item.content_type) === type)
+    ),
   })),
 ].filter((group) => group.items.length > 0);
 
@@ -112,13 +118,13 @@ type RenderItem = RelatedContentItem & { __type: "recipe" | "article" | "roundup
 const getRelatedImage = (item: RenderItem) => item.image;
 
 const getImageVariant = (slot?: RelatedContentImage) =>
-  slot?.variants?.md || slot?.variants?.sm || null;
+  slot?.variants?.md || slot?.variants?.sm || slot?.variants?.xs || null;
 
 const getImageUrl = (slot?: RelatedContentImage) => resolveVariantUrl(getImageVariant(slot)) || null;
 
 const getImageSrcSet = (slot?: RelatedContentImage) => {
   if (!slot?.variants) return "";
-  return (["sm", "md"] as const)
+  return (["xs", "sm", "md"] as const)
     .map((key) => slot.variants[key])
     .filter((variant): variant is RelatedContentImageVariant => Boolean(resolveVariantUrl(variant) && variant?.width))
     .map((variant) => `${resolveVariantUrl(variant)} ${variant.width}w`)
