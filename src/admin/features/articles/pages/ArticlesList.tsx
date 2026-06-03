@@ -9,7 +9,7 @@ const ArticlesList = () => {
       description="Manage your latest blog posts, news, and updates."
       newButtonLabel="New Article"
       newButtonPath="/articles/new"
-      editPathPrefix="/articles/edit"
+      editPathPrefix="/articles"
       livePathPrefix="/articles"
       typeIcon={FileText}
       statsLabel="Total Articles"
