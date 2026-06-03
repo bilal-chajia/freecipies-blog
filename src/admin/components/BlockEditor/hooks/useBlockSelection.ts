@@ -338,6 +338,37 @@ export function useBlockSelection({
         }
     }, [editor, activeBlockId]);
 
+    // Allow native text selection inside custom-block form controls.
+    // content:'none' blocks are ProseMirror atoms: once node-selected, dragging
+    // anywhere in them starts a node drag, so drag-to-select inside an <input>
+    // moves the block instead of selecting text. Suppress the native drag when
+    // the gesture begins on a form control inside a custom block; the side-menu
+    // drag handle and normal block dragging are unaffected.
+    useEffect(() => {
+        const editorDom = getEditorDomElement(editor);
+        if (!editorDom) return;
+        let suppressDrag = false;
+        const isCustomBlockField = (node: EventTarget | null): boolean =>
+            node instanceof HTMLElement
+            && !!node.closest('.wp-block--custom')
+            && !!node.closest('input, textarea, select, [contenteditable="true"]');
+        const onPointerDown = (event: Event) => {
+            suppressDrag = isCustomBlockField(event.target);
+        };
+        const onDragStart = (event: DragEvent) => {
+            if (suppressDrag || isCustomBlockField(event.target)) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        };
+        editorDom.addEventListener('pointerdown', onPointerDown, true);
+        editorDom.addEventListener('dragstart', onDragStart, true);
+        return () => {
+            editorDom.removeEventListener('pointerdown', onPointerDown, true);
+            editorDom.removeEventListener('dragstart', onDragStart, true);
+        };
+    }, [editor]);
+
     // Prevent link navigation inside editor
     useEffect(() => {
         const editorDom = getEditorDomElement(editor);

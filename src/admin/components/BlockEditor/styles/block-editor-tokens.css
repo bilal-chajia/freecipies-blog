@@ -270,6 +270,16 @@
     visibility: visible !important;
 }
 
+/* Custom-block form controls must always allow native text selection,
+   regardless of the block's node-selection state. */
+.block-editor-wrapper .bn-editor .wp-block--custom input,
+.block-editor-wrapper .bn-editor .wp-block--custom textarea,
+.block-editor-wrapper .bn-editor .wp-block--custom select {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -webkit-user-drag: none;
+}
+
 /* Form inputs need user-select: auto so the user can type and select text,
    plus caret and color revert */
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode input,
@@ -307,6 +317,16 @@
     background: transparent !important;
     color: var(--text) !important;
     -webkit-text-fill-color: var(--text) !important;
+}
+
+/* ...but real form controls must show a visible text-selection highlight.
+   Overrides the transparent rule above (equal specificity, later in source). */
+.block-editor-wrapper .bn-editor .wp-block--custom input::selection,
+.block-editor-wrapper .bn-editor .wp-block--custom textarea::selection,
+.block-editor-wrapper .bn-editor .wp-block--custom select::selection {
+    background: var(--brand-primary, #2563eb) !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
 }
 
 .block-editor-wrapper .block-editor-block-list__block,

@@ -102,9 +102,11 @@ export default function BlockEditor({
     initialContent,
     domAttributes: {
       editor: { class: 'min-h-[32rem] pb-[30vh]' },
-      // Mark every block container as a block root declaratively (PR6) so the
-      // editor no longer rewrites data-block-root via querySelectorAll.
-      blockContainer: { 'data-block-root': 'true' },
+      // Mark every block (the .bn-block node carrying data-id) as a block root
+      // declaratively (PR6) so the editor no longer rewrites data-block-root via
+      // querySelectorAll. NOTE: the valid key is `block` — BlockNote has no
+      // `blockContainer` domAttributes key, so a wrong key is silently ignored.
+      block: { 'data-block-root': 'true' },
     },
     uploadFile: async (file: File) => URL.createObjectURL(file),
   });

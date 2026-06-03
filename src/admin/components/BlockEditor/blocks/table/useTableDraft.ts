@@ -3,13 +3,38 @@ import { parseJsonProp } from '../shared/block-props';
 import type { TableRow } from './TableBlock.types';
 import { DEFAULT_HEADERS, normalizeRows } from './TableBlock.defaults';
 
-// Module-level caches to preserve state across React NodeView unmounts/remounts during editor updates
-const draftMap = new Map<string, { headers: TableRow; rows: TableRow[] }>();
-const lastCommittedPropsMap = new Map<string, { headersJson: string; rowsJson: string }>();
-const colKeysMap = new Map<string, string[]>();
-const rowKeysMap = new Map<string, string[]>();
+type TableMaps = {
+    draftMap: Map<string, { headers: TableRow; rows: TableRow[] }>;
+    lastCommittedPropsMap: Map<string, { headersJson: string; rowsJson: string }>;
+    colKeysMap: Map<string, string[]>;
+    rowKeysMap: Map<string, string[]>;
+};
+
+// Per-editor caches preserve table draft state across BlockNote NodeView
+// unmount/remount cycles during editor updates. Keyed by the editor instance
+// via a WeakMap so the whole cache is garbage-collected when the editor is
+// destroyed (e.g. navigating away). This replaces module-global Maps keyed by
+// block id, which never got cleaned up (memory leak) and leaked stale state
+// across documents that reuse block ids (e.g. default `init-0`).
+const editorTableMaps = new WeakMap<object, TableMaps>();
+
+function getTableMaps(editor: object): TableMaps {
+    let maps = editorTableMaps.get(editor);
+    if (!maps) {
+        maps = {
+            draftMap: new Map(),
+            lastCommittedPropsMap: new Map(),
+            colKeysMap: new Map(),
+            rowKeysMap: new Map(),
+        };
+        editorTableMaps.set(editor, maps);
+    }
+    return maps;
+}
 
 export function useTableDraft(editor: any, block: any) {
+    const { draftMap, lastCommittedPropsMap, colKeysMap, rowKeysMap } = getTableMaps(editor);
+
     const [draft, setDraftState] = useState<{ headers: TableRow; rows: TableRow[] }>(() => {
         const cached = draftMap.get(block.id);
         if (cached) return cached;
@@ -35,6 +60,18 @@ export function useTableDraft(editor: any, block: any) {
             isMountedRef.current = false;
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
+            }
+            // Only drop cached entries if the block was actually removed from the
+            // document — not on a transient NodeView remount (block still exists).
+            try {
+                if (!editor?.getBlock?.(block.id)) {
+                    draftMap.delete(block.id);
+                    lastCommittedPropsMap.delete(block.id);
+                    colKeysMap.delete(block.id);
+                    rowKeysMap.delete(block.id);
+                }
+            } catch {
+                // editor torn down — WeakMap GC handles the rest.
             }
         };
     }, []);

@@ -49,7 +49,7 @@ export default function SortableFAQItem({
     transform,
     transition,
     isDragging
-  } = useSortable({ id: `faq-item-${idx}` });
+  } = useSortable({ id: `faq-item-${blockId}-${idx}` });
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),

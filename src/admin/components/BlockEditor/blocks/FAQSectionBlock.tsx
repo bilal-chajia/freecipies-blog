@@ -297,7 +297,7 @@ const FAQSectionBlock = createReactBlockSpec(
                   onDragEnd={handleDragEnd}
                 >
                   <SortableContext
-                    items={items.map((_, i) => `faq-item-${i}`)}
+                    items={items.map((_, i) => `faq-item-${block.id}-${i}`)}
                     strategy={verticalListSortingStrategy}
                   >
                     {items.map((item, idx) => (
