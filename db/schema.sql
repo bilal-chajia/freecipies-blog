@@ -56,11 +56,16 @@ END;
 
 --
 -- DELETION SAFETY:
---   When deleting a media row, the backend MUST:
---   1. Read variants_json to extract r2_key for ALL variants (original, xs, sm, md, lg).
---   2. Send DeleteObject commands to R2 for each variant.
---   3. Only then delete (or soft-delete) the SQL row.
---   This prevents "orphaned files" (ghost files) on R2 storage.
+--   Soft delete (default): set deleted_at only; R2 files are kept so the
+--     media can be restored. Frontend queries filter WHERE deleted_at IS NULL.
+--   Hard delete (?hard=true, ADMIN only): permanently remove the media. The
+--     backend MUST, in this order:
+--       1. Read variants_json to extract r2_key for ALL variants (original, xs, sm, md, lg).
+--       2. Send DeleteObject commands to R2 for each variant.
+--       3. Then delete the SQL row.
+--     This prevents "orphaned files" (ghost files) on R2 storage.
+--   Implemented by hardDeleteMedia() (single: DELETE /api/media/[id]?hard=true,
+--   bulk: POST /api/media/bulk-delete?hard=true).
 --
 
 -- Contract: docs/MEDIA_TABLE_CONTRACT.md, docs/IMAGE_JSON_CONTRACT.md

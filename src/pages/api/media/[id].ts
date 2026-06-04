@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { deleteMedia, getMediaById, updateMedia, propagateMediaUpdate } from '@modules/media';
+import { deleteMedia, hardDeleteMedia, getMediaById, updateMedia, propagateMediaUpdate } from '@modules/media';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateParams, validateBody, IdParam, UpdateMediaSchema } from '@shared/validation';
@@ -120,16 +120,20 @@ export const PUT: APIRoute = async ({ request, params }) => {
     }
 };
 
-export const DELETE: APIRoute = async ({ request, params }) => {
+export const DELETE: APIRoute = async ({ request, params, url }) => {
     const { id } = validateParams(params as Record<string, string | undefined>, IdParam);
 
     try {
 
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+        const isHardDelete = url.searchParams.get('hard') === 'true';
 
-        // Check authentication
+        // Check authentication — hard-delete requires ADMIN (permanent R2 cleanup)
         const authContext = await extractAuthContext(request, jwtSecret);
-        if (!hasRole(authContext, AuthRoles.EDITOR)) {
+        if (isHardDelete && !hasRole(authContext, AuthRoles.ADMIN)) {
+            return createAuthError('Admin role required for hard delete (permanent R2 cleanup)', 403);
+        }
+        if (!isHardDelete && !hasRole(authContext, AuthRoles.EDITOR)) {
             return createAuthError('Editor role required to delete media files', 403);
         }
 
@@ -142,10 +146,14 @@ export const DELETE: APIRoute = async ({ request, params }) => {
         }
 
         try {
-            const success = await deleteMedia(env.DB, id);
+            // Hard delete: remove R2 objects + DB record permanently.
+            // Soft delete: mark deleted_at only (R2 cleanup deferred to a hard delete).
+            const success = isHardDelete
+                ? await hardDeleteMedia(env.DB, env.IMAGES, id)
+                : await deleteMedia(env.DB, id);
             if (!success) {
                 const { body, status, headers } = formatErrorResponse(
-                    new AppError(ErrorCodes.DATABASE_ERROR, `Failed to soft-delete media record with ID ${id}`, 500)
+                    new AppError(ErrorCodes.DATABASE_ERROR, `Failed to delete media record with ID ${id}`, 500)
                 );
                 return new Response(body, { status, headers });
             }
@@ -160,7 +168,7 @@ export const DELETE: APIRoute = async ({ request, params }) => {
         const { body, status, headers } = formatSuccessResponse({
             success: true,
             id,
-            storageCleanup: 'pending'
+            storage_cleanup: isHardDelete ? 'deleted' : 'pending'
         });
         return new Response(body, { status, headers });
 
