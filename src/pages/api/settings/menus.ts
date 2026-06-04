@@ -12,7 +12,6 @@ import {
     getMenuByKey,
     getMenuDocument,
     getMenuItems,
-    upsertMenu,
     createMenu,
     deleteMenuByKey,
     saveMenuDocument,
@@ -62,10 +61,6 @@ export const GET: APIRoute = async ({ url }) => {
             menu_footer: footerDocument,
             menu_mobile: mobileDocument,
             menu_sidebar: sidebarDocument,
-            headerMenu: headerDocument.items,
-            footerMenu: footerDocument.items,
-            mobileMenu: mobileDocument.items,
-            sidebarMenu: sidebarDocument.items,
         });
         return new Response(body, { status, headers });
     } catch (error) {
@@ -81,7 +76,7 @@ export const GET: APIRoute = async ({ url }) => {
  * PUT /api/settings/menus
  * Updates header and/or footer menu (for admin panel compatibility)
  *
- * Body: { headerMenu?: MenuItem[], footerMenu?: MenuItem[] }
+ * Body: { menu_header?: MenuDocument, menu_footer?: MenuDocument, menu_mobile?: MenuDocument, menu_sidebar?: MenuDocument }
  */
 export const PUT: APIRoute = async ({ request }) => {
     try {
@@ -119,51 +114,6 @@ export const PUT: APIRoute = async ({ request }) => {
             });
         }
 
-        // Legacy admin payload compatibility.
-        if (body.headerMenu !== undefined) {
-            await upsertMenu(db, 'header', {
-                label: 'Header Menu',
-                items: body.headerMenu as MenuItem[],
-                location: 'header',
-                description: 'Primary navigation in site header',
-            }, {
-                cache: getSettingsCache(),
-            });
-        }
-
-        if (body.footerMenu !== undefined) {
-            await upsertMenu(db, 'footer', {
-                label: 'Footer Menu',
-                items: body.footerMenu as MenuItem[],
-                location: 'footer',
-                description: 'Footer navigation links',
-            }, {
-                cache: getSettingsCache(),
-            });
-        }
-
-        if (body.mobileMenu !== undefined) {
-            await upsertMenu(db, 'mobile', {
-                label: 'Mobile Menu',
-                items: body.mobileMenu as MenuItem[],
-                location: 'mobile',
-                description: 'Mobile navigation links',
-            }, {
-                cache: getSettingsCache(),
-            });
-        }
-
-        if (body.sidebarMenu !== undefined) {
-            await upsertMenu(db, 'sidebar', {
-                label: 'Sidebar Menu',
-                items: body.sidebarMenu as MenuItem[],
-                location: 'sidebar',
-                description: 'Sidebar navigation links',
-            }, {
-                cache: getSettingsCache(),
-            });
-        }
-
         const headerDocument = await getMenuDocument(db, 'header', { cache: getSettingsCache() });
         const footerDocument = await getMenuDocument(db, 'footer', { cache: getSettingsCache() });
         const mobileDocument = await getMenuDocument(db, 'mobile', { cache: getSettingsCache() });
@@ -174,10 +124,6 @@ export const PUT: APIRoute = async ({ request }) => {
             menu_footer: footerDocument,
             menu_mobile: mobileDocument,
             menu_sidebar: sidebarDocument,
-            headerMenu: headerDocument.items,
-            footerMenu: footerDocument.items,
-            mobileMenu: mobileDocument.items,
-            sidebarMenu: sidebarDocument.items,
         });
         return new Response(responseBody, { status, headers });
     } catch (error: unknown) {

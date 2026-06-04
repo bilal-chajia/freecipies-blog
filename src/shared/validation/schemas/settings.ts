@@ -78,10 +78,6 @@ export const MenuItemSchema: z.ZodType<any> = z.lazy(() =>
     featured_items: z.array(MenuFeaturedItemSchema).optional(),
     image: MenuImageSchema.optional(),
     disclosure_label: z.string().optional(),
-    // Legacy admin fields accepted by normalizers during migration.
-    url: z.string().optional(),
-    openInNewTab: z.boolean().optional(),
-    featured: z.unknown().optional(),
   }).passthrough(),
 );
 
@@ -100,13 +96,9 @@ export const MenuSchema = z.object({
   items: z.array(MenuItemSchema),
 });
 
-/** Save-menus body (PUT endpoint): headerMenu / footerMenu arrays of raw items */
+/** Save-menus body (PUT endpoint): one or more canonical menu_* documents. */
 export const SaveMenusSchema = z
   .object({
-    headerMenu: z.array(MenuItemSchema).optional(),
-    footerMenu: z.array(MenuItemSchema).optional(),
-    mobileMenu: z.array(MenuItemSchema).optional(),
-    sidebarMenu: z.array(MenuItemSchema).optional(),
     menu_header: MenuDocumentSchema.optional(),
     menu_footer: MenuDocumentSchema.optional(),
     menu_mobile: MenuDocumentSchema.optional(),
@@ -114,10 +106,6 @@ export const SaveMenusSchema = z
   })
   .passthrough()
   .refine((d) => Object.keys(d).some((key) => [
-    'headerMenu',
-    'footerMenu',
-    'mobileMenu',
-    'sidebarMenu',
     'menu_header',
     'menu_footer',
     'menu_mobile',
