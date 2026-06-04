@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { AuthRoles, createAuthError, extractAuthContext, hasRole } from '@modules/auth';
-import { getAiSettings, saveAiSettings } from '@modules/ai';
+import { ALL_PROVIDERS, getAiSettings, saveAiSettings } from '@modules/ai';
 import { stripApiKeys } from '@modules/ai/api-key';
 import { validateBody } from '@shared/validation';
 import { CreateCustomProviderSchema } from '@shared/validation/schemas/ai';
@@ -46,6 +46,9 @@ export const POST: APIRoute = async ({ request }) => {
 
         const { id, label, base_url, api_key, enabled } = await validateBody(request, CreateCustomProviderSchema);
         const settings = await getAiSettings(env.DB);
+        if (ALL_PROVIDERS.includes(id as (typeof ALL_PROVIDERS)[number])) {
+            throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Custom provider id cannot match a built-in provider', 400);
+        }
         if (settings.custom_providers[id]) {
             throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Custom provider already exists', 400);
         }

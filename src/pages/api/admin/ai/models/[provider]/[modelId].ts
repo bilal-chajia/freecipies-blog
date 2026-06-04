@@ -44,7 +44,7 @@ function updateModel(model: ModelSelection, updates: z.infer<typeof UpdateModelS
         max_tokens: updates.max_tokens ?? model.max_tokens,
         deprecated: updates.deprecated ?? model.deprecated,
         enabled: updates.enabled ?? model.enabled,
-        status: updates.deprecated ? 'deprecated' : model.status,
+        status: updates.deprecated === true ? 'deprecated' : updates.deprecated === false ? 'available' : model.status,
     };
 }
 

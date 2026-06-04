@@ -84,6 +84,7 @@ export default function AISettings({
     // User selections
     const [selectedProvider, setSelectedProvider] = useState('');
     const [selectedModel, setSelectedModel] = useState('');
+    const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium');
     const [prompt, setPrompt] = useState('');
 
     // Generated content preview
@@ -150,6 +151,7 @@ export default function AISettings({
                 content_type: contentType,
                 provider: selectedProvider,
                 model: selectedModel,
+                reasoning_effort: currentModel?.supports_thinking ? reasoningEffort : undefined,
             });
 
             if (response.data.success) {
@@ -337,6 +339,25 @@ export default function AISettings({
                                             <span>Context: {currentModel.context_window.toLocaleString()}</span>
                                         )}
                                     </div>
+                                </div>
+                            )}
+                            {currentModel?.supports_thinking && (
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs">Reasoning effort</Label>
+                                    <Select
+                                        value={reasoningEffort}
+                                        onValueChange={(value) => setReasoningEffort(value as 'low' | 'medium' | 'high')}
+                                        disabled={generating}
+                                    >
+                                        <SelectTrigger className="h-8 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="low" className="text-xs">Low</SelectItem>
+                                            <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+                                            <SelectItem value="high" className="text-xs">High</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             )}
                         </CollapsibleContent>

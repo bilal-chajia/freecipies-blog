@@ -56,7 +56,9 @@ export class AnthropicProvider implements IAIProvider {
         };
         if (request.reasoning_effort) {
             const budgets = { low: 4096, medium: 8192, high: 16384 } as const;
-            body.thinking = { type: 'enabled', budget_tokens: budgets[request.reasoning_effort] };
+            const budget_tokens = budgets[request.reasoning_effort];
+            body.thinking = { type: 'enabled', budget_tokens };
+            body.max_tokens = budget_tokens + 1024;
         }
 
         try {

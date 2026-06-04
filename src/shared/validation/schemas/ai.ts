@@ -6,6 +6,18 @@
 import { z } from '../helpers';
 
 const ContentTypeEnum = z.enum(['recipe', 'article', 'roundup']);
+const BuiltInProviderIds = [
+    'gemini',
+    'openai',
+    'anthropic',
+    'deepseek',
+    'openrouter',
+    'qwen',
+    'zhipu',
+    'moonshot',
+    'mistral',
+    'xai',
+];
 
 export const ProviderParam = z.object({
     provider: z.string().min(1),
@@ -66,7 +78,8 @@ export const ValidateApiKeySchema = z.object({
 });
 
 export const CreateCustomProviderSchema = z.object({
-    id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'id must be kebab-case'),
+    id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'id must be kebab-case')
+        .refine((id) => !BuiltInProviderIds.includes(id), 'id cannot match a built-in provider'),
     label: z.string().min(1),
     base_url: z.string().url(),
     api_key: z.string().min(1),
