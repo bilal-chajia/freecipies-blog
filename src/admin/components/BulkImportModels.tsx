@@ -30,8 +30,8 @@ type ImportModelInput = {
     id: string;
     name: string;
     description?: string;
-    contextWindow?: number;
-    maxTokens?: number;
+    context_window?: number;
+    max_tokens?: number;
 };
 
 type ImportResult = {
@@ -61,15 +61,15 @@ export function BulkImportModels({ provider, onSuccess, iconOnly = false }: Bulk
             id: "gpt-4o-mini",
             name: "GPT-4o Mini",
             description: "Affordable and intelligent small model",
-            contextWindow: 128000,
-            maxTokens: 16384
+            context_window: 128000,
+            max_tokens: 16384
         },
         {
             id: "gpt-4-turbo",
             name: "GPT-4 Turbo",
             description: "Latest GPT-4 Turbo with vision",
-            contextWindow: 128000,
-            maxTokens: 4096
+            context_window: 128000,
+            max_tokens: 4096
         }
     ], null, 2);
 
@@ -112,9 +112,8 @@ export function BulkImportModels({ provider, onSuccess, iconOnly = false }: Bulk
                     const response = await api.post(`/admin/ai/models/${provider}`, {
                         id: model.id,
                         name: model.name,
-                        description: model.description || '',
-                        contextWindow: model.contextWindow,
-                        maxTokens: model.maxTokens,
+                        context_window: model.context_window,
+                        max_tokens: model.max_tokens,
                     });
 
                     if (response.status >= 200 && response.status < 300) {
@@ -193,7 +192,7 @@ export function BulkImportModels({ provider, onSuccess, iconOnly = false }: Bulk
                             <p className="text-xs text-muted-foreground mt-2">
                                 Required fields: <code>id</code>, <code>name</code>
                                 <br />
-                                Optional: <code>description</code>, <code>contextWindow</code>, <code>maxTokens</code>
+                                Optional: <code>context_window</code>, <code>max_tokens</code>
                             </p>
                         </div>
 

@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Power, PowerOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, Power, PowerOff, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { Button } from '@/ui/button';
 import ConfirmationModal from '@/ui/confirmation-modal';
 import { toast } from 'sonner';
@@ -23,17 +23,19 @@ import {
     DialogTitle,
 } from '@/ui/dialog';
 import { cn } from '@/lib/utils';
-import api from '@/services/api';
+import { aiAPI } from '@/services/api';
 import { BulkImportModels } from './BulkImportModels';
 
 export type ManagedModel = {
     id: string;
-    name: string;
-    description?: string | null;
-    contextWindow?: number | null;
-    maxTokens?: number | null;
+    name?: string | null;
+    context_window?: number | null;
+    max_tokens?: number | null;
+    supports_thinking?: boolean;
     enabled?: boolean;
     deprecated?: boolean;
+    status?: 'available' | 'unavailable' | 'deprecated';
+    source?: 'discovered' | 'manual';
 };
 
 type ModelManagerProps = {
@@ -48,9 +50,8 @@ type ModelManagerProps = {
 type ModelFormData = {
     id: string;
     name: string;
-    description: string;
-    contextWindow: string;
-    maxTokens: string;
+    context_window: string;
+    max_tokens: string;
 };
 
 type DeleteModalState = {
@@ -71,6 +72,7 @@ export function ModelManager({
     const [internalIsAddDialogOpen, setInternalIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const [isDiscovering, setIsDiscovering] = useState(false);
     const [deleteModal, setDeleteModal] = useState<DeleteModalState>({ isOpen: false, modelToDelete: null });
 
     const isAddDialogOpen = externalIsAddOpen !== undefined ? externalIsAddOpen : internalIsAddDialogOpen;
@@ -79,24 +81,22 @@ export function ModelManager({
     const [formData, setFormData] = useState<ModelFormData>({
         id: '',
         name: '',
-        description: '',
-        contextWindow: '',
-        maxTokens: '',
+        context_window: '',
+        max_tokens: '',
     });
 
     const handleAddModel = async () => {
         try {
-            const response = await api.post(`/admin/ai/models/${provider}`, {
+            const response = await aiAPI.addModel(provider, {
                 id: formData.id,
                 name: formData.name,
-                description: formData.description || undefined,
-                contextWindow: formData.contextWindow ? parseInt(formData.contextWindow) : undefined,
-                maxTokens: formData.maxTokens ? parseInt(formData.maxTokens) : undefined,
+                context_window: formData.context_window ? parseInt(formData.context_window) : undefined,
+                max_tokens: formData.max_tokens ? parseInt(formData.max_tokens) : undefined,
             });
 
             if (response.status >= 200 && response.status < 300) {
                 setIsAddDialogOpen(false);
-                setFormData({ id: '', name: '', description: '', contextWindow: '', maxTokens: '' });
+                setFormData({ id: '', name: '', context_window: '', max_tokens: '' });
                 onUpdate?.();
             }
         } catch (error) {
@@ -107,17 +107,16 @@ export function ModelManager({
     const handleUpdateModel = async () => {
         if (!editingModel) return;
         try {
-            const response = await api.put(`/admin/ai/models/${provider}/${editingModel.id}`, {
+            const response = await aiAPI.updateModel(provider, editingModel.id, {
                 name: formData.name,
-                description: formData.description || undefined,
-                contextWindow: formData.contextWindow ? parseInt(formData.contextWindow) : undefined,
-                maxTokens: formData.maxTokens ? parseInt(formData.maxTokens) : undefined,
+                context_window: formData.context_window ? parseInt(formData.context_window) : undefined,
+                max_tokens: formData.max_tokens ? parseInt(formData.max_tokens) : undefined,
             });
 
             if (response.status >= 200 && response.status < 300) {
                 setIsEditDialogOpen(false);
                 setEditingModel(null);
-                setFormData({ id: '', name: '', description: '', contextWindow: '', maxTokens: '' });
+                setFormData({ id: '', name: '', context_window: '', max_tokens: '' });
                 onUpdate?.();
             }
         } catch (error) {
@@ -127,7 +126,7 @@ export function ModelManager({
 
     const handleToggleModel = async (modelId: string) => {
         try {
-            const response = await api.patch(`/admin/ai/models/${provider}/${modelId}/toggle`);
+            const response = await aiAPI.toggleModel(provider, modelId);
             if (response.status >= 200 && response.status < 300) {
                 onUpdate?.();
             }
@@ -146,7 +145,7 @@ export function ModelManager({
 
         setIsDeleting(modelId);
         try {
-            const response = await api.delete(`/admin/ai/models/${provider}/${modelId}`);
+            const response = await aiAPI.removeModel(provider, modelId);
             if (response.status >= 200 && response.status < 300) {
                 onUpdate?.();
             }
@@ -162,12 +161,26 @@ export function ModelManager({
         setEditingModel(model);
         setFormData({
             id: model.id,
-            name: model.name,
-            description: model.description || '',
-            contextWindow: model.contextWindow?.toString() || '',
-            maxTokens: model.maxTokens?.toString() || '',
+            name: model.name || model.id,
+            context_window: model.context_window?.toString() || '',
+            max_tokens: model.max_tokens?.toString() || '',
         });
         setIsEditDialogOpen(true);
+    };
+
+    const handleDiscover = async () => {
+        setIsDiscovering(true);
+        try {
+            const response = await aiAPI.discoverModels(provider);
+            if (response.status >= 200 && response.status < 300) {
+                toast.success('Latest models fetched');
+                onUpdate?.();
+            }
+        } catch {
+            toast.error('Failed to fetch latest models');
+        } finally {
+            setIsDiscovering(false);
+        }
     };
 
     return (
@@ -185,6 +198,16 @@ export function ModelManager({
                 {!hideHeaderActions && (
                     <div className="flex items-center gap-1.5">
                         <BulkImportModels provider={provider} onSuccess={onUpdate} />
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleDiscover}
+                            disabled={isDiscovering}
+                            className="flex items-center gap-1.5 px-2 text-xs"
+                        >
+                            <RefreshCw className={cn('h-3.5 w-3.5', isDiscovering && 'animate-spin')} />
+                            Fetch latest
+                        </Button>
                         <Button
                             size="sm"
                             onClick={() => setIsAddDialogOpen(true)}
@@ -209,7 +232,12 @@ export function ModelManager({
                         >
                             <div className="flex-1">
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-sm font-medium">{model.name}</span>
+                                    <span className="text-sm font-medium">{model.name || model.id}</span>
+                                    {model.status === 'unavailable' && (
+                                        <Badge variant="outline" className="text-xs px-1 py-0">
+                                            Unavailable
+                                        </Badge>
+                                    )}
                                     {model.deprecated && (
                                         <Badge variant="destructive" className="text-xs px-1 py-0">
                                             Deprecated
@@ -222,11 +250,10 @@ export function ModelManager({
                                     )}
                                 </div>
                                 <div className="text-xs text-muted-foreground space-y-0.5">
-                                    {model.description && <p className="text-xs">{model.description}</p>}
                                     <p className="text-xs">
                                         ID: {model.id}
-                                        {model.contextWindow && ` • Context: ${(model.contextWindow / 1024).toFixed(0)}K`}
-                                        {model.maxTokens && ` • Max: ${(model.maxTokens / 1024).toFixed(0)}K`}
+                                        {model.context_window && ` • Context: ${(model.context_window / 1024).toFixed(0)}K`}
+                                        {model.max_tokens && ` • Max: ${(model.max_tokens / 1024).toFixed(0)}K`}
                                     </p>
                                 </div>
                             </div>
@@ -296,23 +323,14 @@ export function ModelManager({
                                 placeholder="e.g., GPT-4o"
                             />
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="model-desc">Description</Label>
-                            <Input
-                                id="model-desc"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                placeholder="e.g., Multimodal flagship"
-                            />
-                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="context-window">Context Window</Label>
                                 <Input
                                     id="context-window"
                                     type="number"
-                                    value={formData.contextWindow}
-                                    onChange={(e) => setFormData({ ...formData, contextWindow: e.target.value })}
+                                    value={formData.context_window}
+                                    onChange={(e) => setFormData({ ...formData, context_window: e.target.value })}
                                     placeholder="131072"
                                 />
                             </div>
@@ -321,8 +339,8 @@ export function ModelManager({
                                 <Input
                                     id="max-tokens"
                                     type="number"
-                                    value={formData.maxTokens}
-                                    onChange={(e) => setFormData({ ...formData, maxTokens: e.target.value })}
+                                    value={formData.max_tokens}
+                                    onChange={(e) => setFormData({ ...formData, max_tokens: e.target.value })}
                                     placeholder="65536"
                                 />
                             </div>
@@ -357,22 +375,14 @@ export function ModelManager({
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             />
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="edit-model-desc">Description</Label>
-                            <Input
-                                id="edit-model-desc"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            />
-                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="edit-context-window">Context Window</Label>
                                 <Input
                                     id="edit-context-window"
                                     type="number"
-                                    value={formData.contextWindow}
-                                    onChange={(e) => setFormData({ ...formData, contextWindow: e.target.value })}
+                                    value={formData.context_window}
+                                    onChange={(e) => setFormData({ ...formData, context_window: e.target.value })}
                                 />
                             </div>
                             <div className="grid gap-2">
@@ -380,8 +390,8 @@ export function ModelManager({
                                 <Input
                                     id="edit-max-tokens"
                                     type="number"
-                                    value={formData.maxTokens}
-                                    onChange={(e) => setFormData({ ...formData, maxTokens: e.target.value })}
+                                    value={formData.max_tokens}
+                                    onChange={(e) => setFormData({ ...formData, max_tokens: e.target.value })}
                                 />
                             </div>
                         </div>

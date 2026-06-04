@@ -18,10 +18,10 @@ import { aiAPI } from '@/services/api';
 
 type AIModel = {
     id: string;
-    name: string;
-    description?: string;
-    maxTokens?: number;
-    contextWindow?: number;
+    name?: string;
+    max_tokens?: number;
+    context_window?: number;
+    supports_thinking?: boolean;
 };
 
 type ProviderInfo = {
@@ -47,9 +47,9 @@ type ProviderDefaults = {
 };
 
 type ProvidersResponse = {
-    configuredProviders?: string[];
-    availableModels?: Record<string, AIModel[]>;
-    providerInfo?: Record<string, ProviderInfo>;
+    configured_providers?: string[];
+    available_models?: Record<string, AIModel[]>;
+    provider_info?: Record<string, ProviderInfo>;
     defaults?: ProviderDefaults;
 };
 
@@ -97,18 +97,18 @@ export default function AISettings({
             setError(null);
             const response = await aiAPI.getProviders();
             if (response.data.success) {
-                const { configuredProviders = [], availableModels: models, providerInfo: info, defaults: defs } = response.data.data as ProvidersResponse;
-                setProviders(configuredProviders);
+                const { configured_providers = [], available_models: models, provider_info: info, defaults: defs } = response.data.data as ProvidersResponse;
+                setProviders(configured_providers);
                 setAvailableModels(models || {});
                 setProviderInfo(info || {});
                 setDefaults(defs || {});
 
                 // Set defaults
-                if (defs?.provider && configuredProviders?.includes(defs.provider)) {
+                if (defs?.provider && configured_providers?.includes(defs.provider)) {
                     setSelectedProvider(defs.provider);
                     setSelectedModel(defs.model || '');
-                } else if (configuredProviders?.length > 0) {
-                    setSelectedProvider(configuredProviders[0]);
+                } else if (configured_providers?.length > 0) {
+                    setSelectedProvider(configured_providers[0]);
                 }
             }
         } catch (err) {
@@ -147,7 +147,7 @@ export default function AISettings({
 
             const response = await aiAPI.generate({
                 prompt: prompt.trim(),
-                contentType,
+                content_type: contentType,
                 provider: selectedProvider,
                 model: selectedModel,
             });
@@ -320,10 +320,7 @@ export default function AISettings({
                                         {currentModels.map((m) => (
                                             <SelectItem key={m.id} value={m.id} className="text-xs">
                                                 <span className="flex items-center gap-2">
-                                                    <span>{m.name}</span>
-                                                    {m.description && (
-                                                        <span className="text-muted-foreground">({m.description})</span>
-                                                    )}
+                                                    <span>{m.name || m.id}</span>
                                                 </span>
                                             </SelectItem>
                                         ))}
@@ -332,15 +329,12 @@ export default function AISettings({
                             </div>
                             {currentModel && (
                                 <div className="text-xs text-muted-foreground space-y-1">
-                                    {currentModel.description && (
-                                        <p>{currentModel.description}</p>
-                                    )}
                                     <div className="flex flex-wrap gap-3 text-[10px] uppercase tracking-wider">
-                                        {currentModel.maxTokens && (
-                                            <span>Max tokens: {currentModel.maxTokens.toLocaleString()}</span>
+                                        {currentModel.max_tokens && (
+                                            <span>Max tokens: {currentModel.max_tokens.toLocaleString()}</span>
                                         )}
-                                        {currentModel.contextWindow && (
-                                            <span>Context: {currentModel.contextWindow.toLocaleString()}</span>
+                                        {currentModel.context_window && (
+                                            <span>Context: {currentModel.context_window.toLocaleString()}</span>
                                         )}
                                     </div>
                                 </div>

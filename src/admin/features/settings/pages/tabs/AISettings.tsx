@@ -1,37 +1,27 @@
-/**
- * AI Settings Tab
- * ================
- * Configuration page for AI providers (Gemini, OpenAI, Anthropic).
- */
-
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Sparkles, Key, Check, Loader2, AlertCircle, Eye, EyeOff, Thermometer, FileText, Plus } from 'lucide-react';
+import { AlertCircle, Check, FileText, Key, Loader2, Plus, Sparkles, Thermometer } from 'lucide-react';
+import { Alert, AlertDescription } from '@/ui/alert';
+import { Badge } from '@/ui/badge';
 import { Button } from '@/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
 import { Input } from '@/ui/input';
 import { Label } from '@/ui/label';
-import { Textarea } from '@/ui/textarea';
-import { Switch } from '@/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import { Slider } from '@/ui/slider';
-import { Badge } from '@/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
-import { Alert, AlertDescription } from '@/ui/alert';
-import { cn } from '@/lib/utils';
-import api from '@/services/api';
+import { Switch } from '@/ui/switch';
+import { Textarea } from '@/ui/textarea';
 import { ProviderIcon } from '@/components/icons/ProviderIcons';
-import { ModelManager } from '@/components/ModelManager';
-import type { ManagedModel } from '@/components/ModelManager';
-import { MigrateModelsButton } from '@/components/MigrateModelsButton';
-import { BulkImportModels } from '@/components/BulkImportModels';
+import { ModelManager, type ManagedModel } from '@/components/ModelManager';
+import { aiAPI } from '@/services/api';
+import { cn } from '@/lib/utils';
 
-// Tabs configuration for this settings page
 export const aiSettingsTabs = [
     { value: 'providers', label: 'Providers', icon: Key },
     { value: 'defaults', label: 'Default Settings', icon: Sparkles },
 ];
 
-const PROVIDER_ORDER = [
+const BUILT_IN_PROVIDERS = [
     'gemini',
     'openai',
     'anthropic',
@@ -44,95 +34,39 @@ const PROVIDER_ORDER = [
     'xai',
 ];
 
-interface ProviderConfigItem {
-    name: string;
-    icon: string;
-    description: string;
-    docsUrl: string;
-}
-
-// Provider display info - January 2026
-const PROVIDER_CONFIG: Record<string, ProviderConfigItem> = {
-    gemini: {
-        name: 'Google Gemini',
-        icon: '✨',
-        description: 'Gemini 3 Flash/Pro, 2.5 - Latest Google AI',
-        docsUrl: 'https://aistudio.google.com/apikey',
-    },
-    openai: {
-        name: 'OpenAI',
-        icon: '🤖',
-        description: 'GPT-5, o3 reasoning - Flagship models',
-        docsUrl: 'https://platform.openai.com/api-keys',
-    },
-    anthropic: {
-        name: 'Anthropic Claude',
-        icon: '🧠',
-        description: 'Claude Sonnet/Opus 4.5 - Best for writing',
-        docsUrl: 'https://console.anthropic.com/settings/keys',
-    },
-    deepseek: {
-        name: 'DeepSeek',
-        icon: '🔭',
-        description: 'DeepSeek V3.2, R1 - Affordable & powerful',
-        docsUrl: 'https://platform.deepseek.com/api_keys',
-    },
-    openrouter: {
-        name: 'OpenRouter',
-        icon: '🌐',
-        description: '300+ models via unified API',
-        docsUrl: 'https://openrouter.ai/keys',
-    },
-    qwen: {
-        name: 'Alibaba Qwen',
-        icon: '☁️',
-        description: 'Qwen3 Max, Plus - 1T+ params',
-        docsUrl: 'https://dashscope.console.aliyun.com/apiKey',
-    },
-    zhipu: {
-        name: 'Zhipu GLM',
-        icon: '🧪',
-        description: 'GLM-4.7, 4.6, 4.5 - Tsinghua AI',
-        docsUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
-    },
-    moonshot: {
-        name: 'Moonshot Kimi',
-        icon: '🌙',
-        description: 'Kimi K2 Thinking - 1T params, 256K context',
-        docsUrl: 'https://platform.moonshot.cn/console/api-keys',
-    },
-    mistral: {
-        name: 'Mistral AI',
-        icon: '🌀',
-        description: 'Mistral Large 3, Ministral - Open source',
-        docsUrl: 'https://console.mistral.ai/api-keys',
-    },
-    xai: {
-        name: 'xAI Grok',
-        icon: '⚡',
-        description: 'Grok 4.1, 4, 3 - Advanced reasoning',
-        docsUrl: 'https://console.x.ai',
-    },
+const PROVIDER_CONFIG: Record<string, { name: string; description: string; docsUrl: string }> = {
+    gemini: { name: 'Google Gemini', description: 'Google text generation models', docsUrl: 'https://aistudio.google.com/apikey' },
+    openai: { name: 'OpenAI', description: 'GPT and reasoning models', docsUrl: 'https://platform.openai.com/api-keys' },
+    anthropic: { name: 'Anthropic Claude', description: 'Claude writing and reasoning models', docsUrl: 'https://console.anthropic.com/settings/keys' },
+    deepseek: { name: 'DeepSeek', description: 'Chat and reasoner models', docsUrl: 'https://platform.deepseek.com/api_keys' },
+    openrouter: { name: 'OpenRouter', description: 'Unified API for many model providers', docsUrl: 'https://openrouter.ai/keys' },
+    qwen: { name: 'Alibaba Qwen', description: 'DashScope compatible-mode models', docsUrl: 'https://dashscope.console.aliyun.com/apiKey' },
+    zhipu: { name: 'Zhipu GLM', description: 'GLM models via BigModel', docsUrl: 'https://open.bigmodel.cn/usercenter/apikeys' },
+    moonshot: { name: 'Moonshot Kimi', description: 'Kimi OpenAI-compatible models', docsUrl: 'https://platform.moonshot.cn/console/api-keys' },
+    mistral: { name: 'Mistral AI', description: 'Mistral hosted models', docsUrl: 'https://console.mistral.ai/api-keys' },
+    xai: { name: 'xAI Grok', description: 'Grok hosted models', docsUrl: 'https://console.x.ai' },
 };
 
 interface ProviderSettings {
-    apiKey: string;
     enabled: boolean;
-    availableModels?: ManagedModel[];
+    api_key?: string;
+    has_api_key?: boolean;
+    api_key_masked?: string;
+    models: ManagedModel[];
+}
+
+interface CustomProviderSettings extends ProviderSettings {
+    label: string;
+    base_url: string;
 }
 
 interface AISettingsState {
-    defaultProvider: string;
-    defaultModel: string;
+    default_provider: string;
+    default_model: string;
     temperature: number;
-    systemPrompt: string;
+    system_prompt: string;
     providers: Record<string, ProviderSettings>;
-}
-
-interface AvailableModel {
-    id: string;
-    name: string;
-    description?: string;
+    custom_providers: Record<string, CustomProviderSettings>;
 }
 
 interface RegisteredActions {
@@ -146,78 +80,53 @@ interface AISettingsProps {
     onRegisterActions?: (actions: RegisteredActions | null) => void;
 }
 
-interface ApiResponseData {
-    settings?: Record<string, unknown>;
-    configuredProviders?: string[];
-    availableModels?: Record<string, AvailableModel[]>;
-    valid?: boolean;
+const emptySettings: AISettingsState = {
+    default_provider: 'gemini',
+    default_model: 'gemini-3-flash-preview',
+    temperature: 0.7,
+    system_prompt: '',
+    providers: Object.fromEntries(BUILT_IN_PROVIDERS.map((provider) => [provider, { enabled: false, models: [] }])),
+    custom_providers: {},
+};
+
+function configuredProviderIds(settings: AISettingsState): string[] {
+    const builtIn = Object.entries(settings.providers)
+        .filter(([, config]) => config.enabled && (config.has_api_key || config.api_key))
+        .map(([provider]) => provider);
+    const custom = Object.entries(settings.custom_providers)
+        .filter(([, config]) => config.enabled && (config.has_api_key || config.api_key))
+        .map(([provider]) => provider);
+    return [...builtIn, ...custom];
 }
 
 const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettingsProps) => {
+    const [settings, setSettings] = useState<AISettingsState>(emptySettings);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [validating, setValidating] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
-    const [addModelDialogProvider, setAddModelDialogProvider] = useState<string | null>(null);
-    const [migrating, setMigrating] = useState(false);
-
-    const mergeSettingsData = useCallback((prev: AISettingsState, incoming: Record<string, unknown> = {}) => {
-        const providers = { ...(prev.providers || {}) };
-        const incomingProviders = incoming.providers as Record<string, ProviderSettings> | undefined;
-        if (incomingProviders) {
-            Object.entries(incomingProviders).forEach(([key, value]) => {
-                providers[key] = {
-                    ...providers[key],
-                    ...value,
-                };
-            });
-        }
-        return {
-            ...prev,
-            ...incoming,
-            providers,
-        };
-    }, []);
-
-    // Settings state
-    const [settings, setSettings] = useState<AISettingsState>({
-        defaultProvider: 'gemini',
-        defaultModel: 'gemini-3-flash-preview',
-        temperature: 0.7,
-        systemPrompt: '',
-        providers: {
-            gemini: { apiKey: '', enabled: false },
-            openai: { apiKey: '', enabled: false },
-            anthropic: { apiKey: '', enabled: false },
-            deepseek: { apiKey: '', enabled: false },
-            openrouter: { apiKey: '', enabled: false },
-            qwen: { apiKey: '', enabled: false },
-            zhipu: { apiKey: '', enabled: false },
-            moonshot: { apiKey: '', enabled: false },
-            mistral: { apiKey: '', enabled: false },
-            xai: { apiKey: '', enabled: false },
-        },
-    });
-
-    const [availableModels, setAvailableModels] = useState<Record<string, AvailableModel[]>>({});
-    const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
     const [hasChanges, setHasChanges] = useState(false);
+    const [customForm, setCustomForm] = useState({ id: '', label: '', base_url: '', api_key: '' });
 
-    // Load settings
+    const configuredProviders = useMemo(() => configuredProviderIds(settings), [settings]);
+    const allProviderIds = useMemo(
+        () => [...BUILT_IN_PROVIDERS, ...Object.keys(settings.custom_providers)],
+        [settings.custom_providers],
+    );
+
     const loadSettings = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await api.get('/admin/ai/settings');
-            const data = (response.data as { success: boolean; data: ApiResponseData }).data;
-            if (data) {
-                const loadedSettings = data.settings || {};
-                const configured = data.configuredProviders || [];
-                const models = data.availableModels || {};
-                setSettings(prev => mergeSettingsData(prev, loadedSettings));
-                setConfiguredProviders(configured);
-                setAvailableModels(models);
+            const response = await aiAPI.getSettings();
+            if (response.data.success) {
+                const data = response.data.data as AISettingsState;
+                setSettings({
+                    ...emptySettings,
+                    ...data,
+                    providers: { ...emptySettings.providers, ...(data.providers || {}) },
+                    custom_providers: data.custom_providers || {},
+                });
                 setHasChanges(false);
             }
         } catch (err) {
@@ -226,24 +135,25 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
         } finally {
             setLoading(false);
         }
-    }, [mergeSettingsData]);
+    }, []);
 
     useEffect(() => {
         loadSettings();
     }, [loadSettings]);
 
-    // Save settings
     const handleSave = useCallback(async () => {
         try {
             setSaving(true);
             setError(null);
-            const response = await api.put('/admin/ai/settings', settings);
-            const data = (response.data as { success: boolean; data: ApiResponseData }).data;
-            if (data) {
-                const updatedSettings = data.settings || {};
-                const configured = data.configuredProviders || [];
-                setSettings(prev => mergeSettingsData(prev, updatedSettings));
-                setConfiguredProviders(configured);
+            const response = await aiAPI.updateSettings(settings);
+            if (response.data.success) {
+                const data = response.data.data as AISettingsState;
+                setSettings({
+                    ...emptySettings,
+                    ...data,
+                    providers: { ...emptySettings.providers, ...(data.providers || {}) },
+                    custom_providers: data.custom_providers || {},
+                });
                 setHasChanges(false);
             }
         } catch (err) {
@@ -252,95 +162,92 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
         } finally {
             setSaving(false);
         }
-    }, [settings, mergeSettingsData]);
+    }, [settings]);
 
-    // Validate API key
-    const handleValidateKey = async (provider: string) => {
-        const apiKey = settings.providers[provider]?.apiKey;
-        if (!apiKey || apiKey.startsWith('****')) {
-            return;
-        }
+    useEffect(() => {
+        if (!onRegisterActions) return;
+        onRegisterActions({ onSave: handleSave, isSaving: saving, hasChanges });
+        return () => onRegisterActions(null);
+    }, [handleSave, hasChanges, onRegisterActions, saving]);
 
-        try {
-            setValidating(provider);
-            const response = await api.post('/admin/ai/settings', { provider, apiKey });
-            const data = (response.data as { success: boolean; data: ApiResponseData }).data;
-            if (data?.valid) {
-                setSettings(prev => ({
-                    ...prev,
-                    providers: {
-                        ...prev.providers,
-                        [provider]: {
-                            ...prev.providers[provider],
-                            enabled: true,
-                        },
-                    },
-                }));
-            }
-        } catch (err) {
-            console.error('Failed to validate API key:', err);
-        } finally {
-            setValidating(null);
-        }
-    };
-
-    // Handle provider changes
-    const handleProviderChange = (provider: string, field: string, value: unknown) => {
-        setSettings(prev => ({
+    const setProvider = (provider: string, patch: Partial<ProviderSettings>) => {
+        setSettings((prev) => ({
             ...prev,
             providers: {
                 ...prev.providers,
-                [provider]: {
-                    ...prev.providers[provider],
-                    [field]: value,
-                },
+                [provider]: { ...(prev.providers[provider] || { enabled: false, models: [] }), ...patch },
             },
         }));
         setHasChanges(true);
     };
 
-    // Handle general settings changes
-    const handleSettingChange = (field: string, value: unknown) => {
-        setSettings(prev => ({ ...prev, [field]: value }));
+    const setCustomProvider = (provider: string, patch: Partial<CustomProviderSettings>) => {
+        setSettings((prev) => ({
+            ...prev,
+            custom_providers: {
+                ...prev.custom_providers,
+                [provider]: { ...prev.custom_providers[provider], ...patch },
+            },
+        }));
         setHasChanges(true);
     };
 
-    // Handle model migration
-    const handleMigrateModels = async () => {
-        toast.info('Starting model migration...');
+    const providerConfig = (provider: string): ProviderSettings | CustomProviderSettings =>
+        settings.custom_providers[provider] || settings.providers[provider] || { enabled: false, models: [] };
 
+    const providerName = (provider: string): string =>
+        settings.custom_providers[provider]?.label || PROVIDER_CONFIG[provider]?.name || provider;
+
+    const providerDescription = (provider: string): string =>
+        settings.custom_providers[provider]?.base_url || PROVIDER_CONFIG[provider]?.description || 'OpenAI-compatible provider';
+
+    const handleValidateKey = async (provider: string) => {
+        const config = providerConfig(provider);
+        if (!config.api_key) return;
         try {
-            setMigrating(true);
-            const response = await api.post('/admin/ai/migrate-models');
-            const data = (response.data as { success: boolean; data: { totalModels?: number } }).data;
-            if (data && typeof data.totalModels === 'number') {
-                toast.success(`Successfully migrated ${data.totalModels} models!`);
-                await loadSettings(); // Reload to show new models
+            setValidating(provider);
+            const response = await aiAPI.validateApiKey(provider, config.api_key, 'base_url' in config ? config.base_url : undefined);
+            if (response.data.data?.valid) {
+                if (settings.custom_providers[provider]) setCustomProvider(provider, { enabled: true });
+                else setProvider(provider, { enabled: true });
+                toast.success('API key valid');
+            } else {
+                toast.error('API key rejected');
             }
-        } catch (err) {
-            console.error('Failed to migrate models:', err);
-            toast.error('Failed to migrate models. Check console for details.');
+        } catch {
+            toast.error('Failed to validate API key');
         } finally {
-            setMigrating(false);
+            setValidating(null);
         }
     };
 
-    useEffect(() => {
-        if (!onRegisterActions) return;
-        onRegisterActions({
-            onSave: handleSave,
-            isSaving: saving,
-            hasChanges,
-        });
-    }, [handleSave, hasChanges, onRegisterActions, saving]);
-
-    useEffect(() => {
-        return () => {
-            if (onRegisterActions) {
-                onRegisterActions(null);
+    const handleCreateCustomProvider = async () => {
+        try {
+            const response = await aiAPI.customProviders.create({ ...customForm, enabled: true });
+            if (response.data.success) {
+                toast.success('Custom provider added');
+                setCustomForm({ id: '', label: '', base_url: '', api_key: '' });
+                await loadSettings();
             }
-        };
-    }, [onRegisterActions]);
+        } catch {
+            toast.error('Failed to add custom provider');
+        }
+    };
+
+    const handleRemoveCustomProvider = async (provider: string) => {
+        try {
+            await aiAPI.customProviders.remove(provider);
+            toast.success('Custom provider removed');
+            await loadSettings();
+        } catch {
+            toast.error('Failed to remove custom provider');
+        }
+    };
+
+    const updateSetting = <K extends keyof AISettingsState>(key: K, value: AISettingsState[K]) => {
+        setSettings((prev) => ({ ...prev, [key]: value }));
+        setHasChanges(true);
+    };
 
     if (loading) {
         return (
@@ -363,34 +270,25 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                 <div className="space-y-4">
                     <div>
                         <h3 className="text-base font-medium">AI Providers</h3>
-                        <p className="text-xs text-muted-foreground">
-                            Configure API keys for AI content generation
-                        </p>
+                        <p className="text-xs text-muted-foreground">Configure write-only API keys and curated models.</p>
                     </div>
 
-                    {/* Migration Button - Only shows if models not yet migrated */}
-                    <MigrateModelsButton onSuccess={loadSettings} settings={settings} />
-
                     <div className="grid gap-4">
-                        {Object.entries(PROVIDER_CONFIG).map(([key, config]) => {
-                            const providerKey = key;
-                            const providerSettings = settings.providers[providerKey] || { apiKey: '', enabled: false };
-                            const isConfigured = configuredProviders.includes(providerKey);
-                            const isValidating = validating === providerKey;
-                            const showKey = showKeys[providerKey];
+                        {allProviderIds.map((provider) => {
+                            const config = providerConfig(provider);
+                            const isConfigured = configuredProviders.includes(provider);
+                            const isCustom = Boolean(settings.custom_providers[provider]);
+                            const canEnable = Boolean(config.has_api_key || config.api_key);
 
                             return (
-                                <Card key={providerKey} className={cn(
-                                    'transition-all',
-                                    isConfigured && 'border-green-500/50'
-                                )}>
+                                <Card key={provider} className={cn('transition-all', isConfigured && 'border-green-500/50')}>
                                     <CardHeader className="pb-2">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <ProviderIcon provider={providerKey} className="w-6 h-6" />
+                                                <ProviderIcon provider={provider} className="w-6 h-6" />
                                                 <div className="space-y-0.5">
                                                     <CardTitle className="text-sm flex items-center gap-1.5">
-                                                        {config.name}
+                                                        {providerName(provider)}
                                                         {isConfigured && (
                                                             <Badge variant="outline" className="text-xs px-1 py-0 text-green-600 border-green-500/50">
                                                                 <Check className="mr-1.5 h-3.5 w-3.5" />
@@ -398,94 +296,88 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                                             </Badge>
                                                         )}
                                                     </CardTitle>
-                                                    <CardDescription className="text-xs">{config.description}</CardDescription>
+                                                    <CardDescription className="text-xs">{providerDescription(provider)}</CardDescription>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                {/* Header Actions: Bulk Import & Add Model */}
-                                                <div className="flex items-center gap-1 mr-2">
-                                                    <BulkImportModels
-                                                        provider={providerKey}
-                                                        onSuccess={loadSettings}
-                                                        iconOnly={true}
-                                                    />
-                                                    <Button
-                                                        size="sm"
-                                                        className="h-9 w-9 p-0 rounded-full"
-                                                        onClick={() => setAddModelDialogProvider(providerKey)}
-                                                        title="Add Model"
-                                                    >
-                                                        <Plus className="h-3 w-3" />
-                                                    </Button>
-                                                </div>
-                                                <Switch
-                                                    checked={providerSettings.enabled || false}
-                                                    onCheckedChange={(checked) => handleProviderChange(providerKey, 'enabled', checked)}
-                                                    disabled={!providerSettings.apiKey}
-                                                />
-                                            </div>
+                                            <Switch
+                                                checked={config.enabled || false}
+                                                onCheckedChange={(enabled) => (
+                                                    isCustom ? setCustomProvider(provider, { enabled }) : setProvider(provider, { enabled })
+                                                )}
+                                                disabled={!canEnable}
+                                            />
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-2">
                                         <div className="flex gap-1.5 items-center">
-                                            <div className="flex-1 relative">
-                                                <Input
-                                                    type={showKey ? 'text' : 'password'}
-                                                    placeholder="Enter API key..."
-                                                    value={providerSettings.apiKey || ''}
-                                                    onChange={(e) => handleProviderChange(providerKey, 'apiKey', e.target.value)}
-                                                    className="pr-9 h-8 text-sm"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowKeys(prev => ({ ...prev, [providerKey]: !prev[providerKey] }))}
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
-                                                >
-                                                    {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                                                </button>
-                                            </div>
-
+                                            <Input
+                                                type="password"
+                                                placeholder={config.api_key_masked || 'Enter API key...'}
+                                                value={config.api_key || ''}
+                                                onChange={(e) => (
+                                                    isCustom
+                                                        ? setCustomProvider(provider, { api_key: e.target.value })
+                                                        : setProvider(provider, { api_key: e.target.value })
+                                                )}
+                                                className="h-8 text-sm"
+                                            />
                                             <Button
                                                 variant="outline"
                                                 size="sm"
                                                 className="h-8 px-3 text-xs"
-                                                onClick={() => handleValidateKey(providerKey)}
-                                                disabled={isValidating || !providerSettings.apiKey || providerSettings.apiKey.startsWith('****')}
+                                                onClick={() => handleValidateKey(provider)}
+                                                disabled={validating === provider || !config.api_key}
                                             >
-                                                {isValidating ? (
-                                                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                                ) : (
-                                                    'Test'
-                                                )}
+                                                {validating === provider ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : 'Test'}
                                             </Button>
-
-                                            {/* Get API Key Link */}
-                                            <a
-                                                href={config.docsUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-xs text-muted-foreground hover:text-primary whitespace-nowrap px-1"
-                                            >
-                                                Get API key →
-                                            </a>
+                                            {!isCustom && (
+                                                <a
+                                                    href={PROVIDER_CONFIG[provider]?.docsUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-muted-foreground hover:text-primary whitespace-nowrap px-1"
+                                                >
+                                                    Get API key
+                                                </a>
+                                            )}
+                                            {isCustom && (
+                                                <Button variant="outline" size="sm" onClick={() => handleRemoveCustomProvider(provider)}>
+                                                    Remove
+                                                </Button>
+                                            )}
                                         </div>
 
-                                        {/* Model Manager */}
                                         <ModelManager
-                                            provider={providerKey}
-                                            models={providerSettings.availableModels || []}
+                                            provider={provider}
+                                            models={config.models || []}
                                             onUpdate={loadSettings}
-                                            hideHeaderActions={true}
-                                            isAddDialogOpen={addModelDialogProvider === providerKey}
-                                            onAddDialogChange={(open: boolean) => {
-                                                if (!open) setAddModelDialogProvider(null);
-                                            }}
+                                            hideHeaderActions={false}
                                         />
                                     </CardContent>
                                 </Card>
                             );
                         })}
                     </div>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                <Plus className="w-4 h-4" />
+                                Custom OpenAI-Compatible Provider
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-3 md:grid-cols-4">
+                            <Input placeholder="id" value={customForm.id} onChange={(e) => setCustomForm((p) => ({ ...p, id: e.target.value }))} />
+                            <Input placeholder="label" value={customForm.label} onChange={(e) => setCustomForm((p) => ({ ...p, label: e.target.value }))} />
+                            <Input placeholder="https://host/v1" value={customForm.base_url} onChange={(e) => setCustomForm((p) => ({ ...p, base_url: e.target.value }))} />
+                            <div className="flex gap-2">
+                                <Input type="password" placeholder="api_key" value={customForm.api_key} onChange={(e) => setCustomForm((p) => ({ ...p, api_key: e.target.value }))} />
+                                <Button onClick={handleCreateCustomProvider} disabled={!customForm.id || !customForm.label || !customForm.base_url || !customForm.api_key}>
+                                    Add
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             )}
 
@@ -493,64 +385,40 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                 <div className="space-y-6">
                     <div>
                         <h3 className="text-lg font-medium">Default Settings</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Configure default AI behavior for content generation
-                        </p>
+                        <p className="text-sm text-muted-foreground">Configure default AI behavior for content generation.</p>
                     </div>
 
                     <div className="grid gap-6 max-w-xl">
-                        {/* Default Provider */}
                         <div className="space-y-2">
                             <Label>Default Provider</Label>
                             <Select
-                                value={settings.defaultProvider}
-                                onValueChange={(value) => handleSettingChange('defaultProvider', value)}
+                                value={settings.default_provider}
+                                onValueChange={(value) => updateSetting('default_provider', value)}
                             >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(PROVIDER_CONFIG).map(([key, config]) => (
-                                        <SelectItem key={key} value={key} disabled={!configuredProviders.includes(key)}>
-                                            <span className="flex items-center gap-2">
-                                                <span>{config.icon}</span>
-                                                <span>{config.name}</span>
-                                                {!configuredProviders.includes(key) && (
-                                                    <span className="text-muted-foreground">(not configured)</span>
-                                                )}
-                                            </span>
-                                        </SelectItem>
+                                    {configuredProviders.map((provider) => (
+                                        <SelectItem key={provider} value={provider}>{providerName(provider)}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        {/* Default Model */}
                         <div className="space-y-2">
                             <Label>Default Model</Label>
                             <Select
-                                value={settings.defaultModel}
-                                onValueChange={(value) => handleSettingChange('defaultModel', value)}
+                                value={settings.default_model}
+                                onValueChange={(value) => updateSetting('default_model', value)}
                             >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {(availableModels[settings.defaultProvider] || []).map((model) => (
-                                        <SelectItem key={model.id} value={model.id}>
-                                            <span className="flex items-center gap-2">
-                                                <span>{model.name}</span>
-                                                {model.description && (
-                                                    <span className="text-muted-foreground text-xs">({model.description})</span>
-                                                )}
-                                            </span>
-                                        </SelectItem>
+                                    {(providerConfig(settings.default_provider).models || []).map((model) => (
+                                        <SelectItem key={model.id} value={model.id}>{model.name || model.id}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        {/* Temperature */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -561,32 +429,24 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                             </div>
                             <Slider
                                 value={[settings.temperature]}
-                                onValueChange={([value]) => handleSettingChange('temperature', value)}
+                                onValueChange={([value]) => updateSetting('temperature', value)}
                                 min={0}
                                 max={2}
                                 step={0.1}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Lower values produce more focused and deterministic output.
-                                Higher values produce more creative and varied responses.
-                            </p>
                         </div>
 
-                        {/* System Prompt */}
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-muted-foreground" />
                                 <Label>System Prompt</Label>
                             </div>
                             <Textarea
-                                value={settings.systemPrompt}
-                                onChange={(e) => handleSettingChange('systemPrompt', e.target.value)}
-                                placeholder="Enter a system prompt that defines the AI's behavior..."
+                                value={settings.system_prompt}
+                                onChange={(e) => updateSetting('system_prompt', e.target.value)}
+                                placeholder="Enter a system prompt that defines the AI behavior..."
                                 rows={4}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                This prompt is sent with every request to guide the AI's tone and style.
-                            </p>
                         </div>
                     </div>
                 </div>

@@ -253,9 +253,20 @@ export const statsAPI = {
 export const aiAPI = {
   getSettings: () => api.get('/admin/ai/settings'),
   updateSettings: (settings: unknown) => api.put('/admin/ai/settings', settings),
-  validateApiKey: (provider: string, apiKey: string) => api.post('/admin/ai/settings', { provider, apiKey }),
+  validateApiKey: (provider: string, api_key: string, base_url?: string) => api.post('/admin/ai/settings', { provider, api_key, base_url }),
   getProviders: () => api.get('/admin/ai/providers'),
   generate: (params: unknown) => api.post('/admin/ai/generate', params),
+  discoverModels: (provider: string) => api.get(`/admin/ai/models/${provider}/discover`),
+  addModel: (provider: string, model: unknown) => api.post(`/admin/ai/models/${provider}`, model),
+  updateModel: (provider: string, modelId: string, model: unknown) => api.put(`/admin/ai/models/${provider}/${modelId}`, model),
+  removeModel: (provider: string, modelId: string) => api.delete(`/admin/ai/models/${provider}/${modelId}`),
+  toggleModel: (provider: string, modelId: string) => api.patch(`/admin/ai/models/${provider}/${modelId}`),
+  customProviders: {
+    list: () => api.get('/admin/ai/custom-providers'),
+    create: (payload: unknown) => api.post('/admin/ai/custom-providers', payload),
+    update: (id: string, payload: unknown) => api.put(`/admin/ai/custom-providers/${id}`, payload),
+    remove: (id: string) => api.delete(`/admin/ai/custom-providers/${id}`),
+  },
 };
 
 /* ------------------------------------------------------------------ */
