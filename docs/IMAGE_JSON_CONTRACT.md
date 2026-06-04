@@ -222,6 +222,21 @@ Rules:
 - `aspect_ratio` is optional, but recommended when it helps reserve layout space.
 - Stored snapshots use `r2_key`, never public `url`.
 
+### Allowed Exception: equipment external affiliate images
+
+Equipment (`equipment.image_json` and the `recipe_json.equipment[].snapshot.image`
+copy) is a discriminated union on `source`:
+
+- `source: "media"` — the standard stored snapshot above (`r2_key` variants).
+- `source: "external"` — an external affiliate product image (e.g. Amazon) that
+  may not be re-hosted: `{ "source": "external", "url": "https://…", "alt": "…",
+  "width"?, "height"? }`.
+
+This is the **only** place a stored image legitimately keeps an absolute `url`.
+It exists because affiliate product imagery is owned by the vendor and cannot be
+copied into R2. Everywhere else, stored snapshots use `r2_key` and resolve to
+`url` only in public/admin payloads. See `docs/EQUIPMENT_TABLE_CONTRACT.md`.
+
 ## Resolved Image Outputs
 
 Resolved image outputs are derived from stored snapshots at the API/service/render boundary.

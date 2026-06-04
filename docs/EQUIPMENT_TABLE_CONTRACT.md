@@ -69,43 +69,53 @@ Rules:
 
 ### `image_json`
 
-Purpose: product image snapshot copied from `media`.
+Purpose: equipment product image. It is a **discriminated union** on `source`,
+because equipment is an affiliate catalog: some images are owned photos uploaded
+to `media`, while others are external affiliate product images (e.g. Amazon)
+that cannot be re-hosted.
+
+**(a) `source: "media"`** — owned photo, snapshot copied from `media`:
 
 ```json
 {
+  "source": "media",
   "media_id": 301,
   "alt": "KitchenAid stand mixer",
   "placeholder": "data:image/jpeg;base64,...",
   "variants": {
-    "xs": {
-      "r2_key": "media/images/stand-mixer-xs-a91c3f2b.webp",
-      "width": 360,
-      "height": 360
-    },
-    "sm": {
-      "r2_key": "media/images/stand-mixer-sm-a91c3f2b.webp",
-      "width": 720,
-      "height": 720
-    }
+    "xs": { "r2_key": "media/images/stand-mixer-xs-a91c3f2b.webp", "width": 360, "height": 360 },
+    "sm": { "r2_key": "media/images/stand-mixer-sm-a91c3f2b.webp", "width": 720, "height": 720 }
   }
+}
+```
+
+**(b) `source: "external"`** — external affiliate product image (no re-hosting):
+
+```json
+{
+  "source": "external",
+  "url": "https://m.media-amazon.com/images/I/71zmya-XiNL._AC_SX679_.jpg",
+  "alt": "KitchenAid stand mixer",
+  "width": 679,
+  "height": 679
 }
 ```
 
 Rules:
 
-- `media.variants_json` remains the complete asset source.
-- `image_json` is an equipment product/tool image snapshot.
-- `image_json.media_id` is required when `image_json` is not null.
-- `image_json.alt` is required when `image_json` is not null.
-- `image_json.placeholder` is required when `image_json` is not null.
-- Equipment cards are small UI/card contexts, so stored snapshots use `xs` and
-  `sm`.
-- Internal snapshots contain `r2_key`; public props must convert to URLs.
-- R2 keys follow `docs/NAMING_CONTRACT.md`.
-- Do not store absolute CDN/domain URLs when a media reference can be resolved
-  dynamically.
+- `image_json.source` is `"media"` or `"external"` and selects the shape.
+- **media:** `media_id`, `alt`, `placeholder`, and `xs`+`sm` `r2_key` variants are
+  required. Internal snapshots contain `r2_key`; public/admin resolved payloads
+  expose `url`, not `r2_key`. `media.variants_json` remains the complete asset
+  source. R2 keys follow `docs/NAMING_CONTRACT.md`. Do not store absolute
+  CDN/domain URLs when a media reference can be resolved dynamically.
+- **external:** `url` (absolute) is required; `alt` is required; `width`/`height`
+  are optional. This is the single documented place a stored image keeps an
+  absolute `url` (see `docs/IMAGE_JSON_CONTRACT.md` "Allowed Exceptions"). No
+  `media_id`, `r2_key`, or `variants`.
 - Equipment `image_json` must not store `caption`, `credit`, or `original`.
-- Public/admin resolved payloads expose `url`, not `r2_key`.
+- Prefer `source: "media"` for images you own; use `source: "external"` only for
+  affiliate images that may not be re-hosted.
 
 ## Recipe Integration
 

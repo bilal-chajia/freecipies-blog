@@ -170,6 +170,27 @@ function hasKeyDeep(value, keyName) {
   return found;
 }
 
+/**
+ * Like hasKeyDeep('url') but ignores the `url` of equipment external affiliate
+ * images (`{ source: 'external', url }`), which are a documented exception
+ * (EQUIPMENT_TABLE_CONTRACT / IMAGE_JSON_CONTRACT "Allowed Exceptions").
+ */
+function hasUrlExcludingExternalImages(value) {
+  let found = false;
+  const visit = (node) => {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    if (!isRecord(node)) return;
+    if (node.source === 'external') return; // allowed external image subtree
+    if (Object.prototype.hasOwnProperty.call(node, 'url')) found = true;
+    for (const child of Object.values(node)) visit(child);
+  };
+  visit(value);
+  return found;
+}
+
 function collectKeysDeep(value, predicate) {
   const matches = [];
   walk(value, (node, path) => {
@@ -316,7 +337,10 @@ function auditJsonRows(report, table, column, area, options = {}) {
 
     const camelKeys = collectKeysDeep(parsed, isCamelCaseKey);
     if (camelKeys.length > 0) stats.camel_case_rows.push({ id: row.id, keys: camelKeys.slice(0, 10) });
-    if (hasKeyDeep(parsed, 'url')) stats.url_rows.push(row.id);
+    const hasUrl = options.allowExternalImageUrls
+      ? hasUrlExcludingExternalImages(parsed)
+      : hasKeyDeep(parsed, 'url');
+    if (hasUrl) stats.url_rows.push(row.id);
     if (hasKeyDeep(parsed, 'r2_key')) stats.r2_key_rows.push(row.id);
 
     const legacyKeys = collectKeysDeep(parsed, (key) => (options.legacyKeys ?? []).includes(key));
@@ -355,6 +379,9 @@ function auditArticleContent(report) {
   auditJsonRows(report, 'articles', 'recipe_json', 'recipe_json', {
     forbidCamelCase: true,
     forbidUrl: true,
+    // Equipment external affiliate images legitimately carry `url`
+    // (source: "external") — see EQUIPMENT_TABLE_CONTRACT / IMAGE_JSON_CONTRACT.
+    allowExternalImageUrls: true,
     legacyKeys: ['aggregateRating', 'recipeCategory', 'recipeCuisine', 'suitableForDiet', 'recipeYield', 'totalTimeMinutes', 'difficultyLabel'],
   });
   auditJsonRows(report, 'articles', 'roundup_json', 'roundup_json', {

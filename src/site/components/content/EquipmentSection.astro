@@ -12,7 +12,16 @@ interface RecipeEquipmentSnapshot {
   description?: string | null;
   category?: string | null;
   image?: {
+    // `source` discriminates an owned R2 media snapshot from an external
+    // affiliate product image (e.g. Amazon). See IMAGE_JSON_CONTRACT.md.
+    source?: "media" | "external";
     alt?: string;
+    // external affiliate image
+    url?: string;
+    width?: number;
+    height?: number;
+    // media snapshot
+    media_id?: number;
     variants?: {
       xs?: { r2_key?: string; url?: string; width?: number; height?: number };
       sm?: { r2_key?: string; url?: string; width?: number; height?: number };
@@ -79,11 +88,14 @@ const categoryIcons: Record<string, string> = {
     {
       equipment.map((item) => {
         const snapshot = item.snapshot;
-        const imageVariant =
-          snapshot?.image?.variants?.sm || snapshot?.image?.variants?.xs;
-        const image_url = resolveVariantUrl(imageVariant);
-        const imageWidth = imageVariant?.width || 720;
-        const imageHeight = imageVariant?.height || 480;
+        const img = snapshot?.image;
+        const isExternalImage = img?.source === "external";
+        const imageVariant = img?.variants?.sm || img?.variants?.xs;
+        const image_url = isExternalImage
+          ? (img?.url ?? null)
+          : resolveVariantUrl(imageVariant);
+        const imageWidth = (isExternalImage ? img?.width : imageVariant?.width) || 720;
+        const imageHeight = (isExternalImage ? img?.height : imageVariant?.height) || 480;
         const name = snapshot?.name || item.label || "Equipment";
         const required = item.required !== false;
         const category = snapshot?.category || "other";

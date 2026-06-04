@@ -533,6 +533,7 @@ table to render the equipment section.
       "description": "Useful for whipping and kneading.",
       "category": "appliances",
       "image": {
+        "source": "media",
         "media_id": 77,
         "alt": "Stand mixer on a kitchen counter",
         "placeholder": "data:image/jpeg;base64,...",
@@ -580,6 +581,10 @@ Rules:
 - `source_type = "manual"` requires `equipment_id: null` and `snapshot: null`.
 - Catalog snapshots are copied from the selected active `equipment` row at
   article save time.
+- `snapshot.image` is the equipment image hybrid from
+  `docs/EQUIPMENT_TABLE_CONTRACT.md`: either `source: "media"` (R2 `r2_key`
+  variants) or `source: "external"` (an affiliate `url`). The latter is the one
+  allowed place a `recipe_json` stored image keeps an absolute `url`.
 - Catalog snapshots include `slug`, `name`, `brand`, `description`,
   `category`, `image`, `affiliate_url`, `affiliate_provider`,
   and `affiliate_note`.

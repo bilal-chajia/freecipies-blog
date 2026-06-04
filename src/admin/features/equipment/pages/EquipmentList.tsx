@@ -130,7 +130,7 @@ const EquipmentList = () => {
     const handleStartEdit = (item: EquipmentItem) => {
         setEditingSlug(item.slug);
         // Extract image URL from parsed image object
-        const imgUrl = item.image?.variants?.md?.url || item.image?.variants?.sm?.url || item.image?.url || '';
+        const imgUrl = item.image?.url || item.image?.variants?.md?.url || item.image?.variants?.sm?.url || '';
         setFormData({
             name: item.name || '',
             brand: item.brand || '',
@@ -168,9 +168,12 @@ const EquipmentList = () => {
             keywordsArray.unshift(nameLower);
         }
 
-        // Build image_json from URL
+        // Build image_json from URL — canonical external affiliate image shape
+        // (source: "external"). Owned R2 photos use source: "media" via upload.
         const image_url = formData.image_url?.trim() || null;
-        const image_json = image_url ? { url: image_url, variants: { md: { url: image_url }, sm: { url: image_url } } } : {};
+        const image_json = image_url
+            ? { source: 'external' as const, url: image_url, alt: formData.name.trim() }
+            : {};
 
         return {
             name: formData.name.trim(),
