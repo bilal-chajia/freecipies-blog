@@ -77,7 +77,7 @@ describe('normalizeImageSnapshotContainer', () => {
         variants: {
           sm: { r2_key: 'media/image-sm.webp', url: '/api/images/media/image-sm.webp', width: 720, height: 480, size_bytes: 202 },
           md: { r2_key: 'media/image-md.webp', url: '/api/images/media/image-md.webp', width: 1200, height: 800, size_bytes: 303 },
-          original: { r2_key: 'media/image-original.jpg', url: '/api/images/media/image-original.jpg', width: 3000, height: 2000, size_bytes: 505 },
+          lg: { r2_key: 'media/image-lg.webp', url: '/api/images/media/image-lg.webp', width: 2048, height: 1365, size_bytes: 404 },
         },
       },
       pinterest: {
@@ -99,6 +99,7 @@ describe('normalizeImageSnapshotContainer', () => {
         variants: {
           sm: { r2_key: 'media/image-sm.webp', width: 720, height: 480, size_bytes: 202 },
           md: { r2_key: 'media/image-md.webp', width: 1200, height: 800, size_bytes: 303 },
+          lg: { r2_key: 'media/image-lg.webp', width: 2048, height: 1365, size_bytes: 404 },
         },
       },
     });
@@ -437,4 +438,3 @@ describe('buildCardImage', () => {
     expect(buildCardImage(imagesJson, 'Fallback')).toBeNull();
   });
 });
-
