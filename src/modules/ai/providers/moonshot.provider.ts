@@ -7,8 +7,10 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
+import { normalizeOpenAiModels } from '../discovery/normalize';
 
 const MOONSHOT_API_URL = 'https://api.moonshot.cn/v1/chat/completions';
+const MOONSHOT_MODELS_URL = 'https://api.moonshot.cn/v1/models';
 
 interface MoonshotResponse {
     id?: string;
@@ -38,7 +40,7 @@ export class MoonshotProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'moonshot-v1-auto';
 
         const body = {
@@ -109,7 +111,7 @@ export class MoonshotProvider implements IAIProvider {
 
     async validateApiKey(apiKey: string): Promise<boolean> {
         try {
-            const response = await fetch('https://api.moonshot.cn/v1/models', {
+            const response = await fetch(MOONSHOT_MODELS_URL, {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                 },
@@ -117,6 +119,20 @@ export class MoonshotProvider implements IAIProvider {
             return response.ok;
         } catch {
             return false;
+        }
+    }
+
+    async listModels(apiKey: string) {
+        try {
+            const response = await fetch(MOONSHOT_MODELS_URL, {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+            });
+            if (!response.ok) return { supported: true, models: [] };
+            return { supported: true, models: normalizeOpenAiModels(await response.json()) };
+        } catch {
+            return { supported: true, models: [] };
         }
     }
 }

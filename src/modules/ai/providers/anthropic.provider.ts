@@ -35,7 +35,7 @@ export class AnthropicProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'claude-3-5-sonnet-latest';
 
         const body = {
@@ -123,5 +123,9 @@ export class AnthropicProvider implements IAIProvider {
         } catch {
             return false;
         }
+    }
+
+    async listModels() {
+        return { supported: false, models: [] };
     }
 }

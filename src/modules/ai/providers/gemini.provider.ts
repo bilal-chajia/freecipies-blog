@@ -38,7 +38,7 @@ export class GeminiProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'gemini-1.5-flash';
 
         const url = `${GEMINI_API_URL}/${model}:generateContent?key=${this.apiKey}`;
@@ -125,5 +125,9 @@ export class GeminiProvider implements IAIProvider {
         } catch {
             return false;
         }
+    }
+
+    async listModels() {
+        return { supported: false, models: [] };
     }
 }

@@ -7,8 +7,10 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
+import { normalizeOpenAiModels } from '../discovery/normalize';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/v1/models';
 
 interface OpenRouterResponse {
     id?: string;
@@ -38,7 +40,7 @@ export class OpenRouterProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'anthropic/claude-sonnet-4';
 
         const body = {
@@ -111,7 +113,7 @@ export class OpenRouterProvider implements IAIProvider {
 
     async validateApiKey(apiKey: string): Promise<boolean> {
         try {
-            const response = await fetch('https://openrouter.ai/api/v1/models', {
+            const response = await fetch(OPENROUTER_MODELS_URL, {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                 },
@@ -119,6 +121,20 @@ export class OpenRouterProvider implements IAIProvider {
             return response.ok;
         } catch {
             return false;
+        }
+    }
+
+    async listModels(apiKey: string) {
+        try {
+            const response = await fetch(OPENROUTER_MODELS_URL, {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+            });
+            if (!response.ok) return { supported: true, models: [] };
+            return { supported: true, models: normalizeOpenAiModels(await response.json()) };
+        } catch {
+            return { supported: true, models: [] };
         }
     }
 }
