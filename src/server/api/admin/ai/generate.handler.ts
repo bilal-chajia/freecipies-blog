@@ -18,14 +18,15 @@ export async function handleGenerateContent(request: Request): Promise<Response>
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const { prompt, contentType, provider, model, temperature } = await validateBody(request, GenerateSchema);
+        const { prompt, content_type, provider, model, temperature, reasoning_effort } = await validateBody(request, GenerateSchema);
 
         const generateRequest: GenerateContentRequest = {
             prompt: prompt.trim(),
-            contentType,
+            content_type,
             provider: (provider || 'gemini') as AIProvider,
             model: model || '',
             temperature: temperature ?? undefined,
+            reasoning_effort: reasoning_effort ?? undefined,
         };
 
         const result = await generateContent(env.DB, generateRequest);

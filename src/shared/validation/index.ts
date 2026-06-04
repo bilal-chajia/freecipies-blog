@@ -40,6 +40,8 @@ export {
   UpdateModelSchema,
   UpdateSettingsSchema,
   ValidateApiKeySchema,
+  CreateCustomProviderSchema,
+  UpdateCustomProviderSchema,
 } from './schemas/ai';
 export { LoginSchema, RefreshSchema } from './schemas/auth';
 export {
