@@ -102,7 +102,6 @@ interface VariantEntry {
   height?: number;
   url: string;
   size_bytes?: number;
-  sizeBytes?: number;
 }
 
 interface NormalizedVariant {
@@ -132,7 +131,7 @@ const normalizeVariantEntry = (variant: VariantEntry | null | undefined): Normal
     url: variant.url,
   };
 
-  const sizeBytes = variant.size_bytes ?? variant.sizeBytes;
+  const sizeBytes = variant.size_bytes;
   if (typeof sizeBytes === 'number') {
     result.size_bytes = sizeBytes;
   }
@@ -206,7 +205,7 @@ export const buildImageSlotFromMedia = (item: MediaItem | null | undefined, over
 
   const alt = overrides.alt ?? item?.alt_text ?? item?.alt ?? '';
   const placeholder = (overrides.placeholder ?? (parsed as Record<string, unknown>)?.placeholder ?? item?.placeholder ?? '') as string;
-  const aspectRatio = overrides.aspect_ratio ?? item?.aspect_ratio;
+  const ratio = overrides.aspect_ratio ?? item?.aspect_ratio;
   const focalPointRaw = overrides.focal_point ?? item?.focal_point_json;
   const focalPoint = ((): FocalPoint | undefined => {
     if (!focalPointRaw) return undefined;
@@ -222,7 +221,7 @@ export const buildImageSlotFromMedia = (item: MediaItem | null | undefined, over
     media_id: item?.id ?? overrides.media_id,
     alt: alt || undefined,
     placeholder: placeholder || undefined,
-    aspect_ratio: aspectRatio || undefined,
+    aspect_ratio: ratio || undefined,
     focal_point: focalPoint,
     variants,
   };
