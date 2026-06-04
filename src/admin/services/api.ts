@@ -121,9 +121,9 @@ export const mediaAPI = {
   uploadVariant: async (blob: Blob, options: UploadVariantOptions, config: AxiosRequestConfig = {}) => {
     const formData = new FormData();
     formData.append('file', blob, options.filename || 'image.webp');
-    formData.append('variantName', options.variantName);
-    formData.append('baseName', options.baseName);
-    formData.append('uploadId', options.uploadId);
+    formData.append('variant_name', options.variantName);
+    formData.append('base_name', options.baseName);
+    formData.append('upload_id', options.uploadId);
     formData.append('width', options.width.toString());
     formData.append('height', options.height.toString());
 

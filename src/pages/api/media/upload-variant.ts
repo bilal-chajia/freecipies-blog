@@ -7,9 +7,9 @@
  * POST /api/media/upload-variant
  *   FormData:
  *     - file: Blob
- *     - variantName: string (original, lg, md, sm, xs)
- *     - baseName: string
- *     - uploadId: string (for grouping variants)
+ *     - variant_name: string (original, lg, md, sm, xs)
+ *     - base_name: string
+ *     - upload_id: string (for grouping variants)
  * 
  *   Returns: { upload_key, url, width, height, size_bytes }
  */
@@ -52,10 +52,10 @@ export const POST: APIRoute = async ({ request }) => {
     const file = formData.get('file') as File;
 
     // Validate variant fields via Zod
-    const { variantName, baseName, uploadId, width, height } = validate(VariantUploadFields, {
-      variantName: formData.get('variantName'),
-      baseName: formData.get('baseName'),
-      uploadId: formData.get('uploadId') || undefined,
+    const { variant_name: variantName, base_name: baseName, upload_id: uploadId, width, height } = validate(VariantUploadFields, {
+      variant_name: formData.get('variant_name'),
+      base_name: formData.get('base_name'),
+      upload_id: formData.get('upload_id') || undefined,
       width: formData.get('width') || '0',
       height: formData.get('height') || '0',
     });

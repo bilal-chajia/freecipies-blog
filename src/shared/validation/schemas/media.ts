@@ -196,9 +196,9 @@ export const UpdateMediaSchema = z.preprocess(normalizeUpdateMediaInput, z.objec
 
 /** POST /api/media/upload-variant fields (FormData) */
 export const VariantUploadFields = z.object({
-  variantName: z.enum(['original', 'lg', 'md', 'sm', 'xs']),
-  baseName: z.string().min(1),
-  uploadId: z.string().optional(),
+  variant_name: z.enum(['original', 'lg', 'md', 'sm', 'xs']),
+  base_name: z.string().min(1),
+  upload_id: z.string().optional(),
   width: z.coerce.number().int().nonnegative(),
   height: z.coerce.number().int().nonnegative(),
 });
