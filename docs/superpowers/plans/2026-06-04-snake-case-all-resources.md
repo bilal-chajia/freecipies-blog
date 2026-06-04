@@ -1,5 +1,7 @@
 # snake_case End-to-End Migration (All Resources) Implementation Plan
 
+> **STATUS — 2026-06-04: ✅ COMPLETED & VERIFIED.** All 9 Drizzle resources (settings, articles_to_tags, tags, templates, redirects, equipment, categories, authors, pinterest, articles) migrated to snake_case end to end; NAMING_CONTRACT migration-status note updated. Verified: typecheck 0 · tests green · boundaries ✅ · contract audit no camelCase data violations.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Migrate all 9 remaining Drizzle-backed resources to snake_case end to end (data keys only — type 2), removing camelCase field aliases, conversion seams, and dual-handling, closing Contract Audit #3.

@@ -1,5 +1,7 @@
 # Media Snake Case Task 7b Implementation Plan
 
+> **STATUS — 2026-06-04: ✅ COMPLETED.** Final media snake_case cleanup task executed as part of the media pilot completion. Verified green.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Remove the last non-exception camelCase media-shape compatibility seams that prevented Task 7 from cleanly verifying the media pilot as snake_case-only.

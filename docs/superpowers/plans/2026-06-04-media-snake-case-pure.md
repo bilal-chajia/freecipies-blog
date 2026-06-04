@@ -1,5 +1,7 @@
 # Media Snake Case Pure Implementation Plan
 
+> **STATUS — 2026-06-04: ✅ COMPLETED & VERIFIED.** Media resource fully migrated to snake_case end to end (schema → service → API → admin), including the Drizzle/handler layer completion (`cf3b0532`) and upload-variant FormData (`126b87b`). Verified green.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Finish the media pilot for audit item #3 by removing the remaining camelCase↔snake_case compatibility layers so media data flows in `snake_case` end to end with zero casing conversion.

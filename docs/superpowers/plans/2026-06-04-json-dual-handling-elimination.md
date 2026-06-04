@@ -1,5 +1,7 @@
 # JSON Dual Handling Elimination Implementation Plan
 
+> **STATUS — 2026-06-04: ✅ COMPLETED, REVIEWED & FIXED.** Dual-handling removed (A dead read fallbacks, A′ camelCase output chains + consumers, B duplicate `x ?? x`); keep-list C preserved (`c5d154be`). Code review found a critical gap → category `config_json` data migration written + applied (`6b030e34`). Behavior findings (#3 keywords / #4 video / #5 is_optional) resolved. Final scan `snake ?? camel` returns only keep-list C. Verified: typecheck 0 · tests green · boundaries ✅. Ops: run `migrate-category-config --apply` on prod D1 at deploy.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Remove dead camelCase read fallbacks, duplicate nullish chains, and accidental camelCase serialized JSON outputs from article, recipe, author, category, and settings JSON flows while preserving legitimate compatibility paths explicitly listed in the spec keep-list.

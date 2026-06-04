@@ -1,5 +1,7 @@
 # AI Model Management Redesign Implementation Plan
 
+> **STATUS — 2026-06-04: ✅ COMPLETED, REVIEWED & FIXED.** All phases implemented (snake_case types/store/discovery/providers/custom providers/endpoints/reasoning/admin UI + data migration). Code review fixes applied (`a71be82`: anthropic max_tokens>budget, provider-id collision guard, un-deprecate, editor reasoning_effort). Stored `ai_settings` blob migrated locally (`migrate-ai-settings --apply`). Verified: typecheck 0 · tests green · boundaries ✅. Ops: run `migrate-ai-settings --apply` on prod D1 at deploy.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the hardcoded AI model catalog with live per-provider discovery, store only the admin's curated snake_case selection with safe validated persistence and write-only keys, add OpenAI-compatible custom providers, model-obsolescence reconciliation, and a thinking/reasoning control — closing the AI portion of Contract Audit #3.
