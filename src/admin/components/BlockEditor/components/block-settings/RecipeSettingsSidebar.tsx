@@ -140,18 +140,18 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
     };
 
     const updateVideo = (field: keyof RecipeVideo, val: string) => {
-        const current: RecipeVideo = data.video || { url: '', name: '', duration: '' };
-        const next = { ...current, [field]: val };
-        const isEmpty = !next.url && !next.name && !next.description && !next.thumbnail_url && !next.duration && !next.uploadDate;
+        const current: RecipeVideo = data.video || { name: '', description: null, thumbnail: null, content_url: null, embed_url: null, duration: null, upload_date: null };
+        const next = { ...current, [field]: val || null };
+        const isEmpty = !next.content_url && !next.embed_url && !next.name && !next.description && !next.duration && !next.upload_date;
         updateField('video', isEmpty ? null : next);
     };
 
     const toggleDiet = (diet: DietType) => {
-        const current = data.suitableForDiet || [];
+        const current = data.suitable_for_diet || [];
         const updated = current.includes(diet)
             ? current.filter(d => d !== diet)
             : [...current, diet];
-        updateField('suitableForDiet', updated);
+        updateField('suitable_for_diet', updated);
     };
 
     if (!recipe && !setRecipe) return null;
@@ -205,8 +205,8 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                 <div className="space-y-1 mt-3">
                     <Label className="text-xs">Yield</Label>
                     <Input
-                        value={data.recipeYield || ''}
-                        onChange={(e) => updateField('recipeYield', e.target.value)}
+                        value={data.recipe_yield || ''}
+                        onChange={(e) => updateField('recipe_yield', e.target.value)}
                         placeholder="12 cookies"
                         className="h-8 text-sm"
                     />
@@ -219,8 +219,8 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                     <div className="space-y-1">
                         <Label className="text-xs">Category</Label>
                         <Input
-                            value={data.recipeCategory || ''}
-                            onChange={(e) => updateField('recipeCategory', e.target.value)}
+                            value={data.recipe_category || ''}
+                            onChange={(e) => updateField('recipe_category', e.target.value)}
                             placeholder="Dessert"
                             className="h-8 text-sm"
                         />
@@ -228,8 +228,8 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                     <div className="space-y-1">
                         <Label className="text-xs">Cuisine</Label>
                         <Input
-                            value={data.recipeCuisine || ''}
-                            onChange={(e) => updateField('recipeCuisine', e.target.value)}
+                            value={data.recipe_cuisine || ''}
+                            onChange={(e) => updateField('recipe_cuisine', e.target.value)}
                             placeholder="Italian"
                             className="h-8 text-sm"
                         />
@@ -237,8 +237,8 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                     <div className="space-y-1">
                         <Label className="text-xs">Method</Label>
                         <Input
-                            value={data.cookingMethod || ''}
-                            onChange={(e) => updateField('cookingMethod', e.target.value)}
+                            value={data.cooking_method || ''}
+                            onChange={(e) => updateField('cooking_method', e.target.value)}
                             placeholder="Baking"
                             className="h-8 text-sm"
                         />
@@ -262,8 +262,8 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                     <div className="space-y-1">
                         <Label className="text-xs">Estimated Cost</Label>
                         <Select
-                            value={data.estimatedCost || ''}
-                            onValueChange={(value) => updateField('estimatedCost', value as CostLevel)}
+                            value={data.estimated_cost || ''}
+                            onValueChange={(value) => updateField('estimated_cost', value as CostLevel)}
                         >
                             <SelectTrigger className="h-8 text-sm">
                                 <SelectValue placeholder="Select cost" />
@@ -317,7 +317,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                     {DIET_OPTIONS.map(diet => (
                         <Button
                             key={diet.value}
-                            variant={data.suitableForDiet?.includes(diet.value) ? "default" : "outline"}
+                            variant={data.suitable_for_diet?.includes(diet.value) ? "default" : "outline"}
                             size="sm"
                             className="h-7 text-xs px-2"
                             onClick={() => toggleDiet(diet.value)}
@@ -641,11 +641,11 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
             <SettingsSection title="Video" icon={Settings}>
                 <div className="space-y-3">
                     <div className="space-y-1">
-                        <Label className="text-xs">Video URL</Label>
+                        <Label className="text-xs">Embed URL</Label>
                         <Input
-                            value={data.video?.url || ''}
-                            onChange={(e) => updateVideo('url', e.target.value)}
-                            placeholder="https://www.youtube.com/watch?v=..."
+                            value={data.video?.embed_url || ''}
+                            onChange={(e) => updateVideo('embed_url', e.target.value)}
+                            placeholder="https://www.youtube.com/embed/..."
                             className="h-8 text-sm"
                         />
                     </div>
@@ -668,11 +668,11 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-xs">Thumbnail URL</Label>
+                        <Label className="text-xs">Content URL</Label>
                         <Input
-                            value={data.video?.thumbnail_url || ''}
-                            onChange={(e) => updateVideo('thumbnail_url', e.target.value)}
-                            placeholder="https://.../thumb.jpg"
+                            value={data.video?.content_url || ''}
+                            onChange={(e) => updateVideo('content_url', e.target.value)}
+                            placeholder="https://.../video.mp4"
                             className="h-8 text-sm"
                         />
                     </div>
@@ -690,8 +690,8 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                             <Label className="text-xs">Upload Date</Label>
                             <Input
                                 type="date"
-                                value={data.video?.uploadDate || ''}
-                                onChange={(e) => updateVideo('uploadDate', e.target.value)}
+                                value={data.video?.upload_date || ''}
+                                onChange={(e) => updateVideo('upload_date', e.target.value)}
                                 className="h-8 text-sm"
                             />
                         </div>

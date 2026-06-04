@@ -13,7 +13,6 @@ interface SeoData {
   metaTitle?: string;
   metaDescription?: string;
   canonicalUrl?: string;
-  keywords?: string[];
 }
 
 interface SEOSectionProps {
@@ -74,20 +73,6 @@ export default function SEOSection({ seoData, onSeoChange }: SEOSectionProps) {
                                 />
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label htmlFor="keywords" className="text-sm font-medium">Keywords</Label>
-                                <Input
-                                    id="keywords"
-                                    value={seoData?.keywords?.join(', ') || ''}
-                                    onChange={(e) => {
-                                        const keywords = e.target.value.split(',').map(k => k.trim()).filter(Boolean);
-                                        onSeoChange({ ...seoData, keywords });
-                                    }}
-                                    placeholder="keyword1, keyword2, keyword3"
-                                    className="text-sm h-8"
-                                />
-                                <p className="text-xs text-muted-foreground">Comma-separated</p>
-                            </div>
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>

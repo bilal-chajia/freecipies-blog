@@ -185,7 +185,7 @@ export function normalizeMenuItem(item: unknown): MenuItem | null {
   const target = normalizeMenuTarget(raw.target);
   if (target) normalized.target = target;
 
-  const overviewTarget = normalizeMenuTarget(raw.overview_target ?? raw.overviewTarget);
+  const overviewTarget = normalizeMenuTarget(raw.overview_target);
   if (overviewTarget) normalized.overview_target = overviewTarget;
 
   const layout = typeof raw.layout === "string" && VALID_LAYOUTS.includes(raw.layout as any)
@@ -222,7 +222,7 @@ export function normalizeMenuItem(item: unknown): MenuItem | null {
   }
 
   // Process featured_items
-  const rawFeatured = raw.featured_items ?? raw.featuredItems;
+  const rawFeatured = raw.featured_items;
   if (Array.isArray(rawFeatured)) {
     const featuredItems: MenuFeaturedItem[] = [];
     for (const feat of rawFeatured) {

@@ -35,7 +35,6 @@ interface SeoData {
   metaTitle: string;
   metaDescription: string;
   canonicalUrl: string;
-  keywords: string[];
 }
 
 const AuthorEditor = () => {
@@ -80,7 +79,6 @@ const AuthorEditor = () => {
     metaTitle: '',
     metaDescription: '',
     canonicalUrl: '',
-    keywords: [],
   });
 
   const isLoadingRef = useRef(false);
@@ -154,17 +152,15 @@ const AuthorEditor = () => {
         try {
           const seo = author.seo_json ? JSON.parse(author.seo_json) : {};
           setSeoData({
-            metaTitle: seo.meta_title || seo.metaTitle || author.metaTitle || '',
-            metaDescription: seo.meta_description || seo.metaDescription || author.metaDescription || '',
-            canonicalUrl: seo.canonical || seo.canonicalUrl || '',
-            keywords: seo.keywords || [],
+            metaTitle: seo.meta_title || author.metaTitle || '',
+            metaDescription: seo.meta_description || author.metaDescription || '',
+            canonicalUrl: seo.canonical || '',
           });
         } catch {
           setSeoData({
             metaTitle: author.metaTitle || '',
             metaDescription: author.metaDescription || '',
             canonicalUrl: '',
-            keywords: [],
           });
         }
       } else {
@@ -228,6 +224,17 @@ const AuthorEditor = () => {
       }
 
       // Prepare data with JSON fields
+      const seoJson = {
+        meta_title: seoData.metaTitle || null,
+        meta_description: seoData.metaDescription || null,
+        canonical: seoData.canonicalUrl || null,
+        og_image: null,
+        og_title: null,
+        og_description: null,
+        twitter_card: 'summary_large_image',
+        no_index: false,
+      };
+
       const authorData = {
         name: formData.name,
         email: formData.email,
@@ -240,7 +247,7 @@ const AuthorEditor = () => {
         role: formData.role,
         images_json: JSON.stringify(imagesData),
         bio_json: JSON.stringify(bioData),
-        seo_json: JSON.stringify(seoData),
+        seo_json: JSON.stringify(seoJson),
       };
 
       if (isEditMode && formData.author_id) {

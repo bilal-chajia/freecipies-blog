@@ -69,17 +69,17 @@ if (!category) {
 }
 
 // Display settings come from admin config only (no user overrides)
-const perPage = category.numEntriesPerPage || 12;
-const sortBy = category.sortBy || "published_at";
-const sort_order = category.articleSortOrder || "desc";
-const layoutMode = category.layoutMode || "grid";
-const showPagination = category.showPagination !== false;
-const showBreadcrumb = category.showBreadcrumb !== false;
-const showSidebar = category.showSidebar !== false;
-const headerStyle = category.headerStyle || "hero";
-const cardStyle = category.cardStyle || "full";
+const perPage = category.posts_per_page || 12;
+const sortBy = category.article_sort_by || "published_at";
+const sort_order = category.article_sort_order || "desc";
+const layoutMode = category.layout_mode || "grid";
+const showPagination = category.show_pagination !== false;
+const showBreadcrumb = category.show_breadcrumb !== false;
+const showSidebar = category.show_sidebar !== false;
+const headerStyle = category.header_style || "hero";
+const cardStyle = category.card_style || "full";
 const showHeader = headerStyle !== "none";
-const showFeaturedRecipe = category.showFeaturedRecipe !== false;
+const showFeaturedRecipe = category.show_featured_recipe !== false;
 
 const breadcrumbItems = showBreadcrumb
   ? [{ label: "Categories", href: "/categories" }, { label: category.label }]
@@ -112,8 +112,8 @@ let featuredArticle: HydratedArticle | null = null;
 
 if (currentPage === 1 && headerStyle === "hero" && showFeaturedRecipe) {
   try {
-    if (env.DB && typeof category.featuredArticleId === "number") {
-      const candidate = await getArticleById(env.DB, category.featuredArticleId);
+    if (env.DB && typeof category.featured_article_id === "number") {
+      const candidate = await getArticleById(env.DB, category.featured_article_id);
       if (
         candidate &&
         (candidate as any).workflow_status === 'published' &&
@@ -158,8 +158,8 @@ if (articles.length === 0 && otherCategories.length > 0) {
 const baseUrl = `/categories/${slug}`;
 
 // SEO Configuration
-const pageTitle = category.metaTitle || category.headline || category.label;
-const pageDescription = category.metaDescription || category.short_description;
+const pageTitle = category.meta_title || category.headline || category.label;
+const pageDescription = category.meta_description || category.short_description;
 const ogImage = getOgImage(category);
 const noIndex = shouldNoIndex(category);
 

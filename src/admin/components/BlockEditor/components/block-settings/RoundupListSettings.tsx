@@ -146,13 +146,13 @@ function RoundupListSettings({
     const buildItem = (item: SearchResultItem): RoundupListItem => {
         const headline = item.headline || item.label || item.slug || '';
         const image = getImageSlot(item.images_json, 'thumbnail') || getImageSlot(item.images_json, 'hero');
-        const recipe = parseJsonObject(item.cached_recipe_json ?? item.cached_recipe_json);
-        const rating = parseJsonObject(item.cached_rating_json ?? item.cached_rating_json);
-        const author = parseJsonObject(item.cached_author_json ?? item.cached_author_json);
-        const category = parseJsonObject(item.cached_category_json ?? item.cached_category_json);
+        const recipe = parseJsonObject(item.cached_recipe_json);
+        const rating = parseJsonObject(item.cached_rating_json);
+        const author = parseJsonObject(item.cached_author_json);
+        const category = parseJsonObject(item.cached_category_json);
         const tags = Array.isArray(item.cached_tags_json)
             ? item.cached_tags_json
-            : parseJsonArray(item.cached_tags_json ?? item.cached_tags_json);
+            : parseJsonArray(item.cached_tags_json);
 
         return {
             source_type: 'internal_recipe',

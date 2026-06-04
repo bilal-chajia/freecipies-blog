@@ -20,8 +20,8 @@ export const DATA_FIELD_SUGGESTIONS = [
     { path: 'recipe_json.total', label: 'Total Time (minutes)', type: 'text' },
     { path: 'recipe_json.servings', label: 'Servings', type: 'text' },
     { path: 'recipe_json.difficulty', label: 'Difficulty', type: 'text' },
-    { path: 'recipe_json.recipeCategory', label: 'Recipe Category', type: 'text' },
-    { path: 'recipe_json.recipeCuisine', label: 'Cuisine', type: 'text' },
+    { path: 'recipe_json.recipe_category', label: 'Recipe Category', type: 'text' },
+    { path: 'recipe_json.recipe_cuisine', label: 'Cuisine', type: 'text' },
 
     // Nutrition fields
     { path: 'recipe_json.nutrition.calories', label: 'Calories', type: 'text' },

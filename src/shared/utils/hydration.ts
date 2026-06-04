@@ -143,14 +143,14 @@ export function extractImage(
 // ============================================================================
 
 interface SeoJson {
-  metaTitle?: string;
-  metaDescription?: string;
-  ogImage?: string;
-  ogTitle?: string;
-  ogDescription?: string;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  og_image?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
   canonical?: string;
-  noIndex?: boolean;
-  twitterCard?: string;
+  no_index?: boolean;
+  twitter_card?: string;
   robots?: string;
 }
 
@@ -169,9 +169,9 @@ export function extractSeo(seo_json: string | null | undefined): ExtractedSeo {
   if (!seo) return {};
 
   return {
-    metaTitle: seo.metaTitle,
-    metaDescription: seo.metaDescription,
-    ogImage: seo.ogImage,
+    metaTitle: seo.meta_title ?? undefined,
+    metaDescription: seo.meta_description ?? undefined,
+    ogImage: seo.og_image ?? undefined,
     canonical: seo.canonical ?? undefined,
   };
 }
@@ -190,26 +190,6 @@ export type { RecipeJson };
 export function extractRecipe(recipe_json: string | null | undefined): RecipeJson | null {
   const recipe = safeParseJson<RecipeJson>(recipe_json);
   if (!recipe) return null;
-  // Deep map is_optional -> isOptional to keep the TS interface happy
-  if (Array.isArray(recipe.ingredients)) {
-    recipe.ingredients = recipe.ingredients.map((group: any) => {
-      if (group && Array.isArray(group.items)) {
-        return {
-          ...group,
-          items: group.items.map((item: any) => {
-            if (item && typeof item === 'object') {
-              return {
-                ...item,
-                isOptional: item.isOptional ?? item.is_optional ?? false,
-              };
-            }
-            return item;
-          }),
-        };
-      }
-      return group;
-    });
-  }
   return recipe;
 }
 
@@ -368,6 +348,38 @@ export function hydrateArticle<T extends {
 /**
  * Hydrate a category with computed fields
  */
+interface CategorySeoJson {
+  meta_title?: string | null;
+  meta_description?: string | null;
+  og_image?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  canonical?: string;
+  no_index?: boolean;
+  twitter_card?: string;
+}
+
+interface CategoryConfigJson {
+  posts_per_page?: number;
+  tldr?: string;
+  show_in_nav?: boolean;
+  show_in_footer?: boolean;
+  layout_mode?: string;
+  card_style?: string;
+  show_sidebar?: boolean;
+  show_filters?: boolean;
+  show_breadcrumb?: boolean;
+  show_pagination?: boolean;
+  article_sort_by?: string;
+  article_sort_order?: string;
+  header_style?: string;
+  featured_article_id?: number | string;
+  show_featured_recipe?: boolean;
+  show_hero_cta?: boolean;
+  hero_cta_text?: string;
+  hero_cta_link?: string;
+}
+
 export function hydrateCategory<T extends {
   images_json?: string | null;
   seo_json?: string | null;
@@ -376,56 +388,63 @@ export function hydrateCategory<T extends {
   slug: string;
 }>(category: T) {
   const image = extractImage(category.images_json);
-  const seo = extractSeo(category.seo_json);
-  const config = safeParseJson<Record<string, any>>(category.config_json);
-  const numEntriesPerPage = config?.postsPerPage;
+  const seo = safeParseJson<CategorySeoJson>(category.seo_json);
+  const config = safeParseJson<CategoryConfigJson>(category.config_json);
+  const postsPerPage = config?.posts_per_page;
   const tldr = config?.tldr;
-  const layoutMode = config?.layout;
-  const cardStyle = config?.cardStyle;
-  const showInNav = config?.showInNav;
-  const showInFooter = config?.showInFooter;
-  const showSidebar = config?.showSidebar;
-  const showFilters = config?.showFilters;
-  const showBreadcrumb = config?.showBreadcrumb;
-  const showPagination = config?.showPagination;
-  const sortBy = config?.sortBy;
-  const articleSortOrder = config?.sort_order;
-  const headerStyle = config?.headerStyle;
-  const featuredArticleIdRaw = config?.featuredArticleId ?? config?.featured_article_id;
+  const layoutMode = config?.layout_mode;
+  const cardStyle = config?.card_style;
+  const showInNav = config?.show_in_nav;
+  const showInFooter = config?.show_in_footer;
+  const showSidebar = config?.show_sidebar;
+  const showFilters = config?.show_filters;
+  const showBreadcrumb = config?.show_breadcrumb;
+  const showPagination = config?.show_pagination;
+  const articleSortBy = config?.article_sort_by;
+  const articleSortOrder = config?.article_sort_order;
+  const headerStyle = config?.header_style;
+  const featuredArticleIdRaw = config?.featured_article_id;
   const featuredArticleId = typeof featuredArticleIdRaw === 'number'
     ? featuredArticleIdRaw
     : typeof featuredArticleIdRaw === 'string'
       ? parseInt(featuredArticleIdRaw, 10)
       : undefined;
-  const showFeaturedRecipe = config?.showFeaturedRecipe ?? config?.show_featured_recipe;
-  const showHeroCta = config?.showHeroCta ?? config?.show_hero_cta;
-  const heroCtaText = config?.heroCtaText ?? config?.hero_cta_text;
-  const heroCtaLink = config?.heroCtaLink ?? config?.hero_cta_link;
+  const showFeaturedRecipe = config?.show_featured_recipe;
+  const showHeroCta = config?.show_hero_cta;
+  const heroCtaText = config?.hero_cta_text;
+  const heroCtaLink = config?.hero_cta_link;
   return {
     ...category,
     ...image,
-    ...seo,
+    ...(seo?.meta_title !== undefined ? { meta_title: seo.meta_title } : {}),
+    ...(seo?.meta_description !== undefined ? { meta_description: seo.meta_description } : {}),
+    ...(seo?.og_image !== undefined ? { og_image: seo.og_image } : {}),
+    ...(seo?.og_title !== undefined ? { og_title: seo.og_title } : {}),
+    ...(seo?.og_description !== undefined ? { og_description: seo.og_description } : {}),
+    ...(seo?.canonical !== undefined ? { canonical: seo.canonical } : {}),
+    ...(seo?.no_index !== undefined ? { no_index: seo.no_index } : {}),
+    ...(seo?.twitter_card !== undefined ? { twitter_card: seo.twitter_card } : {}),
     images_json: safeParseJson(category.images_json),
     seo_json: safeParseJson(category.seo_json),
     route: `/categories/${category.slug}`,
-    ...(typeof numEntriesPerPage === 'number' ? { numEntriesPerPage } : {}),
+    ...(typeof postsPerPage === 'number' ? { posts_per_page: postsPerPage } : {}),
     ...(typeof tldr === 'string' ? { tldr } : {}),
-    ...(layoutMode ? { layoutMode } : {}),
-    ...(cardStyle ? { cardStyle } : {}),
-    ...(typeof showInNav === 'boolean' ? { showInNav } : {}),
-    ...(typeof showInFooter === 'boolean' ? { showInFooter } : {}),
-    ...(typeof showSidebar === 'boolean' ? { showSidebar } : {}),
-    ...(typeof showFilters === 'boolean' ? { showFilters } : {}),
-    ...(typeof showBreadcrumb === 'boolean' ? { showBreadcrumb } : {}),
-    ...(typeof showPagination === 'boolean' ? { showPagination } : {}),
-    ...(sortBy ? { sortBy } : {}),
-    ...(articleSortOrder ? { articleSortOrder } : {}),
-    ...(headerStyle ? { headerStyle } : {}),
-    ...(Number.isFinite(featuredArticleId) ? { featuredArticleId: featuredArticleId as number } : {}),
-    ...(typeof showFeaturedRecipe === 'boolean' ? { showFeaturedRecipe } : {}),
-    ...(typeof showHeroCta === 'boolean' ? { showHeroCta } : {}),
-    ...(typeof heroCtaText === 'string' ? { heroCtaText } : {}),
-    ...(typeof heroCtaLink === 'string' ? { heroCtaLink } : {}),
+    ...(layoutMode ? { layout_mode: layoutMode } : {}),
+    ...(cardStyle ? { card_style: cardStyle } : {}),
+    ...(typeof showInNav === 'boolean' ? { show_in_nav: showInNav } : {}),
+    ...(typeof showInFooter === 'boolean' ? { show_in_footer: showInFooter } : {}),
+    ...(typeof showSidebar === 'boolean' ? { show_sidebar: showSidebar } : {}),
+    ...(typeof showFilters === 'boolean' ? { show_filters: showFilters } : {}),
+    ...(typeof showBreadcrumb === 'boolean' ? { show_breadcrumb: showBreadcrumb } : {}),
+    ...(typeof showPagination === 'boolean' ? { show_pagination: showPagination } : {}),
+    ...(articleSortBy ? { article_sort_by: articleSortBy } : {}),
+    ...(articleSortOrder ? { article_sort_order: articleSortOrder } : {}),
+    ...(headerStyle ? { header_style: headerStyle } : {}),
+    ...(Number.isFinite(featuredArticleId) ? { featured_article_id: featuredArticleId as number } : {}),
+    ...(typeof showFeaturedRecipe === 'boolean' ? { show_featured_recipe: showFeaturedRecipe } : {}),
+    ...(typeof showHeroCta === 'boolean' ? { show_hero_cta: showHeroCta } : {}),
+    ...(typeof heroCtaText === 'string' ? { hero_cta_text: heroCtaText } : {}),
+    ...(typeof heroCtaLink === 'string' ? { hero_cta_link: heroCtaLink } : {}),
   };
 }
 

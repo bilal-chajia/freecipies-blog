@@ -75,13 +75,9 @@ interface SettingsApiResponse {
     numbering?: boolean;
     collapsible?: boolean;
     default_open?: boolean;
-    defaultOpen?: boolean;
     show_jump_button?: boolean;
-    showJumpButton?: boolean;
     accent_color?: string;
-    accentColor?: string;
     max_depth?: number;
-    maxDepth?: number;
   };
 }
 
@@ -322,10 +318,10 @@ const Settings = () => {
             tocEnabled: toc.enabled ?? true,
             tocNumbering: toc.numbering ?? true,
             tocCollapsible: toc.collapsible ?? true,
-            tocDefaultOpen: toc.default_open ?? toc.defaultOpen ?? true,
-            tocShowJumpButton: toc.show_jump_button ?? toc.showJumpButton ?? true,
-            tocAccentColor: toc.accent_color ?? toc.accentColor ?? 'hsl(var(--primary))',
-            tocMaxDepth: toc.max_depth ?? toc.maxDepth ?? 4,
+            tocDefaultOpen: toc.default_open ?? true,
+            tocShowJumpButton: toc.show_jump_button ?? true,
+            tocAccentColor: toc.accent_color ?? 'hsl(var(--primary))',
+            tocMaxDepth: toc.max_depth ?? 4,
           }));
         }
       })

@@ -199,7 +199,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 600, "hero");
 const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 600px) 100vw, (max-width: 1024px) 50vw, 25vw";
                 const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
-                const cookTime = cachedRecipe?.cook_time_minutes ?? cachedRecipe?.cookTimeMinutes ?? null;
+                const cookTime = cachedRecipe?.cook_time_minutes ?? null;
                 return (
                 <article class="foxiz-card">
                   <a href={getRecipeUrl(recipe)} class="foxiz-card-image">
@@ -368,7 +368,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
 const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 768px) 50vw, 25vw";
                 const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
-                const prepTime = cachedRecipe?.prep_time_minutes ?? cachedRecipe?.prepTimeMinutes ?? null;
+                const prepTime = cachedRecipe?.prep_time_minutes ?? null;
                 return (
                 <a href={getRecipeUrl(recipe)} class="recipe-card-vertical">
                   <div class="card-image-wrapper">

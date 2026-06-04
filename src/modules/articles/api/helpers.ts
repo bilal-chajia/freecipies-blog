@@ -41,14 +41,14 @@ const normalizeSeoJson = (value: any): StoredSeoJson => {
     if (!value || typeof value !== 'object') return {};
 
     return {
-        meta_title: value.meta_title ?? value.metaTitle ?? null,
-        meta_description: value.meta_description ?? value.metaDescription ?? null,
-        no_index: Boolean(value.no_index ?? value.noIndex ?? false),
-        canonical: value.canonical ?? value.canonicalUrl ?? null,
-        og_image: value.og_image ?? value.ogImage ?? null,
-        og_title: value.og_title ?? value.ogTitle ?? null,
-        og_description: value.og_description ?? value.ogDescription ?? null,
-        twitter_card: value.twitter_card ?? value.twitterCard ?? 'summary_large_image',
+        meta_title: value.meta_title ?? null,
+        meta_description: value.meta_description ?? null,
+        no_index: Boolean(value.no_index ?? false),
+        canonical: value.canonical ?? null,
+        og_image: value.og_image ?? null,
+        og_title: value.og_title ?? null,
+        og_description: value.og_description ?? null,
+        twitter_card: value.twitter_card ?? 'summary_large_image',
     };
 };
 
@@ -124,26 +124,25 @@ export function transformArticleRequestBody(body: any): any {
     if (body.seo_json !== undefined) {
         transformed.seo_json = normalizeSeoJson(transformed.seo_json);
     } else if (
-        body.metaTitle ||
-        body.metaDescription ||
-        body.noIndex ||
-        body.canonical ||
-        body.canonicalUrl ||
-        body.ogImage ||
-        body.ogTitle ||
-        body.ogDescription ||
-        body.twitterCard
+        body.metaTitle !== undefined ||
+        body.metaDescription !== undefined ||
+        body.noIndex !== undefined ||
+        body.canonical !== undefined ||
+        body.canonicalUrl !== undefined ||
+        body.ogImage !== undefined ||
+        body.ogTitle !== undefined ||
+        body.ogDescription !== undefined ||
+        body.twitterCard !== undefined
     ) {
         transformed.seo_json = normalizeSeoJson({
-            metaTitle: body.metaTitle,
-            metaDescription: body.metaDescription,
-            noIndex: body.noIndex,
-            canonical: body.canonical,
-            canonicalUrl: body.canonicalUrl,
-            ogImage: body.ogImage,
-            ogTitle: body.ogTitle,
-            ogDescription: body.ogDescription,
-            twitterCard: body.twitterCard,
+            meta_title: body.metaTitle,
+            meta_description: body.metaDescription,
+            no_index: body.noIndex,
+            canonical: body.canonical ?? body.canonicalUrl,
+            og_image: body.ogImage,
+            og_title: body.ogTitle,
+            og_description: body.ogDescription,
+            twitter_card: body.twitterCard,
         });
     }
 

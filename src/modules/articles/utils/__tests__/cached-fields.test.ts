@@ -41,7 +41,7 @@ describe('cached-fields helpers', () => {
   });
 
   describe('getReadingTimeDisplay', () => {
-    it('prefers reading_time_minutes or reading_time_minutes when present', () => {
+    it('prefers reading_time_minutes when present', () => {
       expect(getReadingTimeDisplay({ reading_time_minutes: 8 })).toBe(8);
       expect(getReadingTimeDisplay({ reading_time_minutes: 12 })).toBe(12);
     });

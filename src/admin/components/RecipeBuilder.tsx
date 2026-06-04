@@ -105,15 +105,15 @@ const defaultRecipe: EditableRecipeJson = {
     total: null,
     // Yield & Servings
     servings: null,
-    recipeYield: null,
+    recipe_yield: null,
     // Classification
-    recipeCategory: null,
-    recipeCuisine: null,
+    recipe_category: null,
+    recipe_cuisine: null,
     difficulty: null,
-    cookingMethod: null,
-    estimatedCost: null,
+    cooking_method: null,
+    estimated_cost: null,
     keywords: [],
-    suitableForDiet: [],
+    suitable_for_diet: [],
     // Structured content — user adds groups as needed
     ingredients: [],
     instructions: [],
@@ -121,7 +121,7 @@ const defaultRecipe: EditableRecipeJson = {
     // Nutrition — null = not yet provided
     nutrition: null,
     // Social proof — null = no ratings yet
-    aggregateRating: null,
+    aggregate_rating: null,
     // Equipment & Video
     equipment: [],
     video: null,
@@ -132,7 +132,7 @@ const defaultRecipe: EditableRecipeJson = {
  * Mirrors migrateRecipeJson() from recipes.types.ts but for JS runtime.
  * 
  * Handles: flat string ingredients, old `group` key, ISO time strings,
- * old field names (course→recipeCategory, cuisine→recipeCuisine).
+ * old field names (course→recipe_category, cuisine→recipe_cuisine).
  */
 function migrateRecipeData(parsed: Record<string, unknown>): EditableRecipeJson {
     return migrateRecipeJson(parsed as Parameters<typeof migrateRecipeJson>[0]) as EditableRecipeJson;
@@ -264,7 +264,7 @@ export default function RecipeBuilder({ value, onChange, imagesData, onImagesCha
         if (newIngredients[groupIndex]) {
             newIngredients[groupIndex] = {
                 ...newIngredients[groupIndex],
-                items: [...(newIngredients[groupIndex].items || []), { name: '', amount: 0, unit: '' }]
+                items: [...(newIngredients[groupIndex].items || []), { name: '', amount: 0, unit: '', is_optional: false }]
             };
         }
         updateData({ ingredients: newIngredients });
@@ -460,9 +460,9 @@ export default function RecipeBuilder({ value, onChange, imagesData, onImagesCha
     // --- Rating ---
     const handleRatingChange = (field: RatingField, val: string) => {
         const num = val === '' ? 0 : parseFloat(val);
-        const currentRating = data.aggregateRating || { ratingValue: 5, ratingCount: 1 };
+        const currentRating = data.aggregate_rating || { rating_value: 5, rating_count: 1 };
         updateData({
-            aggregateRating: {
+            aggregate_rating: {
                 ...currentRating,
                 [field]: isNaN(num) ? 0 : num
             }
@@ -602,7 +602,7 @@ export default function RecipeBuilder({ value, onChange, imagesData, onImagesCha
                             {data.total != null && <span>⏰ Total: {data.total}m</span>}
                             {data.servings != null && <span>🍽️ {data.servings} servings</span>}
                             {data.difficulty && <span>📊 {data.difficulty}</span>}
-                            {data.recipeCuisine && <span>🌍 {data.recipeCuisine}</span>}
+                            {data.recipe_cuisine && <span>🌍 {data.recipe_cuisine}</span>}
                             {(!data.prep && !data.cook && !data.servings && !data.difficulty) && (
                                 <span className="italic">Select this block to configure recipe details in the sidebar →</span>
                             )}
@@ -623,15 +623,15 @@ export default function RecipeBuilder({ value, onChange, imagesData, onImagesCha
                                     step="0.1"
                                     min="0"
                                     max="5"
-                                    value={data.aggregateRating?.ratingValue ?? ''}
-                                    onChange={(e) => handleRatingChange('ratingValue', e.target.value)}
+                                    value={data.aggregate_rating?.rating_value ?? ''}
+                                    onChange={(e) => handleRatingChange('rating_value', e.target.value)}
                                     placeholder="4.8"
                                     className="w-24 font-bold text-lg"
                                 />
                                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                                     <div 
                                         className="h-full bg-primary" 
-                                        style={{ width: `${(data.aggregateRating?.ratingValue || 0) * 20}%` }}
+                                        style={{ width: `${(data.aggregate_rating?.rating_value || 0) * 20}%` }}
                                     />
                                 </div>
                             </div>
@@ -643,8 +643,8 @@ export default function RecipeBuilder({ value, onChange, imagesData, onImagesCha
                                 name="recipe_rating_count"
                                 type="number"
                                 min="0"
-                                value={data.aggregateRating?.ratingCount ?? ''}
-                                onChange={(e) => handleRatingChange('ratingCount', e.target.value)}
+                                value={data.aggregate_rating?.rating_count ?? ''}
+                                onChange={(e) => handleRatingChange('rating_count', e.target.value)}
                                 placeholder="24"
                                 className="font-mono"
                             />
@@ -729,8 +729,8 @@ export default function RecipeBuilder({ value, onChange, imagesData, onImagesCha
                                             />
                                             <label className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0 cursor-pointer select-none">
                                                 <Checkbox
-                                                    checked={ing.isOptional ?? false}
-                                                    onCheckedChange={(checked) => updateIngredient(groupIndex, index, 'isOptional', checked === true)}
+                                                    checked={ing.is_optional ?? false}
+                                                    onCheckedChange={(checked) => updateIngredient(groupIndex, index, 'is_optional', checked === true)}
                                                 />
                                                 Optional
                                             </label>

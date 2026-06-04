@@ -63,7 +63,7 @@ const { ingredients } = Astro.props;
                     )}
                     <span class="name">{item.name}</span>
                     {item.prep && <span class="prep">, {item.prep}</span>}
-                    {item.isOptional && (
+                    {item.is_optional && (
                       <span class="optional">(optional)</span>
                     )}
                   </span>

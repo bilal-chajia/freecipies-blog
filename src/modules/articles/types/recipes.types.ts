@@ -132,7 +132,7 @@ export interface IngredientSubstitute {
  * the servings count in RecipeCard.
  * 
  * **Frontend rendering (IngredientsSection.astro) already supports:**
- * `amount`, `unit`, `name`, `prep`, `notes`, `isOptional`
+ * `amount`, `unit`, `name`, `prep`, `notes`, `is_optional`
  * 
  * @see IngredientsSection.astro — renders all fields
  * @see formatIngredient() — converts to string for JSON-LD
@@ -174,7 +174,7 @@ export interface IngredientItem {
     notes?: string;
 
     /** Whether this ingredient is optional — shown as "(optional)" tag */
-    isOptional?: boolean;
+    is_optional: boolean;
 
     /** Alternative ingredients for the substitutions feature */
     substitutes?: IngredientSubstitute[];
@@ -313,27 +313,30 @@ export interface EquipmentItem {
  * RecipeCard.astro renders this as an embedded iframe in a "Video Tutorial" section.
  */
 export interface RecipeVideo {
-    /** Video URL (YouTube, Vimeo, or direct MP4) */
-    url: string;
-
     /** Video title — used for iframe title attribute and JSON-LD */
     name: string;
 
     /** Video description for JSON-LD */
-    description?: string;
+    description?: string | null;
 
-    /** Thumbnail image URL — used in JSON-LD VideoObject */
-    thumbnail_url?: string;
+    /** Thumbnail image snapshot — used in JSON-LD VideoObject */
+    thumbnail?: Record<string, unknown> | null;
+
+    /** Crawlable self-hosted video URL */
+    content_url: string | null;
+
+    /** Player embed URL */
+    embed_url: string | null;
 
     /**
      * Duration in ISO-8601 format for JSON-LD.
      * @example "PT2M30S" (2 minutes 30 seconds)
      * @example "PT10M" (10 minutes)
      */
-    duration: string;
+    duration: string | null;
 
     /** Upload date in ISO-8601 format @example "2024-01-15" */
-    uploadDate?: string;
+    upload_date?: string | null;
 }
 
 
@@ -347,14 +350,14 @@ export interface RecipeVideo {
  * Rendered as star rating in RecipeCard.astro header.
  * Maps to Schema.org AggregateRating in JSON-LD.
  * 
- * Only shown when `ratingValue > 0` and `ratingCount > 0`.
+ * Only shown when `rating_value > 0` and `rating_count > 0`.
  */
 export interface AggregateRating {
     /** Average rating value (1-5 scale) @example 4.8 */
-    ratingValue: number | null;
+    rating_value: number | null;
 
     /** Number of ratings/votes @example 55 */
-    ratingCount: number;
+    rating_count: number;
 }
 
 
@@ -454,7 +457,7 @@ export interface RecipeJson {
      * Different from `servings` — this is descriptive text.
      * @example "12 cookies", "2 loaves", "Serves 4-6"
      */
-    recipeYield: string | null;
+    recipe_yield: string | null;
 
     // ── Classification ────────────────────────────
 
@@ -463,14 +466,14 @@ export interface RecipeJson {
      * Shown as "Course: Dessert" pill in RecipeCard header.
      * @example "Dessert", "Breakfast", "Main Course", "Appetizer"
      */
-    recipeCategory: string | null;
+    recipe_category: string | null;
 
     /**
      * Cuisine type for JSON-LD `recipeCuisine`.
      * Shown as globe icon pill in RecipeMetaPills.
      * @example "Italian", "Mexican", "French", "Japanese"
      */
-    recipeCuisine: string | null;
+    recipe_cuisine: string | null;
 
     /**
      * SEO keywords for JSON-LD `keywords`.
@@ -483,7 +486,7 @@ export interface RecipeJson {
      * Rendered as colored badges in RecipeCard (VeganDiet → green, etc.)
      * Limited to first 2 in RecipeMetaPills compact view.
      */
-    suitableForDiet: DietType[];
+    suitable_for_diet: DietType[];
 
     /**
      * Recipe difficulty level.
@@ -496,14 +499,14 @@ export interface RecipeJson {
      * Cooking method for JSON-LD `cookingMethod`.
      * @example "Baking", "Grilling", "Frying", "Slow cooking", "No-cook"
      */
-    cookingMethod: string | null;
+    cooking_method: string | null;
 
     /**
      * Estimated cost level for filtering.
      * Synced to `cached_recipe_json.estimated_cost`; budget flags are derived
      * into `cached_recipe_json.badges.is_budget`.
      */
-    estimatedCost: CostLevel | null;
+    estimated_cost: CostLevel | null;
 
     // ── Structured Content (Core Recipe Data) ─────
 
@@ -542,7 +545,7 @@ export interface RecipeJson {
      * Aggregate rating — rendered as star rating in RecipeCard.
      * Maps to Schema.org AggregateRating in JSON-LD.
      */
-    aggregateRating: AggregateRating | null;
+    aggregate_rating: AggregateRating | null;
 
     // ── Equipment ─────────────────────────────────
 
@@ -584,19 +587,19 @@ export const DEFAULT_RECIPE_JSON: RecipeJson = {
     cook: null,
     total: null,
     servings: null,
-    recipeYield: null,
-    recipeCategory: null,
-    recipeCuisine: null,
+    recipe_yield: null,
+    recipe_category: null,
+    recipe_cuisine: null,
     keywords: [],
-    suitableForDiet: [],
+    suitable_for_diet: [],
     difficulty: null,
-    cookingMethod: null,
-    estimatedCost: null,
+    cooking_method: null,
+    estimated_cost: null,
     ingredients: [],
     instructions: [],
     tips: [],
     nutrition: null,
-    aggregateRating: null,
+    aggregate_rating: null,
     equipment: [],
     video: null,
 };
@@ -665,7 +668,7 @@ export function isoDurationToMinutes(duration: string | null | undefined): numbe
  * // → "2 cups flour, sifted"
  * 
  * @example
- * formatIngredient({ amount: 0.5, unit: "tsp", name: "salt", isOptional: true })
+ * formatIngredient({ amount: 0.5, unit: "tsp", name: "salt", is_optional: true })
  * // → "0.5 tsp salt (optional)"
  */
 export function formatIngredient(item: IngredientItem): string {
@@ -686,7 +689,7 @@ export function formatIngredient(item: IngredientItem): string {
     if (item.notes) parts.push(`(${item.notes})`);
 
     let result = parts.join(' ');
-    if (item.isOptional) result += ' (optional)';
+    if (item.is_optional) result += ' (optional)';
 
     return result;
 }
@@ -787,7 +790,7 @@ export function toSchemaOrgInstructions(
  * 1. ISO-8601 time strings (`prepTime: "PT15M"`) → numeric minutes (`prep: 15`)
  * 2. Flat string ingredients (`["2 cups flour"]`) → structured IngredientGroup
  * 3. Old `group` key → `group_title` key
- * 4. Old `course` / `cuisine` keys → `recipeCategory` / `recipeCuisine`
+ * 4. Old `course` / `cuisine` keys → `recipe_category` / `recipe_cuisine`
  * 5. Legacy camelCase nutrition (`fatContent`, `servingSize`, …) and old
  *    top-level `calories` → canonical snake_case `nutrition` payload.
  *
@@ -927,11 +930,36 @@ export function migrateRecipeJson(raw: Record<string, any>): RecipeJson {
     }
 
     // ── Migrate old field names ──
-    if (!result.recipeCategory && raw.course) {
-        result.recipeCategory = raw.course;
+    if (!result.recipe_yield && typeof raw.recipeYield === 'string') {
+        result.recipe_yield = raw.recipeYield;
     }
-    if (!result.recipeCuisine && raw.cuisine) {
-        result.recipeCuisine = raw.cuisine;
+    if (!result.recipe_category && typeof raw.recipeCategory === 'string') {
+        result.recipe_category = raw.recipeCategory;
+    }
+    if (!result.recipe_category && raw.course) {
+        result.recipe_category = raw.course;
+    }
+    if (!result.recipe_cuisine && typeof raw.recipeCuisine === 'string') {
+        result.recipe_cuisine = raw.recipeCuisine;
+    }
+    if (!result.recipe_cuisine && raw.cuisine) {
+        result.recipe_cuisine = raw.cuisine;
+    }
+    if (!result.cooking_method && typeof raw.cookingMethod === 'string') {
+        result.cooking_method = raw.cookingMethod;
+    }
+    if (!result.estimated_cost && typeof raw.estimatedCost === 'string') {
+        result.estimated_cost = raw.estimatedCost as CostLevel;
+    }
+    if (result.aggregate_rating === null && raw.aggregateRating && typeof raw.aggregateRating === 'object') {
+        const rating = raw.aggregateRating as Record<string, unknown>;
+        result.aggregate_rating = {
+            rating_value: firstNumber(rating.ratingValue) ?? null,
+            rating_count: firstNumber(rating.ratingCount) ?? 0,
+        };
+    }
+    if ((!Array.isArray(result.suitable_for_diet) || result.suitable_for_diet.length === 0) && Array.isArray(raw.suitableForDiet)) {
+        result.suitable_for_diet = raw.suitableForDiet as DietType[];
     }
 
     // ── Migrate ingredients ──
@@ -945,23 +973,29 @@ export function migrateRecipeJson(raw: Record<string, any>): RecipeJson {
                 name: text,
                 amount: 0,
                 unit: '',
-                isOptional: false,
+                is_optional: false,
             })),
         }];
     } else {
-        // Ensure all groups have group_title instead of group, and map isOptional correctly
+        // Ensure all groups have group_title instead of group, and map is_optional correctly
         ingredients = ingredients.map((g: any) => {
             if (g && typeof g === 'object') {
                 return {
                     group_title: g.group_title || g.group || 'Ingredients',
                     items: (g.items || []).map((item: any) => {
                         if (typeof item === 'string') {
-                            return { name: item, amount: 0, unit: '', isOptional: false };
+                            return { name: item, amount: 0, unit: '', is_optional: false };
                         }
                         if (item && typeof item === 'object') {
                             return {
-                                ...item,
-                                isOptional: item.isOptional ?? item.is_optional ?? false,
+                                id: item.id,
+                                amount: item.amount ?? 0,
+                                unit: item.unit ?? '',
+                                name: item.name ?? '',
+                                prep: item.prep,
+                                notes: item.notes,
+                                is_optional: item.is_optional ?? item.isOptional ?? false,
+                                substitutes: item.substitutes ?? [],
                             };
                         }
                         return item;
@@ -1002,9 +1036,22 @@ export function migrateRecipeJson(raw: Record<string, any>): RecipeJson {
 
     // ── Ensure arrays are never undefined ──
     result.keywords = result.keywords || [];
-    result.suitableForDiet = result.suitableForDiet || [];
+    result.suitable_for_diet = result.suitable_for_diet || [];
     result.tips = result.tips || [];
     result.equipment = migrateEquipment(raw.equipment);
+
+    if (result.video && typeof result.video === 'object') {
+        const video = result.video as unknown as Record<string, unknown>;
+        result.video = {
+            name: typeof video.name === 'string' ? video.name : '',
+            description: typeof video.description === 'string' ? video.description : null,
+            thumbnail: video.thumbnail && typeof video.thumbnail === 'object' ? video.thumbnail as Record<string, unknown> : null,
+            content_url: typeof video.content_url === 'string' ? video.content_url : typeof video.contentUrl === 'string' ? video.contentUrl : null,
+            embed_url: typeof video.embed_url === 'string' ? video.embed_url : typeof video.embedUrl === 'string' ? video.embedUrl : typeof video.url === 'string' ? video.url : null,
+            duration: typeof video.duration === 'string' ? video.duration : null,
+            upload_date: typeof video.upload_date === 'string' ? video.upload_date : typeof video.uploadDate === 'string' ? video.uploadDate : null,
+        };
+    }
 
     // ── Clean up legacy keys from the spread ──
     delete (result as any).prepTime;
@@ -1013,6 +1060,13 @@ export function migrateRecipeJson(raw: Record<string, any>): RecipeJson {
     delete (result as any).course;
     delete (result as any).cuisine;
     delete (result as any).calories;
+    delete (result as any).recipeYield;
+    delete (result as any).recipeCategory;
+    delete (result as any).recipeCuisine;
+    delete (result as any).suitableForDiet;
+    delete (result as any).cookingMethod;
+    delete (result as any).estimatedCost;
+    delete (result as any).aggregateRating;
 
     return result;
 }

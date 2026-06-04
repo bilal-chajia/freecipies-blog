@@ -20,8 +20,8 @@ interface AuthorSidebarProps {
   onImageChange: (key: string, value: unknown) => void;
   onImageRemove: (key: string) => void;
   onMediaDialogOpen: (type: string) => void;
-  seoData?: { metaTitle?: string; metaDescription?: string; canonicalUrl?: string; keywords?: string[] };
-  onSeoChange: (data: { metaTitle?: string; metaDescription?: string; canonicalUrl?: string; keywords?: string[] }) => void;
+  seoData?: { metaTitle?: string; metaDescription?: string; canonicalUrl?: string };
+  onSeoChange: (data: { metaTitle?: string; metaDescription?: string; canonicalUrl?: string }) => void;
   socialLinks?: Record<string, string>;
   onSocialChange: (links: Record<string, string>) => void;
 }

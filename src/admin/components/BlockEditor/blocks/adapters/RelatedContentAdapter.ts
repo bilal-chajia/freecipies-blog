@@ -58,12 +58,11 @@ function readString(value: unknown): string | null {
 function normalizeRelatedContentItem(value: unknown): RelatedContentItem | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
     const item = value as Record<string, unknown>;
-    const article_id = readNumber(item.article_id) ?? readNumber(item.article_id) ?? readNumber(item.id);
+    const article_id = readNumber(item.article_id) ?? readNumber(item.id);
     if (!article_id) return null;
 
     const snapshot =
         parseJsonObject(item.snapshot)
-        ?? parseJsonObject(item.cached_card_json)
         ?? parseJsonObject(item.cached_card_json);
 
     if (snapshot) {

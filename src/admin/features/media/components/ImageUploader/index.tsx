@@ -92,7 +92,7 @@ function buildAuthorCreditSnapshot(author: AuthorRecord | undefined): CreditSnap
     slug: author.slug,
   };
 
-  const images = parseImagesJson(author.images_json ?? author.images_json);
+  const images = parseImagesJson(author.images_json);
   const avatar = images.avatar as Record<string, unknown> | undefined;
   const xs = (avatar?.variants as Record<string, unknown> | undefined)?.xs as Record<string, unknown> | undefined;
   const sm = (avatar?.variants as Record<string, unknown> | undefined)?.sm as Record<string, unknown> | undefined;

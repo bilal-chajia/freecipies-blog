@@ -39,11 +39,11 @@ const image = {
 const cachedRecipe = parseCachedRecipe(article.cached_recipe_json);
 const cachedRating = parseCachedRating(article.cached_rating_json);
 
-const ratingValue = cachedRating?.rating_value ?? cachedRating?.ratingValue ?? null;
-const ratingCount = cachedRating?.rating_count ?? cachedRating?.ratingCount ?? 0;
+const ratingValue = cachedRating?.rating_value ?? null;
+const ratingCount = cachedRating?.rating_count ?? 0;
 const hasRating = ratingValue !== null && ratingCount > 0;
 
-const prep = cachedRecipe?.prep_time_minutes ?? cachedRecipe?.prepTimeMinutes ?? null;
+const prep = cachedRecipe?.prep_time_minutes ?? null;
 const recipe = cachedRecipe ? { prep } : null;
 const authorLabel = article.authorName || article.authorSlug || "Unknown";
 const showBookmark = article.type === "recipe";

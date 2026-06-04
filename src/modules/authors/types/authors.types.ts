@@ -55,7 +55,7 @@ export interface SeoJson {
   meta_title?: string | null;
   meta_description?: string | null;
   no_index?: boolean;
-  canonical?: string;
+  canonical?: string | null;
   og_image?: string | null;
   og_title?: string | null;
   og_description?: string | null;
@@ -74,9 +74,9 @@ export interface FlatAuthorImages {
 }
 
 export interface FlatAuthorSeo {
-  metaTitle?: string;
-  metaDescription?: string;
-  canonicalUrl?: string;
+  meta_title?: string;
+  meta_description?: string;
+  canonical?: string | null;
 }
 
 // ============================================
@@ -135,10 +135,10 @@ export function imagesJsonToFlat(images_json: string | null): FlatAuthorImages {
  */
 export function flatToSeoJson(flat: FlatAuthorSeo): string {
   const seo: SeoJson = {
-    meta_title: flat.metaTitle ?? null,
-    meta_description: flat.metaDescription ?? null,
+    meta_title: flat.meta_title ?? null,
+    meta_description: flat.meta_description ?? null,
     no_index: false,
-    canonical: flat.canonicalUrl,
+    canonical: flat.canonical,
     og_image: null,
     og_title: null,
     og_description: null,
@@ -155,11 +155,11 @@ export function seoJsonToFlat(seo_json: string | null): FlatAuthorSeo {
   if (!seo_json) return {};
 
   try {
-    const seo: SeoJson & Record<string, unknown> = JSON.parse(seo_json);
+    const seo: SeoJson = JSON.parse(seo_json);
     return {
-      metaTitle: (seo.meta_title ?? seo.metaTitle) as string | undefined,
-      metaDescription: (seo.meta_description ?? seo.metaDescription) as string | undefined,
-      canonicalUrl: seo.canonical,
+      meta_title: seo.meta_title ?? undefined,
+      meta_description: seo.meta_description ?? undefined,
+      canonical: seo.canonical,
     };
   } catch {
     return {};

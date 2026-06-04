@@ -19,24 +19,24 @@ interface SeoJson {
 }
 
 interface ConfigJson {
-  postsPerPage?: number;
+  posts_per_page?: number;
   tldr?: string;
-  showInNav?: boolean;
-  showInFooter?: boolean;
-  layout?: 'grid' | 'list' | 'masonry';
-  cardStyle?: 'compact' | 'full' | 'minimal';
-  showSidebar?: boolean;
-  showFilters?: boolean;
-  showBreadcrumb?: boolean;
-  showPagination?: boolean;
-  sortBy?: 'published_at' | 'title' | 'view_count';
-  sort_order?: 'asc' | 'desc';
-  headerStyle?: 'hero' | 'minimal' | 'none';
-  featuredArticleId?: number;
-  showFeaturedRecipe?: boolean;
-  showHeroCta?: boolean;
-  heroCtaText?: string;
-  heroCtaLink?: string;
+  show_in_nav?: boolean;
+  show_in_footer?: boolean;
+  layout_mode?: 'grid' | 'list' | 'masonry';
+  card_style?: 'compact' | 'full' | 'minimal';
+  show_sidebar?: boolean;
+  show_filters?: boolean;
+  show_breadcrumb?: boolean;
+  show_pagination?: boolean;
+  article_sort_by?: 'published_at' | 'title' | 'view_count';
+  article_sort_order?: 'asc' | 'desc';
+  header_style?: 'hero' | 'minimal' | 'none';
+  featured_article_id?: number;
+  show_featured_recipe?: boolean;
+  show_hero_cta?: boolean;
+  hero_cta_text?: string;
+  hero_cta_link?: string;
 }
 
 const getBestVariant = (variants?: ImageVariants) => {
@@ -68,8 +68,8 @@ const normalizeImageVariant = (variant: any) => {
     r2_key: r2Key,
     width,
     height,
-    ...(Number.isFinite(Number(variant.size_bytes ?? variant.sizeBytes))
-      ? { size_bytes: Number(variant.size_bytes ?? variant.sizeBytes) }
+    ...(Number.isFinite(Number(variant.size_bytes))
+      ? { size_bytes: Number(variant.size_bytes) }
       : {}),
   };
 };
@@ -111,55 +111,46 @@ const normalizeSeoJsonObject = (value: any): SeoJson => {
   if (!value || typeof value !== 'object') return {};
 
   return {
-    meta_title: value.meta_title ?? value.metaTitle ?? null,
-    meta_description: value.meta_description ?? value.metaDescription ?? null,
-    no_index: Boolean(value.no_index ?? value.noIndex ?? false),
-    canonical: value.canonical ?? value.canonicalUrl,
-    og_image: value.og_image ?? value.ogImage ?? null,
-    og_title: value.og_title ?? value.ogTitle ?? null,
-    og_description: value.og_description ?? value.ogDescription ?? null,
-    twitter_card: value.twitter_card ?? value.twitterCard ?? 'summary_large_image',
+    meta_title: value.meta_title ?? null,
+    meta_description: value.meta_description ?? null,
+    no_index: Boolean(value.no_index ?? false),
+    canonical: value.canonical,
+    og_image: value.og_image ?? null,
+    og_title: value.og_title ?? null,
+    og_description: value.og_description ?? null,
+    twitter_card: value.twitter_card ?? 'summary_large_image',
   };
-};
-
-const getSeoValue = <T = unknown>(seo: SeoJson, snakeKey: keyof SeoJson, camelKey: string): T | undefined => {
-  const legacy = seo as Record<string, unknown>;
-  return (seo[snakeKey] ?? legacy[camelKey]) as T | undefined;
 };
 
 const normalizeConfigJsonObject = (value: any): ConfigJson => {
   if (!value || typeof value !== 'object') return {};
 
-  const postsPerPage = value.postsPerPage ?? value.numEntriesPerPage ?? value.entriesPerPage;
-  const layout = value.layout ?? value.layoutMode;
-  const featuredArticleIdRaw = value.featuredArticleId ?? value.featured_article_id;
+  const featuredArticleIdRaw = value.featured_article_id;
   const featuredArticleId = typeof featuredArticleIdRaw === 'number'
     ? featuredArticleIdRaw
     : typeof featuredArticleIdRaw === 'string'
       ? parseInt(featuredArticleIdRaw, 10)
       : undefined;
-  const showFeaturedRecipe = value.showFeaturedRecipe ?? value.show_featured_recipe;
-  const showHeroCta = value.showHeroCta ?? value.show_hero_cta;
   const normalized: ConfigJson = {};
 
-  if (typeof postsPerPage === 'number') normalized.postsPerPage = postsPerPage;
+  if (typeof value.posts_per_page === 'number') normalized.posts_per_page = value.posts_per_page;
   if (typeof value.tldr === 'string') normalized.tldr = value.tldr;
-  if (typeof value.showInNav === 'boolean') normalized.showInNav = value.showInNav;
-  if (typeof value.showInFooter === 'boolean') normalized.showInFooter = value.showInFooter;
-  if (typeof layout === 'string') normalized.layout = layout as ConfigJson['layout'];
-  if (typeof value.cardStyle === 'string') normalized.cardStyle = value.cardStyle as ConfigJson['cardStyle'];
-  if (typeof value.showSidebar === 'boolean') normalized.showSidebar = value.showSidebar;
-  if (typeof value.showFilters === 'boolean') normalized.showFilters = value.showFilters;
-  if (typeof value.showBreadcrumb === 'boolean') normalized.showBreadcrumb = value.showBreadcrumb;
-  if (typeof value.showPagination === 'boolean') normalized.showPagination = value.showPagination;
-  if (typeof value.sortBy === 'string') normalized.sortBy = value.sortBy as ConfigJson['sortBy'];
-  if (typeof value.sort_order === 'string') normalized.sort_order = value.sort_order as ConfigJson['sort_order'];
-  if (typeof value.headerStyle === 'string') normalized.headerStyle = value.headerStyle as ConfigJson['headerStyle'];
-  if (Number.isFinite(featuredArticleId)) normalized.featuredArticleId = featuredArticleId as number;
-  if (typeof showFeaturedRecipe === 'boolean') normalized.showFeaturedRecipe = showFeaturedRecipe;
-  if (typeof showHeroCta === 'boolean') normalized.showHeroCta = showHeroCta;
-  if (typeof value.heroCtaText === 'string') normalized.heroCtaText = value.heroCtaText;
-  if (typeof value.heroCtaLink === 'string') normalized.heroCtaLink = value.heroCtaLink;
+  if (typeof value.show_in_nav === 'boolean') normalized.show_in_nav = value.show_in_nav;
+  if (typeof value.show_in_footer === 'boolean') normalized.show_in_footer = value.show_in_footer;
+  if (typeof value.layout_mode === 'string') normalized.layout_mode = value.layout_mode as ConfigJson['layout_mode'];
+  if (typeof value.card_style === 'string') normalized.card_style = value.card_style as ConfigJson['card_style'];
+  if (typeof value.show_sidebar === 'boolean') normalized.show_sidebar = value.show_sidebar;
+  if (typeof value.show_filters === 'boolean') normalized.show_filters = value.show_filters;
+  if (typeof value.show_breadcrumb === 'boolean') normalized.show_breadcrumb = value.show_breadcrumb;
+  if (typeof value.show_pagination === 'boolean') normalized.show_pagination = value.show_pagination;
+  if (typeof value.article_sort_by === 'string') normalized.article_sort_by = value.article_sort_by as ConfigJson['article_sort_by'];
+  if (typeof value.article_sort_order === 'string') normalized.article_sort_order = value.article_sort_order as ConfigJson['article_sort_order'];
+  if (typeof value.header_style === 'string') normalized.header_style = value.header_style as ConfigJson['header_style'];
+  if (Number.isFinite(featuredArticleId)) normalized.featured_article_id = featuredArticleId as number;
+  if (typeof value.show_featured_recipe === 'boolean') normalized.show_featured_recipe = value.show_featured_recipe;
+  if (typeof value.show_hero_cta === 'boolean') normalized.show_hero_cta = value.show_hero_cta;
+  if (typeof value.hero_cta_text === 'string') normalized.hero_cta_text = value.hero_cta_text;
+  if (typeof value.hero_cta_link === 'string') normalized.hero_cta_link = value.hero_cta_link;
 
   return normalized;
 };
@@ -263,11 +254,11 @@ export function transformCategoryRequestBody(body: any): any {
   const configOverrides: Record<string, any> = {};
 
   if (body.numEntriesPerPage !== undefined) {
-    configOverrides.postsPerPage = body.numEntriesPerPage;
+    configOverrides.posts_per_page = body.numEntriesPerPage;
     delete transformed.numEntriesPerPage;
   }
   if (body.postsPerPage !== undefined) {
-    configOverrides.postsPerPage = body.postsPerPage;
+    configOverrides.posts_per_page = body.postsPerPage;
     delete transformed.postsPerPage;
   }
   if (body.tldr !== undefined) {
@@ -275,74 +266,74 @@ export function transformCategoryRequestBody(body: any): any {
     delete transformed.tldr;
   }
   if (body.showInNav !== undefined) {
-    configOverrides.showInNav = body.showInNav;
+    configOverrides.show_in_nav = body.showInNav;
     delete transformed.showInNav;
   }
   if (body.showInFooter !== undefined) {
-    configOverrides.showInFooter = body.showInFooter;
+    configOverrides.show_in_footer = body.showInFooter;
     delete transformed.showInFooter;
   }
   if (body.layout !== undefined) {
-    configOverrides.layout = body.layout;
+    configOverrides.layout_mode = body.layout;
     delete transformed.layout;
   }
   if (body.layoutMode !== undefined) {
-    configOverrides.layout = body.layoutMode;
+    configOverrides.layout_mode = body.layoutMode;
     delete transformed.layoutMode;
   }
   if (body.cardStyle !== undefined) {
-    configOverrides.cardStyle = body.cardStyle;
+    configOverrides.card_style = body.cardStyle;
     delete transformed.cardStyle;
   }
   if (body.showSidebar !== undefined) {
-    configOverrides.showSidebar = body.showSidebar;
+    configOverrides.show_sidebar = body.showSidebar;
     delete transformed.showSidebar;
   }
   if (body.showFilters !== undefined) {
-    configOverrides.showFilters = body.showFilters;
+    configOverrides.show_filters = body.showFilters;
     delete transformed.showFilters;
   }
   if (body.showBreadcrumb !== undefined) {
-    configOverrides.showBreadcrumb = body.showBreadcrumb;
+    configOverrides.show_breadcrumb = body.showBreadcrumb;
     delete transformed.showBreadcrumb;
   }
   if (body.showPagination !== undefined) {
-    configOverrides.showPagination = body.showPagination;
+    configOverrides.show_pagination = body.showPagination;
     delete transformed.showPagination;
   }
   if (body.sortBy !== undefined) {
-    configOverrides.sortBy = body.sortBy;
+    configOverrides.article_sort_by = body.sortBy;
     delete transformed.sortBy;
   }
   if (body.sort_order !== undefined) {
-    configOverrides.sort_order = body.sort_order;
+    configOverrides.article_sort_order = body.sort_order;
     delete transformed.sort_order;
   }
   if (body.headerStyle !== undefined) {
-    configOverrides.headerStyle = body.headerStyle;
+    configOverrides.header_style = body.headerStyle;
     delete transformed.headerStyle;
   }
   if (body.featuredArticleId !== undefined) {
     const parsed = typeof body.featuredArticleId === 'string'
       ? parseInt(body.featuredArticleId, 10)
       : body.featuredArticleId;
-    configOverrides.featuredArticleId = Number.isFinite(parsed) ? parsed : null;
+    configOverrides.featured_article_id = Number.isFinite(parsed) ? parsed : null;
     delete transformed.featuredArticleId;
   }
   if (body.showFeaturedRecipe !== undefined) {
-    configOverrides.showFeaturedRecipe = body.showFeaturedRecipe;
+    configOverrides.show_featured_recipe = body.showFeaturedRecipe;
     delete transformed.showFeaturedRecipe;
   }
   if (body.showHeroCta !== undefined) {
-    configOverrides.showHeroCta = body.showHeroCta;
+    configOverrides.show_hero_cta = body.showHeroCta;
     delete transformed.showHeroCta;
   }
   if (body.heroCtaText !== undefined) {
-    configOverrides.heroCtaText = body.heroCtaText;
+    configOverrides.hero_cta_text = body.heroCtaText;
     delete transformed.heroCtaText;
   }
   if (body.heroCtaLink !== undefined) {
-    configOverrides.heroCtaLink = body.heroCtaLink;
+    configOverrides.hero_cta_link = body.heroCtaLink;
     delete transformed.heroCtaLink;
   }
 
@@ -369,32 +360,42 @@ export function transformCategoryRequestBody(body: any): any {
   if (body.seo_json !== undefined) {
     transformed.seo_json = parseSeoJson(body.seo_json);
   } else if (
-    body.metaTitle ||
-    body.metaDescription ||
-    body.canonicalUrl ||
-    body.canonical ||
-    body.ogImage ||
-    body.ogTitle ||
-    body.ogDescription ||
-    body.twitterCard ||
-    body.robots ||
-    body.noIndex
+    body.metaTitle !== undefined ||
+    body.metaDescription !== undefined ||
+    body.canonicalUrl !== undefined ||
+    body.canonical !== undefined ||
+    body.ogImage !== undefined ||
+    body.ogTitle !== undefined ||
+    body.ogDescription !== undefined ||
+    body.twitterCard !== undefined ||
+    body.robots !== undefined ||
+    body.noIndex !== undefined
   ) {
     transformed.seo_json = parseSeoJson({
-      metaTitle: body.metaTitle,
-      metaDescription: body.metaDescription,
-      canonical: body.canonical,
-      canonicalUrl: body.canonicalUrl,
-      ogImage: body.ogImage,
-      ogTitle: body.ogTitle,
-      ogDescription: body.ogDescription,
-      twitterCard: body.twitterCard,
+      meta_title: body.metaTitle,
+      meta_description: body.metaDescription,
+      canonical: body.canonical ?? body.canonicalUrl,
+      og_image: body.ogImage,
+      og_title: body.ogTitle,
+      og_description: body.ogDescription,
+      twitter_card: body.twitterCard,
       robots: body.robots,
-      noIndex: body.noIndex,
+      no_index: body.noIndex,
     });
   }
 
-  delete transformed.config_json;
+  const existingConfig = body.config_json !== undefined
+    ? JSON.parse(parseConfigJson(body.config_json))
+    : {};
+  const mergedConfig = {
+    ...existingConfig,
+    ...configOverrides,
+  };
+  if (Object.keys(mergedConfig).length > 0) {
+    transformed.config_json = JSON.stringify(mergedConfig);
+  } else {
+    delete transformed.config_json;
+  }
 
   // Basic required field validation REMOVED to allow partial updates (PATCH)
   // The database schema or specialized Creation validation should handle requirements.
@@ -415,7 +416,7 @@ export function transformCategoryRequestBody(body: any): any {
   const dbColumns = new Set([
     'slug', 'label', 'parent_id', 'depth', 'headline', 'collection_title',
     'short_description', 'images_json', 'color', 'is_featured',
-    'seo_json', 'sort_order', 'workflow_status',
+    'seo_json', 'config_json', 'sort_order', 'workflow_status',
     'cached_post_count', 'created_at', 'updated_at', 'deleted_at',
   ]);
   for (const key of Object.keys(transformed)) {
@@ -448,19 +449,14 @@ export function transformCategoryResponse(category: any): any {
   if (category.seo_json) {
     try {
       const seo: SeoJson = JSON.parse(category.seo_json);
-      if (!response.metaTitle) response.metaTitle = getSeoValue<string | null>(seo, 'meta_title', 'metaTitle') ?? undefined;
-      if (!response.metaDescription) response.metaDescription = getSeoValue<string | null>(seo, 'meta_description', 'metaDescription') ?? undefined;
-      if (!response.canonicalUrl && seo.canonical) response.canonicalUrl = seo.canonical;
-      const ogImage = getSeoValue<string | null>(seo, 'og_image', 'ogImage');
-      const ogTitle = getSeoValue<string | null>(seo, 'og_title', 'ogTitle');
-      const ogDescription = getSeoValue<string | null>(seo, 'og_description', 'ogDescription');
-      const twitterCard = getSeoValue<string>(seo, 'twitter_card', 'twitterCard');
-      const noIndex = getSeoValue<boolean>(seo, 'no_index', 'noIndex');
-      if (response.ogImage === undefined && ogImage !== undefined) response.ogImage = ogImage;
-      if (response.ogTitle === undefined && ogTitle !== undefined) response.ogTitle = ogTitle;
-      if (response.ogDescription === undefined && ogDescription !== undefined) response.ogDescription = ogDescription;
-      if (response.twitterCard === undefined && twitterCard !== undefined) response.twitterCard = twitterCard;
-      if (response.noIndex === undefined && noIndex !== undefined) response.noIndex = noIndex;
+      if (response.meta_title === undefined && seo.meta_title !== undefined) response.meta_title = seo.meta_title ?? undefined;
+      if (response.meta_description === undefined && seo.meta_description !== undefined) response.meta_description = seo.meta_description ?? undefined;
+      if (response.canonical === undefined && seo.canonical !== undefined) response.canonical = seo.canonical;
+      if (response.og_image === undefined && seo.og_image !== undefined) response.og_image = seo.og_image;
+      if (response.og_title === undefined && seo.og_title !== undefined) response.og_title = seo.og_title;
+      if (response.og_description === undefined && seo.og_description !== undefined) response.og_description = seo.og_description;
+      if (response.twitter_card === undefined && seo.twitter_card !== undefined) response.twitter_card = seo.twitter_card;
+      if (response.no_index === undefined && seo.no_index !== undefined) response.no_index = seo.no_index;
     } catch {
       // Invalid JSON, skip
     }
@@ -469,62 +465,59 @@ export function transformCategoryResponse(category: any): any {
   if (category.config_json) {
     try {
       const config: ConfigJson = JSON.parse(category.config_json);
-      if (response.numEntriesPerPage === undefined && typeof config.postsPerPage === 'number') {
-        response.numEntriesPerPage = config.postsPerPage;
+      if (response.posts_per_page === undefined && typeof config.posts_per_page === 'number') {
+        response.posts_per_page = config.posts_per_page;
       }
       if (response.tldr === undefined && typeof config.tldr === 'string') {
         response.tldr = config.tldr;
       }
-      if (response.showInNav === undefined && typeof config.showInNav === 'boolean') {
-        response.showInNav = config.showInNav;
+      if (response.show_in_nav === undefined && typeof config.show_in_nav === 'boolean') {
+        response.show_in_nav = config.show_in_nav;
       }
-      if (response.showInFooter === undefined && typeof config.showInFooter === 'boolean') {
-        response.showInFooter = config.showInFooter;
+      if (response.show_in_footer === undefined && typeof config.show_in_footer === 'boolean') {
+        response.show_in_footer = config.show_in_footer;
       }
-      if (response.layoutMode === undefined && typeof config.layout === 'string') {
-        response.layoutMode = config.layout;
+      if (response.layout_mode === undefined && typeof config.layout_mode === 'string') {
+        response.layout_mode = config.layout_mode;
       }
-      if (response.cardStyle === undefined && typeof config.cardStyle === 'string') {
-        response.cardStyle = config.cardStyle;
+      if (response.card_style === undefined && typeof config.card_style === 'string') {
+        response.card_style = config.card_style;
       }
-      if (response.showSidebar === undefined && typeof config.showSidebar === 'boolean') {
-        response.showSidebar = config.showSidebar;
+      if (response.show_sidebar === undefined && typeof config.show_sidebar === 'boolean') {
+        response.show_sidebar = config.show_sidebar;
       }
-      if (response.showFilters === undefined && typeof config.showFilters === 'boolean') {
-        response.showFilters = config.showFilters;
+      if (response.show_filters === undefined && typeof config.show_filters === 'boolean') {
+        response.show_filters = config.show_filters;
       }
-      if (response.showBreadcrumb === undefined && typeof config.showBreadcrumb === 'boolean') {
-        response.showBreadcrumb = config.showBreadcrumb;
+      if (response.show_breadcrumb === undefined && typeof config.show_breadcrumb === 'boolean') {
+        response.show_breadcrumb = config.show_breadcrumb;
       }
-      if (response.showPagination === undefined && typeof config.showPagination === 'boolean') {
-        response.showPagination = config.showPagination;
+      if (response.show_pagination === undefined && typeof config.show_pagination === 'boolean') {
+        response.show_pagination = config.show_pagination;
       }
-      // sort_order from config (direction) must use a different check since
-      // the DB column 'sort_order' (numeric display-order) is always present
-      // and would shadow the config direction string.
-      if (typeof config.sortBy === 'string') {
-        response.sortBy = config.sortBy;
+      if (typeof config.article_sort_by === 'string') {
+        response.article_sort_by = config.article_sort_by;
       }
-      if (typeof config.sort_order === 'string') {
-        response.configSortOrder = config.sort_order;
+      if (typeof config.article_sort_order === 'string') {
+        response.article_sort_order = config.article_sort_order;
       }
-      if (response.headerStyle === undefined && typeof config.headerStyle === 'string') {
-        response.headerStyle = config.headerStyle;
+      if (response.header_style === undefined && typeof config.header_style === 'string') {
+        response.header_style = config.header_style;
       }
-      if (response.featuredArticleId === undefined && typeof config.featuredArticleId === 'number') {
-        response.featuredArticleId = config.featuredArticleId;
+      if (response.featured_article_id === undefined && typeof config.featured_article_id === 'number') {
+        response.featured_article_id = config.featured_article_id;
       }
-      if (response.showFeaturedRecipe === undefined && typeof config.showFeaturedRecipe === 'boolean') {
-        response.showFeaturedRecipe = config.showFeaturedRecipe;
+      if (response.show_featured_recipe === undefined && typeof config.show_featured_recipe === 'boolean') {
+        response.show_featured_recipe = config.show_featured_recipe;
       }
-      if (response.showHeroCta === undefined && typeof config.showHeroCta === 'boolean') {
-        response.showHeroCta = config.showHeroCta;
+      if (response.show_hero_cta === undefined && typeof config.show_hero_cta === 'boolean') {
+        response.show_hero_cta = config.show_hero_cta;
       }
-      if (response.heroCtaText === undefined && typeof config.heroCtaText === 'string') {
-        response.heroCtaText = config.heroCtaText;
+      if (response.hero_cta_text === undefined && typeof config.hero_cta_text === 'string') {
+        response.hero_cta_text = config.hero_cta_text;
       }
-      if (response.heroCtaLink === undefined && typeof config.heroCtaLink === 'string') {
-        response.heroCtaLink = config.heroCtaLink;
+      if (response.hero_cta_link === undefined && typeof config.hero_cta_link === 'string') {
+        response.hero_cta_link = config.hero_cta_link;
       }
     } catch {
       // Invalid JSON, skip

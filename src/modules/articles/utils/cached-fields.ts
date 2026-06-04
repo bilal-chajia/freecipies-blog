@@ -103,7 +103,7 @@ export function parseCachedToc(value: unknown): JsonRecord[] {
  */
 export function getReadingTimeDisplay(article: ArticleReadingTimeSource | null | undefined): number {
   if (!article) return 3;
-  const readingTime = article.reading_time_minutes ?? article.reading_time_minutes;
+  const readingTime = article.reading_time_minutes;
   if (typeof readingTime === 'number' && Number.isFinite(readingTime) && readingTime > 0) {
     return readingTime;
   }

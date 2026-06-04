@@ -21,14 +21,14 @@ function arrayOrEmpty(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function pick<T = unknown>(source: JsonRecord, snakeKey: string, camelKey: string): T | undefined {
-  return (source[snakeKey] ?? source[camelKey]) as T | undefined;
+function pick<T = unknown>(source: JsonRecord, key: string): T | undefined {
+  return source[key] as T | undefined;
 }
 
 function normalizeRating(value: unknown) {
   if (!isRecord(value)) return null;
-  const ratingValue = numberOrNull(pick(value, 'rating_value', 'ratingValue'));
-  const ratingCount = numberOrNull(pick(value, 'rating_count', 'ratingCount')) ?? 0;
+  const ratingValue = numberOrNull(pick(value, 'rating_value'));
+  const ratingCount = numberOrNull(pick(value, 'rating_count')) ?? 0;
   if (ratingValue === null && ratingCount === 0) return null;
   return {
     rating_value: ratingValue,
@@ -135,7 +135,7 @@ function normalizeIngredientGroups(value: unknown) {
           name: stringOrNull(item.name) ?? '',
           prep: stringOrNull(item.prep) ?? null,
           notes: stringOrNull(item.notes) ?? null,
-          is_optional: Boolean(item.is_optional ?? item.isOptional ?? false),
+          is_optional: Boolean(item.is_optional ?? false),
           substitutes,
         };
       }),
@@ -176,7 +176,7 @@ function normalizeInstructions(value: unknown) {
           id: stringOrNull(step.id) ?? `step-${index + 1}`,
           name: stringOrNull(step.name) ?? null,
           text: stringOrNull(step.text) ?? '',
-          image_ref: stringOrNull(pick(step, 'image_ref', 'imageRef')) ?? null,
+          image_ref: stringOrNull(pick(step, 'image_ref')) ?? null,
           timer: timerVal !== null && timerVal > 0 ? timerVal : null,
           tip: stringOrNull(step.tip) ?? null,
         };
@@ -209,7 +209,7 @@ function normalizeEquipment(value: unknown) {
         snapshot: null,
       };
     }
-    const equipmentId = numberOrNull(pick(item, 'equipment_id', 'equipmentId'));
+    const equipmentId = numberOrNull(pick(item, 'equipment_id'));
     const sourceType = equipmentId !== null ? 'catalog' : 'manual';
     return {
       id: stringOrNull(item.id) ?? `eq-${index + 1}`,
@@ -225,9 +225,8 @@ function normalizeEquipment(value: unknown) {
 
 function normalizeVideo(value: unknown) {
   if (!isRecord(value)) return null;
-  const url = stringOrNull(value.url);
-  const contentUrl = stringOrNull(pick(value, 'content_url', 'contentUrl'));
-  const embedUrl = stringOrNull(pick(value, 'embed_url', 'embedUrl')) ?? url;
+  const contentUrl = stringOrNull(pick(value, 'content_url'));
+  const embedUrl = stringOrNull(pick(value, 'embed_url'));
   if (!contentUrl && !embedUrl) return null;
   return {
     name: stringOrNull(value.name) ?? 'Recipe video',
@@ -236,7 +235,7 @@ function normalizeVideo(value: unknown) {
     content_url: contentUrl,
     embed_url: embedUrl,
     duration: stringOrNull(value.duration),
-    upload_date: stringOrNull(pick(value, 'upload_date', 'uploadDate')),
+    upload_date: stringOrNull(pick(value, 'upload_date')),
   };
 }
 
@@ -248,19 +247,19 @@ export function normalizeRecipeJson(value: unknown) {
     cook: numberOrNull(source.cook),
     total: numberOrNull(source.total),
     servings,
-    recipe_yield: stringOrNull(pick(source, 'recipe_yield', 'recipeYield')),
-    recipe_category: stringOrNull(pick(source, 'recipe_category', 'recipeCategory') ?? source.course),
-    recipe_cuisine: stringOrNull(pick(source, 'recipe_cuisine', 'recipeCuisine') ?? source.cuisine),
+    recipe_yield: stringOrNull(pick(source, 'recipe_yield')),
+    recipe_category: stringOrNull(pick(source, 'recipe_category')),
+    recipe_cuisine: stringOrNull(pick(source, 'recipe_cuisine')),
     keywords: arrayOrEmpty(source.keywords).filter((item): item is string => typeof item === 'string'),
-    suitable_for_diet: arrayOrEmpty(pick(source, 'suitable_for_diet', 'suitableForDiet')).filter((item): item is string => typeof item === 'string'),
+    suitable_for_diet: arrayOrEmpty(pick(source, 'suitable_for_diet')).filter((item): item is string => typeof item === 'string'),
     difficulty: stringOrNull(source.difficulty),
-    cooking_method: stringOrNull(pick(source, 'cooking_method', 'cookingMethod')),
-    estimated_cost: stringOrNull(pick(source, 'estimated_cost', 'estimatedCost')),
+    cooking_method: stringOrNull(pick(source, 'cooking_method')),
+    estimated_cost: stringOrNull(pick(source, 'estimated_cost')),
     ingredients: normalizeIngredientGroups(source.ingredients),
     instructions: normalizeInstructions(source.instructions),
     tips: arrayOrEmpty(source.tips).filter((item): item is string => typeof item === 'string'),
     nutrition: normalizeNutrition(source.nutrition, servings),
-    aggregate_rating: normalizeRating(pick(source, 'aggregate_rating', 'aggregateRating')),
+    aggregate_rating: normalizeRating(pick(source, 'aggregate_rating')),
     equipment: normalizeEquipment(source.equipment),
     video: normalizeVideo(source.video),
   };
@@ -332,15 +331,14 @@ export function normalizeRoundupJson(value: unknown) {
         title: stringOrNull(item.title) ?? '',
       };
       if (sourceType === 'internal_recipe') {
-        const article_id = numberOrNull(pick(item, 'article_id', 'article_id'));
+        const article_id = numberOrNull(pick(item, 'article_id'));
         if (article_id !== null) normalized.article_id = article_id;
         const slug = stringOrNull(item.slug);
         if (slug) normalized.slug = slug;
       }
-      const externalUrl = stringOrNull(pick(item, 'external_url', 'externalUrl'));
+      const externalUrl = stringOrNull(item.external_url);
       if (externalUrl) normalized.external_url = externalUrl;
       delete normalized.cover;
-      delete normalized.article_id;
       delete normalized.externalUrl;
       delete normalized.canonicalUrl;
       delete normalized.sourceType;

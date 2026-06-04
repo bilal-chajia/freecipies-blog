@@ -264,7 +264,7 @@ const siteDescription =
                 const sizes = "(max-width: 768px) 50vw, 25vw";
                 const { badgeColor, badgeText } = getBadgeColors(recipe.categoryColor);
                 const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
-                const prepTime = cachedRecipe?.prep_time_minutes ?? cachedRecipe?.prepTimeMinutes ?? null;
+                const prepTime = cachedRecipe?.prep_time_minutes ?? null;
                 const servings = cachedRecipe?.servings ?? null;
                 return (
                   <article class="recipe-card">

@@ -23,14 +23,14 @@ const isHeroHeader = headerStyle === "hero";
 const isMinimalHeader = headerStyle === "minimal";
 const hasFeatured = Boolean(featuredArticle && isHeroHeader);
 const showBreadcrumb = breadcrumbItems.length > 0;
-const showHeroCta = category.showHeroCta !== false;
+const showHeroCta = category.show_hero_cta !== false;
 const heroCtaText =
-  typeof category.heroCtaText === "string" && category.heroCtaText.trim()
-    ? category.heroCtaText.trim()
+  typeof category.hero_cta_text === "string" && category.hero_cta_text.trim()
+    ? category.hero_cta_text.trim()
     : "Join My Mailing List";
 const heroCtaLink =
-  typeof category.heroCtaLink === "string" && category.heroCtaLink.trim()
-    ? category.heroCtaLink.trim()
+  typeof category.hero_cta_link === "string" && category.hero_cta_link.trim()
+    ? category.hero_cta_link.trim()
     : "#newsletter";
 const categoryHero = extractImage(category.images_json, "hero", 1600);
 const categoryThumb = extractImage(category.images_json, "thumbnail", 1200);

@@ -86,8 +86,32 @@ type CategoryRecord = Partial<Omit<CategoryFormData, 'sort_order'>> & {
   imageWidth?: number;
   imageHeight?: number;
   images_json?: string | Record<string, unknown> | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  canonical?: string | null;
+  og_image?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  twitter_card?: string | null;
+  no_index?: boolean | null;
   short_description?: string;
-  configSortOrder?: string;
+  posts_per_page?: number;
+  show_in_nav?: boolean;
+  show_in_footer?: boolean;
+  layout_mode?: string;
+  card_style?: string;
+  show_sidebar?: boolean;
+  show_filters?: boolean;
+  show_breadcrumb?: boolean;
+  show_pagination?: boolean;
+  article_sort_by?: string;
+  article_sort_order?: string;
+  header_style?: string;
+  featured_article_id?: number;
+  show_featured_recipe?: boolean;
+  show_hero_cta?: boolean;
+  hero_cta_text?: string;
+  hero_cta_link?: string;
   sort_order?: string | number;
   collection_title?: string;
   workflow_status?: string;
@@ -352,38 +376,38 @@ const CategoryEditor = () => {
           slug: category.slug || '',
           label: category.label || '',
           headline: category.headline || '',
-          metaTitle: category.metaTitle || '',
-          metaDescription: category.metaDescription || '',
-          canonicalUrl: category.canonicalUrl || '',
-          ogImage: category.ogImage || '',
-          ogTitle: category.ogTitle || '',
-          ogDescription: category.ogDescription || '',
-          twitterCard: category.twitterCard || 'summary_large_image',
+          metaTitle: category.meta_title || '',
+          metaDescription: category.meta_description || '',
+          canonicalUrl: category.canonical || '',
+          ogImage: category.og_image || '',
+          ogTitle: category.og_title || '',
+          ogDescription: category.og_description || '',
+          twitterCard: category.twitter_card || 'summary_large_image',
           robots: category.robots || '',
-          noIndex: category.noIndex || false,
+          noIndex: category.no_index || false,
           short_description: category.short_description || '',
           tldr: category.tldr || '',
           // Map flat image properties back to nested object for UI
           imageThumbnail: imageFromJsonThumbnail || legacyImage,
           imageHero: imageFromJsonHero || null,
           collection_title: category.collection_title || '',
-          numEntriesPerPage: category.numEntriesPerPage || 12,
-          showInNav: category.showInNav || false,
-          showInFooter: category.showInFooter || false,
-          layoutMode: category.layoutMode || 'grid',
-          cardStyle: category.cardStyle || 'full',
-          showSidebar: category.showSidebar ?? true,
-          showFilters: category.showFilters ?? true,
-          showBreadcrumb: category.showBreadcrumb ?? true,
-          showPagination: category.showPagination ?? true,
-          sortBy: category.sortBy || 'published_at',
-          sort_order: String(category.configSortOrder || category.sort_order || 'desc'),
-          headerStyle: category.headerStyle || 'hero',
-          featuredArticleId: category.featuredArticleId ?? null,
-          showFeaturedRecipe: category.showFeaturedRecipe ?? true,
-          showHeroCta: category.showHeroCta ?? true,
-          heroCtaText: category.heroCtaText || '',
-          heroCtaLink: category.heroCtaLink || '',
+          numEntriesPerPage: category.posts_per_page || 12,
+          showInNav: category.show_in_nav || false,
+          showInFooter: category.show_in_footer || false,
+          layoutMode: category.layout_mode || 'grid',
+          cardStyle: category.card_style || 'full',
+          showSidebar: category.show_sidebar ?? true,
+          showFilters: category.show_filters ?? true,
+          showBreadcrumb: category.show_breadcrumb ?? true,
+          showPagination: category.show_pagination ?? true,
+          sortBy: category.article_sort_by || 'published_at',
+          sort_order: category.article_sort_order || 'desc',
+          headerStyle: category.header_style || 'hero',
+          featuredArticleId: category.featured_article_id ?? null,
+          showFeaturedRecipe: category.show_featured_recipe ?? true,
+          showHeroCta: category.show_hero_cta ?? true,
+          heroCtaText: category.hero_cta_text || '',
+          heroCtaLink: category.hero_cta_link || '',
           workflow_status: category.workflow_status || 'draft',
           is_featured: category.is_featured || category.is_favorite || false,
           displayOrder: Number.isFinite(Number(category.sort_order)) ? Number(category.sort_order) : 0,
@@ -392,8 +416,8 @@ const CategoryEditor = () => {
           iconSvg: category.iconSvg || '',
         });
 
-        if (typeof category.featuredArticleId === 'number') {
-          loadFeaturedArticleById(category.featuredArticleId);
+        if (typeof category.featured_article_id === 'number') {
+          loadFeaturedArticleById(category.featured_article_id);
         } else {
           setFeaturedLookup({ loading: false, error: '', article: null });
           setFeaturedSlug('');
@@ -505,6 +529,14 @@ const CategoryEditor = () => {
         showHeroCta,
         heroCtaText,
         heroCtaLink,
+        metaTitle,
+        metaDescription,
+        canonicalUrl,
+        ogImage,
+        ogTitle,
+        ogDescription,
+        twitterCard,
+        noIndex,
         iconSvg,
         short_description,
         collection_title,
@@ -525,8 +557,36 @@ const CategoryEditor = () => {
           ...(imageHero ? { hero: imageHero } : {}),
         }),
         headline: formData.headline || formData.label,
-        metaTitle: formData.metaTitle || formData.label,
-        metaDescription: formData.metaDescription || short_description,
+        seo_json: JSON.stringify({
+          meta_title: metaTitle || formData.label,
+          meta_description: metaDescription || short_description,
+          canonical: canonicalUrl || null,
+          og_image: ogImage || null,
+          og_title: ogTitle || null,
+          og_description: ogDescription || null,
+          twitter_card: twitterCard || 'summary_large_image',
+          no_index: noIndex,
+        }),
+        config_json: JSON.stringify({
+          posts_per_page: numEntriesPerPage,
+          tldr: formData.tldr || '',
+          show_in_nav: showInNav,
+          show_in_footer: showInFooter,
+          layout_mode: layoutMode,
+          card_style: cardStyle,
+          show_sidebar: showSidebar,
+          show_filters: showFilters,
+          show_breadcrumb: showBreadcrumb,
+          show_pagination: showPagination,
+          article_sort_by: sortBy,
+          article_sort_order: sort_order,
+          header_style: headerStyle,
+          featured_article_id: featuredArticleId,
+          show_featured_recipe: showFeaturedRecipe,
+          show_hero_cta: showHeroCta,
+          hero_cta_text: heroCtaText,
+          hero_cta_link: heroCtaLink,
+        }),
         collection_title: collection_title || formData.label,
       };
 

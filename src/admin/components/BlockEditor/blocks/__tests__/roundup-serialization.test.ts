@@ -50,7 +50,7 @@ describe('roundup-serialization', () => {
     expect(external.source_type).toBe('external_recipe');
   });
 
-  it('honors explicit source_type and snake/camel id fallbacks', () => {
+  it('honors explicit source_type and canonical article_id', () => {
     const [item] = buildRoundupItems([
       {
         type: 'roundupList',

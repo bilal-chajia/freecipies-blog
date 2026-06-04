@@ -59,55 +59,55 @@ export function normalizeRecipeForRender(input: unknown): RecipeRenderRecord | n
   const recipe = parseRecipe(input);
   if (!recipe) return null;
 
-  const aggregateRating = recipe.aggregate_rating ?? recipe.aggregateRating ?? null;
+  const aggregateRating = recipe.aggregate_rating ?? null;
   const nutrition = isRecord(recipe.nutrition) ? recipe.nutrition : null;
   const video = isRecord(recipe.video) ? recipe.video : null;
   const servingSize = isRecord(nutrition?.serving_size)
     ? nutrition.serving_size
     : {
-        label: nutrition?.servingSize ?? '1 serving',
-        grams: numberOrNull(nutrition?.servingSizeGrams) ?? 0,
+        label: '1 serving',
+        grams: 0,
       };
 
   return {
     ...recipe,
-    recipe_yield: recipe.recipe_yield ?? recipe.recipeYield ?? null,
-    recipe_category: recipe.recipe_category ?? recipe.recipeCategory ?? null,
-    recipe_cuisine: recipe.recipe_cuisine ?? recipe.recipeCuisine ?? null,
-    suitable_for_diet: stringArrayOrEmpty(recipe.suitable_for_diet ?? recipe.suitableForDiet),
-    cooking_method: recipe.cooking_method ?? recipe.cookingMethod ?? null,
-    estimated_cost: recipe.estimated_cost ?? recipe.estimatedCost ?? null,
+    recipe_yield: recipe.recipe_yield ?? null,
+    recipe_category: recipe.recipe_category ?? null,
+    recipe_cuisine: recipe.recipe_cuisine ?? null,
+    suitable_for_diet: stringArrayOrEmpty(recipe.suitable_for_diet),
+    cooking_method: recipe.cooking_method ?? null,
+    estimated_cost: recipe.estimated_cost ?? null,
     aggregate_rating: isRecord(aggregateRating)
       ? {
-          rating_value: numberOrNull(aggregateRating.rating_value ?? aggregateRating.ratingValue),
-          rating_count: numberOrNull(aggregateRating.rating_count ?? aggregateRating.ratingCount) ?? 0,
+          rating_value: numberOrNull(aggregateRating.rating_value),
+          rating_count: numberOrNull(aggregateRating.rating_count) ?? 0,
         }
       : null,
     nutrition: nutrition
       ? {
           ...nutrition,
           serving_size: servingSize,
-          total_fat_g: nutrition.total_fat_g ?? nutrition.totalFat ?? nutrition.fatContent ?? null,
-          saturated_fat_g: nutrition.saturated_fat_g ?? nutrition.saturatedFat ?? nutrition.saturatedFatContent ?? null,
-          trans_fat_g: nutrition.trans_fat_g ?? nutrition.transFat ?? nutrition.transFatContent ?? null,
-          cholesterol_mg: nutrition.cholesterol_mg ?? nutrition.cholesterol ?? nutrition.cholesterolContent ?? null,
-          sodium_mg: nutrition.sodium_mg ?? nutrition.sodium ?? nutrition.sodiumContent ?? null,
-          total_carbohydrate_g: nutrition.total_carbohydrate_g ?? nutrition.totalCarbohydrates ?? nutrition.carbohydrateContent ?? null,
-          dietary_fiber_g: nutrition.dietary_fiber_g ?? nutrition.dietaryFiber ?? nutrition.fiberContent ?? null,
-          total_sugars_g: nutrition.total_sugars_g ?? nutrition.totalSugars ?? nutrition.sugarContent ?? null,
-          protein_g: nutrition.protein_g ?? nutrition.protein ?? nutrition.proteinContent ?? null,
-          vitamin_d_mcg: nutrition.vitamin_d_mcg ?? nutrition.vitaminD ?? null,
-          calcium_mg: nutrition.calcium_mg ?? nutrition.calcium ?? null,
-          iron_mg: nutrition.iron_mg ?? nutrition.iron ?? null,
-          potassium_mg: nutrition.potassium_mg ?? nutrition.potassium ?? null,
+          total_fat_g: nutrition.total_fat_g ?? null,
+          saturated_fat_g: nutrition.saturated_fat_g ?? null,
+          trans_fat_g: nutrition.trans_fat_g ?? null,
+          cholesterol_mg: nutrition.cholesterol_mg ?? null,
+          sodium_mg: nutrition.sodium_mg ?? null,
+          total_carbohydrate_g: nutrition.total_carbohydrate_g ?? null,
+          dietary_fiber_g: nutrition.dietary_fiber_g ?? null,
+          total_sugars_g: nutrition.total_sugars_g ?? null,
+          protein_g: nutrition.protein_g ?? null,
+          vitamin_d_mcg: nutrition.vitamin_d_mcg ?? null,
+          calcium_mg: nutrition.calcium_mg ?? null,
+          iron_mg: nutrition.iron_mg ?? null,
+          potassium_mg: nutrition.potassium_mg ?? null,
         }
       : null,
     video: video
       ? {
           ...video,
-          content_url: video.content_url ?? video.contentUrl ?? null,
-          embed_url: video.embed_url ?? video.embedUrl ?? video.url ?? null,
-          upload_date: video.upload_date ?? video.uploadDate ?? null,
+          content_url: video.content_url ?? null,
+          embed_url: video.embed_url ?? null,
+          upload_date: video.upload_date ?? null,
         }
       : null,
   } as RecipeRenderRecord;

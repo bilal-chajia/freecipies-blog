@@ -100,20 +100,15 @@ const normalizeSeoJsonObject = (value: any): SeoJson => {
     if (!value || typeof value !== 'object') return {};
 
     return {
-        meta_title: value.meta_title ?? value.metaTitle ?? null,
-        meta_description: value.meta_description ?? value.metaDescription ?? null,
-        no_index: Boolean(value.no_index ?? value.noIndex ?? false),
-        canonical: value.canonical ?? value.canonicalUrl,
-        og_image: value.og_image ?? value.ogImage ?? null,
-        og_title: value.og_title ?? value.ogTitle ?? null,
-        og_description: value.og_description ?? value.ogDescription ?? null,
-        twitter_card: value.twitter_card ?? value.twitterCard ?? 'summary_large_image',
+        meta_title: value.meta_title ?? null,
+        meta_description: value.meta_description ?? null,
+        no_index: Boolean(value.no_index ?? false),
+        canonical: value.canonical ?? null,
+        og_image: value.og_image ?? null,
+        og_title: value.og_title ?? null,
+        og_description: value.og_description ?? null,
+        twitter_card: value.twitter_card ?? 'summary_large_image',
     };
-};
-
-const getSeoValue = <T = unknown>(seo: SeoJson, snakeKey: keyof SeoJson, camelKey: string): T | undefined => {
-    const legacy = seo as Record<string, unknown>;
-    return (seo[snakeKey] ?? legacy[camelKey]) as T | undefined;
 };
 
 const normalizeStoredVariant = (variant: any) => {
@@ -133,8 +128,8 @@ const normalizeStoredVariant = (variant: any) => {
         r2_key: r2Key,
         width,
         height,
-        ...(Number.isFinite(Number(variant.size_bytes ?? variant.sizeBytes))
-            ? { size_bytes: Number(variant.size_bytes ?? variant.sizeBytes) }
+        ...(Number.isFinite(Number(variant.size_bytes))
+            ? { size_bytes: Number(variant.size_bytes) }
             : {}),
     };
 };
@@ -331,27 +326,26 @@ export function transformAuthorRequestBody(body: any): any {
     // Handle seo_json - convert flat fields if needed
     if (body.seo_json !== undefined) {
         transformed.seo_json = parseSeoJson(body.seo_json);
-    } else if (
-        body.metaTitle ||
-        body.metaDescription ||
-        body.canonicalUrl ||
-        body.canonical ||
-        body.ogImage ||
-        body.ogTitle ||
-        body.ogDescription ||
-        body.twitterCard ||
-        body.noIndex
-    ) {
+    } else if ([
+        'metaTitle',
+        'metaDescription',
+        'canonicalUrl',
+        'canonical',
+        'ogImage',
+        'ogTitle',
+        'ogDescription',
+        'twitterCard',
+        'noIndex',
+    ].some((key) => Object.prototype.hasOwnProperty.call(body, key))) {
         transformed.seo_json = parseSeoJson({
-            metaTitle: body.metaTitle,
-            metaDescription: body.metaDescription,
-            canonical: body.canonical,
-            canonicalUrl: body.canonicalUrl,
-            ogImage: body.ogImage,
-            ogTitle: body.ogTitle,
-            ogDescription: body.ogDescription,
-            twitterCard: body.twitterCard,
-            noIndex: body.noIndex,
+            meta_title: body.metaTitle,
+            meta_description: body.metaDescription,
+            canonical: body.canonical ?? body.canonicalUrl,
+            og_image: body.ogImage,
+            og_title: body.ogTitle,
+            og_description: body.ogDescription,
+            twitter_card: body.twitterCard,
+            no_index: body.noIndex,
         });
         // Keep flat fields for now (backward compat)
     }
@@ -388,19 +382,14 @@ export function transformAuthorResponse(author: any): any {
     if (author.seo_json) {
         try {
             const seo: SeoJson = JSON.parse(author.seo_json);
-            if (!response.metaTitle) response.metaTitle = getSeoValue<string | null>(seo, 'meta_title', 'metaTitle') ?? undefined;
-            if (!response.metaDescription) response.metaDescription = getSeoValue<string | null>(seo, 'meta_description', 'metaDescription') ?? undefined;
-            if (!response.canonicalUrl && seo.canonical) response.canonicalUrl = seo.canonical;
-            const ogImage = getSeoValue<string | null>(seo, 'og_image', 'ogImage');
-            const ogTitle = getSeoValue<string | null>(seo, 'og_title', 'ogTitle');
-            const ogDescription = getSeoValue<string | null>(seo, 'og_description', 'ogDescription');
-            const twitterCard = getSeoValue<string>(seo, 'twitter_card', 'twitterCard');
-            const noIndex = getSeoValue<boolean>(seo, 'no_index', 'noIndex');
-            if (response.ogImage === undefined && ogImage !== undefined) response.ogImage = ogImage;
-            if (response.ogTitle === undefined && ogTitle !== undefined) response.ogTitle = ogTitle;
-            if (response.ogDescription === undefined && ogDescription !== undefined) response.ogDescription = ogDescription;
-            if (response.twitterCard === undefined && twitterCard !== undefined) response.twitterCard = twitterCard;
-            if (response.noIndex === undefined && noIndex !== undefined) response.noIndex = noIndex;
+            if (response.meta_title === undefined && seo.meta_title !== undefined) response.meta_title = seo.meta_title ?? undefined;
+            if (response.meta_description === undefined && seo.meta_description !== undefined) response.meta_description = seo.meta_description ?? undefined;
+            if (response.canonical === undefined && seo.canonical) response.canonical = seo.canonical;
+            if (response.og_image === undefined && seo.og_image !== undefined) response.og_image = seo.og_image;
+            if (response.og_title === undefined && seo.og_title !== undefined) response.og_title = seo.og_title;
+            if (response.og_description === undefined && seo.og_description !== undefined) response.og_description = seo.og_description;
+            if (response.twitter_card === undefined && seo.twitter_card !== undefined) response.twitter_card = seo.twitter_card;
+            if (response.no_index === undefined && seo.no_index !== undefined) response.no_index = seo.no_index;
         } catch {
             // Invalid JSON, skip
         }
