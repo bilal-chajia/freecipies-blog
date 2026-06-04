@@ -43,11 +43,7 @@ function normalizeVariant(value: unknown): Variant | null {
   const url = resolveVariantUrl(value as Variant);
   const width = typeof value.width === 'number' ? value.width : undefined;
   const height = typeof value.height === 'number' ? value.height : undefined;
-  const sizeBytes = typeof value.size_bytes === 'number'
-    ? value.size_bytes
-    : typeof value.sizeBytes === 'number'
-      ? value.sizeBytes
-      : undefined;
+  const sizeBytes = typeof value.size_bytes === 'number' ? value.size_bytes : undefined;
 
   if (!url || typeof width !== 'number' || typeof height !== 'number') return null;
 
@@ -104,7 +100,7 @@ export function buildContentImageSelection({
   const imageRef = typeof currentProps.imageRef === 'string' && currentProps.imageRef
     ? currentProps.imageRef
     : `body-image-${item.id || fallbackBlockId}`;
-  const alt = item.alt_text ?? item.name ?? '';
+  const alt = item.alt_text ?? item.alt ?? item.name ?? '';
   const caption = item.caption ?? '';
   const aspectRatio = item.aspect_ratio ?? undefined;
   const focalPoint = readFocalPoint(item);
