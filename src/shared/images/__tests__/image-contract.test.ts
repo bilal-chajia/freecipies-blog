@@ -66,12 +66,13 @@ describe('normalizeMediaVariantsJson', () => {
 });
 
 describe('normalizeImageSnapshotContainer', () => {
-  it('normalizes canonical article hero snapshots', () => {
+  it('reads canonical snake_case media slot focal_point and aspect_ratio fields', () => {
     const result = normalizeImageSnapshotContainer('article', {
       hero: {
         media_id: 7,
         alt: 'Hero',
-        aspectRatio: '16:9',
+        focal_point: { x: 45, y: 55 },
+        aspect_ratio: '16:9',
         placeholder: 'snapshot-copy',
         variants: {
           sm: { r2_key: 'media/image-sm.webp', url: '/api/images/media/image-sm.webp', width: 720, height: 480, sizeBytes: 202 },
@@ -86,10 +87,13 @@ describe('normalizeImageSnapshotContainer', () => {
       },
     });
 
+    expect(result.hero?.focal_point).toEqual({ x: 45, y: 55 });
+    expect(result.hero?.aspect_ratio).toBe('16:9');
     expect(result).toEqual({
       hero: {
         media_id: 7,
         alt: 'Hero',
+        focal_point: { x: 45, y: 55 },
         aspect_ratio: '16:9',
         placeholder: 'snapshot-copy',
         variants: {
@@ -170,19 +174,19 @@ describe('serializeAdminMediaPayload', () => {
     const payload = serializeAdminMediaPayload({
       id: 42,
       name: 'image',
-      altText: 'Alt',
+      alt_text: 'Alt',
       caption: null,
       credit: JSON.stringify(storedCredit),
-      mimeType: 'image/webp',
-      aspectRatio: '3:2',
-      variantsJson: JSON.stringify({
+      mime_type: 'image/webp',
+      aspect_ratio: '3:2',
+      variants_json: JSON.stringify({
         variants: legacyUploadVariants,
         placeholder: 'data:image/webp;base64,abc',
       }),
-      focalPointJson: '{"x":45,"y":55}',
-      createdAt: '2026-05-04 12:00:00',
-      updatedAt: '2026-05-04 12:00:00',
-      deletedAt: null,
+      focal_point_json: '{"x":45,"y":55}',
+      created_at: '2026-05-04 12:00:00',
+      updated_at: '2026-05-04 12:00:00',
+      deleted_at: null,
     });
 
     expect(payload.url).toBe('/api/images/media/image-sm.webp');
@@ -215,12 +219,12 @@ describe('serializeAdminMediaPayload', () => {
 describe('buildSnapshotPatch', () => {
   it('handles empty/null fields correctly', () => {
     const patch = buildSnapshotPatch({
-      altText: null,
+      alt_text: null,
       caption: null,
       credit: null,
-      focalPointJson: null,
-      aspectRatio: null,
-      variantsJson: null,
+      focal_point_json: null,
+      aspect_ratio: null,
+      variants_json: null,
     });
     expect(patch).toEqual({
       alt: undefined,
@@ -230,12 +234,12 @@ describe('buildSnapshotPatch', () => {
 
   it('parses valid metadata and variants successfully', () => {
     const mediaRow = {
-      altText: 'Some Alt',
+      alt_text: 'Some Alt',
       caption: 'Some Caption',
       credit: '{"type":"author","id":1,"name":"Alice"}',
-      focalPointJson: '{"x":30,"y":70}',
-      aspectRatio: '16:9',
-      variantsJson: JSON.stringify({
+      focal_point_json: '{"x":30,"y":70}',
+      aspect_ratio: '16:9',
+      variants_json: JSON.stringify({
         variants: {
           xs: { r2_key: 'media/xs.webp', width: 360, height: 240 },
           sm: { r2_key: 'media/sm.webp', width: 720, height: 480 },
@@ -267,10 +271,10 @@ describe('buildSnapshotPatch', () => {
 
   it('safely catches parsing errors and ignores malformed inputs', () => {
     const patch = buildSnapshotPatch({
-      altText: 'Alt',
+      alt_text: 'Alt',
       credit: '{invalid-json}',
-      focalPointJson: '{invalid-json}',
-      variantsJson: '{invalid-json}',
+      focal_point_json: '{invalid-json}',
+      variants_json: '{invalid-json}',
     });
     expect(patch).toEqual({
       alt: 'Alt',
@@ -280,7 +284,7 @@ describe('buildSnapshotPatch', () => {
 
   it('supports snake_case fields of database rows', () => {
     const patch = buildSnapshotPatch({
-      altText: 'Alt',
+      alt_text: 'Alt',
       focal_point_json: '{"x":10,"y":20}',
       aspect_ratio: '4:3',
       variants_json: JSON.stringify({

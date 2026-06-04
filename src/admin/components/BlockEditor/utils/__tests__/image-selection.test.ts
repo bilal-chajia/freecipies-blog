@@ -7,12 +7,12 @@ describe('buildContentImageSelection', () => {
       item: {
         id: 77,
         name: 'toast',
-        altText: 'Avocado toast',
+        alt_text: 'Avocado toast',
         caption: 'Ready to serve',
         credit: { type: 'author', name: 'Jane Doe' },
         placeholder: 'data:image/webp;base64,abc',
-        aspectRatio: '3:2',
-        focalPoint: { x: 45, y: 55 },
+        aspect_ratio: '3:2',
+        focal_point: { x: 45, y: 55 },
         variants: {
           sm: { url: '/api/images/media/toast-sm.webp', width: 720, height: 480, size_bytes: 202 },
           md: { url: '/api/images/media/toast-md.webp', width: 1200, height: 800, size_bytes: 303 },

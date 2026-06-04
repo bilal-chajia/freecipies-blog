@@ -87,7 +87,7 @@ const BoardEditor = () => {
 
   const handleMediaSelect = (item: any) => {
     const slot = buildImageSlotFromMedia(item, {
-      alt: item.altText || formData.name || '',
+      alt: item.alt_text || formData.name || '',
       variant_keys: ['sm', 'md', 'lg'],
     });
     if (slot) {

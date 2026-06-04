@@ -124,7 +124,7 @@ export const BeforeAfterBlock = createReactBlockSpec(
                     : `${activeSlot}-image-${item.id || block.id}`;
                 const nextSlot = {
                     media_id: item.id,
-                    alt: existing?.alt || item.altText || item.alt_text || item.name || '',
+                    alt: existing?.alt || item.alt_text || item.name || '',
                     label: existing?.label || (activeSlot === 'before' ? 'Before' : 'After'),
                     variants,
                 };

@@ -422,10 +422,10 @@ const CategoryEditor = () => {
   };
 
   // Handle selection from media library
-  const handleMediaSelect = (item: { altText?: string } & Record<string, unknown>) => {
+  const handleMediaSelect = (item: Record<string, unknown>) => {
     setFormData(prev => {
       const slot = buildImageSlotFromMedia(item, {
-        alt: item.altText || prev.label || '',
+        alt: item.alt_text || prev.label || '',
         variant_keys: mediaTarget === 'hero' ? ['sm', 'md', 'lg'] : ['xs', 'sm'],
       });
 

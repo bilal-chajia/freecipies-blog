@@ -377,7 +377,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
     interface MediaItem {
         id: number;
         url?: string;
-        altText?: string;
+        alt_text?: string;
         [key: string]: unknown;
     }
 
@@ -391,7 +391,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             setFormData(prev => ({
                 ...prev,
                 imageUrl: slot?.variants?.sm?.url || slot?.variants?.xs?.url || slot?.url || item.url || '',
-                imageAlt: slot?.alt || item.altText || prev.imageAlt
+                imageAlt: slot?.alt || item.alt_text || prev.imageAlt
             }));
         } else if (activeMediaField === 'hero') {
             const slot = buildImageSlotFromMedia(item, {
@@ -402,7 +402,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             setFormData(prev => ({
                 ...prev,
                 heroUrl: slot?.variants?.md?.url || slot?.variants?.sm?.url || slot?.url || item.url || '',
-                heroAlt: slot?.alt || item.altText || prev.heroAlt
+                heroAlt: slot?.alt || item.alt_text || prev.heroAlt
             }));
         }
     };

@@ -329,12 +329,11 @@ export interface ContentImageBlock {
 /**
  * Parse variants JSON from API or DB response
  * Handles both string and object formats
- * @param item - Object with variants_json or variantsJson property
+ * @param item - Object with variants_json property
  * @returns Parsed MediaVariantsJson or null
  */
 export function parseVariantsJson(item: {
     variants_json?: unknown;
-    variantsJson?: unknown;
     variants?: unknown;
     placeholder?: unknown;
 } | null | undefined): ParsedMediaVariantsJson | null {
@@ -345,7 +344,7 @@ export function parseVariantsJson(item: {
             placeholder: typeof item.placeholder === 'string' ? item.placeholder : '',
         };
     }
-    const json = item.variants_json || item.variantsJson;
+    const json = item.variants_json;
     if (!json) return null;
     if (typeof json === 'object') {
         return json as ParsedMediaVariantsJson;

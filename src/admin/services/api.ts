@@ -7,23 +7,21 @@ import type { AxiosRequestConfig } from 'axios';
 
 interface UploadVariantInput {
   upload_key?: string;
-  uploadKey?: string;
   width?: number;
   height?: number;
   size_bytes?: number;
-  sizeBytes?: number;
 }
 
 interface ConfirmUploadInput {
-  uploadId?: string;
-  baseName?: string;
+  upload_id?: string;
+  base_name?: string;
   name?: string;
-  altText?: string;
+  alt_text?: string;
   caption?: string;
   credit?: Record<string, unknown> | null;
-  aspectRatio?: string | null;
-  focalPoint?: { x: number; y: number };
-  mimeType?: string;
+  aspect_ratio?: string | null;
+  focal_point?: { x: number; y: number };
+  mime_type?: string;
   variants?: {
     original?: UploadVariantInput;
     lg?: UploadVariantInput;
@@ -33,49 +31,6 @@ interface ConfirmUploadInput {
   };
   placeholder?: string;
 }
-
-interface StoredUploadVariant {
-  upload_key: string;
-  width: number;
-  height: number;
-  size_bytes?: number;
-}
-
-const toStoredUploadVariant = (variant: UploadVariantInput | undefined | null): StoredUploadVariant | undefined => {
-  if (!variant) return undefined;
-  const uploadKey = variant.upload_key ?? variant.uploadKey;
-  if (!uploadKey || !variant.width || !variant.height) return undefined;
-  const out: StoredUploadVariant = {
-    upload_key: uploadKey,
-    width: variant.width,
-    height: variant.height,
-  };
-  const sizeBytes = variant.size_bytes ?? variant.sizeBytes;
-  if (typeof sizeBytes === 'number') {
-    out.size_bytes = sizeBytes;
-  }
-  return out;
-};
-
-const toConfirmUploadPayload = (payload: ConfirmUploadInput) => ({
-  upload_id: payload.uploadId,
-  base_name: payload.baseName,
-  name: payload.name,
-  alt_text: payload.altText,
-  caption: payload.caption,
-  credit: payload.credit,
-  aspect_ratio: payload.aspectRatio ?? null,
-  focal_point: payload.focalPoint,
-  mime_type: payload.mimeType,
-  variants: {
-    original: toStoredUploadVariant(payload.variants?.original),
-    lg: toStoredUploadVariant(payload.variants?.lg),
-    md: toStoredUploadVariant(payload.variants?.md),
-    sm: toStoredUploadVariant(payload.variants?.sm),
-    xs: toStoredUploadVariant(payload.variants?.xs),
-  },
-  placeholder: payload.placeholder,
-});
 
 /* ------------------------------------------------------------------ */
 /*  ARTICLES API                                                      */
@@ -162,7 +117,7 @@ export const mediaAPI = {
   delete: (id: number | string) => api.delete(`/media/${id}`),
   bulkDelete: (ids: (number | string)[]) => api.post('/media/bulk-delete', { ids }),
   confirmUpload: async (payload: ConfirmUploadInput, config: AxiosRequestConfig = {}) =>
-    api.post('/media/confirm', toConfirmUploadPayload(payload), config),
+    api.post('/media/confirm', payload, config),
   uploadVariant: async (blob: Blob, options: UploadVariantOptions, config: AxiosRequestConfig = {}) => {
     const formData = new FormData();
     formData.append('file', blob, options.filename || 'image.webp');

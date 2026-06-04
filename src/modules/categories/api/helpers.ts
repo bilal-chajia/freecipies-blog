@@ -97,16 +97,12 @@ const normalizeImageSlot = (slot: any, variantKeys: string[], fallbackAspectRati
 
   return {
     ...(typeof slot.media_id === 'number' ? { media_id: slot.media_id } : {}),
-    ...(typeof slot.mediaId === 'number' ? { media_id: slot.mediaId } : {}),
     alt: typeof slot.alt === 'string' ? slot.alt : '',
     placeholder: typeof slot.placeholder === 'string' ? slot.placeholder : '',
     aspect_ratio: typeof slot.aspect_ratio === 'string'
       ? slot.aspect_ratio
-      : typeof slot.aspectRatio === 'string'
-        ? slot.aspectRatio
-        : fallbackAspectRatio,
+      : fallbackAspectRatio,
     ...(slot.focal_point && typeof slot.focal_point === 'object' ? { focal_point: slot.focal_point } : {}),
-    ...(slot.focalPoint && typeof slot.focalPoint === 'object' ? { focal_point: slot.focalPoint } : {}),
     variants,
   };
 };

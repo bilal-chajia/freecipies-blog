@@ -18,7 +18,7 @@ describe('mediaHelpers', () => {
         alt_text: '',
         caption: '',
         credit: '',
-        variantsJson: '{"variants":{},"placeholder":""}'
+        variants_json: '{"variants":{},"placeholder":""}'
       } as unknown as MediaLibraryItem;
       expect(isMediaItemImage(item)).toBe(true);
     });
@@ -31,7 +31,7 @@ describe('mediaHelpers', () => {
         alt_text: '',
         caption: '',
         credit: '',
-        variantsJson: '{"variants":{},"placeholder":""}'
+        variants_json: '{"variants":{},"placeholder":""}'
       } as unknown as MediaLibraryItem;
       expect(isMediaItemImage(item)).toBe(false);
     });
@@ -46,7 +46,7 @@ describe('mediaHelpers', () => {
         alt_text: '',
         caption: '',
         credit: '',
-        variantsJson: JSON.stringify({
+        variants_json: JSON.stringify({
           variants: {
             xs: { url: '/api/images/test-xs.webp', width: 100, height: 100, size_bytes: 500 },
             sm: { url: '/api/images/test-sm.webp', width: 200, height: 200, size_bytes: 1500 }
@@ -65,7 +65,7 @@ describe('mediaHelpers', () => {
         alt_text: '',
         caption: '',
         credit: '',
-        variantsJson: JSON.stringify({
+        variants_json: JSON.stringify({
           variants: {
             xs: { url: '/api/images/test-xs.webp', width: 100, height: 100, size_bytes: 1024 }
           },
@@ -83,7 +83,7 @@ describe('mediaHelpers', () => {
         alt_text: '',
         caption: '',
         credit: '',
-        variantsJson: '{"variants":{},"placeholder":""}'
+        variants_json: '{"variants":{},"placeholder":""}'
       } as unknown as MediaLibraryItem;
       expect(formatDisplayedSize(item)).toBe('-');
     });
@@ -98,7 +98,7 @@ describe('mediaHelpers', () => {
       caption: '',
       credit: '',
       url: '/fallback.jpg',
-      variantsJson: JSON.stringify({
+      variants_json: JSON.stringify({
         variants: {
           xs: { url: '/api/images/pasta-xs.webp', width: 360, height: 240 },
           sm: { url: '/api/images/pasta-sm.webp', width: 720, height: 480 },

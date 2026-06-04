@@ -24,7 +24,7 @@ const variant = (name: string) => ({
 });
 
 describe('media validation schemas', () => {
-  it('normalizes snake_case confirm payloads to internal camelCase', () => {
+  it('keeps snake_case confirm payloads in canonical snake_case', () => {
     const result = ConfirmUploadSchema.parse({
       upload_id: 'upload-1',
       base_name: 'avocado-toast',
@@ -45,12 +45,12 @@ describe('media validation schemas', () => {
       placeholder: 'data:image/jpeg;base64,abc',
     });
 
-    expect(result.uploadId).toBe('upload-1');
-    expect(result.baseName).toBe('avocado-toast');
-    expect(result.altText).toBe('Avocado toast on a plate');
-    expect(result.aspectRatio).toBe('3:2');
-    expect(result.focalPoint).toEqual({ x: 50, y: 45 });
-    expect(result.mimeType).toBe('image/webp');
+    expect(result.upload_id).toBe('upload-1');
+    expect(result.base_name).toBe('avocado-toast');
+    expect(result.alt_text).toBe('Avocado toast on a plate');
+    expect(result.aspect_ratio).toBe('3:2');
+    expect(result.focal_point).toEqual({ x: 50, y: 45 });
+    expect(result.mime_type).toBe('image/webp');
     expect(result.variants.md).toEqual({
       r2Key: 'media/md.webp',
       width: 720,
@@ -81,7 +81,7 @@ describe('media validation schemas', () => {
     expect(result.success).toBe(false);
   });
 
-  it('normalizes snake_case update payloads to internal camelCase', () => {
+  it('keeps snake_case update payloads in canonical snake_case', () => {
     const result = UpdateMediaSchema.parse({
       alt_text: 'Updated alt',
       focal_point: { x: 25, y: 75 },
@@ -90,9 +90,9 @@ describe('media validation schemas', () => {
     });
 
     expect(result).toEqual({
-      altText: 'Updated alt',
-      focalPoint: { x: 25, y: 75 },
-      aspectRatio: '16:9',
+      alt_text: 'Updated alt',
+      focal_point: { x: 25, y: 75 },
+      aspect_ratio: '16:9',
       caption: 'Updated caption',
     });
   });

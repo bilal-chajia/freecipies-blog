@@ -150,22 +150,18 @@ const normalizeMediaVariants = (parsed: object | null | undefined): object | nul
 
 interface MediaItem {
   id?: number;
-  variantsJson?: string | object;
   variants_json?: string | object;
   variants?: object;
-  altText?: string;
+  alt_text?: string;
   alt?: string;
   placeholder?: string;
-  aspectRatio?: string;
   aspect_ratio?: string;
-  focalPointJson?: string | object;
   focal_point_json?: string | object;
 }
 
 interface ImageSlotOverrides {
   alt?: string;
   placeholder?: string;
-  aspectRatio?: string;
   aspect_ratio?: string;
   focal_point?: string | object;
   variant_keys?: string[];
@@ -187,7 +183,7 @@ interface ImageSlot {
 }
 
 export const buildImageSlotFromMedia = (item: MediaItem | null | undefined, overrides: ImageSlotOverrides = {}): ImageSlot => {
-  const parsed = parseVariantsJson(item?.variantsJson || item?.variants_json);
+  const parsed = parseVariantsJson(item?.variants_json);
   const payloadVariants = item?.variants && typeof item.variants === 'object'
     ? item.variants
     : null;
@@ -208,10 +204,10 @@ export const buildImageSlotFromMedia = (item: MediaItem | null | undefined, over
     });
   }
 
-  const alt = overrides.alt ?? item?.altText ?? item?.alt ?? '';
+  const alt = overrides.alt ?? item?.alt_text ?? item?.alt ?? '';
   const placeholder = (overrides.placeholder ?? (parsed as Record<string, unknown>)?.placeholder ?? item?.placeholder ?? '') as string;
-  const aspectRatio = overrides.aspectRatio ?? item?.aspectRatio ?? item?.aspect_ratio;
-  const focalPointRaw = overrides.focal_point ?? item?.focalPointJson ?? item?.focal_point_json;
+  const aspectRatio = overrides.aspect_ratio ?? item?.aspect_ratio;
+  const focalPointRaw = overrides.focal_point ?? item?.focal_point_json;
   const focalPoint = ((): FocalPoint | undefined => {
     if (!focalPointRaw) return undefined;
     if (typeof focalPointRaw === 'object') return focalPointRaw as FocalPoint;

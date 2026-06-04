@@ -5,9 +5,9 @@
  *
  * ## Naming Convention
  *
- * API JSON payloads use snake_case. Schemas normalize request bodies to
- * camelCase for TypeScript services, then storage helpers serialize DB JSON
- * back to snake_case.
+ * API JSON payloads use canonical snake_case. These schemas accept and return
+ * canonical snake_case data shapes and do not normalize data-shape keys to
+ * camelCase.
  */
 import { z } from '../helpers';
 import { PaginationSchema } from './common';
@@ -29,15 +29,15 @@ const normalizeVariantInput = (value: unknown): unknown => {
 const normalizeConfirmUploadInput = (value: unknown): unknown => {
   if (!isRecord(value)) return value;
   return {
-    uploadId: value.upload_id ?? value.uploadId,
-    baseName: value.base_name ?? value.baseName,
+    upload_id: value.upload_id,
+    base_name: value.base_name,
     name: value.name,
-    altText: value.alt_text ?? value.altText,
+    alt_text: value.alt_text,
     caption: value.caption,
     credit: value.credit,
-    aspectRatio: value.aspect_ratio ?? value.aspectRatio,
-    focalPoint: value.focal_point ?? value.focalPoint,
-    mimeType: value.mime_type ?? value.mimeType,
+    aspect_ratio: value.aspect_ratio,
+    focal_point: value.focal_point,
+    mime_type: value.mime_type,
     variants: value.variants,
     placeholder: value.placeholder,
   };
@@ -47,11 +47,11 @@ const normalizeUpdateMediaInput = (value: unknown): unknown => {
   if (!isRecord(value)) return value;
   return {
     name: value.name,
-    altText: value.alt_text ?? value.altText,
+    alt_text: value.alt_text,
     caption: value.caption,
     credit: value.credit,
-    focalPoint: value.focal_point ?? value.focalPoint,
-    aspectRatio: value.aspect_ratio ?? value.aspectRatio,
+    focal_point: value.focal_point,
+    aspect_ratio: value.aspect_ratio,
   };
 };
 
@@ -135,18 +135,18 @@ const AuthorCreditSnapshotSchema = z.object({
 
 /** POST /api/media/confirm body */
 export const ConfirmUploadSchema = z.preprocess(normalizeConfirmUploadInput, z.object({
-  uploadId: z.string().min(1),
-  baseName: z.string().min(1),
+  upload_id: z.string().min(1),
+  base_name: z.string().min(1),
   name: z.string().min(1),
-  altText: z.string().min(1),
+  alt_text: z.string().min(1),
   caption: z.string().min(1, 'Caption is required'),
   credit: AuthorCreditSnapshotSchema,
-  aspectRatio: z.string().nullable().optional(),
-  focalPoint: z.object({
+  aspect_ratio: z.string().nullable().optional(),
+  focal_point: z.object({
     x: z.number().min(0).max(100),
     y: z.number().min(0).max(100),
   }).optional(),
-  mimeType: z.string().min(1),
+  mime_type: z.string().min(1),
   variants: z.object({
     original: VariantInfoSchema,
     lg: VariantInfoSchema,
@@ -161,14 +161,14 @@ export const ConfirmUploadSchema = z.preprocess(normalizeConfirmUploadInput, z.o
 /** PATCH /api/media/:id body — update metadata without re-uploading variants */
 export const UpdateMediaSchema = z.preprocess(normalizeUpdateMediaInput, z.object({
   name: z.string().min(1).optional(),
-  altText: z.string().min(1).optional(),
+  alt_text: z.string().min(1).optional(),
   caption: z.string().min(1).optional(),
   credit: AuthorCreditSnapshotSchema.optional(),
-  focalPoint: z.object({
+  focal_point: z.object({
     x: z.number().min(0).max(100),
     y: z.number().min(0).max(100),
   }).optional(),
-  aspectRatio: z.string().nullable().optional(),
+  aspect_ratio: z.string().nullable().optional(),
 }));
 
 /** POST /api/media/upload-variant fields (FormData) */

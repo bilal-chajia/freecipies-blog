@@ -95,8 +95,8 @@ export const POST: APIRoute = async ({ request }) => {
     await assertUploadedVariantsExist(variantsJson);
 
     // Build focal point JSON
-    const focalPointJson = body.focalPoint
-      ? JSON.stringify(body.focalPoint)
+    const focal_point_value = body.focal_point
+      ? JSON.stringify(body.focal_point)
       : '{"x": 50, "y": 50}';
 
     const credit = JSON.stringify(normalizeStoredAuthorCreditSnapshot(body.credit));
@@ -104,13 +104,13 @@ export const POST: APIRoute = async ({ request }) => {
     // Create media record
     const mediaData: NewMedia = {
       name: body.name,
-      altText: body.altText,
+      alt_text: body.alt_text,
       caption: body.caption,
       credit,
-      mimeType: body.mimeType || 'image/webp',
-      aspectRatio: body.aspectRatio ?? null,
-      variantsJson: JSON.stringify(variantsJson),
-      focalPointJson,
+      mime_type: body.mime_type || 'image/webp',
+      aspect_ratio: body.aspect_ratio ?? null,
+      variants_json: JSON.stringify(variantsJson),
+      focal_point_json: focal_point_value,
     };
 
     const newMedia = await createMedia(env.DB, mediaData);

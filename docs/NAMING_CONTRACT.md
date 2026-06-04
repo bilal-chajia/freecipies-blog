@@ -1,6 +1,6 @@
 # Naming Contract
 
-> **Last Updated:** 2026-05-14
+> **Last Updated:** 2026-06-03
 
 This document is the canonical naming contract for SQL schema names, stored JSON,
 serialized JSON, public routes, slugs, file names, and TypeScript/TSX
@@ -11,35 +11,51 @@ implementation names.
 - SQL schema names use `snake_case`.
 - Stored JSON keys use `snake_case`.
 - Serialized API/admin/server-render JSON keys use `snake_case`.
-- TypeScript/TSX variable, constant, and property names use `camelCase` in
-  implementation code only.
-- TypeScript types, interfaces, classes, React components, and Astro components
-  use `PascalCase`.
+- **Data object properties use `snake_case` end to end.** The same key flows
+  unchanged from the SQL column → Drizzle field → service layer → serialized API
+  payload → consuming React/Astro prop. **No casing conversion at any boundary.**
+- The TypeScript types and interfaces that model data shapes (DB rows, JSON
+  payloads, API request/response bodies) therefore use `snake_case` property
+  names. This is a deliberate exception to JS idiom, chosen to remove the
+  camelCase↔snake_case drift that caused stored/serialized leaks.
+- Local variables, function names, and other non-data identifiers use
+  `camelCase` per normal TS/JS idiom. They are not data keys.
+- Type/interface/class/React-component/Astro-component **names** use `PascalCase`.
 - Public slugs and route params use lowercase `kebab-case`.
 - Files and folders use the existing local convention of their owning module.
   New contract docs use uppercase descriptive names ending in `_CONTRACT.md`.
-- Stored and serialized JSON never use implementation-only camelCase keys.
+- Mixed shapes (e.g. both `sizeBytes` and `size_bytes`) are forbidden.
 
 ## Boundaries
 
-Implementation names do not change persisted or serialized names.
-
-Example:
+A data key keeps **one** name across every layer. There is no implementation-side
+rename and no conversion step.
 
 | Layer | Name |
 | --- | --- |
 | SQL column | `content_json` |
-| Stored JSON key | `size_bytes` |
-| Serialized JSON key | `size_bytes` |
-| TypeScript variable/property | `contentJson`, `sizeBytes` |
+| Stored JSON key | `content_json` |
+| Drizzle field | `content_json` |
+| Serialized JSON key | `content_json` |
+| TypeScript data-shape property | `content_json` |
+| React/Astro prop reading it | `content_json` |
 
 Rules:
 
-- API handlers and services can map `content_json` to `contentJson` internally.
-- Before writing to D1 or returning serialized JSON, convert implementation
-  names back to the contract name.
-- Do not persist or return mixed shapes such as both `sizeBytes` and
-  `size_bytes`.
+- Data flows `snake_case` end to end. Handlers, services, serializers, and the
+  admin SPA read and write the same `snake_case` keys.
+- **Do not add a camelCase↔snake_case conversion layer** (axios interceptor,
+  Drizzle camelCase field aliases, a `serialize*Payload` remap, etc.) for data
+  keys.
+- Local variables and function names may be `camelCase`; they are not data keys.
+- Mixed shapes such as both `sizeBytes` and `size_bytes` are forbidden.
+
+> **Migration status (2026-06-03):** the codebase is mid-migration from the old
+> camelCase-TS rule to this snake_case-end-to-end rule. The **media** resource is
+> fully migrated (schema → API → admin). Other resources (articles, authors,
+> categories, recipes, …) still expose camelCase TS data shapes and must be
+> migrated incrementally. Until a resource is migrated, its existing camelCase
+> shape is tolerated; new code follows this contract.
 
 ## SQL Names
 

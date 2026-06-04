@@ -53,38 +53,33 @@ export type PublicMediaVariants = Record<ImageVariantKey, PublicImageVariantCont
 export interface MediaRowForPayload {
   id: number;
   name: string;
-  altText?: string | null;
+  alt_text?: string | null;
   caption?: string | null;
   credit?: string | null;
-  mimeType?: string | null;
-  aspectRatio?: string | null;
-  variantsJson?: string | null;
+  mime_type?: string | null;
+  aspect_ratio?: string | null;
   variants_json?: string | null;
-  focalPointJson?: string | null;
   focal_point_json?: string | null;
-  createdAt?: string | null;
   created_at?: string | null;
-  updatedAt?: string | null;
   updated_at?: string | null;
-  deletedAt?: string | null;
   deleted_at?: string | null;
 }
 
 export interface AdminMediaPayload {
   id: number;
   name: string;
-  altText: string | null;
+  alt_text: string | null;
   caption: string | null;
   credit: ResolvedAuthorCreditSnapshot | null;
-  mimeType: string;
-  aspectRatio: string | null;
-  focalPoint: { x: number; y: number };
+  mime_type: string;
+  aspect_ratio: string | null;
+  focal_point: { x: number; y: number };
   placeholder: string;
   variants: Partial<PublicMediaVariants>;
   url: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-  deletedAt: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  deleted_at: string | null;
 }
 
 export interface AuthorRowForCredit {
@@ -366,7 +361,7 @@ function normalizeSnapshotVariants(
 }
 
 function readFocalPoint(record: Record<string, unknown>): { x: number; y: number } | undefined {
-  const source = readRecord(record, 'focal_point') ?? readRecord(record, 'focalPoint');
+  const source = readRecord(record, 'focal_point');
   if (!source) return undefined;
 
   const x = readNumber(source, 'x');
@@ -411,7 +406,7 @@ function normalizeSnapshotSlot(
   const focalPoint = readFocalPoint(source);
   if (focalPoint) slot.focal_point = focalPoint;
 
-  const aspectRatio = readString(source, 'aspect_ratio') ?? readString(source, 'aspectRatio');
+  const aspectRatio = readString(source, 'aspect_ratio');
   if (aspectRatio !== undefined) slot.aspect_ratio = aspectRatio;
 
   return slot;
@@ -511,7 +506,7 @@ function pickAdminUrl(variants: Partial<PublicMediaVariants>): string {
 }
 
 export function serializeAdminMediaPayload(row: MediaRowForPayload): AdminMediaPayload {
-  const variantsJson = row.variantsJson ?? row.variants_json ?? null;
+  const variantsJson = row.variants_json ?? null;
   let placeholder = '';
   let variants: Partial<PublicMediaVariants> = {};
 
@@ -528,18 +523,18 @@ export function serializeAdminMediaPayload(row: MediaRowForPayload): AdminMediaP
   return {
     id: row.id,
     name: row.name,
-    altText: row.altText ?? null,
+    alt_text: row.alt_text ?? null,
     caption: row.caption ?? null,
     credit: serializeAuthorCreditForAdmin(row.credit ?? null),
-    mimeType: row.mimeType ?? 'image/webp',
-    aspectRatio: row.aspectRatio ?? null,
-    focalPoint: parseFocalPointJson(row.focalPointJson ?? row.focal_point_json ?? null),
+    mime_type: row.mime_type ?? 'image/webp',
+    aspect_ratio: row.aspect_ratio ?? null,
+    focal_point: parseFocalPointJson(row.focal_point_json ?? null),
     placeholder,
     variants,
     url: pickAdminUrl(variants),
-    createdAt: row.createdAt ?? row.created_at ?? null,
-    updatedAt: row.updatedAt ?? row.updated_at ?? null,
-    deletedAt: row.deletedAt ?? row.deleted_at ?? null,
+    created_at: row.created_at ?? null,
+    updated_at: row.updated_at ?? null,
+    deleted_at: row.deleted_at ?? null,
   };
 }
 
@@ -559,18 +554,15 @@ export interface SnapshotPatch {
 }
 
 export function buildSnapshotPatch(mediaRow: {
-  altText?: string | null;
+  alt_text?: string | null;
   caption?: string | null;
   credit?: string | null;
-  focalPointJson?: string | null;
   focal_point_json?: string | null;
-  aspectRatio?: string | null;
   aspect_ratio?: string | null;
-  variantsJson?: string | null;
   variants_json?: string | null;
 }): SnapshotPatch {
   const patch: SnapshotPatch = {
-    alt: mediaRow.altText ?? undefined,
+    alt: mediaRow.alt_text ?? undefined,
     caption: mediaRow.caption ?? undefined,
   };
 
@@ -583,7 +575,7 @@ export function buildSnapshotPatch(mediaRow: {
     }
   }
 
-  const fpJson = mediaRow.focalPointJson ?? mediaRow.focal_point_json;
+  const fpJson = mediaRow.focal_point_json;
   if (fpJson) {
     try {
       const fp = JSON.parse(fpJson);
@@ -595,12 +587,12 @@ export function buildSnapshotPatch(mediaRow: {
     }
   }
 
-  const ar = mediaRow.aspectRatio ?? mediaRow.aspect_ratio;
+  const ar = mediaRow.aspect_ratio;
   if (ar) {
     patch.aspect_ratio = ar;
   }
 
-  const varJson = mediaRow.variantsJson ?? mediaRow.variants_json;
+  const varJson = mediaRow.variants_json;
   if (varJson) {
     try {
       const normalized = normalizeMediaVariantsJson(varJson);

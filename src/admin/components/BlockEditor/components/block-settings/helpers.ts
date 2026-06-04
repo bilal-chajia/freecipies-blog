@@ -15,7 +15,6 @@ type BlockImageProps = Record<string, unknown>;
 interface MediaSelectPayload {
     id?: string | number | null;
     url?: string;
-    altText?: string;
     alt_text?: string;
     name?: string;
     caption?: string;
@@ -27,7 +26,7 @@ interface MediaSelectPayload {
 interface UploadPayload {
     id?: string | number | null;
     url?: string;
-    altText?: string;
+    alt_text?: string;
     caption?: string;
     credit?: string | Record<string, unknown>;
     width?: number;
@@ -67,7 +66,7 @@ export const buildImageReplaceProps = (item: MediaSelectPayload, currentProps: B
     return {
         url,
         mediaId: item.id?.toString() || '',
-        alt: item.altText || item.alt_text || item.name || '',
+        alt: item.alt_text || item.name || '',
         caption: item.caption || '',
         credit: getAuthorCreditName(item.credit, item.credit_text || ''),
         creditJson: serializeAuthorCredit(item.credit),
@@ -85,7 +84,7 @@ export const buildImageUploadProps = (data: UploadPayload, currentProps: BlockIm
     return {
         url,
         mediaId: data.id?.toString() || '',
-        alt: data.altText || '',
+        alt: data.alt_text || '',
         caption: data.caption || '',
         credit: getAuthorCreditName(data.credit),
         creditJson: serializeAuthorCredit(data.credit),

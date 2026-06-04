@@ -4,11 +4,9 @@ type VariantKey = 'xs' | 'sm' | 'md' | 'lg' | 'original';
 type Variant = {
   url?: string;
   r2_key?: string; // boundary-allow: input-only field, resolved to a public url via resolveVariantUrl; never persisted/exposed by admin
-  r2Key?: string;
   width?: number;
   height?: number;
   size_bytes?: number;
-  sizeBytes?: number;
 };
 
 type MediaSelectionItem = {
@@ -16,17 +14,13 @@ type MediaSelectionItem = {
   url?: string;
   name?: string | null;
   alt?: string | null;
-  altText?: string | null;
   alt_text?: string | null;
   caption?: string | null;
   credit?: unknown;
   placeholder?: string | null;
-  aspectRatio?: string | null;
   aspect_ratio?: string | null;
-  focalPoint?: { x?: number; y?: number } | null;
   focal_point?: { x?: number; y?: number } | null;
   variants?: unknown;
-  variantsJson?: unknown;
   variants_json?: unknown;
   width?: number;
   height?: number;
@@ -89,7 +83,7 @@ function serializeCredit(credit: unknown): string {
 }
 
 function readFocalPoint(item: MediaSelectionItem): { x: number; y: number } | undefined {
-  const source = item.focal_point ?? item.focalPoint;
+  const source = item.focal_point;
   if (!source) return undefined;
   const x = typeof source.x === 'number' ? source.x : undefined;
   const y = typeof source.y === 'number' ? source.y : undefined;
@@ -110,9 +104,9 @@ export function buildContentImageSelection({
   const imageRef = typeof currentProps.imageRef === 'string' && currentProps.imageRef
     ? currentProps.imageRef
     : `body-image-${item.id || fallbackBlockId}`;
-  const alt = item.altText ?? item.alt_text ?? item.alt ?? item.name ?? '';
+  const alt = item.alt_text ?? item.name ?? '';
   const caption = item.caption ?? '';
-  const aspectRatio = item.aspect_ratio ?? item.aspectRatio ?? undefined;
+  const aspectRatio = item.aspect_ratio ?? undefined;
   const focalPoint = readFocalPoint(item);
   const mediaId = typeof item.id === 'number' ? item.id : Number(item.id) || item.id || imageRef;
   const url = bestVariant?.url ?? item.url ?? '';
