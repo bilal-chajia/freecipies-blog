@@ -6,8 +6,10 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
+import { normalizeOpenAiModels } from '../discovery/normalize';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_MODELS_URL = 'https://api.anthropic.com/v1/models';
 
 interface AnthropicResponse {
     id?: string;
@@ -125,7 +127,18 @@ export class AnthropicProvider implements IAIProvider {
         }
     }
 
-    async listModels() {
-        return { supported: false, models: [] };
+    async listModels(apiKey: string) {
+        try {
+            const response = await fetch(ANTHROPIC_MODELS_URL, {
+                headers: {
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                },
+            });
+            if (!response.ok) return { supported: true, models: [] };
+            return { supported: true, models: normalizeOpenAiModels(await response.json()) };
+        } catch {
+            return { supported: true, models: [] };
+        }
     }
 }

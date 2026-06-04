@@ -7,10 +7,8 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
-import { normalizeOpenAiModels } from '../discovery/normalize';
 
 const QWEN_API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
-const QWEN_MODELS_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/models';
 
 interface QwenResponse {
     id?: string;
@@ -129,17 +127,7 @@ export class QwenProvider implements IAIProvider {
         }
     }
 
-    async listModels(apiKey: string) {
-        try {
-            const response = await fetch(QWEN_MODELS_URL, {
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                },
-            });
-            if (!response.ok) return { supported: true, models: [] };
-            return { supported: true, models: normalizeOpenAiModels(await response.json()) };
-        } catch {
-            return { supported: true, models: [] };
-        }
+    async listModels() {
+        return { supported: false, models: [] };
     }
 }

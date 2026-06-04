@@ -7,10 +7,8 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
-import { normalizeOpenAiModels } from '../discovery/normalize';
 
 const ZHIPU_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-const ZHIPU_MODELS_URL = 'https://open.bigmodel.cn/api/paas/v4/models';
 
 interface ZhipuResponse {
     id?: string;
@@ -129,17 +127,7 @@ export class ZhipuProvider implements IAIProvider {
         }
     }
 
-    async listModels(apiKey: string) {
-        try {
-            const response = await fetch(ZHIPU_MODELS_URL, {
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                },
-            });
-            if (!response.ok) return { supported: true, models: [] };
-            return { supported: true, models: normalizeOpenAiModels(await response.json()) };
-        } catch {
-            return { supported: true, models: [] };
-        }
+    async listModels() {
+        return { supported: false, models: [] };
     }
 }
