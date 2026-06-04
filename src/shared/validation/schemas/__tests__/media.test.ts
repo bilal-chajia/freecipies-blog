@@ -23,27 +23,29 @@ const variant = (name: string) => ({
   size_bytes: 12000,
 });
 
+const confirmPayload = () => ({
+  upload_id: 'upload-1',
+  base_name: 'avocado-toast',
+  name: 'Avocado Toast',
+  alt_text: 'Avocado toast on a plate',
+  caption: 'Creamy avocado toast',
+  credit: authorCredit,
+  aspect_ratio: '3:2',
+  focal_point: { x: 50, y: 45 },
+  mime_type: 'image/webp',
+  variants: {
+    original: variant('original'),
+    lg: variant('lg'),
+    md: variant('md'),
+    sm: variant('sm'),
+    xs: variant('xs'),
+  },
+  placeholder: 'data:image/jpeg;base64,abc',
+});
+
 describe('media validation schemas', () => {
   it('keeps snake_case confirm payloads in canonical snake_case', () => {
-    const result = ConfirmUploadSchema.parse({
-      upload_id: 'upload-1',
-      base_name: 'avocado-toast',
-      name: 'Avocado Toast',
-      alt_text: 'Avocado toast on a plate',
-      caption: 'Creamy avocado toast',
-      credit: authorCredit,
-      aspect_ratio: '3:2',
-      focal_point: { x: 50, y: 45 },
-      mime_type: 'image/webp',
-      variants: {
-        original: variant('original'),
-        lg: variant('lg'),
-        md: variant('md'),
-        sm: variant('sm'),
-        xs: variant('xs'),
-      },
-      placeholder: 'data:image/jpeg;base64,abc',
-    });
+    const result = ConfirmUploadSchema.parse(confirmPayload());
 
     expect(result.upload_id).toBe('upload-1');
     expect(result.base_name).toBe('avocado-toast');
@@ -81,6 +83,35 @@ describe('media validation schemas', () => {
     expect(result.success).toBe(false);
   });
 
+  it('rejects camelCase confirm payload keys', () => {
+    const result = ConfirmUploadSchema.safeParse({
+      ...confirmPayload(),
+      uploadId: 'upload-1',
+      baseName: 'avocado-toast',
+      altText: 'Avocado toast on a plate',
+      mimeType: 'image/webp',
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects camelCase confirm variant payload keys', () => {
+    const result = ConfirmUploadSchema.safeParse({
+      ...confirmPayload(),
+      variants: {
+        ...confirmPayload().variants,
+        md: {
+          r2_key: 'media/md.webp',
+          width: 720,
+          height: 480,
+          sizeBytes: 12000,
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it('keeps snake_case update payloads in canonical snake_case', () => {
     const result = UpdateMediaSchema.parse({
       alt_text: 'Updated alt',
@@ -95,5 +126,16 @@ describe('media validation schemas', () => {
       aspect_ratio: '16:9',
       caption: 'Updated caption',
     });
+  });
+
+  it('rejects camelCase update payload keys', () => {
+    const result = UpdateMediaSchema.safeParse({
+      alt_text: 'Updated alt',
+      altText: 'Updated alt',
+      focalPoint: { x: 25, y: 75 },
+      aspectRatio: '16:9',
+    });
+
+    expect(result.success).toBe(false);
   });
 });

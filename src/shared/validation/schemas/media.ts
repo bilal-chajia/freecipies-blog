@@ -16,11 +16,29 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   typeof value === 'object' && value !== null && !Array.isArray(value)
 );
 
+const hasAnyKey = (value: Record<string, unknown>, keys: readonly string[]): boolean => (
+  keys.some(key => Object.prototype.hasOwnProperty.call(value, key))
+);
+
+const hasOnlyKeys = (value: Record<string, unknown>, keys: readonly string[]): boolean => (
+  Object.keys(value).every(key => keys.includes(key))
+);
+
+const CAMEL_CASE_MEDIA_KEYS = [
+  'uploadId',
+  'baseName',
+  'altText',
+  'aspectRatio',
+  'focalPoint',
+  'mimeType',
+] as const;
+
 // `upload_key` (the temporary R2 key returned by upload-variant) and `r2_key`
 // (the stored key) are the same value under two contract names; accept either
 // and emit the canonical `r2_key`. No camelCase fallbacks.
 const normalizeVariantInput = (value: unknown): unknown => {
   if (!isRecord(value)) return value;
+  if (!hasOnlyKeys(value, ['upload_key', 'r2_key', 'width', 'height', 'size_bytes'])) return value;
   return {
     r2_key: value.upload_key ?? value.r2_key,
     width: value.width,
@@ -31,6 +49,7 @@ const normalizeVariantInput = (value: unknown): unknown => {
 
 const normalizeConfirmUploadInput = (value: unknown): unknown => {
   if (!isRecord(value)) return value;
+  if (hasAnyKey(value, CAMEL_CASE_MEDIA_KEYS)) return value;
   return {
     upload_id: value.upload_id,
     base_name: value.base_name,
@@ -48,6 +67,7 @@ const normalizeConfirmUploadInput = (value: unknown): unknown => {
 
 const normalizeUpdateMediaInput = (value: unknown): unknown => {
   if (!isRecord(value)) return value;
+  if (hasAnyKey(value, CAMEL_CASE_MEDIA_KEYS)) return value;
   return {
     name: value.name,
     alt_text: value.alt_text,
@@ -84,7 +104,7 @@ const VariantInfoSchema = z.preprocess(normalizeVariantInput, z.object({
   width: z.coerce.number().int().nonnegative(),
   height: z.coerce.number().int().nonnegative(),
   size_bytes: z.coerce.number().int().nonnegative().optional(),
-}));
+}).strict());
 
 /**
  * Schema for a single stored image variant (DB/R2 snake_case format).
@@ -158,7 +178,7 @@ export const ConfirmUploadSchema = z.preprocess(normalizeConfirmUploadInput, z.o
     xs: VariantInfoSchema,
   }),
   placeholder: z.string().min(1),
-}));
+}).strict());
 
 
 /** PATCH /api/media/:id body — update metadata without re-uploading variants */
@@ -172,7 +192,7 @@ export const UpdateMediaSchema = z.preprocess(normalizeUpdateMediaInput, z.objec
     y: z.number().min(0).max(100),
   }).optional(),
   aspect_ratio: z.string().nullable().optional(),
-}));
+}).strict());
 
 /** POST /api/media/upload-variant fields (FormData) */
 export const VariantUploadFields = z.object({
