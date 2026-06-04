@@ -32,20 +32,20 @@ const heroCtaLink =
   typeof category.heroCtaLink === "string" && category.heroCtaLink.trim()
     ? category.heroCtaLink.trim()
     : "#newsletter";
-const categoryHero = extractImage(category.imagesJson, "hero", 1600);
-const categoryThumb = extractImage(category.imagesJson, "thumbnail", 1200);
-const categorySlot = categoryHero.imageUrl ? "hero" : "thumbnail";
-const categoryImage = categoryHero.imageUrl ? categoryHero : categoryThumb;
-const categorySrcSet = getImageSrcSet(category.imagesJson, categorySlot);
+const categoryHero = extractImage(category.images_json, "hero", 1600);
+const categoryThumb = extractImage(category.images_json, "thumbnail", 1200);
+const categorySlot = categoryHero.image_url ? "hero" : "thumbnail";
+const categoryImage = categoryHero.image_url ? categoryHero : categoryThumb;
+const categorySrcSet = getImageSrcSet(category.images_json, categorySlot);
 const showCategoryImage =
-  isHeroHeader && Boolean(categoryImage.imageUrl || category.imageUrl);
+  isHeroHeader && Boolean(categoryImage.image_url || category.image_url);
 
 const getFeaturedImage = (article: HydratedArticle) => {
-  const hero = extractImage(article.imagesJson, "hero", 1200);
-  const thumbnail = extractImage(article.imagesJson, "thumbnail", 1200);
-  const slotName = hero.imageUrl ? "hero" : "thumbnail";
-  const selected = hero.imageUrl ? hero : thumbnail;
-  const srcSet = getImageSrcSet(article.imagesJson, slotName);
+  const hero = extractImage(article.images_json, "hero", 1200);
+  const thumbnail = extractImage(article.images_json, "thumbnail", 1200);
+  const slotName = hero.image_url ? "hero" : "thumbnail";
+  const selected = hero.image_url ? hero : thumbnail;
+  const srcSet = getImageSrcSet(article.images_json, slotName);
   return { selected, srcSet };
 };
 
@@ -59,7 +59,7 @@ const featuredAuthorSlot = featuredArticle?.authorImagesJson
   ? extractImage(featuredArticle.authorImagesJson, "avatar", 50)
   : {};
 const featuredAuthorAvatar =
-  featuredAuthorSlot.imageUrl || featuredArticle?.authorAvatar;
+  featuredAuthorSlot.image_url || featuredArticle?.authorAvatar;
 ---
 
 {
@@ -73,7 +73,7 @@ const featuredAuthorAvatar =
       {showCategoryImage && (
         <div class="hero-bg">
           <img
-            src={categoryImage.imageUrl || category.imageUrl}
+            src={categoryImage.image_url || category.image_url}
             alt={categoryImage.imageAlt || category.imageAlt || category.label}
             width={categoryImage.imageWidth || category.imageWidth || 1600}
             height={categoryImage.imageHeight || category.imageHeight || 900}
@@ -143,11 +143,11 @@ const featuredAuthorAvatar =
         {isHeroHeader && featuredArticle && featuredImage && (
           <a href={`/recipes/${featuredArticle.slug}`} class="featured-card">
             <div class="featured-image">
-              {(featuredImage.selected.imageUrl ||
-                featuredArticle.imageUrl) && (
+              {(featuredImage.selected.image_url ||
+                featuredArticle.image_url) && (
                 <img
                   src={
-                    featuredImage.selected.imageUrl || featuredArticle.imageUrl
+                    featuredImage.selected.image_url || featuredArticle.image_url
                   }
                   alt={
                     featuredImage.selected.imageAlt ||
@@ -173,9 +173,9 @@ const featuredAuthorAvatar =
               )}
               <div class="featured-overlay">
                 <h2 class="featured-title">{featuredArticle.label}</h2>
-                {featuredArticle.shortDescription && (
+                {featuredArticle.short_description && (
                   <p class="featured-description">
-                    {featuredArticle.shortDescription}
+                    {featuredArticle.short_description}
                   </p>
                 )}
                 <div class="featured-meta">
@@ -200,8 +200,8 @@ const featuredAuthorAvatar =
                     <span class="featured-date">
                       <FormattedDate
                         date={
-                          featuredArticle.publishedAt ||
-                          featuredArticle.createdAt ||
+                          featuredArticle.published_at ||
+                          featuredArticle.created_at ||
                           undefined
                         }
                       />
@@ -232,7 +232,7 @@ const featuredAuthorAvatar =
         <div class:list={["hero-content", { "is-minimal": isMinimalHeader }]}>
           <h1 class="category-title">{category.headline || category.label}</h1>
           <p class="category-description">
-            {category.shortDescription || category.headline}
+            {category.short_description || category.headline}
           </p>
           {category.tldr && <p class="category-tldr">{category.tldr}</p>}
           {isHeroHeader && showHeroCta && (

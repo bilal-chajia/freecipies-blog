@@ -151,7 +151,7 @@ export default function LeftPanel({
         }
         const activeItem = structureItems.find((item) => item.id === String(activeId));
         const overItem = structureItems.find((item) => item.id === String(overId));
-        if (!activeItem || !overItem || activeItem.parentId !== overItem.parentId) {
+        if (!activeItem || !overItem || activeItem.parent_id !== overItem.parent_id) {
             setDropTarget(null);
             setDraggedItems([...visibleStructureItems]);
             return;

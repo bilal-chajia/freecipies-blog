@@ -13,11 +13,11 @@ export const siteSettings = sqliteTable('site_settings', {
   value: text('value').notNull(),
   description: text('description'),
   category: text('category').default('general'),
-  sortOrder: integer('sort_order').default(0),
+  sort_order: integer('sort_order').default(0),
   type: text('type').default('json'),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
-  index('idx_site_settings_category').on(table.category, table.sortOrder),
+  index('idx_site_settings_category').on(table.category, table.sort_order),
 ]);
 
 // Type exports

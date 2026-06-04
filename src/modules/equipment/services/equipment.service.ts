@@ -18,10 +18,10 @@ export async function getEquipment(
 ): Promise<Equipment[]> {
     const drizzle = getDb(db);
 
-    const conditions = [isNull(equipment.deletedAt)];
+    const conditions = [isNull(equipment.deleted_at)];
 
     if (options?.activeOnly) {
-        conditions.push(eq(equipment.isActive, true));
+        conditions.push(eq(equipment.is_active, true));
     }
 
     if (options?.category) {
@@ -32,7 +32,7 @@ export async function getEquipment(
         .select()
         .from(equipment)
         .where(and(...conditions))
-        .orderBy(asc(equipment.sortOrder), asc(equipment.name));
+        .orderBy(asc(equipment.sort_order), asc(equipment.name));
 
     if (options?.limit) {
         return await query.limit(options.limit);
@@ -49,7 +49,7 @@ export async function getEquipmentBySlug(db: D1Database | DrizzleDb, slug: strin
     const [found] = await drizzle
         .select()
         .from(equipment)
-        .where(and(eq(equipment.slug, slug), isNull(equipment.deletedAt)))
+        .where(and(eq(equipment.slug, slug), isNull(equipment.deleted_at)))
         .limit(1);
     return found || null;
 }
@@ -62,7 +62,7 @@ export async function getEquipmentById(db: D1Database | DrizzleDb, id: number): 
     const [found] = await drizzle
         .select()
         .from(equipment)
-        .where(and(eq(equipment.id, id), isNull(equipment.deletedAt)))
+        .where(and(eq(equipment.id, id), isNull(equipment.deleted_at)))
         .limit(1);
     return found || null;
 }
@@ -91,7 +91,7 @@ export async function updateEquipment(
 
     const updateData = {
         ...item,
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
     };
 
     await drizzle.update(equipment)
@@ -107,7 +107,7 @@ export async function updateEquipment(
 export async function deleteEquipment(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
     const drizzle = getDb(db);
     await drizzle.update(equipment)
-        .set({ deletedAt: new Date().toISOString() })
+        .set({ deleted_at: new Date().toISOString() })
         .where(eq(equipment.slug, slug));
     return true;
 }

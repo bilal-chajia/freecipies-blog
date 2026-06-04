@@ -11,18 +11,18 @@ import { articles } from '../../articles/schema/articles.schema';
 import { syncCachedFields } from '../../articles/services/articles.service';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
-async function getArticleIdsForAuthor(drizzle: DrizzleDb, authorId: number): Promise<number[]> {
+async function getArticleIdsForAuthor(drizzle: DrizzleDb, author_id: number): Promise<number[]> {
   const rows = await drizzle
     .select({ id: articles.id })
     .from(articles)
-    .where(and(eq(articles.authorId, authorId), isNull(articles.deletedAt)));
+    .where(and(eq(articles.author_id, author_id), isNull(articles.deleted_at)));
 
   return rows.map((row) => row.id);
 }
 
 async function refreshAuthorArticleCaches(db: D1Database | DrizzleDb, articleIds: number[]): Promise<void> {
-  for (const articleId of articleIds) {
-    await syncCachedFields(db, articleId);
+  for (const article_id of articleIds) {
+    await syncCachedFields(db, article_id);
   }
 }
 
@@ -31,20 +31,20 @@ async function refreshAuthorArticleCaches(db: D1Database | DrizzleDb, articleIds
  */
 export async function getAuthors(
   db: D1Database | DrizzleDb,
-  options?: { workflowStatus?: 'draft' | 'published' | 'archived' }
+  options?: { workflow_status?: 'draft' | 'published' | 'archived' }
 ): Promise<Author[]> {
   const drizzle = getDb(db);
 
-  const conditions = [isNull(authors.deletedAt)];
-  if (options?.workflowStatus !== undefined) {
-    conditions.push(eq(authors.workflowStatus, options.workflowStatus));
+  const conditions = [isNull(authors.deleted_at)];
+  if (options?.workflow_status !== undefined) {
+    conditions.push(eq(authors.workflow_status, options.workflow_status));
   }
 
   return await drizzle
     .select()
     .from(authors)
     .where(and(...conditions))
-    .orderBy(asc(authors.sortOrder), asc(authors.name));
+    .orderBy(asc(authors.sort_order), asc(authors.name));
 }
 
 /**
@@ -53,7 +53,7 @@ export async function getAuthors(
 export async function getAuthorBySlug(db: D1Database | DrizzleDb, slug: string): Promise<Author | null> {
   const drizzle = getDb(db);
   return await drizzle.query.authors.findFirst({
-    where: and(eq(authors.slug, slug), isNull(authors.deletedAt)),
+    where: and(eq(authors.slug, slug), isNull(authors.deleted_at)),
   }) || null;
 }
 
@@ -63,7 +63,7 @@ export async function getAuthorBySlug(db: D1Database | DrizzleDb, slug: string):
 export async function getAuthorById(db: D1Database | DrizzleDb, id: number): Promise<Author | null> {
   const drizzle = getDb(db);
   return await drizzle.query.authors.findFirst({
-    where: and(eq(authors.id, id), isNull(authors.deletedAt)),
+    where: and(eq(authors.id, id), isNull(authors.deleted_at)),
   }) || null;
 }
 
@@ -95,7 +95,7 @@ export async function updateAuthor(
 
   const updateData = {
     ...author,
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   await drizzle.update(authors)
@@ -113,7 +113,7 @@ export async function updateAuthor(
 export async function deleteAuthor(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
   const drizzle = getDb(db);
   await drizzle.update(authors)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deleted_at: new Date().toISOString() })
     .where(eq(authors.slug, slug));
   return true;
 }
@@ -133,7 +133,7 @@ export async function updateAuthorById(
 
   const updateData = {
     ...author,
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   await drizzle.update(authors)
@@ -151,7 +151,7 @@ export async function updateAuthorById(
 export async function deleteAuthorById(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
   const drizzle = getDb(db);
   await drizzle.update(authors)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deleted_at: new Date().toISOString() })
     .where(eq(authors.id, id));
   return true;
 }
@@ -159,7 +159,7 @@ export async function deleteAuthorById(db: D1Database | DrizzleDb, id: number): 
 
 
 /**
- * Toggle isFeatured status by ID
+ * Toggle is_featured status by ID
  */
 export async function toggleFeaturedById(db: D1Database | DrizzleDb, id: number): Promise<Author | null> {
   const drizzle = getDb(db);
@@ -169,8 +169,8 @@ export async function toggleFeaturedById(db: D1Database | DrizzleDb, id: number)
 
   await drizzle.update(authors)
     .set({
-      isFeatured: !author.isFeatured,
-      updatedAt: new Date().toISOString(),
+      is_featured: !author.is_featured,
+      updated_at: new Date().toISOString(),
     })
     .where(eq(authors.id, id));
 

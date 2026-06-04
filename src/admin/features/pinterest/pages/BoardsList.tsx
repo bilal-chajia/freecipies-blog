@@ -216,8 +216,8 @@ const BoardsList = () => {
                       ? board.cover_image_url 
                       : { hero: { url: board.cover_image_url } };
                     
-                    const { imageUrl, imageAlt } = extractImage(imageSlot, 'hero', 1200);
-                    const previewUrl = toAdminImageUrl(imageUrl);
+                    const { image_url, imageAlt } = extractImage(imageSlot, 'hero', 1200);
+                    const previewUrl = toAdminImageUrl(image_url);
 
                     if (!previewUrl) return (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">

@@ -173,7 +173,7 @@ export const BeforeAfterBlock = createReactBlockSpec(
                             key={layout.value}
                             icon={layout.icon}
                             label={layout.label}
-                            isActive={block.props.layout === layout.value}
+                            is_active={block.props.layout === layout.value}
                             onClick={() => updateBlockProps({ layout: layout.value })}
                         />
                     ))}

@@ -48,9 +48,9 @@ export const GET: APIRoute = async ({ params, locals, site }) => {
     };
 
     const getRecipeImageUrl = (recipe: any) => {
-    const hero = extractImage(recipe.imagesJson, 'hero', 1200);
-    const thumbnail = extractImage(recipe.imagesJson, 'thumbnail', 1200);
-    return hero.imageUrl || thumbnail.imageUrl || recipe.imageUrl || '';
+    const hero = extractImage(recipe.images_json, 'hero', 1200);
+    const thumbnail = extractImage(recipe.images_json, 'thumbnail', 1200);
+    return hero.image_url || thumbnail.image_url || recipe.image_url || '';
     };
 
     // Generate sitemap XML for this category
@@ -64,15 +64,15 @@ export const GET: APIRoute = async ({ params, locals, site }) => {
         <priority>0.8</priority>
     </url>
     ${recipes.map(recipe => {
-        const imageUrl = getRecipeImageUrl(recipe);
+        const image_url = getRecipeImageUrl(recipe);
         return `
     <url>
         <loc>${baseUrl}/recipes/${recipe.slug}</loc>
-        <lastmod>${recipe.updatedAt ? new Date(recipe.updatedAt).toISOString().split('T')[0] : today}</lastmod>
+        <lastmod>${recipe.updated_at ? new Date(recipe.updated_at).toISOString().split('T')[0] : today}</lastmod>
         <changefreq>weekly</changefreq>
-        <priority>0.7</priority>${imageUrl ? `
+        <priority>0.7</priority>${image_url ? `
         <image:image>
-            <image:loc>${escapeXml(getAbsoluteImageUrl(imageUrl))}</image:loc>
+            <image:loc>${escapeXml(getAbsoluteImageUrl(image_url))}</image:loc>
             <image:title>${escapeXml(recipe.headline)}</image:title>
         </image:image>` : ''}
     </url>`;

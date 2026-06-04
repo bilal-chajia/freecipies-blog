@@ -92,7 +92,7 @@ export interface TextElement extends BaseElement {
 
 export interface ImageSlotElement extends BaseElement {
   type: 'imageSlot';
-  imageUrl?: string;
+  image_url?: string;
   src?: string;
   binding?: string;
   fit?: 'cover' | 'contain' | 'fill';
@@ -213,7 +213,7 @@ const DEFAULT_TEMPLATE: TemplateState = {
 interface EditorActions {
   setTemplate: (updates: Partial<TemplateState>) => void;
   initTemplate: (template: TemplateState, elements: EditorElement[]) => void;
-  loadTemplateToStore: (templateData: Partial<TemplateState>, elementsJson: string | EditorElement[]) => void;
+  loadTemplateToStore: (templateData: Partial<TemplateState>, elements_json: string | EditorElement[]) => void;
   resetTemplate: () => void;
   setElements: (elements: EditorElement[]) => void;
   addElement: (type: ElementType, defaults?: Partial<EditorElement>) => EditorElement;
@@ -282,8 +282,8 @@ const useEditorStore = create<EditorState & EditorActions>()(
       });
     },
 
-    loadTemplateToStore: (templateData, elementsJson) => {
-      const parsedElements = toEditorTemplateElements<EditorElement>(elementsJson);
+    loadTemplateToStore: (templateData, elements_json) => {
+      const parsedElements = toEditorTemplateElements<EditorElement>(elements_json);
 
       set({
         template: { ...get().template, ...templateData },

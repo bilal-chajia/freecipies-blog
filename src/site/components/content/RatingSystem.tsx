@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 interface RatingSystemProps {
-  articleId: number;
+  article_id: number;
   initialValue: number;
   initialCount: number;
   size?: 'sm' | 'md' | 'lg';
 }
 
-const RatingSystem: React.FC<RatingSystemProps> = ({ 
-  articleId, 
-  initialValue, 
+const RatingSystem: React.FC<RatingSystemProps> = ({
+  article_id,
+  initialValue,
   initialCount,
-  size = 'md' 
+  size = 'md'
 }) => {
   const [rating, setRating] = useState(initialValue);
   const [count, setCount] = useState(initialCount);
@@ -31,10 +31,10 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
 
   useEffect(() => {
     const votedArticles = JSON.parse(localStorage.getItem('voted_recipes') || '[]');
-    if (votedArticles.includes(articleId)) {
+    if (votedArticles.includes(article_id)) {
       setHasVoted(true);
     }
-  }, [articleId]);
+  }, [article_id]);
 
   const handleMouseMove = (e: React.MouseEvent, starIndex: number) => {
     if (hasVoted || isSubmitting) return;
@@ -57,7 +57,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
       const response = await fetch('/api/recipes/rate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: articleId, rating: value })
+        body: JSON.stringify({ id: article_id, rating: value })
       });
 
       const data = await response.json();
@@ -70,15 +70,15 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
         setCount(newCount);
         setHasVoted(true);
         setMessage('Thank you for your rating!');
-        
+
         // Synchronize other instances on the same page
         window.dispatchEvent(new CustomEvent('recipe-rated', {
-          detail: { articleId, rating: newRating, count: newCount }
+          detail: { article_id, rating: newRating, count: newCount }
         }));
-        
+
         const votedArticles = JSON.parse(localStorage.getItem('voted_recipes') || '[]');
-        if (!votedArticles.includes(articleId)) {
-          votedArticles.push(articleId);
+        if (!votedArticles.includes(article_id)) {
+          votedArticles.push(article_id);
           localStorage.setItem('voted_recipes', JSON.stringify(votedArticles));
         }
       } else {
@@ -94,9 +94,9 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
   // Listen for ratings from other components on the same page
   useEffect(() => {
     const handleGlobalRating = (e: Event) => {
-      const customEvent = e as CustomEvent<{ articleId: number; rating: number; count: number }>;
-      const { articleId: id, rating: newRating, count: newCount } = customEvent.detail;
-      if (id === articleId) {
+      const customEvent = e as CustomEvent<{ article_id: number; rating: number; count: number }>;
+      const { article_id: id, rating: newRating, count: newCount } = customEvent.detail;
+      if (id === article_id) {
         setRating(newRating);
         setCount(newCount);
         setHasVoted(true);
@@ -105,7 +105,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
 
     window.addEventListener('recipe-rated', handleGlobalRating);
     return () => window.removeEventListener('recipe-rated', handleGlobalRating);
-  }, [articleId]);
+  }, [article_id]);
 
   // Helper to calculate fill percentage for each star
   const getStarFillPercentage = (starIndex: number) => {
@@ -126,15 +126,15 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
   return (
     <div className="star-rating-container" style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.25rem' }}>
       <div className="stars-wrapper" style={{ display: 'flex', alignItems: 'center', gap: sizes[size].gap }}>
-        <div 
-          className="stars-row" 
+        <div
+          className="stars-row"
           style={{ display: 'flex', alignItems: 'center', gap: '0.125rem' }}
           onMouseLeave={handleMouseLeave}
         >
           {[0, 1, 2, 3, 4].map((index) => {
             const fillPercent = getStarFillPercentage(index);
-            const gradId = `star-grad-${articleId}-${index}`;
-            
+            const gradId = `star-grad-${article_id}-${index}`;
+
             return (
               <div
                 key={index}
@@ -159,9 +159,9 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
                       <stop offset={`${fillPercent}%`} stopColor={emptyColor} />
                     </linearGradient>
                   </defs>
-                  <path 
+                  <path
                     fill={`url(#${gradId})`}
-                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" 
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
                   />
                 </svg>
               </div>
@@ -169,15 +169,15 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
           })}
         </div>
 
-        <div 
-          className="rating-info" 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.25rem', 
-            color: 'var(--text-secondary)', 
+        <div
+          className="rating-info"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            color: 'var(--text-secondary)',
             fontWeight: 500,
-            fontSize: sizes[size].font 
+            fontSize: sizes[size].font
           }}
         >
           <span style={{ color: 'var(--text)', fontWeight: 700 }}>
@@ -190,9 +190,9 @@ const RatingSystem: React.FC<RatingSystemProps> = ({
       </div>
 
       {message && (
-        <span style={{ 
-          fontSize: '0.8rem', 
-          fontWeight: 600, 
+        <span style={{
+          fontSize: '0.8rem',
+          fontWeight: 600,
           color: message.includes('Error') ? '#e11d48' : starColor
         }}>
           {message}

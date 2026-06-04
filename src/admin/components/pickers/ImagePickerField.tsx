@@ -34,8 +34,8 @@ const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
 
     const handleMediaSelect = (item: MediaRecord) => {
         const selectableItem = item as SelectableMediaItem;
-        const imageUrl = selectableItem.url || selectableItem.path || '';
-        onChange(imageUrl);
+        const image_url = selectableItem.url || selectableItem.path || '';
+        onChange(image_url);
     };
 
     const handleClear = () => {

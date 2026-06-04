@@ -34,7 +34,7 @@ const Homepage = () => {
       title: 'Welcome to Our Blog',
       subtitle: 'Discover amazing recipes and cooking tips',
       backgroundImage: '',
-      backgroundColor: 'var(--bg-alt)',
+      background_color: 'var(--bg-alt)',
       ctaText: 'Explore Recipes',
       ctaLink: '/articles?type=recipe',
       showSearch: true,
@@ -49,7 +49,7 @@ const Homepage = () => {
       categoryFilter: 'all',
       tagFilter: 'all',
       sortBy: 'published_at',
-      sortOrder: 'desc',
+      sort_order: 'desc',
     },
     // Categories
     categories: {

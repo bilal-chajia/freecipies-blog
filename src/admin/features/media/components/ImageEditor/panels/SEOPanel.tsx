@@ -46,7 +46,7 @@ interface SEOPanelProps {
     selectedAuthor: string;
     authors: AuthorOption[];
     compressionQuality: string;
-    imageUrl: string | null;
+    image_url: string | null;
     onAltTextChange: (val: string) => void;
     onSelectedAuthorChange: (val: string) => void;
     onCompressionQualityChange: (val: string) => void;
@@ -57,7 +57,7 @@ const SEOPanel = ({
     selectedAuthor,
     authors,
     compressionQuality,
-    imageUrl, // New prop - the current working image URL/dataURL
+    image_url, // New prop - the current working image URL/dataURL
     onAltTextChange,
     onSelectedAuthorChange,
     onCompressionQualityChange,
@@ -82,7 +82,7 @@ const SEOPanel = ({
     }, []);
 
     const handleGenerateAltText = async () => {
-        if (!imageUrl || !puterLoaded) return;
+        if (!image_url || !puterLoaded) return;
 
         setGenerating(true);
         setError('');
@@ -100,7 +100,7 @@ const SEOPanel = ({
                 throw new Error('AI not loaded');
             }
 
-            const response = await window.puter.ai.chat(prompt, imageUrl, {
+            const response = await window.puter.ai.chat(prompt, image_url, {
                 model: 'gpt-4o-mini'
             });
 
@@ -137,7 +137,7 @@ const SEOPanel = ({
                         size="sm"
                         variant="outline"
                         onClick={handleGenerateAltText}
-                        disabled={generating || !imageUrl || !puterLoaded}
+                        disabled={generating || !image_url || !puterLoaded}
                         className="h-7 text-xs gap-1.5 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30 hover:border-purple-500/50"
                     >
                         {generating ? (

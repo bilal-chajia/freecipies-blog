@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
 
   // Validate all query params (pagination + filters) via Zod
-  const { page, limit, offset, slug, category, author, tag, type, workflowStatus, search, dateFrom, dateTo } = validateQuery(url.searchParams, ArticleListQuery);
+  const { page, limit, offset, slug, category, author, tag, type, workflow_status, search, dateFrom, dateTo } = validateQuery(url.searchParams, ArticleListQuery);
 
   try {
     const db = env.DB;
@@ -41,7 +41,7 @@ export const GET: APIRoute = async ({ request }) => {
       categorySlug: category || undefined,
       authorSlug: author || undefined,
       tagSlug: tag || undefined,
-      workflowStatus: workflowStatus || undefined,
+      workflow_status: workflow_status || undefined,
       search: search || undefined,
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,

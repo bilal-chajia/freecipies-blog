@@ -25,7 +25,7 @@ export interface StructureItem {
     id: string;
     type: string;
     depth: number;
-    parentId: string | null;
+    parent_id: string | null;
     level?: number;
     label: string;
     icon: LucideIcon;
@@ -37,7 +37,7 @@ export function buildStructureItems(flatBlocks: FlattenedBlock[]): StructureItem
         id: item.block.id,
         type: item.block.type,
         depth: item.depth,
-        parentId: item.parentId,
+        parent_id: item.parent_id,
         level: (item.block.props as Record<string, unknown> | undefined)?.level as number | undefined,
         label: getBlockLabel(item.block, item.itemCount),
         icon: getBlockIcon(item.block),
@@ -65,7 +65,7 @@ interface SerializeArgs {
     flatBlocks: FlattenedBlock[];
     contentType?: string;
     onChange?: (serialized: string) => void;
-    onRoundupChange?: (roundupJson: string) => void;
+    onRoundupChange?: (roundup_json: string) => void;
     lastEmittedValueRef: React.MutableRefObject<string>;
     lastSerializedRef: React.MutableRefObject<string>;
     lastRoundupRef: React.MutableRefObject<string>;

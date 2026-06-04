@@ -37,7 +37,7 @@ const ImageUploadArea = ({
   const imagesMap = image ? { [type]: image } : null;
   const preview = extractImage(imagesMap as string | null | undefined, type as 'avatar' | 'hero' | 'thumbnail', targetWidth);
   const srcSet = toAdminSrcSet(getImageSrcSet(imagesMap as string | null | undefined, type as 'avatar' | 'hero' | 'thumbnail'));
-  const previewUrl = toAdminImageUrl(preview.imageUrl || (image as Record<string, string> | undefined)?.url);
+  const previewUrl = toAdminImageUrl(preview.image_url || (image as Record<string, string> | undefined)?.url);
   const sizes = srcSet ? '320px' : undefined;
   const fallbackHeight = type === 'avatar' ? targetWidth : Math.round(targetWidth * 0.56);
   const previewStyle = buildImageStyle(preview);

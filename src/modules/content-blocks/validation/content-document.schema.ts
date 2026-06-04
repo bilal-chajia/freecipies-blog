@@ -150,7 +150,7 @@ export const ContentDocumentInputSchema = z.unknown().transform((input, ctx) => 
     } catch {
       ctx.addIssue({
         code: 'custom',
-        message: 'contentJson must be valid JSON',
+        message: 'content_json must be valid JSON',
       });
       return z.NEVER;
     }
@@ -159,7 +159,7 @@ export const ContentDocumentInputSchema = z.unknown().transform((input, ctx) => 
   if (!parseInput || typeof parseInput !== 'object' || Array.isArray(parseInput)) {
     ctx.addIssue({
       code: 'custom',
-      message: 'contentJson must be a ContentDocument object',
+      message: 'content_json must be a ContentDocument object',
     });
     return z.NEVER;
   }
@@ -168,7 +168,7 @@ export const ContentDocumentInputSchema = z.unknown().transform((input, ctx) => 
   if (rawDocument.version !== 1 || rawDocument.kind !== 'content_document' || !Array.isArray(rawDocument.blocks)) {
     ctx.addIssue({
       code: 'custom',
-      message: 'contentJson must include version, kind, and blocks',
+      message: 'content_json must include version, kind, and blocks',
     });
     return z.NEVER;
   }
@@ -178,7 +178,7 @@ export const ContentDocumentInputSchema = z.unknown().transform((input, ctx) => 
     if (!rawBlock || typeof rawBlock !== 'object' || Array.isArray(rawBlock) || typeof (rawBlock as { id?: unknown }).id !== 'string' || !(rawBlock as { id: string }).id.trim()) {
       ctx.addIssue({
         code: 'custom',
-        message: 'contentJson blocks must include id',
+        message: 'content_json blocks must include id',
       });
       return z.NEVER;
     }
@@ -187,7 +187,7 @@ export const ContentDocumentInputSchema = z.unknown().transform((input, ctx) => 
     if (typeof rawType !== 'string' || !canonicalBlockTypes.has(rawType)) {
       ctx.addIssue({
         code: 'custom',
-        message: 'contentJson contains unsupported blocks',
+        message: 'content_json contains unsupported blocks',
       });
       return z.NEVER;
     }
@@ -197,7 +197,7 @@ export const ContentDocumentInputSchema = z.unknown().transform((input, ctx) => 
   if (rawBlocks.length !== document.blocks.length) {
     ctx.addIssue({
       code: 'custom',
-      message: 'contentJson contains unsupported blocks',
+      message: 'content_json contains unsupported blocks',
     });
     return z.NEVER;
   }
@@ -207,7 +207,7 @@ export const ContentDocumentInputSchema = z.unknown().transform((input, ctx) => 
   if (!result.success) {
     ctx.addIssue({
       code: 'custom',
-      message: result.error.issues[0]?.message || 'Invalid contentJson document',
+      message: result.error.issues[0]?.message || 'Invalid content_json document',
     });
     return z.NEVER;
   }

@@ -4,8 +4,8 @@ import { extractImage, getImageSrcSet } from "@shared/utils";
 
 type AuthorCardAuthor = HydratedAuthor & {
   name: string;
-  shortDescription?: string | null;
-  isFeatured?: boolean | null;
+  short_description?: string | null;
+  is_featured?: boolean | null;
 };
 
 interface Props {
@@ -16,8 +16,8 @@ interface Props {
 
 const { author, showArticleCount = false, articleCount = 0 } = Astro.props;
 const authorUrl = `/authors/${author.slug}`;
-const avatar = extractImage(author.imagesJson, "avatar", 200);
-const avatarSrcSet = getImageSrcSet(author.imagesJson, "avatar");
+const avatar = extractImage(author.images_json, "avatar", 200);
+const avatarSrcSet = getImageSrcSet(author.images_json, "avatar");
 const avatarSizes = "120px";
 ---
 
@@ -27,9 +27,9 @@ const avatarSizes = "120px";
     <div class="avatar-wrapper">
       <div class="author-avatar">
         {
-          avatar.imageUrl || author.imageUrl ? (
+          avatar.image_url || author.image_url ? (
             <img
-              src={avatar.imageUrl || author.imageUrl}
+              src={avatar.image_url || author.image_url}
               alt={avatar.imageAlt || author.imageAlt || author.name}
               width={avatar.imageWidth || author.imageWidth || 120}
               height={avatar.imageHeight || author.imageHeight || 120}
@@ -46,7 +46,7 @@ const avatarSizes = "120px";
         }
       </div>
       {
-        author.isFeatured && (
+        author.is_featured && (
           <div class="featured-indicator">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -68,8 +68,8 @@ const avatarSizes = "120px";
       <h3 class="author-name">{author.name}</h3>
       {author.job && <p class="author-job">{author.job}</p>}
       {
-        author.shortDescription && (
-          <p class="author-description">{author.shortDescription}</p>
+        author.short_description && (
+          <p class="author-description">{author.short_description}</p>
         )
       }
       {

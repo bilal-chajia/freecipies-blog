@@ -1,13 +1,13 @@
 /**
  * Custom Block: Video Embed
- * 
+ *
  * Embed YouTube, Vimeo, or other video providers.
- * 
+ *
  * REFACTORED for WordPress Block Editor design:
  * - URL input in placeholder state with proper styling
  * - Aspect ratio controls in toolbar
  * - Proper selected/unselected states
- * 
+ *
  * Based on WordPress Block Editor design:
  * https://developer.wordpress.org/block-editor/
  */
@@ -279,11 +279,11 @@ const VideoBlock = createReactBlockSpec(
                         <span className="text-xs text-muted-foreground capitalize bg-muted px-2 py-0.5 rounded border border-border/40 font-medium">
                             {block.props.provider} embed
                         </span>
-                        
+
                         {isSelected && (
                             <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/40">
                                 {aspectRatios.map((ratio) => {
-                                    const isActive = block.props.aspectRatio === ratio.value;
+                                    const is_active = block.props.aspectRatio === ratio.value;
                                     return (
                                         <button
                                             key={ratio.value}
@@ -291,8 +291,8 @@ const VideoBlock = createReactBlockSpec(
                                             onClick={() => handleAspectChange(ratio.value)}
                                             className={cn(
                                                 "px-2.5 py-0.5 text-[10px] font-semibold rounded-md transition-all duration-200 cursor-pointer",
-                                                isActive 
-                                                    ? "bg-background text-foreground shadow-sm border border-border/10 font-bold scale-105" 
+                                                is_active
+                                                    ? "bg-background text-foreground shadow-sm border border-border/10 font-bold scale-105"
                                                     : "text-muted-foreground hover:bg-background/40 hover:text-foreground"
                                             )}
                                         >

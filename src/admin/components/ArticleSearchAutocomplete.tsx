@@ -24,7 +24,7 @@ type ArticleSearchResult = {
     id: number | string;
     headline: string;
     type?: string | null;
-    imagesJson?: string | null;
+    images_json?: string | null;
 };
 
 type ArticleSearchAutocompleteProps = {
@@ -51,12 +51,12 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
 
         setLoading(true);
         try {
-            const response = await articlesAPI.getAll({ 
+            const response = await articlesAPI.getAll({
                 search: searchQuery,
                 limit: 10,
-                status: 'all' 
+                status: 'all'
             });
-            
+
             if (response.data?.success) {
                 // Ensure we have an array of items
                 const payload = response.data.data as ArticlesListPayload | undefined;
@@ -101,8 +101,8 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                 <Command shouldFilter={false}>
-                    <CommandInput 
-                        placeholder="Type to search..." 
+                    <CommandInput
+                        placeholder="Type to search..."
                         value={query}
                         onValueChange={setQuery}
                     />
@@ -122,7 +122,7 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
                         )}
                         <CommandGroup>
                             {results.map((article) => {
-                                const thumbnailInfo = extractImage(article.imagesJson, 'thumbnail');
+                                const thumbnailInfo = extractImage(article.images_json, 'thumbnail');
                                 return (
                                     <CommandItem
                                         key={article.id}
@@ -135,10 +135,10 @@ export function ArticleSearchAutocomplete({ onSelect, placeholder = "Search reci
                                         className="flex items-center gap-3 p-2 cursor-pointer"
                                     >
                                         <div className="h-10 w-10 shrink-0 rounded bg-muted overflow-hidden">
-                                            {thumbnailInfo.imageUrl ? (
-                                                <img 
-                                                    src={thumbnailInfo.imageUrl} 
-                                                    alt="" 
+                                            {thumbnailInfo.image_url ? (
+                                                <img
+                                                    src={thumbnailInfo.image_url}
+                                                    alt=""
                                                     className="h-full w-full object-cover"
                                                 />
                                             ) : (

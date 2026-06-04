@@ -26,7 +26,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
     const getRecipeImageUrl = (article: any) => {
     const hero = extractImage(article.images_json, 'hero', 1200);
     const thumbnail = extractImage(article.images_json, 'thumbnail', 1200);
-    return hero.imageUrl || thumbnail.imageUrl || '';
+    return hero.image_url || thumbnail.image_url || '';
     };
 
     // Generate RSS feed
@@ -48,7 +48,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
       <link>${siteUrl}</link>
     </image>
     ${articles.map(article => {
-      const imageUrl = getRecipeImageUrl(article);
+      const image_url = getRecipeImageUrl(article);
       return `
     <item>
       <title>${escapeXml(article.headline || article.label)}</title>
@@ -58,7 +58,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
       <pubDate>${article.published_at ? new Date(article.published_at).toUTCString() : new Date().toUTCString()}</pubDate>
       ${article.author_slug ? `<dc:creator>${escapeXml(article.author_slug)}</dc:creator>` : ''}
       ${article.category_slug ? `<category>${escapeXml(article.category_slug)}</category>` : ''}
-      ${imageUrl ? `<enclosure url="${escapeXml(imageUrl)}" type="image/jpeg"/>` : ''}
+      ${image_url ? `<enclosure url="${escapeXml(image_url)}" type="image/jpeg"/>` : ''}
     </item>`;
     }).join('\n')}
   </channel>

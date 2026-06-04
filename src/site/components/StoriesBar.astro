@@ -24,9 +24,9 @@ const { stories = [] } = Astro.props as Props;
             >
               <div class="story-ring">
                 <div class="story-image-wrapper">
-                  {story.storyPreview?.imageUrl ? (
+                  {story.storyPreview?.image_url ? (
                     <img
-                      src={story.storyPreview.imageUrl}
+                      src={story.storyPreview.image_url}
                       alt={story.storyPreview.imageAlt || story.headline}
                       width={story.storyPreview.imageWidth || 80}
                       height={story.storyPreview.imageHeight || 80}

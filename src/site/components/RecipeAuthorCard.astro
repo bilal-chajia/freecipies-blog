@@ -9,7 +9,7 @@ interface Props {
     authorImageStyle?: string;
     authorRole?: string;
     lastUpdated?: string | Date;
-    viewCount?: number;
+    view_count?: number;
 }
 
 const {
@@ -22,7 +22,7 @@ const {
     authorImageStyle,
     authorRole = "Blogger",
     lastUpdated,
-    viewCount,
+    view_count,
 } = Astro.props;
 
 // Check if image is valid (not undefined, null, or empty string)
@@ -97,10 +97,10 @@ const initials = authorName
             formattedDate && (
                 <div class="last-updated">
                     Last updated: {formattedDate}
-                    {viewCount !== undefined && viewCount !== null && (
+                    {view_count !== undefined && view_count !== null && (
                         <>
                             <span class="separator">•</span>
-                            <span class="view-count">{new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(viewCount)} views</span>
+                            <span class="view-count">{new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(view_count)} views</span>
                         </>
                     )}
                 </div>

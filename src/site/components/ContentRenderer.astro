@@ -26,17 +26,17 @@ const { article, settings } = Astro.props as {
   settings?: TocSettings;
 };
 
-const parsed = normalizeContentDocument(article?.contentJson).blocks;
+const parsed = normalizeContentDocument(article?.content_json).blocks;
 
 // Recipe/FAQ/Roundup from dedicated columns
-const recipeJson = article?.recipeJson
-  ? safeParseJson<Record<string, unknown>>(article.recipeJson)
+const recipe_json = article?.recipe_json
+  ? safeParseJson<Record<string, unknown>>(article.recipe_json)
   : null;
-const roundupJson = article?.roundupJson
-  ? safeParseJson<Record<string, unknown>>(article.roundupJson)
+const roundup_json = article?.roundup_json
+  ? safeParseJson<Record<string, unknown>>(article.roundup_json)
   : null;
-const imagesJson = article?.imagesJson
-  ? safeParseJson<Record<string, unknown>>(article.imagesJson)
+const images_json = article?.images_json
+  ? safeParseJson<Record<string, unknown>>(article.images_json)
   : {};
 
 // Author/category from hydration
@@ -70,7 +70,7 @@ const processedBlocks = parsed.map((block: NormalizedContentBlock) => {
     return { ...block, headingNumber: num };
   }
   if (block?.type === "before_after") {
-    const contentImages = ((imagesJson as Record<string, unknown>)?.content_images || {}) as Record<string, Record<string, unknown>>;
+    const contentImages = ((images_json as Record<string, unknown>)?.content_images || {}) as Record<string, Record<string, unknown>>;
     const b = block as Record<string, unknown>;
     const resolveSlot = (ref: unknown, label: unknown) => {
       const slot = typeof ref === "string" ? contentImages[ref] : null;
@@ -95,7 +95,7 @@ const hasRoundupList = processedBlocks.some(
   (b: NormalizedContentBlock) => b.type === "main_roundup",
 );
 const standaloneRoundup =
-  !hasRoundupList && (roundupJson as Record<string, unknown>)?.items?.length > 0;
+  !hasRoundupList && (roundup_json as Record<string, unknown>)?.items?.length > 0;
 ---
 
 <div class="content-blocks">
@@ -116,7 +116,7 @@ const standaloneRoundup =
         return (
           <Image
             block={{
-              ...(imagesJson?.content_images?.[block.image_ref] || {}),
+              ...(images_json?.content_images?.[block.image_ref] || {}),
               ...block,
             }}
           />
@@ -133,11 +133,11 @@ const standaloneRoundup =
         return <RelatedContent block={block} />;
       case "main_roundup": {
         const idx = globalRoundupIndex;
-        globalRoundupIndex += roundupJson?.items?.length || 1;
+        globalRoundupIndex += roundup_json?.items?.length || 1;
         return (
           <RoundupList
             block={block}
-            roundupJson={roundupJson}
+            roundup_json={roundup_json}
             startNumber={idx}
           />
         );
@@ -147,13 +147,13 @@ const standaloneRoundup =
           <MainRecipe
             block={block}
             article={article}
-            recipeJson={recipeJson}
+            recipe_json={recipe_json}
             author={author}
             category={category}
           />
         );
       case "main_faq":
-        return <FaqSection faqs={article.faqsJson} />;
+        return <FaqSection faqs={article.faqs_json} />;
       default:
         return null;
     }
@@ -163,7 +163,7 @@ const standaloneRoundup =
       <div class="standalone-header">
         <h2 class="standalone-title">Featured Recipes</h2>
       </div>
-      <RoundupList roundup={roundupJson} />
+      <RoundupList roundup={roundup_json} />
     </div>
   )}
 </div>

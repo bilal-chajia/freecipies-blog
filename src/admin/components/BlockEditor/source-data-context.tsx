@@ -1,13 +1,13 @@
 import { createContext, useContext } from 'react';
 
 export interface BlockEditorSourceData {
-  recipeJson?: unknown;
+  recipe_json?: unknown;
   onRecipeChange?: (nextValue: string) => void;
-  faqsJson?: unknown;
+  faqs_json?: unknown;
   onFaqsChange?: (nextValue: string) => void;
   imagesData?: unknown;
   onImagesChange?: (nextValue: unknown) => void;
-  roundupJson?: unknown;
+  roundup_json?: unknown;
 }
 
 const BlockEditorSourceDataContext = createContext<BlockEditorSourceData>({});

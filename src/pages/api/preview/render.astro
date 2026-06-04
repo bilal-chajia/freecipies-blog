@@ -25,45 +25,45 @@ let savedArticle = null;
 
 if (db) {
     // Fetch the saved article from DB to get server-side fields
-    // (cachedTocJson, faqsJson, etc.)
+    // (cached_toc_json, faqs_json, etc.)
     if (formData.slug) {
         savedArticle = await getArticleBySlug(db, formData.slug).catch(
             () => null,
         );
     }
 
-    if (formData.authorId) {
-        author = await getAuthorById(db, formData.authorId).catch(() => null);
+    if (formData.author_id) {
+        author = await getAuthorById(db, formData.author_id).catch(() => null);
     }
-    if (formData.categoryId) {
-        category = await getCategoryById(db, formData.categoryId).catch(
+    if (formData.category_id) {
+        category = await getCategoryById(db, formData.category_id).catch(
             () => null,
         );
     }
 }
 
-// --- Parse recipeJson safely with defaults ---
+// --- Parse recipe_json safely with defaults ---
 let parsedRecipe = {};
 try {
     parsedRecipe =
-        typeof formData.recipeJson === "string"
-            ? JSON.parse(formData.recipeJson || "{}")
-            : formData.recipeJson || {};
+        typeof formData.recipe_json === "string"
+            ? JSON.parse(formData.recipe_json || "{}")
+            : formData.recipe_json || {};
 } catch (e) {
-    console.warn("[preview/render] Failed to parse recipeJson:", e);
+    console.warn("[preview/render] Failed to parse recipe_json:", e);
 }
 
-const recipeJson = JSON.stringify({
+const recipe_json = JSON.stringify({
     ingredients: [],
     instructions: [],
     equipment: [],
     ...parsedRecipe,
 });
 
-const contentJson = normalizeContentDocument(formData.contentJson);
+const content_json = normalizeContentDocument(formData.content_json);
 
-// --- Parse imagesJson safely ---
-const imagesJson =
+// --- Parse images_json safely ---
+const images_json =
     typeof formData.imagesData === "string"
         ? formData.imagesData
         : JSON.stringify({
@@ -72,8 +72,8 @@ const imagesJson =
           });
 
 // Use saved article's cached fields when available (these are built server-side on save)
-const cachedTocJson = savedArticle?.cachedTocJson ?? null;
-const faqsJson = savedArticle?.faqsJson ?? formData.faqsJson ?? null;
+const cached_toc_json = savedArticle?.cached_toc_json ?? null;
+const faqs_json = savedArticle?.faqs_json ?? formData.faqs_json ?? null;
 
 // Format the data exactly as RecipeLayout.astro expects on the `recipe` object
 const recipe = {
@@ -84,27 +84,27 @@ const recipe = {
     // Title & text
     headline: formData.label || "Preview Title",
     label: formData.label || "Preview Title",
-    shortDescription: formData.summary || "Preview Description",
+    short_description: formData.summary || "Preview Description",
     tldr: formData.tldr || null,
 
     // Type
     type: formData.type || "recipe",
 
     // JSON data blobs  (form data overrides saved for editable fields)
-    recipeJson: recipeJson,
-    contentJson: contentJson,
-    imagesJson: imagesJson,
+    recipe_json: recipe_json,
+    content_json: content_json,
+    images_json: images_json,
 
     // Server-side cached fields  (always from saved article)
-    faqsJson: faqsJson,
-    cachedTocJson: cachedTocJson,
+    faqs_json: faqs_json,
+    cached_toc_json: cached_toc_json,
 
     // SEO
     metaTitle: formData.metaTitle,
     metaDescription: formData.metaDescription,
 
     // Images
-    imageUrl: formData.heroUrl || undefined,
+    image_url: formData.heroUrl || undefined,
     imageAlt: formData.label || "Preview Image",
 
     // Category references (hydrated from DB or formData)
@@ -115,10 +115,10 @@ const recipe = {
     authorName: author?.name || formData.authorName || null,
 
     // Dates
-    publishedAt: formData.publishedAt || savedArticle?.publishedAt || null,
+    published_at: formData.published_at || savedArticle?.published_at || null,
 
     // Stats
-    viewCount: savedArticle?.viewCount || 0,
+    view_count: savedArticle?.view_count || 0,
 };
 ---
 

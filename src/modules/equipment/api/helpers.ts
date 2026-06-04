@@ -23,10 +23,10 @@ export function transformEquipmentRequestBody(body: any): any {
         }
     }
 
-    // Ensure imageJson is a JSON string
-    if (transformed.imageJson !== undefined) {
-        if (typeof transformed.imageJson === 'object') {
-            transformed.imageJson = JSON.stringify(transformed.imageJson);
+    // Ensure image_json is a JSON string
+    if (transformed.image_json !== undefined) {
+        if (typeof transformed.image_json === 'object') {
+            transformed.image_json = JSON.stringify(transformed.image_json);
         }
     }
 
@@ -50,10 +50,10 @@ export function transformEquipmentResponse(item: any): any {
         }
     }
 
-    // Parse imageJson
-    if (typeof response.imageJson === 'string') {
+    // Parse image_json
+    if (typeof response.image_json === 'string') {
         try {
-            response.image = JSON.parse(response.imageJson);
+            response.image = JSON.parse(response.image_json);
         } catch {
             response.image = {};
         }

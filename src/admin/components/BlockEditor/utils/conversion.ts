@@ -79,13 +79,13 @@ function createUniqueEditorId(baseId: unknown, index: number, usedIds: Set<strin
  * only so local drafts/seeds do not crash the editor during development.
  */
 export function contentJsonToBlocks(
-    contentJson: unknown,
+    content_json: unknown,
     context: BlockAdapterContext = {}
 ): AppBlock[] | undefined {
-    if (!contentJson) return undefined;
+    if (!content_json) return undefined;
 
     try {
-        const { blocks } = normalizeContentDocument(contentJson);
+        const { blocks } = normalizeContentDocument(content_json);
         const rawBlocks: AppBlock[] = [];
         const usedEditorIds = new Set<string>();
 
@@ -129,7 +129,7 @@ export function contentJsonToBlocks(
             ? cleanBlocks
             : [{ id: 'init-0', type: 'paragraph', props: {}, content: [], children: [] }];
     } catch (error) {
-        console.error('[conversion] Error converting contentJson to blocks:', error);
+        console.error('[conversion] Error converting content_json to blocks:', error);
         return [{ id: 'error-0', type: 'paragraph', props: {}, content: [], children: [] }];
     }
 }

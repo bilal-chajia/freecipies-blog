@@ -20,23 +20,23 @@ export const equipment = sqliteTable('equipment', {
     category: text('category').default('other'),
 
     // 2. VISUALS
-    imageJson: text('image_json').default('{}'),
+    image_json: text('image_json').default('{}'),
 
     // 3. AFFILIATE LINKS
-    affiliateUrl: text('affiliate_url'),
-    affiliateProvider: text('affiliate_provider'),
-    affiliateNote: text('affiliate_note'),
+    affiliate_url: text('affiliate_url'),
+    affiliate_provider: text('affiliate_provider'),
+    affiliate_note: text('affiliate_note'),
 
     // 4. SYSTEM
-    isActive: integer('is_active', { mode: 'boolean' }).default(true),
-    sortOrder: integer('sort_order').default(0),
-    createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
-    deletedAt: text('deleted_at'),
+    is_active: integer('is_active', { mode: 'boolean' }).default(true),
+    sort_order: integer('sort_order').default(0),
+    created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+    updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+    deleted_at: text('deleted_at'),
 }, (table) => [
     index('idx_equipment_slug').on(table.slug),
     index('idx_equipment_category').on(table.category),
-    index('idx_equipment_active').on(table.isActive),
+    index('idx_equipment_active').on(table.is_active),
 ]);
 
 // Type exports

@@ -25,14 +25,14 @@ try {
   if (env.DB) {
     const result = await getArticles(env.DB, {
       type: "roundup",
-      workflowStatus: "published",
+      workflow_status: "published",
       limit,
       offset,
     });
     roundups = result.items;
     totalRoundups = result.total;
 
-    const rawCategories = await getCategories(env.DB, { workflowStatus: "published" });
+    const rawCategories = await getCategories(env.DB, { workflow_status: "published" });
     categories = hydrateCategories(rawCategories);
   }
 } catch (error) {
@@ -42,11 +42,11 @@ try {
 const totalPages = Math.ceil(totalRoundups / limit);
 
 const getCardImage = (article: any) => {
-  const hero = extractImage(article.imagesJson, "hero", 600);
-  const thumbnail = extractImage(article.imagesJson, "thumbnail", 600);
-  const selected = hero.imageUrl ? hero : thumbnail;
-  const slotName = hero.imageUrl ? "hero" : "thumbnail";
-  const srcSet = getImageSrcSet(article.imagesJson, slotName);
+  const hero = extractImage(article.images_json, "hero", 600);
+  const thumbnail = extractImage(article.images_json, "thumbnail", 600);
+  const selected = hero.image_url ? hero : thumbnail;
+  const slotName = hero.image_url ? "hero" : "thumbnail";
+  const srcSet = getImageSrcSet(article.images_json, slotName);
   return { selected, srcSet };
 };
 
@@ -73,14 +73,14 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
           <div class="roundups-grid">
             {roundups.map((roundup) => {
               const { selected, srcSet } = getCardImage(roundup);
-              const cachedCard = parseCachedCard(roundup.cachedCardJson);
+              const cachedCard = parseCachedCard(roundup.cached_card_json);
               const itemCount = cachedCard?.item_count ?? 0;
               return (
                 <article class="roundup-card">
                   <a href={`/roundups/${roundup.slug}`} class="card-image-link">
-                    {selected.imageUrl && (
+                    {selected.image_url && (
                       <img
-                        src={selected.imageUrl}
+                        src={selected.image_url}
                         alt={selected.imageAlt || roundup.headline}
                         width={selected.imageWidth || 600}
                         height={selected.imageHeight || 400}
@@ -100,8 +100,8 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
                     <h2 class="card-title">
                       <a href={`/roundups/${roundup.slug}`}>{roundup.headline}</a>
                     </h2>
-                    {roundup.shortDescription && (
-                      <p class="card-excerpt">{roundup.shortDescription}</p>
+                    {roundup.short_description && (
+                      <p class="card-excerpt">{roundup.short_description}</p>
                     )}
                     <a href={`/roundups/${roundup.slug}`} class="read-more">
                       Explore Collection 

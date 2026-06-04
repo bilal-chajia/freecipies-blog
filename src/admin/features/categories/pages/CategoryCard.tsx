@@ -36,11 +36,11 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }: Cate
     if (isUpdating || localUpdating) return;
     
     let nextStatus: 'draft' | 'published' | 'archived' = 'draft';
-    if (category.workflowStatus === 'draft') nextStatus = 'published';
-    else if (category.workflowStatus === 'published') nextStatus = 'archived';
-    else if (category.workflowStatus === 'archived') nextStatus = 'draft';
+    if (category.workflow_status === 'draft') nextStatus = 'published';
+    else if (category.workflow_status === 'published') nextStatus = 'archived';
+    else if (category.workflow_status === 'archived') nextStatus = 'draft';
     
-    await onUpdate(category.slug, { workflowStatus: nextStatus });
+    await onUpdate(category.slug, { workflow_status: nextStatus });
   };
 
   const handleColorChange = (newColor: string | null) => {
@@ -64,12 +64,12 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }: Cate
 
   const badgeColor = pendingColor || category.color || '#ff6b35';
   const textColor = getContrastColor(badgeColor);
-  const hero = extractImage(category.imagesJson, 'hero', 1200);
-  const thumbnail = extractImage(category.imagesJson, 'thumbnail', 720);
-  const slotName = hero.imageUrl ? 'hero' : 'thumbnail';
-  const selectedImage = hero.imageUrl ? hero : thumbnail;
-  const imageUrl = toAdminImageUrl(selectedImage.imageUrl || '');
-  const srcSet = toAdminSrcSet(getImageSrcSet(category.imagesJson, slotName as 'hero' | 'thumbnail'));
+  const hero = extractImage(category.images_json, 'hero', 1200);
+  const thumbnail = extractImage(category.images_json, 'thumbnail', 720);
+  const slotName = hero.image_url ? 'hero' : 'thumbnail';
+  const selectedImage = hero.image_url ? hero : thumbnail;
+  const image_url = toAdminImageUrl(selectedImage.image_url || '');
+  const srcSet = toAdminSrcSet(getImageSrcSet(category.images_json, slotName as 'hero' | 'thumbnail'));
   const sizes = srcSet ? '320px' : undefined;
   const imageStyle = buildImageStyle(selectedImage);
 
@@ -81,9 +81,9 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }: Cate
       >
         {/* Background Image */}
         <div className="absolute inset-0 z-0 overflow-hidden">
-          {imageUrl ? (
+          {image_url ? (
             <img
-              src={imageUrl}
+              src={image_url}
               alt={category.label}
               width={selectedImage.imageWidth || 720}
               height={selectedImage.imageHeight || 720}
@@ -113,11 +113,11 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }: Cate
           <Button
             variant="secondary"
             size="icon"
-            className={`h-6 w-6 rounded-full backdrop-blur-md border-none text-white ${category.isFeatured ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-black/50 hover:bg-yellow-500'}`}
-            onClick={(e) => handleToggle('isFeatured', !category.isFeatured, e)}
-            title={category.isFeatured ? 'Unfeature' : 'Feature'}
+            className={`h-6 w-6 rounded-full backdrop-blur-md border-none text-white ${category.is_featured ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-black/50 hover:bg-yellow-500'}`}
+            onClick={(e) => handleToggle('is_featured', !category.is_featured, e)}
+            title={category.is_featured ? 'Unfeature' : 'Feature'}
           >
-            <Star className={`h-3 w-3 ${category.isFeatured ? 'fill-current' : ''}`} />
+            <Star className={`h-3 w-3 ${category.is_featured ? 'fill-current' : ''}`} />
           </Button>
           <Button
             variant="secondary"
@@ -133,18 +133,18 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }: Cate
         {/* Status Toggle (Top Left) */}
         <button
           className={`absolute top-2 left-2 z-20 p-1.5 rounded-full backdrop-blur-sm shadow-sm transition-colors ${
-            category.workflowStatus === 'published'
+            category.workflow_status === 'published'
               ? 'bg-emerald-500/90 hover:bg-emerald-600'
-              : category.workflowStatus === 'archived'
+              : category.workflow_status === 'archived'
               ? 'bg-zinc-700/90 hover:bg-zinc-800'
               : 'bg-yellow-500/90 hover:bg-yellow-600'
           }`}
           onClick={handleCycleStatus}
-          title={`Status: ${category.workflowStatus || 'draft'} (Click to cycle)`}
+          title={`Status: ${category.workflow_status || 'draft'} (Click to cycle)`}
         >
-          {category.workflowStatus === 'published' ? (
+          {category.workflow_status === 'published' ? (
             <Eye className="h-3 w-3 text-white" />
-          ) : category.workflowStatus === 'archived' ? (
+          ) : category.workflow_status === 'archived' ? (
             <EyeOff className="h-3 w-3 text-white/70" />
           ) : (
             <EyeOff className="h-3 w-3 text-white" />
@@ -168,7 +168,7 @@ const CategoryCard = ({ category, onDelete, onUpdate, isUpdating = false }: Cate
             className="text-[9px] mt-0.5 font-medium leading-none"
             style={{ color: textColor }}
           >
-            {category.cachedPostCount || 0} posts
+            {category.cached_post_count || 0} posts
           </span>
 
           {/* Color Picker */}

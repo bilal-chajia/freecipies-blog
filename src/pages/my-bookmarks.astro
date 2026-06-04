@@ -52,8 +52,8 @@ const description = "Saved recipes from SaaS Blog.";
       }
     };
 
-    const pickImage = (imagesJson) => {
-      const images = parseJson(imagesJson);
+    const pickImage = (images_json) => {
+      const images = parseJson(images_json);
       if (!images) return null;
       const slot = images.thumbnail || images.hero;
       if (!slot) return null;
@@ -76,8 +76,8 @@ const description = "Saved recipes from SaaS Blog.";
       link.href = `/recipes/${article.slug}`;
       link.className = 'block relative aspect-video overflow-hidden';
 
-      const imageData = pickImage(article.imagesJson) || {
-        url: article.imageUrl || '',
+      const imageData = pickImage(article.images_json) || {
+        url: article.image_url || '',
         alt: article.imageAlt || article.headline || '',
         width: article.imageWidth || 800,
         height: article.imageHeight || 600,
@@ -107,7 +107,7 @@ const description = "Saved recipes from SaaS Blog.";
       const info = document.createElement('div');
       info.className = 'p-5 flex flex-col gap-2';
 
-      const cachedCategory = parseJson(article.cachedCategoryJson) || {};
+      const cachedCategory = parseJson(article.cached_category_json) || {};
       const categoryLabel = article.categoryLabel || cachedCategory.label || '';
       const categoryColor = article.categoryColor || cachedCategory.color || '#2563eb';
 
@@ -124,10 +124,10 @@ const description = "Saved recipes from SaaS Blog.";
       title.textContent = article.headline || 'Untitled Recipe';
       info.appendChild(title);
 
-      if (article.shortDescription) {
+      if (article.short_description) {
         const desc = document.createElement('p');
         desc.className = 'text-sm text-gray-600 dark:text-gray-300 line-clamp-2';
-        desc.textContent = article.shortDescription;
+        desc.textContent = article.short_description;
         info.appendChild(desc);
       }
 
@@ -150,9 +150,9 @@ const description = "Saved recipes from SaaS Blog.";
       const bookmarks = readBookmarks();
       grid.querySelectorAll('[data-bookmark-button]').forEach((button) => {
         const slug = normalizeSlug(button.dataset.bookmarkSlug);
-        const isActive = slug ? bookmarks.includes(slug) : false;
-        button.dataset.bookmarked = isActive ? 'true' : 'false';
-        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        const is_active = slug ? bookmarks.includes(slug) : false;
+        button.dataset.bookmarked = is_active ? 'true' : 'false';
+        button.setAttribute('aria-pressed', is_active ? 'true' : 'false');
       });
     };
 

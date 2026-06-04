@@ -67,7 +67,7 @@ export interface SeoJson {
 // ============================================
 
 export interface FlatAuthorImages {
-  imageUrl?: string | null;
+  image_url?: string | null;
   imageAlt?: string | null;
   imageWidth?: number | null;
   imageHeight?: number | null;
@@ -93,12 +93,12 @@ const getBestVariant = (variants?: ImageVariants) => {
 export function flatToImagesJson(flat: FlatAuthorImages): string {
   const images: ImagesJson = {};
 
-  if (flat.imageUrl) {
+  if (flat.image_url) {
     images.avatar = {
       alt: flat.imageAlt || undefined,
       variants: {
         original: {
-          url: flat.imageUrl,
+          url: flat.image_url,
           width: flat.imageWidth ?? 0,
           height: flat.imageHeight ?? 0,
         },
@@ -112,15 +112,15 @@ export function flatToImagesJson(flat: FlatAuthorImages): string {
 /**
  * Convert ImagesJson to flat fields (extract avatar only for backward compat)
  */
-export function imagesJsonToFlat(imagesJson: string | null): FlatAuthorImages {
-  if (!imagesJson) return {};
+export function imagesJsonToFlat(images_json: string | null): FlatAuthorImages {
+  if (!images_json) return {};
 
   try {
-    const images: ImagesJson = JSON.parse(imagesJson);
+    const images: ImagesJson = JSON.parse(images_json);
     const avatar = images.avatar;
     const variant = getBestVariant(avatar?.variants);
     return {
-      imageUrl: resolveVariantUrl(variant) || null,
+      image_url: resolveVariantUrl(variant) || null,
       imageAlt: avatar?.alt || null,
       imageWidth: variant?.width ?? null,
       imageHeight: variant?.height ?? null,
@@ -151,11 +151,11 @@ export function flatToSeoJson(flat: FlatAuthorSeo): string {
 /**
  * Convert SeoJson to flat fields
  */
-export function seoJsonToFlat(seoJson: string | null): FlatAuthorSeo {
-  if (!seoJson) return {};
+export function seoJsonToFlat(seo_json: string | null): FlatAuthorSeo {
+  if (!seo_json) return {};
 
   try {
-    const seo: SeoJson & Record<string, unknown> = JSON.parse(seoJson);
+    const seo: SeoJson & Record<string, unknown> = JSON.parse(seo_json);
     return {
       metaTitle: (seo.meta_title ?? seo.metaTitle) as string | undefined,
       metaDescription: (seo.meta_description ?? seo.metaDescription) as string | undefined,
@@ -169,11 +169,11 @@ export function seoJsonToFlat(seoJson: string | null): FlatAuthorSeo {
 /**
  * Validate and sanitize ImagesJson
  */
-export function validateImagesJson(imagesJson: string | null): ImagesJson | null {
-  if (!imagesJson) return null;
+export function validateImagesJson(images_json: string | null): ImagesJson | null {
+  if (!images_json) return null;
 
   try {
-    const images = JSON.parse(imagesJson);
+    const images = JSON.parse(images_json);
     // Basic validation
     if (typeof images !== 'object') return null;
     return images as ImagesJson;
@@ -185,11 +185,11 @@ export function validateImagesJson(imagesJson: string | null): ImagesJson | null
 /**
  * Validate and sanitize BioJson
  */
-export function validateBioJson(bioJson: string | null): BioJson | null {
-  if (!bioJson) return null;
+export function validateBioJson(bio_json: string | null): BioJson | null {
+  if (!bio_json) return null;
 
   try {
-    const bio = JSON.parse(bioJson);
+    const bio = JSON.parse(bio_json);
     if (typeof bio !== 'object') return null;
     return bio as BioJson;
   } catch {
@@ -200,11 +200,11 @@ export function validateBioJson(bioJson: string | null): BioJson | null {
 /**
  * Validate and sanitize PersonaJson
  */
-export function validatePersonaJson(personaJson: string | null): PersonaJson | null {
-  if (!personaJson) return null;
+export function validatePersonaJson(persona_json: string | null): PersonaJson | null {
+  if (!persona_json) return null;
 
   try {
-    const persona = JSON.parse(personaJson);
+    const persona = JSON.parse(persona_json);
     if (typeof persona !== 'object') return null;
     return persona as PersonaJson;
   } catch {
@@ -215,11 +215,11 @@ export function validatePersonaJson(personaJson: string | null): PersonaJson | n
 /**
  * Validate and sanitize SeoJson
  */
-export function validateSeoJson(seoJson: string | null): SeoJson | null {
-  if (!seoJson) return null;
+export function validateSeoJson(seo_json: string | null): SeoJson | null {
+  if (!seo_json) return null;
 
   try {
-    const seo = JSON.parse(seoJson);
+    const seo = JSON.parse(seo_json);
     if (typeof seo !== 'object') return null;
     return seo as SeoJson;
   } catch {

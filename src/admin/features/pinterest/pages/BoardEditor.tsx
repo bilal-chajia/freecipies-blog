@@ -21,7 +21,7 @@ const BoardEditor = () => {
   const [loading, setLoading] = useState(isEditMode);
   const loadedRef = useRef(false);
   const [error, setError] = useState('');
-  const [boardId, setBoardId] = useState(null);
+  const [board_id, setBoardId] = useState(null);
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     slug: '',
@@ -71,8 +71,8 @@ const BoardEditor = () => {
 
     try {
       setSaving(true);
-      if (isEditMode && boardId) {
-        await pinterestBoardsAPI.update(boardId, formData);
+      if (isEditMode && board_id) {
+        await pinterestBoardsAPI.update(board_id, formData);
       } else {
         await pinterestBoardsAPI.create(formData);
       }
@@ -185,9 +185,9 @@ const BoardEditor = () => {
               {formData.cover_image_url ? (() => {
                 const imageData = typeof formData.cover_image_url === 'object' 
                   ? extractImage(formData.cover_image_url, 'hero', 1200)
-                  : { imageUrl: formData.cover_image_url };
+                  : { image_url: formData.cover_image_url };
                 
-                const previewUrl = toAdminImageUrl(imageData.imageUrl);
+                const previewUrl = toAdminImageUrl(imageData.image_url);
 
                 if (!previewUrl) return null;
 

@@ -24,7 +24,6 @@ export type ArticleReadingTimeSource = {
   id?: number | string | null;
   slug?: string | null;
   type?: string | null;
-  readingTimeMinutes?: number | null;
   reading_time_minutes?: number | null;
 };
 
@@ -104,7 +103,7 @@ export function parseCachedToc(value: unknown): JsonRecord[] {
  */
 export function getReadingTimeDisplay(article: ArticleReadingTimeSource | null | undefined): number {
   if (!article) return 3;
-  const readingTime = article.readingTimeMinutes ?? article.reading_time_minutes;
+  const readingTime = article.reading_time_minutes ?? article.reading_time_minutes;
   if (typeof readingTime === 'number' && Number.isFinite(readingTime) && readingTime > 0) {
     return readingTime;
   }

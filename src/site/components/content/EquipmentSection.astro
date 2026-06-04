@@ -81,7 +81,7 @@ const categoryIcons: Record<string, string> = {
         const snapshot = item.snapshot;
         const imageVariant =
           snapshot?.image?.variants?.sm || snapshot?.image?.variants?.xs;
-        const imageUrl = resolveVariantUrl(imageVariant);
+        const image_url = resolveVariantUrl(imageVariant);
         const imageWidth = imageVariant?.width || 720;
         const imageHeight = imageVariant?.height || 480;
         const name = snapshot?.name || item.label || "Equipment";
@@ -93,14 +93,14 @@ const categoryIcons: Record<string, string> = {
           <div
             class:list={[
               "equipment-card",
-              { "has-image": !!imageUrl, "is-optional": !required },
+              { "has-image": !!image_url, "is-optional": !required },
             ]}
           >
             {/* Product Image */}
-            {imageUrl ? (
+            {image_url ? (
               <div class="card-image">
                 <img
-                  src={imageUrl}
+                  src={image_url}
                   alt={snapshot?.image?.alt || name}
                   width={imageWidth}
                   height={imageHeight}
@@ -136,7 +136,7 @@ const categoryIcons: Record<string, string> = {
             {/* Card Content */}
             <div class="card-body">
               <div class="card-title-row">
-                <h4 class="item-name">{name}</h4>
+                <p class="item-name">{name}</p>
                 {!required && <span class="optional-pill">optional</span>}
               </div>
 
@@ -413,7 +413,7 @@ const categoryIcons: Record<string, string> = {
 
   .item-description {
     font-size: 0.7rem;
-    color: var(--text-body, var(--neutral-500));
+    color: var(--text-secondary);
     line-height: 1.45;
     margin: 0.15rem 0 0;
     display: -webkit-box;
@@ -437,19 +437,19 @@ const categoryIcons: Record<string, string> = {
     margin-left: auto;
     font-size: 0.65rem;
     font-weight: 600;
-    color: var(--accent, var(--accent-sage));
+    color: var(--accent-sage-text);
     text-decoration: none;
     padding: 0.25rem 0.5rem;
     border-radius: var(--radius-xs);
-    border: 1px solid var(--accent, var(--accent-sage));
+    border: 1px solid var(--accent-sage-text);
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
     white-space: nowrap;
   }
   .affiliate-cta:hover {
-    background: var(--accent, var(--accent-sage));
-    color: white;
+    background: var(--accent-sage-text);
+    color: var(--accent-sage-contrast);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+    box-shadow: 0 4px 12px var(--accent-sage-shadow);
   }
   .cta-arrow {
     width: 0.8rem;
@@ -464,7 +464,7 @@ const categoryIcons: Record<string, string> = {
     gap: 0.4rem;
     margin-top: 1rem;
     font-size: 0.72rem;
-    color: var(--text-muted, var(--neutral-400));
+    color: var(--text-secondary);
     line-height: 1.4;
   }
   .affiliate-disclaimer svg {

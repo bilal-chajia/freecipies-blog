@@ -334,13 +334,13 @@ const ContextToolbar: React.FC = () => {
                             <Input
                                 value={selectedElement.binding || ''}
                                 onChange={(e) => updateProp('binding', e.target.value)}
-                                placeholder="e.g. title, recipeJson.prep"
+                                placeholder="e.g. title, recipe_json.prep"
                                 className="h-8 text-xs"
                             />
                             <div className="text-xs text-muted-foreground">
                                 <p className="mb-1">Quick bindings:</p>
                                 <div className="flex flex-wrap gap-1">
-                                    {['title', 'categoryLabel', 'recipeJson.prep', 'recipeJson.servings', 'recipeJson.difficulty'].map(b => (
+                                    {['title', 'categoryLabel', 'recipe_json.prep', 'recipe_json.servings', 'recipe_json.difficulty'].map(b => (
                                         <button
                                             key={b}
                                             type="button"
@@ -400,7 +400,7 @@ const ContextToolbar: React.FC = () => {
                     </div>
 
                     {/* Zoom Slider (Parity Feature) */}
-                    {selectedElement.imageUrl && (
+                    {selectedElement.image_url && (
                         <div className="flex items-center gap-2 w-48">
                             <ZoomIn className="w-4 h-4 text-zinc-400" />
                             <Slider

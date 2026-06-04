@@ -9,7 +9,6 @@ import { useCustomBlock } from './useCustomBlock';
 import { getBestVariantUrl } from '@shared/types/images';
 
 type RoundupListItem = {
-    articleId?: string | number;
     article_id?: string | number;
     externalUrl?: string;
     title?: string;
@@ -132,7 +131,7 @@ export const RoundupListBlock = createReactBlockSpec(
                                 <div className="grid grid-cols-1 gap-2">
                                     {items.map((item, index) => (
                                         <div 
-                                            key={`${item.articleId || item.externalUrl}-${index}`}
+                                            key={`${item.article_id || item.externalUrl}-${index}`}
                                             className="flex gap-4 p-3 rounded-xl border bg-background/50 hover:bg-background transition-colors group"
                                         >
                                             {/* Thumbnail */}
@@ -159,7 +158,7 @@ export const RoundupListBlock = createReactBlockSpec(
                                                     <h4 className="font-bold text-sm text-foreground line-clamp-1">
                                                         {item.title || "Untitled Item"}
                                                     </h4>
-                                                    {item.articleId || item.article_id ? (
+                                                    {item.article_id || item.article_id ? (
                                                         <Link2 className="h-3 w-3 text-muted-foreground opacity-50" />
                                                     ) : (
                                                         <ExternalLink className="h-3 w-3 text-muted-foreground opacity-50" />

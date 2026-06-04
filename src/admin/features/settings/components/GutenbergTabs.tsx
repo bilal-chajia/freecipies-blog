@@ -97,16 +97,16 @@ const GutenbergTabsTrigger = React.forwardRef<HTMLButtonElement, GutenbergTabsTr
   className,
   ...props
 }, ref) => {
-  const isActive = currentValue === value;
+  const is_active = currentValue === value;
 
   return (
     <button
       ref={ref}
       type="button"
       role="tab"
-      aria-selected={isActive}
+      aria-selected={is_active}
       onClick={() => onValueChange?.(value ?? '')}
-      className={cn('structure-tab', isActive && 'is-active', className)}
+      className={cn('structure-tab', is_active && 'is-active', className)}
       {...props}
     >
       {Icon && <Icon className="w-3.5 h-3.5 mr-1.5 inline-block" />}
@@ -210,16 +210,16 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, GutenbergTabsTriggerProp
   className,
   ...props
 }, ref) => {
-  const isActive = currentValue === value;
+  const is_active = currentValue === value;
 
   return (
     <button
       ref={ref}
       type="button"
       role="tab"
-      aria-selected={isActive}
+      aria-selected={is_active}
       onClick={() => onValueChange?.(value ?? '')}
-      className={cn('structure-tab', isActive && 'is-active', className)}
+      className={cn('structure-tab', is_active && 'is-active', className)}
       {...props}
     >
       {Icon && <Icon className="w-3.5 h-3.5 mr-1.5 inline-block" />}

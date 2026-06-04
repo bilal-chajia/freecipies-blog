@@ -41,23 +41,23 @@ function PaginationItem({
 }
 
 interface PaginationLinkProps extends React.ComponentPropsWithoutRef<"a"> {
-  isActive?: boolean
+  is_active?: boolean
   size?: "default" | "icon"
 }
 
 function PaginationLink({
   className,
-  isActive,
+  is_active,
   size = "icon",
   ...props
 }: PaginationLinkProps) {
   return (
     <a
-      aria-current={isActive ? "page" : undefined}
+      aria-current={is_active ? "page" : undefined}
       data-slot="pagination-link"
-      data-active={isActive}
+      data-active={is_active}
       className={cn(buttonVariants({
-        variant: isActive ? "outline" : "ghost",
+        variant: is_active ? "outline" : "ghost",
         size,
       }), className)}
       {...props} />

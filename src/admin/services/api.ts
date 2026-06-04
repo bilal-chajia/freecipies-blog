@@ -179,7 +179,7 @@ export const pinterestBoardsAPI = {
 
 export const pinterestPinsAPI = {
   getAll: (params: Record<string, unknown> = {}) => api.get('/pins', { params }),
-  getByArticle: (articleId: number | string) => api.get(`/pins?article_id=${articleId}`),
+  getByArticle: (article_id: number | string) => api.get(`/pins?article_id=${article_id}`),
   create: (data: unknown) => api.post('/pins', data),
   update: (id: number | string, data: Record<string, unknown>) => api.put('/pins', { id, ...data }),
   delete: (id: number | string) => api.delete(`/pins?id=${id}`),

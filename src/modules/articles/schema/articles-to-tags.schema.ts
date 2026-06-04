@@ -10,13 +10,12 @@ import { articles } from './articles.schema';
 import { tags } from '../../tags/schema/tags.schema';
 
 export const articlesToTags = sqliteTable('articles_to_tags', {
-  articleId: integer('article_id').notNull().references(() => articles.id, { onDelete: 'cascade' }),
-  tagId: integer('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+  article_id: integer('article_id').notNull().references(() => articles.id, { onDelete: 'cascade' }),
+  tag_id: integer('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
 }, (table) => [
-  primaryKey({ columns: [table.articleId, table.tagId] }),
-  index('idx_tag_to_article').on(table.tagId),
+  primaryKey({ columns: [table.article_id, table.tag_id] }),
+  index('idx_tag_to_article').on(table.tag_id),
 ]);
 
 export type ArticleToTag = typeof articlesToTags.$inferSelect;
 export type NewArticleToTag = typeof articlesToTags.$inferInsert;
-

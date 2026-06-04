@@ -135,9 +135,9 @@ export class TocController {
 
     private setActiveLink(id: string) {
         this.links.forEach((link) => {
-            const isActive = link.dataset.tocTarget === id;
-            link.classList.toggle("toc-active", isActive);
-            link.setAttribute("aria-current", isActive ? "true" : "false");
+            const is_active = link.dataset.tocTarget === id;
+            link.classList.toggle("toc-active", is_active);
+            link.setAttribute("aria-current", is_active ? "true" : "false");
         });
     }
 
@@ -160,6 +160,7 @@ export class TocController {
     private syncUI() {
         const expanded = this.toc.classList.contains("is-expanded");
         this.toggleBtn?.setAttribute("aria-expanded", String(expanded));
+        this.toggleBtn?.setAttribute("aria-label", expanded ? "Show less" : "Show all");
         if (this.showMoreLabel) {
             this.showMoreLabel.textContent = expanded ? "Show less" : "Show all";
         }

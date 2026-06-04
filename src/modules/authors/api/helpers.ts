@@ -272,66 +272,65 @@ export function parseSeoJson(value: any): string {
 }
 
 /**
- * Transform request body to handle both legacy flat fields and new JSON fields
- * This allows backward compatibility during migration
+ * Transform request body to handle flat author fields and snake_case JSON fields.
  */
 export function transformAuthorRequestBody(body: any): any {
     const transformed = { ...body };
-    const hasLegacyImageFields = ['imageUrl', 'imageAlt', 'imageWidth', 'imageHeight']
+    const hasLegacyImageFields = ['image_url', 'imageAlt', 'imageWidth', 'imageHeight']
         .some((key) => Object.prototype.hasOwnProperty.call(body, key));
 
-    // Handle imagesJson - accept both formats
-    if (body.imagesJson !== undefined) {
-        transformed.imagesJson = parseImagesJson(body.imagesJson);
+    // Handle images_json
+    if (body.images_json !== undefined) {
+        transformed.images_json = parseImagesJson(body.images_json);
     } else if (hasLegacyImageFields) {
-        // Convert legacy flat fields to imagesJson
+        // Convert legacy flat fields to images_json
         const images: Partial<Record<'avatar', unknown>> = {};
-        if (body.imageUrl) {
-            const r2Key = extractR2KeyFromUrl(body.imageUrl);
+        if (body.image_url) {
+            const r2Key = extractR2KeyFromUrl(body.image_url);
             images.avatar = {
                 alt: body.imageAlt,
                 variants: {
                     xs: {
-                        ...(r2Key ? { r2_key: r2Key } : { url: body.imageUrl }),
+                        ...(r2Key ? { r2_key: r2Key } : { url: body.image_url }),
                         width: body.imageWidth ?? 0,
                         height: body.imageHeight ?? 0,
                     },
                     sm: {
-                        ...(r2Key ? { r2_key: r2Key } : { url: body.imageUrl }),
+                        ...(r2Key ? { r2_key: r2Key } : { url: body.image_url }),
                         width: body.imageWidth ?? 0,
                         height: body.imageHeight ?? 0,
                     },
                 },
             };
         }
-        transformed.imagesJson = JSON.stringify(images);
+        transformed.images_json = JSON.stringify(images);
         // Remove flat fields
-        delete transformed.imageUrl;
+        delete transformed.image_url;
         delete transformed.imageAlt;
         delete transformed.imageWidth;
         delete transformed.imageHeight;
     }
 
-    // Handle bioJson
-    if (body.bioJson !== undefined) {
-        transformed.bioJson = parseBioJson(body.bioJson);
-    } else if (body.introduction || body.fullBio || body.socialLinks || body.headline || body.subtitle) {
-        transformed.bioJson = parseBioJson({
+    // Handle bio_json
+    if (body.bio_json !== undefined) {
+        transformed.bio_json = parseBioJson(body.bio_json);
+    } else if (body.introduction || body.fullBio || body.social_links || body.headline || body.subtitle) {
+        transformed.bio_json = parseBioJson({
             introduction: body.introduction,
             fullBio: body.fullBio,
-            socialLinks: body.socialLinks,
+            socialLinks: body.social_links,
             headline: body.headline,
             subtitle: body.subtitle,
         });
     }
 
-    if (body.personaJson !== undefined) {
-        transformed.personaJson = parsePersonaJson(body.personaJson);
+    if (body.persona_json !== undefined) {
+        transformed.persona_json = parsePersonaJson(body.persona_json);
     }
 
-    // Handle seoJson - convert flat fields if needed
-    if (body.seoJson !== undefined) {
-        transformed.seoJson = parseSeoJson(body.seoJson);
+    // Handle seo_json - convert flat fields if needed
+    if (body.seo_json !== undefined) {
+        transformed.seo_json = parseSeoJson(body.seo_json);
     } else if (
         body.metaTitle ||
         body.metaDescription ||
@@ -343,7 +342,7 @@ export function transformAuthorRequestBody(body: any): any {
         body.twitterCard ||
         body.noIndex
     ) {
-        transformed.seoJson = parseSeoJson({
+        transformed.seo_json = parseSeoJson({
             metaTitle: body.metaTitle,
             metaDescription: body.metaDescription,
             canonical: body.canonical,
@@ -361,7 +360,7 @@ export function transformAuthorRequestBody(body: any): any {
 }
 
 /**
- * Transform author response to include both JSON and flat fields for backward compatibility
+ * Transform author response to include flat display fields derived from snake_case JSON.
  */
 export function transformAuthorResponse(author: any): any {
     if (!author) return author;
@@ -369,13 +368,13 @@ export function transformAuthorResponse(author: any): any {
     const response = { ...author };
     response.mediaCredit = serializeAuthorCreditForAdmin(buildAuthorCreditSnapshot(author));
 
-    // Parse imagesJson and add flat fields
-    if (author.imagesJson) {
+    // Parse images_json and add flat fields
+    if (author.images_json) {
         try {
-            const images: ImagesJson = JSON.parse(author.imagesJson);
+            const images: ImagesJson = JSON.parse(author.images_json);
             if (images.avatar) {
                 const variant = getBestVariant(images.avatar.variants);
-                response.imageUrl = resolveVariantUrl(variant);
+                response.image_url = resolveVariantUrl(variant);
                 response.imageAlt = images.avatar.alt;
                 response.imageWidth = variant?.width;
                 response.imageHeight = variant?.height;
@@ -385,10 +384,10 @@ export function transformAuthorResponse(author: any): any {
         }
     }
 
-    // Parse seoJson and add flat fields
-    if (author.seoJson) {
+    // Parse seo_json and add flat fields
+    if (author.seo_json) {
         try {
-            const seo: SeoJson = JSON.parse(author.seoJson);
+            const seo: SeoJson = JSON.parse(author.seo_json);
             if (!response.metaTitle) response.metaTitle = getSeoValue<string | null>(seo, 'meta_title', 'metaTitle') ?? undefined;
             if (!response.metaDescription) response.metaDescription = getSeoValue<string | null>(seo, 'meta_description', 'metaDescription') ?? undefined;
             if (!response.canonicalUrl && seo.canonical) response.canonicalUrl = seo.canonical;

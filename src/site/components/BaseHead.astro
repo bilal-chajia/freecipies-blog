@@ -22,7 +22,7 @@ const imageSrc = image
     ? image
     : image.src
   : FALLBACK_IMAGE_URL;
-const imageUrl = new URL(imageSrc, siteUrl);
+const image_url = new URL(imageSrc, siteUrl);
 
 // Static asset configuration (assumes existence based on project standard)
 const hasFaviconSvg = true;
@@ -140,11 +140,11 @@ const hasRootFavicon = false; // We prefer logos/* structure
 <meta property="og:url" content={canonicalURL} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-<meta property="og:image" content={imageUrl} />
+<meta property="og:image" content={image_url} />
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary_large_image" />
 <meta property="twitter:url" content={canonicalURL} />
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
-<meta property="twitter:image" content={imageUrl} />
+<meta property="twitter:image" content={image_url} />

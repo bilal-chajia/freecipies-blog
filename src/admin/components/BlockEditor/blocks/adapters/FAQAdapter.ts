@@ -21,7 +21,7 @@ export const FAQAdapter: BlockAdapter<MainFaqBlock> = {
   type: 'main_faq',
 
   toEditor(_block, context) {
-    const faqs = parseJsonObject<Record<string, unknown>>(context?.faqsJson, {});
+    const faqs = parseJsonObject<Record<string, unknown>>(context?.faqs_json, {});
     const title = typeof faqs.heading === 'string' && faqs.heading.trim()
       ? faqs.heading
       : 'Frequently Asked Questions';

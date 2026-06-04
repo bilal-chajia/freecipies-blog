@@ -15,29 +15,29 @@ export const DATA_FIELD_SUGGESTIONS = [
     { path: 'image', label: 'Main Image', type: 'image' },
 
     // Recipe fields
-    { path: 'recipeJson.prep', label: 'Prep Time (minutes)', type: 'text' },
-    { path: 'recipeJson.cook', label: 'Cook Time (minutes)', type: 'text' },
-    { path: 'recipeJson.total', label: 'Total Time (minutes)', type: 'text' },
-    { path: 'recipeJson.servings', label: 'Servings', type: 'text' },
-    { path: 'recipeJson.difficulty', label: 'Difficulty', type: 'text' },
-    { path: 'recipeJson.recipeCategory', label: 'Recipe Category', type: 'text' },
-    { path: 'recipeJson.recipeCuisine', label: 'Cuisine', type: 'text' },
+    { path: 'recipe_json.prep', label: 'Prep Time (minutes)', type: 'text' },
+    { path: 'recipe_json.cook', label: 'Cook Time (minutes)', type: 'text' },
+    { path: 'recipe_json.total', label: 'Total Time (minutes)', type: 'text' },
+    { path: 'recipe_json.servings', label: 'Servings', type: 'text' },
+    { path: 'recipe_json.difficulty', label: 'Difficulty', type: 'text' },
+    { path: 'recipe_json.recipeCategory', label: 'Recipe Category', type: 'text' },
+    { path: 'recipe_json.recipeCuisine', label: 'Cuisine', type: 'text' },
 
     // Nutrition fields
-    { path: 'recipeJson.nutrition.calories', label: 'Calories', type: 'text' },
-    { path: 'recipeJson.nutrition.protein_g', label: 'Protein (g)', type: 'text' },
-    { path: 'recipeJson.nutrition.total_carbohydrate_g', label: 'Carbs (g)', type: 'text' },
-    { path: 'recipeJson.nutrition.total_fat_g', label: 'Fat (g)', type: 'text' },
+    { path: 'recipe_json.nutrition.calories', label: 'Calories', type: 'text' },
+    { path: 'recipe_json.nutrition.protein_g', label: 'Protein (g)', type: 'text' },
+    { path: 'recipe_json.nutrition.total_carbohydrate_g', label: 'Carbs (g)', type: 'text' },
+    { path: 'recipe_json.nutrition.total_fat_g', label: 'Fat (g)', type: 'text' },
 ];
 
 /**
  * Get a value from an object using dot notation path
  * @param data - The source object
- * @param path - Dot notation path (e.g., "recipeJson.nutrition.calories")
+ * @param path - Dot notation path (e.g., "recipe_json.nutrition.calories")
  * @returns The value at the path, or undefined if not found
  * 
  * @example
- * getValue({ recipeJson: { prep: 15 } }, "recipeJson.prep") // returns 15
+ * getValue({ recipe_json: { prep: 15 } }, "recipe_json.prep") // returns 15
  * getValue({ title: "Hello" }, "title") // returns "Hello"
  * getValue({ a: { b: { c: 1 } } }, "a.b.c") // returns 1
  */
@@ -54,7 +54,7 @@ export function getValue<T = unknown>(data: Record<string, unknown>, path: strin
 
 /**
  * Resolve element binding to actual value
- * @param binding - The binding path (e.g., "recipeJson.prep")
+ * @param binding - The binding path (e.g., "recipe_json.prep")
  * @param articleData - The article data object
  * @param fallback - Fallback value if binding not found
  * @returns The resolved value or fallback

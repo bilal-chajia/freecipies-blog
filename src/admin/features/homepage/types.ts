@@ -7,7 +7,7 @@ export type HeroSectionData = {
   title: string;
   subtitle: string;
   backgroundImage: string;
-  backgroundColor: string;
+  background_color: string;
   ctaText: string;
   ctaLink: string;
   showSearch: boolean;
@@ -22,7 +22,7 @@ export type FeaturedPostsData = {
   categoryFilter: string;
   tagFilter: string;
   sortBy: string;
-  sortOrder: string;
+  sort_order: string;
 };
 
 export type CategoriesSectionData = {

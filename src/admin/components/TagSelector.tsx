@@ -24,7 +24,6 @@ type TagOption = {
     label?: string;
     color?: string | null;
     style_json?: string | Record<string, unknown> | null;
-    styleJson?: string | Record<string, unknown> | null;
     style?: string | Record<string, unknown> | null;
 };
 
@@ -54,11 +53,11 @@ export default function TagSelector({
     const [open, setOpen] = React.useState(false)
     const [searchQuery, setSearchQuery] = React.useState("");
 
-    const handleSelect = (tagId: string | number) => {
-        if (selectedTags.includes(tagId)) {
-            onTagsChange(selectedTags.filter((id) => id !== tagId))
+    const handleSelect = (tag_id: string | number) => {
+        if (selectedTags.includes(tag_id)) {
+            onTagsChange(selectedTags.filter((id) => id !== tag_id))
         } else {
-            onTagsChange([...selectedTags, tagId])
+            onTagsChange([...selectedTags, tag_id])
         }
     };
 
@@ -69,7 +68,7 @@ export default function TagSelector({
 
     const getTagColor = (tag: TagOption | undefined) => {
         if (tag?.color) return tag.color;
-        const style = tag?.style_json ?? tag?.styleJson ?? tag?.style;
+        const style = tag?.style_json ?? tag?.style;
         if (!style) return null;
         if (typeof style === 'string') {
             try {
@@ -191,12 +190,12 @@ export default function TagSelector({
             {/* Selected Tags Badges */}
             {selectedTags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                    {selectedTags.map(tagId => {
-                        const tag = tags.find((item) => item.id === tagId);
+                    {selectedTags.map(tag_id => {
+                        const tag = tags.find((item) => item.id === tag_id);
                         const tagColor = getTagColor(tag);
                         return (
                             <Badge
-                                key={tagId}
+                                key={tag_id}
                                 variant="outline"
                                 className={cn("px-2 py-1 gap-1 border font-medium", badgeClassName)}
                                 style={tagColor ? { 
@@ -209,12 +208,12 @@ export default function TagSelector({
                                     borderColor: "rgba(37, 99, 235, 0.2)"
                                 }}
                             >
-                                {getTagLabel(tagId)}
+                                {getTagLabel(tag_id)}
                                 <button
                                     className="ml-1 hover:text-destructive focus:outline-none rounded-full p-0.5"
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        handleSelect(tagId);
+                                        handleSelect(tag_id);
                                     }}
                                 >
                                     <X className="size-3" />

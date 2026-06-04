@@ -24,7 +24,7 @@ export interface BlockStructureRow {
   id: string;
   type: string;
   depth: number;
-  parentId: string | null;
+  parent_id: string | null;
   level?: number;
   label: string;
   icon: LucideIcon;
@@ -39,13 +39,13 @@ export interface BlockEditorContextPayload {
 export interface BlockEditorProps {
   value: string | unknown[] | { blocks: unknown[] } | undefined;
   onChange?: (nextValue: string) => void;
-  recipeJson?: unknown;
+  recipe_json?: unknown;
   onRecipeChange?: (nextValue: string) => void;
-  faqsJson?: unknown;
+  faqs_json?: unknown;
   onFaqsChange?: (nextValue: string) => void;
   imagesData?: unknown;
   onImagesChange?: (nextValue: unknown) => void;
-  roundupJson?: unknown;
+  roundup_json?: unknown;
   contentType?: 'article' | 'recipe' | 'roundup';
   isSidebarOpen?: boolean;
   onStructureUpdate?: (payload: { items: BlockStructureRow[]; activeBlockId: string | null }) => void;

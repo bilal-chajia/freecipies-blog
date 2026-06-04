@@ -19,7 +19,7 @@ const normalizeStyleJsonObject = (value: any): TagStyleJson => {
 };
 
 /**
- * Parse and validate styleJson from request body
+ * Parse and validate style_json from request body
  */
 export function parseStyleJson(value: any): string {
   if (!value) return '{}';
@@ -41,15 +41,15 @@ export function parseStyleJson(value: any): string {
 }
 
 /**
- * Transform request body to handle both legacy flat fields and styleJson
+ * Transform request body to handle flat style fields and style_json
  */
 export function transformTagRequestBody(body: any): any {
   const transformed = { ...body };
 
-  if (body.styleJson !== undefined) {
-    transformed.styleJson = parseStyleJson(body.styleJson);
+  if (body.style_json !== undefined) {
+    transformed.style_json = parseStyleJson(body.style_json);
   } else if (body.color || body.variant) {
-    transformed.styleJson = parseStyleJson({
+    transformed.style_json = parseStyleJson({
       color: body.color,
       variant: body.variant,
     });
@@ -65,16 +65,16 @@ export function transformTagRequestBody(body: any): any {
 }
 
 /**
- * Transform tag response to include legacy flat fields for backward compatibility
+ * Transform tag response to include flat style fields for admin consumers
  */
 export function transformTagResponse(tag: any): any {
   if (!tag) return tag;
 
   const response = { ...tag };
 
-  if (tag.styleJson) {
+  if (tag.style_json) {
     try {
-      const style: TagStyleJson = JSON.parse(tag.styleJson);
+      const style: TagStyleJson = JSON.parse(tag.style_json);
       response.color = style.color;
       response.variant = style.variant;
     } catch {

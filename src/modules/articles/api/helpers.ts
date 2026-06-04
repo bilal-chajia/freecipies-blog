@@ -87,11 +87,11 @@ export function transformArticleRequestBody(body: any): any {
 
     // JSON fields that should be objects
     const jsonFields = [
-        'imagesJson', 'recipeJson', 'roundupJson',
-        'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
-        'cachedTagsJson', 'cachedCategoryJson',
-        'cachedAuthorJson', 'cachedRatingJson', 'cachedRecipeJson',
-        'cachedCardJson'
+        'images_json', 'recipe_json', 'roundup_json',
+        'faqs_json', 'seo_json', 'config_json', 'jsonld_json',
+        'cached_tags_json', 'cached_category_json',
+        'cached_author_json', 'cached_rating_json', 'cached_recipe_json',
+        'cached_card_json'
     ];
 
     // Ensure they are properly parsed if they come as strings (though the client should send objects)
@@ -101,28 +101,28 @@ export function transformArticleRequestBody(body: any): any {
         }
     }
 
-    if (body.contentJson !== undefined) {
-        transformed.contentJson = normalizeContentDocument(body.contentJson);
+    if (body.content_json !== undefined) {
+        transformed.content_json = normalizeContentDocument(body.content_json);
     }
 
-    if (body.recipeJson !== undefined) {
-        transformed.recipeJson = normalizeRecipeJson(transformed.recipeJson);
+    if (body.recipe_json !== undefined) {
+        transformed.recipe_json = normalizeRecipeJson(transformed.recipe_json);
     }
 
-    if (body.roundupJson !== undefined) {
-        transformed.roundupJson = normalizeRoundupJson(transformed.roundupJson);
+    if (body.roundup_json !== undefined) {
+        transformed.roundup_json = normalizeRoundupJson(transformed.roundup_json);
     }
 
-    if (body.faqsJson !== undefined) {
-        transformed.faqsJson = normalizeFaqsJson(transformed.faqsJson);
+    if (body.faqs_json !== undefined) {
+        transformed.faqs_json = normalizeFaqsJson(transformed.faqs_json);
     }
 
-    if (body.imagesJson !== undefined) {
-        transformed.imagesJson = normalizeImageSnapshotContainer('article', transformed.imagesJson);
+    if (body.images_json !== undefined) {
+        transformed.images_json = normalizeImageSnapshotContainer('article', transformed.images_json);
     }
 
-    if (body.seoJson !== undefined) {
-        transformed.seoJson = normalizeSeoJson(transformed.seoJson);
+    if (body.seo_json !== undefined) {
+        transformed.seo_json = normalizeSeoJson(transformed.seo_json);
     } else if (
         body.metaTitle ||
         body.metaDescription ||
@@ -134,7 +134,7 @@ export function transformArticleRequestBody(body: any): any {
         body.ogDescription ||
         body.twitterCard
     ) {
-        transformed.seoJson = normalizeSeoJson({
+        transformed.seo_json = normalizeSeoJson({
             metaTitle: body.metaTitle,
             metaDescription: body.metaDescription,
             noIndex: body.noIndex,
@@ -147,14 +147,14 @@ export function transformArticleRequestBody(body: any): any {
         });
     }
 
-    // Handle legacy flat image fields if imagesJson is not provided
-    if (!body.imagesJson) {
+    // Handle legacy flat image fields if images_json is not provided
+    if (!body.images_json) {
         const images: any = {};
 
-        if (body.imageUrl) {
-            const r2Key = extractR2KeyFromUrl(body.imageUrl);
+        if (body.image_url) {
+            const r2Key = extractR2KeyFromUrl(body.image_url);
             images.thumbnail = {
-                ...(r2Key ? { r2_key: r2Key } : { url: body.imageUrl }),
+                ...(r2Key ? { r2_key: r2Key } : { url: body.image_url }),
                 alt: body.imageAlt || '',
                 width: body.imageWidth,
                 height: body.imageHeight
@@ -172,12 +172,12 @@ export function transformArticleRequestBody(body: any): any {
         }
 
         if (Object.keys(images).length > 0) {
-            transformed.imagesJson = images;
+            transformed.images_json = images;
         }
     }
 
     // Remove legacy flat fields to keep the database patch clean
-    delete transformed.imageUrl;
+    delete transformed.image_url;
     delete transformed.imageAlt;
     delete transformed.imageWidth;
     delete transformed.imageHeight;

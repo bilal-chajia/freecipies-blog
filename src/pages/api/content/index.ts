@@ -14,10 +14,10 @@ const ContentListQuery = z.object({
     category: z.string().optional(),
     author: z.string().optional(),
     search: z.string().optional(),
-    workflowStatus: z.enum(['draft', 'in_review', 'scheduled', 'published', 'archived', 'all']).optional(),
+    workflow_status: z.enum(['draft', 'in_review', 'scheduled', 'published', 'archived', 'all']).optional(),
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().min(1).max(100).default(12),
-}).transform(({ page, limit, type, category, author, search, workflowStatus }) => ({
+}).transform(({ page, limit, type, category, author, search, workflow_status }) => ({
     page,
     limit,
     offset: (page - 1) * limit,
@@ -25,7 +25,7 @@ const ContentListQuery = z.object({
     category,
     author,
     search,
-    workflowStatus,
+    workflow_status,
 }));
 
 /**
@@ -45,7 +45,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
 
     // Validate all query parameters
-    const { page, limit, offset, type, category, author, search, workflowStatus: workflowStatusParam } = validateQuery(url.searchParams, ContentListQuery);
+    const { page, limit, offset, type, category, author, search, workflow_status: workflowStatusParam } = validateQuery(url.searchParams, ContentListQuery);
 
     try {
         const db = env.DB;
@@ -81,9 +81,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
         // Workflow status filter (default to 'published' for public API)
         if (workflowStatusParam && workflowStatusParam !== 'all') {
-            options.workflowStatus = workflowStatusParam;
+            options.workflow_status = workflowStatusParam;
         } else if (!workflowStatusParam) {
-            options.workflowStatus = 'published';
+            options.workflow_status = 'published';
         }
 
         const result = await getArticles(db, options);
@@ -93,15 +93,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
             const articleData = article as any;
             
             // Parse and clean cached card JSON if available
-            const cachedCard = cleanCardImages(parseCachedCard(article.cachedCardJson));
+            const cachedCard = cleanCardImages(parseCachedCard(article.cached_card_json));
 
             // Parse images for thumbnail
             let thumbnail = null;
-            if (article.imagesJson) {
+            if (article.images_json) {
                 try {
-                    const images = typeof article.imagesJson === 'string'
-                        ? JSON.parse(article.imagesJson)
-                        : article.imagesJson;
+                    const images = typeof article.images_json === 'string'
+                        ? JSON.parse(article.images_json)
+                        : article.images_json;
                     const rawThumbnail = images.thumbnail || images.hero;
                     if (rawThumbnail) {
                         const cleanedObj = cleanCardImages({ image: rawThumbnail });
@@ -118,15 +118,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 type: article.type,
                 slug: article.slug,
                 headline: article.headline,
-                shortDescription: article.shortDescription,
+                short_description: article.short_description,
                 thumbnail,
                 categoryLabel: articleData.categoryLabel,
                 categorySlug: articleData.categorySlug,
                 categoryColor: articleData.categoryColor,
                 authorName: articleData.authorName,
                 authorSlug: articleData.authorSlug,
-                publishedAt: article.publishedAt,
-                workflowStatus: article.workflowStatus,
+                published_at: article.published_at,
+                workflow_status: article.workflow_status,
                 // Type-specific fields from cache
                 ...(cachedCard || {}),
             };

@@ -11,6 +11,10 @@
     --brand-primary-light: #fdf2f2;
     --brand-secondary: #ff6b35;
     --brand-secondary-hover: #e55a2b;
+    --brand-secondary-accessible: #9a3412;
+    --brand-secondary-accessible-hover: #7c2d12;
+    --brand-secondary-accessible-shadow: rgba(154, 52, 18, 0.25);
+    --brand-secondary-accessible-shadow-hover: rgba(124, 45, 18, 0.35);
     --brand-accent: #f7931e;
     --brand-accent-hover: #e8850f;
     --brand-gradient: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
@@ -50,6 +54,9 @@
     --accent-sage: #6b8f71;
     --accent-sage-light: #e8f5e9;
     --accent-sage-text: #1b4332;
+    --accent-sage-contrast: #ffffff;
+    --accent-sage-shadow: rgba(27, 67, 50, 0.25);
+    --toc-active-text: var(--accent-sage-text);
 
     /* Radius Tokens — inherited from design-tokens.css */
 
@@ -107,6 +114,13 @@
     --info: #60a5fa;
     --info-bg: #1e3a8a;
     --info-text: #93c5fd;
+    --brand-secondary-accessible: #ffb199;
+    --brand-secondary-accessible-hover: #ffc4b3;
+    --brand-secondary-accessible-shadow: rgba(255, 177, 153, 0.18);
+    --brand-secondary-accessible-shadow-hover: rgba(255, 196, 179, 0.24);
+    --accent-sage-contrast: #ffffff;
+    --accent-sage-shadow: rgba(255, 255, 255, 0.18);
+    --toc-active-text: var(--accent-sage);
 
     --focus-ring-color: #ff8a80;
   }

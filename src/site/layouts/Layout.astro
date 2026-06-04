@@ -3,8 +3,6 @@ import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import "../styles/global.css";
-import bookmarksScript from "@site/scripts/bookmarks.ts?url";
-import enhancementsScript from "@site/scripts/global-enhancements.ts?url";
 import { getHeaderMenu } from "@server/site-data";
 
 interface Props {
@@ -51,7 +49,9 @@ const headerMenu = await getHeaderMenu();
       <slot />
     </main>
     <Footer />
-    <script type="module" src={bookmarksScript}></script>
-    <script type="module" src={enhancementsScript}></script>
+    <script>
+      import "@site/scripts/bookmarks.ts";
+      import "@site/scripts/global-enhancements.ts";
+    </script>
   </body>
 </html>

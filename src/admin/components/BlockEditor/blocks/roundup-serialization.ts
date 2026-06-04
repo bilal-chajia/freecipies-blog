@@ -60,7 +60,7 @@ export function buildRoundupItems(blocks: RoundupSourceBlock[]): RoundupSerializ
           it.source_type ??
           it.sourceType ??
           (it.external_url || it.externalUrl ? 'external_recipe' : 'internal_recipe'),
-        article_id: it.article_id ?? it.articleId ?? null,
+        article_id: it.article_id ?? it.article_id ?? null,
         slug: it.slug ?? '',
         external_url: it.external_url ?? it.externalUrl ?? '',
         title: it.title ?? '',

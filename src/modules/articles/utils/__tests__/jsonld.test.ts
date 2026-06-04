@@ -8,11 +8,11 @@ describe('generateJsonLd', () => {
       type: 'article',
       headline: 'Kitchen Basics',
       slug: 'kitchen-basics',
-      shortDescription: 'Useful kitchen basics.',
-      publishedAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: null,
-      cachedAuthorJson: JSON.stringify({ name: 'Jane Doe', slug: 'jane-doe' }),
-      cachedCategoryJson: JSON.stringify({ label: 'Guides', slug: 'guides' }),
+      short_description: 'Useful kitchen basics.',
+      published_at: '2026-01-01T00:00:00.000Z',
+      updated_at: null,
+      cached_author_json: JSON.stringify({ name: 'Jane Doe', slug: 'jane-doe' }),
+      cached_category_json: JSON.stringify({ label: 'Guides', slug: 'guides' }),
     }, 'https://example.com');
 
     expect(schemas.some((schema) => schema['@type'] === 'Article')).toBe(true);
@@ -32,11 +32,11 @@ describe('generateJsonLd', () => {
       type: 'recipe',
       headline: 'Avocado Toast',
       slug: 'avocado-toast',
-      shortDescription: 'Quick breakfast.',
-      recipeJson: JSON.stringify({ prep: 5, cook: 0, ingredients: [], instructions: [] }),
-      imagesJson: '{}',
-      cachedAuthorJson: JSON.stringify({ name: 'Jane Doe' }),
-      cachedCategoryJson: JSON.stringify({ label: 'Breakfast', slug: 'breakfast' }),
+      short_description: 'Quick breakfast.',
+      recipe_json: JSON.stringify({ prep: 5, cook: 0, ingredients: [], instructions: [] }),
+      images_json: '{}',
+      cached_author_json: JSON.stringify({ name: 'Jane Doe' }),
+      cached_category_json: JSON.stringify({ label: 'Breakfast', slug: 'breakfast' }),
     }, 'https://example.com');
 
     const breadcrumb = schemas.find((schema) => schema['@type'] === 'BreadcrumbList');

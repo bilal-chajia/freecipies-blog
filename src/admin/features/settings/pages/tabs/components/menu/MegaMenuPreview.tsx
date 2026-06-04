@@ -31,10 +31,10 @@ interface MetadataItem {
     label?: string;
     name?: string;
     color?: string;
-    parentId?: number | null;
+    parent_id?: number | null;
     depth?: number;
-    imagesJson?: string | Record<string, unknown> | null;
-    styleJson?: string | Record<string, unknown> | null;
+    images_json?: string | Record<string, unknown> | null;
+    style_json?: string | Record<string, unknown> | null;
 }
 
 type EnrichedMetadata = MetadataItem & {
@@ -121,7 +121,7 @@ const MegaMenuPreview = ({ items, setHeaderActions }: MegaMenuPreviewProps) => {
             const slug = url.split('/categories/')[1];
             const cat = dbData.categories.find((category) => category.slug === slug);
             if (cat) {
-                const images = parseRecord(cat.imagesJson);
+                const images = parseRecord(cat.images_json);
                 return {
                     type: 'category',
                     ...cat,
@@ -136,7 +136,7 @@ const MegaMenuPreview = ({ items, setHeaderActions }: MegaMenuPreviewProps) => {
             const slug = url.split('/tags/')[1];
             const tag = dbData.tags.find((tag) => tag.slug === slug);
             if (tag) {
-                const styles = parseRecord(tag.styleJson);
+                const styles = parseRecord(tag.style_json);
                 return {
                     type: 'tag',
                     ...tag,
@@ -252,7 +252,7 @@ const MegaMenuPreview = ({ items, setHeaderActions }: MegaMenuPreviewProps) => {
                                                                                     const prevMeta = getEnrichedData(getHref(prevLink));
                                                                                     const metaDepth = meta?.depth ?? 0;
                                                                                     const prevMetaDepth = prevMeta?.depth ?? 0;
-                                                                                    const isNested = (meta?.type === 'category' && prevMeta?.type === 'category' && meta?.parentId === prevMeta?.id)
+                                                                                    const isNested = (meta?.type === 'category' && prevMeta?.type === 'category' && meta?.parent_id === prevMeta?.id)
                                                                                         || (metaDepth > 0 && !!prevMeta && metaDepth > prevMetaDepth);
 
                                                                                     return (
@@ -304,16 +304,16 @@ const MegaMenuPreview = ({ items, setHeaderActions }: MegaMenuPreviewProps) => {
                                                                         {(() => {
                                                                             const featured = item.featured_items?.[0];
                                                                             if (!featured) return null;
-                                                                            const imageUrl = toAdminImageUrl(resolveVariantUrl(featured.image?.variants?.sm) || resolveVariantUrl(featured.image?.variants?.xs));
+                                                                            const image_url = toAdminImageUrl(resolveVariantUrl(featured.image?.variants?.sm) || resolveVariantUrl(featured.image?.variants?.xs));
                                                                             return (
                                                                         <div className="group/card relative h-full rounded-2xl overflow-hidden bg-card shadow-sm hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 cursor-pointer border border-border ring-1 ring-border/50">
-                                                                            {imageUrl ? (
+                                                                            {image_url ? (
                                                                                 <div className="relative h-40 overflow-hidden">
                                                                                     <div className="absolute top-3 left-3 bg-background/90 backdrop-blur text-[10px] font-bold px-2 py-1 rounded-full text-primary shadow-sm z-10">
                                                                                         NEW RECIPE
                                                                                     </div>
                                                                                     <img
-                                                                                        src={imageUrl}
+                                                                                        src={image_url}
                                                                                         alt=""
                                                                                         className="w-full h-full object-cover transform group-hover/card:scale-105 transition-transform duration-700 ease-out"
                                                                                     />

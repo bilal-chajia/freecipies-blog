@@ -18,15 +18,15 @@ const AVATAR_VARIANT_SIZES = {
 };
 
 interface FormData {
-  authorId: number | null;
+  author_id: number | null;
   slug: string;
   name: string;
   email: string;
-  jobTitle: string;
-  shortDescription: string;
-  workflowStatus: string;
-  isFeatured: boolean;
-  sortOrder: number;
+  job_title: string;
+  short_description: string;
+  workflow_status: string;
+  is_featured: boolean;
+  sort_order: number;
   role: string;
   isEditMode: boolean;
 }
@@ -53,15 +53,15 @@ const AuthorEditor = () => {
 
   // Basic form data
   const [formData, setFormData] = useState<FormData>({
-    authorId: null,
+    author_id: null,
     slug: '',
     name: '',
     email: '',
-    jobTitle: '',
-    shortDescription: '',
-    workflowStatus: 'draft',
-    isFeatured: false,
-    sortOrder: 0,
+    job_title: '',
+    short_description: '',
+    workflow_status: 'draft',
+    is_featured: false,
+    sort_order: 0,
     role: 'guest',
     isEditMode,
   });
@@ -104,22 +104,22 @@ const AuthorEditor = () => {
       if (author) {
         // Basic fields
         setFormData({
-          authorId: author.id,
+          author_id: author.id,
           slug: author.slug || '',
           name: author.name || '',
           email: author.email || '',
-          jobTitle: author.jobTitle || author.job || '',
-          shortDescription: author.shortDescription || '',
-          workflowStatus: author.workflowStatus || 'draft',
-          isFeatured: author.isFeatured || false,
-          sortOrder: author.sortOrder || 0,
+          job_title: author.job_title || author.job || '',
+          short_description: author.short_description || '',
+          workflow_status: author.workflow_status || 'draft',
+          is_featured: author.is_featured || false,
+          sort_order: author.sort_order || 0,
           role: author.role || 'guest',
           isEditMode: true,
         });
 
-        // Parse imagesJson
+        // Parse images_json
         try {
-          const images = author.imagesJson ? JSON.parse(author.imagesJson) : {};
+          const images = author.images_json ? JSON.parse(author.images_json) : {};
           setImagesData({
             avatar: images.avatar || null,
             hero: images.hero || null,
@@ -128,9 +128,9 @@ const AuthorEditor = () => {
           setImagesData({ avatar: null, hero: null });
         }
 
-        // Parse bioJson
+        // Parse bio_json
         try {
-          const bio = author.bioJson ? JSON.parse(author.bioJson) : {};
+          const bio = author.bio_json ? JSON.parse(author.bio_json) : {};
           setBioData({
             headline: bio.headline || '',
             subtitle: bio.subtitle || '',
@@ -150,9 +150,9 @@ const AuthorEditor = () => {
           });
         }
 
-        // Parse seoJson
+        // Parse seo_json
         try {
-          const seo = author.seoJson ? JSON.parse(author.seoJson) : {};
+          const seo = author.seo_json ? JSON.parse(author.seo_json) : {};
           setSeoData({
             metaTitle: seo.meta_title || seo.metaTitle || author.metaTitle || '',
             metaDescription: seo.meta_description || seo.metaDescription || author.metaDescription || '',
@@ -232,19 +232,19 @@ const AuthorEditor = () => {
         name: formData.name,
         email: formData.email,
         slug: formData.slug,
-        jobTitle: formData.jobTitle,
-        shortDescription: formData.shortDescription,
-        workflowStatus: formData.workflowStatus,
-        isFeatured: formData.isFeatured,
-        sortOrder: formData.sortOrder,
+        job_title: formData.job_title,
+        short_description: formData.short_description,
+        workflow_status: formData.workflow_status,
+        is_featured: formData.is_featured,
+        sort_order: formData.sort_order,
         role: formData.role,
-        imagesJson: JSON.stringify(imagesData),
-        bioJson: JSON.stringify(bioData),
-        seoJson: JSON.stringify(seoData),
+        images_json: JSON.stringify(imagesData),
+        bio_json: JSON.stringify(bioData),
+        seo_json: JSON.stringify(seoData),
       };
 
-      if (isEditMode && formData.authorId) {
-        await authorsAPI.update(formData.authorId, authorData);
+      if (isEditMode && formData.author_id) {
+        await authorsAPI.update(formData.author_id, authorData);
       } else {
         await authorsAPI.create(authorData);
       }

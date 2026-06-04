@@ -42,13 +42,13 @@ import {
 interface ToolbarButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     icon: LucideIcon;
     label?: string;
-    isActive?: boolean;
+    is_active?: boolean;
 }
 
 export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(({
     icon: Icon,
     label,
-    isActive = false,
+    is_active = false,
     disabled = false,
     onClick,
     className,
@@ -61,7 +61,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>((
             disabled={disabled}
             onClick={onClick}
             aria-label={label}
-            aria-pressed={isActive}
+            aria-pressed={is_active}
             className={cn(
                 'wp-block-toolbar__button',
                 'flex items-center justify-center',
@@ -70,7 +70,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>((
                 'cursor-pointer',
                 'transition-colors duration-[var(--wp-transition-duration)]',
                 'hover:bg-[var(--wp-toolbar-button-hover-bg)]',
-                isActive && 'bg-[var(--wp-toolbar-button-active-bg)] text-[var(--wp-toolbar-button-active-color)]',
+                is_active && 'bg-[var(--wp-toolbar-button-active-bg)] text-[var(--wp-toolbar-button-active-color)]',
                 disabled && 'opacity-50 cursor-not-allowed',
                 className
             )}

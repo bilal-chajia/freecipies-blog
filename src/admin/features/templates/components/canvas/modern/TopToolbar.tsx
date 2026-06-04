@@ -571,14 +571,14 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                                     <Input
                                         value={selectedElement.binding || ''}
                                         onChange={(e) => updateProp('binding', e.target.value)}
-                                        placeholder="e.g. title, recipeJson.prep"
+                                        placeholder="e.g. title, recipe_json.prep"
                                         className={`h-8 text-xs mt-1 ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : ''}`}
                                     />
                                 </div>
                                 <div>
                                     <p className={`text-xs mb-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Quick bindings:</p>
                                     <div className="flex flex-wrap gap-1">
-                                        {['title', 'categoryLabel', 'recipeJson.prep', 'recipeJson.servings', 'recipeJson.difficulty'].map(b => (
+                                        {['title', 'categoryLabel', 'recipe_json.prep', 'recipe_json.servings', 'recipe_json.difficulty'].map(b => (
                                             <button
                                                 key={b}
                                                 type="button"
@@ -640,7 +640,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                                     <Input
                                         value={selectedElement.binding || ''}
                                         onChange={(e) => updateProp('binding', e.target.value)}
-                                        placeholder="e.g. image, recipeJson.images[0]"
+                                        placeholder="e.g. image, recipe_json.images[0]"
                                         className={`h-8 text-xs mt-1 ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : ''}`}
                                     />
                                 </div>

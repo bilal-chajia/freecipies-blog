@@ -49,13 +49,13 @@ import type { BlockEditorProps } from './utils/types';
 export default function BlockEditor({
   value,
   onChange,
-  recipeJson,
+  recipe_json,
   onRecipeChange,
-  faqsJson,
+  faqs_json,
   onFaqsChange,
   imagesData,
   onImagesChange,
-  roundupJson,
+  roundup_json,
   contentType = 'article',
   isSidebarOpen = true,
   onStructureUpdate,
@@ -86,14 +86,14 @@ export default function BlockEditor({
   }, [storeSetActiveBlock]);
 
   const hydrationContext = useMemo(() => ({
-    recipeJson,
+    recipe_json,
     onRecipeChange,
-    faqsJson,
+    faqs_json,
     onFaqsChange,
     imagesData,
     onImagesChange,
-    roundupJson,
-  }), [recipeJson, onRecipeChange, faqsJson, onFaqsChange, imagesData, onImagesChange, roundupJson]);
+    roundup_json,
+  }), [recipe_json, onRecipeChange, faqs_json, onFaqsChange, imagesData, onImagesChange, roundup_json]);
 
   // --- Editor instance ---
   const initialContent = useMemo(() => contentJsonToBlocks(value, hydrationContext) as any, []);

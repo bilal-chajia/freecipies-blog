@@ -68,9 +68,9 @@ const FAQSectionBlock = createReactBlockSpec(
   {
     render: (props) => {
       const { block, editor } = props;
-      const { faqsJson, onFaqsChange } = useBlockEditorSourceData();
+      const { faqs_json, onFaqsChange } = useBlockEditorSourceData();
 
-      const sourceFaqs = parseFaqDocument(faqsJson);
+      const sourceFaqs = parseFaqDocument(faqs_json);
       const sourceItems = Array.isArray(sourceFaqs.items)
         ? sourceFaqs.items.map((item) => {
           const record = item && typeof item === 'object' ? item as Record<string, unknown> : {};
@@ -80,7 +80,7 @@ const FAQSectionBlock = createReactBlockSpec(
           };
         })
         : [];
-      // Source-data JSON (faqsJson) is the single source of truth (P6).
+      // Source-data JSON (faqs_json) is the single source of truth (P6).
       // block.props.itemsJson/title are a transient hydration mirror only and
       // are never read back — falling back to them silently resurrects stale
       // items after an intentional empty (the old P6b bug).
@@ -117,7 +117,7 @@ const FAQSectionBlock = createReactBlockSpec(
 
       const updateItems = (newItems: FAQItem[]) => {
         if (onFaqsChange) {
-          const currentFaqs = parseFaqDocument(faqsJson);
+          const currentFaqs = parseFaqDocument(faqs_json);
           onFaqsChange(JSON.stringify({
             heading: currentFaqs.heading || block.props.title || 'Frequently Asked Questions',
             intro: currentFaqs.intro ?? null,
@@ -139,7 +139,7 @@ const FAQSectionBlock = createReactBlockSpec(
 
       const updateTitle = (newTitle: string) => {
         if (onFaqsChange) {
-          const currentFaqs = parseFaqDocument(faqsJson);
+          const currentFaqs = parseFaqDocument(faqs_json);
           onFaqsChange(JSON.stringify({
             heading: newTitle,
             intro: currentFaqs.intro ?? null,

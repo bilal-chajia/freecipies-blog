@@ -19,9 +19,9 @@ const proxyFromPublicR2 = async (
   const r2PublicUrl = getR2PublicUrl();
   if (!r2PublicUrl) return null;
 
-  const imageUrl = `${r2PublicUrl.replace(/\/$/, "")}/${key}`;
+  const image_url = `${r2PublicUrl.replace(/\/$/, "")}/${key}`;
   try {
-    const upstream = await fetch(imageUrl, {
+    const upstream = await fetch(image_url, {
       headers: {
         "If-None-Match": request.headers.get("If-None-Match") || "",
       },

@@ -28,7 +28,7 @@ interface ArticleApiItem {
     id: number | string;
     title: string;
     slug: string;
-    imageUrl?: string;
+    image_url?: string;
     featured_image?: string;
     image?: string;
     excerpt?: string;
@@ -36,7 +36,7 @@ interface ArticleApiItem {
 }
 
 export interface ArticlePickerValue {
-    articleId: number | string;
+    article_id: number | string;
     title: string;
     url: string;
     image: string;
@@ -61,8 +61,8 @@ const ArticlePicker: React.FC<ArticlePickerProps> = ({ value, onChange }) => {
 
     // Load selected article info
     useEffect(() => {
-        if (value?.articleId && !selectedArticle) {
-            api.get('/articles', { params: { limit: 1, id: value.articleId } })
+        if (value?.article_id && !selectedArticle) {
+            api.get('/articles', { params: { limit: 1, id: value.article_id } })
                 .then(res => res.data as ArticleApiItem[] | ArticlesApiResponse)
                 .then(data => {
                     const items = Array.isArray(data) ? data : (data.data || []);
@@ -73,7 +73,7 @@ const ArticlePicker: React.FC<ArticlePickerProps> = ({ value, onChange }) => {
                 })
                 .catch(() => { });
         }
-    }, [value?.articleId, selectedArticle]);
+    }, [value?.article_id, selectedArticle]);
 
     // Search articles
     const handleSearch = useCallback(async (query: string) => {
@@ -107,10 +107,10 @@ const ArticlePicker: React.FC<ArticlePickerProps> = ({ value, onChange }) => {
     // Handle article selection
     const handleSelect = (article: ArticleApiItem) => {
         setSelectedArticle(article);
-        // Use imageUrl (current API field) with fallbacks, and ensure relative paths
-        const rawImage = article.imageUrl || article.featured_image || article.image || '';
+        // Use image_url (current API field) with fallbacks, and ensure relative paths
+        const rawImage = article.image_url || article.featured_image || article.image || '';
         onChange({
-            articleId: article.id,
+            article_id: article.id,
             title: article.title,
             url: `/recipes/${article.slug}`,
             image: toRelativeUrl(rawImage),

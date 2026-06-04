@@ -50,19 +50,19 @@ export function stringifyStoredTemplateElements(elements: unknown[]): string {
 }
 
 export function toEditorTemplateElements<TElement = Record<string, unknown>>(
-  elementsJson: string | unknown[] | null | undefined
+  elements_json: string | unknown[] | null | undefined
 ): TElement[] {
   let rawElements: unknown[] = [];
 
-  if (typeof elementsJson === 'string' && elementsJson.trim()) {
+  if (typeof elements_json === 'string' && elements_json.trim()) {
     try {
-      const parsed = JSON.parse(elementsJson);
+      const parsed = JSON.parse(elements_json);
       rawElements = Array.isArray(parsed) ? parsed : [];
     } catch {
       rawElements = [];
     }
-  } else if (Array.isArray(elementsJson)) {
-    rawElements = elementsJson;
+  } else if (Array.isArray(elements_json)) {
+    rawElements = elements_json;
   }
 
   return rawElements.map((element) => {

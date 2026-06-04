@@ -6,15 +6,15 @@ import BlockEditor from '@admin/components/BlockEditor';
 import type { LegacyBioFields } from '@modules/authors/types/authors.types';
 
 interface AuthorFormData {
-  authorId: number | null;
+  author_id: number | null;
   slug: string;
   name: string;
   email: string;
-  jobTitle: string;
-  shortDescription: string;
-  workflowStatus: string;
-  isFeatured: boolean;
-  sortOrder: number;
+  job_title: string;
+  short_description: string;
+  workflow_status: string;
+  is_featured: boolean;
+  sort_order: number;
   role: string;
   isEditMode: boolean;
 }
@@ -76,11 +76,11 @@ export default function AuthorEditorMain({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="jobTitle" className="text-sm font-medium">Job Title</Label>
+          <Label htmlFor="job_title" className="text-sm font-medium">Job Title</Label>
           <Input
-            id="jobTitle"
-            value={formData.jobTitle || ''}
-            onChange={(e) => onInputChange('jobTitle', e.target.value)}
+            id="job_title"
+            value={formData.job_title || ''}
+            onChange={(e) => onInputChange('job_title', e.target.value)}
             placeholder="e.g., Food Blogger, Chef, Recipe Developer"
             className="h-8"
           />
@@ -175,11 +175,11 @@ export default function AuthorEditorMain({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="shortDescription" className="text-sm font-medium">Short Description *</Label>
+            <Label htmlFor="short_description" className="text-sm font-medium">Short Description *</Label>
             <Textarea
-              id="shortDescription"
-              value={formData.shortDescription || ''}
-              onChange={(e) => onInputChange('shortDescription', e.target.value)}
+              id="short_description"
+              value={formData.short_description || ''}
+              onChange={(e) => onInputChange('short_description', e.target.value)}
               placeholder="Brief description for author cards"
               rows={2}
               className="resize-none"

@@ -277,7 +277,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
   const isCollapsed = state === "collapsed";
 
   // Check if a path is active
-  const isActive = (url: string | undefined): boolean => {
+  const is_active = (url: string | undefined): boolean => {
     if (!url) return false;
     if (url === "/") return location.pathname === url;
     if (url.startsWith("/settings")) {
@@ -288,7 +288,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 
   // Check if any item in a group is active
   const isGroupActive = (items: NavItem[]): boolean =>
-    items.some((item) => isActive(item.url) || (item.items ? isGroupActive(item.items) : false));
+    items.some((item) => is_active(item.url) || (item.items ? isGroupActive(item.items) : false));
 
   const handleLogout = () => {
     clearAuth();
@@ -340,7 +340,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                         ) : (
                           <Collapsible
                             key={item.title}
-                            defaultOpen={item.items?.some((sub) => isActive(sub.url))}
+                            defaultOpen={item.items?.some((sub) => is_active(sub.url))}
                             className="group/submenu w-full"
                           >
                             <SidebarMenuItem>
@@ -357,7 +357,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                                     const SubItemIcon = subItem.icon;
                                     return (
                                       <SidebarMenuSubItem key={subItem.title}>
-                                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                                        <SidebarMenuSubButton asChild is_active={is_active(subItem.url)}>
                                           <Link to={subItem.url ?? "#"}>
                                             {SubItemIcon && <SubItemIcon className="h-3.5 w-3.5 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
                                             <span>{subItem.title}</span>
@@ -375,7 +375,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                         <SidebarMenuItem key={item.title}>
                           <SidebarMenuButton
                             asChild
-                            isActive={isActive(item.url)}
+                            is_active={is_active(item.url)}
                             tooltip={item.title}
                           >
                             <Link to={item.url ?? "#"}>
@@ -395,7 +395,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={location.pathname.startsWith(group.url.replace('/general', ''))}
+                    is_active={location.pathname.startsWith(group.url.replace('/general', ''))}
                     tooltip={group.title}
                   >
                     <Link to={group.url}>
@@ -433,7 +433,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                             const ItemIcon = item.icon;
                             return item.isSubmenu ? (
                               // Nested submenu (e.g., Content > Articles/Recipes/Roundups)
-                              <Collapsible key={item.title} defaultOpen={item.items?.some(sub => isActive(sub.url))} className="group/submenu">
+                              <Collapsible key={item.title} defaultOpen={item.items?.some(sub => is_active(sub.url))} className="group/submenu">
                                 <SidebarMenuSubItem>
                                   <CollapsibleTrigger asChild>
                                     <SidebarMenuSubButton className="cursor-pointer">
@@ -448,7 +448,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                                         const SubItemIcon = subItem.icon;
                                         return (
                                           <SidebarMenuSubItem key={subItem.title}>
-                                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                                            <SidebarMenuSubButton asChild is_active={is_active(subItem.url)}>
                                               <Link to={subItem.url ?? "#"}>
                                                 {SubItemIcon && <SubItemIcon className="h-3.5 w-3.5 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}
                                                 <span>{subItem.title}</span>
@@ -466,7 +466,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
                               <SidebarMenuSubItem key={item.title}>
                                 <SidebarMenuSubButton
                                   asChild
-                                  isActive={isActive(item.url)}
+                                  is_active={is_active(item.url)}
                                 >
                                   <Link to={item.url ?? "#"}>
                                     {ItemIcon && <ItemIcon className="size-4 text-muted-foreground/80 transition-colors group-hover/menu-button:text-primary group-data-[active=true]/menu-button:text-primary" />}

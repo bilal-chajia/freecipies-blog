@@ -37,7 +37,7 @@ export function safeParseJson<T>(json: unknown): T | null {
 // (union of ArticleImagesJson | AuthorImagesJson | CategoryImagesJson)
 
 export interface ExtractedImage {
-  imageUrl?: string;
+  image_url?: string;
   imageAlt?: string;
   imageWidth?: number;
   imageHeight?: number;
@@ -53,10 +53,10 @@ function resolveImageSlot(images: ImagesJson, slot: HydratableImageSlot): ImageS
 }
 
 export function getImageSlot(
-  imagesJson: string | null | undefined,
+  images_json: string | null | undefined,
   slot: HydratableImageSlot = 'thumbnail'
 ): ImageSlot | null {
-  const images = safeParseJson<ImagesJson>(imagesJson);
+  const images = safeParseJson<ImagesJson>(images_json);
   if (!images) return null;
   return resolveImageSlot(images, slot);
 }
@@ -89,10 +89,10 @@ const buildImageStyle = (imageSlot?: ImageSlot): string | undefined => {
 };
 
 export function getImageSrcSet(
-  imagesJson: string | null | undefined,
+  images_json: string | null | undefined,
   slot: HydratableImageSlot = 'thumbnail'
 ): string {
-  const imageSlot = getImageSlot(imagesJson, slot);
+  const imageSlot = getImageSlot(images_json, slot);
   if (!imageSlot) return '';
   return getSrcSet(imageSlot);
 }
@@ -101,16 +101,16 @@ export function getImageSrcSet(
 // retinaMultiplier=1 preserves the previous hydration behavior (no 2× retina scaling)
 
 /**
- * Extract image URL and metadata from imagesJson field
+ * Extract image URL and metadata from images_json field
  * Uses the smallest variant that satisfies targetWidth (when provided),
  * otherwise prefers lg > md > sm > original > xs
  */
 export function extractImage(
-  imagesJson: string | null | undefined,
+  images_json: string | null | undefined,
   slot: HydratableImageSlot = 'thumbnail',
   targetWidth?: number
 ): ExtractedImage {
-  const images = safeParseJson<ImagesJson>(imagesJson);
+  const images = safeParseJson<ImagesJson>(images_json);
   if (!images) return {};
 
   const imageSlot = resolveImageSlot(images, slot);
@@ -125,7 +125,7 @@ export function extractImage(
   const resolvedUrl = resolveVariantUrl(variant);
   if (resolvedUrl && variant) {
     return {
-      imageUrl: resolvedUrl,
+      image_url: resolvedUrl,
       imageAlt: imageSlot.alt,
       imageWidth: variant.width,
       imageHeight: variant.height,
@@ -162,10 +162,10 @@ export interface ExtractedSeo {
 }
 
 /**
- * Extract SEO metadata from seoJson field
+ * Extract SEO metadata from seo_json field
  */
-export function extractSeo(seoJson: string | null | undefined): ExtractedSeo {
-  const seo = safeParseJson<SeoJson>(seoJson);
+export function extractSeo(seo_json: string | null | undefined): ExtractedSeo {
+  const seo = safeParseJson<SeoJson>(seo_json);
   if (!seo) return {};
 
   return {
@@ -187,8 +187,8 @@ export type { RecipeJson };
 /**
  * Parse recipe JSON for display
  */
-export function extractRecipe(recipeJson: string | null | undefined): RecipeJson | null {
-  const recipe = safeParseJson<RecipeJson>(recipeJson);
+export function extractRecipe(recipe_json: string | null | undefined): RecipeJson | null {
+  const recipe = safeParseJson<RecipeJson>(recipe_json);
   if (!recipe) return null;
   // Deep map is_optional -> isOptional to keep the TS interface happy
   if (Array.isArray(recipe.ingredients)) {
@@ -228,10 +228,10 @@ export interface ExtractedTagStyle {
 }
 
 /**
- * Extract tag styling from styleJson field
+ * Extract tag styling from style_json field
  */
-export function extractTagStyle(styleJson: string | null | undefined): ExtractedTagStyle {
-  const style = safeParseJson<TagStyleJson>(styleJson);
+export function extractTagStyle(style_json: string | null | undefined): ExtractedTagStyle {
+  const style = safeParseJson<TagStyleJson>(style_json);
   if (!style) return {};
 
   return {
@@ -248,24 +248,24 @@ export function extractTagStyle(styleJson: string | null | undefined): Extracted
  * Hydrate an article with computed fields and parsed JSON structures
  */
 export function hydrateArticle<T extends {
-  imagesJson?: string | null;
-  contentJson?: string | null;
-  recipeJson?: string | null;
-  roundupJson?: string | null;
-  faqsJson?: string | null;
-  seoJson?: string | null;
+  images_json?: string | null;
+  content_json?: string | null;
+  recipe_json?: string | null;
+  roundup_json?: string | null;
+  faqs_json?: string | null;
+  seo_json?: string | null;
   authorImagesJson?: string | null;
-  cachedAuthorJson?: string | null;
-  cachedCategoryJson?: string | null;
-  cachedTagsJson?: string | null;
+  cached_author_json?: string | null;
+  cached_category_json?: string | null;
+  cached_tags_json?: string | null;
   headline?: string;
   slug: string;
   type?: string;
   author?: {
-    imagesJson?: string | null;
+    images_json?: string | null;
     name?: string | null;
     slug?: string | null;
-    jobTitle?: string | null;
+    job_title?: string | null;
   } | null;
   authorName?: string | null;
   authorSlug?: string | null;
@@ -279,18 +279,18 @@ export function hydrateArticle<T extends {
   categoryColor?: string | null;
   categorySlug?: string | null;
 }>(article: T) {
-  const image = extractImage(article.imagesJson);
+  const image = extractImage(article.images_json);
 
-  const cachedAuthor = article.cachedAuthorJson
-    ? safeParseJson<any>(article.cachedAuthorJson)
+  const cachedAuthor = article.cached_author_json
+    ? safeParseJson<any>(article.cached_author_json)
     : null;
 
-  const cachedCategory = article.cachedCategoryJson
-    ? safeParseJson<any>(article.cachedCategoryJson)
+  const cachedCategory = article.cached_category_json
+    ? safeParseJson<any>(article.cached_category_json)
     : null;
 
   // Support multiple author source formats
-  let authorAvatar = extractImage(article.authorImagesJson, 'avatar').imageUrl;
+  let authorAvatar = extractImage(article.authorImagesJson, 'avatar').image_url;
 
   if (!authorAvatar && cachedAuthor) {
     const avatarSlot = cachedAuthor?.avatar;
@@ -304,8 +304,8 @@ export function hydrateArticle<T extends {
     }
   }
 
-  if (!authorAvatar && article.author?.imagesJson) {
-    authorAvatar = extractImage(article.author.imagesJson, 'avatar').imageUrl;
+  if (!authorAvatar && article.author?.images_json) {
+    authorAvatar = extractImage(article.author.images_json, 'avatar').image_url;
   }
 
   const authorName = article.authorName
@@ -317,7 +317,7 @@ export function hydrateArticle<T extends {
   const authorRole = article.authorJob
     ?? cachedAuthor?.job_title
     ?? cachedAuthor?.role
-    ?? article.author?.jobTitle;
+    ?? article.author?.job_title;
 
   const categoryLabel = article.categoryLabel
     ?? cachedCategory?.label
@@ -329,11 +329,11 @@ export function hydrateArticle<T extends {
     ?? cachedCategory?.slug
     ?? article.category?.slug;
 
-  const tags = article.cachedTagsJson
-    ? safeParseJson<any[]>(article.cachedTagsJson) || []
+  const tags = article.cached_tags_json
+    ? safeParseJson<any[]>(article.cached_tags_json) || []
     : [];
 
-  const seo = extractSeo(article.seoJson);
+  const seo = extractSeo(article.seo_json);
   // Generate correct route based on article type
   const route = article.type === 'recipe'
     ? `/recipes/${article.slug}`
@@ -345,11 +345,11 @@ export function hydrateArticle<T extends {
     ...article,
     ...image,
     ...seo,
-    contentJson: safeParseJson(article.contentJson),
-    recipeJson: extractRecipe(article.recipeJson),
-    recipe: extractRecipe(article.recipeJson), // Alias for RecipeContent.recipe
-    roundupJson: safeParseJson(article.roundupJson),
-    faqsJson: safeParseJson(article.faqsJson),
+    content_json: safeParseJson(article.content_json),
+    recipe_json: extractRecipe(article.recipe_json),
+    recipe: extractRecipe(article.recipe_json), // Alias for RecipeContent.recipe
+    roundup_json: safeParseJson(article.roundup_json),
+    faqs_json: safeParseJson(article.faqs_json),
     label: article.headline, // Alias for UI consistency
     route,
     authorAvatar,
@@ -369,15 +369,15 @@ export function hydrateArticle<T extends {
  * Hydrate a category with computed fields
  */
 export function hydrateCategory<T extends {
-  imagesJson?: string | null;
-  seoJson?: string | null;
-  configJson?: string | null;
-  isFeatured?: boolean | null;
+  images_json?: string | null;
+  seo_json?: string | null;
+  config_json?: string | null;
+  is_featured?: boolean | null;
   slug: string;
 }>(category: T) {
-  const image = extractImage(category.imagesJson);
-  const seo = extractSeo(category.seoJson);
-  const config = safeParseJson<Record<string, any>>(category.configJson);
+  const image = extractImage(category.images_json);
+  const seo = extractSeo(category.seo_json);
+  const config = safeParseJson<Record<string, any>>(category.config_json);
   const numEntriesPerPage = config?.postsPerPage;
   const tldr = config?.tldr;
   const layoutMode = config?.layout;
@@ -389,7 +389,7 @@ export function hydrateCategory<T extends {
   const showBreadcrumb = config?.showBreadcrumb;
   const showPagination = config?.showPagination;
   const sortBy = config?.sortBy;
-  const articleSortOrder = config?.sortOrder;
+  const articleSortOrder = config?.sort_order;
   const headerStyle = config?.headerStyle;
   const featuredArticleIdRaw = config?.featuredArticleId ?? config?.featured_article_id;
   const featuredArticleId = typeof featuredArticleIdRaw === 'number'
@@ -405,8 +405,8 @@ export function hydrateCategory<T extends {
     ...category,
     ...image,
     ...seo,
-    imagesJson: safeParseJson(category.imagesJson),
-    seoJson: safeParseJson(category.seoJson),
+    images_json: safeParseJson(category.images_json),
+    seo_json: safeParseJson(category.seo_json),
     route: `/categories/${category.slug}`,
     ...(typeof numEntriesPerPage === 'number' ? { numEntriesPerPage } : {}),
     ...(typeof tldr === 'string' ? { tldr } : {}),
@@ -433,21 +433,21 @@ export function hydrateCategory<T extends {
  * Hydrate an author with computed fields
  */
 export function hydrateAuthor<T extends {
-  imagesJson?: string | null;
-  seoJson?: string | null;
-  jobTitle?: string | null;
+  images_json?: string | null;
+  seo_json?: string | null;
+  job_title?: string | null;
   slug: string;
 }>(author: T) {
-  const image = extractImage(author.imagesJson, 'avatar');
-  const seo = extractSeo(author.seoJson);
+  const image = extractImage(author.images_json, 'avatar');
+  const seo = extractSeo(author.seo_json);
 
   return {
     ...author,
     ...image,
     ...seo,
-    imagesJson: safeParseJson(author.imagesJson),
-    seoJson: safeParseJson(author.seoJson),
-    job: author.jobTitle, // Alias for template compatibility
+    images_json: safeParseJson(author.images_json),
+    seo_json: safeParseJson(author.seo_json),
+    job: author.job_title, // Alias for template compatibility
     route: `/authors/${author.slug}`,
   };
 }
@@ -456,15 +456,15 @@ export function hydrateAuthor<T extends {
  * Hydrate a tag with computed fields
  */
 export function hydrateTag<T extends {
-  styleJson?: string | null;
+  style_json?: string | null;
   slug: string;
 }>(tag: T) {
-  const style = extractTagStyle(tag.styleJson);
+  const style = extractTagStyle(tag.style_json);
 
   return {
     ...tag,
     ...style,
-    styleJson: safeParseJson(tag.styleJson),
+    style_json: safeParseJson(tag.style_json),
     route: `/tags/${tag.slug}`,
   };
 }

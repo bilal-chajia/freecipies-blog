@@ -125,15 +125,15 @@ export async function extractAuthContext(
 /**
  * Create authorization response
  */
-export function createAuthError(message: string, statusCode: number = 401): Response {
+export function createAuthError(message: string, status_code: number = 401): Response {
   return new Response(
     JSON.stringify({
       success: false,
       error: message,
-      code: statusCode === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN',
+      code: status_code === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN',
     }),
     {
-      status: statusCode,
+      status: status_code,
       headers: { 'Content-Type': 'application/json' },
     }
   );

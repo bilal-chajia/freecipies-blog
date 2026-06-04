@@ -10,7 +10,7 @@ export type CategoryImages = CategoryImagesJson;
 
 export type HydratedCategory = Category & ExtractedImage & ExtractedSeo & {
   route: string;
-  isFavorite?: boolean; // Alias for isFeatured
+  is_favorite?: boolean; // Legacy UI alias for is_featured
   numEntriesPerPage?: number;
   tldr?: string;
   layoutMode?: 'grid' | 'list' | 'masonry';
@@ -21,7 +21,7 @@ export type HydratedCategory = Category & ExtractedImage & ExtractedSeo & {
   showFilters?: boolean;
   showBreadcrumb?: boolean;
   showPagination?: boolean;
-  sortBy?: 'publishedAt' | 'title' | 'viewCount';
+  sortBy?: 'published_at' | 'title' | 'view_count';
   articleSortOrder?: 'asc' | 'desc';
   headerStyle?: 'hero' | 'minimal' | 'none';
   featuredArticleId?: number;
@@ -41,7 +41,7 @@ export interface CategoryConfig {
   showFilters?: boolean;
   showBreadcrumb?: boolean;
   showPagination?: boolean;
-  sortBy?: 'publishedAt' | 'title' | 'viewCount';
+  sortBy?: 'published_at' | 'title' | 'view_count';
   articleSortOrder?: 'asc' | 'desc';
   headerStyle?: 'hero' | 'minimal' | 'none';
   tldr?: string;

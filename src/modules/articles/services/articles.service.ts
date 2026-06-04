@@ -27,12 +27,12 @@ import {
   buildCardCache,
 } from './cache-builders';
 
-async function getTagsForArticleId(drizzle: any, articleId: number): Promise<HydratedTag[]> {
+async function getTagsForArticleId(drizzle: any, article_id: number): Promise<HydratedTag[]> {
   const rows = await drizzle
     .select({ ...getTableColumns(tagsTable) })
     .from(articlesToTags)
-    .innerJoin(tagsTable, eq(articlesToTags.tagId, tagsTable.id))
-    .where(and(eq(articlesToTags.articleId, articleId), isNull(tagsTable.deletedAt)))
+    .innerJoin(tagsTable, eq(articlesToTags.tag_id, tagsTable.id))
+    .where(and(eq(articlesToTags.article_id, article_id), isNull(tagsTable.deleted_at)))
     .orderBy(asc(tagsTable.label));
 
   return rows.map(hydrateTag);
@@ -40,7 +40,7 @@ async function getTagsForArticleId(drizzle: any, articleId: number): Promise<Hyd
 
 export async function setArticleTagsById(
   db: D1Database | DrizzleDb,
-  articleId: number,
+  article_id: number,
   tagIds: number[]
 ): Promise<HydratedTag[]> {
   const drizzle = getDb(db);
@@ -51,30 +51,30 @@ export async function setArticleTagsById(
     ? await drizzle
       .select({ id: tagsTable.id, label: tagsTable.label })
       .from(tagsTable)
-      .where(and(inArray(tagsTable.id, uniqueTagIds), isNull(tagsTable.deletedAt)))
+      .where(and(inArray(tagsTable.id, uniqueTagIds), isNull(tagsTable.deleted_at)))
     : [];
 
   // Replace join rows
-  await drizzle.delete(articlesToTags).where(eq(articlesToTags.articleId, articleId));
+  await drizzle.delete(articlesToTags).where(eq(articlesToTags.article_id, article_id));
   if (resolvedTags.length) {
     await drizzle.insert(articlesToTags).values(
-      resolvedTags.map((tag) => ({ articleId, tagId: tag.id }))
+      resolvedTags.map((tag) => ({ article_id: article_id, tag_id: tag.id }))
     );
   }
 
   // Update zero-join cache (used by search indexing + UI)
-  const hydratedTags = await getTagsForArticleId(drizzle, articleId);
-  const cachedTagsJson = JSON.stringify(buildTagsCache(hydratedTags as any));
+  const hydratedTags = await getTagsForArticleId(drizzle, article_id);
+  const cached_tags_json = JSON.stringify(buildTagsCache(hydratedTags as any));
   await drizzle.update(articles)
-    .set({ cachedTagsJson, updatedAt: new Date().toISOString() })
-    .where(eq(articles.id, articleId));
+    .set({ cached_tags_json, updated_at: new Date().toISOString() })
+    .where(eq(articles.id, article_id));
 
   return hydratedTags;
 }
 
 export interface ArticleQueryOptions {
-  categoryId?: number;
-  authorId?: number;
+  category_id?: number;
+  author_id?: number;
   categorySlug?: string;
   authorSlug?: string;
   tagSlug?: string;
@@ -84,10 +84,10 @@ export interface ArticleQueryOptions {
   dateFrom?: string;
   dateTo?: string;
   publishedAfter?: Date;
-  workflowStatus?: string;
+  workflow_status?: string;
   search?: string;
-  sortBy?: 'publishedAt' | 'title' | 'viewCount';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: 'published_at' | 'title' | 'view_count';
+  sort_order?: 'asc' | 'desc';
 }
 
 export interface PaginatedArticles {
@@ -107,11 +107,11 @@ export async function getArticles(
   const conditions: any[] = [];
 
   // Filter soft-deleted
-  conditions.push(isNull(articles.deletedAt));
+  conditions.push(isNull(articles.deleted_at));
 
-  if (options?.workflowStatus) {
-    if (options.workflowStatus !== 'all') {
-      conditions.push(eq(articles.workflowStatus, options.workflowStatus));
+  if (options?.workflow_status) {
+    if (options.workflow_status !== 'all') {
+      conditions.push(eq(articles.workflow_status, options.workflow_status));
     }
   }
 
@@ -119,39 +119,39 @@ export async function getArticles(
     conditions.push(eq(articles.type, options.type));
   }
 
-  if (options?.categoryId) {
-    conditions.push(eq(articles.categoryId, options.categoryId));
+  if (options?.category_id) {
+    conditions.push(eq(articles.category_id, options.category_id));
   }
 
-  if (options?.authorId) {
-    conditions.push(eq(articles.authorId, options.authorId));
+  if (options?.author_id) {
+    conditions.push(eq(articles.author_id, options.author_id));
   }
 
   // Support filtering by slug relations if IDs not provided
-  if (options?.categorySlug && !options.categoryId) {
+  if (options?.categorySlug && !options.category_id) {
     const categorySubquery = drizzle
       .select({ id: categories.id })
       .from(categories)
-      .where(and(eq(categories.slug, options.categorySlug), isNull(categories.deletedAt)));
-    conditions.push(inArray(articles.categoryId, categorySubquery));
+      .where(and(eq(categories.slug, options.categorySlug), isNull(categories.deleted_at)));
+    conditions.push(inArray(articles.category_id, categorySubquery));
   }
 
-  if (options?.authorSlug && !options.authorId) {
+  if (options?.authorSlug && !options.author_id) {
     const authorSubquery = drizzle
       .select({ id: authors.id })
       .from(authors)
-      .where(and(eq(authors.slug, options.authorSlug), isNull(authors.deletedAt)));
-    conditions.push(inArray(articles.authorId, authorSubquery));
+      .where(and(eq(authors.slug, options.authorSlug), isNull(authors.deleted_at)));
+    conditions.push(inArray(articles.author_id, authorSubquery));
   }
 
   if (options?.tagSlug) {
     conditions.push(sql`exists(
       select 1
       from ${articlesToTags}
-      inner join ${tagsTable} on ${tagsTable.id} = ${articlesToTags.tagId}
-      where ${articlesToTags.articleId} = ${articles.id}
+      inner join ${tagsTable} on ${tagsTable.id} = ${articlesToTags.tag_id}
+      where ${articlesToTags.article_id} = ${articles.id}
         and ${tagsTable.slug} = ${options.tagSlug}
-        and ${tagsTable.deletedAt} is null
+        and ${tagsTable.deleted_at} is null
     )`);
   }
 
@@ -160,7 +160,7 @@ export async function getArticles(
     conditions.push(
       or(
         like(articles.headline, searchPattern),
-        like(articles.shortDescription, searchPattern)
+        like(articles.short_description, searchPattern)
       )
     );
   }
@@ -171,11 +171,11 @@ export async function getArticles(
   };
 
   if (options?.dateFrom) {
-    conditions.push(gte(articles.publishedAt, formatSqliteDate(options.dateFrom)));
+    conditions.push(gte(articles.published_at, formatSqliteDate(options.dateFrom)));
   }
 
   if (options?.dateTo) {
-    conditions.push(lte(articles.publishedAt, formatSqliteDate(options.dateTo)));
+    conditions.push(lte(articles.published_at, formatSqliteDate(options.dateTo)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -183,10 +183,10 @@ export async function getArticles(
   // Dynamic sorting based on options
   const sortColumn = options?.sortBy === 'title'
     ? articles.headline
-    : options?.sortBy === 'viewCount'
-      ? articles.viewCount
-      : articles.publishedAt;
-  const orderByClause = options?.sortOrder === 'asc'
+    : options?.sortBy === 'view_count'
+      ? articles.view_count
+      : articles.published_at;
+  const orderByClause = options?.sort_order === 'asc'
     ? asc(sortColumn)
     : desc(sortColumn);
 
@@ -227,7 +227,7 @@ export async function getArticleBySlug(
 ): Promise<HydratedArticle | null> {
   const drizzle = getDb(db);
 
-  const conditions = [eq(articles.slug, slug), isNull(articles.deletedAt)];
+  const conditions = [eq(articles.slug, slug), isNull(articles.deleted_at)];
   if (type) {
     conditions.push(eq(articles.type, type));
   }
@@ -257,11 +257,11 @@ export async function getArticleBySlug(
 function prepareJsonFields(patch: Record<string, any>): Record<string, any> {
   const processed = { ...patch };
   const jsonFields = [
-    'imagesJson', 'contentJson', 'recipeJson', 'roundupJson',
-    'faqsJson', 'seoJson', 'configJson', 'jsonldJson',
-    'cachedTagsJson', 'cachedCategoryJson',
-    'cachedAuthorJson', 'cachedRatingJson',
-    'cachedTocJson', 'cachedRecipeJson', 'cachedCardJson'
+    'images_json', 'content_json', 'recipe_json', 'roundup_json',
+    'faqs_json', 'seo_json', 'config_json', 'jsonld_json',
+    'cached_tags_json', 'cached_category_json',
+    'cached_author_json', 'cached_rating_json',
+    'cached_toc_json', 'cached_recipe_json', 'cached_card_json'
   ];
 
   for (const field of jsonFields) {
@@ -286,7 +286,7 @@ type RecipeEquipmentEntry = {
 };
 
 function buildEquipmentSnapshot(row: Equipment): Record<string, unknown> {
-  const image = safeParseJson<Record<string, unknown>>(row.imageJson || '{}') || {};
+  const image = safeParseJson<Record<string, unknown>>(row.image_json || '{}') || {};
   return {
     slug: row.slug,
     name: row.name,
@@ -294,9 +294,9 @@ function buildEquipmentSnapshot(row: Equipment): Record<string, unknown> {
     description: row.description ?? null,
     category: row.category ?? null,
     image,
-    affiliate_url: row.affiliateUrl ?? null,
-    affiliate_provider: row.affiliateProvider ?? null,
-    affiliate_note: row.affiliateNote ?? null,
+    affiliate_url: row.affiliate_url ?? null,
+    affiliate_provider: row.affiliate_provider ?? null,
+    affiliate_note: row.affiliate_note ?? null,
   };
 }
 
@@ -304,19 +304,19 @@ async function attachEquipmentSnapshots<T extends Record<string, any>>(
   drizzle: DrizzleDb,
   patch: T
 ): Promise<T> {
-  if (!patch.recipeJson || typeof patch.recipeJson !== 'object') return patch;
+  if (!patch.recipe_json || typeof patch.recipe_json !== 'object') return patch;
 
-  const recipeJson = { ...patch.recipeJson };
-  if (!Array.isArray(recipeJson.equipment)) return patch;
+  const recipe_json = { ...patch.recipe_json };
+  if (!Array.isArray(recipe_json.equipment)) return patch;
 
   const catalogIds: number[] = Array.from(new Set<number>(
-    recipeJson.equipment
+    recipe_json.equipment
       .map((item: RecipeEquipmentEntry) => Number(item?.equipment_id))
       .filter((id: number) => Number.isFinite(id) && id > 0)
   ));
 
   if (!catalogIds.length) {
-    recipeJson.equipment = recipeJson.equipment.map((item: RecipeEquipmentEntry, index: number) => ({
+    recipe_json.equipment = recipe_json.equipment.map((item: RecipeEquipmentEntry, index: number) => ({
       id: item.id ?? `eq-${index + 1}`,
       equipment_id: null,
       label: item.label ?? '',
@@ -325,7 +325,7 @@ async function attachEquipmentSnapshots<T extends Record<string, any>>(
       source_type: 'manual',
       snapshot: null,
     }));
-    return { ...patch, recipeJson } as T;
+    return { ...patch, recipe_json } as T;
   }
 
   const rows = await drizzle
@@ -333,8 +333,8 @@ async function attachEquipmentSnapshots<T extends Record<string, any>>(
     .from(equipmentTable)
     .where(and(
       inArray(equipmentTable.id, catalogIds),
-      eq(equipmentTable.isActive, true),
-      isNull(equipmentTable.deletedAt)
+      eq(equipmentTable.is_active, true),
+      isNull(equipmentTable.deleted_at)
     ));
 
   const byId = new Map(rows.map((row) => [row.id, row]));
@@ -343,7 +343,7 @@ async function attachEquipmentSnapshots<T extends Record<string, any>>(
     throw new Error(`Inactive or missing equipment_id: ${missing.join(', ')}`);
   }
 
-  recipeJson.equipment = recipeJson.equipment.map((item: RecipeEquipmentEntry, index: number) => {
+  recipe_json.equipment = recipe_json.equipment.map((item: RecipeEquipmentEntry, index: number) => {
     const equipmentId = Number(item?.equipment_id);
     if (!Number.isFinite(equipmentId) || equipmentId <= 0) {
       return {
@@ -373,7 +373,7 @@ async function attachEquipmentSnapshots<T extends Record<string, any>>(
     };
   });
 
-  return { ...patch, recipeJson } as T;
+  return { ...patch, recipe_json } as T;
 }
 
 /**
@@ -405,7 +405,7 @@ export async function updateArticle(
   const processed = prepareJsonFields(withEquipmentSnapshots) as Partial<NewArticle>;
   const updateData = {
     ...processed,
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   await drizzle.update(articles)
@@ -421,7 +421,7 @@ export async function updateArticle(
 export async function deleteArticle(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
   const drizzle = getDb(db);
   await drizzle.update(articles)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deleted_at: new Date().toISOString() })
     .where(eq(articles.slug, slug));
   return true;
 }
@@ -432,7 +432,7 @@ export async function deleteArticle(db: D1Database | DrizzleDb, slug: string): P
 export async function incrementViewCount(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
   const drizzle = getDb(db);
   await drizzle.update(articles)
-    .set({ viewCount: sql`${articles.viewCount} + 1` })
+    .set({ view_count: sql`${articles.view_count} + 1` })
     .where(eq(articles.slug, slug));
   return true;
 }
@@ -458,12 +458,12 @@ export async function getArticleById(
       categoryColor: categories.color,
       authorName: authors.name,
       authorSlug: authors.slug,
-      authorImagesJson: authors.imagesJson,
+      authorImagesJson: authors.images_json,
     })
     .from(articles)
-    .leftJoin(categories, eq(articles.categoryId, categories.id))
-    .leftJoin(authors, eq(articles.authorId, authors.id))
-    .where(and(eq(articles.id, id), isNull(articles.deletedAt)))
+    .leftJoin(categories, eq(articles.category_id, categories.id))
+    .leftJoin(authors, eq(articles.author_id, authors.id))
+    .where(and(eq(articles.id, id), isNull(articles.deleted_at)))
     .get();
 
   if (!result) return null;
@@ -488,12 +488,12 @@ export async function updateArticleById(
 
   const updateData = {
     ...processedPatch,
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   const result = await drizzle.update(articles)
     .set(updateData)
-    .where(and(eq(articles.id, id), isNull(articles.deletedAt)))
+    .where(and(eq(articles.id, id), isNull(articles.deleted_at)))
     .returning({ id: articles.id });
 
   return result.length > 0;
@@ -506,8 +506,8 @@ export async function deleteArticleById(db: D1Database | DrizzleDb, id: number):
   const drizzle = getDb(db);
 
   const result = await drizzle.update(articles)
-    .set({ deletedAt: new Date().toISOString() })
-    .where(and(eq(articles.id, id), isNull(articles.deletedAt)))
+    .set({ deleted_at: new Date().toISOString() })
+    .where(and(eq(articles.id, id), isNull(articles.deleted_at)))
     .returning({ id: articles.id });
 
   return result.length > 0;
@@ -520,57 +520,57 @@ export async function setWorkflowStatusById(
   db: D1Database | DrizzleDb,
   id: number,
   status: 'draft' | 'in_review' | 'scheduled' | 'published' | 'archived'
-): Promise<{ workflowStatus: string } | null> {
+): Promise<{ workflow_status: string } | null> {
   const drizzle = getDb(db);
 
   const current = await drizzle.query.articles.findFirst({
-    where: and(eq(articles.id, id), isNull(articles.deletedAt)),
+    where: and(eq(articles.id, id), isNull(articles.deleted_at)),
     columns: { id: true }
   });
 
   if (!current) return null;
 
   const updateFields: any = {
-    workflowStatus: status,
-    updatedAt: new Date().toISOString()
+    workflow_status: status,
+    updated_at: new Date().toISOString()
   };
 
   if (status === 'published') {
-    updateFields.publishedAt = new Date().toISOString();
+    updateFields.published_at = new Date().toISOString();
   }
 
   await drizzle.update(articles)
     .set(updateFields)
     .where(eq(articles.id, id));
 
-  return { workflowStatus: status };
+  return { workflow_status: status };
 }
 
 /**
  * Toggle favorite status by ID
  */
-export async function toggleFavoriteById(db: D1Database | DrizzleDb, id: number): Promise<{ isFavorite: boolean } | null> {
+export async function toggleFavoriteById(db: D1Database | DrizzleDb, id: number): Promise<{ is_favorite: boolean } | null> {
   const drizzle = getDb(db);
 
   const current = await drizzle.query.articles.findFirst({
-    where: and(eq(articles.id, id), isNull(articles.deletedAt)),
-    columns: { isFavorite: true }
+    where: and(eq(articles.id, id), isNull(articles.deleted_at)),
+    columns: { is_favorite: true }
   });
 
   if (!current) return null;
 
-  const newValue = !current.isFavorite;
+  const newValue = !current.is_favorite;
 
   await drizzle.update(articles)
-    .set({ isFavorite: newValue, updatedAt: new Date().toISOString() })
+    .set({ is_favorite: newValue, updated_at: new Date().toISOString() })
     .where(eq(articles.id, id));
 
-  return { isFavorite: newValue };
+  return { is_favorite: newValue };
 }
 
 /**
  * Synchronize cached JSON fields for an article
- * Populates optimized fields like cachedAuthorJson, cachedCategoryJson, and cachedTocJson
+ * Populates optimized fields like cached_author_json, cached_category_json, and cached_toc_json
  */
 export async function syncCachedFields(
   db: D1Database | DrizzleDb,
@@ -584,19 +584,19 @@ export async function syncCachedFields(
       ...getTableColumns(articles),
       authorName: authors.name,
       authorSlug: authors.slug,
-      authorAvatar: authors.imagesJson,
-      authorRole: authors.jobTitle,
-      authorBio: authors.shortDescription,
-      authorBioJson: authors.bioJson,
-      authorDeletedAt: authors.deletedAt,
-      categoryIdValue: categories.id,
+      authorAvatar: authors.images_json,
+      authorRole: authors.job_title,
+      authorBio: authors.short_description,
+      authorBioJson: authors.bio_json,
+      authorDeletedAt: authors.deleted_at,
+      category_id_value: categories.id,
       categoryLabel: categories.label,
       categorySlug: categories.slug,
       categoryColor: categories.color,
     })
     .from(articles)
-    .leftJoin(authors, eq(articles.authorId, authors.id))
-    .leftJoin(categories, eq(articles.categoryId, categories.id))
+    .leftJoin(authors, eq(articles.author_id, authors.id))
+    .leftJoin(categories, eq(articles.category_id, categories.id))
     .where(eq(articles.id, id))
     .get();
 
@@ -606,7 +606,7 @@ export async function syncCachedFields(
 
   // 1. Build Domain Payloads (Pass objects in direct, avoid redundant JSON parsing!)
   const cachedAuthor = buildAuthorCache({
-    authorId: article.authorId,
+    author_id: article.author_id,
     authorName: article.authorName,
     authorSlug: article.authorSlug,
     authorAvatar: article.authorAvatar,
@@ -615,27 +615,27 @@ export async function syncCachedFields(
     authorBioJson: article.authorBioJson,
   });
   if (cachedAuthor) {
-    updateData.cachedAuthorJson = JSON.stringify(cachedAuthor);
+    updateData.cached_author_json = JSON.stringify(cachedAuthor);
   }
 
   const cachedCategory = buildCategoryCache({
-    categoryId: article.categoryId,
-    categoryIdValue: article.categoryIdValue,
+    category_id: article.category_id,
+    category_id_value: article.category_id_value,
     categoryLabel: article.categoryLabel,
     categorySlug: article.categorySlug,
     categoryColor: article.categoryColor,
   });
   if (cachedCategory) {
-    updateData.cachedCategoryJson = JSON.stringify(cachedCategory);
+    updateData.cached_category_json = JSON.stringify(cachedCategory);
   }
 
   const hydratedTags = await getTagsForArticleId(drizzle, id);
   const cachedTags = buildTagsCache(hydratedTags as any);
-  updateData.cachedTagsJson = JSON.stringify(cachedTags);
+  updateData.cached_tags_json = JSON.stringify(cachedTags);
 
-  // Extract TOC from contentJson
-  const toc = extractTocFromContentDocument(article.contentJson, article.headline, article.roundupJson);
-  updateData.cachedTocJson = JSON.stringify(toc);
+  // Extract TOC from content_json
+  const toc = extractTocFromContentDocument(article.content_json, article.headline, article.roundup_json);
+  updateData.cached_toc_json = JSON.stringify(toc);
 
   // Sync cached recipe summary
   let recipeRaw: any = null;
@@ -643,16 +643,16 @@ export async function syncCachedFields(
   let cachedRecipe: any = null;
   let cachedRating: any = null;
 
-  const recipeCacheRes = buildRecipeCache(article.type, article.recipeJson);
+  const recipeCacheRes = buildRecipeCache(article.type, article.recipe_json);
   if (recipeCacheRes) {
-    updateData.recipeJson = recipeCacheRes.recipeJson;
-    updateData.cachedRecipeJson = JSON.stringify(recipeCacheRes.cachedRecipeJson);
-    updateData.cachedRatingJson = JSON.stringify(recipeCacheRes.cachedRatingJson);
+    updateData.recipe_json = recipeCacheRes.recipe_json;
+    updateData.cached_recipe_json = JSON.stringify(recipeCacheRes.cached_recipe_json);
+    updateData.cached_rating_json = JSON.stringify(recipeCacheRes.cached_rating_json);
     totalTimeMinutes = recipeCacheRes.totalTimeMinutes;
     recipeRaw = recipeCacheRes.recipeRaw;
 
-    cachedRecipe = recipeCacheRes.cachedRecipeJson;
-    cachedRating = recipeCacheRes.cachedRatingJson;
+    cachedRecipe = recipeCacheRes.cached_recipe_json;
+    cachedRating = recipeCacheRes.cached_rating_json;
   }
 
   // 2. Generate cached_card_json using pre-computed objects
@@ -662,10 +662,10 @@ export async function syncCachedFields(
       type: article.type,
       slug: article.slug,
       headline: article.headline,
-      shortDescription: article.shortDescription,
-      imagesJson: article.imagesJson,
-      readingTimeMinutes: article.readingTimeMinutes,
-      roundupJson: article.roundupJson,
+      short_description: article.short_description,
+      images_json: article.images_json,
+      reading_time_minutes: article.reading_time_minutes,
+      roundup_json: article.roundup_json,
     },
     {
       author: cachedAuthor,
@@ -677,12 +677,12 @@ export async function syncCachedFields(
       recipeRaw,
     }
   );
-  updateData.cachedCardJson = JSON.stringify(card);
+  updateData.cached_card_json = JSON.stringify(card);
 
   // 3. Generate JSON-LD schemas for SEO
   const resolvedSiteUrl = siteUrl || 'https://saas-blog.com';
   const schemas = generateJsonLd(article as ArticleRow, resolvedSiteUrl);
-  updateData.jsonldJson = JSON.stringify(schemas);
+  updateData.jsonld_json = JSON.stringify(schemas);
 
   // 4. Update the database
   await drizzle.update(articles)
@@ -707,15 +707,15 @@ export async function getPopularArticles(
       slug: articles.slug,
       label: articles.headline,
       type: articles.type,
-      imagesJson: articles.imagesJson,
-      viewCount: articles.viewCount,
+      images_json: articles.images_json,
+      view_count: articles.view_count,
       categoryLabel: categories.label,
       categorySlug: categories.slug
     })
     .from(articles)
-    .leftJoin(categories, eq(articles.categoryId, categories.id))
-    .where(and(eq(articles.workflowStatus, 'published'), isNull(articles.deletedAt)))
-    .orderBy(desc(articles.viewCount), desc(articles.createdAt))
+    .leftJoin(categories, eq(articles.category_id, categories.id))
+    .where(and(eq(articles.workflow_status, 'published'), isNull(articles.deleted_at)))
+    .orderBy(desc(articles.view_count), desc(articles.created_at))
     .limit(limit);
 
   return result;
@@ -726,21 +726,21 @@ export async function getPopularArticles(
  */
 export async function addRecipeVote(
   db: D1Database | DrizzleDb,
-  articleId: number,
+  article_id: number,
   rating: number
 ): Promise<{ ratingValue: number; ratingCount: number } | null> {
   const drizzle = getDb(db);
 
   // 1. Get current article
   const article = await drizzle.query.articles.findFirst({
-    where: and(eq(articles.id, articleId), isNull(articles.deletedAt)),
-    columns: { recipeJson: true, cachedRatingJson: true }
+    where: and(eq(articles.id, article_id), isNull(articles.deleted_at)),
+    columns: { recipe_json: true, cached_rating_json: true }
   });
 
   if (!article) return null;
 
   // 2. Parse current rating
-  const recipe = safeParseJson<any>(article.recipeJson);
+  const recipe = safeParseJson<any>(article.recipe_json);
   if (!recipe) return null;
 
   const normalizedRecipe = normalizeRecipeJson(recipe);
@@ -756,19 +756,19 @@ export async function addRecipeVote(
     rating_count: newCount
   };
 
-  // 4. Update recipeJson
+  // 4. Update recipe_json
   normalizedRecipe.aggregate_rating = newRating;
-  const recipeJson = JSON.stringify(normalizedRecipe);
+  const recipe_json = JSON.stringify(normalizedRecipe);
 
   // 5. Update database (and cache)
   await drizzle.update(articles)
-    .set({ 
-      recipeJson, 
-      cachedRatingJson: JSON.stringify(newRating),
-      cachedRecipeJson: JSON.stringify(buildCachedRecipeJson(normalizedRecipe, 'recipe')),
-      updatedAt: new Date().toISOString() 
+    .set({
+      recipe_json,
+      cached_rating_json: JSON.stringify(newRating),
+      cached_recipe_json: JSON.stringify(buildCachedRecipeJson(normalizedRecipe, 'recipe')),
+      updated_at: new Date().toISOString()
     })
-    .where(eq(articles.id, articleId));
+    .where(eq(articles.id, article_id));
 
   return { ratingValue: newValue, ratingCount: newCount };
 }

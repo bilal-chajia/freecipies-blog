@@ -25,13 +25,13 @@ const visibleRecipes = recipes
     visibleRecipes.length > 0 ? (
       <div class="recipe-list">
         {visibleRecipes.map((recipe) => {
-          const cachedRecipe = parseCachedRecipe(recipe.cachedRecipeJson);
+          const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
           const cookTime = cachedRecipe?.cook_time_minutes ?? null;
-          const thumbnail = extractImage(recipe.imagesJson, "thumbnail", 120);
-          const hero = extractImage(recipe.imagesJson, "hero", 120);
-          const slotName = thumbnail.imageUrl ? "thumbnail" : "hero";
-          const selected = thumbnail.imageUrl ? thumbnail : hero;
-          const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
+          const thumbnail = extractImage(recipe.images_json, "thumbnail", 120);
+          const hero = extractImage(recipe.images_json, "hero", 120);
+          const slotName = thumbnail.image_url ? "thumbnail" : "hero";
+          const selected = thumbnail.image_url ? thumbnail : hero;
+          const srcSet = getImageSrcSet(recipe.images_json, slotName);
           const sizes = "80px";
           return (
             <a href={`/recipes/${recipe.slug}`} class="recipe-item">
@@ -56,9 +56,9 @@ const visibleRecipes = recipes
                   )}
                 </div>
               </div>
-              {(selected.imageUrl || recipe.imageUrl) && (
+              {(selected.image_url || recipe.image_url) && (
                 <img
-                  src={selected.imageUrl || recipe.imageUrl}
+                  src={selected.image_url || recipe.image_url}
                   alt={selected.imageAlt || recipe.imageAlt || recipe.label}
                   width={selected.imageWidth || recipe.imageWidth || 80}
                   height={selected.imageHeight || recipe.imageHeight || 80}

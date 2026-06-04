@@ -178,28 +178,28 @@ export async function propagateMediaUpdate(
     const affectedArticles = await drizzle
       .select({
         id: articles.id,
-        imagesJson: articles.imagesJson,
-        cachedCardJson: articles.cachedCardJson,
+        images_json: articles.images_json,
+        cached_card_json: articles.cached_card_json,
       })
       .from(articles)
       .where(and(
-        isNull(articles.deletedAt),
-        like(articles.imagesJson, mediaIdPattern)
+        isNull(articles.deleted_at),
+        like(articles.images_json, mediaIdPattern)
       ));
 
     for (const row of affectedArticles) {
       try {
         const updates: Record<string, string> = {};
 
-        const patchedImages = patchImagesJsonContainer(row.imagesJson, mediaId, patch, 'article');
-        if (patchedImages) updates.imagesJson = patchedImages;
+        const patchedImages = patchImagesJsonContainer(row.images_json, mediaId, patch, 'article');
+        if (patchedImages) updates.images_json = patchedImages;
 
-        const patchedCard = patchCachedCardJson(row.cachedCardJson, mediaId, patch);
-        if (patchedCard) updates.cachedCardJson = patchedCard;
+        const patchedCard = patchCachedCardJson(row.cached_card_json, mediaId, patch);
+        if (patchedCard) updates.cached_card_json = patchedCard;
 
         if (Object.keys(updates).length > 0) {
           await drizzle.update(articles)
-            .set({ ...updates, updatedAt: new Date().toISOString() } as Partial<typeof articles.$inferInsert>)
+            .set({ ...updates, updated_at: new Date().toISOString() } as Partial<typeof articles.$inferInsert>)
             .where(eq(articles.id, row.id));
           result.articlesUpdated++;
         }
@@ -218,20 +218,20 @@ export async function propagateMediaUpdate(
     const affectedAuthors = await drizzle
       .select({
         id: authors.id,
-        imagesJson: authors.imagesJson,
+        images_json: authors.images_json,
       })
       .from(authors)
       .where(and(
-        isNull(authors.deletedAt),
-        like(authors.imagesJson, mediaIdPattern)
+        isNull(authors.deleted_at),
+        like(authors.images_json, mediaIdPattern)
       ));
 
     for (const row of affectedAuthors) {
       try {
-        const patchedImages = patchImagesJsonContainer(row.imagesJson, mediaId, patch, 'author');
+        const patchedImages = patchImagesJsonContainer(row.images_json, mediaId, patch, 'author');
         if (patchedImages) {
           await drizzle.update(authors)
-            .set({ imagesJson: patchedImages, updatedAt: new Date().toISOString() })
+            .set({ images_json: patchedImages, updated_at: new Date().toISOString() })
             .where(eq(authors.id, row.id));
           result.authorsUpdated++;
         }
@@ -250,20 +250,20 @@ export async function propagateMediaUpdate(
     const affectedCategories = await drizzle
       .select({
         id: categories.id,
-        imagesJson: categories.imagesJson,
+        images_json: categories.images_json,
       })
       .from(categories)
       .where(and(
-        isNull(categories.deletedAt),
-        like(categories.imagesJson, mediaIdPattern)
+        isNull(categories.deleted_at),
+        like(categories.images_json, mediaIdPattern)
       ));
 
     for (const row of affectedCategories) {
       try {
-        const patchedImages = patchImagesJsonContainer(row.imagesJson, mediaId, patch, 'category');
+        const patchedImages = patchImagesJsonContainer(row.images_json, mediaId, patch, 'category');
         if (patchedImages) {
           await drizzle.update(categories)
-            .set({ imagesJson: patchedImages, updatedAt: new Date().toISOString() })
+            .set({ images_json: patchedImages, updated_at: new Date().toISOString() })
             .where(eq(categories.id, row.id));
           result.categoriesUpdated++;
         }

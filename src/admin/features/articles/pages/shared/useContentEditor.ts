@@ -49,35 +49,35 @@ interface ArticleData {
   id: number;
   slug: string;
   type: string;
-  categoryId: number | string | null;
-  authorId: number | string | null;
+  category_id: number | string | null;
+  author_id: number | string | null;
   label: string;
   subtitle?: string | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
   canonicalUrl?: string | null;
-  shortDescription: string;
+  short_description: string;
   tldr: string;
   introduction?: string | null;
   summary?: string | null;
-  imageUrl?: string | null;
+  image_url?: string | null;
   imageAlt?: string | null;
   heroUrl?: string | null;
   heroAlt?: string | null;
-  workflowStatus: string;
-  isFavorite: boolean;
-  publishedAt?: string | null;
+  workflow_status: string;
+  is_favorite: boolean;
+  published_at?: string | null;
   tags?: TagItem[];
-  contentJson?: unknown;
-  recipeJson?: unknown;
-  roundupJson?: unknown;
-  faqsJson?: unknown;
+  content_json?: unknown;
+  recipe_json?: unknown;
+  roundup_json?: unknown;
+  faqs_json?: unknown;
   keywords?: unknown;
   references?: unknown;
-  jsonldJson?: unknown;
+  jsonld_json?: unknown;
   media?: unknown;
-  imagesJson?: unknown;
-  seoJson?: unknown;
+  images_json?: unknown;
+  seo_json?: unknown;
 }
 
 interface ImageSlot {
@@ -89,24 +89,24 @@ interface ImageSlot {
 interface FormData {
   slug: string;
   type: string;
-  categoryId: number | null;
-  authorId: number | null;
+  category_id: number | null;
+  author_id: number | null;
   label: string;
   headline: string;
   metaTitle: string;
   metaDescription: string;
   canonicalUrl: string;
-  shortDescription: string;
+  short_description: string;
   tldr: string;
   introduction: string;
   summary: string;
-  imageUrl: string;
+  image_url: string;
   imageAlt: string;
   heroUrl: string;
   heroAlt: string;
-  workflowStatus: string;
-  isFavorite: boolean;
-  publishedAt: string;
+  workflow_status: string;
+  is_favorite: boolean;
+  published_at: string;
   selectedTags: number[];
 }
 
@@ -150,7 +150,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
     // Core states
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [articleId, setArticleId] = useState<number | null>(null);
+    const [article_id, setArticleId] = useState<number | null>(null);
 
     // Lookup data
     const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -161,36 +161,36 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
     const [formData, setFormData] = useState<FormData>({
         slug: '',
         type: contentType,
-        categoryId: null,
-        authorId: null,
+        category_id: null,
+        author_id: null,
         label: '',
         headline: '',
         metaTitle: '',
         metaDescription: '',
         canonicalUrl: '',
-        shortDescription: '',
+        short_description: '',
         tldr: '',
         introduction: '',
         summary: '',
-        imageUrl: '',
+        image_url: '',
         imageAlt: '',
         heroUrl: '',
         heroAlt: '',
-        workflowStatus: 'draft',
-        isFavorite: false,
-        publishedAt: '',
+        workflow_status: 'draft',
+        is_favorite: false,
+        published_at: '',
         selectedTags: [],
     });
 
     // JSON fields (stored as strings for Monaco + validation compatibility)
-    const [contentJson, setContentJson] = useState(EMPTY_CONTENT_DOCUMENT);
-    const [recipeJson, setRecipeJson] = useState('{}');
-    const [roundupJson, setRoundupJson] = useState('{"list_type":"ItemList","items":[]}');
-    const [faqsJson, setFaqsJson] = useState(EMPTY_FAQS_DOCUMENT);
+    const [content_json, setContentJson] = useState(EMPTY_CONTENT_DOCUMENT);
+    const [recipe_json, setRecipeJson] = useState('{}');
+    const [roundup_json, setRoundupJson] = useState('{"list_type":"ItemList","items":[]}');
+    const [faqs_json, setFaqsJson] = useState(EMPTY_FAQS_DOCUMENT);
     const [keywordsJson, setKeywordsJson] = useState('[]');
     const [referencesJson, setReferencesJson] = useState('[]');
     const [mediaJson, setMediaJson] = useState('{}');
-    const [jsonldJson, setJsonldJson] = useState('{}');
+    const [jsonld_json, setJsonldJson] = useState('{}');
     const [imagesData, setImagesData] = useState<Record<string, ImageSlot | unknown>>({});
 
     // Validation
@@ -284,45 +284,45 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
                     }
                 };
 
-                const parsedImages = safeParse(article.imagesJson, {}) as Record<string, ImageSlot>;
-                const parsedSeo = safeParse(article.seoJson, {}) as Record<string, string | undefined>;
+                const parsedImages = safeParse(article.images_json, {}) as Record<string, ImageSlot>;
+                const parsedSeo = safeParse(article.seo_json, {}) as Record<string, string | undefined>;
 
                 setImagesData(parsedImages);
 
-                const categoryId = normalizeId(article.categoryId);
-                const authorId = normalizeId(article.authorId);
+                const category_id = normalizeId(article.category_id);
+                const author_id = normalizeId(article.author_id);
 
                 setFormData({
                     slug: article.slug,
                     type: article.type,
-                    categoryId,
-                    authorId,
+                    category_id,
+                    author_id,
                     label: article.label,
                     headline: article.subtitle || '',
                     metaTitle: article.metaTitle || (parsedSeo.meta_title as string | undefined) || (parsedSeo.metaTitle as string | undefined) || '',
                     metaDescription: article.metaDescription || (parsedSeo.meta_description as string | undefined) || (parsedSeo.metaDescription as string | undefined) || '',
                     canonicalUrl: article.canonicalUrl || (parsedSeo.canonical as string | undefined) || '',
-                    shortDescription: article.shortDescription,
+                    short_description: article.short_description,
                     tldr: article.tldr,
                     introduction: article.introduction || '',
                     summary: article.summary || '',
-                    imageUrl: article.imageUrl || '',
+                    image_url: article.image_url || '',
                     imageAlt: parsedImages?.thumbnail?.alt || article.imageAlt || '',
                     heroUrl: article.heroUrl || '',
                     heroAlt: parsedImages?.hero?.alt || article.heroAlt || '',
-                    workflowStatus: article.workflowStatus || 'draft',
-                    isFavorite: article.isFavorite,
-                    publishedAt: article.publishedAt || '',
+                    workflow_status: article.workflow_status || 'draft',
+                    is_favorite: article.is_favorite,
+                    published_at: article.published_at || '',
                     selectedTags: article.tags?.map(t => t.id) || [],
                 });
 
-                setContentJson(safeStringify(article.contentJson, []));
-                setRecipeJson(safeStringify(article.recipeJson, {}));
-                setRoundupJson(safeStringify(article.roundupJson, { list_type: "ItemList", items: [] }));
-                setFaqsJson(safeStringify(article.faqsJson, { heading: "Frequently Asked Questions", intro: null, items: [] }));
+                setContentJson(safeStringify(article.content_json, []));
+                setRecipeJson(safeStringify(article.recipe_json, {}));
+                setRoundupJson(safeStringify(article.roundup_json, { list_type: "ItemList", items: [] }));
+                setFaqsJson(safeStringify(article.faqs_json, { heading: "Frequently Asked Questions", intro: null, items: [] }));
                 setKeywordsJson(safeStringify(article.keywords, []));
                 setReferencesJson(safeStringify(article.references, []));
-                setJsonldJson(safeStringify(article.jsonldJson, {}));
+                setJsonldJson(safeStringify(article.jsonld_json, {}));
                 setMediaJson(safeStringify(article.media, {}));
             } else {
                 toast.error(`Content "${slug}" not found.`);
@@ -343,7 +343,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
     };
 
     const handleInputChange = (field: keyof FormData, value: unknown) => {
-        const normalizedValue = (field === 'categoryId' || field === 'authorId')
+        const normalizedValue = (field === 'category_id' || field === 'author_id')
             ? normalizeId(value)
             : value;
 
@@ -390,7 +390,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             setImagesData(prev => ({ ...prev, thumbnail: slot }));
             setFormData(prev => ({
                 ...prev,
-                imageUrl: slot?.variants?.sm?.url || slot?.variants?.xs?.url || slot?.url || item.url || '',
+                image_url: slot?.variants?.sm?.url || slot?.variants?.xs?.url || slot?.url || item.url || '',
                 imageAlt: slot?.alt || item.alt_text || prev.imageAlt
             }));
         } else if (activeMediaField === 'hero') {
@@ -416,7 +416,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             });
             setFormData(prev => ({
                 ...prev,
-                imageUrl: '',
+                image_url: '',
                 imageAlt: '',
             }));
         }
@@ -455,10 +455,10 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
     };
 
     const handleSave = async (editorInstance?: AppEditor | null) => {
-        let finalContentJson = contentJson;
-        let finalRecipeJson = recipeJson;
-        let finalRoundupJson = roundupJson;
-        let finalFaqsJson = faqsJson;
+        let finalContentJson = content_json;
+        let finalRecipeJson = recipe_json;
+        let finalRoundupJson = roundup_json;
+        let finalFaqsJson = faqs_json;
 
         // Synchronously blur any active input/textarea to trigger their local draft commits (like SimpleTable)
         if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
@@ -491,7 +491,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             faqs: finalFaqsJson,
             keywords: keywordsJson,
             references: referencesJson,
-            jsonld: jsonldJson,
+            jsonld: jsonld_json,
             media: mediaJson,
         };
 
@@ -507,7 +507,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             return;
         }
 
-        const { imageUrl, heroUrl, imageAlt, heroAlt, label, headline, ...restFormData } = formData;
+        const { image_url, heroUrl, imageAlt, heroAlt, label, headline, ...restFormData } = formData;
         const requiredFields: string[] = [];
         const trimmedLabel = (label || '').trim();
         const trimmedSlug = (restFormData.slug || '').trim();
@@ -515,9 +515,9 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
 
         if (!trimmedLabel) requiredFields.push('Title');
         if (!computedSlug) requiredFields.push('Slug');
-        if (!restFormData.shortDescription?.trim()) requiredFields.push('Short Description');
-        if (restFormData.categoryId == null) requiredFields.push('Category');
-        if (restFormData.authorId == null) requiredFields.push('Author');
+        if (!restFormData.short_description?.trim()) requiredFields.push('Short Description');
+        if (restFormData.category_id == null) requiredFields.push('Category');
+        if (restFormData.author_id == null) requiredFields.push('Author');
 
         if (requiredFields.length > 0) {
             toast.error(`Please fill required fields: ${requiredFields.join(', ')}`);
@@ -529,25 +529,25 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             slug: computedSlug,
             headline: trimmedLabel,
             subtitle: headline?.trim() || null,
-            contentJson: finalContentJson,
-            faqsJson: finalFaqsJson,
+            content_json: finalContentJson,
+            faqs_json: finalFaqsJson,
             keywordsJson,
             referencesJson,
-            jsonldJson,
+            jsonld_json,
             mediaJson,
-            imagesJson: JSON.stringify(imagesData),
+            images_json: JSON.stringify(imagesData),
         };
 
         if (contentType === 'recipe') {
-            data.recipeJson = finalRecipeJson;
+            data.recipe_json = finalRecipeJson;
         } else if (contentType === 'roundup') {
-            data.roundupJson = finalRoundupJson;
+            data.roundup_json = finalRoundupJson;
         }
 
         try {
             setSaving(true);
-            if (isEditMode && articleId) {
-                await articlesAPI.update(articleId, data);
+            if (isEditMode && article_id) {
+                await articlesAPI.update(article_id, data);
                 toast.success('Content saved successfully');
             } else {
                 const response = await articlesAPI.create(data) as ApiResponse<{ slug: string }>;
@@ -568,18 +568,18 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
         loading,
         saving,
         isEditMode,
-        articleId,
+        article_id,
         formData,
         categories,
         authors,
         tags,
-        contentJson,
+        content_json,
         setContentJson,
-        recipeJson,
+        recipe_json,
         setRecipeJson,
-        roundupJson,
+        roundup_json,
         setRoundupJson,
-        faqsJson,
+        faqs_json,
         setFaqsJson,
         keywordsJson,
         setKeywordsJson,
@@ -587,7 +587,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
         setReferencesJson,
         mediaJson,
         setMediaJson,
-        jsonldJson,
+        jsonld_json,
         setJsonldJson,
         imagesData,
         setImagesData,

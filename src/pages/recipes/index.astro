@@ -43,7 +43,7 @@ try {
     totalRecipes = result.total;
 
     // Get all categories and tags for filters
-    const rawCategories = await getCategories(env.DB, { workflowStatus: 'published' });
+    const rawCategories = await getCategories(env.DB, { workflow_status: 'published' });
     const rawTags = await getTags(env.DB);
     categories = hydrateCategories(rawCategories);
     tags = hydrateTags(rawTags);
@@ -78,18 +78,18 @@ const getRecipeImage = (
   targetWidth: number,
   prefer: "hero" | "thumbnail" = "hero"
 ) => {
-  const hero = extractImage(recipe.imagesJson, "hero", targetWidth);
-  const thumbnail = extractImage(recipe.imagesJson, "thumbnail", targetWidth);
+  const hero = extractImage(recipe.images_json, "hero", targetWidth);
+  const thumbnail = extractImage(recipe.images_json, "thumbnail", targetWidth);
   const slotName =
     prefer === "hero"
-      ? hero.imageUrl
+      ? hero.image_url
         ? "hero"
         : "thumbnail"
-      : thumbnail.imageUrl
+      : thumbnail.image_url
         ? "thumbnail"
         : "hero";
   const selected = slotName === "hero" ? hero : thumbnail;
-  const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
+  const srcSet = getImageSrcSet(recipe.images_json, slotName);
   return { selected, srcSet };
 };
 
@@ -199,8 +199,8 @@ const siteDescription =
                   style={`--tag-color: ${tag.color || "var(--brand-primary)"};`}
                 >
                   <div class="chip-image">
-                    {tag.imageUrl ? (
-                      <img src={tag.imageUrl} alt={tag.label} />
+                    {tag.image_url ? (
+                      <img src={tag.image_url} alt={tag.label} />
                     ) : (
                       <div class="chip-placeholder">{tag.label.charAt(0)}</div>
                     )}
@@ -263,7 +263,7 @@ const siteDescription =
                 const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 768px) 50vw, 25vw";
                 const { badgeColor, badgeText } = getBadgeColors(recipe.categoryColor);
-                const cachedRecipe = parseCachedRecipe(recipe.cachedRecipeJson);
+                const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
                 const prepTime = cachedRecipe?.prep_time_minutes ?? cachedRecipe?.prepTimeMinutes ?? null;
                 const servings = cachedRecipe?.servings ?? null;
                 return (
@@ -281,9 +281,9 @@ const siteDescription =
                       </svg>
                     </button>
                     <a href={`/recipes/${recipe.slug}`} class="card-image-link">
-                      {(selected.imageUrl || recipe.imageUrl) && (
+                      {(selected.image_url || recipe.image_url) && (
                         <img
-                          src={selected.imageUrl || recipe.imageUrl}
+                          src={selected.image_url || recipe.image_url}
                           alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
                           width={selected.imageWidth || recipe.imageWidth || 400}
                           height={selected.imageHeight || recipe.imageHeight || 300}

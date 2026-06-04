@@ -266,8 +266,8 @@ export function normalizeRecipeJson(value: unknown) {
   };
 }
 
-export function buildCachedRatingJson(recipeJson: unknown) {
-  const recipe = normalizeRecipeJson(recipeJson);
+export function buildCachedRatingJson(recipe_json: unknown) {
+  const recipe = normalizeRecipeJson(recipe_json);
   return recipe.aggregate_rating ?? {};
 }
 
@@ -279,8 +279,8 @@ function mainIngredientNames(ingredients: unknown): string[] {
     .slice(0, 5);
 }
 
-export function buildCachedRecipeJson(recipeJson: unknown, articleType: string) {
-  const recipe = normalizeRecipeJson(recipeJson);
+export function buildCachedRecipeJson(recipe_json: unknown, articleType: string) {
+  const recipe = normalizeRecipeJson(recipe_json);
   const total = recipe.total ?? (((recipe.prep ?? 0) + (recipe.cook ?? 0)) || null);
   const nutrition = recipe.nutrition;
 
@@ -332,15 +332,15 @@ export function normalizeRoundupJson(value: unknown) {
         title: stringOrNull(item.title) ?? '',
       };
       if (sourceType === 'internal_recipe') {
-        const articleId = numberOrNull(pick(item, 'article_id', 'articleId'));
-        if (articleId !== null) normalized.article_id = articleId;
+        const article_id = numberOrNull(pick(item, 'article_id', 'article_id'));
+        if (article_id !== null) normalized.article_id = article_id;
         const slug = stringOrNull(item.slug);
         if (slug) normalized.slug = slug;
       }
       const externalUrl = stringOrNull(pick(item, 'external_url', 'externalUrl'));
       if (externalUrl) normalized.external_url = externalUrl;
       delete normalized.cover;
-      delete normalized.articleId;
+      delete normalized.article_id;
       delete normalized.externalUrl;
       delete normalized.canonicalUrl;
       delete normalized.sourceType;

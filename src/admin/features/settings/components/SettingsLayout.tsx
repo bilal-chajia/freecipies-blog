@@ -105,7 +105,7 @@ export default function SettingsLayout({
           <div className="structure-panel-list">
             {settingsTabs.map((item) => {
               const Icon = item.icon;
-              const isActive = currentTab === item.id;
+              const is_active = currentTab === item.id;
               return (
                 <button
                   key={item.id}
@@ -113,10 +113,10 @@ export default function SettingsLayout({
                   onClick={() => handleTabClick(item.id)}
                   className={cn(
                     'structure-item group relative overflow-hidden transition-colors',
-                    isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                    is_active ? 'text-foreground font-medium' : 'text-muted-foreground'
                   )}
                 >
-                  {isActive && (
+                  {is_active && (
                     <motion.div
                       layoutId="settings-active-tab"
                       className="absolute inset-0 bg-[var(--primary-muted)] rounded-md z-0"
@@ -127,13 +127,13 @@ export default function SettingsLayout({
                     <Icon
                       className={cn(
                         'structure-item-icon transition-all duration-200 group-hover:scale-110 shrink-0',
-                        isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                        is_active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
                       )}
                     />
                     <span
                       className={cn(
                         'structure-item-label transition-transform duration-200 group-hover:translate-x-0.5',
-                        isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
+                        is_active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
                       )}
                     >
                       {item.label}

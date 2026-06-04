@@ -32,7 +32,7 @@ import type {
 const mapFeaturedItemToPickerValue = (featuredItem?: MenuFeaturedItem): ArticlePickerValue | null => {
     if (!featuredItem) return null;
     return {
-        articleId: featuredItem.target.id || '',
+        article_id: featuredItem.target.id || '',
         title: featuredItem.label,
         url: featuredItem.target.href,
         image: resolveVariantUrl(featuredItem.image?.variants?.xs) || '',
@@ -217,7 +217,7 @@ const MenuItemInspector = ({
                                         onChange={(article: ArticlePickerValue | null) => {
                                             const featured = item.featured_items?.[0] || createFeaturedItem();
                                             if (article) {
-                                                const { articleId, title, url, description } = article;
+                                                const { article_id, title, url, description } = article;
                                                 handleUpdate('featured_items', [{
                                                     ...featured,
                                                     id: featured.id || `featured-${Date.now()}`,
@@ -225,7 +225,7 @@ const MenuItemInspector = ({
                                                     label: title || featured.label || 'Featured',
                                                     target: {
                                                         type: 'article',
-                                                        id: typeof articleId === 'string' ? parseInt(articleId, 10) || undefined : articleId,
+                                                        id: typeof article_id === 'string' ? parseInt(article_id, 10) || undefined : article_id,
                                                         href: url || featured.target?.href || '#',
                                                         snapshot: { title: title || featured.label || 'Featured' },
                                                     },

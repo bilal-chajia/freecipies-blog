@@ -50,7 +50,7 @@ function roundupItemAnchor(position: number, title: string): string {
   return `item-${position}`;
 }
 
-export function extractTocFromContentDocument(input: unknown, headline?: string, roundupJson?: unknown): TocItem[] {
+export function extractTocFromContentDocument(input: unknown, headline?: string, roundup_json?: unknown): TocItem[] {
   const document = normalizeContentDocument(input);
   const toc: TocItem[] = [];
   const counters = [0, 0, 0, 0, 0];
@@ -105,9 +105,9 @@ export function extractTocFromContentDocument(input: unknown, headline?: string,
       });
       stack[2] = id;
 
-      const roundup = typeof roundupJson === 'string' ? (() => {
-        try { return JSON.parse(roundupJson); } catch { return null; }
-      })() : roundupJson;
+      const roundup = typeof roundup_json === 'string' ? (() => {
+        try { return JSON.parse(roundup_json); } catch { return null; }
+      })() : roundup_json;
       const items = Array.isArray((roundup as any)?.items) ? (roundup as any).items : [];
       items.forEach((item: any, index: number) => {
         const position = Number(item?.position) || index + 1;

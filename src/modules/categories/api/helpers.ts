@@ -29,8 +29,8 @@ interface ConfigJson {
   showFilters?: boolean;
   showBreadcrumb?: boolean;
   showPagination?: boolean;
-  sortBy?: 'publishedAt' | 'title' | 'viewCount';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: 'published_at' | 'title' | 'view_count';
+  sort_order?: 'asc' | 'desc';
   headerStyle?: 'hero' | 'minimal' | 'none';
   featuredArticleId?: number;
   showFeaturedRecipe?: boolean;
@@ -153,7 +153,7 @@ const normalizeConfigJsonObject = (value: any): ConfigJson => {
   if (typeof value.showBreadcrumb === 'boolean') normalized.showBreadcrumb = value.showBreadcrumb;
   if (typeof value.showPagination === 'boolean') normalized.showPagination = value.showPagination;
   if (typeof value.sortBy === 'string') normalized.sortBy = value.sortBy as ConfigJson['sortBy'];
-  if (typeof value.sortOrder === 'string') normalized.sortOrder = value.sortOrder as ConfigJson['sortOrder'];
+  if (typeof value.sort_order === 'string') normalized.sort_order = value.sort_order as ConfigJson['sort_order'];
   if (typeof value.headerStyle === 'string') normalized.headerStyle = value.headerStyle as ConfigJson['headerStyle'];
   if (Number.isFinite(featuredArticleId)) normalized.featuredArticleId = featuredArticleId as number;
   if (typeof showFeaturedRecipe === 'boolean') normalized.showFeaturedRecipe = showFeaturedRecipe;
@@ -258,7 +258,7 @@ export function parseConfigJson(value: any): string {
  */
 export function transformCategoryRequestBody(body: any): any {
   const transformed = { ...body };
-  const hasLegacyImageFields = ['imageUrl', 'imageAlt', 'imageWidth', 'imageHeight']
+  const hasLegacyImageFields = ['image_url', 'imageAlt', 'imageWidth', 'imageHeight']
     .some((key) => Object.prototype.hasOwnProperty.call(body, key));
   const configOverrides: Record<string, any> = {};
 
@@ -314,9 +314,9 @@ export function transformCategoryRequestBody(body: any): any {
     configOverrides.sortBy = body.sortBy;
     delete transformed.sortBy;
   }
-  if (body.sortOrder !== undefined) {
-    configOverrides.sortOrder = body.sortOrder;
-    delete transformed.sortOrder;
+  if (body.sort_order !== undefined) {
+    configOverrides.sort_order = body.sort_order;
+    delete transformed.sort_order;
   }
   if (body.headerStyle !== undefined) {
     configOverrides.headerStyle = body.headerStyle;
@@ -346,28 +346,28 @@ export function transformCategoryRequestBody(body: any): any {
     delete transformed.heroCtaLink;
   }
 
-  if (body.imagesJson !== undefined) {
-    transformed.imagesJson = parseImagesJson(body.imagesJson);
+  if (body.images_json !== undefined) {
+    transformed.images_json = parseImagesJson(body.images_json);
   } else if (hasLegacyImageFields) {
     const images: Partial<Record<'thumbnail', unknown>> = {};
-    if (body.imageUrl) {
-      const r2Key = extractR2KeyFromUrl(body.imageUrl);
+    if (body.image_url) {
+      const r2Key = extractR2KeyFromUrl(body.image_url);
       images.thumbnail = {
         alt: body.imageAlt,
-        url: r2Key ? `/api/images/${r2Key}` : body.imageUrl,
+        url: r2Key ? `/api/images/${r2Key}` : body.image_url,
         width: body.imageWidth ?? 0,
         height: body.imageHeight ?? 0,
       };
     }
-    transformed.imagesJson = JSON.stringify(images);
-    delete transformed.imageUrl;
+    transformed.images_json = JSON.stringify(images);
+    delete transformed.image_url;
     delete transformed.imageAlt;
     delete transformed.imageWidth;
     delete transformed.imageHeight;
   }
 
-  if (body.seoJson !== undefined) {
-    transformed.seoJson = parseSeoJson(body.seoJson);
+  if (body.seo_json !== undefined) {
+    transformed.seo_json = parseSeoJson(body.seo_json);
   } else if (
     body.metaTitle ||
     body.metaDescription ||
@@ -380,7 +380,7 @@ export function transformCategoryRequestBody(body: any): any {
     body.robots ||
     body.noIndex
   ) {
-    transformed.seoJson = parseSeoJson({
+    transformed.seo_json = parseSeoJson({
       metaTitle: body.metaTitle,
       metaDescription: body.metaDescription,
       canonical: body.canonical,
@@ -394,7 +394,7 @@ export function transformCategoryRequestBody(body: any): any {
     });
   }
 
-  delete transformed.configJson;
+  delete transformed.config_json;
 
   // Basic required field validation REMOVED to allow partial updates (PATCH)
   // The database schema or specialized Creation validation should handle requirements.
@@ -402,7 +402,7 @@ export function transformCategoryRequestBody(body: any): any {
   const missing: string[] = [];
   if (!transformed.slug) missing.push('slug');
   if (!transformed.label) missing.push('label');
-  if (!transformed.shortDescription) missing.push('shortDescription');
+  if (!transformed.short_description) missing.push('short_description');
   if (missing.length) {
     const error = new Error(`Missing required fields: ${missing.join(', ')}`);
     (error as any).code = 'VALIDATION_ERROR';
@@ -413,10 +413,10 @@ export function transformCategoryRequestBody(body: any): any {
   // Clean up any flat fields from admin form that are NOT
   // actual DB columns — they would cause Drizzle to fail silently.
   const dbColumns = new Set([
-    'slug', 'label', 'parentId', 'depth', 'headline', 'collectionTitle',
-    'shortDescription', 'imagesJson', 'color', 'isFeatured',
-    'seoJson', 'sortOrder', 'workflowStatus',
-    'cachedPostCount', 'createdAt', 'updatedAt', 'deletedAt',
+    'slug', 'label', 'parent_id', 'depth', 'headline', 'collection_title',
+    'short_description', 'images_json', 'color', 'is_featured',
+    'seo_json', 'sort_order', 'workflow_status',
+    'cached_post_count', 'created_at', 'updated_at', 'deleted_at',
   ]);
   for (const key of Object.keys(transformed)) {
     if (!dbColumns.has(key)) {
@@ -432,12 +432,12 @@ export function transformCategoryResponse(category: any): any {
 
   const response = { ...category };
 
-  if (category.imagesJson) {
+  if (category.images_json) {
     try {
-      const images: CategoryImagesJson = JSON.parse(category.imagesJson);
+      const images: CategoryImagesJson = JSON.parse(category.images_json);
       const primarySlot = images.thumbnail ?? images.hero;
       const variant = getBestVariant(primarySlot?.variants);
-      response.imageUrl = resolveVariantUrl(variant);
+      response.image_url = resolveVariantUrl(variant);
       response.imageAlt = primarySlot?.alt;
       response.imageWidth = variant?.width;
       response.imageHeight = variant?.height;
@@ -445,9 +445,9 @@ export function transformCategoryResponse(category: any): any {
     }
   }
 
-  if (category.seoJson) {
+  if (category.seo_json) {
     try {
-      const seo: SeoJson = JSON.parse(category.seoJson);
+      const seo: SeoJson = JSON.parse(category.seo_json);
       if (!response.metaTitle) response.metaTitle = getSeoValue<string | null>(seo, 'meta_title', 'metaTitle') ?? undefined;
       if (!response.metaDescription) response.metaDescription = getSeoValue<string | null>(seo, 'meta_description', 'metaDescription') ?? undefined;
       if (!response.canonicalUrl && seo.canonical) response.canonicalUrl = seo.canonical;
@@ -466,9 +466,9 @@ export function transformCategoryResponse(category: any): any {
     }
   }
 
-  if (category.configJson) {
+  if (category.config_json) {
     try {
-      const config: ConfigJson = JSON.parse(category.configJson);
+      const config: ConfigJson = JSON.parse(category.config_json);
       if (response.numEntriesPerPage === undefined && typeof config.postsPerPage === 'number') {
         response.numEntriesPerPage = config.postsPerPage;
       }
@@ -499,14 +499,14 @@ export function transformCategoryResponse(category: any): any {
       if (response.showPagination === undefined && typeof config.showPagination === 'boolean') {
         response.showPagination = config.showPagination;
       }
-      // sortOrder from config (direction) must use a different check since
-      // the DB column 'sortOrder' (numeric display-order) is always present
+      // sort_order from config (direction) must use a different check since
+      // the DB column 'sort_order' (numeric display-order) is always present
       // and would shadow the config direction string.
       if (typeof config.sortBy === 'string') {
         response.sortBy = config.sortBy;
       }
-      if (typeof config.sortOrder === 'string') {
-        response.configSortOrder = config.sortOrder;
+      if (typeof config.sort_order === 'string') {
+        response.configSortOrder = config.sort_order;
       }
       if (response.headerStyle === undefined && typeof config.headerStyle === 'string') {
         response.headerStyle = config.headerStyle;

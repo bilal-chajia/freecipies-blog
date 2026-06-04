@@ -82,11 +82,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         });
 
         // Build the public URL
-        const thumbnailUrl = `${publicUrl}/${stableKey}`;
+        const thumbnail_url = `${publicUrl}/${stableKey}`;
 
         // Return success - DO NOT save to media table
         const { body, status, headers } = formatSuccessResponse({
-            url: thumbnailUrl,
+            url: thumbnail_url,
             key: stableKey,
             size: arrayBuffer.byteLength,
         });

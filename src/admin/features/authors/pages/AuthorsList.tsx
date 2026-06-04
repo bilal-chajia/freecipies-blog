@@ -78,7 +78,7 @@ const AuthorsList = () => {
   const filteredAuthors = authors.filter(author =>
     author.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     author.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    author.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase())
+    author.job_title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleToggle = async (authorSlug: string, field: keyof Author, value: boolean) => {
@@ -103,9 +103,9 @@ const AuthorsList = () => {
     setUpdating(authorSlug);
 
     try {
-      await authorsAPI.update(authorSlug, { workflowStatus: status });
+      await authorsAPI.update(authorSlug, { workflow_status: status });
       setAuthors(authors.map(author =>
-        author.slug === authorSlug ? { ...author, workflowStatus: status } : author
+        author.slug === authorSlug ? { ...author, workflow_status: status } : author
       ));
       toast.success('Author status updated');
     } catch {
@@ -207,9 +207,9 @@ const AuthorsList = () => {
                           <div className="flex items-center gap-3">
                             <Avatar className="h-11 w-11 border-2 border-background shadow-sm ring-1 ring-border/50">
                               {(() => {
-                                const avatar = extractImage(author.imagesJson, 'avatar', 120);
-                                const avatarUrl = toAdminImageUrl(avatar.imageUrl || '');
-                                const avatarSrcSet = toAdminSrcSet(getImageSrcSet(author.imagesJson, 'avatar'));
+                                const avatar = extractImage(author.images_json, 'avatar', 120);
+                                const avatarUrl = toAdminImageUrl(avatar.image_url || '');
+                                const avatarSrcSet = toAdminSrcSet(getImageSrcSet(author.images_json, 'avatar'));
                                 const avatarStyle = buildImageStyle(avatar);
                                 return (
                                   <AvatarImage
@@ -230,7 +230,7 @@ const AuthorsList = () => {
                               <div className="font-bold text-sm tracking-tight">{author.name}</div>
                               <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] mt-0.5">
                                 <Briefcase className="h-3 w-3" />
-                                {author.jobTitle || 'Contributor'}
+                                {author.job_title || 'Contributor'}
                               </div>
                             </div>
                           </div>
@@ -244,17 +244,17 @@ const AuthorsList = () => {
                         <td className="px-6 py-5 whitespace-nowrap hidden lg:table-cell">
                           <div className="flex justify-center">
                             <button
-                              onClick={() => handleToggle(author.slug, 'isFeatured', !author.isFeatured)}
-                              className={`p-2 rounded-lg transition-all ${author.isFeatured ? 'bg-yellow-400/10 text-yellow-500' : 'hover:bg-muted text-muted-foreground/30'}`}
+                              onClick={() => handleToggle(author.slug, 'is_featured', !author.is_featured)}
+                              className={`p-2 rounded-lg transition-all ${author.is_featured ? 'bg-yellow-400/10 text-yellow-500' : 'hover:bg-muted text-muted-foreground/30'}`}
                             >
-                              <Star className={`h-4 w-4 ${author.isFeatured ? 'fill-current' : ''}`} />
+                              <Star className={`h-4 w-4 ${author.is_featured ? 'fill-current' : ''}`} />
                             </button>
                           </div>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
                           <div className="flex items-center justify-center">
                             <Select
-                              value={author.workflowStatus || 'draft'}
+                              value={author.workflow_status || 'draft'}
                               onValueChange={(val) => handleStatusChange(author.slug, val)}
                               disabled={updating === author.slug}
                             >
@@ -290,11 +290,11 @@ const AuthorsList = () => {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleToggle(author.slug, 'isFeatured', !author.isFeatured)}
+                                onClick={() => handleToggle(author.slug, 'is_featured', !author.is_featured)}
                                 className="cursor-pointer text-yellow-600 dark:text-yellow-400"
                               >
-                                <Star className={`mr-2 h-4 w-4 ${author.isFeatured ? 'fill-current' : ''}`} />
-                                {author.isFeatured ? 'Remove Featured' : 'Make Featured'}
+                                <Star className={`mr-2 h-4 w-4 ${author.is_featured ? 'fill-current' : ''}`} />
+                                {author.is_featured ? 'Remove Featured' : 'Make Featured'}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => setDeleteModal({ isOpen: true, authorToDelete: author })}

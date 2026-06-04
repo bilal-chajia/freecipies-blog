@@ -178,7 +178,7 @@ export interface GeneratedRecipe {
 export interface GeneratedContent {
     label: string;
     headline?: string;
-    shortDescription: string;
+    short_description: string;
     metaTitle?: string;
     metaDescription?: string;
     recipe?: GeneratedRecipe;

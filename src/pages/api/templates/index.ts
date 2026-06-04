@@ -16,9 +16,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
         }
 
         const url = new URL(request.url);
-        const isActive = url.searchParams.get('is_active') !== 'false';
+        const is_active = url.searchParams.get('is_active') !== 'false';
 
-        const templates = await getTemplates(env.DB, { activeOnly: isActive });
+        const templates = await getTemplates(env.DB, { activeOnly: is_active });
         
         const { body, status, headers } = formatSuccessResponse(templates);
         return new Response(body, { status, headers });

@@ -4,7 +4,7 @@ import { buildCardImage } from '../../../shared/images/image-contract';
 
 // --- Input Interfaces ---
 export interface AuthorCacheInput {
-  authorId: number | null;
+  author_id: number | null;
   authorName: string | null;
   authorSlug: string | null;
   authorAvatar: string | null; // serialized avatar images_json
@@ -14,8 +14,8 @@ export interface AuthorCacheInput {
 }
 
 export interface CategoryCacheInput {
-  categoryId: number | null;
-  categoryIdValue: number | null;
+  category_id: number | null;
+  category_id_value: number | null;
   categoryLabel: string | null;
   categorySlug: string | null;
   categoryColor: string | null;
@@ -26,10 +26,10 @@ export interface CardCacheInput {
   type: string;
   slug: string;
   headline: string;
-  shortDescription: string | null;
-  imagesJson: string | null;
-  readingTimeMinutes: number | null;
-  roundupJson: string | null;
+  short_description: string | null;
+  images_json: string | null;
+  reading_time_minutes: number | null;
+  roundup_json: string | null;
 }
 
 // --- Output Payload Interfaces ---
@@ -85,8 +85,8 @@ export interface CardCachePayload {
 }
 
 // --- Private Helpers Migrated ---
-export function buildAuthorSocialLinks(bioJson: unknown) {
-  const bio = safeParseJson<any>(bioJson) || {};
+export function buildAuthorSocialLinks(bio_json: unknown) {
+  const bio = safeParseJson<any>(bio_json) || {};
   const socials = Array.isArray(bio.socials) ? bio.socials : [];
   return socials
     .filter((item: any) => item && typeof item === 'object' && item.network && item.url)
@@ -101,10 +101,10 @@ export function buildAuthorSocialLinks(bioJson: unknown) {
 
 // --- Public Domain Builders ---
 export function buildAuthorCache(input: AuthorCacheInput): AuthorCachePayload | null {
-  if (!input.authorId) return null;
+  if (!input.author_id) return null;
   const authorImages = safeParseJson<any>(input.authorAvatar) || {};
   return {
-    id: input.authorId,
+    id: input.author_id,
     name: input.authorName,
     slug: input.authorSlug,
     job_title: input.authorRole || null,
@@ -115,7 +115,7 @@ export function buildAuthorCache(input: AuthorCacheInput): AuthorCachePayload | 
 }
 
 export function buildCategoryCache(input: CategoryCacheInput): CategoryCachePayload | null {
-  const id = input.categoryIdValue ?? input.categoryId;
+  const id = input.category_id_value ?? input.category_id;
   if (!id) return null;
   return {
     id,
@@ -138,10 +138,10 @@ export function buildTagsCache(
 
 export function buildRecipeCache(
   type: string,
-  recipeJson: string | null
+  recipe_json: string | null
 ) {
-  if (type !== 'recipe' || !recipeJson) return null;
-  const parsed = safeParseJson<any>(recipeJson);
+  if (type !== 'recipe' || !recipe_json) return null;
+  const parsed = safeParseJson<any>(recipe_json);
   const recipe = normalizeRecipeJson(parsed);
   if (!recipe) return null;
 
@@ -149,9 +149,9 @@ export function buildRecipeCache(
     ?? (((recipe.prep ?? 0) + (recipe.cook ?? 0)) || null);
 
   return {
-    recipeJson: JSON.stringify(recipe),
-    cachedRecipeJson: buildCachedRecipeJson(recipe, type),
-    cachedRatingJson: buildCachedRatingJson(recipe),
+    recipe_json: JSON.stringify(recipe),
+    cached_recipe_json: buildCachedRecipeJson(recipe, type),
+    cached_rating_json: buildCachedRatingJson(recipe),
     totalTimeMinutes,
     recipeRaw: recipe,
   };
@@ -163,8 +163,8 @@ export function buildCardCache(
     author: AuthorCachePayload | null;
     category: CategoryCachePayload | null;
     tags: TagCachePayload[];
-    recipe: any | null;       // cachedRecipeJson payload
-    rating: any | null;       // cachedRatingJson payload
+    recipe: any | null;       // cached_recipe_json payload
+    rating: any | null;       // cached_rating_json payload
     totalTimeMinutes: number | null;
     recipeRaw?: any;          // raw normalized recipe
   }
@@ -174,8 +174,8 @@ export function buildCardCache(
     type: input.type,
     slug: input.slug,
     headline: input.headline,
-    short_description: input.shortDescription,
-    image: buildCardImage(input.imagesJson, input.headline),
+    short_description: input.short_description,
+    image: buildCardImage(input.images_json, input.headline),
     category: deps.category,
     author: deps.author ? {
       id: deps.author.id,
@@ -196,9 +196,9 @@ export function buildCardCache(
     };
     card.rating = deps.rating && Object.keys(deps.rating).length ? deps.rating : null;
   } else if (input.type === 'article') {
-    card.reading_time = input.readingTimeMinutes || null;
+    card.reading_time = input.reading_time_minutes || null;
   } else if (input.type === 'roundup') {
-    const roundupData = safeParseJson<any>(input.roundupJson);
+    const roundupData = safeParseJson<any>(input.roundup_json);
     card.item_count = roundupData?.items?.length ?? 0;
   }
 

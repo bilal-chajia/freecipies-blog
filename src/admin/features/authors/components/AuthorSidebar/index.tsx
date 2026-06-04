@@ -7,9 +7,9 @@ import SocialLinksSection from './SocialLinksSection';
 
 interface AuthorSidebarProps {
   formData: {
-    workflowStatus?: string;
-    isFeatured?: boolean;
-    sortOrder?: number;
+    workflow_status?: string;
+    is_featured?: boolean;
+    sort_order?: number;
     role?: string;
   };
   onInputChange: (field: string, value: unknown) => void;

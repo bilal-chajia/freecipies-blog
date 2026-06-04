@@ -8,10 +8,10 @@ import type { ContentBlock } from '@modules/articles/types/content-blocks.types'
 import type { AppBlock } from '../types/editor.types';
 
 export interface BlockAdapterContext {
-    recipeJson?: unknown;
-    faqsJson?: unknown;
+    recipe_json?: unknown;
+    faqs_json?: unknown;
     imagesData?: unknown;
-    roundupJson?: unknown;
+    roundup_json?: unknown;
 }
 
 /**

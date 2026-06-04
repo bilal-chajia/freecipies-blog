@@ -37,7 +37,7 @@ type AISettingsProps = {
 
 type GeneratedContent = {
     label?: string;
-    shortDescription?: string;
+    short_description?: string;
     [key: string]: unknown;
 };
 
@@ -244,9 +244,9 @@ export default function AISettings({
                         {generatedContent.label && (
                             <div><strong>Title:</strong> {generatedContent.label}</div>
                         )}
-                        {generatedContent.shortDescription && (
+                        {generatedContent.short_description && (
                             <div className="text-muted-foreground line-clamp-2">
-                                {generatedContent.shortDescription}
+                                {generatedContent.short_description}
                             </div>
                         )}
                     </div>

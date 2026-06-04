@@ -3,7 +3,7 @@ import type { HydratedTag } from "@modules/tags";
 
 type TagCardTag = HydratedTag & {
   headline?: string | null;
-  imageUrl?: string | null;
+  image_url?: string | null;
   imageAlt?: string | null;
 };
 
@@ -20,10 +20,10 @@ const tagUrl = `/tags/${tag.slug}`;
 <a href={tagUrl} class="tag-card">
   <div class="tag-content">
     {
-      tag.imageUrl && (
+      tag.image_url && (
         <div class="tag-image">
           <img
-            src={tag.imageUrl}
+            src={tag.image_url}
             alt={tag.imageAlt || tag.label}
             loading="lazy"
           />

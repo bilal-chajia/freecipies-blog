@@ -14,8 +14,8 @@ describe('migrateEquipment', () => {
         ]);
     });
 
-    it('maps legacy { name, affiliateUrl } items to canonical manual items', () => {
-        const result = migrateEquipment([{ name: 'Whisk', required: false, notes: 'optional', affiliateUrl: 'https://x' }]);
+    it('maps legacy { name, affiliate_url } items to canonical manual items', () => {
+        const result = migrateEquipment([{ name: 'Whisk', required: false, notes: 'optional', affiliate_url: 'https://x' }]);
         expect(result[0]).toMatchObject({
             equipment_id: null,
             label: 'Whisk',

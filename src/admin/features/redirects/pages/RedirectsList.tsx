@@ -24,22 +24,22 @@ const STATUS_CODES = [
 ];
 
 const EMPTY_FORM = {
-    fromPath: '',
-    toPath: '',
-    statusCode: '301',
-    isActive: true,
+    from_path: '',
+    to_path: '',
+    status_code: '301',
+    is_active: true,
     notes: '',
 };
 
 interface RedirectItem {
     id: string | number;
-    fromPath: string;
-    toPath: string;
-    statusCode: number | string;
-    isActive: boolean;
+    from_path: string;
+    to_path: string;
+    status_code: number | string;
+    is_active: boolean;
     notes?: string | null;
-    hitCount?: number;
-    lastHitAt?: string | null;
+    hit_count?: number;
+    last_hit_at?: string | null;
 }
 
 const RedirectsList = () => {
@@ -72,22 +72,22 @@ const RedirectsList = () => {
 
     const filteredItems = items.filter((item) => {
         const matchesSearch =
-            item.fromPath?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.toPath?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.from_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.to_path?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterActive === 'all' || 
-                             (filterActive === 'active' && item.isActive) || 
-                             (filterActive === 'inactive' && !item.isActive);
+        const matchesStatus = filterActive === 'all' ||
+                             (filterActive === 'active' && item.is_active) ||
+                             (filterActive === 'inactive' && !item.is_active);
         return matchesSearch && matchesStatus;
     });
 
     const handleStartEdit = (item: RedirectItem) => {
         setEditingId(item.id);
         setFormData({
-            fromPath: item.fromPath || '',
-            toPath: item.toPath || '',
-            statusCode: String(item.statusCode || '301'),
-            isActive: Boolean(item.isActive),
+            from_path: item.from_path || '',
+            to_path: item.to_path || '',
+            status_code: String(item.status_code || '301'),
+            is_active: Boolean(item.is_active),
             notes: item.notes || '',
         });
         setIsCreatingNew(false);
@@ -106,7 +106,7 @@ const RedirectsList = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.fromPath.trim() || !formData.toPath.trim()) {
+        if (!formData.from_path.trim() || !formData.to_path.trim()) {
             toast.error('Source and Destination paths are required');
             return;
         }
@@ -114,9 +114,10 @@ const RedirectsList = () => {
         try {
             setSaving(true);
             const payload = {
-                ...formData,
-                fromPath: formData.fromPath.trim(),
-                toPath: formData.toPath.trim(),
+                from_path: formData.from_path.trim(),
+                to_path: formData.to_path.trim(),
+                status_code: formData.status_code,
+                is_active: formData.is_active,
                 notes: formData.notes.trim() || null,
             };
 
@@ -142,8 +143,8 @@ const RedirectsList = () => {
 
     const handleToggleActive = async (item: RedirectItem) => {
         try {
-            const updatedStatus = !item.isActive;
-            const res = await redirectsAPI.update(item.id, { isActive: updatedStatus });
+            const updatedStatus = !item.is_active;
+            const res = await redirectsAPI.update(item.id, { is_active: updatedStatus });
             const updated = res.data?.data || res.data;
             setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)));
             toast.success(`Redirect ${updatedStatus ? 'activated' : 'deactivated'}`);
@@ -184,8 +185,8 @@ const RedirectsList = () => {
                 <div className="space-y-1.5">
                     <Label className="text-xs">Source Path (From) *</Label>
                     <Input
-                        value={formData.fromPath}
-                        onChange={(e) => updateField('fromPath', e.target.value)}
+                        value={formData.from_path}
+                        onChange={(e) => updateField('from_path', e.target.value)}
                         placeholder="/old-path-slug"
                         className="h-9"
                     />
@@ -193,8 +194,8 @@ const RedirectsList = () => {
                 <div className="space-y-1.5">
                     <Label className="text-xs">Destination Path (To) *</Label>
                     <Input
-                        value={formData.toPath}
-                        onChange={(e) => updateField('toPath', e.target.value)}
+                        value={formData.to_path}
+                        onChange={(e) => updateField('to_path', e.target.value)}
                         placeholder="/new-excellent-recipe"
                         className="h-9"
                     />
@@ -204,7 +205,7 @@ const RedirectsList = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <Label className="text-xs">Redirect Type</Label>
-                    <Select value={formData.statusCode} onValueChange={(v) => updateField('statusCode', v)}>
+                    <Select value={formData.status_code} onValueChange={(v) => updateField('status_code', v)}>
                         <SelectTrigger className="h-9">
                             <SelectValue />
                         </SelectTrigger>
@@ -217,16 +218,16 @@ const RedirectsList = () => {
                 </div>
                 <div className="flex items-end pb-1.5">
                      <div className="flex items-center gap-2 px-3 py-2 bg-background border rounded-lg w-full h-9">
-                        <Label className="text-xs cursor-pointer flex-1" htmlFor="active-toggle" onClick={() => updateField('isActive', !formData.isActive)}>
-                            Status: {formData.isActive ? 'Active' : 'Inactive'}
+                        <Label className="text-xs cursor-pointer flex-1" htmlFor="active-toggle" onClick={() => updateField('is_active', !formData.is_active)}>
+                            Status: {formData.is_active ? 'Active' : 'Inactive'}
                         </Label>
-                        <button 
+                        <button
                             id="active-toggle"
                             type="button"
-                            onClick={() => updateField('isActive', !formData.isActive)}
-                            className={`size-5 rounded-full flex items-center justify-center transition-colors ${formData.isActive ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'}`}
+                            onClick={() => updateField('is_active', !formData.is_active)}
+                            className={`size-5 rounded-full flex items-center justify-center transition-colors ${formData.is_active ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'}`}
                         >
-                            {formData.isActive ? <Check className="size-3" /> : <X className="size-3" />}
+                            {formData.is_active ? <Check className="size-3" /> : <X className="size-3" />}
                         </button>
                      </div>
                 </div>
@@ -335,19 +336,19 @@ const RedirectsList = () => {
                                 {editingId === item.id ? (
                                     <RedirectForm onCancel={handleCancel} />
                                 ) : (
-                                    <Card className={`group p-3 rounded-lg border border-border/80 shadow-xs transition-all duration-200 ${!item.isActive ? 'opacity-60 grayscale-[0.5] bg-muted/30' : 'bg-card hover:border-border hover:bg-accent/5'}`}>
+                                    <Card className={`group p-3 rounded-lg border border-border/80 shadow-xs transition-all duration-200 ${!item.is_active ? 'opacity-60 grayscale-[0.5] bg-muted/30' : 'bg-card hover:border-border hover:bg-accent/5'}`}>
                                         <div className="flex flex-col md:flex-row md:items-center gap-4">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <Badge className={`rounded-md px-1.5 py-0.5 text-[10px] ${Number(item.statusCode) >= 307 ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}>
-                                                        {item.statusCode}
+                                                    <Badge className={`rounded-md px-1.5 py-0.5 text-[10px] ${Number(item.status_code) >= 307 ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}>
+                                                        {item.status_code}
                                                     </Badge>
                                                     <span className="font-mono text-sm font-bold truncate block flex-1">
-                                                        {item.fromPath}
+                                                        {item.from_path}
                                                     </span>
                                                     <ArrowRightLeft className="size-3 text-muted-foreground shrink-0" />
                                                     <span className="font-mono text-sm text-primary truncate block flex-1">
-                                                        {item.toPath}
+                                                        {item.to_path}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -359,37 +360,37 @@ const RedirectsList = () => {
                                                     )}
                                                     <div className="flex items-center gap-1">
                                                         <Activity className="size-3" />
-                                                        {item.hitCount} hits
+                                                        {item.hit_count} hits
                                                     </div>
-                                                    {item.lastHitAt && (
+                                                    {item.last_hit_at && (
                                                         <div className="flex items-center gap-1">
-                                                            Last: {new Date(item.lastHitAt).toLocaleDateString()}
+                                                            Last: {new Date(item.last_hit_at).toLocaleDateString()}
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
-                                                    className={`h-7 w-7 p-0 rounded-md ${item.isActive ? 'text-emerald-500 bg-emerald-500/10' : 'text-muted-foreground bg-muted'}`}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className={`h-7 w-7 p-0 rounded-md ${item.is_active ? 'text-emerald-500 bg-emerald-500/10' : 'text-muted-foreground bg-muted'}`}
                                                     onClick={() => handleToggleActive(item)}
-                                                    title={item.isActive ? 'Deactivate' : 'Activate'}
+                                                    title={item.is_active ? 'Deactivate' : 'Activate'}
                                                 >
-                                                    {item.isActive ? <Power className="size-3.5" /> : <PowerOff className="size-3.5" />}
+                                                    {item.is_active ? <Power className="size-3.5" /> : <PowerOff className="size-3.5" />}
                                                 </Button>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
                                                     className="h-7 w-7 p-0 rounded-md"
                                                     onClick={() => handleStartEdit(item)}
                                                 >
                                                     <Edit className="size-3.5" />
                                                 </Button>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
                                                     className="h-7 w-7 p-0 rounded-md hover:text-destructive hover:bg-destructive/10"
                                                     onClick={() => setDeleteModal({ isOpen: true, item })}
                                                 >
@@ -410,7 +411,7 @@ const RedirectsList = () => {
                 onClose={() => setDeleteModal({ isOpen: false, item: null })}
                 onConfirm={handleDeleteConfirm}
                 title="Delete Redirect"
-                description={`Are you sure you want to remove the redirect from "${deleteModal.item?.fromPath}"? This cannot be undone.`}
+                description={`Are you sure you want to remove the redirect from "${deleteModal.item?.from_path}"? This cannot be undone.`}
                 confirmText="Delete Rule"
                 cancelText="Cancel"
             />

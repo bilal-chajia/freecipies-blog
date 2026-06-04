@@ -17,40 +17,40 @@ export const authors = sqliteTable('authors', {
   email: text('email').unique().notNull(),
   
   // 2. DISPLAY METADATA
-  jobTitle: text('job_title'),
+  job_title: text('job_title'),
   role: text('role').default('guest'),
   headline: text('headline'),
   subtitle: text('subtitle'),
-  shortDescription: text('short_description').notNull(),
+  short_description: text('short_description').notNull(),
   introduction: text('introduction'),
   
   // 3. VISUALS
-  imagesJson: text('images_json').default('{}'),
+  images_json: text('images_json').default('{}'),
   
   // 4. BIOGRAPHY & SOCIALS
-  bioJson: text('bio_json').default('{}'),
+  bio_json: text('bio_json').default('{}'),
 
   // 5. AI PERSONA
-  personaJson: text('persona_json').default('{}'),
+  persona_json: text('persona_json').default('{}'),
   
   // 6. SEO CONFIGURATION
-  seoJson: text('seo_json').default('{}'),
+  seo_json: text('seo_json').default('{}'),
   
   // 7. SYSTEM & METRICS
-  workflowStatus: text('workflow_status').default('draft'),
-  isFeatured: integer('is_featured', { mode: 'boolean' }).default(false),
-  sortOrder: integer('sort_order').default(0),
-  cachedPostCount: integer('cached_post_count').default(0),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
-  deletedAt: text('deleted_at'),
+  workflow_status: text('workflow_status').default('draft'),
+  is_featured: integer('is_featured', { mode: 'boolean' }).default(false),
+  sort_order: integer('sort_order').default(0),
+  cached_post_count: integer('cached_post_count').default(0),
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  deleted_at: text('deleted_at'),
 }, (table) => [
   index('idx_authors_slug').on(table.slug),
   index('idx_authors_role').on(table.role),
   index('idx_authors_email').on(table.email),
-  index('idx_authors_featured').on(table.isFeatured),
-  index('idx_authors_display').on(table.workflowStatus, table.sortOrder),
-  index('idx_authors_active').on(table.deletedAt),
+  index('idx_authors_featured').on(table.is_featured),
+  index('idx_authors_display').on(table.workflow_status, table.sort_order),
+  index('idx_authors_active').on(table.deleted_at),
 ]);
 
 // Type exports

@@ -65,11 +65,11 @@ describe('useEditorStore', () => {
                 width: 1000,
                 height: 1500,
             };
-            const elementsJson = JSON.stringify([
+            const elements_json = JSON.stringify([
                 { id: 'image-1', type: 'imageSlot', x: 0, y: 0, width: 500, height: 500, rotation: 0, locked: false }
             ]);
 
-            store.loadTemplateToStore(sampleTemplate, elementsJson);
+            store.loadTemplateToStore(sampleTemplate, elements_json);
 
             const updatedState = useEditorStore.getState();
             expect(updatedState.template.name).toBe('Json Loaded Pin');

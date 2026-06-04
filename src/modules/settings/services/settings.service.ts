@@ -105,7 +105,7 @@ export async function upsertSetting(
     await drizzle.update(siteSettings)
       .set({
         value: valueStr,
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         ...(options?.description && { description: options.description }),
         ...(options?.category && { category: options.category }),
         ...(options?.type && { type: options.type }),

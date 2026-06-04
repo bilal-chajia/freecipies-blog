@@ -13,9 +13,9 @@ interface ArticlePreviewProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     formData: Record<string, unknown>;
-    contentJson: string | unknown[];
-    recipeJson?: string | Record<string, unknown>;
-    roundupJson?: string | Record<string, unknown>;
+    content_json: string | unknown[];
+    recipe_json?: string | Record<string, unknown>;
+    roundup_json?: string | Record<string, unknown>;
     imagesData?: Record<string, unknown>;
     categories?: unknown[];
     authors?: unknown[];
@@ -33,9 +33,9 @@ export default function ArticlePreview({
     open,
     onOpenChange,
     formData,
-    contentJson,
-    recipeJson,
-    roundupJson,
+    content_json,
+    recipe_json,
+    roundup_json,
     imagesData,
 }: ArticlePreviewProps) {
     const [device, setDevice] = useState<DeviceType>('desktop');
@@ -49,15 +49,15 @@ export default function ArticlePreview({
         try {
             return JSON.stringify({
                 formData,
-                contentJson,
-                recipeJson,
-                roundupJson,
+                content_json,
+                recipe_json,
+                roundup_json,
                 imagesData,
             });
         } catch {
             return '';
         }
-    }, [formData, contentJson, recipeJson, roundupJson, imagesData]);
+    }, [formData, content_json, recipe_json, roundup_json, imagesData]);
 
     useEffect(() => {
         if (!open) return;
@@ -69,9 +69,9 @@ export default function ArticlePreview({
                 // Combine all form data parts
                 const payload = {
                     ...formData,
-                    contentJson: typeof contentJson === 'string' ? contentJson : JSON.stringify(contentJson || []),
-                    recipeJson: typeof recipeJson === 'string' ? recipeJson : JSON.stringify(recipeJson || {}),
-                    roundupJson: typeof roundupJson === 'string' ? roundupJson : JSON.stringify(roundupJson || {}),
+                    content_json: typeof content_json === 'string' ? content_json : JSON.stringify(content_json || []),
+                    recipe_json: typeof recipe_json === 'string' ? recipe_json : JSON.stringify(recipe_json || {}),
+                    roundup_json: typeof roundup_json === 'string' ? roundup_json : JSON.stringify(roundup_json || {}),
                     imagesData: typeof imagesData === 'string' ? imagesData : JSON.stringify(imagesData || {}),
                 };
 

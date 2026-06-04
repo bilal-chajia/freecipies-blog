@@ -86,7 +86,6 @@ export interface AuthorRowForCredit {
   id: number;
   name: string;
   slug: string;
-  imagesJson?: string | null;
   images_json?: string | null;
 }
 
@@ -253,8 +252,8 @@ export function buildAuthorCreditSnapshot(author: AuthorRowForCredit): StoredAut
     slug: author.slug,
   };
 
-  const imagesJson = author.imagesJson ?? author.images_json ?? null;
-  const images = parseJsonRecord(imagesJson) as AuthorImagesJson | null;
+  const images_json = author.images_json ?? null;
+  const images = parseJsonRecord(images_json) as AuthorImagesJson | null;
   const avatar = normalizeAuthorCreditAvatar(images?.avatar);
   if (avatar) credit.avatar = avatar;
 
@@ -649,7 +648,7 @@ export function applyPatchToSlot(
 }
 
 export function buildCardImage(
-  imagesJson: unknown,
+  images_json: unknown,
   fallbackAlt: string
 ): {
   media_id?: number;
@@ -660,7 +659,7 @@ export function buildCardImage(
     sm: StorageImageVariant;
   };
 } | null {
-  const images = parseJsonRecord(imagesJson) || {};
+  const images = parseJsonRecord(images_json) || {};
   const slot = parseJsonRecord(images.thumbnail ?? images.hero);
   if (!slot) return null;
 
@@ -682,4 +681,3 @@ export function buildCardImage(
     variants: { xs, sm },
   };
 }
-

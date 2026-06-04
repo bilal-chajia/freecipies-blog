@@ -129,9 +129,7 @@ export function transformMenuResponse(menu: MenuConfig): any {
         location: menu.location,
         document: menu.document,
         description: menu.description,
-        createdAt: menu.createdAt,
-        created_at: menu.createdAt,
-        updatedAt: menu.updatedAt,
-        updated_at: menu.updatedAt,
+        created_at: menu.created_at,
+        updated_at: menu.updated_at,
     };
 }

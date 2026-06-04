@@ -61,13 +61,13 @@ export function GutenbergEditorShell({
         categories,
         authors,
         tags,
-        contentJson,
+        content_json,
         setContentJson,
-        recipeJson,
+        recipe_json,
         setRecipeJson,
-        roundupJson,
+        roundup_json,
         setRoundupJson,
-        faqsJson,
+        faqs_json,
         setFaqsJson,
         jsonErrors,
         validateJSON,
@@ -110,8 +110,8 @@ export function GutenbergEditorShell({
 
     // Related content context
     const categorySlug = useMemo(() => 
-        (categories.find((c) => c.id === formData.categoryId)?.slug as string | undefined) || null,
-        [categories, formData.categoryId]
+        (categories.find((c) => c.id === formData.category_id)?.slug as string | undefined) || null,
+        [categories, formData.category_id]
     );
 
     const tagSlugs = useMemo(() => 
@@ -148,8 +148,8 @@ export function GutenbergEditorShell({
         if (aiContent.headline) {
             handleInputChange('headline', aiContent.headline);
         }
-        if (aiContent.shortDescription) {
-            handleInputChange('shortDescription', aiContent.shortDescription);
+        if (aiContent.short_description) {
+            handleInputChange('short_description', aiContent.short_description);
         }
         if (aiContent.metaTitle) {
             handleInputChange('metaTitle', aiContent.metaTitle);
@@ -390,7 +390,7 @@ export function GutenbergEditorShell({
                                     <GutenbergEditorMain
                                         formData={formData as any}
                                         onInputChange={(field, value) => handleInputChange(field as any, value)}
-                                        contentJson={contentJson}
+                                        content_json={content_json}
                                         setContentJson={setContentJson}
                                         validateJSON={validateJSON}
                                         relatedContext={relatedContext}
@@ -405,13 +405,13 @@ export function GutenbergEditorShell({
                                         forceSelectBlockId={forceSelectBlockId}
                                         onForceSelectHandled={handleClearForceSelect}
                                         blockEditorProps={{
-                                            roundupJson,
+                                            roundup_json,
                                             onRoundupChange: (newValue: any) => {
                                                 const nextValue = newValue ?? '';
                                                 setRoundupJson(nextValue);
                                                 validateJSON('roundup', nextValue);
                                             },
-                                            faqsJson,
+                                            faqs_json,
                                             onFaqsChange: (newValue: any) => {
                                                 const nextValue = Array.isArray(newValue)
                                                     ? JSON.stringify(newValue, null, 2)
@@ -428,7 +428,7 @@ export function GutenbergEditorShell({
                                 <GutenbergEditorMain
                                     formData={formData as any}
                                     onInputChange={(field, value) => handleInputChange(field as any, value)}
-                                    contentJson={contentJson}
+                                    content_json={content_json}
                                     setContentJson={setContentJson}
                                     validateJSON={validateJSON}
                                     relatedContext={relatedContext}
@@ -444,13 +444,13 @@ export function GutenbergEditorShell({
                                     blockEditorProps={
                                         contentType === 'recipe'
                                             ? {
-                                                recipeJson,
+                                                recipe_json,
                                                 onRecipeChange: (newValue: any) => {
                                                     const nextValue = newValue ?? '';
                                                     setRecipeJson(nextValue);
                                                     validateJSON('recipe', nextValue);
                                                 },
-                                                faqsJson,
+                                                faqs_json,
                                                 onFaqsChange: (newValue: any) => {
                                                     const nextValue = Array.isArray(newValue)
                                                         ? JSON.stringify(newValue, null, 2)
@@ -462,7 +462,7 @@ export function GutenbergEditorShell({
                                                 onImagesChange: setImagesData,
                                             }
                                             : {
-                                                faqsJson,
+                                                faqs_json,
                                                 onFaqsChange: (newValue: any) => {
                                                     const nextValue = Array.isArray(newValue)
                                                         ? JSON.stringify(newValue, null, 2)
@@ -507,7 +507,7 @@ export function GutenbergEditorShell({
                                     relatedContext={relatedContext}
                                     imagesData={imagesData}
                                     onImagesChange={(next) => setImagesData(next as Record<string, unknown>)}
-                                    recipeData={contentType === 'recipe' ? recipeJson : undefined}
+                                    recipeData={contentType === 'recipe' ? recipe_json : undefined}
                                     onRecipeChange={
                                         contentType === 'recipe'
                                             ? (newValue: any) => {
@@ -543,9 +543,9 @@ export function GutenbergEditorShell({
                 open={previewOpen}
                 onOpenChange={setPreviewOpen}
                 formData={formData as any}
-                contentJson={contentJson}
-                recipeJson={contentType === 'recipe' ? recipeJson : undefined}
-                roundupJson={contentType === 'roundup' ? roundupJson : undefined}
+                content_json={content_json}
+                recipe_json={contentType === 'recipe' ? recipe_json : undefined}
+                roundup_json={contentType === 'roundup' ? roundup_json : undefined}
                 imagesData={imagesData as any}
                 categories={categories}
                 authors={authors}

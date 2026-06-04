@@ -7,7 +7,7 @@ export type StructureItem = {
   type: string;
   label?: string;
   icon?: LucideIcon;
-  parentId?: string | null;
+  parent_id?: string | null;
   level?: number;
   depth?: number;
 };

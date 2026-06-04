@@ -423,8 +423,8 @@ describe('BlockEditor hydrated marker blocks', () => {
         ],
       },
       {
-        recipeJson: '{"ingredients":[{"group_title":"Main","items":[{"name":"Avocado"}]}]}',
-        faqsJson: '{"heading":"Recipe FAQs","items":[{"question":"Can I prep it?","answer":"Yes."}]}',
+        recipe_json: '{"ingredients":[{"group_title":"Main","items":[{"name":"Avocado"}]}]}',
+        faqs_json: '{"heading":"Recipe FAQs","items":[{"question":"Can I prep it?","answer":"Yes."}]}',
         imagesData: {
           content_images: {
             'body-image-1': {
@@ -444,7 +444,7 @@ describe('BlockEditor hydrated marker blocks', () => {
     expect(blocks?.[0]).toMatchObject({
       id: 'recipe-marker',
       type: 'mainRecipe',
-      props: { recipeJson: '{"ingredients":[{"group_title":"Main","items":[{"name":"Avocado"}]}]}' },
+      props: { recipe_json: '{"ingredients":[{"group_title":"Main","items":[{"name":"Avocado"}]}]}' },
     });
     expect(blocks?.[1]).toMatchObject({
       id: 'faq-marker',
@@ -484,7 +484,7 @@ describe('BlockEditor hydrated marker blocks', () => {
         type: 'mainRecipe',
         props: {
           title: 'Editor display title',
-          recipeJson: '{"ingredients":[]}',
+          recipe_json: '{"ingredients":[]}',
         },
         content: [],
         children: [],
@@ -502,7 +502,7 @@ describe('BlockEditor hydrated marker blocks', () => {
         id: 'faq-marker',
         type: 'faqSection',
         props: {
-          faqsJson: '[{"question":"Editor only","answer":"No save"}]',
+          faqs_json: '[{"question":"Editor only","answer":"No save"}]',
         },
         content: [],
         children: [],

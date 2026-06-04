@@ -181,7 +181,7 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
 
         onUpdate({
             ...element,
-            imageUrl: media.url,
+            image_url: media.url,
             sourceType: 'upload',
             name: media.alt_text || element.name || 'Image',
         } as EditorElement);
@@ -299,12 +299,12 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                     <Input
                                         value={el.binding || ''}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('binding', e.target.value)}
-                                        placeholder="e.g. title, recipeJson.prep"
+                                        placeholder="e.g. title, recipe_json.prep"
                                     />
                                     <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded mt-1">
                                         <p className="mb-1">Common bindings:</p>
                                         <div className="flex flex-wrap gap-1">
-                                            {['title', 'categoryLabel', 'recipeJson.prep', 'recipeJson.servings', 'recipeJson.difficulty'].map(b => (
+                                            {['title', 'categoryLabel', 'recipe_json.prep', 'recipe_json.servings', 'recipe_json.difficulty'].map(b => (
                                                 <button
                                                     key={b}
                                                     type="button"
@@ -736,10 +736,10 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
 
                                     {el.sourceType === 'upload' && (
                                         <div className="pt-2">
-                                            {el.imageUrl && (
+                                            {el.image_url && (
                                                 <div className="mb-2 rounded overflow-hidden aspect-video relative group border border-zinc-700">
                                                     <img
-                                                        src={el.imageUrl}
+                                                        src={el.image_url}
                                                         alt="Selected"
                                                         className="w-full h-full object-cover"
                                                     />
@@ -751,7 +751,7 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                                 onClick={() => setMediaDialogOpen(true)}
                                             >
                                                 <Upload className="w-4 h-4 mr-2" />
-                                                {el.imageUrl ? 'Change Image' : 'Select Image'}
+                                                {el.image_url ? 'Change Image' : 'Select Image'}
                                             </Button>
                                         </div>
                                     )}
@@ -837,7 +837,7 @@ const AddElementPanel: React.FC<AddElementPanelProps> = ({ onAddElement }) => {
             x: 250,
             y: 250,
             sourceType: 'upload',
-            imageUrl: media.url,
+            image_url: media.url,
             name: media.alt_text || 'Image'
         });
     };

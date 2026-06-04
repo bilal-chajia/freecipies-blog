@@ -6,7 +6,7 @@
  * for all article types. Called once at save time by
  * `refreshArticleCaches()` and stored in `articles.jsonld_json`.
  *
- * The frontend reads `jsonldJson` directly via SEO.astro —
+ * The frontend reads `jsonld_json` directly via SEO.astro —
  * no per-page reconstruction needed.
  *
  * Supported schemas:
@@ -60,15 +60,15 @@ export interface ArticleRow {
     type: string;
     headline: string;
     slug: string;
-    shortDescription?: string | null;
-    publishedAt?: string | null;
-    updatedAt?: string | null;
-    recipeJson?: string | object | null;
-    roundupJson?: string | object | null;
-    imagesJson?: string | object | null;
-    faqsJson?: string | unknown[] | object | null;
-    cachedAuthorJson?: string | object | null;
-    cachedCategoryJson?: string | object | null;
+    short_description?: string | null;
+    published_at?: string | null;
+    updated_at?: string | null;
+    recipe_json?: string | object | null;
+    roundup_json?: string | object | null;
+    images_json?: string | object | null;
+    faqs_json?: string | unknown[] | object | null;
+    cached_author_json?: string | object | null;
+    cached_category_json?: string | object | null;
 }
 
 /** Output shape — array of JSON-LD objects */
@@ -93,7 +93,7 @@ function makePublisher(siteUrl: string) {
 }
 
 function makeBreadcrumbSchema(article: ArticleRow, siteUrl: string): Record<string, unknown> {
-    const category = safeParseJson<CachedCategory>(article.cachedCategoryJson);
+    const category = safeParseJson<CachedCategory>(article.cached_category_json);
     const elements: Record<string, unknown>[] = [
         {
             '@type': 'ListItem',
@@ -171,7 +171,7 @@ function schemaNutrition(nutrition: Record<string, unknown>): Record<string, unk
  * Build FAQPage schema from faqs array.
  * Returns null if no FAQs to emit.
  */
-function normalizeFaqItems(input: ArticleRow['faqsJson']): Array<{ question: string; answer: string }> {
+function normalizeFaqItems(input: ArticleRow['faqs_json']): Array<{ question: string; answer: string }> {
     const parsed = typeof input === 'string'
         ? safeParseJson<any>(input)
         : input;
@@ -189,7 +189,7 @@ function normalizeFaqItems(input: ArticleRow['faqsJson']): Array<{ question: str
         .filter((faq: { question: string; answer: string }) => faq.question.trim() && faq.answer.trim());
 }
 
-function buildFaqSchema(faqsInput: ArticleRow['faqsJson']): Record<string, unknown> | null {
+function buildFaqSchema(faqsInput: ArticleRow['faqs_json']): Record<string, unknown> | null {
     const faqs = normalizeFaqItems(faqsInput);
     if (faqs.length === 0) return null;
 
@@ -217,7 +217,7 @@ function buildFaqSchema(faqsInput: ArticleRow['faqsJson']): Record<string, unkno
  */
 function generateArticleJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutput {
     const schemas: JsonLdOutput = [];
-    const author = safeParseJson<Record<string, unknown>>(article.cachedAuthorJson as string);
+    const author = safeParseJson<Record<string, unknown>>(article.cached_author_json as string);
     const publisher = makePublisher(siteUrl);
     const canonicalUrl = `${siteUrl}/articles/${article.slug}`;
 
@@ -226,9 +226,9 @@ function generateArticleJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
         '@context': 'https://schema.org',
         '@type': 'Article',
         headline: article.headline,
-        description: article.shortDescription || undefined,
-        datePublished: article.publishedAt || undefined,
-        dateModified: article.updatedAt || article.publishedAt || undefined,
+        description: article.short_description || undefined,
+        datePublished: article.published_at || undefined,
+        dateModified: article.updated_at || article.published_at || undefined,
         author: {
             '@type': 'Person',
             name: (author?.name as string) || 'SaaS Blog Team',
@@ -242,7 +242,7 @@ function generateArticleJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
     });
 
     // FAQ overlay — merge into Article or emit separately
-    const faqSchema = buildFaqSchema(article.faqsJson);
+    const faqSchema = buildFaqSchema(article.faqs_json);
     if (faqSchema) {
         // Google supports FAQPage as standalone or merged into Article
         // We merge mainEntity into the Article schema
@@ -267,9 +267,9 @@ function generateArticleJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
 function generateRecipeJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutput {
     const schemas: JsonLdOutput = [];
 
-    const recipeData = normalizeRecipeJson(safeParseJson<RecipeJson>(article.recipeJson as string) || {});
-    const imagesData = safeParseJson<JsonImages>(article.imagesJson as string) || {};
-    const author = safeParseJson<Record<string, unknown>>(article.cachedAuthorJson as string);
+    const recipeData = normalizeRecipeJson(safeParseJson<RecipeJson>(article.recipe_json as string) || {});
+    const imagesData = safeParseJson<JsonImages>(article.images_json as string) || {};
+    const author = safeParseJson<Record<string, unknown>>(article.cached_author_json as string);
     const publisher = makePublisher(siteUrl);
     const canonicalUrl = `${siteUrl}/recipes/${article.slug}`;
 
@@ -315,7 +315,7 @@ function generateRecipeJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutpu
             '@type': 'VideoObject',
             name: recipeData.video.name,
             description: recipeData.video.description,
-            thumbnailUrl: resolveImageSlotUrl(recipeData.video.thumbnail as any) || undefined,
+            thumbnail_url: resolveImageSlotUrl(recipeData.video.thumbnail as any) || undefined,
             contentUrl: recipeData.video.content_url,
             embedUrl: recipeData.video.embed_url,
             duration: recipeData.video.duration,
@@ -328,15 +328,15 @@ function generateRecipeJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutpu
         '@context': 'https://schema.org',
         '@type': 'Recipe',
         name: article.headline,
-        description: article.shortDescription || undefined,
+        description: article.short_description || undefined,
         image: images.length > 0 ? images : undefined,
         author: {
             '@type': 'Person',
             name: (author?.name as string) || 'SaaS Blog Team',
             ...(typeof author?.slug === 'string' ? { url: `${siteUrl}/authors/${author.slug}` } : {}),
         },
-        datePublished: article.publishedAt || undefined,
-        dateModified: article.updatedAt || article.publishedAt || undefined,
+        datePublished: article.published_at || undefined,
+        dateModified: article.updated_at || article.published_at || undefined,
         prepTime: minutesToIsoDuration(recipeData.prep) || undefined,
         cookTime: minutesToIsoDuration(recipeData.cook) || undefined,
         totalTime: minutesToIsoDuration(
@@ -360,7 +360,7 @@ function generateRecipeJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutpu
     };
 
     // FAQ as subjectOf (Google Recipe spec)
-    const faqSchema = buildFaqSchema(article.faqsJson);
+    const faqSchema = buildFaqSchema(article.faqs_json);
     if (faqSchema) {
         schema.subjectOf = faqSchema;
     }
@@ -382,10 +382,10 @@ function generateRecipeJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutpu
 function generateRoundupJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutput {
     const schemas: JsonLdOutput = [];
 
-    const roundupData = safeParseJson<RoundupJson>(article.roundupJson as string)
+    const roundupData = safeParseJson<RoundupJson>(article.roundup_json as string)
         || { items: [], list_type: 'ItemList' };
-    const imagesData = safeParseJson<JsonImages>(article.imagesJson as string) || {};
-    const author = safeParseJson<Record<string, unknown>>(article.cachedAuthorJson as string);
+    const imagesData = safeParseJson<JsonImages>(article.images_json as string) || {};
+    const author = safeParseJson<Record<string, unknown>>(article.cached_author_json as string);
 
     // Main image
     const hero = imagesData?.hero;
@@ -399,7 +399,7 @@ function generateRoundupJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
         '@context': 'https://schema.org',
         '@type': 'ItemList',
         name: article.headline,
-        description: article.shortDescription || undefined,
+        description: article.short_description || undefined,
         image: mainImage || undefined,
         numberOfItems: roundupData.items?.length || 0,
         itemListElement: itemList.itemListElement,
@@ -408,14 +408,14 @@ function generateRoundupJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
             name: (author?.name as string) || 'SaaS Blog Team',
             ...(typeof author?.slug === 'string' ? { url: `${siteUrl}/authors/${author.slug}` } : {}),
         },
-        datePublished: article.publishedAt || undefined,
-        dateModified: article.updatedAt || article.publishedAt || undefined,
+        datePublished: article.published_at || undefined,
+        dateModified: article.updated_at || article.published_at || undefined,
     };
 
     schemas.push(schema);
 
     // FAQ overlay for roundups
-    const faqSchema = buildFaqSchema(article.faqsJson);
+    const faqSchema = buildFaqSchema(article.faqs_json);
     if (faqSchema) {
         schemas.push({
             '@context': 'https://schema.org',
@@ -446,7 +446,7 @@ function generateRoundupJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutp
  * @example
  * const schemas = generateJsonLd(article, 'https://saas-blog.com');
  * // Store as JSON string in DB
- * updateData.jsonldJson = JSON.stringify(schemas);
+ * updateData.jsonld_json = JSON.stringify(schemas);
  */
 export function generateJsonLd(article: ArticleRow, siteUrl: string): JsonLdOutput {
     switch (article.type) {

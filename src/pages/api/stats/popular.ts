@@ -28,11 +28,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
         const articles = (result || []).map((a: Record<string, unknown>) => {
                 // Extract hero image URL from images_json
-                let imageUrl = '';
+                let image_url = '';
                 try {
-                    const imagesJson = typeof a.images_json === 'string' ? JSON.parse(a.images_json) : (a.images_json || {});
-                    const images = imagesJson as Record<string, any>;
-                    imageUrl = resolveVariantUrl(images?.hero?.variants?.md || images?.hero?.variants?.sm) || '';
+                    const images_json = typeof a.images_json === 'string' ? JSON.parse(a.images_json) : (a.images_json || {});
+                    const images = images_json as Record<string, any>;
+                    image_url = resolveVariantUrl(images?.hero?.variants?.md || images?.hero?.variants?.sm) || '';
                 } catch { }
             
             return {
@@ -40,7 +40,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 slug: a.slug,
                 title: a.label,
                 type: a.type,
-                imageUrl,
+                image_url,
                 views: a.view_count || 0,
                 category: a.category_label,
                 categorySlug: a.category_slug,

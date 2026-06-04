@@ -11,24 +11,24 @@ export const prerender = false;
 type JsonLdArticle = Parameters<typeof generateJsonLd>[0];
 
 function toJsonLdArticle(article: NonNullable<Awaited<ReturnType<typeof getArticleBySlug>>>): JsonLdArticle {
-    const recipeJson = article.type === 'recipe'
-        ? (article.recipeJson ?? undefined)
+    const recipe_json = article.type === 'recipe'
+        ? (article.recipe_json ?? undefined)
         : undefined;
-    const roundupJson = article.type === 'roundup'
-        ? (article.roundupJson ?? undefined)
+    const roundup_json = article.type === 'roundup'
+        ? (article.roundup_json ?? undefined)
         : undefined;
 
     return {
         ...article,
-        shortDescription: article.shortDescription ?? undefined,
-        publishedAt: article.publishedAt ?? undefined,
-        updatedAt: article.updatedAt ?? undefined,
-        recipeJson,
-        roundupJson,
-        imagesJson: article.imagesJson ?? undefined,
-        faqsJson: article.faqsJson ?? undefined,
-        cachedAuthorJson: article.cachedAuthorJson ?? undefined,
-        cachedCategoryJson: article.cachedCategoryJson ?? undefined,
+        short_description: article.short_description ?? undefined,
+        published_at: article.published_at ?? undefined,
+        updated_at: article.updated_at ?? undefined,
+        recipe_json,
+        roundup_json,
+        images_json: article.images_json ?? undefined,
+        faqs_json: article.faqs_json ?? undefined,
+        cached_author_json: article.cached_author_json ?? undefined,
+        cached_category_json: article.cached_category_json ?? undefined,
     };
 }
 
@@ -56,7 +56,7 @@ export const GET: APIRoute = async ({ params, url }) => {
 
         // Generate JSON-LD (prefer pre-generated, fallback to on-the-fly)
         const baseUrl = `${url.protocol}//${url.host}`;
-        const cachedJsonLd = parseJsonLdArray(article.jsonldJson);
+        const cachedJsonLd = parseJsonLdArray(article.jsonld_json);
         const jsonLd = cachedJsonLd.length > 0
             ? cachedJsonLd
             : generateJsonLd(toJsonLdArticle(article), baseUrl);

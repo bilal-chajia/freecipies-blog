@@ -15,7 +15,7 @@ describe('json contract helpers', () => {
         ratingCount: 12,
       },
       items: [
-        { articleId: 42, externalUrl: null },
+        { article_id: 42, externalUrl: null },
       ],
     })).toEqual({
       recipe_yield: '4 servings',

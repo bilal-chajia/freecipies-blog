@@ -8,15 +8,15 @@ interface Props {
 
 const { category } = Astro.props;
 
-const hero = extractImage(category.imagesJson, "hero", 1200);
-const thumbnail = extractImage(category.imagesJson, "thumbnail", 720);
-const slotName = hero.imageUrl ? "hero" : "thumbnail";
-const selected = hero.imageUrl ? hero : thumbnail;
-const srcSet = getImageSrcSet(category.imagesJson, slotName);
+const hero = extractImage(category.images_json, "hero", 1200);
+const thumbnail = extractImage(category.images_json, "thumbnail", 720);
+const slotName = hero.image_url ? "hero" : "thumbnail";
+const selected = hero.image_url ? hero : thumbnail;
+const srcSet = getImageSrcSet(category.images_json, slotName);
 const image = {
   url:
-    selected.imageUrl ||
-    category.imageUrl ||
+    selected.image_url ||
+    category.image_url ||
     "https://images.unsplash.com/photo-1556910103-1c02745a30bf?w=800&q=80",
   alt: selected.imageAlt || category.imageAlt || category.label,
   width: selected.imageWidth || category.imageWidth || 800,
@@ -46,7 +46,7 @@ const image = {
 
     {/* Badge - Top Right */}
     {
-      category.isFeatured && (
+      category.is_featured && (
         <span class="card-badge">
           <svg viewBox="0 0 20 20" fill="currentColor">
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -62,7 +62,7 @@ const image = {
         {category.label}
       </h3>
       <p class="card-description">
-        {category.shortDescription}
+        {category.short_description}
       </p>
     </div>
 

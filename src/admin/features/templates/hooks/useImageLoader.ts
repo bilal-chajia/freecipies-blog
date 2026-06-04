@@ -194,14 +194,14 @@ export function useImageLoader({
         continue;
       }
 
-      // Priority: 1) customImages, 2) binding, 3) static imageUrl
+      // Priority: 1) customImages, 2) binding, 3) static image_url
       const customUrl = articleData?.customImages?.[el.id];
       let boundUrl: string | null = null;
       if (el.binding && articleData) {
         const resolved = getValue(articleData, el.binding);
         if (typeof resolved === 'string') boundUrl = resolved;
       }
-      const rawUrl = customUrl || boundUrl || el.imageUrl;
+      const rawUrl = customUrl || boundUrl || el.image_url;
 
       if (rawUrl) {
         const proxied = getProxiedUrl(rawUrl);

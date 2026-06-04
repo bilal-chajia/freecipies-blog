@@ -11,7 +11,7 @@ import { useCustomBlock } from './useCustomBlock';
  * MainRecipeBlock
  * 
  * A BlockNote custom block that renders the full RecipeBuilder.
- * Recipe data is stored directly in block props (recipeJson string).
+ * Recipe data is stored directly in block props (recipe_json string).
  * No context needed — self-contained block.
  */
 export const MainRecipeBlock = createReactBlockSpec(
@@ -20,21 +20,21 @@ export const MainRecipeBlock = createReactBlockSpec(
     propSchema: {
       // Recipe data stored as JSON string in block props.
       // Migrated from RecipeDataContext — block is now self-contained.
-      recipeJson: { default: '' },
+      recipe_json: { default: '' },
     },
     content: "none",
   },
   {
     render: (props) => {
       const { block, editor } = props;
-      const { recipeJson, onRecipeChange, imagesData, onImagesChange } = useBlockEditorSourceData();
-      // Source-data JSON (recipeJson) is the single source of truth (P6).
-      // block.props.recipeJson is a transient hydration seed only and is never
+      const { recipe_json, onRecipeChange, imagesData, onImagesChange } = useBlockEditorSourceData();
+      // Source-data JSON (recipe_json) is the single source of truth (P6).
+      // block.props.recipe_json is a transient hydration seed only and is never
       // read back — falling back to it would resurrect a stale recipe.
-      const currentRecipeJson = typeof recipeJson === 'string'
-        ? recipeJson
-        : recipeJson
-          ? JSON.stringify(recipeJson)
+      const currentRecipeJson = typeof recipe_json === 'string'
+        ? recipe_json
+        : recipe_json
+          ? JSON.stringify(recipe_json)
           : '{}';
       const {
         isSelected, selectBlock,

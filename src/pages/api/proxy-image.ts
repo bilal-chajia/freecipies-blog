@@ -44,11 +44,11 @@ export const GET: APIRoute = async ({ request }) => {
 
         // Validate query params with Zod
         const urlObj = new URL(request.url);
-        const { url: imageUrl } = validateQuery(urlObj.searchParams, ProxyImageQuery);
+        const { url: image_url } = validateQuery(urlObj.searchParams, ProxyImageQuery);
 
         let parsed: URL;
         try {
-            parsed = new URL(imageUrl);
+            parsed = new URL(image_url);
         } catch {
             throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid URL', 400);
         }
@@ -64,7 +64,7 @@ export const GET: APIRoute = async ({ request }) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
 
-        const response = await fetch(imageUrl, {
+        const response = await fetch(image_url, {
             signal: controller.signal,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (compatible; ImageProxy/1.0)',

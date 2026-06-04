@@ -24,9 +24,9 @@ const writeBookmarks = (bookmarks: string[]): void => {
   }
 };
 
-const setButtonState = (button: HTMLElement, isActive: boolean): void => {
-  button.dataset.bookmarked = isActive ? 'true' : 'false';
-  button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+const setButtonState = (button: HTMLElement, is_active: boolean): void => {
+  button.dataset.bookmarked = is_active ? 'true' : 'false';
+  button.setAttribute('aria-pressed', is_active ? 'true' : 'false');
 };
 
 const updateButtons = (): void => {

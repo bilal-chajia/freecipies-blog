@@ -43,26 +43,25 @@ type SelectOption = {
     name?: string;
     color?: string | null;
     style_json?: string | Record<string, unknown> | null;
-    styleJson?: string | Record<string, unknown> | null;
     style?: string | Record<string, unknown> | null;
 };
 
 type EditorFormData = Record<string, unknown> & {
-    categoryId?: string | number | null;
-    authorId?: string | number | null;
-    workflowStatus?: string;
-    isFavorite?: boolean;
-    publishedAt?: string;
+    category_id?: string | number | null;
+    author_id?: string | number | null;
+    workflow_status?: string;
+    is_favorite?: boolean;
+    published_at?: string;
     selectedTags?: Array<string | number>;
     metaTitle?: string;
     metaDescription?: string;
     canonicalUrl?: string;
-    imageUrl?: string;
+    image_url?: string;
     imageAlt?: string;
     heroUrl?: string;
     heroAlt?: string;
     headline?: string;
-    shortDescription?: string;
+    short_description?: string;
     tldr?: string;
     introduction?: string;
     summary?: string;
@@ -161,7 +160,7 @@ function ChipSelect({
     );
     const getOptionColor = (option: SelectOption) => {
         if (option?.color) return option.color;
-        const style = option?.style_json ?? option?.styleJson ?? option?.style;
+        const style = option?.style_json ?? option?.style;
         if (!style) return null;
         if (typeof style === 'string') {
             try {
@@ -255,9 +254,9 @@ function StatusSection({
                 </div>
                 <div className="w-[170px] shrink-0">
                     <ChipSelect
-                        value={formData.categoryId}
+                        value={formData.category_id}
                         options={categories || []}
-                        onChange={(value) => onInputChange('categoryId', value)}
+                        onChange={(value) => onInputChange('category_id', value)}
                         placeholder="Select category"
                         searchPlaceholder="Search categories..."
                         buttonClassName="h-8 text-xs w-full"
@@ -272,8 +271,8 @@ function StatusSection({
                 </div>
                 <div className="w-[170px] shrink-0">
                     <Select
-                        value={formData.authorId ? String(formData.authorId) : undefined}
-                        onValueChange={(value) => onInputChange('authorId', value)}
+                        value={formData.author_id ? String(formData.author_id) : undefined}
+                        onValueChange={(value) => onInputChange('author_id', value)}
                     >
                         <SelectTrigger className="h-8 text-xs w-full">
                             <SelectValue placeholder="Select author" />
@@ -296,8 +295,8 @@ function StatusSection({
                 </div>
                 <div className="w-[120px] shrink-0">
                     <Select
-                        value={(formData.workflowStatus as string) || 'draft'}
-                        onValueChange={(val) => onInputChange('workflowStatus', val)}
+                        value={(formData.workflow_status as string) || 'draft'}
+                        onValueChange={(val) => onInputChange('workflow_status', val)}
                     >
                         <SelectTrigger className="h-8 w-full text-xs">
                             <SelectValue placeholder="Status" />
@@ -315,21 +314,21 @@ function StatusSection({
 
             <div className="flex items-center justify-between py-1 gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                    <Star className={cn('w-3.5 h-3.5 text-muted-foreground/70 shrink-0', formData.isFavorite ? 'text-yellow-500 fill-yellow-500' : '')} />
+                    <Star className={cn('w-3.5 h-3.5 text-muted-foreground/70 shrink-0', formData.is_favorite ? 'text-yellow-500 fill-yellow-500' : '')} />
                     <span className="text-xs font-medium text-muted-foreground select-none">Favorite</span>
                 </div>
                 <button
                     type="button"
-                    onClick={() => onInputChange('isFavorite', !formData.isFavorite)}
+                    onClick={() => onInputChange('is_favorite', !formData.is_favorite)}
                     className={cn(
                         'flex items-center justify-center shrink-0',
                         'h-8 w-8 rounded-md transition-colors border border-input/60 cursor-pointer',
-                        formData.isFavorite
+                        formData.is_favorite
                             ? 'text-yellow-500 bg-yellow-50/50 border-yellow-200 hover:bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900/50'
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     )}
                 >
-                    <Star className={cn('h-3.5 w-3.5', formData.isFavorite ? 'fill-current' : '')} />
+                    <Star className={cn('h-3.5 w-3.5', formData.is_favorite ? 'fill-current' : '')} />
                 </button>
             </div>
 
@@ -340,8 +339,8 @@ function StatusSection({
                 </div>
                 <Input
                     type="datetime-local"
-                    value={formData.publishedAt || ''}
-                    onChange={(e) => onInputChange('publishedAt', e.target.value)}
+                    value={formData.published_at || ''}
+                    onChange={(e) => onInputChange('published_at', e.target.value)}
                     className="h-8 text-xs w-[180px] shrink-0"
                 />
             </div>
@@ -453,13 +452,13 @@ function MediaSectionContent({
 }) {
     const featured = extractImage(imagesData as any, 'thumbnail', 720);
     const featuredSrcSet = toAdminSrcSet(getImageSrcSet(imagesData as any, 'thumbnail'));
-    const featuredUrl = toAdminImageUrl(featured.imageUrl || (typeof formData.imageUrl === 'string' ? formData.imageUrl : undefined));
+    const featuredUrl = toAdminImageUrl(featured.image_url || (typeof formData.image_url === 'string' ? formData.image_url : undefined));
     const featuredAlt = (typeof formData.imageAlt === 'string' ? formData.imageAlt : undefined) || featured.imageAlt || 'Featured';
     const featuredStyle = buildImageStyle(featured);
 
     const hero = extractImage(imagesData as any, 'hero', 1200);
     const heroSlotSrcSet = toAdminSrcSet(getImageSrcSet(imagesData as any, 'hero'));
-    const heroUrl = toAdminImageUrl(hero.imageUrl || (typeof formData.heroUrl === 'string' ? formData.heroUrl : undefined));
+    const heroUrl = toAdminImageUrl(hero.image_url || (typeof formData.heroUrl === 'string' ? formData.heroUrl : undefined));
     const heroAlt = (typeof formData.heroAlt === 'string' ? formData.heroAlt : undefined) || hero.imageAlt || 'Hero';
     const heroStyle = buildImageStyle(hero);
 
@@ -605,11 +604,11 @@ function ExcerptsSectionContent({ formData, onInputChange }: { formData: EditorF
                 />
             </div>
             <div className="flex flex-col gap-1.5">
-                <Label htmlFor="shortDescription" className="text-xs font-semibold text-muted-foreground select-none">Short Description</Label>
+                <Label htmlFor="short_description" className="text-xs font-semibold text-muted-foreground select-none">Short Description</Label>
                 <Textarea
-                    id="shortDescription"
-                    value={formData.shortDescription || ''}
-                    onChange={(e) => onInputChange('shortDescription', e.target.value)}
+                    id="short_description"
+                    value={formData.short_description || ''}
+                    onChange={(e) => onInputChange('short_description', e.target.value)}
                     placeholder="Brief description for listings"
                     rows={2}
                     className="text-xs resize-none"

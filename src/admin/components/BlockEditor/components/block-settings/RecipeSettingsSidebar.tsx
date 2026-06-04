@@ -142,7 +142,7 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
     const updateVideo = (field: keyof RecipeVideo, val: string) => {
         const current: RecipeVideo = data.video || { url: '', name: '', duration: '' };
         const next = { ...current, [field]: val };
-        const isEmpty = !next.url && !next.name && !next.description && !next.thumbnailUrl && !next.duration && !next.uploadDate;
+        const isEmpty = !next.url && !next.name && !next.description && !next.thumbnail_url && !next.duration && !next.uploadDate;
         updateField('video', isEmpty ? null : next);
     };
 
@@ -670,8 +670,8 @@ function RecipeSettingsSidebar({ recipe, setRecipe }: RecipeSettingsSidebarProps
                     <div className="space-y-1">
                         <Label className="text-xs">Thumbnail URL</Label>
                         <Input
-                            value={data.video?.thumbnailUrl || ''}
-                            onChange={(e) => updateVideo('thumbnailUrl', e.target.value)}
+                            value={data.video?.thumbnail_url || ''}
+                            onChange={(e) => updateVideo('thumbnail_url', e.target.value)}
                             placeholder="https://.../thumb.jpg"
                             className="h-8 text-sm"
                         />

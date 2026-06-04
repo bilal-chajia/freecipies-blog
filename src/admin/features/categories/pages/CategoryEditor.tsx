@@ -48,12 +48,12 @@ interface CategoryFormData {
   twitterCard: string;
   robots: string;
   noIndex: boolean;
-  shortDescription: string;
+  short_description: string;
   tldr: string;
   imageThumbnail: CategoryImageSlot | null;
   imageHero: CategoryImageSlot | null;
   image?: CategoryImageSlot | null;
-  collectionTitle: string;
+  collection_title: string;
   numEntriesPerPage: number;
   showInNav: boolean;
   showInFooter: boolean;
@@ -64,32 +64,36 @@ interface CategoryFormData {
   showBreadcrumb: boolean;
   showPagination: boolean;
   sortBy: string;
-  sortOrder: string;
+  sort_order: string;
   headerStyle: string;
   featuredArticleId: number | null;
   showFeaturedRecipe: boolean;
   showHeroCta: boolean;
   heroCtaText: string;
   heroCtaLink: string;
-  workflowStatus: string;
-  isFeatured: boolean;
+  workflow_status: string;
+  is_featured: boolean;
   displayOrder: number;
   color: string;
-  parentId: number | null;
+  parent_id: number | null;
   iconSvg: string;
 }
 
-type CategoryRecord = Partial<Omit<CategoryFormData, 'sortOrder'>> & {
+type CategoryRecord = Partial<Omit<CategoryFormData, 'sort_order'>> & {
   id?: number;
-  imageUrl?: string;
+  image_url?: string;
   imageAlt?: string;
   imageWidth?: number;
   imageHeight?: number;
-  imagesJson?: string | Record<string, unknown> | null;
-  shortDescription?: string;
+  images_json?: string | Record<string, unknown> | null;
+  short_description?: string;
   configSortOrder?: string;
-  sortOrder?: string | number;
-  isFavorite?: boolean;
+  sort_order?: string | number;
+  collection_title?: string;
+  workflow_status?: string;
+  is_featured?: boolean;
+  parent_id?: number | null;
+  is_favorite?: boolean;
 };
 
 interface ArticleRecord {
@@ -168,11 +172,11 @@ const CategoryEditor = () => {
     twitterCard: 'summary_large_image',
     robots: '',
     noIndex: false,
-    shortDescription: '',
+    short_description: '',
     tldr: '',
     imageThumbnail: null,
     imageHero: null,
-    collectionTitle: '',
+    collection_title: '',
     numEntriesPerPage: 12,
     showInNav: false,
     showInFooter: false,
@@ -182,19 +186,19 @@ const CategoryEditor = () => {
     showFilters: true,
     showBreadcrumb: true,
     showPagination: true,
-    sortBy: 'publishedAt',
-    sortOrder: 'desc',
+    sortBy: 'published_at',
+    sort_order: 'desc',
     headerStyle: 'hero',
     featuredArticleId: null,
     showFeaturedRecipe: true,
     showHeroCta: true,
     heroCtaText: '',
     heroCtaLink: '',
-    workflowStatus: 'draft',
-    isFeatured: false,
+    workflow_status: 'draft',
+    is_featured: false,
     displayOrder: 0,
     color: '#ff6b35ff',
-    parentId: null,
+    parent_id: null,
     iconSvg: '',
   });
 
@@ -202,11 +206,11 @@ const CategoryEditor = () => {
     "label": "Category Name",
     "slug": "category-slug",
     "headline": "Category Headline",
-    "shortDescription": "Short description for the card.",
+    "short_description": "Short description for the card.",
     "tldr": "Longer summary or TL;DR.",
     "metaTitle": "SEO Meta Title",
     "metaDescription": "SEO Meta Description",
-    "collectionTitle": "Collection Title",
+    "collection_title": "Collection Title",
     "numEntriesPerPage": 12,
     "image": {
       "url": "https://example.com/image.jpg",
@@ -245,7 +249,7 @@ const CategoryEditor = () => {
       return;
     }
 
-    let isActive = true;
+    let is_active = true;
     const timeout = setTimeout(async () => {
       setFeaturedSearchLoading(true);
       setFeaturedSearchError('');
@@ -258,24 +262,24 @@ const CategoryEditor = () => {
         });
         const data = unwrapApiData<unknown>(response, []);
         const items = Array.isArray(data) ? data as ArticleRecord[] : [];
-        if (isActive) {
+        if (is_active) {
           setFeaturedSearchResults(items);
         }
       } catch (err) {
         toast.error('Failed to search recipes');
-        if (isActive) {
+        if (is_active) {
           setFeaturedSearchResults([]);
           setFeaturedSearchError('Search failed');
         }
       } finally {
-        if (isActive) {
+        if (is_active) {
           setFeaturedSearchLoading(false);
         }
       }
     }, 300);
 
     return () => {
-      isActive = false;
+      is_active = false;
       clearTimeout(timeout);
     };
   }, [featuredSearchQuery, formData.showFeaturedRecipe]);
@@ -325,11 +329,11 @@ const CategoryEditor = () => {
 
       if (category) {
         const parsedImages = (() => {
-          if (!category.imagesJson) return {};
+          if (!category.images_json) return {};
           try {
-            return typeof category.imagesJson === 'string'
-              ? JSON.parse(category.imagesJson)
-              : category.imagesJson;
+            return typeof category.images_json === 'string'
+              ? JSON.parse(category.images_json)
+              : category.images_json;
           } catch {
             return {};
           }
@@ -337,8 +341,8 @@ const CategoryEditor = () => {
 
         const imageFromJsonThumbnail = parsedImages?.thumbnail || null;
         const imageFromJsonHero = parsedImages?.hero || null;
-        const legacyImage = category.imageUrl ? {
-          url: category.imageUrl,
+        const legacyImage = category.image_url ? {
+          url: category.image_url,
           alt: category.imageAlt || '',
           width: category.imageWidth || null,
           height: category.imageHeight || null,
@@ -357,12 +361,12 @@ const CategoryEditor = () => {
           twitterCard: category.twitterCard || 'summary_large_image',
           robots: category.robots || '',
           noIndex: category.noIndex || false,
-          shortDescription: category.shortDescription || '',
+          short_description: category.short_description || '',
           tldr: category.tldr || '',
           // Map flat image properties back to nested object for UI
           imageThumbnail: imageFromJsonThumbnail || legacyImage,
           imageHero: imageFromJsonHero || null,
-          collectionTitle: category.collectionTitle || '',
+          collection_title: category.collection_title || '',
           numEntriesPerPage: category.numEntriesPerPage || 12,
           showInNav: category.showInNav || false,
           showInFooter: category.showInFooter || false,
@@ -372,19 +376,19 @@ const CategoryEditor = () => {
           showFilters: category.showFilters ?? true,
           showBreadcrumb: category.showBreadcrumb ?? true,
           showPagination: category.showPagination ?? true,
-          sortBy: category.sortBy || 'publishedAt',
-          sortOrder: String(category.configSortOrder || category.sortOrder || 'desc'),
+          sortBy: category.sortBy || 'published_at',
+          sort_order: String(category.configSortOrder || category.sort_order || 'desc'),
           headerStyle: category.headerStyle || 'hero',
           featuredArticleId: category.featuredArticleId ?? null,
           showFeaturedRecipe: category.showFeaturedRecipe ?? true,
           showHeroCta: category.showHeroCta ?? true,
           heroCtaText: category.heroCtaText || '',
           heroCtaLink: category.heroCtaLink || '',
-          workflowStatus: category.workflowStatus || 'draft',
-          isFeatured: category.isFeatured || category.isFavorite || false,
-          displayOrder: Number.isFinite(Number(category.sortOrder)) ? Number(category.sortOrder) : 0,
+          workflow_status: category.workflow_status || 'draft',
+          is_featured: category.is_featured || category.is_favorite || false,
+          displayOrder: Number.isFinite(Number(category.sort_order)) ? Number(category.sort_order) : 0,
           color: category.color || '#ff6b35ff',
-          parentId: category.parentId ?? null,
+          parent_id: category.parent_id ?? null,
           iconSvg: category.iconSvg || '',
         });
 
@@ -474,7 +478,7 @@ const CategoryEditor = () => {
       setSaving(true);
       setError('');
 
-      if (!formData.label || !formData.slug || !formData.shortDescription) {
+      if (!formData.label || !formData.slug || !formData.short_description) {
         setError('Label, slug, and short description are required');
         setSaving(false);
         return;
@@ -494,7 +498,7 @@ const CategoryEditor = () => {
         showBreadcrumb,
         showPagination,
         sortBy,
-        sortOrder,
+        sort_order,
         headerStyle,
         featuredArticleId,
         showFeaturedRecipe,
@@ -502,19 +506,28 @@ const CategoryEditor = () => {
         heroCtaText,
         heroCtaLink,
         iconSvg,
+        short_description,
+        collection_title,
+        workflow_status,
+        is_featured,
+        parent_id,
         ...restData
       } = formData;
       const categoryData = {
         ...restData,
-        sortOrder: displayOrder, // Map frontend displayOrder to backend sortOrder (numeric)
-        imagesJson: JSON.stringify({
+        short_description: short_description,
+        workflow_status: workflow_status,
+        is_featured: is_featured,
+        parent_id: parent_id,
+        sort_order: displayOrder,
+        images_json: JSON.stringify({
           ...(imageThumbnail ? { thumbnail: imageThumbnail } : {}),
           ...(imageHero ? { hero: imageHero } : {}),
         }),
         headline: formData.headline || formData.label,
         metaTitle: formData.metaTitle || formData.label,
-        metaDescription: formData.metaDescription || formData.shortDescription,
-        collectionTitle: formData.collectionTitle || formData.label,
+        metaDescription: formData.metaDescription || short_description,
+        collection_title: collection_title || formData.label,
       };
 
       if (isEditMode) {
@@ -597,14 +610,14 @@ const CategoryEditor = () => {
 
   const previewThumb = extractImage(thumbnailSlot, 'thumbnail', 1200);
   const previewThumbSrcSet = toAdminSrcSet(getImageSrcSet(thumbnailSlot, 'thumbnail'));
-  const previewThumbUrl = toAdminImageUrl(previewThumb.imageUrl || formData.imageThumbnail?.url);
+  const previewThumbUrl = toAdminImageUrl(previewThumb.image_url || formData.imageThumbnail?.url);
   const previewThumbAlt = formData.imageThumbnail?.alt || formData.label || '';
   const previewThumbSizes = previewThumbSrcSet ? '400px' : undefined;
   const previewThumbStyle = buildImageStyle(previewThumb);
 
   const previewHero = extractImage(heroSlotData, 'hero', 1200);
   const previewHeroSrcSet = toAdminSrcSet(getImageSrcSet(heroSlotData, 'hero'));
-  const previewHeroUrl = toAdminImageUrl(previewHero.imageUrl || formData.imageHero?.url);
+  const previewHeroUrl = toAdminImageUrl(previewHero.image_url || formData.imageHero?.url);
   const previewHeroAlt = formData.imageHero?.alt || formData.label || '';
   const previewHeroSizes = previewHeroSrcSet ? '400px' : undefined;
   const previewHeroStyle = buildImageStyle(previewHero);
@@ -706,8 +719,8 @@ const CategoryEditor = () => {
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Short Description *</Label>
                   <Textarea
-                    value={formData.shortDescription}
-                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleChange('shortDescription', e.target.value)}
+                    value={formData.short_description}
+                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleChange('short_description', e.target.value)}
                     rows={3}
                     placeholder="Brief summary displayed on cards"
                     className="resize-none min-h-[80px]"
@@ -1051,8 +1064,8 @@ const CategoryEditor = () => {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Parent Category</Label>
                     <Select
-                      value={formData.parentId === null ? '__none__' : String(formData.parentId)}
-                      onValueChange={(value: string) => handleChange('parentId', value === '__none__' ? null : parseInt(value))}
+                      value={formData.parent_id === null ? '__none__' : String(formData.parent_id)}
+                      onValueChange={(value: string) => handleChange('parent_id', value === '__none__' ? null : parseInt(value))}
                       disabled={parentLoading}
                     >
                       <SelectTrigger className="h-8">
@@ -1083,8 +1096,8 @@ const CategoryEditor = () => {
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Collection Title</Label>
                   <Input
-                    value={formData.collectionTitle}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('collectionTitle', e.target.value)}
+                    value={formData.collection_title}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('collection_title', e.target.value)}
                     placeholder="e.g. Latest Recipes"
                     className="h-8"
                   />
@@ -1121,12 +1134,12 @@ const CategoryEditor = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="workflowStatus" className="text-sm font-medium">Status</Label>
+                    <Label htmlFor="workflow_status" className="text-sm font-medium">Status</Label>
                     <Select
-                      value={formData.workflowStatus}
-                      onValueChange={(value) => handleChange('workflowStatus', value)}
+                      value={formData.workflow_status}
+                      onValueChange={(value) => handleChange('workflow_status', value)}
                     >
-                      <SelectTrigger id="workflowStatus" className="h-10">
+                      <SelectTrigger id="workflow_status" className="h-10">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1142,8 +1155,8 @@ const CategoryEditor = () => {
                       <p className="text-xs text-muted-foreground">Show in featured blocks</p>
                     </div>
                     <Switch
-                      checked={formData.isFeatured}
-                      onCheckedChange={(checked: boolean) => handleChange('isFeatured', checked)}
+                      checked={formData.is_featured}
+                      onCheckedChange={(checked: boolean) => handleChange('is_featured', checked)}
                     />
                   </div>
                 </div>

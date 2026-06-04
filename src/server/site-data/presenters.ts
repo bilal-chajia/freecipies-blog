@@ -266,7 +266,7 @@ export function presentPopularRecipes(
 // --- Stories Presenters ---
 
 export interface StoryPreview {
-  imageUrl?: string;
+  image_url?: string;
   imageAlt?: string;
   imageWidth?: number;
   imageHeight?: number;
@@ -278,7 +278,7 @@ export type StoryPageData = HydratedArticle & {
   storyImage?: string;
   storyPreview: StoryPreview;
   storyPages: Array<{
-    imageUrl?: string;
+    image_url?: string;
     title: string;
     text: string;
   }>;
@@ -286,11 +286,11 @@ export type StoryPageData = HydratedArticle & {
 
 export function presentStories(stories: HydratedArticle[]): StoryPageData[] {
   return [...stories]
-    .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
     .map((story) => {
-      const preview = extractImage(story.imagesJson, "thumbnail", 120);
-      const hero = extractImage(story.imagesJson, "hero", 1200);
-      const storyImage = hero.imageUrl || preview.imageUrl || story.imageUrl;
+      const preview = extractImage(story.images_json, "thumbnail", 120);
+      const hero = extractImage(story.images_json, "hero", 1200);
+      const storyImage = hero.image_url || preview.image_url || story.image_url;
 
       const storyTextSource = story as HydratedArticle & { tldr?: string };
 
@@ -298,30 +298,30 @@ export function presentStories(stories: HydratedArticle[]): StoryPageData[] {
         ...story,
         storyImage,
         storyPreview: {
-          imageUrl: preview.imageUrl || story.imageUrl,
+          image_url: preview.image_url || story.image_url,
           imageAlt: preview.imageAlt || story.headline,
           imageWidth: preview.imageWidth || 80,
           imageHeight: preview.imageHeight || 80,
           imageStyle: preview.imageStyle,
-          srcSet: getImageSrcSet(story.imagesJson, "thumbnail"),
+          srcSet: getImageSrcSet(story.images_json, "thumbnail"),
         },
         storyPages: [
           {
-            imageUrl: storyImage,
+            image_url: storyImage,
             title: story.headline,
-            text: story.shortDescription || storyTextSource.tldr || "",
+            text: story.short_description || storyTextSource.tldr || "",
           },
           ...(storyImage
             ? [
                 {
-                  imageUrl: storyImage,
+                  image_url: storyImage,
                   title: "Swipe to continue",
                   text: "Tap right to see more",
                 },
               ]
             : []),
           {
-            imageUrl: storyImage,
+            image_url: storyImage,
             title: story.headline,
             text: "Ready to cook?",
           },

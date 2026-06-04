@@ -21,16 +21,16 @@ export async function getRedirects(
 
   const conditions = [];
 
-  if (filter?.isActive !== undefined) {
-    conditions.push(eq(redirects.isActive, filter.isActive));
+  if (filter?.is_active !== undefined) {
+    conditions.push(eq(redirects.is_active, filter.is_active));
   }
 
   if (filter?.search) {
     const searchPattern = `%${filter.search}%`;
     conditions.push(
       or(
-        like(redirects.fromPath, searchPattern),
-        like(redirects.toPath, searchPattern),
+        like(redirects.from_path, searchPattern),
+        like(redirects.to_path, searchPattern),
         like(redirects.notes, searchPattern)
       )
     );
@@ -40,18 +40,18 @@ export async function getRedirects(
     .select()
     .from(redirects)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(redirects.createdAt));
+    .orderBy(desc(redirects.created_at));
 }
 
 /**
  * Get a redirect by its source path (for middleware)
  */
-export async function getRedirectByFromPath(db: D1Database | DrizzleDb, fromPath: string): Promise<Redirect | null> {
+export async function getRedirectByFromPath(db: D1Database | DrizzleDb, from_path: string): Promise<Redirect | null> {
   const drizzle = getDb(db);
   const result = await drizzle
     .select()
     .from(redirects)
-    .where(and(eq(redirects.fromPath, fromPath), eq(redirects.isActive, true)))
+    .where(and(eq(redirects.from_path, from_path), eq(redirects.is_active, true)))
     .limit(1);
 
   return result[0] || null;
@@ -94,7 +94,7 @@ export async function updateRedirect(
     .update(redirects)
     .set({
       ...data,
-      updatedAt: new Date().toISOString()
+      updated_at: new Date().toISOString()
     })
     .where(eq(redirects.id, id));
 
@@ -118,8 +118,8 @@ export async function incrementHitCount(db: D1Database | DrizzleDb, id: number):
   await drizzle
     .update(redirects)
     .set({
-      hitCount: sql`${redirects.hitCount} + 1`,
-      lastHitAt: new Date().toISOString()
+      hit_count: sql`${redirects.hit_count} + 1`,
+      last_hit_at: new Date().toISOString()
     })
     .where(eq(redirects.id, id));
 }

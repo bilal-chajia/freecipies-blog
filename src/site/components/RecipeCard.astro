@@ -29,7 +29,7 @@ import RatingSystem from "./content/RatingSystem";
 
 interface Props {
   article: Article;
-  recipeJson: RecipeJson | null;
+  recipe_json: RecipeJson | null;
   author?: Author | null;
   category?: Category | null;
   showImage?: boolean;
@@ -41,7 +41,7 @@ interface Props {
 
 const {
   article,
-  recipeJson,
+  recipe_json,
   author = null,
   category = null,
   showImage = true,
@@ -53,14 +53,14 @@ const {
 
 const TitleTag = embedded ? "h2" : "h1";
 
-const recipe = normalizeRecipeForRender(recipeJson);
+const recipe = normalizeRecipeForRender(recipe_json);
 
-const imagesJson: ArticleImagesJson = article.imagesJson
-  ? JSON.parse(article.imagesJson)
+const images_json: ArticleImagesJson = article.images_json
+  ? JSON.parse(article.images_json)
   : {};
 
-const heroImage = extractImage(article.imagesJson, "hero", 1200);
-const heroSlotSrcSet = getImageSrcSet(article.imagesJson, "hero");
+const heroImage = extractImage(article.images_json, "hero", 1200);
+const heroSlotSrcSet = getImageSrcSet(article.images_json, "hero");
 
 const rating = recipe?.aggregate_rating;
 const hasRating = rating && rating.rating_value && rating.rating_count > 0;
@@ -112,16 +112,16 @@ const navItems = [
         : {})}
     >
       <meta itemprop="name" content={article.headline} />
-      <meta itemprop="description" content={article.shortDescription} />
-      {!showImage && heroImage.imageUrl && (
-        <meta itemprop="image" content={heroImage.imageUrl} />
+      <meta itemprop="description" content={article.short_description} />
+      {!showImage && heroImage.image_url && (
+        <meta itemprop="image" content={heroImage.image_url} />
       )}
-      {article.publishedAt && (
-        <meta itemprop="datePublished" content={article.publishedAt} />
+      {article.published_at && (
+        <meta itemprop="datePublished" content={article.published_at} />
       )}
 
       {/* Hero Image Section - Now shown in all modes if showImage is true */}
-      {showImage && heroImage.imageUrl && (
+      {showImage && heroImage.image_url && (
         <div
           class="recipe-hero"
           itemprop="image"
@@ -129,7 +129,7 @@ const navItems = [
           itemtype="https://schema.org/ImageObject"
         >
           <img
-            src={heroImage.imageUrl}
+            src={heroImage.image_url}
             alt={heroImage.imageAlt || article.headline}
             width={heroImage.imageWidth || 1200}
             height={heroImage.imageHeight || 675}
@@ -158,7 +158,7 @@ const navItems = [
               <button
                 type="button"
                 class="fab pin-btn"
-                onclick={`window.open('https://pinterest.com/pin/create/button/?url=${encodeURIComponent(`https://example.com/recipes/${article.slug}`)}&media=${encodeURIComponent(heroImage.imageUrl || "")}&description=${encodeURIComponent(article.headline)}', '_blank')`}
+                onclick={`window.open('https://pinterest.com/pin/create/button/?url=${encodeURIComponent(`https://example.com/recipes/${article.slug}`)}&media=${encodeURIComponent(heroImage.image_url || "")}&description=${encodeURIComponent(article.headline)}', '_blank')`}
                 title="Pin Recipe"
               >
                 <Icon name="pinterest" />
@@ -193,8 +193,8 @@ const navItems = [
                 itemtype="https://schema.org/Person"
               >
                 {(() => {
-                  const authorImg = extractImage(author.imagesJson, "avatar");
-                  const hasAuthorImage = authorImg.imageUrl;
+                  const authorImg = extractImage(author.images_json, "avatar");
+                  const hasAuthorImage = authorImg.image_url;
                   const initials = author.name
                     .split(" ")
                     .map((word) => word.charAt(0))
@@ -205,7 +205,7 @@ const navItems = [
                     <>
                       {hasAuthorImage ? (
                         <img
-                          src={authorImg.imageUrl}
+                          src={authorImg.image_url}
                           alt={author.name}
                           class="author-avatar"
                           width={authorImg.imageWidth || 48}
@@ -232,7 +232,7 @@ const navItems = [
             <div class="recipe-rating-card">
               <RatingSystem
                 client:idle
-                articleId={article.id}
+                article_id={article.id}
                 initialValue={rating?.rating_value || 0}
                 initialCount={rating?.rating_count || 0}
                 size="lg"
@@ -282,9 +282,9 @@ const navItems = [
           )}
 
           {/* Description */}
-          {showDescription && article.shortDescription && (
+          {showDescription && article.short_description && (
             <p class="recipe-description" itemprop="description">
-              {article.shortDescription}
+              {article.short_description}
             </p>
           )}
         </div>
@@ -456,7 +456,7 @@ const navItems = [
             </div>
             <InstructionsSection
               instructions={recipe?.instructions || []}
-              imagesJson={article.imagesJson}
+              images_json={article.images_json}
             />
           </section>
 
@@ -511,7 +511,7 @@ const navItems = [
       </div>
 
       {/* ═══ Exact Stitch Cooking Mode Overlay ═══ */}
-      <CookModeOverlay article={article} heroImageUrl={heroImage.imageUrl} />
+      <CookModeOverlay article={article} heroImageUrl={heroImage.image_url} />
 
       <script
         type="application/json"
@@ -524,7 +524,7 @@ const navItems = [
         article={article}
         recipe={recipe as RecipeJson}
         author={author}
-        heroImageUrl={heroImage.imageUrl}
+        heroImageUrl={heroImage.image_url}
         heroImageAlt={heroImage.imageAlt}
       />
     </div>
@@ -1232,7 +1232,7 @@ const navItems = [
 
   .cook-mode-hint {
     font-size: 13px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
   }
 
   /* ===== Recipe Sections ===== */
@@ -1784,7 +1784,7 @@ const navItems = [
 
   .cook-mode-hint {
     font-size: var(--text-xs);
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
   }
 
   .recipe-sections {

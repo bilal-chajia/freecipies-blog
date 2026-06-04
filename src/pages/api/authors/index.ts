@@ -17,9 +17,9 @@ export const GET: APIRoute = async ({ url }) => {
         }
 
         // Optional filter by workflow status
-        const workflowStatusParam = url.searchParams.get('workflow_status') || url.searchParams.get('workflowStatus');
+        const workflowStatusParam = url.searchParams.get('workflow_status');
         const options = workflowStatusParam !== null
-            ? { workflowStatus: workflowStatusParam as 'draft' | 'published' | 'archived' }
+            ? { workflow_status: workflowStatusParam as 'draft' | 'published' | 'archived' }
             : undefined;
 
         const authors = await getAuthors(env.DB, options);

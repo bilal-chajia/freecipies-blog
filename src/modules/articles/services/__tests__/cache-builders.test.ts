@@ -9,12 +9,12 @@ import {
 
 describe('Cache Builders', () => {
   describe('buildAuthorCache', () => {
-    it('returns null if authorId is missing', () => {
-      expect(buildAuthorCache({ authorId: null } as any)).toBeNull();
+    it('returns null if author_id is missing', () => {
+      expect(buildAuthorCache({ author_id: null } as any)).toBeNull();
     });
 
     it('successfully compiles author payload and extracts socials', () => {
-      const bioJson = JSON.stringify({
+      const bio_json = JSON.stringify({
         socials: [
           { network: 'pinterest', url: 'https://pinterest.com/test', label: 'Pinterest' },
           { network: 'instagram', url: 'https://instagram.com/test' },
@@ -26,13 +26,13 @@ describe('Cache Builders', () => {
       });
 
       const res = buildAuthorCache({
-        authorId: 42,
+        author_id: 42,
         authorName: 'Chef Bilal',
         authorSlug: 'chef-bilal',
         authorAvatar: avatarJson,
         authorRole: 'Head Chef',
         authorBio: 'Expert in SaaS architectures.',
-        authorBioJson: bioJson,
+        authorBioJson: bio_json,
       });
 
       expect(res).toEqual({
@@ -52,13 +52,13 @@ describe('Cache Builders', () => {
 
   describe('buildCategoryCache', () => {
     it('returns null if no ID present', () => {
-      expect(buildCategoryCache({ categoryId: null, categoryIdValue: null } as any)).toBeNull();
+      expect(buildCategoryCache({ category_id: null, category_id_value: null } as any)).toBeNull();
     });
 
-    it('prefers categoryIdValue over categoryId', () => {
+    it('prefers category_id_value over category_id', () => {
       const res = buildCategoryCache({
-        categoryId: 10,
-        categoryIdValue: 20,
+        category_id: 10,
+        category_id_value: 20,
         categoryLabel: 'Desserts',
         categorySlug: 'desserts',
         categoryColor: '#ff0000',
@@ -87,18 +87,18 @@ describe('Cache Builders', () => {
     });
 
     it('parses, normalizes, and derives recipe cache properties', () => {
-      const recipeJson = JSON.stringify({
+      const recipe_json = JSON.stringify({
         prep: 10,
         cook: 20,
         difficulty: 'easy',
         ingredients: [],
         instructions: [],
       });
-      const res = buildRecipeCache('recipe', recipeJson);
+      const res = buildRecipeCache('recipe', recipe_json);
       expect(res).not.toBeNull();
       expect(res?.totalTimeMinutes).toBe(30);
-      expect(res?.recipeJson).toContain('"difficulty":"easy"');
-      expect(res?.cachedRecipeJson).toHaveProperty('total_time_minutes', 30);
+      expect(res?.recipe_json).toContain('"difficulty":"easy"');
+      expect(res?.cached_recipe_json).toHaveProperty('total_time_minutes', 30);
     });
   });
 
@@ -108,10 +108,10 @@ describe('Cache Builders', () => {
       type: 'article',
       slug: 'test-article',
       headline: 'A Great Article',
-      shortDescription: 'Article summary',
-      imagesJson: null,
-      readingTimeMinutes: 5,
-      roundupJson: null,
+      short_description: 'Article summary',
+      images_json: null,
+      reading_time_minutes: 5,
+      roundup_json: null,
     };
 
     it('correctly compiles article card', () => {

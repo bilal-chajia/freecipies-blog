@@ -147,12 +147,12 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
                                             target: { type: "internal_route", href: item.featured?.url || "#" },
                                             legacyImage: item.featured?.image,
                                         }] satisfies RenderedFeaturedItem[]) as RenderedFeaturedItem[]).map((featured) => {
-                                            const imageUrl = resolveImageUrl(featured.image) || sanitizeUrl(featured.legacyImage);
+                                            const image_url = resolveImageUrl(featured.image) || sanitizeUrl(featured.legacyImage);
                                             return (
                                                 <a href={featured.target?.href || "#"} class="featured-card">
-                                                    {imageUrl ? (
+                                                    {image_url ? (
                                                         <img
-                                                            src={imageUrl}
+                                                            src={image_url}
                                                             alt={featured.image?.alt || featured.label || "Featured"}
                                                             class="featured-image"
                                                             width="220"
@@ -222,12 +222,12 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
     .nav-link.active,
     .nav-trigger[aria-expanded="true"] {
         background: var(--bg-alt);
-        color: var(--brand-secondary);
+        color: var(--brand-secondary-accessible);
     }
 
     .nav-link.highlight,
     .nav-trigger.highlight {
-        color: var(--brand-secondary);
+        color: var(--brand-secondary-accessible);
         font-weight: 600;
     }
 
@@ -289,7 +289,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
     .column-title {
         font-size: 0.75rem;
         font-weight: 700;
-        color: var(--brand-secondary);
+        color: var(--brand-secondary-accessible);
         text-transform: uppercase;
         letter-spacing: 0.05em;
         margin: 0 0 0.75rem 0;
@@ -313,7 +313,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
     }
 
     .column-link:hover {
-        color: var(--brand-secondary);
+        color: var(--brand-secondary-accessible);
         transform: translateX(4px);
     }
 
@@ -351,7 +351,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
         align-items: center;
         justify-content: center;
         background: linear-gradient(135deg, var(--border-subtle) 0%, var(--bg-active) 100%);
-        color: var(--brand-secondary);
+        color: var(--brand-secondary-accessible);
     }
 
     .featured-content {
@@ -361,7 +361,7 @@ const resolveImageUrl = (image: MenuImageSnapshot | undefined) => {
     .featured-label {
         font-size: 0.65rem;
         font-weight: 700;
-        color: var(--brand-secondary);
+        color: var(--brand-secondary-accessible);
         text-transform: uppercase;
         letter-spacing: 0.1em;
     }

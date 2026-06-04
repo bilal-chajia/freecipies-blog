@@ -336,8 +336,8 @@ export async function getMenuByKey(
         isEnabled: document.is_enabled,
         location,
         document,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
     };
 }
 

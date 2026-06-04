@@ -16,12 +16,12 @@ export const truncateLabel = (text: string | null | undefined): string => {
 interface FlattenedBlock {
     block: AnyBlock;
     depth: number;
-    parentId: string | null;
+    parent_id: string | null;
 }
 
-export const flattenBlocks = (blocks: AnyBlock[], depth = 0, acc: FlattenedBlock[] = [], parentId: string | null = null): FlattenedBlock[] => {
+export const flattenBlocks = (blocks: AnyBlock[], depth = 0, acc: FlattenedBlock[] = [], parent_id: string | null = null): FlattenedBlock[] => {
     (blocks || []).forEach((block) => {
-        acc.push({ block, depth, parentId });
+        acc.push({ block, depth, parent_id });
         if (Array.isArray(block.children) && block.children.length > 0) {
             flattenBlocks(block.children as AnyBlock[], depth + 1, acc, block.id);
         }
@@ -43,14 +43,14 @@ export const groupConsecutiveBlocks = (flatBlocks: FlattenedBlock[]): GroupedFla
         if (isList) {
             const listType = current.block.type;
             const depth = current.depth;
-            const parentId = current.parentId;
+            const parent_id = current.parent_id;
 
             let count = 1;
             let j = i + 1;
             while (j < flatBlocks.length) {
                 const next = flatBlocks[j];
                 // Group if same type, same depth, and same parent
-                if (next.block.type === listType && next.depth === depth && next.parentId === parentId) {
+                if (next.block.type === listType && next.depth === depth && next.parent_id === parent_id) {
                     count++;
                     j++;
                 } else {

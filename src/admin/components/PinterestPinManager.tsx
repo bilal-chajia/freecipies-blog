@@ -36,7 +36,7 @@ type PinFormData = {
 };
 
 type PinterestPinManagerProps = {
-  articleId?: string | number | null;
+  article_id?: string | number | null;
 };
 
 const emptyFormData: PinFormData = {
@@ -51,7 +51,7 @@ const emptyFormData: PinFormData = {
   sort_order: 0
 };
 
-const PinterestPinManager = ({ articleId }: PinterestPinManagerProps) => {
+const PinterestPinManager = ({ article_id }: PinterestPinManagerProps) => {
   const [pins, setPins] = useState<PinterestPin[]>([]);
   const [boards, setBoards] = useState<PinterestBoard[]>([]);
   const [loading, setLoading] = useState(false);
@@ -62,10 +62,10 @@ const PinterestPinManager = ({ articleId }: PinterestPinManagerProps) => {
 
   useEffect(() => {
     fetchBoards();
-    if (articleId) {
+    if (article_id) {
       fetchPins();
     }
-  }, [articleId]);
+  }, [article_id]);
 
   const fetchBoards = async () => {
     try {
@@ -80,7 +80,7 @@ const PinterestPinManager = ({ articleId }: PinterestPinManagerProps) => {
   const fetchPins = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/pins', { params: { article_id: articleId } });
+      const response = await api.get('/pins', { params: { article_id: article_id } });
       const data = response.data;
       setPins(data.data?.pins || data.pins || []);
     } catch (error) {
@@ -118,19 +118,19 @@ const PinterestPinManager = ({ articleId }: PinterestPinManagerProps) => {
       if (!uploadResponse.ok) throw new Error('Upload failed');
       const uploadData = await uploadResponse.json();
 
-      const imageUrl = uploadData.success ? uploadData.data?.url || uploadData.url || '' : '';
+      const image_url = uploadData.success ? uploadData.data?.url || uploadData.url || '' : '';
 
-      if (imageUrl) {
+      if (image_url) {
         const img = new Image();
         img.onload = () => {
           setFormData(prev => ({
             ...prev,
-            image_url: imageUrl,
+            image_url: image_url,
             image_width: img.width,
             image_height: img.height
           }));
         };
-        img.src = imageUrl;
+        img.src = image_url;
       }
 
     } catch (error) {
@@ -154,7 +154,7 @@ const PinterestPinManager = ({ articleId }: PinterestPinManagerProps) => {
 
       const payload = editingPin
         ? { ...formData, id: editingPin.id }
-        : { ...formData, article_id: articleId };
+        : { ...formData, article_id: article_id };
 
       if (editingPin) {
         await api.put('/pins', payload);
@@ -235,7 +235,7 @@ const PinterestPinManager = ({ articleId }: PinterestPinManagerProps) => {
     setFormData(emptyFormData);
   };
 
-  if (!articleId) {
+  if (!article_id) {
     return (
       <div className="text-center py-12 px-8 bg-muted/50 rounded-lg text-muted-foreground border border-border">
         <p>Save the article first to manage Pinterest pins</p>

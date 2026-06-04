@@ -162,7 +162,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        let result: { workflowStatus?: string; isFavorite?: boolean } | null = null;
+        let result: { workflow_status?: string; is_favorite?: boolean } | null = null;
 
         if (action === 'set-workflow-status') {
             const body = await request.json().catch(() => ({}));
@@ -191,7 +191,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
         }
 
         // If workflow status is set to published, also sync cached fields
-        if (action === 'set-workflow-status' && result && result.workflowStatus === 'published') {
+        if (action === 'set-workflow-status' && result && result.workflow_status === 'published') {
             await syncCachedFields(env.DB, id, env.SITE_URL);
         }
 

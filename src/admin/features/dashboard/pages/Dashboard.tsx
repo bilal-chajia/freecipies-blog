@@ -45,8 +45,8 @@ interface ArticleSummary {
   label: string;
   categoryLabel?: string;
   status?: string;
-  viewCount?: number;
-  createdAt?: string;
+  view_count?: number;
+  created_at?: string;
 }
 
 interface ChartDataPoint {
@@ -392,7 +392,7 @@ const Dashboard = () => {
                         <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground/80">
                           <span className="flex items-center gap-1">
                             <Eye className="size-2.5" />
-                            {formatNumber(article.viewCount)}
+                            {formatNumber(article.view_count)}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
                           <span>
@@ -467,7 +467,7 @@ const Dashboard = () => {
                            </div>
                         </td>
                         <td className="py-2.5 px-3 text-right text-muted-foreground text-[11px] font-mono whitespace-nowrap">
-                          {formatRelativeTime(article.createdAt)}
+                          {formatRelativeTime(article.created_at)}
                         </td>
                       </tr>
                     ))

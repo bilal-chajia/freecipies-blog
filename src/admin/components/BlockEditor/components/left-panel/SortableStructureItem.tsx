@@ -39,7 +39,7 @@ export function SortableStructureItem({
     showConvertOptions,
     isOutlineView,
 }: SortableStructureItemProps) {
-    const isActive = activeBlockId === item.id;
+    const is_active = activeBlockId === item.id;
     const isDropTarget = dropTarget?.targetId === item.id;
     const dropPosition = isDropTarget ? dropTarget.position : null;
     const Icon = item.icon || FileText;
@@ -67,17 +67,17 @@ export function SortableStructureItem({
     }, [setNodeRef]);
 
     useEffect(() => {
-        if (isActive && !isDragging) {
+        if (is_active && !isDragging) {
             itemRef.current?.scrollIntoView({ block: 'nearest' });
         }
-    }, [isActive, isDragging]);
+    }, [is_active, isDragging]);
 
     return (
         <div
             ref={setRefs}
             className={cn(
                 'structure-item group relative select-none rounded-md mx-2 my-0.5 border border-transparent',
-                isActive ? 'bg-primary/5 border-primary/20 shadow-sm' : 'hover:bg-muted/40',
+                is_active ? 'bg-primary/5 border-primary/20 shadow-sm' : 'hover:bg-muted/40',
                 isDragging && 'opacity-60 shadow-lg scale-95 border-dashed border-primary',
                 dropPosition && 'scale-[0.98]'
             )}
@@ -135,7 +135,7 @@ export function SortableStructureItem({
                 <span
                     className={cn(
                         'structure-item-label text-xs truncate flex-1 font-medium transition-colors duration-200',
-                        isActive ? 'text-primary font-semibold' : 'text-foreground/80 group-hover:text-foreground'
+                        is_active ? 'text-primary font-semibold' : 'text-foreground/80 group-hover:text-foreground'
                     )}
                     title={item.label ? item.label.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1') : ''}
                     dangerouslySetInnerHTML={{ __html: renderInlineMarkdownHtml(item.label, { allowStyles: true, preserveLineBreaks: false }) }}

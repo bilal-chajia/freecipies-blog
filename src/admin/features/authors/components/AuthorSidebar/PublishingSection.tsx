@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface PublishingSectionProps {
   formData: {
-    workflowStatus?: string;
-    isFeatured?: boolean;
-    sortOrder?: number;
+    workflow_status?: string;
+    is_featured?: boolean;
+    sort_order?: number;
   };
   onInputChange: (field: string, value: unknown) => void;
   onSave: () => void;
@@ -42,12 +42,12 @@ export default function PublishingSection({
 
                 <div className="space-y-3">
                     <div className="space-y-1.5">
-                        <Label htmlFor="workflowStatus" className="text-sm font-medium">Status</Label>
+                        <Label htmlFor="workflow_status" className="text-sm font-medium">Status</Label>
                         <Select
-                            value={formData.workflowStatus || 'draft'}
-                            onValueChange={(value) => onInputChange('workflowStatus', value)}
+                            value={formData.workflow_status || 'draft'}
+                            onValueChange={(value) => onInputChange('workflow_status', value)}
                         >
-                            <SelectTrigger id="workflowStatus" className="h-8">
+                            <SelectTrigger id="workflow_status" className="h-8">
                                 <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -59,21 +59,21 @@ export default function PublishingSection({
                     </div>
 
                     <div className="flex items-center justify-between">
-                        <Label htmlFor="isFeatured" className="text-sm font-medium">Featured</Label>
+                        <Label htmlFor="is_featured" className="text-sm font-medium">Featured</Label>
                         <Switch
-                            id="isFeatured"
-                            checked={formData.isFeatured}
-                            onCheckedChange={(checked) => onInputChange('isFeatured', checked)}
+                            id="is_featured"
+                            checked={formData.is_featured}
+                            onCheckedChange={(checked) => onInputChange('is_featured', checked)}
                         />
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="sortOrder" className="text-sm font-medium">Sort Order</Label>
+                        <Label htmlFor="sort_order" className="text-sm font-medium">Sort Order</Label>
                         <Input
-                            id="sortOrder"
+                            id="sort_order"
                             type="number"
-                            value={formData.sortOrder || 0}
-                            onChange={(e) => onInputChange('sortOrder', parseInt(e.target.value) || 0)}
+                            value={formData.sort_order || 0}
+                            onChange={(e) => onInputChange('sort_order', parseInt(e.target.value) || 0)}
                             className="text-sm h-9"
                             min="0"
                         />

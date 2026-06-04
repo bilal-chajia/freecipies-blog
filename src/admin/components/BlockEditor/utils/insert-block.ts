@@ -78,8 +78,8 @@ export const safeInsertBlock = (
     // Find root parent if nested, to ensure custom blocks are at root level
     // This is a requirement for our food blog blocks
     let current = currentPos.block;
-    while (current.parentId) {
-        const parent = editor.getBlock(current.parentId);
+    while (current.parent_id) {
+        const parent = editor.getBlock(current.parent_id);
         if (!parent) break;
         current = parent;
         targetId = current.id;

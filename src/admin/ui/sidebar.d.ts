@@ -64,7 +64,7 @@ export const SidebarMenuItem: React.FC<React.HTMLAttributes<HTMLLIElement>>;
 
 interface SidebarMenuButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
-  isActive?: boolean;
+  is_active?: boolean;
   variant?: "default" | "outline";
   size?: "default" | "sm" | "lg";
   tooltip?: React.ReactNode;
@@ -81,7 +81,7 @@ export const SidebarMenuSubItem: React.FC<React.HTMLAttributes<HTMLLIElement>>;
 interface SidebarMenuSubButtonProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   asChild?: boolean;
   size?: "md" | "sm";
-  isActive?: boolean;
+  is_active?: boolean;
   className?: string;
 }
 

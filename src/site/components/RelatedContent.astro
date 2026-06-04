@@ -172,7 +172,7 @@ const buildHref = (item: RenderItem) => {
             <div class="rc-list-items">
               {group.items.map((item) => {
                 const thumbnail = getRelatedImage(item);
-                const imageUrl = getImageUrl(thumbnail);
+                const image_url = getImageUrl(thumbnail);
                 const imageVariant = getImageVariant(thumbnail);
                 const srcSet = getImageSrcSet(thumbnail);
                 const imageStyle = buildImageStyle(thumbnail);
@@ -183,9 +183,9 @@ const buildHref = (item: RenderItem) => {
                 return (
                   <a href={href} class="rc-list-item">
                     <div class="rc-list-thumb">
-                      {imageUrl ? (
+                      {image_url ? (
                         <img
-                          src={imageUrl}
+                          src={image_url}
                           alt={thumbnail?.alt || item.title || ""}
                           width={imageVariant?.width || undefined}
                           height={imageVariant?.height || undefined}
@@ -247,7 +247,7 @@ const buildHref = (item: RenderItem) => {
           <div class:list={["rc-grid", `rc-layout-${layout}`]}>
             {group.items.map((item) => {
               const thumbnail = getRelatedImage(item);
-              const imageUrl = getImageUrl(thumbnail);
+              const image_url = getImageUrl(thumbnail);
               const imageVariant = getImageVariant(thumbnail);
               const srcSet = getImageSrcSet(thumbnail);
               const imageStyle = buildImageStyle(thumbnail);
@@ -258,9 +258,9 @@ const buildHref = (item: RenderItem) => {
               return (
                 <a href={href} class="rc-card">
                   <div class="rc-media">
-                    {imageUrl ? (
+                    {image_url ? (
                       <img
-                        src={imageUrl}
+                        src={image_url}
                         alt={thumbnail?.alt || item.title || ""}
                         width={imageVariant?.width || undefined}
                         height={imageVariant?.height || undefined}

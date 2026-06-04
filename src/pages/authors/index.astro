@@ -9,7 +9,7 @@ let authors: any[] = [];
 let authorArticleCounts = new Map<string, number>();
 
 try {
-  const rawAuthors = await getAuthors(env.DB, { workflowStatus: 'published' });
+  const rawAuthors = await getAuthors(env.DB, { workflow_status: 'published' });
   authors = rawAuthors.map(hydrateAuthor);
 
   // Get article counts for each author

@@ -16,7 +16,7 @@ export const GET: APIRoute = async ({ params }) => {
 
     const article = await getArticleBySlug(env.DB, slug);
     const { body, status, headers } = formatSuccessResponse({
-      viewCount: article?.viewCount || 0
+      view_count: article?.view_count || 0
     });
     return new Response(body, { status, headers });
   } catch (error) {

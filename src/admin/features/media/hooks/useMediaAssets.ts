@@ -38,7 +38,7 @@ export const useMediaAssets = (options?: UseMediaAssetsOptions) => {
         type: filters.filterType,
         search: filters.searchQuery || undefined,
         sortBy: filters.sortBy,
-        order: filters.sortOrder,
+        order: filters.sort_order,
         page: pageNum,
         limit: pagination.limit
       };
@@ -83,7 +83,7 @@ export const useMediaAssets = (options?: UseMediaAssetsOptions) => {
   }, [
     filters.filterType,
     filters.sortBy,
-    filters.sortOrder,
+    filters.sort_order,
     filters.dateFrom,
     filters.dateTo,
     filters.searchQuery

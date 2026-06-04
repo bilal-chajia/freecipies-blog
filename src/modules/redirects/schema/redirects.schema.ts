@@ -10,22 +10,22 @@ import { sql } from 'drizzle-orm';
 
 export const redirects = sqliteTable('redirects', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  fromPath: text('from_path').unique().notNull(),
-  toPath: text('to_path').notNull(),
-  statusCode: integer('status_code').default(301).notNull(),
-  isActive: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
+  from_path: text('from_path').unique().notNull(),
+  to_path: text('to_path').notNull(),
+  status_code: integer('status_code').default(301).notNull(),
+  is_active: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
   notes: text('notes'),
 
   // Stats
-  hitCount: integer('hit_count').default(0).notNull(),
-  lastHitAt: text('last_hit_at'),
+  hit_count: integer('hit_count').default(0).notNull(),
+  last_hit_at: text('last_hit_at'),
 
   // Timestamps
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
-  index('idx_redirects_from_path').on(table.fromPath),
-  index('idx_redirects_active').on(table.isActive),
+  index('idx_redirects_from_path').on(table.from_path),
+  index('idx_redirects_active').on(table.is_active),
 ]);
 
 export type Redirect = typeof redirects.$inferSelect;

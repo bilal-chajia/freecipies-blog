@@ -142,7 +142,7 @@ describe('serializeAdminMediaPayload', () => {
       id: 1,
       name: 'Chef Maria salvador',
       slug: 'chef-maria',
-      imagesJson: JSON.stringify({ avatar: storedCredit.avatar }),
+      images_json: JSON.stringify({ avatar: storedCredit.avatar }),
     });
 
     expect(credit).toEqual(storedCredit);
@@ -374,13 +374,13 @@ describe('applyPatchToSlot', () => {
 });
 
 describe('buildCardImage', () => {
-  it('returns null if imagesJson is empty or has no valid slots', () => {
+  it('returns null if images_json is empty or has no valid slots', () => {
     expect(buildCardImage(null, 'Fallback')).toBeNull();
     expect(buildCardImage('{}', 'Fallback')).toBeNull();
   });
 
   it('extracts thumbnail slot and builds variants xs and sm', () => {
-    const imagesJson = JSON.stringify({
+    const images_json = JSON.stringify({
       thumbnail: {
         media_id: 45,
         alt: 'Thumbnail Alt',
@@ -392,7 +392,7 @@ describe('buildCardImage', () => {
       },
     });
 
-    const res = buildCardImage(imagesJson, 'Fallback');
+    const res = buildCardImage(images_json, 'Fallback');
     expect(res).toEqual({
       media_id: 45,
       alt: 'Thumbnail Alt',
@@ -405,7 +405,7 @@ describe('buildCardImage', () => {
   });
 
   it('falls back to hero slot if thumbnail is missing', () => {
-    const imagesJson = JSON.stringify({
+    const images_json = JSON.stringify({
       hero: {
         mediaId: 99,
         variants: {
@@ -415,7 +415,7 @@ describe('buildCardImage', () => {
       },
     });
 
-    const res = buildCardImage(imagesJson, 'My Fallback');
+    const res = buildCardImage(images_json, 'My Fallback');
     expect(res).toEqual({
       media_id: 99,
       alt: 'My Fallback',
@@ -428,13 +428,13 @@ describe('buildCardImage', () => {
   });
 
   it('returns null if xs or sm variant is missing', () => {
-    const imagesJson = JSON.stringify({
+    const images_json = JSON.stringify({
       thumbnail: {
         variants: {
           xs: { r2_key: 'media/xs.webp', width: 360, height: 240 },
         },
       },
     });
-    expect(buildCardImage(imagesJson, 'Fallback')).toBeNull();
+    expect(buildCardImage(images_json, 'Fallback')).toBeNull();
   });
 });

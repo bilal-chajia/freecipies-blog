@@ -64,19 +64,19 @@ function compactRelatedImage(input: unknown): Record<string, unknown> | undefine
 function normalizeRelatedItem(input: unknown, contentType?: string): Record<string, unknown> | null {
   const record = asRecord(input);
   if (!record) return null;
-  const articleId = numberValue(record.article_id) ?? numberValue(record.id);
+  const article_id = numberValue(record.article_id) ?? numberValue(record.id);
   const snapshot = asRecord(record.snapshot);
-  if (articleId && snapshot) return { article_id: articleId, snapshot };
+  if (article_id && snapshot) return { article_id: article_id, snapshot };
 
   const type = stringValue(record.content_type) ?? contentType;
   const slug = stringValue(record.slug);
   const headline = stringValue(record.headline) ?? stringValue(record.title);
-  if (!articleId || !slug || !headline) return null;
+  if (!article_id || !slug || !headline) return null;
   const image = compactRelatedImage(record.image) ?? compactRelatedImage(record.thumbnail);
   return {
-    article_id: articleId,
+    article_id: article_id,
     snapshot: {
-      id: articleId,
+      id: article_id,
       type: type === 'recipe' || type === 'roundup' || type === 'article' ? type : 'article',
       slug,
       headline,

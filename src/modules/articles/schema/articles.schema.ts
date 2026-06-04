@@ -16,61 +16,61 @@ export const articles = sqliteTable('articles', {
   locale: text('locale').default('en'),
 
   // Relations
-  categoryId: integer('category_id').notNull().references(() => categories.id),
-  authorId: integer('author_id').notNull().references(() => authors.id),
-  parentArticleId: integer('parent_article_id'),
+  category_id: integer('category_id').notNull().references(() => categories.id),
+  author_id: integer('author_id').notNull().references(() => authors.id),
+  parent_article_id: integer('parent_article_id'),
 
   // Display Metadata
   headline: text('headline').notNull(),
   subtitle: text('subtitle'),
-  shortDescription: text('short_description').notNull(),
+  short_description: text('short_description').notNull(),
   excerpt: text('excerpt'),
   introduction: text('introduction'),
 
   // Content Fields
-  imagesJson: text('images_json'),
-  contentJson: text('content_json'),
-  recipeJson: text('recipe_json'),
-  roundupJson: text('roundup_json'),
-  faqsJson: text('faqs_json'),
+  images_json: text('images_json'),
+  content_json: text('content_json'),
+  recipe_json: text('recipe_json'),
+  roundup_json: text('roundup_json'),
+  faqs_json: text('faqs_json'),
 
   // Cached Fields (Zero-Join)
-  cachedTagsJson: text('cached_tags_json'),
-  cachedCategoryJson: text('cached_category_json'),
-  cachedAuthorJson: text('cached_author_json'),
-  cachedRatingJson: text('cached_rating_json'),
-  cachedTocJson: text('cached_toc_json'),
-  cachedRecipeJson: text('cached_recipe_json'),
-  cachedCardJson: text('cached_card_json'),
-  readingTimeMinutes: integer('reading_time_minutes'),
+  cached_tags_json: text('cached_tags_json'),
+  cached_category_json: text('cached_category_json'),
+  cached_author_json: text('cached_author_json'),
+  cached_rating_json: text('cached_rating_json'),
+  cached_toc_json: text('cached_toc_json'),
+  cached_recipe_json: text('cached_recipe_json'),
+  cached_card_json: text('cached_card_json'),
+  reading_time_minutes: integer('reading_time_minutes'),
 
   // SEO & Config
-  seoJson: text('seo_json'),
-  jsonldJson: text('jsonld_json'),
-  configJson: text('config_json'),
+  seo_json: text('seo_json'),
+  jsonld_json: text('jsonld_json'),
+  config_json: text('config_json'),
 
   // Workflow
-  workflowStatus: text('workflow_status').default('draft'),
-  scheduledAt: text('scheduled_at'),
+  workflow_status: text('workflow_status').default('draft'),
+  scheduled_at: text('scheduled_at'),
 
   // System
-  isFavorite: integer('is_favorite', { mode: 'boolean' }).default(false),
-  accessLevel: integer('access_level').default(0),
-  viewCount: integer('view_count').default(0),
-  publishedAt: text('published_at'),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
-  deletedAt: text('deleted_at'),
+  is_favorite: integer('is_favorite', { mode: 'boolean' }).default(false),
+  access_level: integer('access_level').default(0),
+  view_count: integer('view_count').default(0),
+  published_at: text('published_at'),
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  deleted_at: text('deleted_at'),
 }, (table) => [
   index('idx_articles_slug').on(table.slug),
   index('idx_articles_type').on(table.type),
-  index('idx_articles_category').on(table.categoryId),
-  index('idx_articles_author').on(table.authorId),
-  index('idx_articles_favorite').on(table.isFavorite),
-  index('idx_articles_published').on(table.publishedAt),
-  index('idx_articles_views').on(table.viewCount),
-  index('idx_articles_workflow').on(table.workflowStatus),
-  index('idx_articles_active').on(table.deletedAt),
+  index('idx_articles_category').on(table.category_id),
+  index('idx_articles_author').on(table.author_id),
+  index('idx_articles_favorite').on(table.is_favorite),
+  index('idx_articles_published').on(table.published_at),
+  index('idx_articles_views').on(table.view_count),
+  index('idx_articles_workflow').on(table.workflow_status),
+  index('idx_articles_active').on(table.deleted_at),
 ]);
 
 // Type exports

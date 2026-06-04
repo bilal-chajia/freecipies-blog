@@ -49,16 +49,16 @@ type ContentListItem = {
     slug?: string;
     label?: string;
     headline?: string;
-    imageUrl?: string;
+    image_url?: string;
     imageAlt?: string;
-    isFavorite?: boolean;
+    is_favorite?: boolean;
     categoryLabel?: string;
-    viewCount?: number;
+    view_count?: number;
     authorAvatar?: string;
     authorName?: string;
-    workflowStatus?: string;
-    publishedAt?: string;
-    createdAt?: string;
+    workflow_status?: string;
+    published_at?: string;
+    created_at?: string;
     [key: string]: unknown;
 };
 
@@ -313,14 +313,14 @@ const ContentListBase = ({
             header: 'Content',
             cell: ({ row }: { row: Row<ContentListItem> }) => {
                 const item = row.original;
-                const imageUrl = toAdminImageUrl(item.imageUrl || '');
+                const image_url = toAdminImageUrl(item.image_url || '');
                 const imageAlt = item.imageAlt || item.label || item.headline || '';
                 return (
                     <div className="flex items-center gap-4 py-1">
                         <div className="relative group">
-                            {imageUrl ? (
+                            {image_url ? (
                                 <img
-                                    src={imageUrl}
+                                    src={image_url}
                                     alt={imageAlt}
                                     className="w-16 h-16 rounded-xl object-cover shadow-sm ring-1 ring-border/50 transition-all group-hover:ring-primary/50"
                                 />
@@ -329,7 +329,7 @@ const ContentListBase = ({
                                     <ImagePlus className="h-4 w-4" />
                                 </div>
                             )}
-                            {item.isFavorite && (
+                            {item.is_favorite && (
                                 <div className="absolute -top-1 -right-1 bg-secondary text-secondary-foreground rounded-full p-0.5 shadow-sm">
                                     <Star className="size-2.5 fill-current" />
                                 </div>
@@ -349,7 +349,7 @@ const ContentListBase = ({
                                 <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
                                 <span className="flex items-center gap-1">
                                     <Eye className="size-3" />
-                                    {formatNumber(item.viewCount || 0)}
+                                    {formatNumber(item.view_count || 0)}
                                 </span>
                             </div>
                         </div>
@@ -377,10 +377,10 @@ const ContentListBase = ({
             },
         },
         {
-            accessorKey: 'workflowStatus',
+            accessorKey: 'workflow_status',
             header: 'Status',
             cell: ({ row }: { row: Row<ContentListItem> }) => {
-                const status = row.original.workflowStatus || 'draft';
+                const status = row.original.workflow_status || 'draft';
                 const statusColors: Record<string, string> = {
                     published: 'bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20',
                     draft: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20',
@@ -407,16 +407,16 @@ const ContentListBase = ({
             },
         },
         {
-            accessorKey: 'publishedAt',
+            accessorKey: 'published_at',
             header: 'Date',
             meta: { className: 'hidden md:table-cell' },
             cell: ({ row }: { row: Row<ContentListItem> }) => (
                 <div className="flex flex-col">
                     <span className="text-sm font-medium">
-                        {formatDate(row.original.publishedAt || row.original.createdAt, 'MMM dd, yyyy')}
+                        {formatDate(row.original.published_at || row.original.created_at, 'MMM dd, yyyy')}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                        {formatRelativeTime(row.original.publishedAt || row.original.createdAt)}
+                        {formatRelativeTime(row.original.published_at || row.original.created_at)}
                     </span>
                 </div>
             ),
@@ -454,8 +454,8 @@ const ContentListBase = ({
                                     <ExternalLink className="size-4 mr-2" />
                                     View Live Site
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleToggleOnline(item.id, item.workflowStatus as string)}>
-                                    {item.workflowStatus === 'published' ? (
+                                <DropdownMenuItem onClick={() => handleToggleOnline(item.id, item.workflow_status as string)}>
+                                    {item.workflow_status === 'published' ? (
                                         <>
                                             <EyeOff className="size-4 mr-2" />
                                             Move to Drafts
@@ -523,7 +523,7 @@ const ContentListBase = ({
                     <CardContent className="p-3.5 flex items-center justify-between">
                         <div className="space-y-0.5">
                             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Published</p>
-                            <p className="text-xl font-bold">{(articles as ContentListItem[]).filter(a => a.workflowStatus === 'published').length}</p>
+                            <p className="text-xl font-bold">{(articles as ContentListItem[]).filter(a => a.workflow_status === 'published').length}</p>
                         </div>
                         <div className="p-1.5 bg-muted rounded-md text-muted-foreground">
                             <CheckCircle2 className="size-4" />

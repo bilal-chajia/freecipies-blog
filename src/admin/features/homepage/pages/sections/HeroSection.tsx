@@ -67,20 +67,20 @@ const HeroSection = ({ formData, handleNestedInputChange }: HomepageSectionProps
                         <div
                             ref={colorTriggerRef}
                             className="w-6 h-6 rounded border border-border/40 cursor-pointer hover:scale-105 transition-transform"
-                            style={{ backgroundColor: formData.hero.backgroundColor || 'var(--bg-alt)' }}
+                            style={{ backgroundColor: formData.hero.background_color || 'var(--bg-alt)' }}
                             onClick={() => setShowColorPicker(!showColorPicker)}
                         />
                         <Input
-                            value={formData.hero.backgroundColor}
-                            onChange={(e) => handleNestedInputChange('hero', 'backgroundColor', e.target.value)}
+                            value={formData.hero.background_color}
+                            onChange={(e) => handleNestedInputChange('hero', 'background_color', e.target.value)}
                             className="flex-1 border-none shadow-none focus-visible:ring-0 h-7 px-1 font-mono text-xs uppercase"
                             placeholder="#f8f9fa"
                         />
                     </div>
                     {showColorPicker && (
                         <ColorPicker
-                            color={formData.hero.backgroundColor}
-                            onChange={(color) => handleNestedInputChange('hero', 'backgroundColor', color)}
+                            color={formData.hero.background_color}
+                            onChange={(color) => handleNestedInputChange('hero', 'background_color', color)}
                             onClose={() => setShowColorPicker(false)}
                             triggerRect={colorTriggerRef.current?.getBoundingClientRect()}
                         />

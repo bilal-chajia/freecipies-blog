@@ -226,15 +226,15 @@ const ArticleFilters = ({
                             {localFilters.tags.length === 0 && (
                                 <span className="text-xs text-muted-foreground/60 py-1 px-2 italic">No tags selected</span>
                             )}
-                            {localFilters.tags.map((tagId) => {
-                                const tag = tags.find(t => t.id === tagId);
+                            {localFilters.tags.map((tag_id) => {
+                                const tag = tags.find(t => t.id === tag_id);
                                 return (
-                                    <Badge key={tagId} variant="secondary" className="gap-1.5 py-1 px-2 bg-secondary/50 hover:bg-secondary text-xs rounded-md">
-                                        {tag?.label || tagId}
+                                    <Badge key={tag_id} variant="secondary" className="gap-1.5 py-1 px-2 bg-secondary/50 hover:bg-secondary text-xs rounded-md">
+                                        {tag?.label || tag_id}
                                         <X
                                             className="w-3 h-3 cursor-pointer hover:text-destructive transition-colors"
                                             onClick={() => {
-                                                const newTags = localFilters.tags.filter(t => t !== tagId);
+                                                const newTags = localFilters.tags.filter(t => t !== tag_id);
                                                 onFilterChange('tags', newTags);
                                             }}
                                         />

@@ -114,7 +114,7 @@ export default function HomepageLayout({
                     <div className="structure-panel-list">
                         {homepageSections.map((item) => {
                             const Icon = item.icon;
-                            const isActive = currentSection === item.id;
+                            const is_active = currentSection === item.id;
                             const status = sectionStatus.find(s => s.key === item.id);
 
                             return (
@@ -124,10 +124,10 @@ export default function HomepageLayout({
                                     onClick={() => handleSectionClick(item.id)}
                                     className={cn(
                                         'structure-item group relative overflow-hidden transition-colors',
-                                        isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                                        is_active ? 'text-foreground font-medium' : 'text-muted-foreground'
                                     )}
                                 >
-                                    {isActive && (
+                                    {is_active && (
                                         <motion.div
                                             layoutId="homepage-active-tab"
                                             className="absolute inset-0 bg-[var(--primary-muted)] rounded-md z-0"
@@ -138,13 +138,13 @@ export default function HomepageLayout({
                                         <Icon
                                             className={cn(
                                                 'structure-item-icon transition-all duration-200 group-hover:scale-110 shrink-0',
-                                                isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                                                is_active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
                                             )}
                                         />
                                         <span
                                             className={cn(
                                                 'structure-item-label transition-transform duration-200 group-hover:translate-x-0.5',
-                                                isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
+                                                is_active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
                                             )}
                                         >
                                             {item.label}

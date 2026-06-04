@@ -31,18 +31,18 @@ const tocSettings = await getSiteTocSettings();
 const popularRecipes = await getPopularRecipes(article.slug, 5);
 
 const readingTime = getReadingTimeDisplay(article);
-const contentBlocks = normalizeContentDocument(article.contentJson).blocks;
+const contentBlocks = normalizeContentDocument(article.content_json).blocks;
 
-const heroSlot = extractImage(article.imagesJson, "hero", 1200);
-const heroThumb = extractImage(article.imagesJson, "thumbnail", 1200);
-const heroSlotSrcSet = getImageSrcSet(article.imagesJson, "hero");
-const thumbSrcSet = getImageSrcSet(article.imagesJson, "thumbnail");
-const useHeroSlot = heroSlot.imageUrl && (heroSlotSrcSet || !heroThumb.imageUrl);
+const heroSlot = extractImage(article.images_json, "hero", 1200);
+const heroThumb = extractImage(article.images_json, "thumbnail", 1200);
+const heroSlotSrcSet = getImageSrcSet(article.images_json, "hero");
+const thumbSrcSet = getImageSrcSet(article.images_json, "thumbnail");
+const useHeroSlot = heroSlot.image_url && (heroSlotSrcSet || !heroThumb.image_url);
 const heroSrcSet = useHeroSlot ? heroSlotSrcSet : thumbSrcSet;
 const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
 let authorAvatar: {
-  imageUrl?: string;
+  image_url?: string;
   imageAlt?: string;
   imageWidth?: number;
   imageHeight?: number;
@@ -52,17 +52,17 @@ let authorAvatar: {
 } = {};
 
 if (author) {
-  if (author.imagesJson) {
-    authorAvatar = extractImage(author.imagesJson, "avatar", 96);
+  if (author.images_json) {
+    authorAvatar = extractImage(author.images_json, "avatar", 96);
   } else if (author.avatar) {
     const avatarSlot = author.avatar;
     if (typeof avatarSlot === 'string') {
-      authorAvatar = { imageUrl: avatarSlot, imageWidth: 96, imageHeight: 96 };
+      authorAvatar = { image_url: avatarSlot, imageWidth: 96, imageHeight: 96 };
     } else if (avatarSlot && typeof avatarSlot === 'object') {
       const variants = avatarSlot.variants || {};
       const bestVariant = variants.sm || variants.xs || null;
       authorAvatar = {
-        imageUrl: resolveVariantUrl(bestVariant) || (avatarSlot as ImageSlot & { url?: string }).url || undefined,
+        image_url: resolveVariantUrl(bestVariant) || (avatarSlot as ImageSlot & { url?: string }).url || undefined,
         imageAlt: avatarSlot.alt || undefined,
         imageWidth: bestVariant?.width || 96,
         imageHeight: bestVariant?.height || 96,
@@ -72,11 +72,11 @@ if (author) {
   }
 }
 
-const authorAvatarSrcSet = author?.imagesJson
-  ? getImageSrcSet(author.imagesJson, "avatar")
+const authorAvatarSrcSet = author?.images_json
+  ? getImageSrcSet(author.images_json, "avatar")
   : (author?.avatar && typeof author.avatar === 'object' ? getSrcSet(author.avatar as ImageSlot) : "");
 const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
-const authorImage = authorAvatar.imageUrl || author?.imageUrl;
+const authorImage = authorAvatar.image_url || author?.image_url;
 const authorImageWidth = authorAvatar.imageWidth || 48;
 const authorImageHeight = authorAvatar.imageHeight || 48;
 const authorImageStyle = authorAvatar.imageStyle;
@@ -98,20 +98,20 @@ const breadcrumbItems = [
 
 <Layout
   title={article.metaTitle || article.label}
-  description={article.metaDescription || article.shortDescription}
-  image={heroSlot.imageUrl ||
-    heroThumb.imageUrl ||
-    article.imageUrl ||
+  description={article.metaDescription || article.short_description}
+  image={heroSlot.image_url ||
+    heroThumb.image_url ||
+    article.image_url ||
     undefined}
 >
   <slot name="head" slot="head" />
   {
-    (heroSlot.imageUrl || heroThumb.imageUrl || article.imageUrl) && (
+    (heroSlot.image_url || heroThumb.image_url || article.image_url) && (
       <link
         slot="head"
         rel="preload"
         as="image"
-        href={heroSlot.imageUrl || heroThumb.imageUrl || article.imageUrl}
+        href={heroSlot.image_url || heroThumb.image_url || article.image_url}
         imagesrcset={heroSrcSet || undefined}
         imagesizes={heroSrcSet ? heroSizes : undefined}
         fetchpriority="high"
@@ -142,8 +142,8 @@ const breadcrumbItems = [
         <h1 class="article-title">{article.label}</h1>
 
         {
-          article.shortDescription && (
-            <p class="article-description">{article.shortDescription}</p>
+          article.short_description && (
+            <p class="article-description">{article.short_description}</p>
           )
         }
 
@@ -161,8 +161,8 @@ const breadcrumbItems = [
           authorImageHeight={authorImageHeight}
           authorImageStyle={authorImageStyle}
           authorRole={author?.job || "Writer"}
-          lastUpdated={article.publishedAt || undefined}
-          viewCount={article.viewCount}
+          lastUpdated={article.published_at || undefined}
+          view_count={article.view_count}
         />
 
         <div class="disclosure-notice">
@@ -172,10 +172,10 @@ const breadcrumbItems = [
           will add value to my readers. Your support is appreciated!
         </div>
 
-        <TableOfContents toc={article.cachedTocJson} settings={tocSettings} />
+        <TableOfContents toc={article.cached_toc_json} settings={tocSettings} />
 
         <HeroImage
-          src={heroSlot.imageUrl || heroThumb.imageUrl || article.imageUrl}
+          src={heroSlot.image_url || heroThumb.image_url || article.image_url}
           alt={heroSlot.imageAlt ||
             heroThumb.imageAlt ||
             article.imageAlt ||

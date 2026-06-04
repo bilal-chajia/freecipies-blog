@@ -1,13 +1,13 @@
 /**
  * Custom Block: Tip Box (Alert)
- * 
+ *
  * A callout box for tips, warnings, notes, and info.
- * 
+ *
  * REFACTORED for WordPress Block Editor design:
  * - Type selector moved from inline <select> to BlockToolbar dropdown
  * - Proper selected/unselected states via BlockWrapper
  * - Clean content-first design following WordPress patterns
- * 
+ *
  * Based on WordPress Block Editor design:
  * https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/block-design/
  */
@@ -363,7 +363,7 @@ const Alert = createReactBlockSpec(
                                 <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border/40 ml-4 animate-in fade-in zoom-in-95 duration-200">
                                     {alertTypes.map((type) => {
                                         const typeConfig = alertConfig[type];
-                                        const isActive = alertType === type;
+                                        const is_active = alertType === type;
                                         return (
                                             <button
                                                 key={type}
@@ -371,8 +371,8 @@ const Alert = createReactBlockSpec(
                                                 onClick={() => handleTypeChange(type)}
                                                 className={cn(
                                                     "px-2.5 py-1 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap",
-                                                    isActive 
-                                                        ? "bg-background text-foreground shadow-sm scale-105 border border-border/10 font-bold" 
+                                                    is_active
+                                                        ? "bg-background text-foreground shadow-sm scale-105 border border-border/10 font-bold"
                                                         : "text-muted-foreground hover:bg-background/40 hover:text-foreground"
                                                 )}
                                             >

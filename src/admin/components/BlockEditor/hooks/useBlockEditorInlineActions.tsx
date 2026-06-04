@@ -4,7 +4,7 @@ import { setEditorTextSelection } from '../utils/editorView';
 import type { LinkToolbarState } from './useLinkToolbar';
 import type { InsertHandleState } from './useInsertHandle';
 
-type NestableBlock = { id: string; parentId?: string | null };
+type NestableBlock = { id: string; parent_id?: string | null };
 
 interface InlineActionsOptions {
   editor: AppEditor | null;
@@ -38,14 +38,14 @@ export function useBlockEditorInlineActions({
     if (!editor || !insertHandle) return;
     let targetId = insertHandle.blockId;
     let placement = insertHandle.placement;
-    // BlockNote's Block type doesn't surface `parentId`; narrow to the shape we read.
+    // BlockNote's Block type doesn't surface `parent_id`; narrow to the shape we read.
     const getNestable = (id: string): NestableBlock | undefined =>
       editor.getBlock(id) as NestableBlock | undefined;
     const block = getNestable(targetId);
-    if (block?.parentId) {
+    if (block?.parent_id) {
       let current: NestableBlock = block;
-      while (current.parentId) {
-        const parent = getNestable(current.parentId);
+      while (current.parent_id) {
+        const parent = getNestable(current.parent_id);
         if (!parent) break;
         current = parent;
         targetId = current.id;

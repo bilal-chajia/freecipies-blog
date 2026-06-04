@@ -98,29 +98,23 @@
     return rect.top < window.innerHeight && rect.bottom > 0;
   }
 
-  // 1. Find all elements that will participate in fade-up
-  const explicitEls = document.querySelectorAll("[data-fade-up]");
-  const autoTargets = document.querySelectorAll("section, article, .recipe-card, .content-blocks");
+  // Only animate explicit opt-ins. Auto-attaching to every section/article forces
+  // large style recalculations on long recipe pages.
+  const targets = document.querySelectorAll("[data-fade-up]");
+  if (targets.length === 0) return;
 
-  // 2. Auto-attach data-fade-up to macro containers NOT already opted-in
-  autoTargets.forEach((el) => {
-    if (!el.hasAttribute("data-fade-up") && !el.closest("[data-fade-up]")) {
-      el.setAttribute("data-fade-up", "");
-    }
-  });
-
-  // 3. Mark ALL elements already in the viewport as immediately visible
+  // Mark elements already in the viewport as immediately visible
   //    This MUST happen BEFORE we add .js-fade-enabled to prevent the flash
-  document.querySelectorAll("[data-fade-up]").forEach((el) => {
+  targets.forEach((el) => {
     if (isInViewport(el)) {
       el.classList.add("is-visible");
     }
   });
 
-  // 4. NOW enable the animation system (elements already marked won't flash)
+  // NOW enable the animation system (elements already marked won't flash)
   document.body.classList.add("js-fade-enabled");
 
-  // 5. Set up IntersectionObserver for below-the-fold elements
+  // Set up IntersectionObserver for below-the-fold elements
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -134,14 +128,8 @@
   );
 
   // Observe only elements NOT yet visible
-  document.querySelectorAll("[data-fade-up]:not(.is-visible)").forEach((el) => {
+  targets.forEach((el) => {
+    if (el.classList.contains("is-visible")) return;
     observer.observe(el);
   });
-
-  // 6. Safety: if IO somehow fails, force visible after 2.5s
-  setTimeout(function() {
-    document.querySelectorAll('[data-fade-up]:not(.is-visible)').forEach(function(el) {
-      el.classList.add('is-visible');
-    });
-  }, 2500);
 })();

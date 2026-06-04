@@ -9,7 +9,7 @@ export const useMediaFilters = (options?: UseMediaFiltersOptions) => {
   const [searchQuery, setSearchQuery] = useState(options?.searchQueryInitial || '');
   const [filterType, setFilterType] = useState(options?.filterTypeInitial || 'all');
   const [sortBy, setSortBy] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sort_order, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
@@ -20,7 +20,7 @@ export const useMediaFilters = (options?: UseMediaFiltersOptions) => {
     setFilterType,
     sortBy,
     setSortBy,
-    sortOrder,
+    sort_order,
     setSortOrder,
     dateFrom,
     setDateFrom,

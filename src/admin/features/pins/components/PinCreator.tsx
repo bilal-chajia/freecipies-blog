@@ -75,7 +75,7 @@ const PinCreator: React.FC<PinCreatorProps> = ({
     const [pinData, setPinData] = useState({
         title: '',
         description: '',
-        boardId: '',
+        board_id: '',
     });
 
     // Image URLs for template slots
@@ -122,7 +122,7 @@ const PinCreator: React.FC<PinCreatorProps> = ({
                 setPinData({
                     title: article.label || article.title || '',
                     description: article.short_description || article.meta_description || '',
-                    boardId: '',
+                    board_id: '',
                 });
             }
         }
@@ -198,11 +198,11 @@ const PinCreator: React.FC<PinCreatorProps> = ({
         thumbnail: article.thumbnail_url || article.thumbnail || '',
         featuredImage: article.featured_image || article.image_url || '',
 
-        // Recipe JSON for nested binding (recipeJson.prep, recipeJson.servings, etc.)
-        recipeJson: article.recipe_json || article.recipeJson || article.recipe || null,
+        // Recipe JSON for nested binding (recipe_json.prep, recipe_json.servings, etc.)
+        recipe_json: article.recipe_json || article.recipe_json || article.recipe || null,
 
         // Short text
-        shortDescription: article.short_description || article.meta_description || '',
+        short_description: article.short_description || article.meta_description || '',
         metaDescription: article.meta_description || '',
 
         // Map custom image URLs to slot IDs
@@ -265,7 +265,7 @@ const PinCreator: React.FC<PinCreatorProps> = ({
             formData.append('file', blob, `${filename}.jpg`);
             formData.append('type', 'pinterest-pin');
 
-            let imageUrl = '';
+            let image_url = '';
             try {
                 const uploadResponse = await fetch('/api/pins/upload-image', {
                     method: 'POST',
@@ -274,20 +274,20 @@ const PinCreator: React.FC<PinCreatorProps> = ({
                 const uploadData = await uploadResponse.json();
 
                 if (uploadData.success) {
-                    imageUrl = uploadData.data?.url || uploadData.url || '';
+                    image_url = uploadData.data?.url || uploadData.url || '';
                 }
             } catch (uploadError) {
                 console.warn('R2 upload failed, falling back to download:', uploadError);
             }
 
             // If we have an image URL, save the pin to database
-            if (imageUrl && article?.id) {
+            if (image_url && article?.id) {
                 await pinterestPinsAPI.create({
                     article_id: article.id,
-                    board_id: pinData.boardId ? parseInt(pinData.boardId) : null,
+                    board_id: pinData.board_id ? parseInt(pinData.board_id) : null,
                     title: pinData.title,
                     description: pinData.description,
-                    image_url: imageUrl,
+                    image_url: image_url,
                     image_alt: pinData.title,
                     image_width: 1000,
                     image_height: 1500,
@@ -551,10 +551,10 @@ const PinCreator: React.FC<PinCreatorProps> = ({
                             <div className="space-y-2">
                                 <Label>Pinterest Board</Label>
                                 <Select
-                                    value={pinData.boardId}
+                                    value={pinData.board_id}
                                     onValueChange={(value) => setPinData(prev => ({
                                         ...prev,
-                                        boardId: value
+                                        board_id: value
                                     }))}
                                 >
                                     <SelectTrigger className="bg-muted border-border">

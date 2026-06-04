@@ -25,9 +25,7 @@ interface EquipmentItem {
     description?: string | null;
     keywordsList?: string[];
     category?: string;
-    affiliateUrl?: string | null;
     affiliate_url?: string | null;
-    affiliateProvider?: string | null;
     affiliate_provider?: string | null;
     image?: {
         url?: string;
@@ -44,9 +42,9 @@ interface EquipmentFormData {
     description: string;
     keywords: string;
     category: string;
-    affiliateUrl: string;
-    affiliateProvider: string;
-    imageUrl: string;
+    affiliate_url: string;
+    affiliate_provider: string;
+    image_url: string;
 }
 
 const CATEGORIES = [
@@ -82,9 +80,9 @@ const EMPTY_FORM: EquipmentFormData = {
     description: '',
     keywords: '',
     category: 'other',
-    affiliateUrl: '',
-    affiliateProvider: '',
-    imageUrl: '',
+    affiliate_url: '',
+    affiliate_provider: '',
+    image_url: '',
 };
 
 const EquipmentList = () => {
@@ -139,9 +137,9 @@ const EquipmentList = () => {
             description: item.description || '',
             keywords: (item.keywordsList || []).join(', '),
             category: item.category || 'other',
-            affiliateUrl: item.affiliateUrl || item.affiliate_url || '',
-            affiliateProvider: item.affiliateProvider || item.affiliate_provider || '',
-            imageUrl: imgUrl,
+            affiliate_url: item.affiliate_url || '',
+            affiliate_provider: item.affiliate_provider || '',
+            image_url: imgUrl,
         });
         setIsCreatingNew(false);
     };
@@ -170,9 +168,9 @@ const EquipmentList = () => {
             keywordsArray.unshift(nameLower);
         }
 
-        // Build imageJson from URL
-        const imageUrl = formData.imageUrl?.trim() || null;
-        const imageJson = imageUrl ? { url: imageUrl, variants: { md: { url: imageUrl }, sm: { url: imageUrl } } } : {};
+        // Build image_json from URL
+        const image_url = formData.image_url?.trim() || null;
+        const image_json = image_url ? { url: image_url, variants: { md: { url: image_url }, sm: { url: image_url } } } : {};
 
         return {
             name: formData.name.trim(),
@@ -181,9 +179,9 @@ const EquipmentList = () => {
             description: formData.description.trim() || null,
             keywords: keywordsArray,
             category: formData.category,
-            affiliateUrl: formData.affiliateUrl.trim() || null,
-            affiliateProvider: formData.affiliateProvider.trim() || null,
-            imageJson,
+            affiliate_url: formData.affiliate_url.trim() || null,
+            affiliate_provider: formData.affiliate_provider.trim() || null,
+            image_json,
         };
     };
 
@@ -302,8 +300,8 @@ const EquipmentList = () => {
             <div className="space-y-1.5">
                 <Label className="text-xs">Affiliate URL</Label>
                 <Input
-                    value={formData.affiliateUrl}
-                    onChange={(e) => updateField('affiliateUrl', e.target.value)}
+                    value={formData.affiliate_url}
+                    onChange={(e) => updateField('affiliate_url', e.target.value)}
                     placeholder="https://www.amazon.com/dp/..."
                     className="h-9"
                 />
@@ -315,8 +313,8 @@ const EquipmentList = () => {
                 <div className="flex gap-3 items-start">
                     <div className="flex-1">
                         <Input
-                            value={formData.imageUrl}
-                            onChange={(e) => updateField('imageUrl', e.target.value)}
+                            value={formData.image_url}
+                            onChange={(e) => updateField('image_url', e.target.value)}
                             placeholder="https://example.com/stand-mixer.jpg"
                             className="h-9"
                         />
@@ -324,10 +322,10 @@ const EquipmentList = () => {
                             Paste a direct image URL. Shows on recipe equipment cards.
                         </p>
                     </div>
-                    {formData.imageUrl && (
+                    {formData.image_url && (
                         <div className="w-16 h-16 rounded-lg border overflow-hidden bg-muted flex-shrink-0">
                             <img
-                                src={formData.imageUrl}
+                                src={formData.image_url}
                                 alt="Preview"
                                 className="w-full h-full object-cover"
                                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -520,9 +518,9 @@ const EquipmentList = () => {
                                         )}
 
                                         <div className="mt-auto pt-2 border-t border-border/30">
-                                            {item.affiliateUrl || item.affiliate_url ? (
+                                            {item.affiliate_url ? (
                                                 <a
-                                                    href={item.affiliateUrl || item.affiliate_url || undefined}
+                                                    href={item.affiliate_url || undefined}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-[10px] text-primary flex items-center gap-1 hover:underline truncate"

@@ -9,11 +9,11 @@
  *   3. **JSON-LD** (SEO) — Schema.org Recipe rich snippets for Google
  * 
  * ┌─────────────────────────────────────────────────────────────┐
- * │  FIELD BOUNDARY — article vs recipeJson                     │
+ * │  FIELD BOUNDARY — article vs recipe_json                     │
  * │                                                             │
- * │  Article-level (NOT in recipeJson):                         │
- * │    headline, shortDescription, imagesJson,                  │
- * │    authorId, categoryId, publishedAt, slug, tags            │
+ * │  Article-level (NOT in recipe_json):                         │
+ * │    headline, short_description, images_json,                  │
+ * │    author_id, category_id, published_at, slug, tags            │
  * │                                                             │
  * │  RecipeJson (THIS file):                                    │
  * │    time, servings, classification, ingredients,              │
@@ -323,7 +323,7 @@ export interface RecipeVideo {
     description?: string;
 
     /** Thumbnail image URL — used in JSON-LD VideoObject */
-    thumbnailUrl?: string;
+    thumbnail_url?: string;
 
     /**
      * Duration in ISO-8601 format for JSON-LD.
@@ -418,8 +418,8 @@ export type CostLevel = 'Budget' | 'Moderate' | 'Premium';
  * | Cached fields sync     | articles.service.ts          | total, difficulty, nutrition, diet, ingredients |
  * 
  * **IMPORTANT — Fields that live at the Article level (NOT here):**
- * `headline`, `shortDescription`, `imagesJson`, `authorId`, `categoryId`,
- * `publishedAt`, `slug`, `tags` — these are on the `articles` table.
+ * `headline`, `short_description`, `images_json`, `author_id`, `category_id`,
+ * `published_at`, `slug`, `tags` — these are on the `articles` table.
  */
 export interface RecipeJson {
     // ── Time (numeric minutes) ────────────────────
@@ -748,8 +748,8 @@ export function toSchemaOrgInstructions(
                     };
                     if (step.name) stepData.name = step.name;
                     if (step.image_ref && resolveStepImage) {
-                        const imageUrl = resolveStepImage(step.image_ref);
-                        if (imageUrl) stepData.image = imageUrl;
+                        const image_url = resolveStepImage(step.image_ref);
+                        if (image_url) stepData.image = image_url;
                     }
                     return stepData;
                 })
@@ -764,8 +764,8 @@ export function toSchemaOrgInstructions(
                 };
                 if (step.name) stepData.name = step.name;
                 if (step.image_ref && resolveStepImage) {
-                    const imageUrl = resolveStepImage(step.image_ref);
-                    if (imageUrl) stepData.image = imageUrl;
+                    const image_url = resolveStepImage(step.image_ref);
+                    if (image_url) stepData.image = image_url;
                 }
                 result.push(stepData);
             }
@@ -874,7 +874,7 @@ export function migrateNutrition(
  * the editor — catalog snapshots are (re)copied from the equipment table at
  * article save time. `source_type` is derived from a numeric `equipment_id`.
  *
- * Legacy shapes handled: bare strings, old `{ name, affiliateUrl }` items.
+ * Legacy shapes handled: bare strings, old `{ name, affiliate_url }` items.
  */
 export function migrateEquipment(raw: unknown): EquipmentItem[] {
     if (!Array.isArray(raw)) return [];

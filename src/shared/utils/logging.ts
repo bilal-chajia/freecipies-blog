@@ -10,7 +10,7 @@ export interface RequestLog {
   queryParams?: Record<string, string>;
   headers?: Record<string, string>;
   duration?: number;
-  statusCode?: number;
+  status_code?: number;
   error?: string;
 }
 
@@ -66,7 +66,7 @@ export function logRequest(log: RequestLog, config: LoggerConfig = DEFAULT_CONFI
   
   if (config.enableConsole) {
     const logFn = log.error ? console.error : console.log;
-    logFn(`[${log.timestamp}] ${log.method} ${log.path} - ${log.statusCode || 'pending'}`, logEntry);
+    logFn(`[${log.timestamp}] ${log.method} ${log.path} - ${log.status_code || 'pending'}`, logEntry);
   }
 }
 
@@ -96,7 +96,7 @@ export function createRequestLogger(config: LoggerConfig = DEFAULT_CONFIG) {
 export function logResponse(
   log: RequestLog,
   startTime: number,
-  statusCode: number,
+  status_code: number,
   error?: Error,
   config: LoggerConfig = DEFAULT_CONFIG
 ): void {
@@ -105,7 +105,7 @@ export function logResponse(
   const responseLog: RequestLog = {
     ...log,
     duration,
-    statusCode,
+    status_code,
     error: error?.message,
   };
   

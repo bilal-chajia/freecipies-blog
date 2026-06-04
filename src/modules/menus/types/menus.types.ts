@@ -95,8 +95,8 @@ export interface MenuConfig {
     location: MenuLocation;
     document: MenuDocument;
     description?: string;
-    createdAt: string;
-    updatedAt: string;
+    created_at: string;
+    updated_at: string;
 }
 
 /**

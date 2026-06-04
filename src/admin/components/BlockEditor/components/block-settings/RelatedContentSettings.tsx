@@ -30,7 +30,7 @@ type RelatedItem = {
 };
 
 type SearchResultItem = RelatedItem & {
-    imagesJson?: string | null;
+    images_json?: string | null;
     categoryLabel?: string | null;
     category?: {
         label?: string | null;
@@ -38,8 +38,8 @@ type SearchResultItem = RelatedItem & {
     } | null;
     totalTimeMinutes?: number;
     difficultyLabel?: string;
-    readingTimeMinutes?: number;
-    roundupJson?: string | { items?: unknown[] } | null;
+    reading_time_minutes?: number;
+    roundup_json?: string | { items?: unknown[] } | null;
 };
 
 type RelatedBlockProps = {
@@ -123,7 +123,7 @@ function RelatedContentSettings({
             setError('');
             return undefined;
         }
-        let isActive = true;
+        let is_active = true;
         const timeout = setTimeout(async () => {
             setLoading(true);
             setError('');
@@ -135,21 +135,21 @@ function RelatedContentSettings({
                     limit: 8,
                 });
                 const data = response.data?.data || response.data || [];
-                if (isActive) {
+                if (is_active) {
                     setResults(Array.isArray(data) ? data as SearchResultItem[] : []);
                 }
             } catch {
-                if (isActive) {
+                if (is_active) {
                     setResults([]);
                     setError('Search failed.');
                 }
             } finally {
-                if (isActive) setLoading(false);
+                if (is_active) setLoading(false);
             }
         }, 300);
 
         return () => {
-            isActive = false;
+            is_active = false;
             clearTimeout(timeout);
         };
     }, [searchTerm, activeType, mode]);
@@ -164,8 +164,8 @@ function RelatedContentSettings({
             categoryColor: item.categoryColor || item.category?.color || null,
         };
 
-        const thumbnail = getImageSlot(item.imagesJson, 'thumbnail')
-                    || getImageSlot(item.imagesJson, 'hero');
+        const thumbnail = getImageSlot(item.images_json, 'thumbnail')
+                    || getImageSlot(item.images_json, 'hero');
         if (thumbnail && thumbnail.variants && Object.keys(thumbnail.variants).length > 0) {
             relatedItem.thumbnail = thumbnail;
         }
@@ -180,23 +180,23 @@ function RelatedContentSettings({
         }
 
         if (type === 'article') {
-            if (typeof item.readingTimeMinutes === 'number') {
-                relatedItem.reading_time = item.readingTimeMinutes;
+            if (typeof item.reading_time_minutes === 'number') {
+                relatedItem.reading_time = item.reading_time_minutes;
             }
         }
 
         if (type === 'roundup') {
-            const roundupJson = typeof item.roundupJson === 'string'
+            const roundup_json = typeof item.roundup_json === 'string'
                 ? (() => {
                     try {
-                        return JSON.parse(item.roundupJson);
+                        return JSON.parse(item.roundup_json);
                     } catch {
                         return null;
                     }
                 })()
-                : item.roundupJson;
-            const count = Array.isArray(roundupJson?.items)
-                ? roundupJson.items.length
+                : item.roundup_json;
+            const count = Array.isArray(roundup_json?.items)
+                ? roundup_json.items.length
                 : undefined;
             if (typeof count === 'number') {
                 relatedItem.item_count = count;
@@ -299,8 +299,8 @@ function RelatedContentSettings({
 
     const getThumbnailUrl = (item: SearchResultItem) => {
         if (!item) return '';
-        const slot = getImageSlot(item.imagesJson, 'thumbnail')
-                    || getImageSlot(item.imagesJson, 'hero');
+        const slot = getImageSlot(item.images_json, 'thumbnail')
+                    || getImageSlot(item.images_json, 'hero');
         return slot ? getBestVariantUrl(slot) || '' : '';
     };
 
@@ -312,7 +312,7 @@ function RelatedContentSettings({
     );
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-3 px-4 pb-2">
             <div className="flex items-center justify-between py-1 gap-2">
                 <span className="text-xs font-medium text-muted-foreground select-none">Title</span>
                 <div className="w-[170px] shrink-0">
@@ -374,8 +374,8 @@ function RelatedContentSettings({
             </div>
 
             <div className="flex items-center justify-between py-1 gap-2">
-                <span className="text-xs font-medium text-muted-foreground select-none">Type</span>
-                <div className="flex flex-nowrap justify-end gap-1.5 shrink-0">
+                <span className="text-xs font-medium text-muted-foreground select-none shrink-0">Type</span>
+                <div className="flex flex-wrap justify-end gap-1.5 min-w-0">
                     {(Object.keys(RELATED_TYPE_LABELS) as RelatedType[]).map((type) => (
                         <button
                             key={type}

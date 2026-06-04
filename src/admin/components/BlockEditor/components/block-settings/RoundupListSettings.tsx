@@ -46,18 +46,12 @@ type SearchResultItem = {
     headline?: string;
     label?: string;
     subtitle?: string;
-    shortDescription?: string;
     short_description?: string;
-    imagesJson?: string | null;
-    cachedRecipeJson?: string | JsonRecord | null;
+    images_json?: string | null;
     cached_recipe_json?: string | JsonRecord | null;
-    cachedRatingJson?: string | JsonRecord | null;
     cached_rating_json?: string | JsonRecord | null;
-    cachedAuthorJson?: string | JsonRecord | null;
     cached_author_json?: string | JsonRecord | null;
-    cachedCategoryJson?: string | JsonRecord | null;
     cached_category_json?: string | JsonRecord | null;
-    cachedTagsJson?: unknown[] | string | null;
     cached_tags_json?: unknown[] | string | null;
 };
 
@@ -93,7 +87,7 @@ const parseJsonObject = (value: unknown): JsonRecord => {
 
 /**
  * RoundupListSettings
- * 
+ *
  * Managed block-level settings for the RoundupListBlock.
  * Handles recipe search, bulk addition, and individual item editorial notes.
  */
@@ -118,7 +112,7 @@ function RoundupListSettings({
             setResults([]);
             return undefined;
         }
-        let isActive = true;
+        let is_active = true;
         const timeout = setTimeout(async () => {
             setLoading(true);
             setError('');
@@ -130,35 +124,35 @@ function RoundupListSettings({
                     limit: 8,
                 });
                 const data = response.data?.data || response.data || [];
-                if (isActive) {
+                if (is_active) {
                     setResults(Array.isArray(data) ? data as SearchResultItem[] : []);
                 }
             } catch {
-                if (isActive) {
+                if (is_active) {
                     setResults([]);
                     setError('Search failed.');
                 }
             } finally {
-                if (isActive) setLoading(false);
+                if (is_active) setLoading(false);
             }
         }, 300);
 
         return () => {
-            isActive = false;
+            is_active = false;
             clearTimeout(timeout);
         };
     }, [searchTerm]);
 
     const buildItem = (item: SearchResultItem): RoundupListItem => {
         const headline = item.headline || item.label || item.slug || '';
-        const image = getImageSlot(item.imagesJson, 'thumbnail') || getImageSlot(item.imagesJson, 'hero');
-        const recipe = parseJsonObject(item.cachedRecipeJson ?? item.cached_recipe_json);
-        const rating = parseJsonObject(item.cachedRatingJson ?? item.cached_rating_json);
-        const author = parseJsonObject(item.cachedAuthorJson ?? item.cached_author_json);
-        const category = parseJsonObject(item.cachedCategoryJson ?? item.cached_category_json);
-        const tags = Array.isArray(item.cachedTagsJson)
-            ? item.cachedTagsJson
-            : parseJsonArray(item.cachedTagsJson ?? item.cached_tags_json);
+        const image = getImageSlot(item.images_json, 'thumbnail') || getImageSlot(item.images_json, 'hero');
+        const recipe = parseJsonObject(item.cached_recipe_json ?? item.cached_recipe_json);
+        const rating = parseJsonObject(item.cached_rating_json ?? item.cached_rating_json);
+        const author = parseJsonObject(item.cached_author_json ?? item.cached_author_json);
+        const category = parseJsonObject(item.cached_category_json ?? item.cached_category_json);
+        const tags = Array.isArray(item.cached_tags_json)
+            ? item.cached_tags_json
+            : parseJsonArray(item.cached_tags_json ?? item.cached_tags_json);
 
         return {
             source_type: 'internal_recipe',
@@ -166,7 +160,7 @@ function RoundupListSettings({
             slug: item.slug,
             title: headline,
             subtitle: item.subtitle || '',
-            description: item.shortDescription || item.short_description || '',
+            description: item.short_description || item.short_description || '',
             note: '',
             image,
             recipe: {
@@ -237,10 +231,10 @@ function RoundupListSettings({
             </SettingsSection>
 
             {/* Manage Items */}
-            <SettingsSection 
-                title="Curated Recipes" 
-                icon={LayoutList} 
-                defaultOpen 
+            <SettingsSection
+                title="Curated Recipes"
+                icon={LayoutList}
+                defaultOpen
                 className="bg-muted/5"
             >
                 <div className="space-y-4 pt-2">
@@ -249,9 +243,9 @@ function RoundupListSettings({
                             {items.length} Items Selected
                         </Badge>
                         {items.length > 0 && (
-                             <Button 
-                                variant="ghost" 
-                                size="sm" 
+                             <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-6 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => updateProps({ itemsJson: '[]' })}
                              >
@@ -279,10 +273,10 @@ function RoundupListSettings({
                             return (
                                 <div key={item.id} className="p-2 flex items-center gap-3">
                                     <div className="w-8 h-8 rounded bg-muted overflow-hidden shrink-0">
-                                        <img 
-                                            src={getBestVariantUrl(getImageSlot(item.imagesJson, 'thumbnail') || undefined) || undefined} 
-                                            alt="" 
-                                            className="w-full h-full object-cover" 
+                                        <img
+                                            src={getBestVariantUrl(getImageSlot(item.images_json, 'thumbnail') || undefined) || undefined}
+                                            alt=""
+                                            className="w-full h-full object-cover"
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -313,7 +307,7 @@ function RoundupListSettings({
                     ) : (
                         <div className="space-y-2">
                             {items.map((item, index) => (
-                                <Collapsible 
+                                <Collapsible
                                     key={`${item.article_id}-${index}`}
                                     open={openItemId === item.article_id}
                                     onOpenChange={(open) => setOpenItemId(open ? item.article_id : null)}
@@ -321,10 +315,10 @@ function RoundupListSettings({
                                 >
                                     <div className="p-2 flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
-                                            <img 
-                                                src={item.image ? getBestVariantUrl(item.image) || undefined : undefined} 
-                                                alt="" 
-                                                className="w-full h-full object-cover" 
+                                            <img
+                                                src={item.image ? getBestVariantUrl(item.image) || undefined : undefined}
+                                                alt=""
+                                                className="w-full h-full object-cover"
                                             />
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -336,7 +330,7 @@ function RoundupListSettings({
                                                 )}
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); moveItem(index, -1); }} disabled={index === 0}>
                                                 <ChevronUp className="h-3.5 w-3.5" />
@@ -352,10 +346,10 @@ function RoundupListSettings({
                                                     <Settings2 className="h-3.5 w-3.5" />
                                                 </Button>
                                             </CollapsibleTrigger>
-                                            
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
+
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
                                                 className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                                 onClick={(e) => { e.stopPropagation(); removeItem(item.article_id); }}
                                             >
@@ -367,26 +361,26 @@ function RoundupListSettings({
                                     <CollapsibleContent className="px-3 pb-3 pt-1 space-y-3 border-t bg-muted/5">
                                         <div className="space-y-2 mt-2">
                                             <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Override Title</Label>
-                                            <Input 
-                                                className="h-7 text-[11px]" 
-                                                value={item.title} 
+                                            <Input
+                                                className="h-7 text-[11px]"
+                                                value={item.title}
                                                 onChange={(e) => updateItemField(index, 'title', e.target.value)}
                                             />
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Subtitle / Teaser</Label>
-                                            <Input 
-                                                className="h-7 text-[11px]" 
-                                                value={item.subtitle} 
+                                            <Input
+                                                className="h-7 text-[11px]"
+                                                value={item.subtitle}
                                                 onChange={(e) => updateItemField(index, 'subtitle', e.target.value)}
                                                 placeholder="Short catchy hook..."
                                             />
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Editorial Note</Label>
-                                            <Textarea 
-                                                className="text-[11px] min-h-[80px]" 
-                                                value={item.note} 
+                                            <Textarea
+                                                className="text-[11px] min-h-[80px]"
+                                                value={item.note}
                                                 onChange={(e) => updateItemField(index, 'note', e.target.value)}
                                                 placeholder="Why is this recipe a top choice? Mention your personal experience..."
                                             />
@@ -406,10 +400,10 @@ function RoundupListSettings({
                 <div className="space-y-3 pt-1">
                      <div className="flex items-center justify-between">
                         <Label className="text-xs">Show Recipe Stats</Label>
-                        <input 
-                            type="checkbox" 
-                            checked={selectedBlock.props.showStats} 
-                            onChange={(e) => updateProps({ showStats: e.target.checked })} 
+                        <input
+                            type="checkbox"
+                            checked={selectedBlock.props.showStats}
+                            onChange={(e) => updateProps({ showStats: e.target.checked })}
                             className="rounded border-border h-4 w-4"
                         />
                      </div>

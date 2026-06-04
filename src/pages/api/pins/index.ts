@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ request }) => {
   try {
     const { article_id } = validateQuery(new URL(request.url).searchParams, PinListQuery);
 
-    const pins = await getPinterestPins(env.DB, { articleId: article_id });
+    const pins = await getPinterestPins(env.DB, { article_id });
 
     const { body, status, headers } = formatSuccessResponse({ pins });
     return new Response(body, { status, headers });
@@ -55,14 +55,14 @@ export const POST: APIRoute = async ({ request }) => {
     const body = await validateBody(request, CreatePinSchema);
 
     const inserted = await createPinterestPin(env.DB, {
-      articleId: body.article_id,
-      boardId: body.board_id ?? null,
+      article_id: body.article_id,
+      board_id: body.board_id ?? null,
       title: body.title,
       description: body.description,
-      imageUrl: body.image_url,
-      destinationUrl: body.pin_url || '',
+      image_url: body.image_url,
+      destination_url: body.pin_url || '',
       status: 'draft',
-      tagsJson: '[]'
+      tags_json: '[]'
     });
 
     const { body: respBody, status, headers } = formatSuccessResponse({
@@ -97,11 +97,11 @@ export const PUT: APIRoute = async ({ request }) => {
     const body = await validateBody(request, UpdatePinSchema);
 
     await updatePinterestPin(env.DB, body.id, {
-      boardId: body.board_id ?? null,
+      board_id: body.board_id ?? null,
       title: body.title,
       description: body.description,
-      imageUrl: body.image_url,
-      destinationUrl: body.pin_url || ''
+      image_url: body.image_url,
+      destination_url: body.pin_url || ''
     });
 
     const { body: respBody, status, headers } = formatSuccessResponse({ updated: true });

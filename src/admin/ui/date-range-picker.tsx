@@ -116,13 +116,13 @@ export function DateRangePicker({
         <div className="flex flex-col sm:flex-row">
           <div className="border-r border-border/20 p-3 flex flex-col gap-1 min-w-[150px] bg-muted/20">
             {PRESETS.map((preset) => {
-              const isActive = activePreset === preset.label;
+              const is_active = activePreset === preset.label;
               return (
                 <Button
                   key={preset.label}
-                  variant={isActive ? "default" : "ghost"}
+                  variant={is_active ? "default" : "ghost"}
                   size="sm"
-                  className={`justify-start text-xs h-8 rounded-lg font-medium transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                  className={`justify-start text-xs h-8 rounded-lg font-medium transition-colors ${is_active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
                   onClick={() => handlePresetClick(preset)}
                 >
                   {preset.label}

@@ -16,15 +16,15 @@ export const pinterestBoards = sqliteTable('pinterest_boards', {
   slug: text('slug').unique().notNull(),
   name: text('name').notNull(),
   description: text('description'),
-  boardUrl: text('board_url'),
-  coverImageUrl: text('cover_image_url'),
+  board_url: text('board_url'),
+  cover_image_url: text('cover_image_url'),
   locale: text('locale').default('en'),
-  isActive: integer('is_active', { mode: 'boolean' }).default(true),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
-  deletedAt: text('deleted_at'),
+  is_active: integer('is_active', { mode: 'boolean' }).default(true),
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  deleted_at: text('deleted_at'),
 }, (table) => [
-  index('idx_pinterest_boards_active').on(table.isActive),
+  index('idx_pinterest_boards_active').on(table.is_active),
 ]);
 
 // ============================================================================
@@ -32,25 +32,25 @@ export const pinterestBoards = sqliteTable('pinterest_boards', {
 // ============================================================================
 export const pinterestPins = sqliteTable('pinterest_pins', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  articleId: integer('article_id').references(() => articles.id, { onDelete: 'cascade' }),
-  boardId: integer('board_id').references(() => pinterestBoards.id, { onDelete: 'set null' }),
-  sectionName: text('section_name'),
-  imageUrl: text('image_url').notNull(),
-  destinationUrl: text('destination_url').notNull(),
+  article_id: integer('article_id').references(() => articles.id, { onDelete: 'cascade' }),
+  board_id: integer('board_id').references(() => pinterestBoards.id, { onDelete: 'set null' }),
+  section_name: text('section_name'),
+  image_url: text('image_url').notNull(),
+  destination_url: text('destination_url').notNull(),
   title: text('title').notNull(),
   description: text('description'),
-  tagsJson: text('tags_json').default('[]'),
+  tags_json: text('tags_json').default('[]'),
   status: text('status').default('draft'),
-  pinterestPinId: text('pinterest_pin_id'),
-  exportedAt: text('exported_at'),
-  exportBatchId: text('export_batch_id'),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  pinterest_pin_id: text('pinterest_pin_id'),
+  exported_at: text('exported_at'),
+  export_batch_id: text('export_batch_id'),
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
-  index('idx_pinterest_pins_board').on(table.boardId),
-  index('idx_pinterest_pins_article').on(table.articleId),
+  index('idx_pinterest_pins_board').on(table.board_id),
+  index('idx_pinterest_pins_article').on(table.article_id),
   index('idx_pinterest_pins_status').on(table.status),
-  index('idx_pinterest_pins_batch').on(table.exportBatchId),
+  index('idx_pinterest_pins_batch').on(table.export_batch_id),
 ]);
 
 // Type exports

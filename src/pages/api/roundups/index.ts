@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ request }) => {
         // Build query options - always filter by type='roundup'
         const options: Record<string, unknown> = {
             type: 'roundup',
-            workflowStatus: 'published',
+            workflow_status: 'published',
             limit,
             offset,
         };
@@ -53,11 +53,11 @@ export const GET: APIRoute = async ({ request }) => {
             const articleData = article as any;
             // Parse roundup JSON for item count
             let itemCount = 0;
-            if (articleData.roundupJson) {
+            if (articleData.roundup_json) {
                 try {
-                    const roundupData = typeof articleData.roundupJson === 'string'
-                        ? JSON.parse(articleData.roundupJson as string)
-                        : articleData.roundupJson;
+                    const roundupData = typeof articleData.roundup_json === 'string'
+                        ? JSON.parse(articleData.roundup_json as string)
+                        : articleData.roundup_json;
                     itemCount = (roundupData as { items?: unknown[] }).items?.length || 0;
                 } catch {
                     itemCount = 0;
@@ -66,11 +66,11 @@ export const GET: APIRoute = async ({ request }) => {
 
             // Parse images for thumbnail
             let thumbnail = null;
-            if (article.imagesJson) {
+            if (article.images_json) {
                 try {
-                    const images = typeof article.imagesJson === 'string'
-                        ? JSON.parse(article.imagesJson)
-                        : article.imagesJson;
+                    const images = typeof article.images_json === 'string'
+                        ? JSON.parse(article.images_json)
+                        : article.images_json;
                     thumbnail = images.thumbnail || images.hero;
                 } catch {
                     thumbnail = null;
@@ -81,14 +81,14 @@ export const GET: APIRoute = async ({ request }) => {
                 id: article.id,
                 slug: article.slug,
                 headline: article.headline,
-                shortDescription: article.shortDescription,
+                short_description: article.short_description,
                 thumbnail,
                 categoryLabel: articleData.categoryLabel,
                 categorySlug: articleData.categorySlug,
                 categoryColor: articleData.categoryColor,
                 authorName: articleData.authorName,
                 authorSlug: articleData.authorSlug,
-                publishedAt: article.publishedAt,
+                published_at: article.published_at,
                 // Roundup-specific
                 itemCount,
             };

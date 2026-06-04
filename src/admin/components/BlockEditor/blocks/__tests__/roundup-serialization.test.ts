@@ -54,7 +54,7 @@ describe('roundup-serialization', () => {
     const [item] = buildRoundupItems([
       {
         type: 'roundupList',
-        props: { items: [{ source_type: 'external_recipe', articleId: 42 }] },
+        props: { items: [{ source_type: 'external_recipe', article_id: 42 }] },
       },
     ]);
     expect(item.source_type).toBe('external_recipe');

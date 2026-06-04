@@ -15,12 +15,12 @@ export const CreateAuthorSchema = z.object({
   slug: SlugField,
   email: z.string().email('Invalid email address').optional(),
   bio: z.string().max(5000).optional(),
-  avatarUrl: z.string().url('Invalid avatar URL').optional(),
-  socialLinks: z.record(z.string(), z.string()).optional(),
-  workflowStatus: z.enum(['draft', 'published', 'archived']).optional(),
-  sortOrder: z.number().int().min(0).optional(),
-  seoJson: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
-  configJson: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
+  avatar_url: z.string().url('Invalid avatar URL').optional(),
+  social_links: z.record(z.string(), z.string()).optional(),
+  workflow_status: z.enum(['draft', 'published', 'archived']).optional(),
+  sort_order: z.number().int().min(0).optional(),
+  seo_json: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
+  config_json: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
 }).passthrough();
 
 /**

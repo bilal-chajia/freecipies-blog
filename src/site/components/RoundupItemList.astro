@@ -13,14 +13,14 @@ type RoundupItem = NonNullable<RoundupJson["items"]>[number];
 interface Props {
   roundup?: Record<string, unknown>;
   block?: Record<string, unknown>;
-  roundupJson?: Record<string, unknown>;
+  roundup_json?: Record<string, unknown>;
   startNumber?: number;
 }
 
 const {
   roundup: rawRoundup,
   block,
-  roundupJson: rawRoundupJson,
+  roundup_json: rawRoundupJson,
   startNumber = 1,
 } = Astro.props;
 
@@ -117,11 +117,11 @@ const renderedItems = items.map((item, index) => {
             </h3>
           </div>
 
-          {imgData.imageUrl && (
+          {imgData.image_url && (
             <div class="item-media">
               <a href={href} class="media-link">
                 <img
-                  src={imgData.imageUrl}
+                  src={imgData.image_url}
                   alt={imgData.imageAlt || title}
                   width={imgData.imageWidth}
                   height={imgData.imageHeight}

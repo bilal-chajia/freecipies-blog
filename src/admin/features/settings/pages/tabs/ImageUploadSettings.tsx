@@ -85,9 +85,9 @@ const ImageUploadSettings = ({ onRegisterActions }: ImageUploadSettingsProps) =>
     } as ImageSettingsType));
   };
 
-  const buildDefaultCredit = (authorId: string) => {
-    if (!authorId || authorId === 'none') return null;
-    const author = authors.find(item => String(item.id) === String(authorId));
+  const buildDefaultCredit = (author_id: string) => {
+    if (!author_id || author_id === 'none') return null;
+    const author = authors.find(item => String(item.id) === String(author_id));
     if (!author?.id || !author?.name || !author?.slug) return null;
     return {
       type: 'author' as const,

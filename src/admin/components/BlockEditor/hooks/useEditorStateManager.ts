@@ -15,7 +15,7 @@ interface EditorStateManagerProps {
     onStructureUpdate?: (info: { items: StructureItem[]; activeBlockId: string | null }) => void;
     onSelectedBlockChange?: (block: Record<string, unknown> | null) => void;
     contentType?: string;
-    onRoundupChange?: (roundupJson: string) => void;
+    onRoundupChange?: (roundup_json: string) => void;
     activeBlockId: string | null;
     /**
      * Shared with useBlockEditorHydration so the hydration echo-guard can

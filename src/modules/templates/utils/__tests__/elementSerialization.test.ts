@@ -11,7 +11,7 @@ describe('template element serialization', () => {
       {
         id: 'image-1',
         type: 'imageSlot',
-        imageUrl: '/api/images/template-assets/example.webp',
+        image_url: '/api/images/template-assets/example.webp',
         sourceType: 'upload',
         borderRadius: 8,
         imageOffset: { x: 10, y: 20 },

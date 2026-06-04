@@ -8,10 +8,10 @@ import { resolveVariantUrl } from "@shared/types/images";
 
 interface Props {
   instructions: InstructionSection[];
-  imagesJson?: unknown;
+  images_json?: unknown;
 }
 
-const { instructions, imagesJson } = Astro.props;
+const { instructions, images_json } = Astro.props;
 
 type StepImageVariant = {
   url?: string;
@@ -92,7 +92,7 @@ function getStepImage(imageRef: string | null | undefined) {
   };
 }
 
-const stepImages = parseImagesJson(imagesJson);
+const stepImages = parseImagesJson(images_json);
 
 function formatTime(minutes: number): string {
   if (!minutes) return "";

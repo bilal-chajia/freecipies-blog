@@ -50,12 +50,10 @@ Rules:
 - Local variables and function names may be `camelCase`; they are not data keys.
 - Mixed shapes such as both `sizeBytes` and `size_bytes` are forbidden.
 
-> **Migration status (2026-06-03):** the codebase is mid-migration from the old
-> camelCase-TS rule to this snake_case-end-to-end rule. The **media** resource is
-> fully migrated (schema → API → admin). Other resources (articles, authors,
-> categories, recipes, …) still expose camelCase TS data shapes and must be
-> migrated incrementally. Until a resource is migrated, its existing camelCase
-> shape is tolerated; new code follows this contract.
+> **Migration status (2026-06-04):** all Drizzle-backed resources are migrated to
+> snake_case data keys end to end (schema → service → API/admin/server-render
+> payloads → consuming types/components). CamelCase data-shape aliases are no
+> longer tolerated for migrated resources.
 
 ## SQL Names
 

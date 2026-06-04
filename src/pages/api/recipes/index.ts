@@ -39,7 +39,7 @@ export const GET: APIRoute = async ({ request }) => {
 
         const options: ArticleQueryOptions = {
             type: 'recipe',
-            workflowStatus: 'published',
+            workflow_status: 'published',
             limit,
             offset,
         };
@@ -55,9 +55,9 @@ export const GET: APIRoute = async ({ request }) => {
             const recipeArticle = article.type === 'recipe' ? article as RecipeContent : null;
             // Parse recipe JSON for card data
             let recipeData = null;
-            if (recipeArticle?.recipeJson) {
+            if (recipeArticle?.recipe_json) {
                 try {
-                    recipeData = normalizeRecipeForRender(recipeArticle.recipeJson);
+                    recipeData = normalizeRecipeForRender(recipeArticle.recipe_json);
                 } catch {
                     recipeData = null;
                 }
@@ -65,11 +65,11 @@ export const GET: APIRoute = async ({ request }) => {
 
             // Parse images for thumbnail
             let thumbnail = null;
-            if (article.imagesJson) {
+            if (article.images_json) {
                 try {
-                    const images = typeof article.imagesJson === 'string'
-                        ? JSON.parse(article.imagesJson)
-                        : article.imagesJson;
+                    const images = typeof article.images_json === 'string'
+                        ? JSON.parse(article.images_json)
+                        : article.images_json;
                     thumbnail = images.thumbnail || images.hero;
                 } catch {
                     thumbnail = null;
@@ -80,14 +80,14 @@ export const GET: APIRoute = async ({ request }) => {
                 id: article.id,
                 slug: article.slug,
                 headline: article.headline,
-                shortDescription: article.shortDescription,
+                short_description: article.short_description,
                 thumbnail,
                 categoryLabel: article.categoryLabel,
                 categorySlug: article.categorySlug,
                 categoryColor: article.categoryColor,
                 authorName: article.authorName,
                 authorSlug: article.authorSlug,
-                publishedAt: article.publishedAt,
+                published_at: article.published_at,
                 // Recipe-specific fields
                 totalTime: recipeData?.total,
                 prepTime: recipeData?.prep,

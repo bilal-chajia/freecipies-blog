@@ -13,18 +13,18 @@ export const pinTemplates = sqliteTable('pin_templates', {
   name: text('name').notNull(),
   description: text('description'),
   category: text('category').default('general'),
-  backgroundColor: text('background_color').default('#ffffff'),
-  thumbnailUrl: text('thumbnail_url'),
+  background_color: text('background_color').default('#ffffff'),
+  thumbnail_url: text('thumbnail_url'),
   width: integer('width').default(1000),
   height: integer('height').default(1500),
-  elementsJson: text('elements_json').notNull(),
-  isActive: integer('is_active', { mode: 'boolean' }).default(true),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  elements_json: text('elements_json').notNull(),
+  is_active: integer('is_active', { mode: 'boolean' }).default(true),
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index('idx_pin_templates_slug').on(table.slug),
   index('idx_pin_templates_category').on(table.category),
-  index('idx_pin_templates_active').on(table.isActive),
+  index('idx_pin_templates_active').on(table.is_active),
 ]);
 
 // Type exports

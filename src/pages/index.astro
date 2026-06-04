@@ -30,12 +30,12 @@ try {
   allRecipes = recipes;
 
   // Get categories
-  const rawCategories = await getCategories(env.DB, { workflowStatus: 'published' });
+  const rawCategories = await getCategories(env.DB, { workflow_status: 'published' });
   categories = rawCategories.map(hydrateCategory);
 
   // Get featured author for About section
-  const allAuthors = await getAuthors(env.DB, { workflowStatus: 'published' });
-  featuredAuthor = allAuthors.find(a => a.isFeatured) || allAuthors[0] || null;
+  const allAuthors = await getAuthors(env.DB, { workflow_status: 'published' });
+  featuredAuthor = allAuthors.find(a => a.is_featured) || allAuthors[0] || null;
 } catch (error) {
   console.error("Error fetching data for homepage:", error);
 }
@@ -57,24 +57,24 @@ const getCategoryColor = (categorySlug?: string) =>
   categoryColorMap.get(categorySlug || '') || 'var(--brand-primary)';
 
 const getRecipeImage = (recipe: HydratedArticle, targetWidth: number, prefer: 'hero' | 'thumbnail' = 'hero') => {
-  const hero = extractImage(recipe.imagesJson, 'hero', targetWidth);
-  const thumbnail = extractImage(recipe.imagesJson, 'thumbnail', targetWidth);
+  const hero = extractImage(recipe.images_json, 'hero', targetWidth);
+  const thumbnail = extractImage(recipe.images_json, 'thumbnail', targetWidth);
   const slotName = prefer === 'hero'
-    ? (hero.imageUrl ? 'hero' : 'thumbnail')
-    : (thumbnail.imageUrl ? 'thumbnail' : 'hero');
+    ? (hero.image_url ? 'hero' : 'thumbnail')
+    : (thumbnail.image_url ? 'thumbnail' : 'hero');
   const selected = slotName === 'hero' ? hero : thumbnail;
-  const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
+  const srcSet = getImageSrcSet(recipe.images_json, slotName);
   return { selected, srcSet };
 };
 
 const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefer: 'hero' | 'thumbnail' = 'thumbnail') => {
-  const hero = extractImage(category.imagesJson, 'hero', targetWidth);
-  const thumbnail = extractImage(category.imagesJson, 'thumbnail', targetWidth);
+  const hero = extractImage(category.images_json, 'hero', targetWidth);
+  const thumbnail = extractImage(category.images_json, 'thumbnail', targetWidth);
   const slotName = prefer === 'hero'
-    ? (hero.imageUrl ? 'hero' : 'thumbnail')
-    : (thumbnail.imageUrl ? 'thumbnail' : 'hero');
+    ? (hero.image_url ? 'hero' : 'thumbnail')
+    : (thumbnail.image_url ? 'thumbnail' : 'hero');
   const selected = slotName === 'hero' ? hero : thumbnail;
-  const srcSet = getImageSrcSet(category.imagesJson, slotName);
+  const srcSet = getImageSrcSet(category.images_json, slotName);
   return { selected, srcSet };
 };
 ---
@@ -104,9 +104,9 @@ const { selected, srcSet } = getRecipeImage(recipe, 1200, "hero");
                     data-index={index}
                   >
                     <div class="card-image">
-                      {(selected.imageUrl || recipe.imageUrl) && (
+                      {(selected.image_url || recipe.image_url) && (
                         <img
-                          src={selected.imageUrl || recipe.imageUrl}
+                          src={selected.image_url || recipe.image_url}
                           alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
                           width={selected.imageWidth || recipe.imageWidth || 1200}
                           height={selected.imageHeight || recipe.imageHeight || 675}
@@ -120,7 +120,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 1200, "hero");
                       <div class="card-overlay" />
                     </div>
                     <div class="card-content">
-                      <span 
+                      <span
                         class="badge card-category"
                         style={`--badge-color: ${getCategoryColor(recipe.categorySlug)};`}
                       >
@@ -154,9 +154,9 @@ const { selected, srcSet } = getRecipeImage(recipe, 600, "hero");
                   class="recipe-card recipe-card-small"
                 >
                   <div class="card-image">
-                    {(selected.imageUrl || recipe.imageUrl) && (
+                    {(selected.image_url || recipe.image_url) && (
                       <img
-                        src={selected.imageUrl || recipe.imageUrl}
+                        src={selected.image_url || recipe.image_url}
                         alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
                         width={selected.imageWidth || recipe.imageWidth || 600}
                         height={selected.imageHeight || recipe.imageHeight || 400}
@@ -169,7 +169,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 600, "hero");
                     <div class="card-overlay" />
                   </div>
                   <div class="card-content">
-                    <span 
+                    <span
                       class="badge card-category"
                       style={`--badge-color: ${getCategoryColor(recipe.categorySlug)};`}
                     >{recipe.categoryLabel}</span>
@@ -198,14 +198,14 @@ const { selected, srcSet } = getRecipeImage(recipe, 600, "hero");
               {popularRecipes.map((recipe: HydratedArticle) => {
 const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 600px) 100vw, (max-width: 1024px) 50vw, 25vw";
-                const cachedRecipe = parseCachedRecipe(recipe.cachedRecipeJson);
+                const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
                 const cookTime = cachedRecipe?.cook_time_minutes ?? cachedRecipe?.cookTimeMinutes ?? null;
                 return (
                 <article class="foxiz-card">
                   <a href={getRecipeUrl(recipe)} class="foxiz-card-image">
-                    {(selected.imageUrl || recipe.imageUrl) && (
+                    {(selected.image_url || recipe.image_url) && (
                       <img
-                        src={selected.imageUrl || recipe.imageUrl}
+                        src={selected.image_url || recipe.image_url}
                         alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
                         width={selected.imageWidth || recipe.imageWidth || 400}
                         height={selected.imageHeight || recipe.imageHeight || 300}
@@ -215,7 +215,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                         style={selected.imageStyle || undefined}
                       />
                     )}
-                    <span 
+                    <span
                       class="badge foxiz-badge"
                       style={`--badge-color: ${getCategoryColor(recipe.categorySlug)};`}
                     >
@@ -261,7 +261,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
         <section class="section categories-section">
           <div class="container">
             <h2 class="section-title centered">Want to Learn How to Make?</h2>
-            
+
             <!-- Category Filter Buttons -->
             <div class="category-filter-row">
               {categories.slice(0, 4).map((category) => (
@@ -279,9 +279,9 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 return (
                 <a href={`/categories/${category.slug}`} class="chip-standard category-chip">
                   <div class="chip-image">
-                    {(selected.imageUrl || category.imageUrl) ? (
-                      <img 
-                        src={selected.imageUrl || category.imageUrl} 
+                    {(selected.image_url || category.image_url) ? (
+                      <img
+                        src={selected.image_url || category.image_url}
                         alt={selected.imageAlt || category.imageAlt || category.label}
                         width={selected.imageWidth || category.imageWidth || 80}
                         height={selected.imageHeight || category.imageHeight || 80}
@@ -309,10 +309,10 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
     <!-- About the Author Section -->
     {
       featuredAuthor && (() => {
-        const authorImage = extractImage(featuredAuthor.imagesJson, 'avatar', 600);
-        const authorImageUrl = authorImage.imageUrl || '';
+        const authorImage = extractImage(featuredAuthor.images_json, 'avatar', 600);
+        const authorImageUrl = authorImage.image_url || '';
         const authorName = featuredAuthor.name || 'Our Chef';
-        const authorBio = featuredAuthor.shortDescription || '';
+        const authorBio = featuredAuthor.short_description || '';
         const authorSlug = featuredAuthor.slug || '';
         return (
           <section class="section about-author-section">
@@ -367,14 +367,14 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
               {moreRecipes.map((recipe: HydratedArticle) => {
 const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 768px) 50vw, 25vw";
-                const cachedRecipe = parseCachedRecipe(recipe.cachedRecipeJson);
+                const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
                 const prepTime = cachedRecipe?.prep_time_minutes ?? cachedRecipe?.prepTimeMinutes ?? null;
                 return (
                 <a href={getRecipeUrl(recipe)} class="recipe-card-vertical">
                   <div class="card-image-wrapper">
-                    {(selected.imageUrl || recipe.imageUrl) && (
+                    {(selected.image_url || recipe.image_url) && (
                       <img
-                        src={selected.imageUrl || recipe.imageUrl}
+                        src={selected.image_url || recipe.image_url}
                         alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
                         width={selected.imageWidth || recipe.imageWidth || 400}
                         height={selected.imageHeight || recipe.imageHeight || 300}
@@ -384,7 +384,7 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                         style={selected.imageStyle || undefined}
                       />
                     )}
-                    <span 
+                    <span
                       class="badge card-category-badge"
                       style={`--badge-color: ${getCategoryColor(recipe.categorySlug)};`}
                     >

@@ -30,7 +30,7 @@ interface EditorInstance {
 
 interface StructureItem {
     id: string;
-    parentId: string | null;
+    parent_id: string | null;
     [key: string]: unknown;
 }
 
@@ -91,10 +91,10 @@ export function useGutenbergCanvasHandlers(
         const dragged = structureItems.find((item) => item.id === draggedId);
         const target = structureItems.find((item) => item.id === targetId);
         if (!dragged || !target) return;
-        if (dragged.parentId !== target.parentId) return;
+        if (dragged.parent_id !== target.parent_id) return;
 
         const siblings = structureItems
-            .filter((item) => item.parentId === dragged.parentId)
+            .filter((item) => item.parent_id === dragged.parent_id)
             .map((item) => item.id);
         const fromIndex = siblings.indexOf(draggedId);
         const targetIndex = siblings.indexOf(targetId);

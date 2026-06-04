@@ -42,13 +42,13 @@ if (!roundup) {
 const author = (roundup as any).author || null;
 const category = (roundup as any).category || null;
 
-const heroSlot = extractImage(roundup.imagesJson, "hero", 1200);
-const heroThumb = extractImage(roundup.imagesJson, "thumbnail", 1200);
-const heroImage = heroSlot.imageUrl ? heroSlot : heroThumb;
+const heroSlot = extractImage(roundup.images_json, "hero", 1200);
+const heroThumb = extractImage(roundup.images_json, "thumbnail", 1200);
+const heroImage = heroSlot.image_url ? heroSlot : heroThumb;
 
 const pageTitle = roundup.metaTitle || roundup.headline;
-const pageDescription = roundup.metaDescription || roundup.shortDescription;
-const jsonldSchemas = parseJsonLdArray(roundup.jsonldJson);
+const pageDescription = roundup.metaDescription || roundup.short_description;
+const jsonldSchemas = parseJsonLdArray(roundup.jsonld_json);
 ---
 
 <RoundupLayout article={roundup} author={author} category={category}>
@@ -56,7 +56,7 @@ const jsonldSchemas = parseJsonLdArray(roundup.jsonldJson);
     slot="head"
     title={pageTitle}
     description={pageDescription}
-    image={heroImage.imageUrl || roundup.imageUrl || ""}
+    image={heroImage.image_url || roundup.image_url || ""}
     imageAlt={heroImage.imageAlt || roundup.imageAlt || undefined}
     schemas={jsonldSchemas}
   />

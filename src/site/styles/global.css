@@ -687,9 +687,9 @@
 
 /* TOC active link highlight */
 .toc-active {
-  color: var(--brand-primary) !important;
+  color: var(--toc-accent, var(--brand-primary)) !important;
   font-weight: var(--font-semibold);
-  border-left-color: var(--brand-primary) !important;
+  border-left-color: var(--toc-accent, var(--brand-primary)) !important;
 }
 
 /* Back-to-top hover */

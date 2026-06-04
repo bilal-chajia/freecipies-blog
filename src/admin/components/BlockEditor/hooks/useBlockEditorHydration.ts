@@ -49,10 +49,10 @@ export function useBlockEditorHydration({
 
   const sourceDataSignature = useMemo(
     () => JSON.stringify({
-      recipeJson: hydrationContext.recipeJson,
-      faqsJson: hydrationContext.faqsJson,
+      recipe_json: hydrationContext.recipe_json,
+      faqs_json: hydrationContext.faqs_json,
       imagesData: hydrationContext.imagesData,
-      roundupJson: hydrationContext.roundupJson,
+      roundup_json: hydrationContext.roundup_json,
     }),
     [hydrationContext]
   );

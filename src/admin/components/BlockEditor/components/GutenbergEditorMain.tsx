@@ -36,7 +36,7 @@ type GutenbergEditorMainProps = {
         [key: string]: unknown;
     };
     onInputChange?: (field: string, value: unknown) => void;
-    contentJson: string | unknown[] | { blocks: unknown[] };
+    content_json: string | unknown[] | { blocks: unknown[] };
     setContentJson: (value: string) => void;
     validateJSON?: (field: string, value: string) => void;
     relatedContext?: React.ComponentProps<typeof BlockEditor>['context'];
@@ -151,7 +151,7 @@ function ContentTypeBadge({ type }: { type: EditorContentType }) {
 export default function GutenbergEditorMain({
     formData,
     onInputChange,
-    contentJson,
+    content_json,
     setContentJson,
     validateJSON,
     relatedContext,
@@ -188,7 +188,7 @@ export default function GutenbergEditorMain({
                             <Editor
                                 height="100%"
                                 defaultLanguage="json"
-                                value={typeof contentJson === 'string' ? contentJson : JSON.stringify(contentJson, null, 2)}
+                                value={typeof content_json === 'string' ? content_json : JSON.stringify(content_json, null, 2)}
                                 onChange={(value) => {
                                     const nextValue = value ?? '';
                                     setContentJson(nextValue);
@@ -204,7 +204,7 @@ export default function GutenbergEditorMain({
                         </div>
                     ) : (
                         <BlockEditor
-                            value={contentJson}
+                            value={content_json}
                             onChange={(value) => {
                                 const nextValue = value ?? '';
                                 setContentJson(nextValue);

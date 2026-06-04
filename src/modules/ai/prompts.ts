@@ -17,7 +17,7 @@ When generating a recipe, respond with this exact JSON structure:
 {
   "label": "Recipe Title",
   "headline": "A catchy subtitle",
-  "shortDescription": "2-3 sentence description for SEO and previews",
+  "short_description": "2-3 sentence description for SEO and previews",
   "metaTitle": "SEO meta title (50-60 chars)",
   "metaDescription": "SEO meta description (150-160 chars)",
   "recipe": {
@@ -59,7 +59,7 @@ When generating an article, respond with this exact JSON structure:
 {
   "label": "Article Title",
   "headline": "A catchy subtitle",
-  "shortDescription": "2-3 sentence description for SEO and previews",
+  "short_description": "2-3 sentence description for SEO and previews",
   "metaTitle": "SEO meta title (50-60 chars)",
   "metaDescription": "SEO meta description (150-160 chars)",
   "blocks": [
@@ -78,7 +78,7 @@ When generating a roundup article (list of recipes), respond with this exact JSO
 {
   "label": "Roundup Title",
   "headline": "A catchy subtitle",
-  "shortDescription": "2-3 sentence description for SEO and previews",
+  "short_description": "2-3 sentence description for SEO and previews",
   "metaTitle": "SEO meta title (50-60 chars)",
   "metaDescription": "SEO meta description (150-160 chars)",
   "blocks": [

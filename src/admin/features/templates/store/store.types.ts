@@ -61,7 +61,7 @@ export interface EditorActions {
     // Template actions
     setTemplate: (updates: Partial<TemplateState>) => void;
     initTemplate: (template: Partial<TemplateState>, elements?: TemplateElement[]) => void;
-    loadTemplateToStore: (templateData: Partial<TemplateState>, elementsJson?: string | TemplateElement[]) => void;
+    loadTemplateToStore: (templateData: Partial<TemplateState>, elements_json?: string | TemplateElement[]) => void;
     resetTemplate: () => void;
     setCanvasBase: (width: number, height: number) => void;
 

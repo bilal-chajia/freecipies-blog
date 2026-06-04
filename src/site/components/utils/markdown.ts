@@ -24,7 +24,7 @@ export function renderInlineMarkdown(text?: string): string {
     const isExternal = safeHref.startsWith("http");
     const target = isExternal ? ' target="_blank"' : "";
     const rel = isExternal ? ' rel="noreferrer noopener"' : "";
-    return `<a href="${safeHref}" class="text-[var(--info)] underline underline-offset-2"${target}${rel}>${label}</a>`;
+    return `<a href="${safeHref}" class="text-[var(--info-text)] underline underline-offset-2"${target}${rel}>${label}</a>`;
   });
 
   return withLinks

@@ -203,7 +203,7 @@
                         `;
                     }
 
-                    const imageUrl = page.imageUrl || "";
+                    const image_url = page.image_url || "";
                     const imageAlt = page.imageAlt || "";
                     const title = page.title || "";
                     const text = page.text || "";
@@ -223,7 +223,7 @@
                     pagesHtml += `
                         <div class="story-page" data-page="${i}" style="position:absolute;inset:0;opacity:0;visibility:hidden;">
                             <div style="position:absolute;inset:0;">
-                                <img src="${imageUrl}" alt="${imageAlt}" width="720" height="1280" loading="lazy" style="width:100%;height:100%;object-fit:cover;" />
+                                <img src="${image_url}" alt="${imageAlt}" width="720" height="1280" loading="lazy" style="width:100%;height:100%;object-fit:cover;" />
                             </div>
                             <div style="${overlayStyle}">
                                 <h2 style="${titleStyle}">${title}</h2>

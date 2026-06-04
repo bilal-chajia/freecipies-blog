@@ -32,16 +32,16 @@ if (slug !== normalizedSlug) {
 }
 slug = normalizedSlug; // Use normalized slug going forward
 
-// Helper: Check noIndex from category seoJson
+// Helper: Check noIndex from category seo_json
 function shouldNoIndex(category: any): boolean {
-  const seoJson = safeParseJson<{ noIndex?: boolean }>(category.seoJson);
-  return seoJson?.noIndex === true;
+  const seo_json = safeParseJson<{ no_index?: boolean }>(category.seo_json);
+  return seo_json?.no_index === true;
 }
 
 // Helper: Get OG image from category
 function getOgImage(category: any): string | undefined {
-  const seoJson = safeParseJson<{ ogImage?: string }>(category.seoJson);
-  return seoJson?.ogImage || category.imageUrl;
+  const seo_json = safeParseJson<{ og_image?: string }>(category.seo_json);
+  return seo_json?.og_image || category.image_url;
 }
 
 // Parse query parameters - only pagination is user-controllable
@@ -55,7 +55,7 @@ const currentPage = Math.max(
 let allCategories: any[] = [];
 try {
   if (env.DB) {
-    const raw = await getCategories(env.DB, { workflowStatus: 'published' });
+    const raw = await getCategories(env.DB, { workflow_status: 'published' });
     allCategories = hydrateCategories(raw);
   }
 } catch (e) {
@@ -70,8 +70,8 @@ if (!category) {
 
 // Display settings come from admin config only (no user overrides)
 const perPage = category.numEntriesPerPage || 12;
-const sortBy = category.sortBy || "publishedAt";
-const sortOrder = category.articleSortOrder || "desc";
+const sortBy = category.sortBy || "published_at";
+const sort_order = category.articleSortOrder || "desc";
 const layoutMode = category.layoutMode || "grid";
 const showPagination = category.showPagination !== false;
 const showBreadcrumb = category.showBreadcrumb !== false;
@@ -94,11 +94,11 @@ try {
   if (env.DB) {
     const result = await getArticles(env.DB, {
       categorySlug: slug,
-      workflowStatus: 'published',
+      workflow_status: 'published',
       limit: perPage,
       offset,
       sortBy,
-      sortOrder,
+      sort_order,
     });
     articles = result.items;
     total = result.total;
@@ -116,8 +116,8 @@ if (currentPage === 1 && headerStyle === "hero" && showFeaturedRecipe) {
       const candidate = await getArticleById(env.DB, category.featuredArticleId);
       if (
         candidate &&
-        (candidate as any).workflowStatus === 'published' &&
-        (candidate as any).categoryId === category.id
+        (candidate as any).workflow_status === 'published' &&
+        (candidate as any).category_id === category.id
       ) {
         featuredArticle = candidate;
       }
@@ -145,10 +145,10 @@ if (articles.length === 0 && otherCategories.length > 0) {
   for (const otherCat of otherCategories.slice(0, 2)) {
     const { items: others } = await getArticles(env.DB, {
       categorySlug: otherCat.slug,
-      workflowStatus: 'published',
+      workflow_status: 'published',
       limit: 2,
-      sortBy: "publishedAt",
-      sortOrder: "desc",
+      sortBy: "published_at",
+      sort_order: "desc",
     });
     featuredFromOthers = [...featuredFromOthers, ...others];
   }
@@ -159,7 +159,7 @@ const baseUrl = `/categories/${slug}`;
 
 // SEO Configuration
 const pageTitle = category.metaTitle || category.headline || category.label;
-const pageDescription = category.metaDescription || category.shortDescription;
+const pageDescription = category.metaDescription || category.short_description;
 const ogImage = getOgImage(category);
 const noIndex = shouldNoIndex(category);
 
@@ -223,7 +223,7 @@ const categoryJsonLd = {
     <div class="container">
       <div class="section-header">
         <h2 id="category-title" class="section-title">
-          {category.collectionTitle || `${category.label} Recipes`}
+          {category.collection_title || `${category.label} Recipes`}
         </h2>
         <span class="recipe-count" aria-live="polite" aria-atomic="true">
           {total} recipe{total !== 1 ? 's' : ''}

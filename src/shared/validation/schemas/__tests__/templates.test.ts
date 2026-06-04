@@ -21,7 +21,7 @@ describe('template validation schemas', () => {
         slug: 'recipe-pin',
         name: 'Recipe Pin',
         backgroundColor: '#ffffff',
-        elementsJson: [],
+        elements_json: [],
       })
     ).toThrow();
   });

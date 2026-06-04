@@ -8,6 +8,6 @@ export interface PinStatus {
 
 export interface PinExport {
   batchId: string;
-  exportedAt: string;
-  pinterestPinId?: string;
+  exported_at: string;
+  pinterest_pin_id?: string;
 }

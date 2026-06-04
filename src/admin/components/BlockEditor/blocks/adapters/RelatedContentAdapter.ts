@@ -58,21 +58,21 @@ function readString(value: unknown): string | null {
 function normalizeRelatedContentItem(value: unknown): RelatedContentItem | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
     const item = value as Record<string, unknown>;
-    const articleId = readNumber(item.article_id) ?? readNumber(item.articleId) ?? readNumber(item.id);
-    if (!articleId) return null;
+    const article_id = readNumber(item.article_id) ?? readNumber(item.article_id) ?? readNumber(item.id);
+    if (!article_id) return null;
 
     const snapshot =
         parseJsonObject(item.snapshot)
         ?? parseJsonObject(item.cached_card_json)
-        ?? parseJsonObject(item.cachedCardJson);
+        ?? parseJsonObject(item.cached_card_json);
 
     if (snapshot) {
-        const snapshotId = readNumber(snapshot.id) ?? articleId;
+        const snapshotId = readNumber(snapshot.id) ?? article_id;
         const slug = readString(snapshot.slug) ?? readString(item.slug);
         const headline = readString(snapshot.headline) ?? readString(snapshot.title) ?? readString(item.headline) ?? readString(item.title);
         if (!slug || !headline) return null;
         return {
-            article_id: articleId,
+            article_id: article_id,
             snapshot: {
                 ...snapshot,
                 id: snapshotId,
@@ -87,9 +87,9 @@ function normalizeRelatedContentItem(value: unknown): RelatedContentItem | null 
     if (!slug || !headline) return null;
 
     return {
-        article_id: articleId,
+        article_id: article_id,
         snapshot: {
-            id: articleId,
+            id: article_id,
             type: readString(item.content_type) ?? readString(item.type) ?? 'article',
             slug,
             headline,

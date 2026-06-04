@@ -12,12 +12,12 @@ import type { Redirect } from '../schema/redirects.schema';
 export function transformRedirectRequest(body: any): any {
   const transformed = { ...body };
 
-  if (body.statusCode !== undefined) {
-    transformed.statusCode = parseInt(body.statusCode, 10);
+  if (body.status_code !== undefined) {
+    transformed.status_code = parseInt(body.status_code, 10);
   }
 
-  if (body.isActive !== undefined) {
-    transformed.isActive = body.isActive === true || body.isActive === 'true' || body.isActive === 1;
+  if (body.is_active !== undefined) {
+    transformed.is_active = body.is_active === true || body.is_active === 'true' || body.is_active === 1;
   }
 
   return transformed;
@@ -32,8 +32,8 @@ export function transformRedirectResponse(redirect: Redirect): any {
   return {
     ...redirect,
     // Ensure accurate types for frontend
-    isActive: Boolean(redirect.isActive),
-    hitCount: Number(redirect.hitCount),
-    statusCode: Number(redirect.statusCode),
+    is_active: Boolean(redirect.is_active),
+    hit_count: Number(redirect.hit_count),
+    status_code: Number(redirect.status_code),
   };
 }

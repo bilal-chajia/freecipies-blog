@@ -264,14 +264,14 @@ describe("Site-Data Presenters", () => {
   });
 
   describe("presentStories", () => {
-    it("should sort stories by viewCount descending and build previews and slides", () => {
+    it("should sort stories by view_count descending and build previews and slides", () => {
       const mockStories = [
         {
           id: 1,
           headline: "Low Views",
-          viewCount: 10,
+          view_count: 10,
           slug: "low",
-          imagesJson: JSON.stringify({
+          images_json: JSON.stringify({
             thumbnail: {
               variants: {
                 xs: { r2_key: "low-xs.jpg", width: 120, height: 120 },
@@ -282,27 +282,27 @@ describe("Site-Data Presenters", () => {
         {
           id: 2,
           headline: "High Views",
-          viewCount: 100,
+          view_count: 100,
           slug: "high",
-          imageUrl: "fallback-high.jpg",
-          imagesJson: null,
+          image_url: "fallback-high.jpg",
+          images_json: null,
         },
       ] as unknown as HydratedArticle[];
 
       const result = presentStories(mockStories);
 
-      // Verify sorting by viewCount descending
+      // Verify sorting by view_count descending
       expect(result).toHaveLength(2);
       expect(result[0].headline).toBe("High Views");
       expect(result[1].headline).toBe("Low Views");
 
       // Verify storyImage selection and fallbacks
-      expect(result[0].storyImage).toBe("fallback-high.jpg"); // Falls back to story.imageUrl since there is no imagesJson
+      expect(result[0].storyImage).toBe("fallback-high.jpg"); // Falls back to story.image_url since there is no images_json
       expect(result[1].storyImage).toBe("/api/images/low-xs.jpg"); // Uses preview since no hero and hero fallback is xs
 
       // Verify storyPreview building
       expect(result[0].storyPreview).toEqual({
-        imageUrl: "fallback-high.jpg",
+        image_url: "fallback-high.jpg",
         imageAlt: "High Views",
         imageWidth: 80,
         imageHeight: 80,
@@ -313,17 +313,17 @@ describe("Site-Data Presenters", () => {
       // Verify page layout formatting (with fallback images / swipe page)
       expect(result[0].storyPages).toEqual([
         {
-          imageUrl: "fallback-high.jpg",
+          image_url: "fallback-high.jpg",
           title: "High Views",
           text: "",
         },
         {
-          imageUrl: "fallback-high.jpg",
+          image_url: "fallback-high.jpg",
           title: "Swipe to continue",
           text: "Tap right to see more",
         },
         {
-          imageUrl: "fallback-high.jpg",
+          image_url: "fallback-high.jpg",
           title: "High Views",
           text: "Ready to cook?",
         },
@@ -335,9 +335,9 @@ describe("Site-Data Presenters", () => {
         {
           id: 3,
           headline: "No Image Story",
-          viewCount: 5,
+          view_count: 5,
           slug: "no-image",
-          imagesJson: null,
+          images_json: null,
         },
       ] as unknown as HydratedArticle[];
 

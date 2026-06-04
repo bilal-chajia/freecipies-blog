@@ -15,16 +15,14 @@ const JsonField = z.union([z.string(), z.record(z.string(), z.unknown())]).optio
 /**
  * Schema for creating a tag.
  * Uses .passthrough() to allow extra fields consumed by transformTagRequestBody
- * (e.g. color, svg_code, svgCode, icon, variant, styleJson).
+ * (e.g. color, svg_code, icon, variant, style_json).
  */
 export const CreateTagSchema = z.object({
   slug: SlugField,
   label: LabelField,
-  shortDescription: DescriptionField,
+  description: DescriptionField,
   color: HexColorField,
-  sortOrder: z.number().int().min(0).optional(),
-  seoJson: JsonField,
-  configJson: JsonField,
+  style_json: JsonField,
 }).passthrough();
 
 /**

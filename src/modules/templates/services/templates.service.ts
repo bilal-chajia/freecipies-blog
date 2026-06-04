@@ -42,7 +42,7 @@ export interface CreateTemplatePayload {
 export type UpdateTemplatePayload = Partial<CreateTemplatePayload>;
 
 /**
- * Helper to serialize Drizzle camelCase properties to contract snake_case.
+ * Helper to serialize Drizzle row properties to contract snake_case.
  */
 function mapToSnakeCase(t: PinTemplate | undefined): TemplateApiPayload | undefined {
   if (!t) return t;
@@ -52,28 +52,28 @@ function mapToSnakeCase(t: PinTemplate | undefined): TemplateApiPayload | undefi
     name: t.name,
     description: t.description,
     category: t.category,
-    elements_json: t.elementsJson,
-    thumbnail_url: t.thumbnailUrl,
-    is_active: Boolean(t.isActive),
-    background_color: t.backgroundColor ?? '#ffffff',
+    elements_json: t.elements_json,
+    thumbnail_url: t.thumbnail_url,
+    is_active: Boolean(t.is_active),
+    background_color: t.background_color ?? '#ffffff',
     width: t.width ?? 1000,
     height: t.height ?? 1500,
-    created_at: t.createdAt,
-    updated_at: t.updatedAt,
+    created_at: t.created_at,
+    updated_at: t.updated_at,
   };
 }
 
-function normalizeElementsJson(elementsJson: CreateTemplatePayload['elements_json']): string {
-  if (typeof elementsJson === 'string') {
-    const parsed = JSON.parse(elementsJson);
+function normalizeElementsJson(elements_json: CreateTemplatePayload['elements_json']): string {
+  if (typeof elements_json === 'string') {
+    const parsed = JSON.parse(elements_json);
     if (!Array.isArray(parsed)) {
       throw new Error('elements_json must be an array');
     }
     return JSON.stringify(toStoredTemplateElements(parsed as Record<string, unknown>[]));
   }
 
-  if (Array.isArray(elementsJson)) {
-    return JSON.stringify(toStoredTemplateElements(elementsJson));
+  if (Array.isArray(elements_json)) {
+    return JSON.stringify(toStoredTemplateElements(elements_json));
   }
 
   return '[]';
@@ -91,7 +91,7 @@ export async function getTemplates(
 
   let results;
   if (activeOnly) {
-    results = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.isActive, true)).all();
+    results = await drizzle.select().from(pinTemplates).where(eq(pinTemplates.is_active, true)).all();
   } else {
     results = await drizzle.select().from(pinTemplates).all();
   }
@@ -141,10 +141,10 @@ export async function createTemplate(
     category: data.category ?? 'general',
     width: data.width ?? 1000,
     height: data.height ?? 1500,
-    elementsJson: elementsStr,
-    thumbnailUrl: data.thumbnail_url ?? null,
-    backgroundColor: data.background_color ?? '#ffffff',
-    isActive: data.is_active ?? true,
+    elements_json: elementsStr,
+    thumbnail_url: data.thumbnail_url ?? null,
+    background_color: data.background_color ?? '#ffffff',
+    is_active: data.is_active ?? true,
   }).returning().get();
 
   return mapToSnakeCase(result) as TemplateApiPayload;
@@ -169,16 +169,16 @@ export async function updateTemplate(
 
   if (data.height !== undefined) updates.height = data.height;
 
-  if (data.thumbnail_url !== undefined) updates.thumbnailUrl = data.thumbnail_url;
+  if (data.thumbnail_url !== undefined) updates.thumbnail_url = data.thumbnail_url;
 
-  if (data.is_active !== undefined) updates.isActive = data.is_active;
+  if (data.is_active !== undefined) updates.is_active = data.is_active;
 
-  if (data.background_color !== undefined) updates.backgroundColor = data.background_color;
+  if (data.background_color !== undefined) updates.background_color = data.background_color;
 
   if (data.slug !== undefined) updates.slug = data.slug;
 
   if (data.elements_json !== undefined) {
-    updates.elementsJson = normalizeElementsJson(data.elements_json);
+    updates.elements_json = normalizeElementsJson(data.elements_json);
   }
 
   if (Object.keys(updates).length === 0) {
