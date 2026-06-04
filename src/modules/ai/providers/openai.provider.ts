@@ -42,7 +42,14 @@ export class OpenAIProvider implements IAIProvider {
         const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'gpt-4o-mini';
 
-        const body = {
+        const body: {
+            model: string;
+            messages: Array<{ role: string; content: string }>;
+            temperature: number;
+            max_tokens: number;
+            response_format: { type: 'json_object' };
+            reasoning_effort?: 'low' | 'medium' | 'high';
+        } = {
             model,
             messages: [
                 { role: 'system', content: systemPrompt },
@@ -52,6 +59,9 @@ export class OpenAIProvider implements IAIProvider {
             max_tokens: 4096,
             response_format: { type: 'json_object' },
         };
+        if (request.reasoning_effort) {
+            body.reasoning_effort = request.reasoning_effort;
+        }
 
         try {
             const response = await fetch(OPENAI_API_URL, {

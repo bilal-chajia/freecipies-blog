@@ -40,7 +40,13 @@ export class AnthropicProvider implements IAIProvider {
         const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'claude-3-5-sonnet-latest';
 
-        const body = {
+        const body: {
+            model: string;
+            max_tokens: number;
+            system: string;
+            messages: Array<{ role: string; content: string }>;
+            thinking?: { type: 'enabled'; budget_tokens: number };
+        } = {
             model,
             max_tokens: 4096,
             system: systemPrompt,
@@ -48,6 +54,10 @@ export class AnthropicProvider implements IAIProvider {
                 { role: 'user', content: request.prompt }
             ],
         };
+        if (request.reasoning_effort) {
+            const budgets = { low: 4096, medium: 8192, high: 16384 } as const;
+            body.thinking = { type: 'enabled', budget_tokens: budgets[request.reasoning_effort] };
+        }
 
         try {
             const response = await fetch(ANTHROPIC_API_URL, {

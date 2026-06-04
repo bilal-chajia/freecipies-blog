@@ -28,21 +28,32 @@ export class OpenAICompatibleProvider implements IAIProvider {
         const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
 
         try {
+            const body: {
+                model: string;
+                messages: Array<{ role: string; content: string }>;
+                temperature: number;
+                response_format: { type: 'json_object' };
+                reasoning_effort?: 'low' | 'medium' | 'high';
+            } = {
+                model: request.model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: request.prompt },
+                ],
+                temperature: request.temperature ?? 0.7,
+                response_format: { type: 'json_object' },
+            };
+            if (request.reasoning_effort) {
+                body.reasoning_effort = request.reasoning_effort;
+            }
+
             const response = await fetch(this.url('/chat/completions'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.apiKey}`,
                 },
-                body: JSON.stringify({
-                    model: request.model,
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: request.prompt },
-                    ],
-                    temperature: request.temperature ?? 0.7,
-                    response_format: { type: 'json_object' },
-                }),
+                body: JSON.stringify(body),
             });
 
             const data = await response.json() as OpenAICompatibleResponse;

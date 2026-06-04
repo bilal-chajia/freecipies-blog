@@ -54,6 +54,7 @@ export class DeepSeekProvider implements IAIProvider {
             max_tokens: 8192,
             response_format: { type: 'json_object' },
         };
+        // DeepSeek reasoning is model-selected (`deepseek-reasoner`); no extra request field required.
 
         try {
             const response = await fetch(DEEPSEEK_API_URL, {
