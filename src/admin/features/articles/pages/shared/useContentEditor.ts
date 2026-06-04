@@ -6,6 +6,7 @@ import { buildImageSlotFromMedia, generateSlug, isValidJSON } from '../../../../
 import type { AppEditor } from '@admin/components/BlockEditor/schema';
 import { blocksToContentJson } from '@admin/components/BlockEditor/utils/conversion';
 import { flattenBlocks } from '@admin/components/BlockEditor/utils/blockHelpers';
+import { EDITOR_TYPE_TO_CONTENT_TYPE } from '@admin/components/BlockEditor/blocks/registry';
 import { DEFAULT_HEADERS, normalizeRows } from '@admin/components/BlockEditor/blocks/table/TableBlock.defaults';
 import type { TableRow } from '@admin/components/BlockEditor/blocks/table/TableBlock.types';
 
@@ -473,8 +474,12 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             finalContentJson = JSON.stringify(contentObj, null, 2);
 
             const flatBlocks = flattenBlocks(docBlocks as any[]);
-            const hasRoundupList = flatBlocks.some(({ block }) => block.type === 'roundupList' || block.type === 'main_roundup');
-            const hasFaqSection = flatBlocks.some(({ block }) => block.type === 'faqSection' || block.type === 'main_faq');
+            // flatBlocks come from editorInstance.document (BlockNote editorType
+            // ids). Map each to its stored content_json type via the registry
+            // instead of hardcoding editor-type literals here.
+            const contentTypeOf = (type: string) => EDITOR_TYPE_TO_CONTENT_TYPE[type] ?? type;
+            const hasRoundupList = flatBlocks.some(({ block }) => contentTypeOf(block.type) === 'main_roundup');
+            const hasFaqSection = flatBlocks.some(({ block }) => contentTypeOf(block.type) === 'main_faq');
 
             if (!hasRoundupList && contentType === 'roundup') {
                 finalRoundupJson = '{"list_type":"ItemList","items":[]}';
