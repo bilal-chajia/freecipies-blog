@@ -34,20 +34,20 @@ export const PATCH: APIRoute = async ({ request, params }) => {
         // Parse & validate body
         const body = await validateBody(request, UpdateMediaSchema);
 
-        // Build update payload (convert camelCase → Drizzle column names)
+        // Build update payload — snake_case end to end (body, Drizzle, column).
         const updatePayload: Record<string, unknown> = {};
         if (body.name !== undefined) updatePayload.name = body.name;
-        if (body.altText !== undefined) updatePayload.altText = body.altText;
+        if (body.alt_text !== undefined) updatePayload.alt_text = body.alt_text;
         if (body.caption !== undefined) updatePayload.caption = body.caption;
-        if (body.aspectRatio !== undefined) updatePayload.aspectRatio = body.aspectRatio;
+        if (body.aspect_ratio !== undefined) updatePayload.aspect_ratio = body.aspect_ratio;
 
         if (body.credit !== undefined) {
             const normalized = normalizeStoredAuthorCreditSnapshot(body.credit);
             updatePayload.credit = JSON.stringify(normalized);
         }
 
-        if (body.focalPoint !== undefined) {
-            updatePayload.focalPointJson = JSON.stringify(body.focalPoint);
+        if (body.focal_point !== undefined) {
+            updatePayload.focal_point_json = JSON.stringify(body.focal_point);
         }
 
         if (Object.keys(updatePayload).length === 0) {

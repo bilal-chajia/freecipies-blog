@@ -55,7 +55,7 @@ export const OptimizedImage = ({
 
   // Dynamic dimension fallback using aspect_ratio database column (preventing CLS)
   if (!width || !height) {
-    const ratioStr = item.aspect_ratio ?? item.aspectRatio;
+    const ratioStr = item.aspect_ratio;
     if (ratioStr && ratioStr.includes(':')) {
       const [wPart, hPart] = ratioStr.split(':').map(Number);
       if (wPart > 0 && hPart > 0) {
@@ -87,7 +87,7 @@ export const OptimizedImage = ({
         sizes="180px"
         width={finalWidth}
         height={finalHeight}
-        alt={item.alt_text ?? item.altText ?? item.name}
+        alt={item.alt_text ?? item.name}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}
         className={`w-full h-full object-cover transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}

@@ -18,7 +18,7 @@ export type MediaLibraryItem = MediaRecord & {
 };
 
 export const isMediaItemImage = (item: MediaLibraryItem): boolean => {
-  if (item.mimeType?.startsWith('image/') || item.mime_type?.startsWith('image/')) return true;
+  if (item.mime_type?.startsWith('image/')) return true;
   return isImageFile(item.name || '');
 };
 

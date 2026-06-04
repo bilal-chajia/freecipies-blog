@@ -425,7 +425,7 @@ const CategoryEditor = () => {
   const handleMediaSelect = (item: Record<string, unknown>) => {
     setFormData(prev => {
       const slot = buildImageSlotFromMedia(item, {
-        alt: item.alt_text || prev.label || '',
+        alt: (typeof item.alt_text === 'string' ? item.alt_text : '') || prev.label || '',
         variant_keys: mediaTarget === 'hero' ? ['sm', 'md', 'lg'] : ['xs', 'sm'],
       });
 

@@ -130,12 +130,11 @@ function readNumber(record: Record<string, unknown>, key: string): number | unde
 }
 
 function readVariantSizeBytes(record: Record<string, unknown>): number | undefined {
-  return readNumber(record, 'size_bytes') ?? readNumber(record, 'sizeBytes');
+  return readNumber(record, 'size_bytes');
 }
 
 function readR2Key(record: Record<string, unknown>): string | undefined {
   return readString(record, 'r2_key')
-    ?? readString(record, 'r2Key')
     ?? extractR2KeyFromUrl(readString(record, 'url'));
 }
 

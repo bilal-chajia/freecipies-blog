@@ -16,13 +16,16 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   typeof value === 'object' && value !== null && !Array.isArray(value)
 );
 
+// `upload_key` (the temporary R2 key returned by upload-variant) and `r2_key`
+// (the stored key) are the same value under two contract names; accept either
+// and emit the canonical `r2_key`. No camelCase fallbacks.
 const normalizeVariantInput = (value: unknown): unknown => {
   if (!isRecord(value)) return value;
   return {
-    r2Key: value.upload_key ?? value.uploadKey ?? value.r2_key ?? value.r2Key,
+    r2_key: value.upload_key ?? value.r2_key,
     width: value.width,
     height: value.height,
-    sizeBytes: value.size_bytes ?? value.sizeBytes,
+    size_bytes: value.size_bytes,
   };
 };
 
@@ -77,15 +80,15 @@ export const BulkDeleteSchema = z.object({
 });
 
 const VariantInfoSchema = z.preprocess(normalizeVariantInput, z.object({
-  r2Key: z.string().min(1),
+  r2_key: z.string().min(1),
   width: z.coerce.number().int().nonnegative(),
   height: z.coerce.number().int().nonnegative(),
-  sizeBytes: z.coerce.number().int().nonnegative().optional(),
+  size_bytes: z.coerce.number().int().nonnegative().optional(),
 }));
 
 /**
  * Schema for a single stored image variant (DB/R2 snake_case format).
- * Flow: client sends camelCase → Zod validates → normalizeMediaVariantsJson converts → DB stores snake_case
+ * Flow: client sends snake_case → Zod validates → normalizeMediaVariantsJson → DB stores snake_case.
  */
 export const StoredVariantSchema = z.object({
   r2_key: z.string().min(1, 'r2_key is required'),

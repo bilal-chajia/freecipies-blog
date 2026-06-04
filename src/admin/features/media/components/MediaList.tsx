@@ -77,9 +77,9 @@ export const MediaList = ({
                   <p className="text-sm font-medium text-foreground truncate max-w-[200px] md:max-w-xs">
                     {item.name}
                   </p>
-                  {item.altText && (
+                  {item.alt_text && (
                     <p className="text-[10px] text-muted-foreground truncate max-w-[200px] md:max-w-xs mt-0.5">
-                      {item.altText}
+                      {item.alt_text}
                     </p>
                   )}
                 </td>
@@ -87,7 +87,7 @@ export const MediaList = ({
                 {/* Type */}
                 <td className="px-3 py-2.5 hidden sm:table-cell w-28">
                   <span className="text-xs text-muted-foreground font-medium">
-                    {item.mimeType || item.mime_type || '—'}
+                    {item.mime_type || '—'}
                   </span>
                 </td>
 
@@ -101,7 +101,7 @@ export const MediaList = ({
                 {/* Date */}
                 <td className="px-3 py-2.5 hidden md:table-cell w-32 text-center">
                   <span className="text-xs text-muted-foreground font-medium">
-                    {formatDate(item.createdAt || item.created_at)}
+                    {formatDate(item.created_at)}
                   </span>
                 </td>
 

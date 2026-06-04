@@ -162,7 +162,7 @@ export async function propagateMediaUpdate(
 
   // 1. Fetch the fresh media row
   const mediaRow = await drizzle.query.media.findFirst({
-    where: and(eq(media.id, mediaId), isNull(media.deletedAt)),
+    where: and(eq(media.id, mediaId), isNull(media.deleted_at)),
   });
 
   if (!mediaRow) {

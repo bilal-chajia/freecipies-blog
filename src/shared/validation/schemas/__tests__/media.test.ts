@@ -52,10 +52,10 @@ describe('media validation schemas', () => {
     expect(result.focal_point).toEqual({ x: 50, y: 45 });
     expect(result.mime_type).toBe('image/webp');
     expect(result.variants.md).toEqual({
-      r2Key: 'media/md.webp',
+      r2_key: 'media/md.webp',
       width: 720,
       height: 480,
-      sizeBytes: 12000,
+      size_bytes: 12000,
     });
   });
 

@@ -13,26 +13,26 @@ export const media = sqliteTable('media', {
   
   // 1. SEARCHABLE METADATA
   name: text('name').notNull(),
-  altText: text('alt_text').notNull(),
+  alt_text: text('alt_text').notNull(),
   caption: text('caption').notNull(),
   credit: text('credit').notNull(),
-  mimeType: text('mime_type').notNull().default('image/webp'),
-  aspectRatio: text('aspect_ratio'),
-  
+  mime_type: text('mime_type').notNull().default('image/webp'),
+  aspect_ratio: text('aspect_ratio'),
+
   // 2. TECHNICAL PAYLOAD
-  variantsJson: text('variants_json').notNull(),
-  
+  variants_json: text('variants_json').notNull(),
+
   // 3. SMART DISPLAY
-  focalPointJson: text('focal_point_json').default('{"x": 50, "y": 50}'),
-  
+  focal_point_json: text('focal_point_json').default('{"x": 50, "y": 50}'),
+
   // 4. SYSTEM METADATA
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
-  deletedAt: text('deleted_at'),
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  deleted_at: text('deleted_at'),
 }, (table) => [
-  index('idx_media_search').on(table.name, table.altText, table.credit),
-  index('idx_media_date').on(table.createdAt),
-  index('idx_media_active').on(table.deletedAt),
+  index('idx_media_search').on(table.name, table.alt_text, table.credit),
+  index('idx_media_date').on(table.created_at),
+  index('idx_media_active').on(table.deleted_at),
 ]);
 
 // Type exports

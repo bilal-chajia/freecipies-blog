@@ -11,11 +11,11 @@ import {
 } from '../image-contract';
 
 const legacyUploadVariants = {
-  xs: { r2Key: 'media/image-xs.webp', width: 360, height: 240, sizeBytes: 101, url: '/api/images/media/image-xs.webp' },
-  sm: { r2Key: 'media/image-sm.webp', width: 720, height: 480, sizeBytes: 202, url: '/api/images/media/image-sm.webp' },
-  md: { r2Key: 'media/image-md.webp', width: 1200, height: 800, sizeBytes: 303, url: '/api/images/media/image-md.webp' },
-  lg: { r2Key: 'media/image-lg.webp', width: 2048, height: 1365, sizeBytes: 404, url: '/api/images/media/image-lg.webp' },
-  original: { r2Key: 'media/image-original.jpg', width: 3000, height: 2000, sizeBytes: 505, url: '/api/images/media/image-original.jpg' },
+  xs: { r2_key: 'media/image-xs.webp', width: 360, height: 240, size_bytes: 101, url: '/api/images/media/image-xs.webp' },
+  sm: { r2_key: 'media/image-sm.webp', width: 720, height: 480, size_bytes: 202, url: '/api/images/media/image-sm.webp' },
+  md: { r2_key: 'media/image-md.webp', width: 1200, height: 800, size_bytes: 303, url: '/api/images/media/image-md.webp' },
+  lg: { r2_key: 'media/image-lg.webp', width: 2048, height: 1365, size_bytes: 404, url: '/api/images/media/image-lg.webp' },
+  original: { r2_key: 'media/image-original.jpg', width: 3000, height: 2000, size_bytes: 505, url: '/api/images/media/image-original.jpg' },
 };
 
 const storedCredit = {
@@ -75,9 +75,9 @@ describe('normalizeImageSnapshotContainer', () => {
         aspect_ratio: '16:9',
         placeholder: 'snapshot-copy',
         variants: {
-          sm: { r2_key: 'media/image-sm.webp', url: '/api/images/media/image-sm.webp', width: 720, height: 480, sizeBytes: 202 },
-          md: { r2_key: 'media/image-md.webp', url: '/api/images/media/image-md.webp', width: 1200, height: 800, sizeBytes: 303 },
-          original: { r2_key: 'media/image-original.jpg', url: '/api/images/media/image-original.jpg', width: 3000, height: 2000, sizeBytes: 505 },
+          sm: { r2_key: 'media/image-sm.webp', url: '/api/images/media/image-sm.webp', width: 720, height: 480, size_bytes: 202 },
+          md: { r2_key: 'media/image-md.webp', url: '/api/images/media/image-md.webp', width: 1200, height: 800, size_bytes: 303 },
+          original: { r2_key: 'media/image-original.jpg', url: '/api/images/media/image-original.jpg', width: 3000, height: 2000, size_bytes: 505 },
         },
       },
       pinterest: {

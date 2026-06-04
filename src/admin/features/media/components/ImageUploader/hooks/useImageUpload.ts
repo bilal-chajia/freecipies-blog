@@ -665,8 +665,8 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     originalExt: string,
     fileType: string,
     signal: AbortSignal | null | undefined
-  ): Promise<Record<string, { uploadKey: string; width: number; height: number; sizeBytes: number }>> => {
-    const uploadedVariants: Record<string, { uploadKey: string; width: number; height: number; sizeBytes: number }> = {};
+  ): Promise<Record<string, { upload_key: string; width: number; height: number; size_bytes: number }>> => {
+    const uploadedVariants: Record<string, { upload_key: string; width: number; height: number; size_bytes: number }> = {};
     const totalVariants = variantNames.length;
     const maxConcurrent = UPLOAD_CONFIG.maxConcurrentUploads;
 
@@ -706,10 +706,10 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         return {
           name,
           result: {
-            uploadKey: response.data.data.upload_key ?? response.data.data.uploadKey,
+            upload_key: response.data.data.upload_key,
             width: variantInfo.width,
             height: variantInfo.height,
-            sizeBytes: response.data.data.size_bytes ?? response.data.data.sizeBytes ?? blob?.size,
+            size_bytes: response.data.data.size_bytes ?? blob?.size,
           },
         };
       });
@@ -876,15 +876,15 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
 
       const confirmResponse = await withRetry(
         () => mediaAPI.confirmUpload({
-          uploadId,
-          baseName: cleanBaseName,
+          upload_id: uploadId,
+          base_name: cleanBaseName,
           name: metadata.name,
-          altText: metadata.altText,
+          alt_text: metadata.altText,
           caption: metadata.caption || '',
           credit: metadata.credit,
-          aspectRatio: metadata.aspectRatio || null,
-          focalPoint: metadata.focalPoint || { x: 50, y: 50 },
-          mimeType: outputFormat === 'avif' ? 'image/avif' : 'image/webp',
+          aspect_ratio: metadata.aspectRatio || null,
+          focal_point: metadata.focalPoint || { x: 50, y: 50 },
+          mime_type: outputFormat === 'avif' ? 'image/avif' : 'image/webp',
           variants: uploadedVariants,
           placeholder,
         }, { signal }),

@@ -114,7 +114,7 @@ export const MediaGrid = ({
 
               {/* Image Type Badge (top-left, aligned with action buttons) */}
               {!selectedMedia.includes(item.id) && (() => {
-                const type = (item.mimeType || item.mime_type || 'image/jpeg').split('/').pop() || 'jpeg';
+                const type = (item.mime_type || 'image/jpeg').split('/').pop() || 'jpeg';
                 const colorClass: Record<string, string> = {
                   webp: 'bg-success/80',
                   avif: 'bg-secondary/80',

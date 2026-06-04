@@ -18,7 +18,7 @@ import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
  * Build conditions for media queries
  */
 function buildMediaConditions(options?: MediaQueryOptions) {
-  const conditions = [isNull(media.deletedAt)];
+  const conditions = [isNull(media.deleted_at)];
 
   // Type filter (image, video, document)
   if (options?.type && options.type !== 'all') {
@@ -29,7 +29,7 @@ function buildMediaConditions(options?: MediaQueryOptions) {
     };
     const pattern = mimePatterns[options.type];
     if (pattern) {
-      conditions.push(like(media.mimeType, pattern));
+      conditions.push(like(media.mime_type, pattern));
     }
   }
 
@@ -39,7 +39,7 @@ function buildMediaConditions(options?: MediaQueryOptions) {
     conditions.push(
       or(
         like(media.name, searchPattern),
-        like(media.altText, searchPattern)
+        like(media.alt_text, searchPattern)
       )!
     );
   }
@@ -54,11 +54,11 @@ function buildMediaConditions(options?: MediaQueryOptions) {
 
   // Date range filters
   if (options?.dateFrom) {
-    conditions.push(gte(media.createdAt, formatSqliteDate(options.dateFrom)));
+    conditions.push(gte(media.created_at, formatSqliteDate(options.dateFrom)));
   }
   if (options?.dateTo) {
     const toDateStr = options.dateTo.includes('T') ? options.dateTo : `${options.dateTo}T23:59:59.999Z`;
-    conditions.push(lte(media.createdAt, formatSqliteDate(toDateStr)));
+    conditions.push(lte(media.created_at, formatSqliteDate(toDateStr)));
   }
 
   return conditions;
@@ -75,7 +75,7 @@ export async function getMedia(
   const conditions = buildMediaConditions(options);
 
   // Sort logic
-  const sortColumn = options?.sortBy === 'name' ? media.name : media.createdAt;
+  const sortColumn = options?.sortBy === 'name' ? media.name : media.created_at;
   const orderFn = options?.order === 'asc' ? asc : desc;
 
   const query = drizzle
@@ -118,7 +118,7 @@ export async function countMedia(
 export async function getMediaById(db: D1Database | DrizzleDb, id: number): Promise<Media | null> {
   const drizzle = getDb(db);
   return await drizzle.query.media.findFirst({
-    where: and(eq(media.id, id), isNull(media.deletedAt)),
+    where: and(eq(media.id, id), isNull(media.deleted_at)),
   }) || null;
 }
 
@@ -135,12 +135,12 @@ export async function createMedia(
 
   // F1: Enforce storage contract at the service boundary before every insert.
   // This catches malformed variantsJson from any caller (confirm.ts, seed scripts, etc.)
-  if (!data.variantsJson) {
+  if (!data.variants_json) {
     throw new Error('createMedia: variantsJson is required');
   }
   let parsedJson: unknown;
   try {
-    parsedJson = JSON.parse(data.variantsJson);
+    parsedJson = JSON.parse(data.variants_json);
   } catch {
     throw new Error('createMedia: variantsJson is not valid JSON');
   }
@@ -165,7 +165,7 @@ export async function updateMedia(
 ): Promise<boolean> {
   const drizzle = getDb(db);
 
-  const updateData: Partial<NewMedia> = { ...data, updatedAt: new Date().toISOString() };
+  const updateData: Partial<NewMedia> = { ...data, updated_at: new Date().toISOString() };
 
   await drizzle.update(media)
     .set(updateData)
@@ -180,7 +180,7 @@ export async function updateMedia(
 export async function deleteMedia(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
   const drizzle = getDb(db);
   await drizzle.update(media)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deleted_at: new Date().toISOString() })
     .where(eq(media.id, id));
   return true;
 }
@@ -201,7 +201,7 @@ export async function hardDeleteMedia(
   if (!record) return false;
 
   // Clean up R2 objects in parallel (best-effort — DB delete proceeds regardless)
-  const r2Keys = extractR2KeysFromMediaVariantsJson(record.variantsJson);
+  const r2Keys = extractR2KeysFromMediaVariantsJson(record.variants_json);
   if (r2Keys.length > 0) {
     await Promise.all(r2Keys.map(key => images.delete(key)));
   }

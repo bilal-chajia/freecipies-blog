@@ -94,7 +94,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
   const filteredMedia = mediaItems.filter(item => {
     const matchesSearch = !searchQuery ||
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.altText?.toLowerCase().includes(searchQuery.toLowerCase());
+      item.alt_text?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
