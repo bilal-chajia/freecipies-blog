@@ -38,7 +38,7 @@ export class ZhipuProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'glm-4.5';
 
         const body = {
@@ -125,5 +125,9 @@ export class ZhipuProvider implements IAIProvider {
         } catch {
             return false;
         }
+    }
+
+    async listModels() {
+        return { supported: false, models: [] };
     }
 }

@@ -1,9 +1,0 @@
----
-import { getEmbedUrl } from '../../utils/embed';
-const { block } = Astro.props as { block: any };
-const videoUrl = getEmbedUrl(block.url || block.props?.url);
-if (!videoUrl) return null;
----
-<div class="video-embed" style={`aspect-ratio: ${(block.aspectRatio || block.props?.aspectRatio || '16:9').replace(':', '/')};`}>
-  <iframe src={videoUrl} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy" style="width:100%;height:100%;border:0;border-radius:8px;" />
-</div>

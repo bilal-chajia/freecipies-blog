@@ -3,7 +3,7 @@ import { env } from 'cloudflare:workers';
 import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
-import { validate, z } from '@shared/validation';
+import { validate, TemplateThumbnailUploadFields } from '@shared/validation';
 
 export const prerender = false;
 
@@ -14,7 +14,7 @@ export const prerender = false;
  * 
  * Form Data:
  * - file: The thumbnail image file
- * - templateSlug: The template slug (used for naming)
+ * - template_slug: The template slug (used for naming)
  */
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
@@ -39,12 +39,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const file = formData.get('file') as File;
 
         // Validate text fields with Zod
-        const { templateSlug } = validate(
-          z.object({
-            templateSlug: z.string().min(1).default('untitled'),
-          }),
-          { templateSlug: formData.get('templateSlug') || undefined }
-        );
+        const { template_slug: templateSlug } = validate(TemplateThumbnailUploadFields, {
+            template_slug: formData.get('template_slug') || undefined,
+        });
 
         if (!file) {
             const { body, status, headers } = formatErrorResponse(
@@ -85,22 +82,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
         });
 
         // Build the public URL
-        const thumbnailUrl = `${publicUrl}/${stableKey}`;
+        const thumbnail_url = `${publicUrl}/${stableKey}`;
 
         // Return success - DO NOT save to media table
         const { body, status, headers } = formatSuccessResponse({
-            url: thumbnailUrl,
+            url: thumbnail_url,
             key: stableKey,
             size: arrayBuffer.byteLength,
         });
         return new Response(body, { status, headers });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error uploading thumbnail:', error);
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error
-                : new AppError(ErrorCodes.INTERNAL_ERROR, error.message || 'Failed to upload thumbnail', 500)
+                : new AppError(
+                    ErrorCodes.INTERNAL_ERROR,
+                    error instanceof Error ? error.message : 'Failed to upload thumbnail',
+                    500
+                )
         );
         return new Response(body, { status, headers });
     }

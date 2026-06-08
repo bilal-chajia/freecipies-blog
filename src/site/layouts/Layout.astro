@@ -1,0 +1,57 @@
+---
+import BaseHead from "../components/BaseHead.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import "../styles/global.css";
+import { getHeaderMenu } from "@server/site-data";
+
+interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  noindex?: boolean;
+}
+
+const { title, description, image, noindex } = Astro.props;
+const headerMenu = await getHeaderMenu();
+---
+
+<!doctype html>
+<html lang="en" data-surface="site">
+  <head>
+    <BaseHead
+      title={title}
+      description={description}
+      image={image}
+      noindex={noindex}
+    />
+    <!-- Anti-FOUC theme script — runs immediately before render -->
+    <script is:inline>
+      (function() {
+        var cookieMatch = document.cookie.match(/(?:^|; )theme=([^;]*)/);
+        var theme = cookieMatch ? cookieMatch[1] : null;
+        if (!theme) {
+          try { theme = localStorage.getItem('theme'); } catch (e) {}
+        }
+        if (!theme) {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body class="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)]">
+    <Header headerMenu={headerMenu} />
+    <main id="main-content" class="flex-1">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      import "@site/scripts/bookmarks.ts";
+      import "@site/scripts/global-enhancements.ts";
+    </script>
+  </body>
+</html>

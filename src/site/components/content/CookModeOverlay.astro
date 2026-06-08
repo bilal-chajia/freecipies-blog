@@ -1,0 +1,663 @@
+---
+import Icon from "../ui/Icon.astro";
+import type { Article } from "@modules/articles/schema/articles.schema";
+
+interface Props {
+  article: Article;
+  heroImageUrl?: string | null;
+}
+
+const { article, heroImageUrl } = Astro.props;
+---
+
+      {/* ═══ Exact Stitch Cooking Mode Overlay ═══ */}
+      <div class="cooking-mode-overlay" data-cooking-mode hidden>
+        <div
+          class="cm-bg-image"
+          data-cm-bg-image
+          style={`--cm-bg: url('${heroImageUrl}')`}
+        />
+        <div class="cm-content-wrap">
+          {/* Progress Bar Area */}
+          <div class="cm-progress-area">
+            <div class="cm-progress-header">
+              <p class="cm-progress-label">Progress</p>
+              <p class="cm-progress-text" data-progress-text>
+                0% Completed
+              </p>
+            </div>
+            <div class="cm-progress-track">
+              <div
+                class="cm-progress-fill"
+                data-progress-bar
+                style="width: 0%;"
+              />
+            </div>
+          </div>
+
+          {/* Top Navigation Bar */}
+          <div class="cm-top-nav">
+            <div class="cm-top-titles">
+              <h2 class="cm-top-title">{article.headline}</h2>
+              <span class="cm-top-subtitle">Cook Mode</span>
+            </div>
+            <button
+              type="button"
+              class="cm-close-btn"
+              data-close-cook-mode
+              title="Exit cook mode (Esc)"
+            >
+              <Icon name="x" />
+            </button>
+          </div>
+
+          {/* Main Content (Step Details) */}
+          <div class="cm-main-content">
+            {/* Pagination Dots */}
+            <div class="cm-dots" data-step-dots />
+
+            <div class="cm-steps-container" data-cooking-steps />
+
+            {/* Sophisticated Timer Component */}
+            <div class="cm-timer-panel glass-panel" data-timer-section hidden>
+              <span class="cm-timer-label">Resting Timer</span>
+              <div class="cm-timer-display" data-timer-display>
+                00:00
+              </div>
+              <div class="cm-timer-controls">
+                <button
+                  type="button"
+                  class="cm-timer-btn cm-timer-btn-stop"
+                  data-timer-pause
+                  hidden
+                >
+                  <Icon name="pause" />
+                  Stop
+                </button>
+                <button
+                  type="button"
+                  class="cm-timer-btn cm-timer-btn-start"
+                  data-timer-start
+                >
+                  <Icon name="play" />
+                  Start
+                </button>
+                <button type="button" class="cm-timer-btn cm-timer-btn-stop" data-timer-reset>
+                  <Icon name="timer" />
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Floating Bottom Navigation */}
+          <div class="cm-bottom-nav-wrap">
+            <div class="cm-bottom-nav glass-panel">
+              <button type="button" class="cm-nav-btn prev" data-step-prev disabled>
+                <Icon name="chevron-left" />
+                <span>Previous</span>
+              </button>
+              <div class="cm-nav-divider" />
+              <button type="button" class="cm-nav-btn items" data-toggle-ingredients>
+                <Icon name="copy" />
+                <span>Ingredients</span>
+              </button>
+              <button type="button" class="cm-nav-btn next primary" data-step-next>
+                <span>Next Step</span>
+                <Icon name="chevron-right" />
+              </button>
+            </div>
+          </div>
+
+          {/* Slide-over Ingredients Panel */}
+          <aside class="cm-ingredients glass-panel" data-cm-ingredients hidden>
+            <div class="cm-ingredients-inner">
+              <div class="cm-ingredients-header">
+                <h3>Ingredients Needed</h3>
+                <button
+                  type="button"
+                  class="cm-btn-close-ing"
+                  data-close-ingredients
+                >
+                  <Icon name="x" />
+                </button>
+              </div>
+              <ul class="cm-ing-list" data-cm-ing-list />
+            </div>
+          </aside>
+        </div>
+      </div>
+
+
+<style>
+  /* ===== Cooking Mode Overlay ===== */
+  /* ═══════ EXACT STITCH COOK MODE ═══════ */
+  .cooking-mode-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--bg-inset);
+    font-family: inherit;
+    color: var(--text);
+    min-height: 100vh;
+  }
+  :global(.dark) .cooking-mode-overlay {
+    background-color: var(--bg-active);
+    color: var(--text-inverse);
+  }
+  .cooking-mode-overlay[hidden] {
+    display: none;
+  }
+  .cm-bg-image {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to bottom, rgba(17, 33, 23, 0.8), rgba(17, 33, 23, 0.95)),
+      var(--cm-bg, url(""));
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+  }
+  .cm-content-wrap {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+  }
+
+  /* Progress Bar Area */
+  .cm-progress-area {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px 24px 16px 24px;
+  }
+  .cm-progress-header {
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .cm-progress-label {
+    color: var(--success);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0;
+  }
+  .cm-progress-text {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-weight: 500;
+    margin: 0;
+  }
+  .cm-progress-track {
+    border-radius: var(--radius-full);
+    background-color: rgba(30, 41, 59, 0.5);
+    height: 6px;
+    overflow: hidden;
+  }
+  .cm-progress-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background-color: var(--success);
+    transition: width 0.3s ease;
+  }
+
+  /* Top Navigation Bar */
+  .cm-top-nav {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    justify-content: space-between;
+  }
+  .cm-top-titles {
+    display: flex;
+    flex-direction: column;
+  }
+  .cm-top-title {
+    color: var(--text-inverse);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .cm-top-subtitle {
+    color: var(--success);
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+  }
+  .cm-close-btn {
+    display: flex;
+    height: 40px;
+    width: 40px;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background-color: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    color: var(--text-inverse);
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .cm-close-btn:hover {
+    background-color: rgba(51, 65, 85, 0.5);
+  }
+
+  /* Main Content */
+  .cm-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 16px 32px 0;
+    text-align: center;
+    overflow-y: auto;
+  }
+
+  /* Pagination Dots */
+  .cm-dots {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .cm-dots :global(.cm-dot) {
+    height: 6px;
+    width: 6px;
+    border-radius: var(--radius-full);
+    background-color: var(--neutral-700);
+    transition: background-color 0.2s, transform 0.2s;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .cm-dots :global(.cm-dot.active) {
+    background-color: var(--success);
+    width: 32px;
+  }
+  .cm-dots :global(.cm-dot.done) {
+    background-color: var(--success);
+  }
+
+  /* Step Details */
+  .cm-steps-container {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .cm-steps-container :global(.cook-step) {
+    animation: cmFadeIn 0.3s ease-out;
+  }
+  .cm-steps-container :global(.cook-step[hidden]) {
+    display: none;
+  }
+  .cm-steps-container :global(.step-counter) {
+    color: var(--success);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    opacity: 0.8;
+  }
+  .cm-steps-container :global(.cook-step h3) {
+    color: var(--text-inverse);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 48px;
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .cm-steps-container :global(.cook-step p) {
+    color: var(--text-tertiary);
+    font-size: 18px;
+    margin-bottom: 24px;
+  }
+  .cm-steps-container :global(.step-timer-badge) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    background: rgba(51, 230, 122, 0.1);
+    color: var(--success);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .cm-steps-container :global(.step-timer-badge svg) {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+  .cm-steps-container :global(.step-tip) {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-tertiary);
+    font-size: 14px;
+    text-align: left;
+  }
+  @keyframes cmFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Sophisticated Timer */
+  .glass-panel {
+    background: rgba(17, 33, 23, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(51, 230, 122, 0.1);
+  }
+  .cm-timer-panel {
+    padding: 32px;
+    border-radius: var(--radius-xl);
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    margin: 0 auto 32px auto;
+  }
+  .cm-timer-panel[hidden] {
+    display: none;
+  }
+  .cm-timer-label {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .cm-timer-display {
+    font-size: 60px;
+    font-weight: 300;
+    color: var(--text-inverse);
+    margin-bottom: 24px;
+    letter-spacing: -0.05em;
+  }
+  .cm-timer-display.warning {
+    color: var(--warning);
+  }
+  .cm-timer-display.finished {
+    color: var(--brand-primary);
+    animation: cmPulse 1s infinite;
+  }
+  @keyframes cmPulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+  .cm-timer-controls {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+  }
+  .cm-timer-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 0;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+    border: none;
+  }
+  .cm-timer-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  .cm-timer-btn-stop {
+    border: 1px solid var(--neutral-700);
+    color: var(--neutral-400);
+    background: transparent;
+  }
+  .cm-timer-btn-stop:hover {
+    background: rgba(30, 41, 59, 0.5);
+  }
+  .cm-timer-btn-start {
+    background: var(--success);
+    color: var(--bg-active);
+    font-weight: 700;
+  }
+  .cm-timer-btn-start:hover {
+    box-shadow: 0 0 20px rgba(51, 230, 122, 0.4);
+  }
+  .cm-timer-btn[hidden] {
+    display: none;
+  }
+
+  /* Floating Bottom Navigation */
+  .cm-bottom-nav-wrap {
+    padding: 24px 24px 40px 24px;
+    position: absolute;
+    bottom: 0px;
+    left: 0;
+    width: 100%;
+  }
+  .cm-bottom-nav {
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+  .cm-nav-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 0;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: none;
+    background: transparent;
+  }
+  .cm-nav-btn svg,
+  .cm-nav-btn :global(svg) {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .cm-nav-btn.prev {
+    color: var(--text-tertiary);
+  }
+  .cm-nav-btn.prev:hover:not([disabled]) {
+    color: var(--bg-elevated);
+  }
+  .cm-nav-btn.prev[disabled] {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .cm-nav-btn.items {
+    color: var(--bg-elevated);
+  }
+  .cm-nav-btn.items:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .cm-nav-btn.next {
+    background: var(--success);
+    color: var(--bg-active);
+    font-weight: 700;
+    box-shadow: 0 10px 15px -3px rgba(51, 230, 122, 0.1);
+  }
+  .cm-nav-btn.next:hover {
+    box-shadow: 0 10px 15px -3px rgba(51, 230, 122, 0.3);
+  }
+
+  .cm-nav-divider {
+    width: 1px;
+    height: 32px;
+    background-color: rgba(51, 65, 85, 0.5);
+    margin: 0 8px;
+  }
+
+  /* Ingredients Slide-over */
+  .cm-ingredients {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 400px;
+    z-index: 50;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .cm-ingredients:not([hidden]) {
+    transform: translateX(0);
+  }
+  .cm-ingredients-inner {
+    padding: 32px 24px;
+    height: 100%;
+    overflow-y: auto;
+  }
+  .cm-ingredients-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .cm-ingredients-header h3 {
+    margin: 0;
+    font-size: 20px;
+    color: var(--text-inverse);
+    font-weight: 700;
+  }
+  .cm-btn-close-ing {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: -8px;
+  }
+
+  .cm-btn-close-ing svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cm-btn-close-ing:hover {
+    color: var(--text-inverse);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .cm-ing-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cm-ing-list :global(li) {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    color: var(--text-inverse);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .cm-ing-list :global(li:hover) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .cm-ing-list :global(li.checked) {
+    opacity: 0.5;
+  }
+  .cm-ing-list :global(.cm-ing-amount) {
+    color: var(--success);
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .cm-ing-list :global(.cm-ing-unit) {
+    color: var(--text-tertiary);
+    margin-right: 4px;
+  }
+
+  /* ── Mobile cook mode ── */
+  @media (max-width: 768px) {
+    .cm-ingredients {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      max-width: none;
+      z-index: 10;
+      background: var(--bg-active);
+      backdrop-filter: blur(12px);
+    }
+    .cm-title {
+      font-size: 14px;
+      max-width: 50%;
+    }
+    .cm-steps-container :global(.cook-step h3) {
+      font-size: 22px;
+    }
+    .cm-steps-container :global(.cook-step p) {
+      font-size: 17px;
+    }
+    .cm-timer-display {
+      font-size: 40px;
+    }
+    .step-nav {
+      flex-direction: column;
+      gap: 10px;
+    }
+    .step-btn {
+      min-width: 100%;
+    }
+    .cm-shortcuts {
+      display: none;
+    }
+  }
+
+</style>

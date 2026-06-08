@@ -10,7 +10,7 @@ export interface RequestLog {
   queryParams?: Record<string, string>;
   headers?: Record<string, string>;
   duration?: number;
-  statusCode?: number;
+  status_code?: number;
   error?: string;
 }
 
@@ -66,7 +66,7 @@ export function logRequest(log: RequestLog, config: LoggerConfig = DEFAULT_CONFI
   
   if (config.enableConsole) {
     const logFn = log.error ? console.error : console.log;
-    logFn(`[${log.timestamp}] ${log.method} ${log.path} - ${log.statusCode || 'pending'}`, logEntry);
+    logFn(`[${log.timestamp}] ${log.method} ${log.path} - ${log.status_code || 'pending'}`, logEntry);
   }
 }
 
@@ -96,7 +96,7 @@ export function createRequestLogger(config: LoggerConfig = DEFAULT_CONFIG) {
 export function logResponse(
   log: RequestLog,
   startTime: number,
-  statusCode: number,
+  status_code: number,
   error?: Error,
   config: LoggerConfig = DEFAULT_CONFIG
 ): void {
@@ -105,65 +105,10 @@ export function logResponse(
   const responseLog: RequestLog = {
     ...log,
     duration,
-    statusCode,
+    status_code,
     error: error?.message,
   };
   
   logRequest(responseLog, config);
 }
 
-/**
- * Performance metrics logger
- */
-export interface PerformanceMetrics {
-  endpoint: string;
-  method: string;
-  avgDuration: number;
-  minDuration: number;
-  maxDuration: number;
-  requestCount: number;
-  errorCount: number;
-}
-
-export class PerformanceLogger {
-  private metrics: Map<string, PerformanceMetrics> = new Map();
-  
-  recordRequest(
-    endpoint: string,
-    method: string,
-    duration: number,
-    hasError: boolean = false
-  ): void {
-    const key = `${method} ${endpoint}`;
-    const existing = this.metrics.get(key);
-    
-    if (existing) {
-      existing.avgDuration = (existing.avgDuration * existing.requestCount + duration) / (existing.requestCount + 1);
-      existing.minDuration = Math.min(existing.minDuration, duration);
-      existing.maxDuration = Math.max(existing.maxDuration, duration);
-      existing.requestCount++;
-      if (hasError) existing.errorCount++;
-    } else {
-      this.metrics.set(key, {
-        endpoint,
-        method,
-        avgDuration: duration,
-        minDuration: duration,
-        maxDuration: duration,
-        requestCount: 1,
-        errorCount: hasError ? 1 : 0,
-      });
-    }
-  }
-  
-  getMetrics(endpoint?: string): PerformanceMetrics[] {
-    if (endpoint) {
-      return Array.from(this.metrics.values()).filter(m => m.endpoint === endpoint);
-    }
-    return Array.from(this.metrics.values());
-  }
-  
-  reset(): void {
-    this.metrics.clear();
-  }
-}

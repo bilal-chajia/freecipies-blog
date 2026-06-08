@@ -9,9 +9,9 @@ import type {
   ImageVariant,
   ImageVariants,
   ImageSlot,
-  ImageSlotName,
+  ImagesJson,
 } from '@shared/types/images';
-import { resolveVariantUrl } from '@shared/types/images';
+import { resolveVariantUrl, getSrcSet, pickVariantByWidth } from '@shared/types/images';
 
 // Re-export for backwards compatibility
 export type { ImageVariant, ImageVariants, ImageSlot };
@@ -20,13 +20,10 @@ export type { ImageVariant, ImageVariants, ImageSlot };
 // JSON Parsing Helpers
 // ============================================================================
 
-/**
- * Safely parse a JSON string, returning null on failure
- */
-export function safeParseJson<T>(json: string | null | undefined): T | null {
-  if (!json) return null;
+export function safeParseJson<T>(json: unknown): T | null {
+  if (json === null || json === undefined || json === '') return null;
   try {
-    return typeof json === 'string' ? JSON.parse(json) : json;
+    return typeof json === 'string' ? JSON.parse(json) : (json as T);
   } catch {
     return null;
   }
@@ -36,18 +33,11 @@ export function safeParseJson<T>(json: string | null | undefined): T | null {
 // Image Extraction
 // ============================================================================
 
-// ImageVariant and ImageSlot imported from @shared/types/images
-
-interface ImagesJson {
-  thumbnail?: ImageSlot;
-  cover?: ImageSlot;
-  avatar?: ImageSlot;
-  banner?: ImageSlot;
-  pinterest?: ImageSlot;
-}
+// ImagesJson imported from @shared/types/images
+// (union of ArticleImagesJson | AuthorImagesJson | CategoryImagesJson)
 
 export interface ExtractedImage {
-  imageUrl?: string;
+  image_url?: string;
   imageAlt?: string;
   imageWidth?: number;
   imageHeight?: number;
@@ -56,32 +46,24 @@ export interface ExtractedImage {
   imageStyle?: string;
 }
 
+type HydratableImageSlot = 'hero' | 'thumbnail' | 'avatar';
+
+function resolveImageSlot(images: ImagesJson, slot: HydratableImageSlot): ImageSlot | null {
+  return (images as Partial<Record<HydratableImageSlot, ImageSlot>>)[slot] ?? null;
+}
+
 export function getImageSlot(
-  imagesJson: string | null | undefined,
-  slot: 'thumbnail' | 'cover' | 'avatar' | 'banner' | 'pinterest' = 'thumbnail'
+  images_json: string | null | undefined,
+  slot: HydratableImageSlot = 'thumbnail'
 ): ImageSlot | null {
-  const images = safeParseJson<ImagesJson>(imagesJson);
+  const images = safeParseJson<ImagesJson>(images_json);
   if (!images) return null;
-  return images[slot] || null;
+  return resolveImageSlot(images, slot);
 }
 
 
 
-const buildSrcSet = (variants?: ImageSlot['variants']): string => {
-  if (!variants) return '';
-  const entries: string[] = [];
-  const ordered = ['xs', 'sm', 'md', 'lg', 'original'] as const;
-
-  for (const key of ordered) {
-    const variant = variants[key];
-    const resolvedUrl = resolveVariantUrl(variant);
-    if (resolvedUrl && variant?.width) {
-      entries.push(`${resolvedUrl} ${variant.width}w`);
-    }
-  }
-
-  return entries.join(', ');
-};
+// buildSrcSet removed — use getSrcSet(slot) from @shared/types/images (C1)
 
 const toCssAspectRatio = (value?: string): string | undefined => {
   if (!value) return undefined;
@@ -98,7 +80,7 @@ const buildImageStyle = (imageSlot?: ImageSlot): string | undefined => {
     styles.push(`object-position: ${imageSlot.focal_point.x}% ${imageSlot.focal_point.y}%`);
   }
 
-  const aspectRatio = toCssAspectRatio(imageSlot.aspectRatio);
+  const aspectRatio = toCssAspectRatio(imageSlot.aspect_ratio);
   if (aspectRatio) {
     styles.push(`aspect-ratio: ${aspectRatio}`);
   }
@@ -107,74 +89,43 @@ const buildImageStyle = (imageSlot?: ImageSlot): string | undefined => {
 };
 
 export function getImageSrcSet(
-  imagesJson: string | null | undefined,
-  slot: 'thumbnail' | 'cover' | 'avatar' | 'banner' | 'pinterest' = 'thumbnail'
+  images_json: string | null | undefined,
+  slot: HydratableImageSlot = 'thumbnail'
 ): string {
-  const imageSlot = getImageSlot(imagesJson, slot);
-  if (!imageSlot?.variants) return '';
-  return buildSrcSet(imageSlot.variants);
+  const imageSlot = getImageSlot(images_json, slot);
+  if (!imageSlot) return '';
+  return getSrcSet(imageSlot);
 }
 
-const FALLBACK_VARIANT_ORDER = ['lg', 'md', 'sm', 'original', 'xs'] as const;
-const FALLBACK_VARIANT_ORDER_FOR_TARGET = ['xs', 'sm', 'md', 'lg', 'original'] as const;
-
-const pickVariantByWidth = (
-  variants: ImageSlot['variants'],
-  targetWidth?: number
-): ImageVariant | null => {
-  if (!variants) return null;
-
-  const entries = Object.entries(variants)
-    .filter(([, variant]) => variant && (resolveVariantUrl(variant) !== null))
-    .map(([key, variant]) => ({ key, ...(variant as ImageVariant) }));
-
-  if (!entries.length) return null;
-
-  const withWidth = entries
-    .filter((variant) => typeof variant.width === 'number' && (variant.width || 0) > 0)
-    .sort((a, b) => (a.width || 0) - (b.width || 0));
-
-  if (targetWidth && withWidth.length > 0) {
-    const match = withWidth.find((variant) => (variant.width || 0) >= targetWidth);
-    return (match || withWidth[withWidth.length - 1]) || null;
-  }
-
-  const fallbackOrder = targetWidth ? FALLBACK_VARIANT_ORDER_FOR_TARGET : FALLBACK_VARIANT_ORDER;
-
-  for (const key of fallbackOrder) {
-    const candidate = variants[key];
-    if (resolveVariantUrl(candidate) !== null) return candidate!;
-  }
-
-  return entries[0] || null;
-};
+// pickVariantByWidth removed — use pickVariantByWidth(variants, targetWidth, 1) from @shared/types/images (C2)
+// retinaMultiplier=1 preserves the previous hydration behavior (no 2× retina scaling)
 
 /**
- * Extract image URL and metadata from imagesJson field
+ * Extract image URL and metadata from images_json field
  * Uses the smallest variant that satisfies targetWidth (when provided),
  * otherwise prefers lg > md > sm > original > xs
  */
 export function extractImage(
-  imagesJson: string | null | undefined,
-  slot: 'thumbnail' | 'cover' | 'avatar' | 'banner' | 'pinterest' = 'thumbnail',
+  images_json: string | null | undefined,
+  slot: HydratableImageSlot = 'thumbnail',
   targetWidth?: number
 ): ExtractedImage {
-  const images = safeParseJson<ImagesJson>(imagesJson);
+  const images = safeParseJson<ImagesJson>(images_json);
   if (!images) return {};
 
-  const imageSlot = images[slot];
+  const imageSlot = resolveImageSlot(images, slot);
   if (!imageSlot) return {};
 
-  const variant = pickVariantByWidth(imageSlot.variants, targetWidth);
+  const variant = pickVariantByWidth(imageSlot.variants, targetWidth, 1);
   const imageStyle = buildImageStyle(imageSlot);
-  const imageAspectRatio = toCssAspectRatio(imageSlot.aspectRatio);
+  const imageAspectRatio = toCssAspectRatio(imageSlot.aspect_ratio);
   const imageObjectPosition = imageSlot.focal_point
     ? `${imageSlot.focal_point.x}% ${imageSlot.focal_point.y}%`
     : undefined;
   const resolvedUrl = resolveVariantUrl(variant);
   if (resolvedUrl && variant) {
     return {
-      imageUrl: resolvedUrl,
+      image_url: resolvedUrl,
       imageAlt: imageSlot.alt,
       imageWidth: variant.width,
       imageHeight: variant.height,
@@ -192,14 +143,14 @@ export function extractImage(
 // ============================================================================
 
 interface SeoJson {
-  metaTitle?: string;
-  metaDescription?: string;
-  ogImage?: string;
-  ogTitle?: string;
-  ogDescription?: string;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  og_image?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
   canonical?: string;
-  noIndex?: boolean;
-  twitterCard?: string;
+  no_index?: boolean;
+  twitter_card?: string;
   robots?: string;
 }
 
@@ -211,16 +162,16 @@ export interface ExtractedSeo {
 }
 
 /**
- * Extract SEO metadata from seoJson field
+ * Extract SEO metadata from seo_json field
  */
-export function extractSeo(seoJson: string | null | undefined): ExtractedSeo {
-  const seo = safeParseJson<SeoJson>(seoJson);
+export function extractSeo(seo_json: string | null | undefined): ExtractedSeo {
+  const seo = safeParseJson<SeoJson>(seo_json);
   if (!seo) return {};
 
   return {
-    metaTitle: seo.metaTitle,
-    metaDescription: seo.metaDescription,
-    ogImage: seo.ogImage,
+    metaTitle: seo.meta_title ?? undefined,
+    metaDescription: seo.meta_description ?? undefined,
+    ogImage: seo.og_image ?? undefined,
     canonical: seo.canonical ?? undefined,
   };
 }
@@ -236,8 +187,10 @@ export type { RecipeJson };
 /**
  * Parse recipe JSON for display
  */
-export function extractRecipe(recipeJson: string | null | undefined): RecipeJson | null {
-  return safeParseJson<RecipeJson>(recipeJson);
+export function extractRecipe(recipe_json: string | null | undefined): RecipeJson | null {
+  const recipe = safeParseJson<RecipeJson>(recipe_json);
+  if (!recipe) return null;
+  return recipe;
 }
 
 // ============================================================================
@@ -245,29 +198,24 @@ export function extractRecipe(recipeJson: string | null | undefined): RecipeJson
 // ============================================================================
 
 interface TagStyleJson {
-  svg_code?: string;
   color?: string;
   variant?: string;
 }
 
 export interface ExtractedTagStyle {
   color?: string;
-  icon?: string;
-  svgCode?: string;
   variant?: string;
 }
 
 /**
- * Extract tag styling from styleJson field
+ * Extract tag styling from style_json field
  */
-export function extractTagStyle(styleJson: string | null | undefined): ExtractedTagStyle {
-  const style = safeParseJson<TagStyleJson>(styleJson);
+export function extractTagStyle(style_json: string | null | undefined): ExtractedTagStyle {
+  const style = safeParseJson<TagStyleJson>(style_json);
   if (!style) return {};
 
   return {
     color: style.color,
-    icon: style.svg_code,
-    svgCode: style.svg_code,
     variant: style.variant,
   };
 }
@@ -280,66 +228,92 @@ export function extractTagStyle(styleJson: string | null | undefined): Extracted
  * Hydrate an article with computed fields and parsed JSON structures
  */
 export function hydrateArticle<T extends {
-  imagesJson?: string | null;
-  contentJson?: string | null;
-  recipeJson?: string | null;
-  roundupJson?: string | null;
-  faqsJson?: string | null;
-  seoJson?: string | null;
+  images_json?: string | null;
+  content_json?: string | null;
+  recipe_json?: string | null;
+  roundup_json?: string | null;
+  faqs_json?: string | null;
+  seo_json?: string | null;
   authorImagesJson?: string | null;
-  cachedAuthorJson?: string | null;
-  cachedCategoryJson?: string | null;
-  cachedTagsJson?: string | null;
+  cached_author_json?: string | null;
+  cached_category_json?: string | null;
+  cached_tags_json?: string | null;
   headline?: string;
   slug: string;
   type?: string;
+  author?: {
+    images_json?: string | null;
+    name?: string | null;
+    slug?: string | null;
+    job_title?: string | null;
+  } | null;
+  authorName?: string | null;
+  authorSlug?: string | null;
+  authorJob?: string | null;
+  category?: {
+    label?: string | null;
+    color?: string | null;
+    slug?: string | null;
+  } | null;
+  categoryLabel?: string | null;
+  categoryColor?: string | null;
+  categorySlug?: string | null;
 }>(article: T) {
-  const image = extractImage(article.imagesJson);
+  const image = extractImage(article.images_json);
 
-  const cachedAuthor = article.cachedAuthorJson
-    ? safeParseJson<any>(article.cachedAuthorJson)
+  const cachedAuthor = article.cached_author_json
+    ? safeParseJson<any>(article.cached_author_json)
     : null;
 
-  const cachedCategory = article.cachedCategoryJson
-    ? safeParseJson<any>(article.cachedCategoryJson)
+  const cachedCategory = article.cached_category_json
+    ? safeParseJson<any>(article.cached_category_json)
     : null;
 
   // Support multiple author source formats
-  let authorAvatar = extractImage(article.authorImagesJson, 'avatar').imageUrl;
+  let authorAvatar = extractImage(article.authorImagesJson, 'avatar').image_url;
 
   if (!authorAvatar && cachedAuthor) {
-    authorAvatar = cachedAuthor?.avatar;
+    const avatarSlot = cachedAuthor?.avatar;
+    if (typeof avatarSlot === 'string') {
+      authorAvatar = avatarSlot;
+    } else if (avatarSlot && typeof avatarSlot === 'object') {
+      authorAvatar = resolveVariantUrl(avatarSlot.variants?.sm) 
+        || resolveVariantUrl(avatarSlot.variants?.xs) 
+        || (avatarSlot as any).url 
+        || null;
+    }
   }
 
-  if (!authorAvatar && (article as any).author?.imagesJson) {
-    authorAvatar = extractImage((article as any).author.imagesJson, 'avatar').imageUrl;
+  if (!authorAvatar && article.author?.images_json) {
+    authorAvatar = extractImage(article.author.images_json, 'avatar').image_url;
   }
 
-  const authorName = (article as any).authorName
+  const authorName = article.authorName
     ?? cachedAuthor?.name
-    ?? (article as any).author?.name;
-  const authorSlug = (article as any).authorSlug
+    ?? article.author?.name;
+  const authorSlug = article.authorSlug
     ?? cachedAuthor?.slug
-    ?? (article as any).author?.slug;
-  const authorRole = (article as any).authorJob
+    ?? article.author?.slug;
+  const authorRole = article.authorJob
+    ?? cachedAuthor?.job_title
     ?? cachedAuthor?.role
-    ?? (article as any).author?.jobTitle;
+    ?? article.author?.job_title;
 
-  const categoryLabel = (article as any).categoryLabel
+  const categoryLabel = article.categoryLabel
     ?? cachedCategory?.label
-    ?? (article as any).category?.label;
-  const categoryColor = (article as any).categoryColor
+    ?? article.category?.label;
+  const categoryColor = article.categoryColor
     ?? cachedCategory?.color
-    ?? (article as any).category?.color;
-  const categorySlug = (article as any).categorySlug
+    ?? article.category?.color;
+  const categorySlug = article.categorySlug
     ?? cachedCategory?.slug
-    ?? (article as any).category?.slug;
+    ?? article.category?.slug;
 
-  const tags = article.cachedTagsJson
-    ? safeParseJson<string[]>(article.cachedTagsJson) || []
+  const tags = article.cached_tags_json
+    ? safeParseJson<any[]>(article.cached_tags_json) || []
     : [];
 
-  const seo = extractSeo(article.seoJson);
+  const seo = extractSeo(article.seo_json);
   // Generate correct route based on article type
   const route = article.type === 'recipe'
     ? `/recipes/${article.slug}`
@@ -351,11 +325,11 @@ export function hydrateArticle<T extends {
     ...article,
     ...image,
     ...seo,
-    contentJson: safeParseJson(article.contentJson),
-    recipeJson: safeParseJson(article.recipeJson),
-    recipe: safeParseJson(article.recipeJson), // Alias for RecipeContent.recipe
-    roundupJson: safeParseJson(article.roundupJson),
-    faqsJson: safeParseJson(article.faqsJson),
+    content_json: safeParseJson(article.content_json),
+    recipe_json: extractRecipe(article.recipe_json),
+    recipe: extractRecipe(article.recipe_json), // Alias for RecipeContent.recipe
+    roundup_json: safeParseJson(article.roundup_json),
+    faqs_json: safeParseJson(article.faqs_json),
     label: article.headline, // Alias for UI consistency
     route,
     authorAvatar,
@@ -374,73 +348,103 @@ export function hydrateArticle<T extends {
 /**
  * Hydrate a category with computed fields
  */
+interface CategorySeoJson {
+  meta_title?: string | null;
+  meta_description?: string | null;
+  og_image?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  canonical?: string;
+  no_index?: boolean;
+  twitter_card?: string;
+}
+
+interface CategoryConfigJson {
+  posts_per_page?: number;
+  tldr?: string;
+  show_in_nav?: boolean;
+  show_in_footer?: boolean;
+  layout_mode?: string;
+  card_style?: string;
+  show_sidebar?: boolean;
+  show_filters?: boolean;
+  show_breadcrumb?: boolean;
+  show_pagination?: boolean;
+  article_sort_by?: string;
+  article_sort_order?: string;
+  header_style?: string;
+  featured_article_id?: number | string;
+  show_featured_recipe?: boolean;
+  show_hero_cta?: boolean;
+  hero_cta_text?: string;
+  hero_cta_link?: string;
+}
+
 export function hydrateCategory<T extends {
-  imagesJson?: string | null;
-  seoJson?: string | null;
-  configJson?: string | null;
-  isFeatured?: boolean | null;
+  images_json?: string | null;
+  seo_json?: string | null;
+  config_json?: string | null;
+  is_featured?: boolean | null;
   slug: string;
 }>(category: T) {
-  const image = extractImage(category.imagesJson);
-  const seo = extractSeo(category.seoJson);
-  const config = safeParseJson<Record<string, any>>(category.configJson);
-  const numEntriesPerPage = config?.postsPerPage;
+  const image = extractImage(category.images_json);
+  const seo = safeParseJson<CategorySeoJson>(category.seo_json);
+  const config = safeParseJson<CategoryConfigJson>(category.config_json);
+  const postsPerPage = config?.posts_per_page;
   const tldr = config?.tldr;
-  const layoutMode = config?.layout;
-  const cardStyle = config?.cardStyle;
-  const showInNav = config?.showInNav;
-  const showInFooter = config?.showInFooter;
-  const showSidebar = config?.showSidebar;
-  const showFilters = config?.showFilters;
-  const showBreadcrumb = config?.showBreadcrumb;
-  const showPagination = config?.showPagination;
-  const sortBy = config?.sortBy;
-  const articleSortOrder = config?.sortOrder;
-  const headerStyle = config?.headerStyle;
-  const featuredArticleIdRaw = config?.featuredArticleId ?? config?.featured_article_id;
+  const layoutMode = config?.layout_mode;
+  const cardStyle = config?.card_style;
+  const showInNav = config?.show_in_nav;
+  const showInFooter = config?.show_in_footer;
+  const showSidebar = config?.show_sidebar;
+  const showFilters = config?.show_filters;
+  const showBreadcrumb = config?.show_breadcrumb;
+  const showPagination = config?.show_pagination;
+  const articleSortBy = config?.article_sort_by;
+  const articleSortOrder = config?.article_sort_order;
+  const headerStyle = config?.header_style;
+  const featuredArticleIdRaw = config?.featured_article_id;
   const featuredArticleId = typeof featuredArticleIdRaw === 'number'
     ? featuredArticleIdRaw
     : typeof featuredArticleIdRaw === 'string'
       ? parseInt(featuredArticleIdRaw, 10)
       : undefined;
-  const showFeaturedRecipe = config?.showFeaturedRecipe ?? config?.show_featured_recipe;
-  const showHeroCta = config?.showHeroCta ?? config?.show_hero_cta;
-  const heroCtaText = config?.heroCtaText ?? config?.hero_cta_text;
-  const heroCtaLink = config?.heroCtaLink ?? config?.hero_cta_link;
-  const rawIconSvg = (category as any).iconSvg
-    ?? (category as any).icon_svg
-    ?? config?.iconSvg
-    ?? config?.icon_svg;
-  const iconSvg = typeof rawIconSvg === 'string' && rawIconSvg.trim()
-    ? rawIconSvg.trim()
-    : undefined;
-
+  const showFeaturedRecipe = config?.show_featured_recipe;
+  const showHeroCta = config?.show_hero_cta;
+  const heroCtaText = config?.hero_cta_text;
+  const heroCtaLink = config?.hero_cta_link;
   return {
     ...category,
     ...image,
-    ...seo,
-    imagesJson: safeParseJson(category.imagesJson),
-    seoJson: safeParseJson(category.seoJson),
+    ...(seo?.meta_title !== undefined ? { meta_title: seo.meta_title } : {}),
+    ...(seo?.meta_description !== undefined ? { meta_description: seo.meta_description } : {}),
+    ...(seo?.og_image !== undefined ? { og_image: seo.og_image } : {}),
+    ...(seo?.og_title !== undefined ? { og_title: seo.og_title } : {}),
+    ...(seo?.og_description !== undefined ? { og_description: seo.og_description } : {}),
+    ...(seo?.canonical !== undefined ? { canonical: seo.canonical } : {}),
+    ...(seo?.no_index !== undefined ? { no_index: seo.no_index } : {}),
+    ...(seo?.twitter_card !== undefined ? { twitter_card: seo.twitter_card } : {}),
+    images_json: safeParseJson(category.images_json),
+    seo_json: safeParseJson(category.seo_json),
     route: `/categories/${category.slug}`,
-    ...(iconSvg ? { iconSvg } : {}),
-    ...(typeof numEntriesPerPage === 'number' ? { numEntriesPerPage } : {}),
+    ...(typeof postsPerPage === 'number' ? { posts_per_page: postsPerPage } : {}),
     ...(typeof tldr === 'string' ? { tldr } : {}),
-    ...(layoutMode ? { layoutMode } : {}),
-    ...(cardStyle ? { cardStyle } : {}),
-    ...(typeof showInNav === 'boolean' ? { showInNav } : {}),
-    ...(typeof showInFooter === 'boolean' ? { showInFooter } : {}),
-    ...(typeof showSidebar === 'boolean' ? { showSidebar } : {}),
-    ...(typeof showFilters === 'boolean' ? { showFilters } : {}),
-    ...(typeof showBreadcrumb === 'boolean' ? { showBreadcrumb } : {}),
-    ...(typeof showPagination === 'boolean' ? { showPagination } : {}),
-    ...(sortBy ? { sortBy } : {}),
-    ...(articleSortOrder ? { articleSortOrder } : {}),
-    ...(headerStyle ? { headerStyle } : {}),
-    ...(Number.isFinite(featuredArticleId) ? { featuredArticleId: featuredArticleId as number } : {}),
-    ...(typeof showFeaturedRecipe === 'boolean' ? { showFeaturedRecipe } : {}),
-    ...(typeof showHeroCta === 'boolean' ? { showHeroCta } : {}),
-    ...(typeof heroCtaText === 'string' ? { heroCtaText } : {}),
-    ...(typeof heroCtaLink === 'string' ? { heroCtaLink } : {}),
+    ...(layoutMode ? { layout_mode: layoutMode } : {}),
+    ...(cardStyle ? { card_style: cardStyle } : {}),
+    ...(typeof showInNav === 'boolean' ? { show_in_nav: showInNav } : {}),
+    ...(typeof showInFooter === 'boolean' ? { show_in_footer: showInFooter } : {}),
+    ...(typeof showSidebar === 'boolean' ? { show_sidebar: showSidebar } : {}),
+    ...(typeof showFilters === 'boolean' ? { show_filters: showFilters } : {}),
+    ...(typeof showBreadcrumb === 'boolean' ? { show_breadcrumb: showBreadcrumb } : {}),
+    ...(typeof showPagination === 'boolean' ? { show_pagination: showPagination } : {}),
+    ...(articleSortBy ? { article_sort_by: articleSortBy } : {}),
+    ...(articleSortOrder ? { article_sort_order: articleSortOrder } : {}),
+    ...(headerStyle ? { header_style: headerStyle } : {}),
+    ...(Number.isFinite(featuredArticleId) ? { featured_article_id: featuredArticleId as number } : {}),
+    ...(typeof showFeaturedRecipe === 'boolean' ? { show_featured_recipe: showFeaturedRecipe } : {}),
+    ...(typeof showHeroCta === 'boolean' ? { show_hero_cta: showHeroCta } : {}),
+    ...(typeof heroCtaText === 'string' ? { hero_cta_text: heroCtaText } : {}),
+    ...(typeof heroCtaLink === 'string' ? { hero_cta_link: heroCtaLink } : {}),
   };
 }
 
@@ -448,21 +452,21 @@ export function hydrateCategory<T extends {
  * Hydrate an author with computed fields
  */
 export function hydrateAuthor<T extends {
-  imagesJson?: string | null;
-  seoJson?: string | null;
-  jobTitle?: string | null;
+  images_json?: string | null;
+  seo_json?: string | null;
+  job_title?: string | null;
   slug: string;
 }>(author: T) {
-  const image = extractImage(author.imagesJson, 'avatar');
-  const seo = extractSeo(author.seoJson);
+  const image = extractImage(author.images_json, 'avatar');
+  const seo = extractSeo(author.seo_json);
 
   return {
     ...author,
     ...image,
     ...seo,
-    imagesJson: safeParseJson(author.imagesJson),
-    seoJson: safeParseJson(author.seoJson),
-    job: author.jobTitle, // Alias for template compatibility
+    images_json: safeParseJson(author.images_json),
+    seo_json: safeParseJson(author.seo_json),
+    job: author.job_title, // Alias for template compatibility
     route: `/authors/${author.slug}`,
   };
 }
@@ -471,15 +475,15 @@ export function hydrateAuthor<T extends {
  * Hydrate a tag with computed fields
  */
 export function hydrateTag<T extends {
-  styleJson?: string | null;
+  style_json?: string | null;
   slug: string;
 }>(tag: T) {
-  const style = extractTagStyle(tag.styleJson);
+  const style = extractTagStyle(tag.style_json);
 
   return {
     ...tag,
     ...style,
-    styleJson: safeParseJson(tag.styleJson),
+    style_json: safeParseJson(tag.style_json),
     route: `/tags/${tag.slug}`,
   };
 }

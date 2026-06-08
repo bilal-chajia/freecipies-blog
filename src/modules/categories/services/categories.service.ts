@@ -7,28 +7,45 @@
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { categories, type Category, type NewCategory } from '../schema/categories.schema';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { articles } from '../../articles/schema/articles.schema';
+import { syncCachedFields } from '../../articles/services/articles.service';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+
+async function getArticleIdsForCategory(drizzle: DrizzleDb, category_id: number): Promise<number[]> {
+  const rows = await drizzle
+    .select({ id: articles.id })
+    .from(articles)
+    .where(and(eq(articles.category_id, category_id), isNull(articles.deleted_at)));
+
+  return rows.map((row) => row.id);
+}
+
+async function refreshCategoryArticleCaches(db: D1Database | DrizzleDb, articleIds: number[]): Promise<void> {
+  for (const article_id of articleIds) {
+    await syncCachedFields(db, article_id);
+  }
+}
 
 /**
  * Get all categories
  */
 export async function getCategories(
   db: D1Database | DrizzleDb,
-  options?: { isOnline?: boolean; parentId?: number | null }
+  options?: { workflow_status?: 'draft' | 'published' | 'archived'; parent_id?: number | null }
 ): Promise<Category[]> {
   const drizzle = getDb(db);
 
-  const conditions = [isNull(categories.deletedAt)];
+  const conditions = [isNull(categories.deleted_at)];
 
-  if (options?.isOnline !== undefined) {
-    conditions.push(eq(categories.isOnline, options.isOnline));
+  if (options?.workflow_status !== undefined) {
+    conditions.push(eq(categories.workflow_status, options.workflow_status));
   }
 
-  if (options?.parentId !== undefined) {
-    if (options.parentId === null) {
-      conditions.push(isNull(categories.parentId));
+  if (options?.parent_id !== undefined) {
+    if (options.parent_id === null) {
+      conditions.push(isNull(categories.parent_id));
     } else {
-      conditions.push(eq(categories.parentId, options.parentId));
+      conditions.push(eq(categories.parent_id, options.parent_id));
     }
   }
 
@@ -36,7 +53,7 @@ export async function getCategories(
     .select()
     .from(categories)
     .where(and(...conditions))
-    .orderBy(asc(categories.sortOrder), asc(categories.label));
+    .orderBy(asc(categories.sort_order), asc(categories.label));
 }
 
 /**
@@ -45,7 +62,7 @@ export async function getCategories(
 export async function getCategoryBySlug(db: D1Database | DrizzleDb, slug: string): Promise<Category | null> {
   const drizzle = getDb(db);
   return await drizzle.query.categories.findFirst({
-    where: and(eq(categories.slug, slug), isNull(categories.deletedAt)),
+    where: and(eq(categories.slug, slug), isNull(categories.deleted_at)),
   }) || null;
 }
 
@@ -55,18 +72,18 @@ export async function getCategoryBySlug(db: D1Database | DrizzleDb, slug: string
 export async function getCategoryById(db: D1Database | DrizzleDb, id: number): Promise<Category | null> {
   const drizzle = getDb(db);
   return await drizzle.query.categories.findFirst({
-    where: and(eq(categories.id, id), isNull(categories.deletedAt)),
+    where: and(eq(categories.id, id), isNull(categories.deleted_at)),
   }) || null;
 }
 
 /**
- * Calculate depth based on parentId
+ * Calculate depth based on parent_id
  * Returns 0 for root categories, parent.depth + 1 for child categories
  */
-async function calculateDepth(db: D1Database | DrizzleDb, parentId: number | null | undefined): Promise<number> {
-  if (!parentId) return 0;
+async function calculateDepth(db: D1Database | DrizzleDb, parent_id: number | null | undefined): Promise<number> {
+  if (!parent_id) return 0;
 
-  const parent = await getCategoryById(db, parentId);
+  const parent = await getCategoryById(db, parent_id);
   if (!parent) return 0;
 
   return (parent.depth || 0) + 1;
@@ -81,8 +98,8 @@ export async function createCategory(
 ): Promise<Category | null> {
   const drizzle = getDb(db);
 
-  // Auto-calculate depth based on parentId
-  const depth = await calculateDepth(db, category.parentId);
+  // Auto-calculate depth based on parent_id
+  const depth = await calculateDepth(db, category.parent_id);
 
   const [inserted] = await drizzle.insert(categories).values({
     ...category,
@@ -100,21 +117,26 @@ export async function updateCategory(
   category: Partial<NewCategory>
 ): Promise<Category | null> {
   const drizzle = getDb(db);
+  const existing = await getCategoryBySlug(db, slug);
+  if (!existing) return null;
+  const affectedArticleIds = await getArticleIdsForCategory(drizzle, existing.id);
 
-  // Recalculate depth if parentId is being changed
-  const depth = category.parentId !== undefined
-    ? await calculateDepth(db, category.parentId)
+  // Recalculate depth if parent_id is being changed
+  const depth = category.parent_id !== undefined
+    ? await calculateDepth(db, category.parent_id)
     : undefined;
 
   const updateData = {
     ...category,
     ...(depth !== undefined ? { depth } : {}),
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   await drizzle.update(categories)
     .set(updateData)
     .where(eq(categories.slug, slug));
+
+  await refreshCategoryArticleCaches(db, affectedArticleIds);
 
   return getCategoryBySlug(db, slug);
 }
@@ -128,21 +150,26 @@ export async function updateCategoryById(
   category: Partial<NewCategory>
 ): Promise<Category | null> {
   const drizzle = getDb(db);
+  const existing = await getCategoryById(db, id);
+  if (!existing) return null;
+  const affectedArticleIds = await getArticleIdsForCategory(drizzle, id);
 
-  // Recalculate depth if parentId is being changed
-  const depth = category.parentId !== undefined
-    ? await calculateDepth(db, category.parentId)
+  // Recalculate depth if parent_id is being changed
+  const depth = category.parent_id !== undefined
+    ? await calculateDepth(db, category.parent_id)
     : undefined;
 
   const updateData = {
     ...category,
     ...(depth !== undefined ? { depth } : {}),
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   await drizzle.update(categories)
     .set(updateData)
     .where(eq(categories.id, id));
+
+  await refreshCategoryArticleCaches(db, affectedArticleIds);
 
   return getCategoryById(db, id);
 }
@@ -153,7 +180,7 @@ export async function updateCategoryById(
 export async function deleteCategory(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
   const drizzle = getDb(db);
   const result = await drizzle.update(categories)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deleted_at: new Date().toISOString() })
     .where(eq(categories.slug, slug));
   return (result.rowsAffected ?? 0) > 0;
 }
@@ -164,9 +191,7 @@ export async function deleteCategory(db: D1Database | DrizzleDb, slug: string): 
 export async function deleteCategoryById(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
   const drizzle = getDb(db);
   const result = await drizzle.update(categories)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deleted_at: new Date().toISOString() })
     .where(eq(categories.id, id));
   return (result.rowsAffected ?? 0) > 0;
 }
-
-

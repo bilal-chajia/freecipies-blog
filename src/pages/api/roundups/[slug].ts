@@ -1,18 +1,42 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getArticleBySlug } from '@modules/articles';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { generateJsonLd } from '@modules/articles/utils/jsonld';
+import { parseJsonLdArray } from '@modules/articles/utils/cached-fields';
 import { validateParams, SlugOrIdParam } from '@shared/validation';
 
 export const prerender = false;
+
+type JsonLdArticle = Parameters<typeof generateJsonLd>[0];
+
+function toJsonLdArticle(article: NonNullable<Awaited<ReturnType<typeof getArticleBySlug>>>): JsonLdArticle {
+    const recipe_json = article.type === 'recipe'
+        ? (article.recipe_json ?? undefined)
+        : undefined;
+    const roundup_json = article.type === 'roundup'
+        ? (article.roundup_json ?? undefined)
+        : undefined;
+
+    return {
+        ...article,
+        short_description: article.short_description ?? undefined,
+        published_at: article.published_at ?? undefined,
+        updated_at: article.updated_at ?? undefined,
+        recipe_json,
+        roundup_json,
+        images_json: article.images_json ?? undefined,
+        faqs_json: article.faqs_json ?? undefined,
+        cached_author_json: article.cached_author_json ?? undefined,
+        cached_category_json: article.cached_category_json ?? undefined,
+    };
+}
 
 /**
  * GET /api/roundups/:slug
  * Public endpoint to get roundup by slug with JSON-LD ItemList
  */
-export const GET: APIRoute = async ({ params, locals, url }) => {
+export const GET: APIRoute = async ({ params, url }) => {
     try {
         const { slug } = validateParams(params, SlugOrIdParam);
         const db = env.DB;
@@ -32,9 +56,10 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
 
         // Use pre-generated JSON-LD with fallback to runtime generation
         const baseUrl = `${url.protocol}//${url.host}`;
-        const jsonLd = article.jsonldJson
-            ? (typeof article.jsonldJson === 'string' ? JSON.parse(article.jsonldJson) : article.jsonldJson)
-            : generateJsonLd(article, baseUrl);
+        const cachedJsonLd = parseJsonLdArray(article.jsonld_json);
+        const jsonLd = cachedJsonLd.length > 0
+            ? cachedJsonLd
+            : generateJsonLd(toJsonLdArticle(article), baseUrl);
 
         // Include JSON-LD in response
         const responseData = {

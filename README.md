@@ -1,458 +1,196 @@
-# Freecipies - Recipe Blog SaaS Platform
+# SaaS Blog
 
-A modern, full-featured recipe and food blog platform built with **Astro 6**, **React 19**, and deployed on **Cloudflare**. Features a public-facing recipe site with SEO-optimized pages and a comprehensive admin panel for content management.
+SaaS Blog is a recipe and food blog SaaS built as one Astro application: a public Astro site, a React admin SPA, and Cloudflare-backed server/API code deployed through the Astro Cloudflare adapter.
 
----
+## Stack
 
-## Features
+| Layer | Technology |
+| --- | --- |
+| Framework | Astro 6, `output: 'server'` |
+| Admin UI | React 19, React Router, Zustand |
+| Styling | Tailwind CSS 4, Radix UI, shadcn/ui |
+| Database | Cloudflare D1 with Drizzle |
+| Storage | Cloudflare R2 for images |
+| Sessions | Cloudflare KV |
+| Runtime | Cloudflare Workers via `@astrojs/cloudflare` |
+| Package manager | pnpm only |
 
-### Public Site
-- **Recipe Discovery** - Browse recipes with category, tag, and author filters
-- **Fully Responsive** - Mobile-first design with responsive images (5 breakpoints)
-- **SEO Optimized** - Dynamic sitemaps, JSON-LD structured data, RSS feeds
-- **Rich Content** - Block-based article editor with images, videos, tip boxes, and more
-- **Bookmarking** - Save favorite recipes locally
-- **Lightning Fast** - SSR with zero-join rendering using cached denormalized fields
-- **Web Stories** - Interactive story format for recipe browsing
-- **Roundups** - Curated listicle format for recipe collections
-- **About, Contact & FAQ Pages** - Static pages for site information
-- **RSS Feeds** - Recipe and Pinterest-specific XML feeds
-- **Smart Redirects** - Database-driven 301/302 redirect management with hit tracking
+Key current versions are declared in `package.json`.
 
-### Admin Panel
-- **Block Editor** - Create articles, recipes, and roundups with @blocknote/react
-- **Media Library** - Upload images with auto-generated responsive variants, focal point selection, and blur placeholders
-- **Category Management** - Hierarchical taxonomy with color/icon configuration
-- **Author Management** - Profile management with social links
-- **Tag System** - Flexible labeling with filter groups
-- **Equipment Management** - Kitchen tools with affiliate links
-- **Redirect Management** - Create and manage 301/302 redirects with hit tracking
-- **Pinterest Integration** - Board management, pin creation, and CSV export
-- **Template Editor** - Canvas-based pin template designer with Konva
-- **Analytics Dashboard** - Content metrics and popular content tracking with recharts
-- **AI Content Generation** - Multi-provider AI support (OpenAI, Anthropic, Gemini)
-- **Homepage Builder** - Customize hero sections and layouts
-- **Branding Manager** - Logo, favicon, and site appearance configuration
-- **Global Search** - Search across all content types with command palette (cmdk)
-- **Dark Mode** - Full theme support with next-themes
-- **Session Monitoring** - Auto-refresh JWT tokens and session management
-- **Bulk Import** - AI model migration and bulk content import
-
----
-
-## Tech Stack
-
-### Core Framework
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Astro** | 6.1.4 | SSR framework with islands architecture |
-| **React** | 19.2.4 | Admin panel SPA |
-| **TypeScript** | 6.0.2 | Full type safety |
-| **TailwindCSS** | 4.2.2 | Utility-first styling |
-
-### Cloudflare Infrastructure
-| Service | Purpose |
-|---------|---------|
-| **D1** | SQLite database (primary data store) |
-| **R2** | Object storage for images with responsive variants |
-| **KV** | Session storage for authentication |
-| **Workers** | Edge runtime via @astrojs/cloudflare |
-
-### Key Libraries
-- **Database**: Drizzle ORM
-- **UI Components**: Radix UI + shadcn/ui (New York style)
-- **State Management**: Zustand
-- **Forms**: react-hook-form + zod
-- **Block Editor**: @blocknote/react + @blocknote/mantine
-- **Data Tables**: @tanstack/react-table
-- **Canvas Editor**: Konva + react-konva
-- **Charts**: recharts
-- **Drag & Drop**: @dnd-kit
-- **Animation**: motion (Framer Motion)
-- **Authentication**: jose (JWT)
-- **Image Processing**: @jsquash/webp, @jsquash/avif (WASM-based)
-- **Image Cropping**: react-easy-crop
-- **Icons**: lucide-react
-- **Command Palette**: cmdk
-- **Toast Notifications**: sonner
-- **Drawer**: vaul
-- **Code Editor**: @monaco-editor/react
-- **Date Handling**: date-fns
-- **Routing**: react-router-dom
-- **Carousel**: embla-carousel-react
-- **HTTP Client**: axios
-
----
-
-## Getting Started
-
-### Prerequisites
-- **Node.js** 18+
-- **pnpm** (required - do not use npm/yarn)
-- **Cloudflare account** (for production deployment with D1/R2/KV)
-
-### Installation
+## Commands
 
 ```bash
-# Clone the repository
-git clone https://github.com/bilal-chajia/freecipies-blog.git
-cd freecipies-blog
-
-# Install dependencies
 pnpm install
-
-# Set up environment variables
-cp .env.example .env
-```
-
-### Development
-
-```bash
-# Start development server (with local D1/R2 bindings via Vite)
 pnpm dev
-
-# Production build
-pnpm build
-
-# Preview with full Cloudflare bindings (D1/R2 work)
 pnpm preview
-```
-
-### Database Setup
-
-```bash
-# Run migrations
-pnpm drizzle-kit generate
-pnpm drizzle-kit migrate
-```
-
-> **Note**: The database schema source of truth is `db/schema.sql`. Drizzle schemas in `src/modules/*/schema/` should be kept in sync.
-
-### Other Commands
-
-```bash
-# Astro CLI passthrough
-pnpm astro
-
-# Deploy to Cloudflare
 pnpm deploy
-
-# CSV to D1 migration
-pnpm migrate
+pnpm test
+pnpm check:boundaries
 ```
 
----
+`pnpm build` runs `node scripts/build.mjs`. Use it for release validation, but agents must not run it automatically without permission.
+
+`pnpm preview` runs an Astro build then starts Wrangler. Use it when validating behavior that depends on Cloudflare bindings such as D1, R2, or KV.
 
 ## Project Structure
 
-```
+```text
 src/
-├── modules/              # Domain-driven feature modules
-│   ├── articles/         # Articles, recipes, roundups (polymorphic)
-│   ├── categories/       # Hierarchical taxonomy
-│   ├── authors/          # Content creator profiles
-│   ├── tags/             # Flexible labeling system
-│   ├── equipment/        # Kitchen tools with affiliate links
-│   ├── media/            # Media library & R2 storage
-│   ├── auth/             # JWT authentication
-│   ├── settings/         # Site configuration
-│   ├── menus/            # Navigation menus
-│   ├── pinterest/        # Pinterest boards & pins
-│   ├── templates/        # Canvas pin template editor
-│   ├── redirects/        # 301/302 redirect management
-│   ├── ai/               # Multi-provider AI integration
-│   └── index.ts          # Barrel exports
-├── shared/               # Cross-cutting concerns
-│   ├── database/         # Drizzle client + schema
-│   ├── types/            # Global TypeScript types
-│   ├── utils/            # Shared utilities
-│   └── constants/        # Shared constants
-├── admin/                # React Admin SPA (/admin)
-│   ├── AdminApp.jsx      # Entry point
-│   ├── components/       # React UI components
-│   │   ├── BlockEditor/  # BlockNote article editor
-│   │   ├── ImageEditor/  # Image editing with focal points
-│   │   ├── ImageUploader/# Multi-upload with variants
-│   │   ├── pins/         # Pinterest pin management
-│   │   ├── settings/     # Settings page components
-│   │   ├── shared/       # Reusable admin components
-│   │   └── ...           # Other feature components
-│   ├── pages/            # Admin route pages
-│   │   ├── dashboard/    # Analytics dashboard
-│   │   ├── articles/     # Article editor
-│   │   ├── recipes/      # Recipe editor
-│   │   ├── roundups/     # Roundup editor
-│   │   ├── media/        # Media library
-│   │   ├── categories/   # Category management
-│   │   ├── authors/      # Author profiles
-│   │   ├── tags/         # Tag management
-│   │   ├── equipment/    # Equipment management
-│   │   ├── pinterest/    # Pinterest boards & pins
-│   │   ├── homepage/     # Homepage builder
-│   │   ├── settings/     # Site settings
-│   │   ├── redirects/    # Redirect management
-│   │   └── auth/         # Login page
-│   ├── services/         # API client
-│   ├── store/            # Zustand stores
-│   ├── ui/               # shadcn/ui components
-│   ├── hooks/            # Custom React hooks
-│   ├── lib/              # Admin utilities
-│   └── utils/            # Admin helper functions
-├── components/           # Public site Astro components
-│   ├── Header.astro      # Site navigation with mega menu
-│   ├── Footer.astro      # Site footer
-│   ├── SEO.astro         # Meta tags & JSON-LD
-│   ├── RecipeCard.astro  # Recipe listing card
-│   ├── ArticleCard.astro # Article listing card
-│   ├── StoriesBar.astro  # Web Stories carousel
-│   ├── WebStoryViewer.astro # Full story viewer
-│   ├── content/          # Content block renderers
-│   └── ...               # Other public components
-├── layouts/              # Astro layouts
-│   ├── Layout.astro      # Base layout
-│   ├── ArticleLayout.astro
-│   ├── RecipeLayout.astro
-│   └── RoundupLayout.astro
-├── pages/                # Astro pages & API routes
-│   ├── index.astro       # Homepage
-│   ├── about.astro       # About page
-│   ├── contact.astro     # Contact page
-│   ├── faqs.astro        # FAQs page
-│   ├── my-bookmarks.astro # Saved recipes
-│   ├── 404.astro         # Not found
-│   ├── 500.astro         # Server error
-│   ├── recipes/          # Recipe listing + detail
-│   ├── articles/         # Article detail pages
-│   ├── roundups/         # Roundup listing + detail
-│   ├── categories/       # Category archives
-│   ├── authors/          # Author pages
-│   ├── tags/             # Tag archives
-│   ├── feed/             # RSS feed routes
-│   ├── rss/              # Recipe & Pinterest XML feeds
-│   ├── images/           # Image proxy routes
-│   ├── api/              # REST API (50 endpoints)
-│   └── sitemap.ts        # Dynamic sitemap
-├── middleware.ts          # CORS, CSP, redirects, security headers
-├── lib/                  # Shared utilities
-├── utils/                # Canvas & image compression helpers
-├── scripts/              # Client-side scripts (bookmarks)
-└── styles/               # Global CSS
+  admin/    React admin SPA mounted by src/pages/admin/[...path].astro.
+  modules/  Business domains: articles, auth, media, settings, AI, templates, etc.
+  pages/    Astro routes and thin API route entrypoints.
+  server/   API handlers, auth guards, site-data loaders, Cloudflare server access.
+  shared/   Cross-cutting database, types, validation, constants, and utilities.
+  site/     Public Astro UI: components, layouts, scripts, and styles.
 ```
 
----
+The repo is intentionally a single Astro deployment. Keep the boundary internal:
 
-## Database Architecture
+- public rendering belongs in `src/site` and `src/pages`;
+- admin UI belongs in `src/admin`;
+- route files in `src/pages/api` should stay thin;
+- API behavior belongs in `src/server` and domain modules;
+- reusable global contracts belong in `src/shared`;
+- domain logic belongs in `src/modules`.
 
-**Database**: Cloudflare D1 (SQLite)
-**ORM**: Drizzle ORM
-**Schema Source**: `db/schema.sql`
+## Public Site
 
-### Key Tables
-| Table | Purpose |
-|-------|---------|
-| `site_settings` | Global key-value config store |
-| `media` | Asset library with responsive variants (xs/sm/md/lg/original) |
-| `categories` | Hierarchical taxonomy with cached counts |
-| `authors` | Creator profiles with social links |
-| `tags` | Flexible labeling with filter groups |
-| `equipment` | Kitchen tools with affiliate links |
-| `articles` | Core content (polymorphic: article/recipe/roundup) |
-| `articles_to_tags` | Many-to-many junction (articles <-> tags) |
-| `pinterest_boards` | Pinterest board targets |
-| `pinterest_pins` | Pin assets for export |
-| `pin_templates` | Canvas template definitions |
-| `redirects` | 301/302 redirect management with hit tracking |
+The public site is Astro-first and server-rendered. Current public routes include:
 
-### FTS5 Virtual Tables
-| Table | Purpose |
-|-------|---------|
-| `idx_articles_search` | Full-text search for articles |
-| `idx_media_search_fts` | Full-text search for media library |
+- `/`, `/about`, `/contact`, `/faqs`, `/my-bookmarks`;
+- `/recipes`, `/recipes/[slug]`;
+- `/articles/[slug]`;
+- `/roundups`, `/roundups/[slug]`;
+- `/categories`, `/categories/[slug]`;
+- `/authors`, `/authors/[slug]`;
+- `/tags`, `/tags/[slug]`;
+- RSS, sitemap, image proxy, and error routes.
 
-### Design Patterns
-- **Soft Deletes**: All tables use `deleted_at`; queries filter `WHERE deleted_at IS NULL`
-- **Zero-Join Rendering**: Cached JSON fields for instant rendering without JOINs
-- **SQL Triggers**: Auto-timestamps, FTS5 sync, soft delete protection
-- **Polymorphic Articles**: Supports `article`, `recipe`, and `roundup` types
+Public UI should use `src/site/components`, `src/site/layouts`, `src/site/scripts`, and `src/site/styles`.
 
----
+## Admin Panel
 
-## Image System
+The admin is a React SPA served from `/admin` through:
 
-Sophisticated responsive image system with:
-- **5 Breakpoints**: xs (360px), sm (720px), md (1200px), lg (2048px), original
-- **WASM Encoding**: @jsquash/webp and @jsquash/avif for client-side encoding
-- **Focal Point Selection**: CSS object-position control per image
-- **Blur Placeholders**: Base64 LQIP for progressive loading
-- **Image Cropping**: react-easy-crop for precise focal point selection
-- **Storage Isolation**: `r2_key` stripped from API responses
-
----
-
-## API
-
-**Base Path**: `/api/`
-**Endpoints**: 50 across 20+ resource directories
-
-### Response Format
-```typescript
-// Success
-{ success: true, data: T | T[] }
-
-// Error
-{ success: false, error: string, code: string, details?: Record }
-
-// Paginated
-{ success: true, data: T[], pagination: { page, limit, total, totalPages, hasNext, hasPrev } }
+```text
+src/pages/admin/[...path].astro
+src/admin/app/
+src/admin/features/
+src/admin/components/
+src/admin/services/
+src/admin/store/
+src/admin/ui/
 ```
 
-### Authentication
-- **Public**: GET endpoints for listings
-- **Protected**: POST/PUT/DELETE require Bearer token (JWT)
+The admin includes content editing, media management, taxonomy management, Pinterest tooling, template editing with Konva, settings, redirects, dashboards, and AI content generation.
 
-### API Resources
-| Resource | Endpoints | Purpose |
-|----------|-----------|---------|
-| `articles` | CRUD + slug | Article management |
-| `recipes` | CRUD + slug + rating | Recipe management |
-| `roundups` | CRUD + slug | Roundup management |
-| `categories` | CRUD + slug | Category taxonomy |
-| `tags` | CRUD + slug | Tag system |
-| `authors` | CRUD + slug | Author profiles |
-| `equipment` | CRUD | Kitchen tools |
-| `media` | CRUD + upload + bulk delete | Media library |
-| `pinterest-boards` | CRUD | Pinterest boards |
-| `pins` | CRUD + upload | Pinterest pins |
-| `templates` | CRUD + slug | Pin templates |
-| `redirects` | CRUD | URL redirects |
-| `settings` | Appearance, menus, image upload | Site configuration |
-| `stats` | Dashboard, popular | Analytics |
-| `auth` | Login, refresh, verify | Authentication |
-| `ai` | Generate, models, providers, settings | AI content |
-| `branding` | Logo, favicon | Site branding |
-| `content` | Index | Content queries |
-| `views` | By slug | Page view tracking |
-| `upload` | Image, thumbnail, font, from URL | File uploads |
+Keep Cloudflare bindings and secrets server-side. The admin talks to API routes; it must not receive D1, R2, KV, secrets, or raw R2 keys.
 
----
+## API Pattern
 
-## Security
+API route files in `src/pages/api` should delegate to handlers instead of containing business logic.
 
-- **Middleware**: CORS, Content Security Policy, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Cross-Origin policies
-- **JWT Authentication**: jose library for admin auth with auto-refresh
-- **Secrets Management**: JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD stored in Cloudflare Secrets (not in code)
-- **Soft Deletes**: Prevents accidental data loss
-- **Input Validation**: Zod schemas for all API inputs
-- **Session Monitoring**: Automatic token refresh and session expiry handling
-- **CSP**: Stricter production policy vs relaxed dev policy
+Gold-standard pattern:
 
----
-
-## Configuration
-
-| File | Purpose |
-|------|---------|
-| `astro.config.mjs` | Astro: React integration, Cloudflare adapter, SSR output |
-| `wrangler.toml` | Cloudflare: D1/R2/KV bindings, dev env vars |
-| `tsconfig.json` | Path aliases (`@/*`, `@modules/*`, `@shared/*`, etc.) |
-| `drizzle.config.ts` | Drizzle: SQLite dialect, schema location |
-| `components.json` | shadcn/ui: New York style, zinc base |
-| `db/schema.sql` | **Source of truth** for database schema |
-| `.dev.vars` | Local dev secrets (JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD) |
-
----
-
-## Documentation
-
-- [Database Schema](db/DATABASE_SCHEMA.md) - Comprehensive database documentation
-- [Architecture](docs/ARCHITECTURE.md) - System architecture overview
-- [API Reference](docs/API.md) - Complete API documentation
-- [Articles API](docs/articles-api.md) - Articles-specific API docs
-- [Multi-Language SaaS](docs/MULTI_LANGUAGE_SAAS.md) - Multi-language support planning
-- [Recipe JSON Review](docs/RECIPE_JSON_REVIEW.md) - Recipe JSON structure review
-- [Agent Instructions](AGENTS.md) - AI coding agent guidelines
-
----
-
-## Content Types
-
-The `articles` table supports three polymorphic content types:
-
-| Type | Description | Required Fields |
-|------|-------------|-----------------|
-| `article` | Blog/editorial content | `content_json` |
-| `recipe` | Structured recipes | `content_json` + `recipe_json` |
-| `roundup` | Curated listicles | `content_json` + `roundup_json` |
-
-### Content Blocks
-Articles use a block-based JSON structure with support for:
-- **Text**: paragraph, heading, blockquote, list
-- **Media**: image, video
-- **Callouts**: tip_box
-- **Embeds**: embed, product_card
-- **Layout**: divider, spacer, ad_slot, table
-- **Food Blog**: before_after, ingredient_spotlight, faq_section, related_content
-
----
-
-## Deployment
-
-### Cloudflare Workers
-
-```bash
-# Production build
-pnpm build
-
-# Deploy to Cloudflare
-pnpm deploy
-# or
-wrangler deploy
+```text
+src/pages/api/admin/ai/generate.ts
+src/server/api/admin/ai/generate.handler.ts
 ```
 
-### Environment Variables
+Responses should use `formatSuccessResponse` and `formatErrorResponse` from `@shared/utils`.
 
-| Variable | Purpose | Location |
-|----------|---------|----------|
-| `JWT_SECRET` | Auth token signing | Cloudflare Secrets |
-| `ADMIN_USERNAME` | Admin login username | Cloudflare Secrets |
-| `ADMIN_PASSWORD` | Admin login password | Cloudflare Secrets |
-| `DB` | D1 Database binding | wrangler.toml |
-| `IMAGES` | R2 Storage binding | wrangler.toml |
-| `SESSION` | KV namespace binding | wrangler.toml |
-| `PUBLIC_CORS_ORIGINS` | Additional CORS origins | wrangler.toml |
+For resources with sub-routes, prefer:
 
----
+```text
+src/pages/api/{resource}/index.ts
+```
 
-## Contributing
+over:
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+```text
+src/pages/api/{resource}.ts
+```
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Data Model
 
-### Commit Message Format
+Database source of truth:
 
-Follow conventional commits:
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation only
-- `refactor:` - Code change that neither fixes a bug nor adds a feature
-- `perf:` - Performance improvement
-- `test:` - Adding tests
-- `chore:` - Build process, dependencies, tooling
+```text
+db/schema.sql
+src/shared/database/drizzle.ts
+src/shared/database/schema.ts
+```
 
----
+Rules:
 
-## Contact
+- use Drizzle for database access;
+- apply soft deletes with `deleted_at IS NULL`;
+- store timestamps in UTC;
+- keep denormalized article fields aligned with the content contracts in `docs/`;
+- do not bypass shared database setup.
 
-- **GitHub**: [bilal-chajia](https://github.com/bilal-chajia)
-- **Project Link**: [https://github.com/bilal-chajia/freecipies-blog](https://github.com/bilal-chajia/freecipies-blog)
+Important contract docs:
 
----
+- `docs/DATABASE_CONTENT_MODEL.md`
+- `docs/ARTICLE_TABLE_CONTRACT.md`
+- `docs/CONTENT_JSON_CONTRACT.md`
+- `docs/IMAGE_JSON_CONTRACT.md`
+- `docs/RECIPE_JSON_CONTRACT.md`
+- `docs/API.md`
+- `docs/ARCHITECTURE.md`
 
-## License
+## Images
 
-This project is open source and available under the MIT License.
+Image types must be imported exclusively from:
+
+```ts
+@shared/types/images
+```
+
+Frontend code must not receive or depend on `r2_key`. Server code owns storage details and exposes safe image data.
+
+Public `<img>` tags must include `width`, `height`, and `loading="lazy"` unless there is a deliberate above-the-fold exception.
+
+## Cloudflare Bindings
+
+Configured in `wrangler.jsonc`:
+
+| Binding | Purpose |
+| --- | --- |
+| `DB` | D1 database |
+| `IMAGES` | R2 image bucket |
+| `SESSION` | KV session storage |
+| `ASSETS` | Static assets served by Workers |
+
+Local Cloudflare behavior is runtime-sensitive. If D1/R2/KV behavior matters, validate with `pnpm preview`, not only `pnpm dev`.
+
+## Development Rules
+
+- Use `pnpm` only.
+- Keep TypeScript strict.
+- Avoid `any`.
+- Convert `null` to `undefined` for optional props.
+- Use Context7/shadcn MCP docs before web browsing for framework or component documentation.
+- Do not use browser automation unless explicitly requested.
+- Do not run `pnpm build` automatically without permission.
+- Keep public and admin boundaries explicit.
+- Keep API route files thin.
+
+## Agent Reference
+
+Before changing architecture or data contracts, inspect these files first:
+
+```text
+AGENTS.md
+package.json
+astro.config.mjs
+wrangler.jsonc
+db/schema.sql
+src/shared/database/drizzle.ts
+src/shared/database/schema.ts
+src/shared/types/images.ts
+src/pages/api/admin/ai/generate.ts
+src/server/api/admin/ai/generate.handler.ts
+src/modules/auth/
+docs/
+```

@@ -6,6 +6,10 @@ dist/
 # dependencies
 node_modules/
 
+# local project toolchain (Node/pnpm portable for sandboxed agents)
+.tools/
+.toolchain/
+
 # logs
 npm-debug.log*
 yarn-debug.log*
@@ -31,9 +35,89 @@ pnpm-debug.log*
 history/
 
 # IDE and Agent configurations
+.mcp.json
 .kilocode/
 .qwen/
 
 # TypeScript build info
 *.tsbuildinfo
 content.json
+.zencoder/
+.claude/
+
+# AI coding tools
+.agents/
+.agent/
+.adal/
+.augment/
+.bob/
+.claude/
+.codebuddy/
+.commandcode/
+.continue/
+.cortex/
+.crush/
+.factory/
+.goose/
+.hermes/
+.iflow/
+.junie/
+.kilo/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+db/DATABASE_SCHEMA.md
+.gitignore
+
+# System & Agent Memory caches
+.remember/
+
+# Temporary test and audit outputs
+temp_res.html
+lighthouse-*.json
+video record/
+
+# Expanded Local environment variables
+.env.local
+.env.*.local
+
+# Test Coverage & E2E outputs
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+.vitest/
+.vite-node/
+*.timestamp-*
+
+# Linting & Formatting Caches
+.eslintcache
+.prettiercache
+.stylelintcache
+
+# Local Package Manager & Lock Caches
+.pnpm-store/
+.npm/
+
+# General logs
+*.log
+logs/
+
+# Standalone Webwright tools
+/tools/
+/outputs/
+
+tmp-lighthouse/

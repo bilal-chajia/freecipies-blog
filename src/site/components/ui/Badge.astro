@@ -1,0 +1,101 @@
+---
+/**
+ * Badge — Catégories, tags, diet badges avec variantes de couleur
+ * Usage: <Badge variant="diet" size="sm">Vegan</Badge>
+ */
+interface Props {
+  variant?: "default" | "primary" | "secondary" | "diet" | "time" | "difficulty" | "ghost" | "eco";
+  size?: "sm" | "md" | "lg";
+  class?: string;
+}
+
+const { variant = "default", size = "md", class: className = "" } = Astro.props;
+---
+
+<span class:list={["badge", "ui-badge", `ui-badge--${variant}`, `ui-badge--${size}`, className]}>
+  <slot />
+</span>
+
+<style>
+  .ui-badge {
+    /* Base spacing/alignment is handled by .badge */
+    gap: var(--space-1);
+    font-weight: var(--font-semibold);
+  }
+
+  /* Size adjustments if needed, but .badge handles the default */
+  .ui-badge--sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.625rem;
+  }
+
+  .ui-badge--md {
+    /* Same as .badge default */
+  }
+
+  .ui-badge--lg {
+    font-size: var(--text-sm);
+    padding: 0.5rem 1rem;
+  }
+
+  .ui-badge--default {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+
+  .ui-badge--primary {
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+  }
+
+  .ui-badge--secondary {
+    background: var(--brand-secondary);
+    color: var(--text-inverse);
+  }
+
+  .ui-badge--diet {
+    background: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--success);
+  }
+
+  .ui-badge--time {
+    background: var(--info-bg);
+    color: var(--info-text);
+    border: 1px solid var(--info);
+  }
+
+  .ui-badge--difficulty {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border: 1px solid var(--warning);
+  }
+
+  .ui-badge--ghost {
+    background: transparent;
+    color: var(--text-tertiary);
+    border: 1px solid var(--border);
+  }
+
+  .ui-badge--ghost:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+
+  /* Positive / eco states for green/sage related tags */
+  .ui-badge--eco {
+    background: var(--accent-sage-light);
+    color: var(--accent-sage-text);
+    border: 1px solid var(--accent-sage);
+  }
+
+  /* Negative / error states using coral red */
+  .ui-badge--error,
+  .ui-badge--alert,
+  .ui-badge--negative {
+    background: var(--error-bg);
+    color: var(--error-text);
+    border: 1px solid var(--error);
+  }
+</style>

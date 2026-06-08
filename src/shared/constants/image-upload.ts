@@ -5,20 +5,63 @@
  * Used by both frontend hooks and backend services.
  */
 
-export const IMAGE_UPLOAD_DEFAULTS = {
-    webpQuality: 80,
-    avifQuality: 70,
-    maxFileSizeMB: 50,
-    variantLg: 2048,
-    variantMd: 1200,
-    variantSm: 720,
-    variantXs: 360,
-    defaultFormat: 'webp',
-    defaultAspectRatio: 'free',
-    defaultCredit: '',
-} as const;
+export interface ImageUploadSettingsCreditAvatarVariant {
+    r2_key: string;
+    width: number;
+    height: number;
+    size_bytes?: number;
+}
 
-export type ImageUploadSettings = typeof IMAGE_UPLOAD_DEFAULTS;
+export interface ImageUploadSettingsCreditAvatar {
+    media_id?: number;
+    alt?: string;
+    variants: {
+        xs: ImageUploadSettingsCreditAvatarVariant;
+        sm: ImageUploadSettingsCreditAvatarVariant;
+    };
+}
+
+export interface ImageUploadSettingsCredit {
+    type: 'author';
+    id: number;
+    name: string;
+    slug: string;
+    avatar: ImageUploadSettingsCreditAvatar | null;
+}
+
+export interface ImageUploadSettings {
+    max_file_size_mb: number;
+    variant_widths: {
+        xs: number;
+        sm: number;
+        md: number;
+        lg: number;
+    };
+    encoding: {
+        format: 'webp' | 'avif';
+        webp_quality: number;
+        avif_quality: number;
+    };
+    default_aspect_ratio: string;
+    default_credit: ImageUploadSettingsCredit | null;
+}
+
+export const IMAGE_UPLOAD_DEFAULTS: ImageUploadSettings = {
+    max_file_size_mb: 50,
+    variant_widths: {
+        xs: 360,
+        sm: 720,
+        md: 1200,
+        lg: 2048,
+    },
+    encoding: {
+        format: 'webp',
+        webp_quality: 80,
+        avif_quality: 70,
+    },
+    default_aspect_ratio: 'free',
+    default_credit: null,
+};
 
 /** Cache key for localStorage */
 export const IMAGE_SETTINGS_CACHE_KEY = 'image_upload_settings';
@@ -43,16 +86,16 @@ export const ASPECT_RATIO_OPTIONS = [
 
 /** Variant sizes derived from defaults */
 export const IMAGE_VARIANT_SIZES = {
-    lg: IMAGE_UPLOAD_DEFAULTS.variantLg,
-    md: IMAGE_UPLOAD_DEFAULTS.variantMd,
-    sm: IMAGE_UPLOAD_DEFAULTS.variantSm,
-    xs: IMAGE_UPLOAD_DEFAULTS.variantXs,
+    lg: IMAGE_UPLOAD_DEFAULTS.variant_widths.lg,
+    md: IMAGE_UPLOAD_DEFAULTS.variant_widths.md,
+    sm: IMAGE_UPLOAD_DEFAULTS.variant_widths.sm,
+    xs: IMAGE_UPLOAD_DEFAULTS.variant_widths.xs,
 } as const;
 
 /** Encoding quality defaults */
 export const IMAGE_ENCODING_QUALITY = {
-    webp: IMAGE_UPLOAD_DEFAULTS.webpQuality,
-    avif: IMAGE_UPLOAD_DEFAULTS.avifQuality,
+    webp: IMAGE_UPLOAD_DEFAULTS.encoding.webp_quality,
+    avif: IMAGE_UPLOAD_DEFAULTS.encoding.avif_quality,
     original: 95,
     placeholder: 50,
 } as const;
@@ -78,7 +121,7 @@ export const IMAGE_SUPPORTED_OUTPUT_FORMATS = ['webp', 'avif'] as const;
 
 /** File constraints for client-side validation */
 export const IMAGE_FILE_CONSTRAINTS = {
-    maxSizeBytes: IMAGE_UPLOAD_DEFAULTS.maxFileSizeMB * 1024 * 1024,
+    maxSizeBytes: IMAGE_UPLOAD_DEFAULTS.max_file_size_mb * 1024 * 1024,
     supportedTypes: IMAGE_SUPPORTED_TYPES,
     supportedOutputFormats: IMAGE_SUPPORTED_OUTPUT_FORMATS,
 } as const;

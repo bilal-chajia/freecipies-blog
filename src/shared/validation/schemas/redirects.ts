@@ -25,10 +25,10 @@ const StatusCodeField = z.coerce
 
 export const CreateRedirectSchema = z
   .object({
-    fromPath: PathField,
-    toPath: TargetField,
-    statusCode: StatusCodeField.optional(),
-    isActive: z.boolean().optional(),
+    from_path: PathField,
+    to_path: TargetField,
+    status_code: StatusCodeField.optional(),
+    is_active: z.boolean().optional(),
     notes: z.string().max(1000).optional(),
   })
   .passthrough();

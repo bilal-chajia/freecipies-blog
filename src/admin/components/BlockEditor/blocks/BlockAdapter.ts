@@ -7,6 +7,13 @@
 import type { ContentBlock } from '@modules/articles/types/content-blocks.types';
 import type { AppBlock } from '../types/editor.types';
 
+export interface BlockAdapterContext {
+    recipe_json?: unknown;
+    faqs_json?: unknown;
+    imagesData?: unknown;
+    roundup_json?: unknown;
+}
+
 /**
  * Adapter interface for custom blocks.
  *
@@ -17,7 +24,7 @@ export interface BlockAdapter<T extends ContentBlock = ContentBlock> {
     type: string;
 
     /** Convert a ContentBlock into a partial AppBlock for the editor. */
-    toEditor(block: T): Partial<AppBlock>;
+    toEditor(block: T, context?: BlockAdapterContext): Partial<AppBlock>;
 
     /** Convert an AppBlock back into a ContentBlock. Returns null on failure. */
     fromEditor(block: AppBlock): T | null;
@@ -37,7 +44,8 @@ export const blockAdapters = new Map<string, BlockAdapter>();
  * @param adapter - The BlockAdapter implementation to register.
  */
 export function registerBlockAdapter(adapter: BlockAdapter): void {
-    if (blockAdapters.has(adapter.type)) {
+    const existing = blockAdapters.get(adapter.type);
+    if (existing && existing !== adapter) {
         console.warn(`[BlockAdapter] Overwriting existing adapter for type "${adapter.type}"`);
     }
     blockAdapters.set(adapter.type, adapter);

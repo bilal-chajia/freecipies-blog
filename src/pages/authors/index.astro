@@ -1,7 +1,7 @@
 ---
 import { env } from 'cloudflare:workers';
-import Layout from "../../layouts/Layout.astro";
-import AuthorCard from "../../components/AuthorCard.astro";
+import Layout from "@layouts/Layout.astro";
+import AuthorCard from "@components/AuthorCard.astro";
 import { getAuthors } from "@modules/authors";
 import { getArticles } from "@modules/articles";
 import { hydrateAuthor } from "@shared/utils";
@@ -9,7 +9,7 @@ let authors: any[] = [];
 let authorArticleCounts = new Map<string, number>();
 
 try {
-  const rawAuthors = await getAuthors(env.DB, { isOnline: true });
+  const rawAuthors = await getAuthors(env.DB, { workflow_status: 'published' });
   authors = rawAuthors.map(hydrateAuthor);
 
   // Get article counts for each author
@@ -25,7 +25,7 @@ try {
   console.error("Authors index: Error fetching authors:", error);
 }
 
-const pageTitle = "Our Recipe Creators - Freecipies";
+const pageTitle = "Our Recipe Creators - SaaS Blog";
 const pageDescription =
   "Meet the talented chefs and food enthusiasts behind our delicious recipes. Discover their culinary journeys and cooking expertise.";
 ---
@@ -107,7 +107,7 @@ const pageDescription =
   }
 
   .section-container {
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 1.5rem);
   }

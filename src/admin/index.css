@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../shared/design-tokens.css";
+@import "./styles/admin-theme.css";
 
 /* WordPress Block Editor Design System */
 @import "./components/BlockEditor/styles/block-editor-tokens.css";
@@ -40,11 +41,11 @@
   --font-mono: var(--font-mono);
 
   /* Radii */
-  --radius-xs: calc(var(--radius-sm) - 2px);
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 
   /* Shadows */
   --shadow-sm: var(--shadow-sm);
@@ -67,71 +68,14 @@
 }
 
 /* ========================================
- * shadcn/ui CSS Variables — Brand Theme
- * Synced with design tokens
- * IMPORTANT: ces valeurs HSL doivent rester synchronisées avec :
- *   --primary   ↔ --brand-primary (#e74c3c)
- *   --secondary ↔ --bg-alt (#f8f9fa light / #1a1a1a dark)
- *   --accent    ↔ --brand-accent (#f7931e)
- *   --destructive ↔ --error (#ef4444)
+ * shadcn/ui CSS Variables live in ./styles/admin-theme.css.
  * ======================================== */
-:root {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 10%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 10%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
-  --primary: 6 78% 57%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 30 10% 96%;
-  --secondary-foreground: 0 0% 10%;
-  --muted: 30 10% 96%;
-  --muted-foreground: 0 0% 45%;
-  --accent: 24 95% 53%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 30 10% 90%;
-  --input: 30 10% 90%;
-  --ring: 6 78% 57%;
-  --radius: 0.625rem;
-  --chart-1: 6 78% 57%;
-  --chart-2: 24 95% 53%;
-  --chart-3: 30 100% 60%;
-  --chart-4: 150 60% 45%;
-  --chart-5: 220 70% 50%;
-}
-
-.dark {
-  --background: 0 0% 7%;
-  --foreground: 30 10% 95%;
-  --card: 0 0% 10%;
-  --card-foreground: 30 10% 95%;
-  --popover: 0 0% 10%;
-  --popover-foreground: 30 10% 95%;
-  --primary: 6 78% 57%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 15%;
-  --secondary-foreground: 30 10% 95%;
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 60%;
-  --accent: 24 80% 45%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 62% 50%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 18%;
-  --input: 0 0% 18%;
-  --ring: 6 78% 57%;
-  --chart-1: 6 78% 57%;
-  --chart-2: 24 80% 45%;
-  --chart-3: 30 60% 30%;
-  --chart-4: 150 50% 40%;
-  --chart-5: 220 60% 55%;
-}
-
-* {
-  border-color: hsl(var(--border));
+[data-surface="admin"] a,
+[data-surface="admin"] button,
+[data-surface="admin"] input,
+[data-surface="admin"] select,
+[data-surface="admin"] [role="button"] {
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 html {
@@ -142,6 +86,123 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+[data-surface="admin"] {
+  color-scheme: light;
+}
+
+[data-surface="admin"].dark,
+[data-surface="admin"] .dark {
+  color-scheme: dark;
+}
+
+[data-surface="admin"] h1,
+[data-surface="admin"] h2,
+[data-surface="admin"] h3,
+[data-surface="admin"] h4,
+[data-surface="admin"] h5,
+[data-surface="admin"] h6 {
+  letter-spacing: 0;
+}
+
+[data-surface="admin"] [data-slot="card"],
+[data-surface="admin"] .admin-dashboard [class*="rounded-2xl"] {
+  border-radius: var(--radius-lg);
+}
+
+[data-surface="admin"] [data-sidebar="sidebar"] {
+  border-right-color: hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+[data-surface="admin"] [data-sidebar="menu-button"] {
+  min-height: 2.25rem;
+}
+
+[data-surface="admin"] [data-sidebar="menu-button"][data-active="true"] {
+  background: hsl(var(--primary) / 0.08);
+  color: hsl(var(--primary));
+  font-weight: var(--font-semibold);
+}
+
+[data-surface="admin"] [data-sidebar="menu-sub-button"][data-active="true"] {
+  background: hsl(var(--primary) / 0.08);
+  color: hsl(var(--primary));
+  font-weight: var(--font-semibold);
+}
+
+[data-surface="admin"] table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+[data-surface="admin"] th {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem !important;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+[data-surface="admin"] td {
+  vertical-align: middle;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* ========================================
+ * BlockNote popover fallback styles
+ * (for portaled dropdowns in the admin editor)
+ * ======================================== */
+.bn-form-popover {
+  background-color: var(--bn-colors-menu-background, var(--bg));
+  border: var(--bn-border, 1px solid var(--border));
+  border-radius: var(--bn-border-radius-medium, var(--radius-lg));
+  box-shadow: var(--bn-shadow-medium, var(--shadow-lg));
+  color: var(--bn-colors-menu-text, var(--text));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  padding: 6px;
+}
+
+.bn-form-popover .mantine-TextInput-label,
+.bn-form-popover .mantine-FileInput-label {
+  color: var(--bn-colors-menu-text, var(--text-tertiary));
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.bn-form-popover .bn-text-input {
+  width: 300px;
+  max-width: min(320px, 75vw);
+}
+
+.bn-form-popover input,
+.bn-form-popover textarea,
+.bn-form-popover select {
+  background-color: var(--bn-colors-background, var(--bg));
+  border: 1px solid var(--bn-border-color, var(--border));
+  border-radius: var(--radius-md);
+  color: var(--bn-colors-menu-text, var(--text));
+  font-size: 12px;
+  padding: 6px 10px 6px 28px;
+  width: 100%;
+}
+
+.bn-form-popover input::placeholder,
+.bn-form-popover textarea::placeholder {
+  color: var(--bn-colors-menu-text, var(--text-tertiary));
+}
+
+.bn-form-popover svg {
+  color: var(--bn-colors-menu-text, var(--text-tertiary));
 }
 
 /* ========================================
@@ -166,11 +227,26 @@ body {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background-color: var(--neutral-700);
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--neutral-600);
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Hide scrollbar for the main sidebar content and Radix ScrollArea viewports */
+[data-sidebar="content"]::-webkit-scrollbar,
+[data-slot="scroll-area-viewport"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+[data-sidebar="content"],
+[data-slot="scroll-area-viewport"] {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 /* ========================================
@@ -270,23 +346,6 @@ body {
  * Motion & Micro-interactions
  * ======================================== */
 
-/* Hover lift for cards */
-.hover-lift {
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
-}
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
-}
-
-/* Button press feedback */
-.btn-press {
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-.btn-press:active {
-  transform: scale(0.98);
-}
-
 /* Table row hover highlight */
 .table-row-hover {
   transition: background-color var(--transition-fast);
@@ -314,31 +373,6 @@ body {
 .sidebar-item-indicator.is-active::before,
 .sidebar-item-indicator[data-active="true"]::before {
   transform: translateY(-50%) scaleY(1);
-}
-
-/* Stagger children animation */
-.stagger-children > * {
-  opacity: 0;
-  transform: translateY(12px);
-  animation: fadeUp 0.4s var(--ease-out) forwards;
-}
-.stagger-children > *:nth-child(1) { animation-delay: 0.04s; }
-.stagger-children > *:nth-child(2) { animation-delay: 0.08s; }
-.stagger-children > *:nth-child(3) { animation-delay: 0.12s; }
-.stagger-children > *:nth-child(4) { animation-delay: 0.16s; }
-.stagger-children > *:nth-child(5) { animation-delay: 0.20s; }
-.stagger-children > *:nth-child(6) { animation-delay: 0.24s; }
-.stagger-children > *:nth-child(7) { animation-delay: 0.28s; }
-.stagger-children > *:nth-child(8) { animation-delay: 0.32s; }
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Standalone fade-up animation class */
-.animate-fade-up {
-  animation: fadeUp 0.5s var(--ease-out) forwards;
 }
 
 /* ========================================
@@ -398,5 +432,15 @@ body {
   }
   .editor-toolbar-group {
     padding: 0 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

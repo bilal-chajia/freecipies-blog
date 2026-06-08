@@ -5,7 +5,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
-import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { validateQuery, ProxyImageQuery } from '@shared/validation';
 
@@ -32,7 +31,7 @@ function isPrivateHost(url: URL): boolean {
     return false;
 }
 
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
     try {
 
         const jwtSecret = env?.JWT_SECRET || import.meta.env.JWT_SECRET;
@@ -45,11 +44,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
         // Validate query params with Zod
         const urlObj = new URL(request.url);
-        const { url: imageUrl } = validateQuery(urlObj.searchParams, ProxyImageQuery);
+        const { url: image_url } = validateQuery(urlObj.searchParams, ProxyImageQuery);
 
         let parsed: URL;
         try {
-            parsed = new URL(imageUrl);
+            parsed = new URL(image_url);
         } catch {
             throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid URL', 400);
         }
@@ -65,7 +64,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
 
-        const response = await fetch(imageUrl, {
+        const response = await fetch(image_url, {
             signal: controller.signal,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (compatible; ImageProxy/1.0)',

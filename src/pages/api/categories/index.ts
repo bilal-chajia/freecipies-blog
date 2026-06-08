@@ -1,0 +1,68 @@
+import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
+import { getCategories, createCategory, transformCategoryRequestBody, transformCategoryResponse } from '@modules/categories';
+import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
+import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
+import { validateBody, CreateCategorySchema } from '@shared/validation';
+
+export const prerender = false;
+
+export const GET: APIRoute = async ({ request }) => {
+  try {
+    const db = env.DB;
+    if (!db) {
+      throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
+    }
+
+    const categories = await getCategories(db);
+    const responseCategories = categories.map(transformCategoryResponse);
+
+    // Disable caching for admin panel to always get fresh data
+    const { body, status, headers } = formatSuccessResponse(responseCategories, {
+      cacheControl: 'no-cache, no-store, must-revalidate'
+    });
+    return new Response(body, { status, headers });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    const { body, status, headers } = formatErrorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(
+          ErrorCodes.DATABASE_ERROR,
+          'Failed to fetch categories',
+          500,
+          { originalError: error instanceof Error ? error.message : 'Unknown error' }
+        )
+    );
+    return new Response(body, { status, headers });
+  }
+};
+
+export const POST: APIRoute = async ({ request }) => {
+  try {
+    const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+
+    const authContext = await extractAuthContext(request, jwtSecret);
+    if (!hasRole(authContext, AuthRoles.EDITOR)) {
+      return createAuthError('Insufficient permissions', 403);
+    }
+
+    const reqBody = await validateBody(request, CreateCategorySchema);
+    const transformedBody = transformCategoryRequestBody(reqBody);
+    const category = await createCategory(env.DB, transformedBody);
+    const responseCategory = transformCategoryResponse(category);
+
+    const { body, status, headers } = formatSuccessResponse(responseCategory);
+    return new Response(body, { status: 201, headers });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    const appErr = error instanceof AppError
+      ? error
+      : (error as any)?.code === 'VALIDATION_ERROR'
+        ? new AppError(ErrorCodes.VALIDATION_ERROR, (error as Error).message, 400)
+        : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to create category', 500);
+
+    const { body, status, headers } = formatErrorResponse(appErr);
+    return new Response(body, { status, headers });
+  }
+};

@@ -1,0 +1,611 @@
+---
+import type { HydratedCategory } from "@modules/categories";
+import type { HydratedArticle } from "@modules/articles";
+import { extractImage, getImageSrcSet } from "@shared/utils";
+import FormattedDate from "./FormattedDate.astro";
+
+interface Props {
+  category: HydratedCategory;
+  featuredArticle?: HydratedArticle | null;
+  headerStyle?: "hero" | "minimal" | "none";
+  breadcrumbItems?: { label: string; href?: string }[];
+}
+
+const {
+  category,
+  featuredArticle = null,
+  headerStyle = "hero",
+  breadcrumbItems = [],
+} = Astro.props;
+
+const showHeader = headerStyle !== "none";
+const isHeroHeader = headerStyle === "hero";
+const isMinimalHeader = headerStyle === "minimal";
+const hasFeatured = Boolean(featuredArticle && isHeroHeader);
+const showBreadcrumb = breadcrumbItems.length > 0;
+const showHeroCta = category.show_hero_cta !== false;
+const heroCtaText =
+  typeof category.hero_cta_text === "string" && category.hero_cta_text.trim()
+    ? category.hero_cta_text.trim()
+    : "Join My Mailing List";
+const heroCtaLink =
+  typeof category.hero_cta_link === "string" && category.hero_cta_link.trim()
+    ? category.hero_cta_link.trim()
+    : "#newsletter";
+const categoryHero = extractImage(category.images_json, "hero", 1600);
+const categoryThumb = extractImage(category.images_json, "thumbnail", 1200);
+const categorySlot = categoryHero.image_url ? "hero" : "thumbnail";
+const categoryImage = categoryHero.image_url ? categoryHero : categoryThumb;
+const categorySrcSet = getImageSrcSet(category.images_json, categorySlot);
+const showCategoryImage =
+  isHeroHeader && Boolean(categoryImage.image_url || category.image_url);
+
+const getFeaturedImage = (article: HydratedArticle) => {
+  const hero = extractImage(article.images_json, "hero", 1200);
+  const thumbnail = extractImage(article.images_json, "thumbnail", 1200);
+  const slotName = hero.image_url ? "hero" : "thumbnail";
+  const selected = hero.image_url ? hero : thumbnail;
+  const srcSet = getImageSrcSet(article.images_json, slotName);
+  return { selected, srcSet };
+};
+
+const featuredImage = featuredArticle
+  ? getFeaturedImage(featuredArticle)
+  : null;
+const featuredSizes = "(max-width: 1024px) 100vw, 50vw";
+const featuredAuthorName =
+  featuredArticle?.authorName || featuredArticle?.authorSlug || "Unknown";
+const featuredAuthorSlot = featuredArticle?.authorImagesJson
+  ? extractImage(featuredArticle.authorImagesJson, "avatar", 50)
+  : {};
+const featuredAuthorAvatar =
+  featuredAuthorSlot.image_url || featuredArticle?.authorAvatar;
+---
+
+{
+  showHeader && (
+    <section
+      class:list={[
+        "category-hero",
+        { "is-minimal": isMinimalHeader, "has-bg": showCategoryImage },
+      ]}
+    >
+      {showCategoryImage && (
+        <div class="hero-bg">
+          <img
+            src={categoryImage.image_url || category.image_url}
+            alt={categoryImage.imageAlt || category.imageAlt || category.label}
+            width={categoryImage.imageWidth || category.imageWidth || 1600}
+            height={categoryImage.imageHeight || category.imageHeight || 900}
+            srcset={categorySrcSet || undefined}
+            sizes={categorySrcSet ? "100vw" : undefined}
+            loading="eager"
+            style={categoryImage.imageStyle || undefined}
+          />
+          <div class="hero-bg-overlay" />
+        </div>
+      )}
+      {showBreadcrumb && (
+        <nav class="hero-breadcrumb" aria-label="Breadcrumb">
+          <ol class="hero-breadcrumb-list">
+            <li class="hero-breadcrumb-item">
+              <a href="/" class="hero-breadcrumb-link" aria-label="Home">
+                <svg
+                  class="hero-breadcrumb-home"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+              </a>
+            </li>
+            {breadcrumbItems.map((item, index) => (
+              <li class="hero-breadcrumb-item">
+                <svg
+                  class="hero-breadcrumb-separator"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+                {item.href && index < breadcrumbItems.length - 1 ? (
+                  <a href={item.href} class="hero-breadcrumb-link">
+                    {item.label}
+                  </a>
+                ) : (
+                  <span class="hero-breadcrumb-current" aria-current="page">
+                    {item.label}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+      <div
+        class:list={[
+          "hero-container",
+          { "has-featured": hasFeatured, "is-minimal": isMinimalHeader },
+        ]}
+      >
+        {isHeroHeader && featuredArticle && featuredImage && (
+          <a href={`/recipes/${featuredArticle.slug}`} class="featured-card">
+            <div class="featured-image">
+              {(featuredImage.selected.image_url ||
+                featuredArticle.image_url) && (
+                <img
+                  src={
+                    featuredImage.selected.image_url || featuredArticle.image_url
+                  }
+                  alt={
+                    featuredImage.selected.imageAlt ||
+                    featuredArticle.imageAlt ||
+                    featuredArticle.label
+                  }
+                  width={
+                    featuredImage.selected.imageWidth ||
+                    featuredArticle.imageWidth ||
+                    1200
+                  }
+                  height={
+                    featuredImage.selected.imageHeight ||
+                    featuredArticle.imageHeight ||
+                    900
+                  }
+                  srcset={featuredImage.srcSet || undefined}
+                  sizes={featuredImage.srcSet ? featuredSizes : undefined}
+                  loading="eager"
+                  class="featured-hero-image"
+                  style={featuredImage.selected.imageStyle || undefined}
+                />
+              )}
+              <div class="featured-overlay">
+                <h2 class="featured-title">{featuredArticle.label}</h2>
+                {featuredArticle.short_description && (
+                  <p class="featured-description">
+                    {featuredArticle.short_description}
+                  </p>
+                )}
+                <div class="featured-meta">
+                  <div class="featured-meta-left">
+                    {featuredAuthorAvatar ? (
+                      <img
+                        src={featuredAuthorAvatar}
+                        alt={featuredAuthorName}
+                        width="28"
+                        height="28"
+                        class="featured-avatar"
+                        loading="lazy"
+                        style={featuredAuthorSlot.imageStyle || undefined}
+                      />
+                    ) : (
+                      <span class="featured-avatar placeholder">
+                        {featuredAuthorName.charAt(0)}
+                      </span>
+                    )}
+                    <span class="featured-author">{featuredAuthorName}</span>
+                    <span class="featured-separator">|</span>
+                    <span class="featured-date">
+                      <FormattedDate
+                        date={
+                          featuredArticle.published_at ||
+                          featuredArticle.created_at ||
+                          undefined
+                        }
+                      />
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    class="featured-bookmark"
+                    data-bookmark-button
+                    data-bookmark-slug={featuredArticle.slug}
+                    aria-pressed="false"
+                    aria-label="Bookmark recipe"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-4-6 4V4z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </a>
+        )}
+        <div class:list={["hero-content", { "is-minimal": isMinimalHeader }]}>
+          <h1 class="category-title">{category.headline || category.label}</h1>
+          <p class="category-description">
+            {category.short_description || category.headline}
+          </p>
+          {category.tldr && <p class="category-tldr">{category.tldr}</p>}
+          {isHeroHeader && showHeroCta && (
+            <a href={heroCtaLink} class="cta-button">
+              {heroCtaText}
+            </a>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  /* Hero Section */
+  .category-hero {
+    background: #0f172a;
+    padding: clamp(2rem, 4vw, 3rem) 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .category-hero.is-minimal {
+    background: #fff;
+    padding: 2rem 0 1rem;
+  }
+
+  .hero-container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 2rem);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    animation: heroFade 1s ease both;
+  }
+
+  .hero-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero-bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(15, 23, 42, 0.65) 0%,
+      rgba(15, 23, 42, 0.45) 40%,
+      rgba(15, 23, 42, 0.85) 100%
+    );
+  }
+
+  .hero-breadcrumb {
+    max-width: var(--container-max);
+    margin: 0 auto 1.5rem;
+    padding: 0 clamp(1rem, 3vw, 2rem);
+    animation: heroFadeUp 0.6s ease both;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-breadcrumb-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .hero-breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hero-breadcrumb-link,
+  .hero-breadcrumb-current {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .hero-breadcrumb-link:hover {
+    color: #fff;
+  }
+
+  .hero-breadcrumb-current {
+    color: #fff;
+  }
+
+  .hero-breadcrumb-separator,
+  .hero-breadcrumb-home {
+    width: 16px;
+    height: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+  }
+
+  .category-hero.is-minimal .hero-breadcrumb-link,
+  .category-hero.is-minimal .hero-breadcrumb-current {
+    color: #111;
+  }
+
+  .category-hero.is-minimal .hero-breadcrumb-separator,
+  .category-hero.is-minimal .hero-breadcrumb-home {
+    color: #9ca3af;
+  }
+
+  @media (min-width: 1024px) {
+    .hero-container.has-featured {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .featured-card {
+    display: block;
+    text-decoration: none;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+    animation: heroSlideIn 0.8s ease both;
+  }
+
+  .featured-image {
+    position: relative;
+    aspect-ratio: 4/3;
+  }
+
+  .featured-hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .featured-overlay {
+    position: absolute;
+    inset: 0;
+    padding: 2rem;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.15) 0%,
+      rgba(0, 0, 0, 0.65) 60%,
+      rgba(0, 0, 0, 0.9) 100%
+    );
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .featured-badge {
+    display: inline-block;
+    background: #ff3366;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-xs);
+    margin-bottom: 0.75rem;
+  }
+
+  .featured-title {
+    color: white;
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-weight: 800;
+    line-height: 1.25;
+    margin: 0;
+    letter-spacing: -0.02em;
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .featured-description {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .featured-meta {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .featured-meta-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+  }
+
+  .featured-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+  }
+
+  .featured-avatar.placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .featured-author {
+    font-weight: 600;
+  }
+
+  .featured-separator {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .featured-bookmark {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+
+  .featured-bookmark svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .featured-bookmark[data-bookmarked="true"] {
+    background: rgba(255, 255, 255, 0.92);
+    color: #111;
+  }
+
+  .hero-content {
+    color: white;
+    text-align: center;
+    animation: heroFadeUp 0.8s ease both;
+  }
+
+  .hero-content.is-minimal {
+    color: #111;
+    text-align: left;
+  }
+
+  @media (min-width: 1024px) {
+    .hero-content {
+      text-align: right;
+      padding-right: 2rem;
+    }
+    .hero-content.is-minimal {
+      text-align: left;
+      padding-right: 0;
+    }
+  }
+
+  .category-title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    margin: 0 0 1rem;
+    letter-spacing: -0.03em;
+    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .category-description {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.7;
+    margin: 0 0 2rem;
+  }
+
+  .category-hero.is-minimal .category-description {
+    color: #444;
+  }
+
+  .cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #ff3366, #ff6b35);
+    color: white;
+    padding: 0.9375rem 2.25rem;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    animation: heroFadeUp 0.9s ease both;
+    animation-delay: 0.1s;
+    box-shadow: 0 4px 16px rgba(255, 51, 102, 0.3);
+  }
+
+  .cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(255, 51, 102, 0.4);
+  }
+
+  .cta-button:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
+  }
+
+  @keyframes heroFade {
+    from {
+      opacity: 0;
+      transform: scale(1.02);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes heroFadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes heroSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-bg,
+    .hero-breadcrumb,
+    .hero-content,
+    .cta-button,
+    .featured-card {
+      animation: none;
+    }
+  }
+</style>

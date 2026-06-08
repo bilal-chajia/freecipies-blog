@@ -60,7 +60,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     try {
       const redirect = await getRedirectByFromPath(env.DB, url.pathname);
       
-      if (redirect && redirect.isActive) {
+      if (redirect && redirect.is_active) {
         // Schedule hit count update in the background via waitUntil().
         // The redirect is sent immediately; the D1 write completes after.
         // This avoids floating promises (which corrupt env.DB under
@@ -69,7 +69,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
           incrementHitCount(env.DB, redirect.id)
         );
         
-        return context.redirect(redirect.toPath, (redirect.statusCode || 301) as any);
+        return context.redirect(redirect.to_path, (redirect.status_code || 301) as any);
       }
     } catch (err) {
       console.error('Middleware redirect error:', err);

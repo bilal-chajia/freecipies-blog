@@ -1,49 +1,99 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { deleteMedia, hardDeleteMedia, getMediaById, updateMedia } from '@modules/media';
-import type { Env } from '@shared/types';
+import { deleteMedia, hardDeleteMedia, getMediaById, updateMedia, propagateMediaUpdate } from '@modules/media';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
-import { validateParams, IdParam } from '@shared/validation';
+import { validateParams, validateBody, IdParam, UpdateMediaSchema } from '@shared/validation';
+import { normalizeStoredAuthorCreditSnapshot, serializeAdminMediaPayload } from '@shared/images/image-contract';
 
 export const prerender = false;
 
-// Helper to extract all R2 keys from variants JSON
-function getAllR2Keys(variantsJson: string | null): string[] {
-    if (!variantsJson) return [];
-    const keys: string[] = [];
-    try {
-        const data = JSON.parse(variantsJson);
-
-        // Handle new structure: { variants: { lg: { r2_key: ... }, ... } }
-        if (data.variants && typeof data.variants === 'object') {
-            Object.values(data.variants).forEach((variant: any) => {
-                if (variant?.r2_key) {
-                    keys.push(variant.r2_key);
-                }
-            });
-        }
-        // Handle potential legacy flat structure or other formats
-        else {
-            // Try to find R2 key in simple object
-            const simpleVariant = data.original || data.lg || data.md || data.sm || data.xs;
-            if (simpleVariant?.r2_key) keys.push(simpleVariant.r2_key);
-        }
-    } catch {
-        // Ignore parsing errors
-    }
-    return keys;
-}
-
-// ... (PUT implementation skipped for brevity as we focus on DELETE, but helper is shared)
-// Actually I need to keep PUT, so I will just replace the helper and the DELETE function.
-
-// PUT - Replace image file (in-place)
-export const PUT: APIRoute = async ({ request, locals, params }) => {
+// PATCH - Update media metadata (alt, caption, credit, focal point, etc.)
+// Propagates changes to all referencing image snapshots.
+export const PATCH: APIRoute = async ({ request, params }) => {
     const { id } = validateParams(params as Record<string, string | undefined>, IdParam);
 
     try {
+        const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
+        // Check authentication
+        const authContext = await extractAuthContext(request, jwtSecret);
+        if (!hasRole(authContext, AuthRoles.EDITOR)) {
+            return createAuthError('Editor role required to update media metadata', 403);
+        }
+
+        // Verify media exists
+        const existing = await getMediaById(env.DB, id);
+        if (!existing) {
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, `Media file with ID ${id} not found`, 404)
+            );
+            return new Response(body, { status, headers });
+        }
+
+        // Parse & validate body
+        const body = await validateBody(request, UpdateMediaSchema);
+
+        // Build update payload — snake_case end to end (body, Drizzle, column).
+        const updatePayload: Record<string, unknown> = {};
+        if (body.name !== undefined) updatePayload.name = body.name;
+        if (body.alt_text !== undefined) updatePayload.alt_text = body.alt_text;
+        if (body.caption !== undefined) updatePayload.caption = body.caption;
+        if (body.aspect_ratio !== undefined) updatePayload.aspect_ratio = body.aspect_ratio;
+
+        if (body.credit !== undefined) {
+            const normalized = normalizeStoredAuthorCreditSnapshot(body.credit);
+            updatePayload.credit = JSON.stringify(normalized);
+        }
+
+        if (body.focal_point !== undefined) {
+            updatePayload.focal_point_json = JSON.stringify(body.focal_point);
+        }
+
+        if (Object.keys(updatePayload).length === 0) {
+            const { body: errBody, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.VALIDATION_ERROR, 'No fields to update', 400)
+            );
+            return new Response(errBody, { status, headers });
+        }
+
+        // 1. Update the media row
+        await updateMedia(env.DB, id, updatePayload as Parameters<typeof updateMedia>[2]);
+
+        // 2. Propagate changes to all referencing snapshots (best-effort)
+        let syncResult;
+        try {
+            syncResult = await propagateMediaUpdate(env.DB, id);
+        } catch (syncError) {
+            console.error(`Snapshot sync failed for media ${id}:`, syncError);
+            syncResult = { errors: ['Snapshot sync failed — snapshots may be stale'] };
+        }
+
+        // 3. Return fresh media payload
+        const updated = await getMediaById(env.DB, id);
+        const { body: responseBody, status, headers } = formatSuccessResponse({
+            ...serializeAdminMediaPayload(updated!),
+            snapshotSync: syncResult,
+        });
+        return new Response(responseBody, { status, headers });
+
+    } catch (error) {
+        console.error('Error updating media:', error);
+        const { body, status, headers } = formatErrorResponse(
+            error instanceof AppError
+                ? error
+                : new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to update media', 500)
+        );
+        return new Response(body, { status, headers });
+    }
+};
+
+// PUT - Replace image file (in-place)
+// NOTE: In-place replacement is disabled — callers must re-upload via the variant pipeline.
+export const PUT: APIRoute = async ({ request, params }) => {
+    const { id } = validateParams(params as Record<string, string | undefined>, IdParam);
+
+    try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
 
         // Check authentication
@@ -52,86 +102,13 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
             return createAuthError('Editor role required to replace media files', 403);
         }
 
-        // Get the original media record
-        const mediaRecord = await getMediaById(env.DB, id);
-        if (!mediaRecord) {
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.NOT_FOUND, `Media file with ID ${id} not found`, 404)
-            );
-            return new Response(body, { status, headers });
-        }
-
-        // Get the new file from form data
-        let formData: FormData;
-        try {
-            formData = await request.formData();
-        } catch (parseError) {
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid form data: request body must be multipart/form-data', 400)
-            );
-            return new Response(body, { status, headers });
-        }
-
-        const file = formData.get('file') as File;
-        if (!file) {
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.VALIDATION_ERROR, 'No file provided: include a "file" field in form data', 400)
-            );
-            return new Response(body, { status, headers });
-        }
-
-        // Clean up ALL old files from R2
-        const oldKeys = getAllR2Keys(mediaRecord.variantsJson);
-        for (const key of oldKeys) {
-            try {
-                await env.IMAGES.delete(key);
-            } catch (e) {
-                console.warn(`Failed to delete old variant ${key}:`, e);
-            }
-        }
-
-        // Generate new key (note: PUT currently only does single file upload, not full variant generation pipeline)
-        // Ideally PUT should also go through the client-side flow, but for now we keep existing simple logic
-        const timestamp = Date.now();
-        const newKey = `media/${id}/${timestamp}.webp`;
-        const cacheBuster = `?v=${timestamp}`;
-        const newUrl = `/api/images/${newKey}${cacheBuster}`;
-
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            await env.IMAGES.put(newKey, arrayBuffer, {
-                httpMetadata: { contentType: 'image/webp' }
-            });
-        } catch (uploadError) {
-            console.error('R2 upload failed:', uploadError);
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to upload file to storage', 500)
-            );
-            return new Response(body, { status, headers });
-        }
-
-        // Update database
-        try {
-            // Updated to match new structure even for single file
-            const newVariants = {
-                variants: {
-                    original: { r2_key: newKey, width: 0, height: 0 }
-                },
-                placeholder: ''
-            };
-            await updateMedia(env.DB, id, {
-                variantsJson: JSON.stringify(newVariants),
-                name: file.name
-            });
-        } catch (dbError) {
-            // ... error handling
-            const { body, status, headers } = formatErrorResponse(
-                new AppError(ErrorCodes.DATABASE_ERROR, 'Database update failed', 500)
-            );
-            return new Response(body, { status, headers });
-        }
-
-        const { body, status, headers } = formatSuccessResponse({ success: true, id, url: newUrl });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(
+                ErrorCodes.VALIDATION_ERROR,
+                'In-place media replacement is disabled. Delete the existing record and re-upload via /api/media/upload-variant + /api/media/confirm.',
+                410
+            )
+        );
         return new Response(body, { status, headers });
 
     } catch (error) {
@@ -143,20 +120,23 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
     }
 };
 
-export const DELETE: APIRoute = async ({ request, locals, params }) => {
+export const DELETE: APIRoute = async ({ request, params, url }) => {
     const { id } = validateParams(params as Record<string, string | undefined>, IdParam);
 
     try {
 
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+        const isHardDelete = url.searchParams.get('hard') === 'true';
 
-        // Check authentication
+        // Check authentication — hard-delete requires ADMIN (permanent R2 cleanup)
         const authContext = await extractAuthContext(request, jwtSecret);
-        if (!hasRole(authContext, AuthRoles.EDITOR)) {
+        if (isHardDelete && !hasRole(authContext, AuthRoles.ADMIN)) {
+            return createAuthError('Admin role required for hard delete (permanent R2 cleanup)', 403);
+        }
+        if (!isHardDelete && !hasRole(authContext, AuthRoles.EDITOR)) {
             return createAuthError('Editor role required to delete media files', 403);
         }
 
-        // Get the media file first to find R2 keys
         const mediaRecord = await getMediaById(env.DB, id);
         if (!mediaRecord) {
             const { body, status, headers } = formatErrorResponse(
@@ -165,26 +145,15 @@ export const DELETE: APIRoute = async ({ request, locals, params }) => {
             return new Response(body, { status, headers });
         }
 
-        // Delete ALL variants from R2
-        let r2DeleteFailed = false;
-        const r2Keys = getAllR2Keys(mediaRecord.variantsJson);
-
-        // Execute deletions in parallel for speed
-        await Promise.all(r2Keys.map(async (key) => {
-            try {
-                await env.IMAGES.delete(key);
-            } catch (r2Error) {
-                r2DeleteFailed = true;
-                console.warn(`Failed to delete file from R2 (key: ${key}):`, r2Error);
-            }
-        }));
-
-        // Delete from DB (hard delete - removes the row)
         try {
-            const success = await hardDeleteMedia(env.DB, id);
+            // Hard delete: remove R2 objects + DB record permanently.
+            // Soft delete: mark deleted_at only (R2 cleanup deferred to a hard delete).
+            const success = isHardDelete
+                ? await hardDeleteMedia(env.DB, env.IMAGES, id)
+                : await deleteMedia(env.DB, id);
             if (!success) {
                 const { body, status, headers } = formatErrorResponse(
-                    new AppError(ErrorCodes.DATABASE_ERROR, `Failed to delete media record with ID ${id} from database`, 500)
+                    new AppError(ErrorCodes.DATABASE_ERROR, `Failed to delete media record with ID ${id}`, 500)
                 );
                 return new Response(body, { status, headers });
             }
@@ -199,7 +168,7 @@ export const DELETE: APIRoute = async ({ request, locals, params }) => {
         const { body, status, headers } = formatSuccessResponse({
             success: true,
             id,
-            warning: r2DeleteFailed ? 'Some files could not be deleted from storage' : undefined
+            storage_cleanup: isHardDelete ? 'deleted' : 'pending'
         });
         return new Response(body, { status, headers });
 

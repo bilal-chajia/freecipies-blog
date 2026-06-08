@@ -1,0 +1,9 @@
+---
+import { renderInlineMarkdown } from '../../utils/markdown';
+import { slugifyHeading } from "@modules/content-blocks";
+const { block } = Astro.props as { block: { type: 'heading'; level?: number; text: string; headingNumber?: string } };
+const HeadingTag = `h${block.level || 2}` as keyof HTMLElementTagNameMap;
+const headingId = slugifyHeading(block.text || "");
+const headingContent = block.headingNumber ? `<span class="heading-number">${block.headingNumber}.</span> ${block.text || ""}` : block.text || "";
+---
+<HeadingTag id={headingId} class="numbered-heading" set:html={renderInlineMarkdown(headingContent)} />

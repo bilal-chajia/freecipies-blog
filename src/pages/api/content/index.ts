@@ -4,6 +4,7 @@ import { getArticles } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateQuery, z } from '@shared/validation';
+import { parseCachedCard, cleanCardImages } from '@modules/articles/utils/cached-fields';
 
 export const prerender = false;
 
@@ -13,10 +14,10 @@ const ContentListQuery = z.object({
     category: z.string().optional(),
     author: z.string().optional(),
     search: z.string().optional(),
-    online: z.enum(['true', 'false']).optional(),
+    workflow_status: z.enum(['draft', 'in_review', 'scheduled', 'published', 'archived', 'all']).optional(),
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().min(1).max(100).default(12),
-}).transform(({ page, limit, type, category, author, search, online }) => ({
+}).transform(({ page, limit, type, category, author, search, workflow_status }) => ({
     page,
     limit,
     offset: (page - 1) * limit,
@@ -24,7 +25,7 @@ const ContentListQuery = z.object({
     category,
     author,
     search,
-    online,
+    workflow_status,
 }));
 
 /**
@@ -44,7 +45,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
 
     // Validate all query parameters
-    const { page, limit, offset, type, category, author, search, online: onlineParam } = validateQuery(url.searchParams, ContentListQuery);
+    const { page, limit, offset, type, category, author, search, workflow_status: workflowStatusParam } = validateQuery(url.searchParams, ContentListQuery);
 
     try {
         const db = env.DB;
@@ -53,7 +54,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         }
 
         // Build query options
-        const options: any = {
+        const options: Record<string, unknown> = {
             limit,
             offset,
         };
@@ -78,37 +79,34 @@ export const GET: APIRoute = async ({ request, locals }) => {
             options.search = search.trim();
         }
 
-        // Online status filter (default to true for public API)
-        if (onlineParam === 'false') {
-            options.isOnline = false;
-        } else if (onlineParam === 'true' || !onlineParam) {
-            options.isOnline = true;
+        // Workflow status filter (default to 'published' for public API)
+        if (workflowStatusParam && workflowStatusParam !== 'all') {
+            options.workflow_status = workflowStatusParam;
+        } else if (!workflowStatusParam) {
+            options.workflow_status = 'published';
         }
 
         const result = await getArticles(db, options);
 
         // Transform items for card display (use cached fields if available)
         const items = result.items.map(article => {
-            // Parse cached card JSON if available
-            let cachedCard = null;
-            if (article.cachedCardJson) {
-                try {
-                    cachedCard = typeof article.cachedCardJson === 'string'
-                        ? JSON.parse(article.cachedCardJson)
-                        : article.cachedCardJson;
-                } catch {
-                    cachedCard = null;
-                }
-            }
+            const articleData = article as any;
+            
+            // Parse and clean cached card JSON if available
+            const cachedCard = cleanCardImages(parseCachedCard(article.cached_card_json));
 
             // Parse images for thumbnail
             let thumbnail = null;
-            if (article.imagesJson) {
+            if (article.images_json) {
                 try {
-                    const images = typeof article.imagesJson === 'string'
-                        ? JSON.parse(article.imagesJson)
-                        : article.imagesJson;
-                    thumbnail = images.thumbnail || images.cover;
+                    const images = typeof article.images_json === 'string'
+                        ? JSON.parse(article.images_json)
+                        : article.images_json;
+                    const rawThumbnail = images.thumbnail || images.hero;
+                    if (rawThumbnail) {
+                        const cleanedObj = cleanCardImages({ image: rawThumbnail });
+                        thumbnail = cleanedObj.image;
+                    }
                 } catch {
                     thumbnail = null;
                 }
@@ -120,15 +118,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 type: article.type,
                 slug: article.slug,
                 headline: article.headline,
-                shortDescription: article.shortDescription,
+                short_description: article.short_description,
                 thumbnail,
-                categoryLabel: (article as any).categoryLabel,
-                categorySlug: (article as any).categorySlug,
-                categoryColor: (article as any).categoryColor,
-                authorName: (article as any).authorName,
-                authorSlug: (article as any).authorSlug,
-                publishedAt: article.publishedAt,
-                isOnline: article.isOnline,
+                categoryLabel: articleData.categoryLabel,
+                categorySlug: articleData.categorySlug,
+                categoryColor: articleData.categoryColor,
+                authorName: articleData.authorName,
+                authorSlug: articleData.authorSlug,
+                published_at: article.published_at,
+                workflow_status: article.workflow_status,
                 // Type-specific fields from cache
                 ...(cachedCard || {}),
             };

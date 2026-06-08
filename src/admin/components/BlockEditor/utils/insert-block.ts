@@ -25,7 +25,12 @@ const blockTypeMap: Record<string, () => BlockSpec> = {
     roundupList: () => ({ type: 'roundupList' }),
 };
 
-const SINGLETON_BLOCK_TYPES = new Set(['roundupList']);
+// Blocks backed by a single article-level document (only one makes sense per
+// article). Inserting again focuses the existing block instead of creating a
+// duplicate window onto the same data.
+// - roundupList -> roundup_json
+// - faqSection  -> faqs_json (content_json stores only the main_faq marker)
+const SINGLETON_BLOCK_TYPES = new Set(['roundupList', 'faqSection']);
 
 const findBlockByType = (blocks: any[] | undefined, type: string): any | null => {
     if (!Array.isArray(blocks)) return null;
@@ -73,8 +78,8 @@ export const safeInsertBlock = (
     // Find root parent if nested, to ensure custom blocks are at root level
     // This is a requirement for our food blog blocks
     let current = currentPos.block;
-    while (current.parentId) {
-        const parent = editor.getBlock(current.parentId);
+    while (current.parent_id) {
+        const parent = editor.getBlock(current.parent_id);
         if (!parent) break;
         current = parent;
         targetId = current.id;

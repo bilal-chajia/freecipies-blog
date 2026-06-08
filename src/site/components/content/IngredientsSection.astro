@@ -1,0 +1,265 @@
+---
+/**
+ * IngredientsSection - Clean ingredient list with checkboxes
+ */
+
+import type { IngredientGroup } from "@modules/articles/types/recipes.types";
+import { formatAmount, formatUnit } from "@shared/utils";
+
+interface Props {
+  ingredients: IngredientGroup[];
+  servings?: number;
+}
+
+const { ingredients } = Astro.props;
+
+
+---
+
+<div class="ingredients-list">
+  {
+    ingredients.map((group, groupIdx) => (
+      <div class="ingredient-group" data-group={groupIdx}>
+        {group.group_title && (
+          <h3 class="group-title">
+            {group.group_title}
+          </h3>
+        )}
+        <ul class="group-items">
+          {group.items.map((item, itemIdx) => {
+            const globalIdx =
+              ingredients
+                .slice(0, groupIdx)
+                .reduce((acc, g) => acc + g.items.length, 0) + itemIdx;
+
+            return (
+              <li class="ingredient-item">
+                <label for={`ingredient-${globalIdx}`} class="ingredient-label">
+                  <input
+                    id={`ingredient-${globalIdx}`}
+                    type="checkbox"
+                    class="ingredient-check"
+                    data-ingredient-check
+                    data-index={globalIdx}
+                    aria-label={`Mark ${item.amount ? formatAmount(item.amount) : ''} ${item.unit ? formatUnit(item.unit, Number(item.amount) || 0) : ''} ${item.name} as checked`}
+                  />
+                  <span class="checkmark" aria-hidden="true" />
+                  <span class="ingredient-text">
+                    <span
+                      class="amount"
+                      data-ingredient-amount
+                      data-original-amount={item.amount}
+                    >
+                      {formatAmount(item.amount)}
+                    </span>
+                    {item.unit && (
+                      <span 
+                        class="unit" 
+                        data-ingredient-unit 
+                        data-original-unit={item.unit}
+                      >
+                        {formatUnit(item.unit, Number(item.amount) || 0)}
+                      </span>
+                    )}
+                    <span class="name">{item.name}</span>
+                    {item.prep && <span class="prep">, {item.prep}</span>}
+                    {item.is_optional && (
+                      <span class="optional">(optional)</span>
+                    )}
+                  </span>
+                </label>
+                {item.notes && <p class="ingredient-note">{item.notes}</p>}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .ingredients-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+  }
+
+  .ingredient-group {
+    min-width: 0;
+  }
+
+  .group-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 0.75rem;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .group-title::after {
+    content: "";
+    flex: 1 1 auto;
+    min-width: 2rem;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+  }
+
+  .ingredient-item {
+    list-style: none;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-alt);
+    transition: background var(--transition-fast, 150ms);
+    min-width: 0;
+  }
+
+  .ingredient-item:hover {
+    background: var(--bg-hover);
+  }
+
+  .ingredient-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .ingredient-check {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  .checkmark {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--border-strong);
+    border-radius: 25%;
+    flex: 0 0 22px;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background var(--transition-fast, 150ms),
+      border-color var(--transition-fast, 150ms);
+  }
+
+  .ingredient-check:checked + .checkmark {
+    background: var(--success);
+    border-color: var(--success);
+  }
+
+  .ingredient-check:checked + .checkmark::after {
+    content: "✓";
+    color: white;
+    font-size: 14px;
+  }
+
+  .ingredient-check:focus-visible + .checkmark {
+    outline: var(--focus-ring-width, 2px) solid var(--focus-ring-color, currentColor);
+    outline-offset: var(--focus-ring-offset, 2px);
+  }
+
+  .ingredient-text {
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+
+  .ingredient-check:checked ~ .ingredient-text {
+    opacity: 0.5;
+    text-decoration: line-through;
+  }
+
+  .amount {
+    margin-right: 0.25rem;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .unit {
+    margin-right: 0.25rem;
+    color: var(--text-tertiary);
+  }
+
+  .name {
+    color: var(--text);
+  }
+
+  .prep {
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  .optional {
+    margin-left: 0.25rem;
+    color: var(--text-tertiary);
+    font-size: 0.8125rem;
+  }
+
+  .ingredient-note {
+    margin: 0.375rem 0 0 2.125rem;
+    color: var(--text-tertiary);
+    font-size: 0.8125rem;
+    font-style: italic;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 420px) {
+    .ingredient-item {
+      padding: 0.75rem;
+    }
+
+    .ingredient-label {
+      gap: 0.75rem;
+    }
+
+    .ingredient-text {
+      font-size: 1rem;
+    }
+
+    .ingredient-note {
+      margin-left: 2rem;
+    }
+  }
+
+  @media print {
+    .ingredient-check {
+      position: static;
+      width: auto;
+      height: auto;
+      clip: auto;
+      clip-path: none;
+    }
+
+    .checkmark {
+      display: none;
+    }
+  }
+</style>

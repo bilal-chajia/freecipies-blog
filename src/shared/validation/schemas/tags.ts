@@ -10,22 +10,19 @@ import { SlugField, LabelField, DescriptionField } from './common';
 const HexColorField = z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, 'Color must be a valid hex code').optional();
 
 /** JSON string or object */
-const JsonField = z.union([z.string(), z.record(z.unknown())]).optional();
+const JsonField = z.union([z.string(), z.record(z.string(), z.unknown())]).optional();
 
 /**
  * Schema for creating a tag.
  * Uses .passthrough() to allow extra fields consumed by transformTagRequestBody
- * (e.g. color, svg_code, svgCode, icon, variant, styleJson).
+ * (e.g. color, svg_code, icon, variant, style_json).
  */
 export const CreateTagSchema = z.object({
   slug: SlugField,
   label: LabelField,
-  shortDescription: DescriptionField,
+  description: DescriptionField,
   color: HexColorField,
-  isOnline: z.boolean().optional(),
-  sortOrder: z.number().int().min(0).optional(),
-  seoJson: JsonField,
-  configJson: JsonField,
+  style_json: JsonField,
 }).passthrough();
 
 /**
@@ -33,4 +30,4 @@ export const CreateTagSchema = z.object({
  * All fields are optional at the top level (partial).
  * Uses .passthrough() for the same reason as CreateTagSchema.
  */
-export const UpdateTagSchema = CreateTagSchema;
+export const UpdateTagSchema = CreateTagSchema.partial().passthrough();

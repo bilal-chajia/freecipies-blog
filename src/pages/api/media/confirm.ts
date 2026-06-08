@@ -5,64 +5,72 @@
  * POST /api/media/confirm
  *   Body:
  *     {
- *       uploadId: string,
- *       baseName: string,
+ *       upload_id: string,
+ *       base_name: string,
  *       name: string,
- *       altText: string,
- *       caption?: string,
- *       credit?: string,
- *       aspectRatio?: string,
- *       focalPoint?: { x: number, y: number },
- *       mimeType: string,
+ *       alt_text: string,
+ *       caption: string,
+ *       credit: {
+ *         type: "author",
+ *         id: number,
+ *         name: string,
+ *         slug: string,
+ *         avatar?: { variants: { xs: { r2_key: string, width: number, height: number }, sm: { r2_key: string, width: number, height: number } } }
+ *       },
+ *       aspect_ratio?: string,
+ *       focal_point?: { x: number, y: number },
+ *       mime_type: string,
  *       variants: {
- *         original?: { r2Key: string, width: number, height: number, sizeBytes?: number },
- *         lg: { r2Key: string, width: number, height: number, sizeBytes?: number },
- *         md: { r2Key: string, width: number, height: number, sizeBytes?: number },
- *         sm: { r2Key: string, width: number, height: number, sizeBytes?: number },
- *         xs: { r2Key: string, width: number, height: number, sizeBytes?: number }
+ *         original: { r2_key: string, width: number, height: number, size_bytes?: number },
+ *         lg: { r2_key: string, width: number, height: number, size_bytes?: number },
+ *         md: { r2_key: string, width: number, height: number, size_bytes?: number },
+ *         sm: { r2_key: string, width: number, height: number, size_bytes?: number },
+ *         xs: { r2_key: string, width: number, height: number, size_bytes?: number }
  *       },
  *       placeholder: string // base64 LQIP
  *     }
  * 
- *   Returns: Complete media record
+ *   Returns: Admin media payload with public URLs
  */
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { createMedia, type NewMedia } from '@modules/media';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
-import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { validateBody, ConfirmUploadSchema } from '@shared/validation';
+import {
+  IMAGE_VARIANT_KEYS,
+  normalizeMediaVariantsJson,
+  normalizeStoredAuthorCreditSnapshot,
+  serializeAdminMediaPayload,
+} from '@shared/images/image-contract';
 
-interface VariantInfo {
-  r2Key: string;
-  width: number;
-  height: number;
-  sizeBytes?: number;
+async function assertUploadedVariantsExist(variantsJson: ReturnType<typeof normalizeMediaVariantsJson>) {
+  if (!env?.IMAGES) {
+    throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Storage not configured', 500);
+  }
+
+  const missingKeys = (
+    await Promise.all(
+      IMAGE_VARIANT_KEYS.map(async (variantKey) => {
+        const r2Key = variantsJson.variants[variantKey].r2_key;
+        const object = await env.IMAGES.head(r2Key);
+        return object ? null : r2Key;
+      })
+    )
+  ).filter((r): r is string => r !== null);
+
+  if (missingKeys.length) {
+    throw new AppError(
+      ErrorCodes.VALIDATION_ERROR,
+      `Upload incomplete. Missing R2 object(s): ${missingKeys.join(', ')}`,
+      400
+    );
+  }
 }
 
-interface ConfirmBody {
-  uploadId: string;
-  baseName: string;
-  name: string;
-  altText: string;
-  caption?: string;
-  credit?: string;
-  aspectRatio?: string;
-  focalPoint?: { x: number; y: number };
-  mimeType: string;
-  variants: {
-    original?: VariantInfo;
-    lg: VariantInfo;
-    md: VariantInfo;
-    sm: VariantInfo;
-    xs: VariantInfo;
-  };
-  placeholder: string;
-}
-
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
 
 
@@ -80,39 +88,29 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Parse & validate body via Zod
     const body = await validateBody(request, ConfirmUploadSchema);
 
-    // Build variants JSON for storage (r2_key only, no url)
-    const variantsJson = {
-      variants: {} as Record<string, { r2_key: string; width: number; height: number; sizeBytes?: number }>,
-      placeholder: body.placeholder || '',
-    };
-
-    // Add each variant
-    for (const [key, variant] of Object.entries(body.variants)) {
-      if (variant) {
-        variantsJson.variants[key] = {
-          r2_key: variant.r2Key,
-          width: variant.width,
-          height: variant.height,
-          sizeBytes: variant.sizeBytes,
-        };
-      }
-    }
+    const variantsJson = normalizeMediaVariantsJson({
+      variants: body.variants,
+      placeholder: body.placeholder,
+    });
+    await assertUploadedVariantsExist(variantsJson);
 
     // Build focal point JSON
-    const focalPointJson = body.focalPoint
-      ? JSON.stringify(body.focalPoint)
+    const focal_point_value = body.focal_point
+      ? JSON.stringify(body.focal_point)
       : '{"x": 50, "y": 50}';
+
+    const credit = JSON.stringify(normalizeStoredAuthorCreditSnapshot(body.credit));
 
     // Create media record
     const mediaData: NewMedia = {
       name: body.name,
-      altText: body.altText,
-      caption: body.caption || '',
-      credit: body.credit || '',
-      mimeType: body.mimeType || 'image/webp',
-      aspectRatio: body.aspectRatio || null,
-      variantsJson: JSON.stringify(variantsJson),
-      focalPointJson,
+      alt_text: body.alt_text,
+      caption: body.caption,
+      credit,
+      mime_type: body.mime_type || 'image/webp',
+      aspect_ratio: body.aspect_ratio ?? null,
+      variants_json: JSON.stringify(variantsJson),
+      focal_point_json: focal_point_value,
     };
 
     const newMedia = await createMedia(env.DB, mediaData);
@@ -121,7 +119,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to create media record', 500);
     }
 
-    const { body: responseBody, status, headers } = formatSuccessResponse(newMedia);
+    const { body: responseBody, status, headers } = formatSuccessResponse(serializeAdminMediaPayload(newMedia));
     return new Response(responseBody, { status: 201, headers });
 
   } catch (error) {

@@ -1,0 +1,242 @@
+---
+import Layout from "./Layout.astro";
+import type { Category } from "@modules/categories/schema/categories.schema";
+import SocialShareBar from "../components/SocialShareBar.astro";
+import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
+import PopularRecipes from "../components/PopularRecipes.astro";
+import NewsletterWidget from "../components/NewsletterWidget.astro";
+import ContentRenderer from "../components/ContentRenderer.astro";
+import { normalizeContentDocument } from "@modules/content-blocks";
+import HeroImage from "../components/content/HeroImage.astro";
+import TableOfContents from "../components/content/TableOfContents.astro";
+import { extractImage, getImageSrcSet } from "@shared/utils";
+import { safeParseJson } from "@shared/utils/hydration";
+import { resolveVariantUrl, getSrcSet, type ImageSlot } from "@shared/types/images";
+import { getReadingTimeDisplay } from "@modules/articles/utils/cached-fields";
+import {
+  getPopularRecipes,
+  getSiteTocSettings,
+} from "@server/site-data";
+interface Props {
+  article: Record<string, any>;
+  author?: Record<string, any> | null;
+  category?: Category | null;
+}
+
+const { article, author, category } = Astro.props;
+
+const parsedRoundupJson = safeParseJson<Record<string, unknown>>(article.roundup_json) || { items: [] };
+const categoryColor = category?.color || "#ff6600";
+
+const tocSettings = await getSiteTocSettings();
+const popularRecipes = await getPopularRecipes(article.slug, 5);
+
+const readingTime = getReadingTimeDisplay(article);
+
+const heroSlot = extractImage(article.images_json, "hero", 1200);
+const heroThumb = extractImage(article.images_json, "thumbnail", 1200);
+const heroSlotSrcSet = getImageSrcSet(article.images_json, "hero");
+const thumbSrcSet = getImageSrcSet(article.images_json, "thumbnail");
+const useHeroSlot = heroSlot.image_url && (heroSlotSrcSet || !heroThumb.image_url);
+const heroSrcSet = useHeroSlot ? heroSlotSrcSet : thumbSrcSet;
+const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
+
+let authorAvatar: {
+  image_url?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageAspectRatio?: string;
+  imageObjectPosition?: string;
+  imageStyle?: string;
+} = {};
+
+if (author) {
+  if (author.images_json) {
+    authorAvatar = extractImage(author.images_json, "avatar", 96);
+  } else if (author.avatar) {
+    const avatarSlot = author.avatar;
+    if (typeof avatarSlot === 'string') {
+      authorAvatar = { image_url: avatarSlot, imageWidth: 96, imageHeight: 96 };
+    } else if (avatarSlot && typeof avatarSlot === 'object') {
+      const variants = avatarSlot.variants || {};
+      const bestVariant = variants.sm || variants.xs || null;
+      authorAvatar = {
+        image_url: resolveVariantUrl(bestVariant) || (avatarSlot as ImageSlot & { url?: string }).url || undefined,
+        imageAlt: avatarSlot.alt || undefined,
+        imageWidth: bestVariant?.width || 96,
+        imageHeight: bestVariant?.height || 96,
+        imageStyle: avatarSlot.focal_point ? `object-position: ${avatarSlot.focal_point.x}% ${avatarSlot.focal_point.y}%;` : undefined,
+      };
+    }
+  }
+}
+
+const authorAvatarSrcSet = author?.images_json
+  ? getImageSrcSet(author.images_json, "avatar")
+  : (author?.avatar && typeof author.avatar === 'object' ? getSrcSet(author.avatar as ImageSlot) : "");
+const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
+const authorImage = authorAvatar.image_url || author?.image_url;
+
+const contentBlocks = normalizeContentDocument(article.content_json).blocks;
+
+---
+
+<Layout
+  title={article.metaTitle || article.label}
+  description={article.metaDescription || article.short_description}
+  image={heroSlot.image_url ||
+    heroThumb.image_url ||
+    article.image_url ||
+    undefined}
+>
+  <slot name="head" slot="head" />
+
+  {/* JSON-LD for Article */}
+
+  <article
+    class="article-page"
+    style={`--toc-accent: ${tocSettings.accent_color};`}
+  >
+    <div class="article-container l-page-container">
+      <div class="main-content l-main-content">
+        {
+          article.categoryLabel && (
+            <a
+              href={`/categories/${article.categorySlug}`}
+              class="badge category-badge"
+              style={`--badge-color: ${categoryColor};`}
+            >
+              {article.categoryLabel}
+            </a>
+          )
+        }
+
+        <h1 class="article-title">{article.label}</h1>
+
+        {
+          article.short_description && (
+            <p class="article-description">{article.short_description}</p>
+          )
+        }
+
+        <SocialShareBar
+          title={article.label}
+          readingTime={`${readingTime} Min Read`}
+        />
+
+        <RecipeAuthorCard
+          authorName={author?.name || article.authorName}
+          authorImage={authorImage || undefined}
+          authorImageSrcSet={authorAvatarSrcSet || undefined}
+          authorImageSizes={authorAvatarSizes}
+          authorRole={author?.job || "Writer"}
+          lastUpdated={article.published_at || undefined}
+          view_count={article.view_count}
+        />
+
+        <div class="disclosure-notice">
+          <strong>Disclosure:</strong> This website may contain affiliate links, which
+          means I may earn a commission if you click on the link and make a purchase.
+        </div>
+
+        <TableOfContents toc={article.cached_toc_json} settings={tocSettings} />
+
+        <HeroImage
+          src={heroSlot.image_url || heroThumb.image_url || article.image_url}
+          alt={heroSlot.imageAlt || heroThumb.imageAlt || article.label}
+          width={heroSlot.imageWidth || heroThumb.imageWidth}
+          height={heroSlot.imageHeight || heroThumb.imageHeight}
+          srcset={heroSrcSet}
+          sizes={heroSizes}
+          style={heroSlot.imageStyle || heroThumb.imageStyle}
+        />
+
+        {
+          article.introduction && (
+            <section class="content-section introduction-section">
+              <div class="prose" set:html={article.introduction} />
+            </section>
+          )
+        }
+
+        {
+          (contentBlocks.length > 0 || parsedRoundupJson?.items?.length > 0) && (
+            <section class="content-section content-json-section">
+              <ContentRenderer
+                article={article}
+                settings={tocSettings}
+              />
+            </section>
+          )
+        }
+
+      </div>
+
+      <aside class="sidebar l-sidebar">
+        <div class="sidebar-sticky l-sidebar-sticky">
+          <PopularRecipes
+            currentSlug={article.slug}
+            limit={5}
+            recipes={popularRecipes}
+          />
+          <NewsletterWidget />
+        </div>
+      </aside>
+    </div>
+  </article>
+</Layout>
+
+<script define:vars={{ slug: article.slug }}>
+  const trackView = async () => {
+    try {
+      await fetch(`/api/views/${slug}`, { method: "POST" });
+    } catch (e) {}
+  };
+  if (document.readyState === "complete") trackView();
+  else window.addEventListener("load", trackView);
+</script>
+
+<style>
+  /* Base styles inherited from ArticleLayout pattern */
+  /* Layout classes now handled by global .l-page-container, .l-main-content, etc. */
+
+  .category-badge {
+    background: var(--badge-color, var(--brand-secondary));
+    color: var(--text-inverse);
+    text-decoration: none;
+    margin-bottom: var(--space-4);
+    transition: filter 0.2s;
+  }
+
+  .article-title {
+    font-size: clamp(1.375rem, 3vw + 0.5rem, 2.5rem);
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.2;
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-heading);
+  }
+
+  .article-description {
+    font-family: var(--font-body);
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 0 var(--space-4);
+  }
+
+  /* Disclosure notice now handled by global .disclosure-notice utility */
+
+  .introduction-section {
+    background: var(--bg-alt);
+    margin: var(--space-8) calc(-1 * clamp(1rem, 3vw, 2rem));
+    padding: var(--space-6) clamp(1rem, 3vw, 2rem);
+    border-left: 4px solid var(--brand-secondary);
+  }
+
+  .prose {
+    color: var(--text-secondary);
+    line-height: 1.75;
+  }
+</style>

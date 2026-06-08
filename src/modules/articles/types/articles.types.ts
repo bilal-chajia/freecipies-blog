@@ -1,5 +1,5 @@
 import type { Article as DbArticle } from '../schema/articles.schema';
-import type { ExtractedImage, ExtractedSeo } from '@shared/utils';
+import type { ExtractedImage, ExtractedSeo, HydratedTag } from '@shared/utils';
 import type { RecipeJson } from './recipes.types';
 import type { RoundupJson } from './roundups.types';
 import type { ArticleImagesJson } from './images.types';
@@ -10,7 +10,7 @@ import type { ArticleImagesJson } from './images.types';
 
 // 1. Base Content (Common to all types)
 // Represents the shared structure in the 'articles' table
-export type BaseContent = Omit<DbArticle, 'recipeJson' | 'roundupJson'> & ExtractedImage & ExtractedSeo & {
+export type BaseContent = Omit<DbArticle, 'recipe_json' | 'roundup_json'> & ExtractedImage & ExtractedSeo & {
   label: string;
   route: string;
 
@@ -27,23 +27,24 @@ export type BaseContent = Omit<DbArticle, 'recipeJson' | 'roundupJson'> & Extrac
     label?: string;
     slug?: string;
   };
+  tags?: HydratedTag[];
 };
 
 // 2. Specific Content Types
 export interface ArticleContent extends BaseContent {
   type: 'article';
-  // Standard articles might use contentJson for body, no specific extra JSON
+  // Standard articles might use content_json for body, no specific extra JSON
 }
 
 export interface RecipeContent extends BaseContent {
   type: 'recipe';
-  recipeJson: RecipeJson | null; // Raw JSON from DB
+  recipe_json: RecipeJson | null; // Raw JSON from DB
   recipe: RecipeJson | null;     // Helper alias often used in frontend
 }
 
 export interface RoundupContent extends BaseContent {
   type: 'roundup';
-  roundupJson: RoundupJson | null;
+  roundup_json: RoundupJson | null;
 }
 
 // 3. Union Type

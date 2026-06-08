@@ -5,7 +5,6 @@
  */
 
 interface TagStyleJson {
-  svg_code?: string;
   color?: string;
   variant?: string;
 }
@@ -14,14 +13,13 @@ const normalizeStyleJsonObject = (value: any): TagStyleJson => {
   if (!value || typeof value !== 'object') return {};
 
   return {
-    svg_code: value.svg_code ?? value.svgCode ?? value.icon,
     color: value.color,
     variant: value.variant,
   };
 };
 
 /**
- * Parse and validate styleJson from request body
+ * Parse and validate style_json from request body
  */
 export function parseStyleJson(value: any): string {
   if (!value) return '{}';
@@ -43,17 +41,16 @@ export function parseStyleJson(value: any): string {
 }
 
 /**
- * Transform request body to handle both legacy flat fields and styleJson
+ * Transform request body to handle flat style fields and style_json
  */
 export function transformTagRequestBody(body: any): any {
   const transformed = { ...body };
 
-  if (body.styleJson !== undefined) {
-    transformed.styleJson = parseStyleJson(body.styleJson);
-  } else if (body.color || body.svg_code || body.svgCode || body.variant || body.icon) {
-    transformed.styleJson = parseStyleJson({
+  if (body.style_json !== undefined) {
+    transformed.style_json = parseStyleJson(body.style_json);
+  } else if (body.color || body.variant) {
+    transformed.style_json = parseStyleJson({
       color: body.color,
-      svg_code: body.svg_code ?? body.svgCode ?? body.icon,
       variant: body.variant,
     });
   }
@@ -68,19 +65,17 @@ export function transformTagRequestBody(body: any): any {
 }
 
 /**
- * Transform tag response to include legacy flat fields for backward compatibility
+ * Transform tag response to include flat style fields for admin consumers
  */
 export function transformTagResponse(tag: any): any {
   if (!tag) return tag;
 
   const response = { ...tag };
 
-  if (tag.styleJson) {
+  if (tag.style_json) {
     try {
-      const style: TagStyleJson = JSON.parse(tag.styleJson);
+      const style: TagStyleJson = JSON.parse(tag.style_json);
       response.color = style.color;
-      response.svgCode = style.svg_code;
-      response.icon = style.svg_code;
       response.variant = style.variant;
     } catch {
       // Invalid JSON, skip

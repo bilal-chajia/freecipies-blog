@@ -1,0 +1,64 @@
+---
+/**
+ * SEO Component — Schema.org JSON-LD Emitter
+ * ============================================
+ *
+ * Consumes pre-generated JSON-LD from `articles.jsonld_json`
+ * (populated at save time by `generateJsonLd()` in utils/jsonld.ts).
+ *
+ * Two modes:
+ *   1. **Pre-generated** (preferred): pass `schemas` as an array of
+ *      JSON-LD objects. The component simply serializes them.
+ *   2. **Legacy passthrough**: pass individual props for backward compat
+ *      during migration (type='website', etc.).
+ *
+ * @see utils/jsonld.ts — generation logic
+ * @see articles.service.ts syncCachedFields() — save-time hook
+ */
+
+interface Props {
+  /** Page title for og:title */
+  title: string;
+  /** Page description for meta description */
+  description: string;
+  /** Canonical URL override */
+  canonical?: string;
+  /** OG image URL */
+  image?: string;
+  /** OG image alt text */
+  imageAlt?: string;
+  /**
+   * Pre-generated JSON-LD schemas array.
+   * When provided, the component emits each schema directly —
+   * no per-page reconstruction needed.
+   */
+  schemas?: Record<string, unknown>[];
+}
+
+const {
+  title,
+  description,
+  canonical,
+  image,
+  imageAlt,
+  schemas = [],
+} = Astro.props;
+
+const siteUrl = Astro.site?.toString() || Astro.url.origin;
+const canonicalURL = canonical || new URL(Astro.url.pathname, siteUrl).toString();
+const image_url = image ? new URL(image, siteUrl).toString() : `${siteUrl}/og-image.jpg`;
+---
+
+<!-- Structured data — pre-generated at save time, emitted directly -->
+{schemas.map((schema) => (
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      ...schema,
+    })}
+  />
+))}
+
+<!-- Breadcrumb Schema -->
+<slot name="breadcrumb-schema" />

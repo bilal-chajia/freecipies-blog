@@ -1,0 +1,125 @@
+/* ========================================
+ * Admin Dashboard Theme
+ * Neutral CMS dashboard identity, independent from the public food blog.
+ * ======================================== */
+
+@layer tokens {
+  :root,
+  [data-surface="admin"] {
+    --brand-primary: #2563eb;
+    --brand-primary-hover: #1d4ed8;
+    --brand-primary-light: #eff6ff;
+    --brand-secondary: #0f172a;
+    --brand-secondary-hover: #020617;
+    --brand-accent: #14b8a6;
+    --brand-accent-hover: #0f9488;
+    --brand-gradient: linear-gradient(135deg, #2563eb 0%, #14b8a6 100%);
+    --brand-gradient-vertical: linear-gradient(180deg, #2563eb 0%, #14b8a6 100%);
+
+    --bg: #f8fafc;
+    --bg-alt: #f1f5f9;
+    --bg-elevated: #ffffff;
+    --bg-inset: #e2e8f0;
+    --bg-hover: #f1f5f9;
+    --bg-active: #e2e8f0;
+    --bg-overlay: rgba(15, 23, 42, 0.55);
+
+    --text: #0f172a;
+    --text-secondary: #334155;
+    --text-tertiary: #64748b;
+    --text-inverse: #ffffff;
+    --text-brand: var(--brand-primary);
+
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --border-subtle: #f8fafc;
+
+    --shadow-color: 15 23 42;
+    --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.03);
+    --shadow-md: 0 2px 8px rgba(var(--shadow-color), 0.05);
+    --shadow-lg: 0 8px 20px rgba(var(--shadow-color), 0.06);
+    --shadow-xl: 0 12px 30px rgba(var(--shadow-color), 0.08);
+    --shadow-hover: 0 4px 16px rgba(var(--shadow-color), 0.07);
+    --shadow-focus: 0 0 0 2px rgba(37, 99, 235, 0.15);
+
+    --font-sans: Inter, "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-serif: Georgia, "Times New Roman", serif;
+    --font-mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+
+    --focus-ring-color: var(--brand-primary);
+
+    /* shadcn/Radix theme variables */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    --radius: 0.5rem;
+    --chart-1: 221 83% 53%;
+    --chart-2: 173 80% 40%;
+    --chart-3: 262 83% 58%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 199 89% 48%;
+  }
+
+  [data-surface="admin"].dark,
+  [data-surface="admin"] .dark {
+    --bg: #020617;
+    --bg-alt: #0f172a;
+    --bg-elevated: #111827;
+    --bg-inset: #020617;
+    --bg-hover: #1e293b;
+    --bg-active: #334155;
+    --bg-overlay: rgba(2, 6, 23, 0.76);
+
+    --text: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #94a3b8;
+    --text-inverse: #020617;
+    --text-brand: #93c5fd;
+
+    --border: #1e293b;
+    --border-strong: #334155;
+    --border-subtle: #090d16;
+
+    --shadow-color: 2 6 23;
+    --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.15);
+    --shadow-md: 0 2px 8px rgba(var(--shadow-color), 0.2);
+    --shadow-lg: 0 8px 20px rgba(var(--shadow-color), 0.25);
+    --shadow-xl: 0 12px 30px rgba(var(--shadow-color), 0.3);
+    --shadow-hover: 0 4px 16px rgba(var(--shadow-color), 0.25);
+    --shadow-focus: 0 0 0 2px rgba(96, 165, 250, 0.28);
+
+    --background: 222 47% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 7%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 7%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+  }
+}

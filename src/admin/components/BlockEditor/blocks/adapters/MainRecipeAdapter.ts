@@ -3,33 +3,29 @@ import type { MainRecipeBlock as MainRecipeBlockType } from '@modules/articles/t
 import type { AppBlock } from '../../types/editor.types';
 
 /**
- * Adapter for mainRecipe blocks.
- * Recipe data is stored as recipeJson in block props (Phase 3: self-contained, no context).
+ * Adapter for the canonical main_recipe position marker.
+ * Recipe data stays in recipe_json; content_json stores only the block position.
  */
-export class MainRecipeAdapter implements BlockAdapter<MainRecipeBlockType> {
-  readonly blockType = 'mainRecipe';
+export const MainRecipeAdapter: BlockAdapter<MainRecipeBlockType> = {
+  type: 'main_recipe',
 
-  toBlockNote(appBlock: MainRecipeBlockType): Partial<AppBlock> {
-    const recipe = appBlock.recipe;
+  toEditor(_block, context): Partial<AppBlock> {
+    const recipe_json = typeof context?.recipe_json === 'string'
+      ? context.recipe_json
+      : JSON.stringify(context?.recipe_json ?? {});
+
     return {
       type: 'mainRecipe',
       props: {
-        recipeJson: recipe ? JSON.stringify(recipe) : '',
+        recipe_json,
       },
     };
-  }
+  },
 
-  fromBlockNote(bnBlock: AppBlock): MainRecipeBlockType {
-    let recipe = null;
-    try {
-      recipe = bnBlock.props.recipeJson ? JSON.parse(bnBlock.props.recipeJson) : null;
-    } catch {
-      recipe = null;
-    }
-
+  fromEditor(block: AppBlock): MainRecipeBlockType {
     return {
-      type: 'mainRecipe',
-      recipe,
-    } as MainRecipeBlockType;
-  }
-}
+      ...(typeof block.id === 'string' ? { id: block.id } : {}),
+      type: 'main_recipe',
+    };
+  },
+};

@@ -1,6 +1,7 @@
 import type { BlockAdapter } from '../BlockAdapter';
 import type { HeadingBlock } from '@modules/articles/types/content-blocks.types';
 import type { AppBlock } from '../../types/editor.types';
+import { parseInlineMarkdown, extractText } from '../../utils/inlineContent';
 
 export const HeadingAdapter: BlockAdapter<HeadingBlock> = {
     type: 'heading',
@@ -13,16 +14,12 @@ export const HeadingAdapter: BlockAdapter<HeadingBlock> = {
                 textAlignment: 'left',
                 textColor: 'default',
             },
-            content: block.text || '',
+            content: parseInlineMarkdown(block.text || ''),
         };
     },
 
     fromEditor(block: AppBlock): HeadingBlock | null {
-        const text = typeof block.content === 'string'
-            ? block.content
-            : Array.isArray(block.content)
-                ? block.content.map((c: any) => c?.text || '').join('')
-                : '';
+        const text = extractText(block.content as any);
         const level = (block.props as any)?.level || 2;
         if (!text.trim()) return null;
         return {

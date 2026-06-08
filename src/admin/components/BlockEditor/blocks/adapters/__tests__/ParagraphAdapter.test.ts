@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ParagraphAdapter } from '../ParagraphAdapter';
-import type { ParagraphBlock } from '../../../../../modules/articles/types/content-blocks.types';
+import type { ParagraphBlock } from '@modules/articles/types/content-blocks.types';
 
 describe('ParagraphAdapter', () => {
     const adapter = ParagraphAdapter;

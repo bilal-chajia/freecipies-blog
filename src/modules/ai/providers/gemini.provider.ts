@@ -6,6 +6,7 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
+import { classifyModality, detectThinking } from '../discovery/normalize';
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -38,7 +39,7 @@ export class GeminiProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'gemini-1.5-flash';
 
         const url = `${GEMINI_API_URL}/${model}:generateContent?key=${this.apiKey}`;
@@ -124,6 +125,26 @@ export class GeminiProvider implements IAIProvider {
             return !data.error;
         } catch {
             return false;
+        }
+    }
+
+    async listModels(apiKey: string) {
+        try {
+            const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`);
+            if (!response.ok) return { supported: true, models: [] };
+            const raw = await response.json() as { models?: Array<{ name?: string }> };
+            const models = (raw.models ?? [])
+                .map((model) => (model.name ?? '').replace(/^models\//, ''))
+                .filter((id): id is string => id.length > 0)
+                .map((id) => ({
+                    id,
+                    modality: classifyModality(id),
+                    supports_thinking: detectThinking(id),
+                }))
+                .filter((model) => model.modality === 'text');
+            return { supported: true, models };
+        } catch {
+            return { supported: true, models: [] };
         }
     }
 }

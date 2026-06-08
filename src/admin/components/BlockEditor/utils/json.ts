@@ -21,3 +21,6 @@ export const parseJsonObject = <T>(value: unknown, fallback: T): T => {
     }
     return fallback;
 };
+
+/** Alias for parseJsonObject — used by block components for JSON-safe parsing. */
+export const parseSafeJson = parseJsonObject;

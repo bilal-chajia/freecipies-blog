@@ -1,6 +1,6 @@
 ---
 import { env } from 'cloudflare:workers';
-import Layout from "../../layouts/Layout.astro";
+import Layout from "@layouts/Layout.astro";
 import { getArticles } from "@modules/articles";
 import { getCategories } from "@modules/categories";
 import { getTags } from "@modules/tags";
@@ -10,6 +10,8 @@ import {
   hydrateTags,
 } from "@shared/utils/hydration";
 import { extractImage, getImageSrcSet } from "@shared/utils";
+import { parseCachedRecipe } from "@modules/articles/utils/cached-fields";
+import Pagination from "@components/Pagination.astro";
 
 export const prerender = false;
 
@@ -41,7 +43,7 @@ try {
     totalRecipes = result.total;
 
     // Get all categories and tags for filters
-    const rawCategories = await getCategories(env.DB, { isOnline: true });
+    const rawCategories = await getCategories(env.DB, { workflow_status: 'published' });
     const rawTags = await getTags(env.DB);
     categories = hydrateCategories(rawCategories);
     tags = hydrateTags(rawTags);
@@ -74,20 +76,20 @@ const buildFilterUrl = (
 const getRecipeImage = (
   recipe: any,
   targetWidth: number,
-  prefer: "cover" | "thumbnail" = "cover"
+  prefer: "hero" | "thumbnail" = "hero"
 ) => {
-  const cover = extractImage(recipe.imagesJson, "cover", targetWidth);
-  const thumbnail = extractImage(recipe.imagesJson, "thumbnail", targetWidth);
+  const hero = extractImage(recipe.images_json, "hero", targetWidth);
+  const thumbnail = extractImage(recipe.images_json, "thumbnail", targetWidth);
   const slotName =
-    prefer === "cover"
-      ? cover.imageUrl
-        ? "cover"
+    prefer === "hero"
+      ? hero.image_url
+        ? "hero"
         : "thumbnail"
-      : thumbnail.imageUrl
+      : thumbnail.image_url
         ? "thumbnail"
-        : "cover";
-  const selected = slotName === "cover" ? cover : thumbnail;
-  const srcSet = getImageSrcSet(recipe.imagesJson, slotName);
+        : "hero";
+  const selected = slotName === "hero" ? hero : thumbnail;
+  const srcSet = getImageSrcSet(recipe.images_json, slotName);
   return { selected, srcSet };
 };
 
@@ -108,23 +110,23 @@ const parseHexColor = (value?: string) => {
 
 const getBadgeTextColor = (background?: string) => {
   const hex = parseHexColor(background);
-  if (!hex) return "#ffffff";
+  if (!hex) return "var(--text-inverse)";
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  return yiq >= 170 ? "#111111" : "#ffffff";
+  return yiq >= 170 ? "var(--text-dark, #111111)" : "var(--text-inverse, #ffffff)";
 };
 
 const getBadgeColors = (color?: string) => {
-  const badgeColor = color && color.trim() ? color.trim() : "#ff3366";
+  const badgeColor = color && color.trim() ? color.trim() : "var(--brand-primary)";
   const badgeText = getBadgeTextColor(badgeColor);
   return { badgeColor, badgeText };
 };
 
 const siteTitle = categoryFilter
-  ? `${categories.find((c) => c.slug === categoryFilter)?.label || "Category"} Recipes - Freecipies`
-  : "All Recipes - Freecipies";
+  ? `${categories.find((c) => c.slug === categoryFilter)?.label || "Category"} Recipes - SaaS Blog`
+  : "All Recipes - SaaS Blog";
 const siteDescription =
   "Browse all our delicious and easy-to-follow recipes. Filter by category or tag.";
 ---
@@ -193,12 +195,12 @@ const siteDescription =
                     tag.slug === tagFilter ? "" : tag.slug,
                     1
                   )}
-                  class:list={["tag-chip", { active: tagFilter === tag.slug }]}
-                  style={`--tag-color: ${tag.color || "#ff6600"};`}
+                  class:list={["chip-standard tag-chip", { active: tagFilter === tag.slug }]}
+                  style={`--tag-color: ${tag.color || "var(--brand-primary)"};`}
                 >
                   <div class="chip-image">
-                    {tag.imageUrl ? (
-                      <img src={tag.imageUrl} alt={tag.label} />
+                    {tag.image_url ? (
+                      <img src={tag.image_url} alt={tag.label} />
                     ) : (
                       <div class="chip-placeholder">{tag.label.charAt(0)}</div>
                     )}
@@ -258,9 +260,12 @@ const siteDescription =
           recipes.length > 0 ? (
             <div class="recipes-grid">
               {recipes.map((recipe) => {
-                const { selected, srcSet } = getRecipeImage(recipe, 400, "cover");
+                const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 768px) 50vw, 25vw";
                 const { badgeColor, badgeText } = getBadgeColors(recipe.categoryColor);
+                const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
+                const prepTime = cachedRecipe?.prep_time_minutes ?? null;
+                const servings = cachedRecipe?.servings ?? null;
                 return (
                   <article class="recipe-card">
                     <button
@@ -276,9 +281,9 @@ const siteDescription =
                       </svg>
                     </button>
                     <a href={`/recipes/${recipe.slug}`} class="card-image-link">
-                      {(selected.imageUrl || recipe.imageUrl) && (
+                      {(selected.image_url || recipe.image_url) && (
                         <img
-                          src={selected.imageUrl || recipe.imageUrl}
+                          src={selected.image_url || recipe.image_url}
                           alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
                           width={selected.imageWidth || recipe.imageWidth || 400}
                           height={selected.imageHeight || recipe.imageHeight || 300}
@@ -289,7 +294,7 @@ const siteDescription =
                         />
                       )}
                       <span
-                        class="card-badge"
+                        class="badge card-badge"
                         style={`background: ${badgeColor}; color: ${badgeText};`}
                       >
                         {recipe.categoryLabel}
@@ -300,7 +305,7 @@ const siteDescription =
                         <a href={`/recipes/${recipe.slug}`}>{recipe.headline}</a>
                       </h3>
                       <div class="card-meta">
-                        {recipe.recipeJson?.prepTime && (
+                        {prepTime !== null && (
                           <span class="meta-item">
                             <svg
                               viewBox="0 0 24 24"
@@ -311,10 +316,10 @@ const siteDescription =
                               <circle cx="12" cy="12" r="10" />
                               <path d="M12 6v6l4 2" />
                             </svg>
-                            {recipe.recipeJson.prepTime}
+                            {`${prepTime} min`}
                           </span>
                         )}
-                        {recipe.recipeJson?.servings && (
+                        {servings !== null && (
                           <span class="meta-item">
                             <svg
                               viewBox="0 0 24 24"
@@ -325,7 +330,7 @@ const siteDescription =
                               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                               <circle cx="9" cy="7" r="4" />
                             </svg>
-                            {recipe.recipeJson.servings}
+                            {`${servings} servings`}
                           </span>
                         )}
                       </div>
@@ -347,36 +352,14 @@ const siteDescription =
         <!-- Pagination -->
         {
           totalPages > 1 && (
-            <nav class="pagination">
-              {page > 1 && (
-                <a
-                  href={buildFilterUrl(undefined, undefined, page - 1)}
-                  class="page-btn prev"
-                >
-                  ← Previous
-                </a>
-              )}
-              <div class="page-numbers">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (p) => (
-                    <a
-                      href={buildFilterUrl(undefined, undefined, p)}
-                      class:list={["page-num", { active: p === page }]}
-                    >
-                      {p}
-                    </a>
-                  )
-                )}
-              </div>
-              {page < totalPages && (
-                <a
-                  href={buildFilterUrl(undefined, undefined, page + 1)}
-                  class="page-btn next"
-                >
-                  Next →
-                </a>
-              )}
-            </nav>
+            <div style="margin-top: 3rem;">
+              <Pagination 
+                currentPage={page} 
+                totalPages={totalPages} 
+                baseUrl="/recipes" 
+                preserveParams={Object.fromEntries([...url.searchParams].filter(([k]) => k !== 'page'))}
+              />
+            </div>
           )
         }
       </div>
@@ -386,27 +369,27 @@ const siteDescription =
 
 <style>
   .recipes-page {
-    background: #fafafa;
+    background: var(--bg);
     min-height: 100vh;
   }
 
   .container {
-    max-width: 1280px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 2rem);
   }
 
   /* Page Header */
   .page-header {
-    background: #fff;
+    background: var(--bg-elevated);
     padding: 3rem 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border);
   }
 
   .page-title {
     font-size: clamp(2rem, 4vw, 2.5rem);
     font-weight: 800;
-    color: #111;
+    color: var(--text);
     margin: 0 0 0.5rem;
     display: flex;
     align-items: center;
@@ -416,21 +399,21 @@ const siteDescription =
   .title-dot {
     width: 12px;
     height: 12px;
-    background: #ff3366;
+    background: var(--brand-primary);
     border-radius: 50%;
   }
 
   .recipe-count {
-    color: #666;
+    color: var(--text-tertiary);
     font-size: 1rem;
     margin: 0;
   }
 
   /* Filter Pills */
   .filters-section {
-    background: #fff;
+    background: var(--bg-elevated);
     padding: 1.5rem 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border);
   }
 
   .filter-pills {
@@ -441,10 +424,10 @@ const siteDescription =
 
   .filter-pill {
     padding: 0.625rem 1.25rem;
-    border: 1px solid #ddd;
-    border-radius: 50px;
-    background: #fff;
-    color: #333;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
     text-decoration: none;
     font-size: 0.875rem;
     font-weight: 500;
@@ -453,14 +436,14 @@ const siteDescription =
 
   .filter-pill:hover,
   .filter-pill.active {
-    background: #111;
-    color: #fff;
-    border-color: #111;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+    border-color: var(--brand-primary);
   }
 
   /* Tag Chips */
   .tags-section {
-    background: #fff;
+    background: var(--bg-elevated);
     padding: 2rem 0;
   }
 
@@ -495,41 +478,29 @@ const siteDescription =
 
   .tag-chip:hover .chip-image,
   .tag-chip.active .chip-image {
-    border-color: var(--tag-color, #ff6600);
-  }
-
-  .chip-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    border-color: var(--tag-color, var(--brand-primary));
   }
 
   .chip-placeholder {
     width: 100%;
     height: 100%;
-    background: var(--tag-color, #ff6600);
+    background: var(--tag-color, var(--brand-primary));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--text-inverse);
     font-size: 1.5rem;
     font-weight: 700;
   }
 
-  .chip-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #222;
-  }
-
   .tag-chip.active .chip-label {
-    color: var(--tag-color, #ff6600);
+    color: var(--tag-color, var(--brand-primary));
   }
 
   /* Active Filters */
   .active-filters {
     padding: 1rem 0;
-    background: #f5f5f5;
+    background: var(--bg);
   }
 
   .filter-tags {
@@ -544,11 +515,11 @@ const siteDescription =
     align-items: center;
     gap: 0.5rem;
     padding: 0.375rem 0.75rem;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     font-size: 0.8125rem;
-    color: #333;
+    color: var(--text-secondary);
   }
 
   .remove-filter {
@@ -557,21 +528,21 @@ const siteDescription =
     justify-content: center;
     width: 18px;
     height: 18px;
-    background: #eee;
+    background: var(--border);
     border-radius: 50%;
-    color: #666;
+    color: var(--text-tertiary);
     text-decoration: none;
     font-size: 1rem;
     line-height: 1;
   }
 
   .remove-filter:hover {
-    background: #ff3366;
-    color: #fff;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
   }
 
   .clear-all {
-    color: #ff3366;
+    color: var(--brand-primary);
     font-size: 0.8125rem;
     font-weight: 500;
     text-decoration: none;
@@ -613,10 +584,10 @@ const siteDescription =
 
   /* Recipe Card */
   .recipe-card {
-    background: #fff;
-    border-radius: 12px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-xl);
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
     transition:
       transform 0.3s ease,
       box-shadow 0.3s ease;
@@ -625,7 +596,7 @@ const siteDescription =
 
   .recipe-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-hover);
   }
 
   .card-image-link {
@@ -641,14 +612,14 @@ const siteDescription =
     right: 12px;
     width: 36px;
     height: 36px;
-    border-radius: 9999px;
+    border-radius: var(--radius-full);
     border: none;
-    background: rgba(0, 0, 0, 0.7);
-    color: #fff;
+    background: color-mix(in srgb, var(--text) 70%, transparent);
+    color: var(--bg-elevated);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-sm);
     cursor: pointer;
     z-index: 2;
   }
@@ -659,8 +630,8 @@ const siteDescription =
   }
 
   .recipe-bookmark[data-bookmarked="true"] {
-    background: #ef4444;
-    color: #fff;
+    background: var(--error, #ef4444);
+    color: var(--text-inverse);
   }
 
   .card-image-link img {
@@ -678,14 +649,6 @@ const siteDescription =
     position: absolute;
     bottom: 12px;
     left: 12px;
-    background: #b3123c;
-    color: white;
-    padding: 0.375rem 0.875rem;
-    border-radius: 4px;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
   }
 
   .card-body {
@@ -697,7 +660,7 @@ const siteDescription =
     font-weight: 700;
     line-height: 1.4;
     margin: 0 0 0.75rem;
-    color: #111;
+    color: var(--text);
   }
 
   .card-title a {
@@ -707,7 +670,7 @@ const siteDescription =
   }
 
   .card-title a:hover {
-    color: #ff3366;
+    color: var(--brand-primary);
   }
 
   .card-meta {
@@ -720,7 +683,7 @@ const siteDescription =
     align-items: center;
     gap: 0.375rem;
     font-size: 0.75rem;
-    color: #666;
+    color: var(--text-tertiary);
   }
 
   .meta-item svg {
@@ -735,7 +698,7 @@ const siteDescription =
   }
 
   .no-recipes p {
-    color: #666;
+    color: var(--text-tertiary);
     font-size: 1.125rem;
     margin: 0 0 1.5rem;
   }
@@ -743,70 +706,15 @@ const siteDescription =
   .reset-btn {
     display: inline-block;
     padding: 0.75rem 1.5rem;
-    background: #ff3366;
-    color: white;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
     text-decoration: none;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     font-weight: 600;
     transition: background 0.2s ease;
   }
 
   .reset-btn:hover {
-    background: #e62e5c;
-  }
-
-  /* Pagination */
-  .pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 3rem;
-  }
-
-  .page-btn {
-    padding: 0.625rem 1.25rem;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    color: #333;
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-
-  .page-btn:hover {
-    background: #111;
-    color: #fff;
-    border-color: #111;
-  }
-
-  .page-numbers {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .page-num {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 6px;
-    background: #fff;
-    border: 1px solid #ddd;
-    color: #333;
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-
-  .page-num:hover,
-  .page-num.active {
-    background: #ff3366;
-    color: #fff;
-    border-color: #ff3366;
+    background: var(--brand-primary-hover);
   }
 </style>

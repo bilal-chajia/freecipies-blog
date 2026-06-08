@@ -16,7 +16,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
           slug, label, headline, short_description, 
           images_json, published_at, author_slug, category_slug
         FROM articles 
-        WHERE is_online = 1 
+        WHERE workflow_status = 'published' AND deleted_at IS NULL
         ORDER BY published_at DESC 
         LIMIT 50
       `).all();
@@ -24,9 +24,9 @@ export const GET: APIRoute = async ({ locals, site }) => {
     }
 
     const getRecipeImageUrl = (article: any) => {
-      const cover = extractImage(article.images_json, 'cover', 1200);
-      const thumbnail = extractImage(article.images_json, 'thumbnail', 1200);
-      return cover.imageUrl || thumbnail.imageUrl || '';
+    const hero = extractImage(article.images_json, 'hero', 1200);
+    const thumbnail = extractImage(article.images_json, 'thumbnail', 1200);
+    return hero.image_url || thumbnail.image_url || '';
     };
 
     // Generate RSS feed
@@ -36,7 +36,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
      xmlns:content="http://purl.org/rss/1.0/modules/content/"
      xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
-    <title>Freecipies - Easy and Quick Recipes</title>
+    <title>SaaS Blog - Easy and Quick Recipes</title>
     <description>Discover delicious, easy-to-follow recipes with everyday ingredients. From quick weeknight dinners to impressive desserts.</description>
     <link>${siteUrl}</link>
     <atom:link href="${siteUrl}/rss.xml" rel="self" type="application/rss+xml"/>
@@ -44,11 +44,11 @@ export const GET: APIRoute = async ({ locals, site }) => {
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <image>
       <url>${siteUrl}/logo.png</url>
-      <title>Freecipies</title>
+      <title>SaaS Blog</title>
       <link>${siteUrl}</link>
     </image>
     ${articles.map(article => {
-      const imageUrl = getRecipeImageUrl(article);
+      const image_url = getRecipeImageUrl(article);
       return `
     <item>
       <title>${escapeXml(article.headline || article.label)}</title>
@@ -58,7 +58,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
       <pubDate>${article.published_at ? new Date(article.published_at).toUTCString() : new Date().toUTCString()}</pubDate>
       ${article.author_slug ? `<dc:creator>${escapeXml(article.author_slug)}</dc:creator>` : ''}
       ${article.category_slug ? `<category>${escapeXml(article.category_slug)}</category>` : ''}
-      ${imageUrl ? `<enclosure url="${escapeXml(imageUrl)}" type="image/jpeg"/>` : ''}
+      ${image_url ? `<enclosure url="${escapeXml(image_url)}" type="image/jpeg"/>` : ''}
     </item>`;
     }).join('\n')}
   </channel>
@@ -78,7 +78,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
     const fallbackRss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>Freecipies</title>
+    <title>SaaS Blog</title>
     <description>Easy and Quick Recipes</description>
     <link>${siteUrl}</link>
   </channel>

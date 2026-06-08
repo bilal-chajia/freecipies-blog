@@ -1,0 +1,14 @@
+---
+import RoundupItemList from '../../RoundupItemList.astro';
+import type { ContentBlock } from '@modules/content-blocks/contract/content-blocks.types';
+const { block, roundup_json, startNumber } = Astro.props as {
+  block: ContentBlock;
+  roundup_json?: Record<string, unknown>;
+  startNumber?: number;
+};
+---
+<RoundupItemList
+  block={block}
+  roundup_json={roundup_json}
+  startNumber={startNumber || 1}
+/>

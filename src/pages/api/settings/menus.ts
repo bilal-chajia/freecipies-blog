@@ -1,6 +1,6 @@
 /**
  * Menus API
- * 
+ *
  * GET  - Retrieve all menus or specific menu by key
  * PUT  - Update menu by key (upsert)
  * POST - Create new menu
@@ -10,153 +10,154 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import {
     getMenuByKey,
+    getMenuDocument,
     getMenuItems,
-    upsertMenu,
     createMenu,
     deleteMenuByKey,
+    saveMenuDocument,
 } from '@modules/menus/services/menus.service';
 import { transformMenuResponse } from '@modules/menus/api/helpers';
-import type { MenuItem } from '@modules/menus/types/menus.types';
+import type { MenuDocument, MenuItem } from '@modules/menus/types/menus.types';
 import { validateBody, validateQuery } from '@shared/validation';
 import { SaveMenusSchema, CreateMenuSchema, DeleteMenuQuery } from '@shared/validation/schemas/settings';
+import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils/error-handler';
+
+const getSettingsCache = () => env?.SETTINGS_CACHE ?? env?.SESSION ?? null;
 
 /**
  * GET /api/settings/menus
  * GET /api/settings/menus?key=header
  */
-export const GET: APIRoute = async ({ url, locals }) => {
+export const GET: APIRoute = async ({ url }) => {
     try {
         const db = env?.DB;
         if (!db) {
-            return new Response(JSON.stringify({ error: 'Database not available' }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not available', 500)
+            );
+            return new Response(body, { status, headers });
         }
 
         const key = url.searchParams.get('key');
 
         if (key) {
-            // Get specific menu
-            const menu = await getMenuByKey(db, key);
+            const menu = await getMenuByKey(db, key, { cache: getSettingsCache() });
             if (!menu) {
-                // Return default items for known keys
-                const items = await getMenuItems(db, key);
-                return new Response(JSON.stringify({
-                    key,
-                    items,
-                }), {
-                    status: 200,
-                    headers: { 'Content-Type': 'application/json' },
-                });
+                const items = await getMenuItems(db, key, { cache: getSettingsCache() });
+                const { body, status, headers } = formatSuccessResponse({ key, items });
+                return new Response(body, { status, headers });
             }
-            return new Response(JSON.stringify(transformMenuResponse(menu)), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            const { body, status, headers } = formatSuccessResponse(transformMenuResponse(menu));
+            return new Response(body, { status, headers });
         }
 
-        // Get all menus (for admin panel compatibility, return headerMenu/footerMenu format)
-        const headerItems = await getMenuItems(db, 'header');
-        const footerItems = await getMenuItems(db, 'footer');
+        const headerDocument = await getMenuDocument(db, 'header', { cache: getSettingsCache() });
+        const footerDocument = await getMenuDocument(db, 'footer', { cache: getSettingsCache() });
+        const mobileDocument = await getMenuDocument(db, 'mobile', { cache: getSettingsCache() });
+        const sidebarDocument = await getMenuDocument(db, 'sidebar', { cache: getSettingsCache() });
 
-        return new Response(JSON.stringify({
-            headerMenu: headerItems,
-            footerMenu: footerItems,
-        }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
+        const { body, status, headers } = formatSuccessResponse({
+            menu_header: headerDocument,
+            menu_footer: footerDocument,
+            menu_mobile: mobileDocument,
+            menu_sidebar: sidebarDocument,
         });
+        return new Response(body, { status, headers });
     } catch (error) {
         console.error('Error fetching menus:', error);
-        return new Response(JSON.stringify({ error: 'Failed to fetch menus' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to fetch menus', 500)
+        );
+        return new Response(body, { status, headers });
     }
 };
 
 /**
  * PUT /api/settings/menus
  * Updates header and/or footer menu (for admin panel compatibility)
- * 
- * Body: { headerMenu?: MenuItem[], footerMenu?: MenuItem[] }
+ *
+ * Body: { menu_header?: MenuDocument, menu_footer?: MenuDocument, menu_mobile?: MenuDocument, menu_sidebar?: MenuDocument }
  */
-export const PUT: APIRoute = async ({ request, locals }) => {
+export const PUT: APIRoute = async ({ request }) => {
     try {
         const db = env?.DB;
         if (!db) {
-            return new Response(JSON.stringify({ error: 'Database not available' }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not available', 500)
+            );
+            return new Response(body, { status, headers });
         }
 
         const body = await validateBody(request, SaveMenusSchema);
 
-        // Update header menu if provided
-        if (body.headerMenu !== undefined) {
-            await upsertMenu(db, 'header', {
-                label: 'Header Menu',
-                items: body.headerMenu as MenuItem[],
-                location: 'header',
-                description: 'Primary navigation in site header',
+        if (body.menu_header !== undefined) {
+            await saveMenuDocument(db, 'header', body.menu_header as MenuDocument, {
+                cache: getSettingsCache(),
             });
         }
 
-        // Update footer menu if provided
-        if (body.footerMenu !== undefined) {
-            await upsertMenu(db, 'footer', {
-                label: 'Footer Menu',
-                items: body.footerMenu as MenuItem[],
-                location: 'footer',
-                description: 'Footer navigation links',
+        if (body.menu_footer !== undefined) {
+            await saveMenuDocument(db, 'footer', body.menu_footer as MenuDocument, {
+                cache: getSettingsCache(),
             });
         }
 
-        // Return updated menus
-        const headerItems = await getMenuItems(db, 'header');
-        const footerItems = await getMenuItems(db, 'footer');
+        if (body.menu_mobile !== undefined) {
+            await saveMenuDocument(db, 'mobile', body.menu_mobile as MenuDocument, {
+                cache: getSettingsCache(),
+            });
+        }
 
-        return new Response(JSON.stringify({
-            success: true,
-            headerMenu: headerItems,
-            footerMenu: footerItems,
-        }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
+        if (body.menu_sidebar !== undefined) {
+            await saveMenuDocument(db, 'sidebar', body.menu_sidebar as MenuDocument, {
+                cache: getSettingsCache(),
+            });
+        }
+
+        const headerDocument = await getMenuDocument(db, 'header', { cache: getSettingsCache() });
+        const footerDocument = await getMenuDocument(db, 'footer', { cache: getSettingsCache() });
+        const mobileDocument = await getMenuDocument(db, 'mobile', { cache: getSettingsCache() });
+        const sidebarDocument = await getMenuDocument(db, 'sidebar', { cache: getSettingsCache() });
+
+        const { body: responseBody, status, headers } = formatSuccessResponse({
+            menu_header: headerDocument,
+            menu_footer: footerDocument,
+            menu_mobile: mobileDocument,
+            menu_sidebar: sidebarDocument,
         });
-    } catch (error: any) {
+        return new Response(responseBody, { status, headers });
+    } catch (error: unknown) {
         console.error('Error updating menus:', error);
 
-        if (error.code === 'VALIDATION_ERROR') {
-            return new Response(JSON.stringify({ error: error.message }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-            });
+        const err = error as { code?: string; message?: string };
+        if (err.code === 'VALIDATION_ERROR') {
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.VALIDATION_ERROR, err.message || 'Validation failed', 400)
+            );
+            return new Response(body, { status, headers });
         }
 
-        return new Response(JSON.stringify({ error: 'Failed to update menus' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to update menus', 500)
+        );
+        return new Response(body, { status, headers });
     }
 };
 
 /**
  * POST /api/settings/menus
  * Create a new menu
- * 
+ *
  * Body: { key: string, label: string, items?: MenuItem[], location?: string }
  */
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
     try {
         const db = env?.DB;
         if (!db) {
-            return new Response(JSON.stringify({ error: 'Database not available' }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not available', 500)
+            );
+            return new Response(body, { status, headers });
         }
 
         const body = await validateBody(request, CreateMenuSchema);
@@ -164,70 +165,73 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const menu = await createMenu(db, {
             key: body.key,
             label: body.label,
-            items: body.items,
+            items: body.items as MenuItem[] | undefined,
             location: body.location,
             description: body.description,
+        }, {
+            cache: getSettingsCache(),
         });
 
         if (!menu) {
-            return new Response(JSON.stringify({ error: 'Failed to create menu' }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to create menu', 500)
+            );
+            return new Response(body, { status, headers });
         }
 
-        return new Response(JSON.stringify({
-            success: true,
+        const { body: responseBody, status, headers } = formatSuccessResponse({
             menu: transformMenuResponse(menu),
-        }), {
-            status: 201,
-            headers: { 'Content-Type': 'application/json' },
         });
-    } catch (error: any) {
+        return new Response(responseBody, { status, headers });
+    } catch (error: unknown) {
         console.error('Error creating menu:', error);
 
-        if (error.code === 'VALIDATION_ERROR') {
-            return new Response(JSON.stringify({ error: error.message }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-            });
+        const err = error as { code?: string; message?: string };
+        if (err.code === 'VALIDATION_ERROR') {
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.VALIDATION_ERROR, err.message || 'Validation failed', 400)
+            );
+            return new Response(body, { status, headers });
         }
 
-        return new Response(JSON.stringify({ error: 'Failed to create menu' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to create menu', 500)
+        );
+        return new Response(body, { status, headers });
     }
 };
 
 /**
  * DELETE /api/settings/menus?key=xxx
  */
-export const DELETE: APIRoute = async ({ url, locals }) => {
+export const DELETE: APIRoute = async ({ url }) => {
     try {
         const db = env?.DB;
         if (!db) {
-            return new Response(JSON.stringify({ error: 'Database not available' }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not available', 500)
+            );
+            return new Response(body, { status, headers });
         }
 
         const { key } = validateQuery(url.searchParams, DeleteMenuQuery);
 
-        const deleted = await deleteMenuByKey(db, key);
+        const deleted = await deleteMenuByKey(db, key, { cache: getSettingsCache() });
 
-        return new Response(JSON.stringify({
-            success: deleted,
-        }), {
-            status: deleted ? 200 : 404,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        if (!deleted) {
+            const { body, status, headers } = formatErrorResponse(
+                new AppError(ErrorCodes.NOT_FOUND, 'Menu not found', 404)
+            );
+            return new Response(body, { status, headers });
+        }
+
+        const { body, status, headers } = formatSuccessResponse({ deleted });
+        return new Response(body, { status, headers });
     } catch (error) {
         console.error('Error deleting menu:', error);
-        return new Response(JSON.stringify({ error: 'Failed to delete menu' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        const { body, status, headers } = formatErrorResponse(
+            new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to delete menu', 500)
+        );
+        return new Response(body, { status, headers });
     }
 };

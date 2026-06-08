@@ -59,7 +59,7 @@ if (!tag) return Astro.redirect("/404");
           articles.length > 0 ? (
             <div class="recipes-grid">
               {articles.map((article) => (
-                <RecipeCard article={article} recipeJson={article.recipeJson} />
+                <RecipeCard article={article} recipe_json={article.recipe_json} />
               ))}
             </div>
           ) : (
@@ -126,7 +126,7 @@ if (!tag) return Astro.redirect("/404");
   }
 
   .section-container {
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 1.5rem);
   }

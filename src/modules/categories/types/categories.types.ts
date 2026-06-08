@@ -3,64 +3,71 @@
  */
 
 import type { Category } from '../schema/categories.schema';
-import type { ExtractedImage, ExtractedSeo } from '@shared/utils';
+import type { ExtractedImage } from '@shared/utils';
 import type { CategoryImagesJson } from '../../articles/types/images.types';
 
 export type CategoryImages = CategoryImagesJson;
 
-export type HydratedCategory = Category & ExtractedImage & ExtractedSeo & {
+export type HydratedCategory = Category & ExtractedImage & {
   route: string;
-  isFavorite?: boolean; // Alias for isFeatured
-  numEntriesPerPage?: number;
+  is_favorite?: boolean; // Legacy UI alias for is_featured
+  meta_title?: string | null;
+  meta_description?: string | null;
+  no_index?: boolean;
+  canonical?: string;
+  og_image?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  twitter_card?: string;
+  posts_per_page?: number;
   tldr?: string;
-  layoutMode?: 'grid' | 'list' | 'masonry';
-  cardStyle?: 'compact' | 'full' | 'minimal';
-  showInNav?: boolean;
-  showInFooter?: boolean;
-  showSidebar?: boolean;
-  showFilters?: boolean;
-  showBreadcrumb?: boolean;
-  showPagination?: boolean;
-  sortBy?: 'publishedAt' | 'title' | 'viewCount';
-  articleSortOrder?: 'asc' | 'desc';
-  headerStyle?: 'hero' | 'minimal' | 'none';
-  featuredArticleId?: number;
-  showFeaturedRecipe?: boolean;
-  showHeroCta?: boolean;
-  heroCtaText?: string;
-  heroCtaLink?: string;
+  layout_mode?: 'grid' | 'list' | 'masonry';
+  card_style?: 'compact' | 'full' | 'minimal';
+  show_in_nav?: boolean;
+  show_in_footer?: boolean;
+  show_sidebar?: boolean;
+  show_filters?: boolean;
+  show_breadcrumb?: boolean;
+  show_pagination?: boolean;
+  article_sort_by?: 'published_at' | 'title' | 'view_count';
+  article_sort_order?: 'asc' | 'desc';
+  header_style?: 'hero' | 'minimal' | 'none';
+  featured_article_id?: number;
+  show_featured_recipe?: boolean;
+  show_hero_cta?: boolean;
+  hero_cta_text?: string;
+  hero_cta_link?: string;
 };
 
 export interface CategoryConfig {
-  showInNav?: boolean;
-  showInFooter?: boolean;
-  layout?: 'grid' | 'list' | 'masonry';
-  postsPerPage?: number;
-  cardStyle?: 'compact' | 'full' | 'minimal';
-  showSidebar?: boolean;
-  showFilters?: boolean;
-  showBreadcrumb?: boolean;
-  showPagination?: boolean;
-  sortBy?: 'publishedAt' | 'title' | 'viewCount';
-  articleSortOrder?: 'asc' | 'desc';
-  headerStyle?: 'hero' | 'minimal' | 'none';
+  show_in_nav?: boolean;
+  show_in_footer?: boolean;
+  layout_mode?: 'grid' | 'list' | 'masonry';
+  posts_per_page?: number;
+  card_style?: 'compact' | 'full' | 'minimal';
+  show_sidebar?: boolean;
+  show_filters?: boolean;
+  show_breadcrumb?: boolean;
+  show_pagination?: boolean;
+  article_sort_by?: 'published_at' | 'title' | 'view_count';
+  article_sort_order?: 'asc' | 'desc';
+  header_style?: 'hero' | 'minimal' | 'none';
   tldr?: string;
-  numEntriesPerPage?: number;
-  featuredArticleId?: number;
-  showFeaturedRecipe?: boolean;
-  showHeroCta?: boolean;
-  heroCtaText?: string;
-  heroCtaLink?: string;
+  featured_article_id?: number;
+  show_featured_recipe?: boolean;
+  show_hero_cta?: boolean;
+  hero_cta_text?: string;
+  hero_cta_link?: string;
 }
 
 export interface CategorySeo {
-  metaTitle?: string;
-  metaDescription?: string;
-  noIndex?: boolean;
+  meta_title?: string;
+  meta_description?: string;
+  no_index?: boolean;
   canonical?: string;
-  ogImage?: string;
-  ogTitle?: string;
-  ogDescription?: string;
-  twitterCard?: string;
+  og_image?: string;
+  og_title?: string;
+  og_description?: string;
+  twitter_card?: string;
   robots?: string;
 }

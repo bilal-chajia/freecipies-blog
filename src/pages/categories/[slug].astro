@@ -32,16 +32,16 @@ if (slug !== normalizedSlug) {
 }
 slug = normalizedSlug; // Use normalized slug going forward
 
-// Helper: Check noIndex from category seoJson
+// Helper: Check noIndex from category seo_json
 function shouldNoIndex(category: any): boolean {
-  const seoJson = safeParseJson<{ noIndex?: boolean }>(category.seoJson);
-  return seoJson?.noIndex === true;
+  const seo_json = safeParseJson<{ no_index?: boolean }>(category.seo_json);
+  return seo_json?.no_index === true;
 }
 
 // Helper: Get OG image from category
 function getOgImage(category: any): string | undefined {
-  const seoJson = safeParseJson<{ ogImage?: string }>(category.seoJson);
-  return seoJson?.ogImage || category.imageUrl;
+  const seo_json = safeParseJson<{ og_image?: string }>(category.seo_json);
+  return seo_json?.og_image || category.image_url;
 }
 
 // Parse query parameters - only pagination is user-controllable
@@ -55,7 +55,7 @@ const currentPage = Math.max(
 let allCategories: any[] = [];
 try {
   if (env.DB) {
-    const raw = await getCategories(env.DB, { isOnline: true });
+    const raw = await getCategories(env.DB, { workflow_status: 'published' });
     allCategories = hydrateCategories(raw);
   }
 } catch (e) {
@@ -69,17 +69,17 @@ if (!category) {
 }
 
 // Display settings come from admin config only (no user overrides)
-const perPage = category.numEntriesPerPage || 12;
-const sortBy = category.sortBy || "publishedAt";
-const sortOrder = category.articleSortOrder || "desc";
-const layoutMode = category.layoutMode || "grid";
-const showPagination = category.showPagination !== false;
-const showBreadcrumb = category.showBreadcrumb !== false;
-const showSidebar = category.showSidebar !== false;
-const headerStyle = category.headerStyle || "hero";
-const cardStyle = category.cardStyle || "full";
+const perPage = category.posts_per_page || 12;
+const sortBy = category.article_sort_by || "published_at";
+const sort_order = category.article_sort_order || "desc";
+const layoutMode = category.layout_mode || "grid";
+const showPagination = category.show_pagination !== false;
+const showBreadcrumb = category.show_breadcrumb !== false;
+const showSidebar = category.show_sidebar !== false;
+const headerStyle = category.header_style || "hero";
+const cardStyle = category.card_style || "full";
 const showHeader = headerStyle !== "none";
-const showFeaturedRecipe = category.showFeaturedRecipe !== false;
+const showFeaturedRecipe = category.show_featured_recipe !== false;
 
 const breadcrumbItems = showBreadcrumb
   ? [{ label: "Categories", href: "/categories" }, { label: category.label }]
@@ -94,11 +94,11 @@ try {
   if (env.DB) {
     const result = await getArticles(env.DB, {
       categorySlug: slug,
-      isOnline: true,
+      workflow_status: 'published',
       limit: perPage,
       offset,
       sortBy,
-      sortOrder,
+      sort_order,
     });
     articles = result.items;
     total = result.total;
@@ -112,12 +112,12 @@ let featuredArticle: HydratedArticle | null = null;
 
 if (currentPage === 1 && headerStyle === "hero" && showFeaturedRecipe) {
   try {
-    if (env.DB && typeof category.featuredArticleId === "number") {
-      const candidate = await getArticleById(env.DB, category.featuredArticleId);
+    if (env.DB && typeof category.featured_article_id === "number") {
+      const candidate = await getArticleById(env.DB, category.featured_article_id);
       if (
         candidate &&
-        (candidate as any).isOnline &&
-        (candidate as any).categoryId === category.id
+        (candidate as any).workflow_status === 'published' &&
+        (candidate as any).category_id === category.id
       ) {
         featuredArticle = candidate;
       }
@@ -145,21 +145,21 @@ if (articles.length === 0 && otherCategories.length > 0) {
   for (const otherCat of otherCategories.slice(0, 2)) {
     const { items: others } = await getArticles(env.DB, {
       categorySlug: otherCat.slug,
-      isOnline: true,
+      workflow_status: 'published',
       limit: 2,
-      sortBy: "publishedAt",
-      sortOrder: "desc",
+      sortBy: "published_at",
+      sort_order: "desc",
     });
     featuredFromOthers = [...featuredFromOthers, ...others];
   }
-  }
+}
 
 // Base URL for pagination
 const baseUrl = `/categories/${slug}`;
 
 // SEO Configuration
-const pageTitle = category.metaTitle || category.headline || category.label;
-const pageDescription = category.metaDescription || category.shortDescription;
+const pageTitle = category.meta_title || category.headline || category.label;
+const pageDescription = category.meta_description || category.short_description;
 const ogImage = getOgImage(category);
 const noIndex = shouldNoIndex(category);
 
@@ -169,18 +169,18 @@ const categoryJsonLd = {
   "@type": "CollectionPage",
   "name": pageTitle,
   "description": pageDescription,
-  "url": `${Astro.site?.origin || "https://freecipies.com"}/categories/${slug}`,
+  "url": `${Astro.site?.origin || "https://saas-blog.com"}/categories/${slug}`,
   "isPartOf": {
     "@type": "WebSite",
-    "name": "Freecipies",
-    "url": Astro.site?.origin || "https://freecipies.com"
+    "name": "SaaS Blog",
+    "url": Astro.site?.origin || "https://saas-blog.com"
   },
   "mainEntity": {
     "@type": "ItemList",
     "itemListElement": gridArticles.slice(0, 10).map((article: any, index: number) => ({
       "@type": "ListItem",
       "position": index + 1,
-      "url": `${Astro.site?.origin || "https://freecipies.com"}/recipes/${article.slug}`,
+      "url": `${Astro.site?.origin || "https://saas-blog.com"}/recipes/${article.slug}`,
       "name": article.headline || article.title
     }))
   },
@@ -223,7 +223,7 @@ const categoryJsonLd = {
     <div class="container">
       <div class="section-header">
         <h2 id="category-title" class="section-title">
-          {category.collectionTitle || `${category.label} Recipes`}
+          {category.collection_title || `${category.label} Recipes`}
         </h2>
         <span class="recipe-count" aria-live="polite" aria-atomic="true">
           {total} recipe{total !== 1 ? 's' : ''}
@@ -317,16 +317,12 @@ const categoryJsonLd = {
                 role="listitem"
               >
                 <div class="chip-svg">
-                  {cat.iconSvg ? (
-                    <Fragment set:html={cat.iconSvg} />
-                  ) : (
-                    <div
-                      class="chip-placeholder"
-                      style={`background-color: ${cat.color || "#ff3366"}`}
-                    >
-                      <span>{cat.label.charAt(0)}</span>
-                    </div>
-                  )}
+                  <div
+                    class="chip-placeholder"
+                    style={`background-color: ${cat.color || "#ff3366"}`}
+                  >
+                    <span>{cat.label.charAt(0)}</span>
+                  </div>
                 </div>
                 <span class="chip-label">{cat.label}</span>
               </a>
@@ -395,7 +391,7 @@ const categoryJsonLd = {
 
   /* ---- Layout Container ---- */
   .container {
-    max-width: 1280px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 2rem);
   }
@@ -703,7 +699,7 @@ const categoryJsonLd = {
   .newsletter-bar {
     position: relative;
     z-index: 1;
-    max-width: 1280px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 2rem);
     display: flex;

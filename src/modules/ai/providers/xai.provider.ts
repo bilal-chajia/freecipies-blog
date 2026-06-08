@@ -7,8 +7,10 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
+import { normalizeOpenAiModels } from '../discovery/normalize';
 
 const XAI_API_URL = 'https://api.x.ai/v1/chat/completions';
+const XAI_MODELS_URL = 'https://api.x.ai/v1/models';
 
 interface XAIResponse {
     id?: string;
@@ -38,7 +40,7 @@ export class XAIProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'grok-4.1';
 
         const body = {
@@ -109,7 +111,7 @@ export class XAIProvider implements IAIProvider {
 
     async validateApiKey(apiKey: string): Promise<boolean> {
         try {
-            const response = await fetch('https://api.x.ai/v1/models', {
+            const response = await fetch(XAI_MODELS_URL, {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                 },
@@ -117,6 +119,20 @@ export class XAIProvider implements IAIProvider {
             return response.ok;
         } catch {
             return false;
+        }
+    }
+
+    async listModels(apiKey: string) {
+        try {
+            const response = await fetch(XAI_MODELS_URL, {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+            });
+            if (!response.ok) return { supported: true, models: [] };
+            return { supported: true, models: normalizeOpenAiModels(await response.json()) };
+        } catch {
+            return { supported: true, models: [] };
         }
     }
 }

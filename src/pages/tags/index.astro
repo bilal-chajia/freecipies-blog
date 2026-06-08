@@ -1,7 +1,7 @@
 ---
 import { env } from 'cloudflare:workers';
-import Layout from "../../layouts/Layout.astro";
-import TagCard from "../../components/TagCard.astro";
+import Layout from "@layouts/Layout.astro";
+import TagCard from "@components/TagCard.astro";
 import { getTags } from "@modules/tags";
 import { getArticles } from "@modules/articles";
 import { hydrateTag } from "@shared/utils";
@@ -34,7 +34,7 @@ const sortedTags = [...tags].sort((a, b) => {
   );
 });
 
-const pageTitle = "Recipe Tags - Freecipies";
+const pageTitle = "Recipe Tags - SaaS Blog";
 const pageDescription =
   "Browse recipes by tags. Find exactly what you're looking for with our organized recipe tags.";
 ---
@@ -116,7 +116,7 @@ const pageDescription =
   }
 
   .section-container {
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 1.5rem);
   }

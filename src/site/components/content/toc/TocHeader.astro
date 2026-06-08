@@ -1,0 +1,154 @@
+---
+/**
+ * TocHeader - The header part of the Table of Contents
+ */
+
+interface Props {
+    showJumpButton: boolean;
+    collapsible: boolean;
+    accentColor?: string;
+}
+
+const { showJumpButton, collapsible, accentColor = "var(--info)" } = Astro.props;
+---
+
+<div class="toc-header">
+    <div class="toc-title-group">
+        <svg
+            class="toc-book-icon"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style={`color: ${accentColor};`}
+        >
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+            <path d="M8 2v20"></path>
+        </svg>
+        <span class="toc-label">Contents</span>
+    </div>
+    
+    <div class="toc-header-actions">
+        {
+            showJumpButton && (
+                <a href="#recipe-card" class="toc-jump-btn">
+                    Jump
+                </a>
+            )
+        }
+        {
+            collapsible && (
+                <button
+                    type="button"
+                    class="toc-toggle-btn toc-show-more-btn"
+                    aria-label="Show all"
+                    aria-expanded="false"
+                >
+                    <span class="toc-show-more-label">Show all</span>
+                    <svg
+                        class="toc-show-more-icon"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+            )
+        }
+    </div>
+</div>
+
+<style>
+    .toc-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-5) var(--space-6) var(--space-3);
+        user-select: none;
+    }
+
+    .toc-title-group {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
+    .toc-label {
+        font-weight: var(--font-bold);
+        font-size: var(--text-lg);
+        color: var(--text);
+    }
+
+    .toc-header-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+
+    .toc-jump-btn {
+        background-color: var(--toc-accent, var(--warning));
+        color: var(--text-inverse);
+        font-size: var(--text-xs);
+        font-weight: var(--font-bold);
+        padding: var(--space-2) var(--space-3);
+        border-radius: var(--radius-sm);
+        text-decoration: none;
+        text-transform: uppercase;
+        transition: opacity var(--transition-fast);
+    }
+    
+    .toc-jump-btn:hover {
+        opacity: 0.9;
+    }
+
+    .toc-toggle-btn {
+        display: none; /* Controlled by parent class .can-truncate */
+        align-items: center;
+        gap: var(--space-1);
+        font-size: var(--text-xs);
+        font-weight: var(--font-bold);
+        color: var(--text-inverse);
+        background: var(--text);
+        border: none;
+        border-radius: var(--radius-full);
+        padding: var(--space-1) var(--space-3);
+        cursor: pointer;
+        transition: background-color var(--transition-fast), color var(--transition-fast);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-subtle);
+    }
+
+    :global(.blog-toc.can-truncate) .toc-toggle-btn {
+        display: inline-flex;
+    }
+
+    .toc-toggle-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        background: var(--neutral-950);
+    }
+
+    .toc-show-more-icon {
+        transition: transform var(--transition-base);
+    }
+
+    :global(.blog-toc.is-expanded) .toc-show-more-icon {
+        transform: rotate(180deg);
+    }
+
+    @media (max-width: 768px) {
+        .toc-header {
+            padding: var(--space-3) var(--space-4);
+        }
+    }
+</style>

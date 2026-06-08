@@ -1,0 +1,92 @@
+import type { D1Database } from '@cloudflare/workers-types';
+import { AiSettingsSchema } from './settings-schema';
+import type { AiSettings, BuiltInProvider, CustomProviderConfig, ProviderConfig } from './types';
+import { DEFAULT_AI_SETTINGS } from './types';
+
+const AI_SETTINGS_KEY = 'ai_settings';
+
+export type AiSettingsPatch = Omit<Partial<AiSettings>, 'providers' | 'custom_providers'> & {
+    providers?: Partial<Record<BuiltInProvider, Partial<ProviderConfig>>>;
+    custom_providers?: Record<string, Partial<CustomProviderConfig>>;
+};
+
+function mergeProviderMap<T extends Record<string, object>>(
+    current: T,
+    patch: Record<string, object> | undefined,
+): T {
+    if (!patch) return current;
+    const out: Record<string, object> = { ...current };
+    for (const [id, cfg] of Object.entries(patch)) {
+        out[id] = { ...(current[id] ?? {}), ...cfg };
+    }
+    return out as T;
+}
+
+export function mergeAiSettings(current: AiSettings, patch: AiSettingsPatch): AiSettings {
+    return {
+        ...current,
+        ...patch,
+        providers: mergeProviderMap(
+            current.providers,
+            patch.providers as Record<string, object> | undefined,
+        ) as AiSettings['providers'],
+        custom_providers: mergeProviderMap(
+            current.custom_providers,
+            patch.custom_providers as Record<string, object> | undefined,
+        ) as AiSettings['custom_providers'],
+    };
+}
+
+export async function getAiSettings(db: D1Database): Promise<AiSettings> {
+    try {
+        const row = await db
+            .prepare('SELECT value FROM site_settings WHERE key = ?')
+            .bind(AI_SETTINGS_KEY)
+            .first<{ value: string }>();
+
+        if (row?.value) {
+            const parsed = AiSettingsSchema.safeParse(JSON.parse(row.value));
+            if (parsed.success) return parsed.data as AiSettings;
+            console.error('Invalid ai_settings blob, using defaults:', parsed.error.issues);
+        }
+    } catch (error) {
+        console.error('Failed to load AI settings:', error);
+    }
+
+    return DEFAULT_AI_SETTINGS;
+}
+
+async function writeAiSettings(db: D1Database, settings: AiSettings): Promise<void> {
+    const validated = AiSettingsSchema.parse(settings);
+    await db
+        .prepare(`
+            INSERT INTO site_settings (key, value, category, type, updated_at)
+            VALUES (?, ?, 'ai', 'json', CURRENT_TIMESTAMP)
+            ON CONFLICT(key) DO UPDATE SET
+              value = excluded.value,
+              updated_at = CURRENT_TIMESTAMP
+        `)
+        .bind(AI_SETTINGS_KEY, JSON.stringify(validated))
+        .run();
+}
+
+export async function saveAiSettings(db: D1Database, patch: AiSettingsPatch): Promise<boolean> {
+    try {
+        const merged = mergeAiSettings(await getAiSettings(db), patch);
+        await writeAiSettings(db, merged);
+        return true;
+    } catch (error) {
+        console.error('Failed to save AI settings:', error);
+        return false;
+    }
+}
+
+export async function replaceAiSettings(db: D1Database, settings: AiSettings): Promise<boolean> {
+    try {
+        await writeAiSettings(db, settings);
+        return true;
+    } catch (error) {
+        console.error('Failed to replace AI settings:', error);
+        return false;
+    }
+}

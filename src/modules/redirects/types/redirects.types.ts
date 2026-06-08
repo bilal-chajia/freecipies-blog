@@ -5,7 +5,7 @@
 import type { Redirect } from '../schema/redirects.schema';
 
 export interface RedirectFilter {
-  isActive?: boolean;
+  is_active?: boolean;
   search?: string;
 }
 

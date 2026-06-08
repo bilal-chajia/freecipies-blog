@@ -1,10 +1,11 @@
+import { z } from 'zod';
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import {
     getArticleById,
     updateArticleById,
     deleteArticleById,
-    toggleOnlineById,
+    setWorkflowStatusById,
     toggleFavoriteById,
     setArticleTagsById,
     syncCachedFields
@@ -57,6 +58,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
  */
 export const PUT: APIRoute = async ({ request, params, locals }) => {
     const { id } = validateParams(params, IdParam);
+    const url = new URL(request.url);
 
     try {
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
@@ -66,38 +68,29 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        const requestBody = await validateBody(request, UpdateArticleSchema);
-        const { selectedTags, ...rest } = requestBody ?? {};
+        const updateData = await validateBody(request, UpdateArticleSchema);
 
-        // Standardized normalization using helper
-        const transformedData = transformArticleRequestBody(rest);
+        if (!env?.DB) {
+            throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
+        }
 
-        const success = await updateArticleById(env.DB, id, transformedData);
+        const transformed = transformArticleRequestBody(updateData);
+        const updated = await updateArticleById(env.DB, id, transformed);
 
-        if (!success) {
+        if (!updated) {
             const { body, status, headers } = formatErrorResponse(
                 new AppError(ErrorCodes.NOT_FOUND, 'Article not found', 404)
             );
             return new Response(body, { status, headers });
         }
 
-        // Tags (articles_to_tags + cached_tags_json)
-        if (selectedTags !== undefined) {
-            const tagIds = Array.isArray(selectedTags)
-                ? selectedTags
-                    .map((value: unknown) => Number(value))
-                    .filter((value: number) => Number.isFinite(value) && value > 0)
-                : [];
-            await setArticleTagsById(env.DB, id, tagIds);
+        if (updateData.selectedTags) {
+            await setArticleTagsById(env.DB, id, updateData.selectedTags);
         }
 
-        // Automatically synchronize cached fields (zero-join optimization)
         await syncCachedFields(env.DB, id, env.SITE_URL);
 
-        // Fetch updated article to return
-        const updatedArticle = await getArticleById(env.DB, id);
-
-        const { body, status, headers } = formatSuccessResponse(updatedArticle);
+        const { body, status, headers } = formatSuccessResponse(updated);
         return new Response(body, { status, headers });
     } catch (error) {
         console.error('Error updating article:', error);
@@ -125,20 +118,20 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        // Get article to find its category before deletion
-        // const article = await getArticleById(env.DB, id);
-        // const categoryId = (article as any)?.categoryId;
+        if (!env?.DB) {
+            throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
+        }
 
-        const success = await deleteArticleById(env.DB, id);
+        const deleted = await deleteArticleById(env.DB, id);
 
-        if (!success) {
+        if (!deleted) {
             const { body, status, headers } = formatErrorResponse(
                 new AppError(ErrorCodes.NOT_FOUND, 'Article not found or already deleted', 404)
             );
             return new Response(body, { status, headers });
         }
 
-        const { body, status, headers } = formatSuccessResponse({ deleted: true, id });
+        const { body, status, headers } = formatSuccessResponse({ id, success: true });
         return new Response(body, { status, headers });
     } catch (error) {
         console.error('Error deleting article:', error);
@@ -153,8 +146,8 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
 
 /**
  * PATCH /api/admin/articles/:id
- * Handle toggle operations (toggle-online, toggle-favorite)
- * Query param: action=toggle-online | toggle-favorite
+ * Handle toggle and status operations (set-workflow-status, toggle-favorite)
+ * Query param: action=set-workflow-status | toggle-favorite
  */
 export const PATCH: APIRoute = async ({ request, params, locals }) => {
     const { id } = validateParams(params, IdParam);
@@ -169,10 +162,23 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
             return createAuthError('Insufficient permissions', 403);
         }
 
-        let result: { isOnline?: boolean; isFavorite?: boolean } | null = null;
+        let result: { workflow_status?: string; is_favorite?: boolean } | null = null;
 
-        if (action === 'toggle-online') {
-            result = await toggleOnlineById(env.DB, id);
+        if (action === 'set-workflow-status') {
+            const body = await request.json().catch(() => ({}));
+            const parseResult = z.object({
+                status: z.enum(['draft', 'in_review', 'scheduled', 'published', 'archived'])
+            }).safeParse(body);
+
+            if (!parseResult.success) {
+                const { body: errBody, status: errStatus, headers: errHeaders } = formatErrorResponse(
+                    new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid workflow status', 400)
+                );
+                return new Response(errBody, { status: errStatus, headers: errHeaders });
+            }
+
+            const { status: newStatus } = parseResult.data;
+            result = await setWorkflowStatusById(env.DB, id, newStatus);
         } else if (action === 'toggle-favorite') {
             result = await toggleFavoriteById(env.DB, id);
         }
@@ -184,19 +190,19 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
             return new Response(body, { status, headers });
         }
 
-        // If toggled online, also sync cached fields to be safe (though not strictly required for just online toggle)
-        if (action === 'toggle-online') {
+        // If workflow status is set to published, also sync cached fields
+        if (action === 'set-workflow-status' && result && result.workflow_status === 'published') {
             await syncCachedFields(env.DB, id, env.SITE_URL);
         }
 
         const { body, status, headers } = formatSuccessResponse({ id, ...result });
         return new Response(body, { status, headers });
     } catch (error) {
-        console.error('Error toggling article status:', error);
+        console.error('Error modifying article status:', error);
         const { body, status, headers } = formatErrorResponse(
             error instanceof AppError
                 ? error
-                : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to toggle article status', 500)
+                : new AppError(ErrorCodes.DATABASE_ERROR, 'Failed to modify article status', 500)
         );
         return new Response(body, { status, headers });
     }

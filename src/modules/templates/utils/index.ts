@@ -4,3 +4,4 @@
 
 export * from './placeholders';
 export * from './fontLoader';
+export * from './elementSerialization';

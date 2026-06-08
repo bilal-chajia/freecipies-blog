@@ -1,0 +1,239 @@
+---
+import type { HydratedArticle, RecipeContent } from "@modules/articles";
+import { extractImage, getImageSrcSet } from "@shared/utils";
+import { parseCachedRecipe } from "@modules/articles/utils/cached-fields";
+
+interface Props {
+  currentSlug?: string;
+  limit?: number;
+  recipes?: HydratedArticle[];
+}
+
+const { currentSlug = "", limit = 5, recipes = [] } = Astro.props as Props;
+const visibleRecipes = recipes
+  .filter((recipe) => recipe.slug !== currentSlug)
+  .slice(0, limit);
+---
+
+<div class="popular-recipes-widget">
+  <div class="widget-header">
+    <span class="header-dot"></span>
+    <h3>Popular Recipes</h3>
+  </div>
+
+  {
+    visibleRecipes.length > 0 ? (
+      <div class="recipe-list">
+        {visibleRecipes.map((recipe) => {
+          const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
+          const cookTime = cachedRecipe?.cook_time_minutes ?? null;
+          const thumbnail = extractImage(recipe.images_json, "thumbnail", 120);
+          const hero = extractImage(recipe.images_json, "hero", 120);
+          const slotName = thumbnail.image_url ? "thumbnail" : "hero";
+          const selected = thumbnail.image_url ? thumbnail : hero;
+          const srcSet = getImageSrcSet(recipe.images_json, slotName);
+          const sizes = "80px";
+          return (
+            <a href={`/recipes/${recipe.slug}`} class="recipe-item">
+              <div class="recipe-content">
+                <h4 class="recipe-title">{recipe.label}</h4>
+                <div class="recipe-meta">
+                  {recipe.categoryLabel && (
+                    <span
+                      class="category"
+                      style={`color: ${recipe.category?.color || "#666"}`}
+                    >
+                      {recipe.categoryLabel}
+                    </span>
+                  )}
+                  {cookTime && (
+                    <>
+                      <span class="separator">•</span>
+                      <span class="cook-time">
+                        {`${cookTime} min`}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+              {(selected.image_url || recipe.image_url) && (
+                <img
+                  src={selected.image_url || recipe.image_url}
+                  alt={selected.imageAlt || recipe.imageAlt || recipe.label}
+                  width={selected.imageWidth || recipe.imageWidth || 80}
+                  height={selected.imageHeight || recipe.imageHeight || 80}
+                  srcset={srcSet || undefined}
+                  sizes={srcSet ? sizes : undefined}
+                  class="recipe-thumb"
+                  loading="lazy"
+                  decoding="async"
+                  style={selected.imageStyle || undefined}
+                />
+              )}
+            </a>
+          );
+        })}
+      </div>
+    ) : (
+      <p class="no-recipes">More recipes coming soon!</p>
+    )
+  }
+</div>
+
+<style>
+  /* Container Query Setup */
+  .popular-recipes-widget {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    container-type: inline-size;
+    container-name: popular-widget;
+  }
+
+  .widget-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .header-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--brand-gradient);
+    box-shadow: 0 1px 4px rgba(255, 51, 102, 0.3);
+  }
+
+  .widget-header h3 {
+    font-size: 1.0625rem;
+    font-weight: 800;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .recipe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Container query - horizontal layout on wider containers */
+  @container popular-widget (min-width: 400px) {
+    .recipe-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+
+    .recipe-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  @container popular-widget (min-width: 600px) {
+    .recipe-list {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .recipe-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    padding: 0.625rem;
+    margin: -0.25rem;
+    border-radius: var(--radius-md);
+    transition: background 0.2s ease;
+  }
+
+  .recipe-item:hover {
+    background: var(--bg-hover);
+  }
+
+  /* :has() selector - Style items with images differently */
+  .recipe-item:has(.recipe-image) {
+    padding-left: 0;
+  }
+
+  /* :has() selector - Add visual indicator to items with meta info */
+  .recipe-item:has(.recipe-meta)::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  @container popular-widget (min-width: 400px) {
+    .recipe-item:has(.recipe-meta)::after {
+      display: none;
+    }
+  }
+
+  .recipe-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recipe-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 0.3rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .recipe-item:hover .recipe-title {
+    color: var(--brand-primary);
+  }
+
+  .recipe-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
+  .category {
+    font-weight: 500;
+  }
+
+  .separator {
+    color: var(--border);
+  }
+
+  .cook-time {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .recipe-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+
+  .no-recipes {
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 1rem 0;
+  }
+</style>

@@ -31,6 +31,9 @@
 
         .block-editor-wrapper .bn-container {
           min-height: inherit;
+          background-color: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
         }
         
         /* Remove default min-height from editor as wrapper handles it */
@@ -42,6 +45,9 @@
           overflow-x: visible;
           max-width: clamp(1000px, 98vw, 1500px);
           margin: 0 auto;
+          background-color: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
         }
 
         .block-editor-wrapper .bn-editor a {
@@ -216,8 +222,8 @@
 
         .bn-editor [data-placeholder]:empty:before {
           content: attr(data-placeholder);
-          color: hsl(var(--muted-foreground));
-          opacity: 0.6;
+          color: hsl(var(--muted-foreground)) !important;
+          opacity: 0.8 !important;
           cursor: text;
         }
 
@@ -354,7 +360,7 @@
 
         /* ── BlockNote / Mantine shadcn theme overrides ── */
         .bn-mantine {
-          --mantine-color-body: hsl(var(--background));
+          --mantine-color-body: transparent;
           --mantine-color-text: hsl(var(--foreground));
           --mantine-color-dimmed: hsl(var(--muted-foreground));
           --mantine-color-default: hsl(var(--background));
@@ -363,32 +369,61 @@
           --mantine-color-default-border: hsl(var(--border));
         }
 
+        /* Force high contrast text and headings in dark mode */
+        .block-editor-wrapper .bn-container,
+        .block-editor-wrapper .bn-editor,
+        .block-editor-wrapper .ProseMirror,
+        .block-editor-wrapper .bn-editor p,
+        .block-editor-wrapper .bn-editor div[data-content-type] {
+          color: hsl(var(--foreground)) !important;
+        }
+
+        .block-editor-wrapper .bn-editor h1,
+        .block-editor-wrapper .bn-editor h2,
+        .block-editor-wrapper .bn-editor h3,
+        .block-editor-wrapper .bn-editor h4,
+        .block-editor-wrapper .bn-editor h5,
+        .block-editor-wrapper .bn-editor h6,
+        .block-editor-wrapper .bn-editor [data-content-type="heading"] {
+          color: hsl(var(--foreground)) !important;
+          font-weight: 700 !important;
+        }
+
+        /* High-contrast text selections */
+        .bn-editor ::selection {
+          background: hsl(var(--primary) / 0.3) !important;
+          color: inherit !important;
+        }
+
+        /* Solid high-contrast backgrounds for all popovers, menus, suggestions, and dropdowns */
         .bn-mantine .mantine-Menu-dropdown,
-        .bn-mantine [role="menu"] {
-          background-color: hsl(var(--popover));
-          border: 1px solid hsl(var(--border));
-          border-radius: var(--radius);
-          box-shadow: var(--shadow-lg);
+        .bn-mantine [role="menu"],
+        .block-editor-wrapper .bn-suggestion-menu,
+        .block-editor-wrapper .bn-menu-dropdown,
+        .bn-mantine .mantine-Popover-dropdown,
+        .block-editor-wrapper .bn-formatting-toolbar,
+        .bn-form-popover {
+          background-color: hsl(var(--popover)) !important;
+          background: hsl(var(--popover)) !important;
+          border: 1px solid hsl(var(--border)) !important;
+          color: hsl(var(--popover-foreground)) !important;
+          box-shadow: var(--shadow-xl) !important;
         }
 
+        /* Formatting and Suggestions items text colors */
         .bn-mantine .mantine-Menu-item,
-        .bn-mantine [role="menuitem"] {
-          color: hsl(var(--popover-foreground));
-          border-radius: calc(var(--radius) - 4px);
+        .bn-mantine [role="menuitem"],
+        .block-editor-wrapper .bn-suggestion-menu-item {
+          color: hsl(var(--popover-foreground)) !important;
         }
 
+        /* Hover and active selection contrast rules */
         .bn-mantine .mantine-Menu-item:hover,
-        .bn-mantine [role="menuitem"]:hover {
-          background-color: hsl(var(--accent));
-          color: hsl(var(--accent-foreground));
-        }
-
-        .bn-mantine .mantine-Popover-dropdown {
-          background-color: hsl(var(--popover));
-          border: 1px solid hsl(var(--border));
-          border-radius: var(--radius);
-          box-shadow: var(--shadow-lg);
-          color: hsl(var(--popover-foreground));
+        .bn-mantine [role="menuitem"]:hover,
+        .block-editor-wrapper .bn-suggestion-menu-item:hover,
+        .block-editor-wrapper .bn-suggestion-menu-item[aria-selected="true"] {
+          background-color: hsl(var(--accent)) !important;
+          color: hsl(var(--accent-foreground)) !important;
         }
 
         .bn-mantine .mantine-ColorSwatch-root {
@@ -396,9 +431,26 @@
           box-shadow: inset 0 0 0 1px hsl(var(--border));
         }
 
-        .bn-mantine .mantine-ColorInput-wrapper input {
-          background-color: hsl(var(--background));
-          border: 1px solid hsl(var(--border));
-          color: hsl(var(--foreground));
+        .bn-mantine .mantine-ColorInput-wrapper input,
+        .inline-link-input-field {
+          background-color: hsl(var(--background)) !important;
+          border: 1px solid hsl(var(--border)) !important;
+          color: hsl(var(--foreground)) !important;
           border-radius: var(--radius);
+        }
+
+        /* ── Active Block Focus Highlighting ── */
+        .bn-editor [data-block-root="true"] {
+          position: relative;
+          border-left: 3px solid transparent;
+          padding-left: 8px;
+          margin-left: -11px;
+          transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), padding 0.2s, margin 0.2s;
+        }
+
+        .bn-editor [data-block-root="true"][data-selected="true"] {
+          border-left-color: hsl(var(--primary));
+          background-color: hsl(var(--primary) / 0.02);
+          border-top-right-radius: 6px;
+          border-bottom-right-radius: 6px;
         }

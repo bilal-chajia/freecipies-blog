@@ -1,9 +1,9 @@
 # API Documentation
 
-> **Last Updated:** 2026-04-06
+> **Last Updated:** 2026-05-13
 > **Base URL:** `/api`
 > **Auth:** Bearer Token (Admin endpoints)
-> **Version:** Astro 6 + React 19
+> **Version:** Astro 6.3.3 + React 19
 
 ---
 
@@ -14,9 +14,14 @@
 ### Request/Response Format
 
 - All requests/responses use **JSON**
-- Use **camelCase** for JSON keys
+- Use `docs/NAMING_CONTRACT.md` for serialized JSON and implementation names.
 - Dates are **ISO-8601** format (UTC)
 - Empty arrays: `[]`, empty objects: `{}`
+- For stored article JSON contracts, use:
+  - `docs/CONTENT_JSON_CONTRACT.md` for `content_json`
+  - `docs/RECIPE_JSON_CONTRACT.md` for `recipe_json`
+  - `docs/ARTICLE_JSON_CONTRACTS.md` for `images_json`, `roundup_json`, `seo_json`, `config_json`
+  - `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md` for cached fields
 
 ### Authentication
 
@@ -114,7 +119,7 @@ List articles with pagination and filters.
 | `category` | string  | -             | Category slug                  |
 | `author`   | string  | -             | Author slug                    |
 | `tag`      | string  | -             | Tag slug (comma-separated)     |
-| `online`   | boolean | `true`        | Visibility filter              |
+| `workflowStatus` | string  | -             | Visibility filter (`draft`, `in_review`, `scheduled`, `published`, `archived`, `all`) |
 | `featured` | boolean | -             | Featured articles only         |
 | `search`   | string  | -             | Full-text search               |
 
@@ -180,7 +185,7 @@ Get article by slug with full details.
     "excerpt": "These brownies are...",
     "introduction": "Nothing beats homemade brownies...",
     "images": {
-      "cover": {
+      "hero": {
         "alt": "Chocolate brownies",
         "variants": {
           "xs": { "url": "...", "width": 360, "height": 240 },
@@ -199,11 +204,45 @@ Get article by slug with full details.
       "cook": 25,
       "total": 40,
       "servings": 12,
-      "prepTime": "PT15M",
-      "cookTime": "PT25M",
+      "recipe_yield": "12 brownies",
+      "recipe_category": "Dessert",
+      "recipe_cuisine": "American",
+      "keywords": ["fudgy brownies", "easy dessert"],
       "difficulty": "Easy",
       "ingredients": [...],
-      "instructions": [...]
+      "instructions": [...],
+      "equipment": [
+        {
+          "id": "eq-chefs-knife",
+          "equipment_id": 1,
+          "label": "Chef's knife",
+          "required": true,
+          "notes": null,
+          "source_type": "catalog",
+          "snapshot": {
+            "slug": "chefs-knife-8",
+            "name": "Chef's Knife 8\"",
+            "affiliate_url": "https://amazon.com/...",
+            "image": {
+              "media_id": 22,
+              "alt": "Chef's knife",
+              "variants": {
+                "xs": { "url": "https://...", "width": 360, "height": 360 },
+                "sm": { "url": "https://...", "width": 720, "height": 720 }
+              }
+            }
+          }
+        },
+        {
+          "id": "eq-large-bowl",
+          "equipment_id": null,
+          "label": "Large mixing bowl",
+          "required": true,
+          "notes": null,
+          "source_type": "manual",
+          "snapshot": null
+        }
+      ]
     },
     "category": {
       "id": 5,
@@ -234,6 +273,13 @@ Get article by slug with full details.
 }
 ```
 
+Notes:
+
+- `recipe` mirrors the stored `recipe_json` contract.
+- Recipe equipment renders from `recipe.equipment[]`; catalog items contain a
+  resolved `snapshot`, and manual items use `snapshot: null`.
+- API response naming follows `docs/NAMING_CONTRACT.md`.
+
 ---
 
 ### POST /api/articles
@@ -247,12 +293,34 @@ Create new article. **Requires Auth.**
   "slug": "new-recipe",
   "type": "recipe",
   "headline": "New Recipe Title",
-  "shortDescription": "A delicious new recipe...",
-  "categoryId": 5,
-  "authorId": 1,
-  "imagesJson": { "cover": {...} },
-  "contentJson": [...],
-  "recipeJson": {...},
+  "short_description": "A delicious new recipe...",
+  "category_id": 5,
+  "author_id": 1,
+  "images_json": { "hero": {...} },
+  "content_json": {
+    "version": 1,
+    "kind": "content_document",
+    "blocks": [
+      { "id": "intro", "type": "paragraph", "text": "..." },
+      { "id": "main-recipe", "type": "main_recipe" }
+    ]
+  },
+  "recipe_json": {
+    "prep": 15,
+    "cook": 25,
+    "total": 40,
+    "servings": 4,
+    "recipe_yield": "4 servings",
+    "recipe_category": "Dinner",
+    "recipe_cuisine": "Italian",
+    "keywords": ["quick pasta", "weeknight dinner"],
+    "ingredients": [],
+    "instructions": [],
+    "equipment": [
+      { "equipment_id": 12, "label": "Stand mixer", "required": true, "notes": null },
+      { "label": "Large mixing bowl", "required": true, "notes": null }
+    ]
+  },
   "tagIds": [1, 5, 12]
 }
 ```
@@ -278,7 +346,7 @@ Update article. **Requires Auth.**
 {
   "headline": "Updated Title",
   "shortDescription": "Updated description...",
-  "isOnline": true
+  "isFavorite": true
 }
 ```
 
@@ -594,7 +662,7 @@ Upload new media. **Requires Auth.**
 }
 ```
 
-> **Note:** Variant objects may include `height` and `sizeBytes` when generated by the client-side variant pipeline.
+> **Note:** Upload/client pipeline payloads must use `size_bytes` in serialized JSON. TypeScript implementation variables use `sizeBytes` internally.
 
 ---
 
@@ -676,7 +744,7 @@ Get specific setting.
   "data": {
     "key": "site_info",
     "value": {
-      "name": "Freecipies",
+      "name": "SaaS Blog",
       "tagline": "Delicious recipes..."
     }
   }
@@ -877,7 +945,7 @@ Delete template. **Requires Auth.**
 
 ### GET /api/equipment
 
-List kitchen equipment with affiliate links.
+List kitchen equipment catalog entries with optional affiliate links.
 
 **Query Parameters:**
 
@@ -886,7 +954,7 @@ List kitchen equipment with affiliate links.
 | `page`     | number  | 1       | Page number       |
 | `limit`    | number  | 24      | Per page          |
 | `category` | string  | -       | Filter by category|
-| `online`   | boolean | `true`  | Visibility filter |
+| `isActive` | boolean | `true`  | Active equipment filter |
 
 **Response:**
 
@@ -900,9 +968,11 @@ List kitchen equipment with affiliate links.
       "slug": "chefs-knife-8",
       "description": "Professional grade chef's knife",
       "affiliateUrl": "https://amazon.com/...",
+      "affiliateProvider": "Amazon",
+      "affiliateNote": "Affiliate link",
       "imageUrl": "https://...",
-      "price": "$89.99",
-      "category": "Knives",
+      "category": "tools",
+      "isActive": true,
       "route": "/equipment/chefs-knife-8"
     }
   ],
@@ -922,8 +992,10 @@ Create equipment entry. **Requires Auth.**
   "slug": "new-equipment",
   "description": "Description...",
   "affiliateUrl": "https://...",
-  "price": "$49.99",
-  "category": "Category"
+  "affiliateProvider": "Amazon",
+  "affiliateNote": "Affiliate link",
+  "category": "tools",
+  "isActive": true
 }
 ```
 

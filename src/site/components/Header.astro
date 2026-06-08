@@ -1,0 +1,583 @@
+---
+import MegaMenu from "./MegaMenu.astro";
+import ThemeToggle from "./ThemeToggle.astro";
+import type { MenuItem } from "@modules/menus/types/menus.types";
+
+const currentPath = Astro.url.pathname;
+const logoMain = "/logos/logo-mobile.svg";
+const logoDark = null;
+
+interface Props {
+  headerMenu?: MenuItem[];
+}
+
+const defaultHeaderMenu: MenuItem[] = [
+  { id: "nav-1", label: "Categories", type: "link", target: { type: "internal_route", href: "/categories" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-2", label: "Recipes", type: "link", target: { type: "internal_route", href: "/recipes" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-3", label: "Bookmarks", type: "link", target: { type: "internal_route", href: "/my-bookmarks" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-4", label: "Authors", type: "link", target: { type: "internal_route", href: "/authors" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-5", label: "About", type: "link", target: { type: "internal_route", href: "/about" }, is_enabled: true, visibility: "all", highlight: false },
+  { id: "nav-6", label: "Contact", type: "link", target: { type: "internal_route", href: "/contact" }, is_enabled: true, visibility: "all", highlight: false },
+];
+
+const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
+---
+
+<header class="site-header">
+  <a href="#main-content" class="skip-link">Skip to content</a>
+  <div class="header-container">
+    <div class="header-content">
+      <!-- Logo -->
+      <a href="/" class="logo">
+        {
+          logoMain ? (
+            <>
+              <img
+                src={logoMain}
+                alt="SaaS Blog"
+                class="logo-img logo-light"
+                width="200"
+                height="60"
+              />
+              {logoDark ? (
+                <img
+                  src={logoDark}
+                  alt="SaaS Blog"
+                  class="logo-img logo-dark"
+                  width="200"
+                  height="60"
+                />
+              ) : (
+                <img
+                  src={logoMain}
+                  alt="SaaS Blog"
+                  class="logo-img logo-dark"
+                  width="200"
+                  height="60"
+                />
+              )}
+            </>
+          ) : (
+            <span class="logo-text">SaaS Blog</span>
+          )
+        }
+      </a>
+
+      <!-- Desktop Navigation - Dynamic Mega Menu -->
+      <MegaMenu items={headerMenu} currentPath={currentPath} />
+
+      <!-- Search & Mobile Menu -->
+      <div class="header-actions">
+        <button
+          class="search-btn"
+          aria-label="Search"
+          title="Quick and easy search"
+          aria-controls="search-modal"
+          aria-expanded="false"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </button>
+        <ThemeToggle />
+        <button
+          class="mobile-menu-btn"
+          aria-label="Show menu"
+          aria-controls="mobile-nav"
+          aria-expanded="false"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Navigation -->
+  <nav class="mobile-nav" id="mobile-nav">
+    <a
+      href="/categories"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/categories" ? "page" : undefined}
+      >Categories</a
+    >
+    <a
+      href="/recipes"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/recipes" ? "page" : undefined}>Explore</a
+    >
+    <a
+      href="/my-bookmarks"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/my-bookmarks" ? "page" : undefined}
+      >Bookmarks</a
+    >
+    <a
+      href="/authors"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/authors" ? "page" : undefined}>Authors</a
+    >
+    <a
+      href="/about"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/about" ? "page" : undefined}>About</a
+    >
+    <a
+      href="/contact"
+      class="mobile-nav-link"
+      aria-current={currentPath === "/contact" ? "page" : undefined}>Contact</a
+    >
+  </nav>
+
+  <!-- Search Modal -->
+  <div
+    class="search-modal"
+    id="search-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-hidden="true"
+  >
+    <div class="search-modal-content">
+      <div class="search-header">
+        <h2 id="search-title">Search Recipes</h2>
+        <button class="close-search" aria-label="Close search">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form action="/search" method="GET" class="search-form">
+        <input
+          type="search"
+          name="q"
+          placeholder="Search for recipes..."
+          autocomplete="off"
+          class="search-input"
+        />
+        <button type="submit" class="search-submit">Search</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky, 100);
+    will-change: transform;
+    contain: layout style paint;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 72%, transparent);
+    backdrop-filter: blur(16px);
+  }
+
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: var(--space-2);
+    background: var(--neutral-900);
+    color: var(--text-inverse);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+  }
+
+  .skip-link:focus {
+    left: var(--space-3);
+    z-index: calc(var(--z-sticky, 100) + 1);
+  }
+
+  .header-container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--space-4);
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 76px;
+  }
+
+  .logo {
+    text-decoration: none;
+    margin-left: var(--space-2);
+  }
+
+  .logo-text {
+    font-size: 1.5rem;
+    font-weight: var(--font-extrabold);
+    background: var(--brand-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .logo-img {
+    height: 52px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .logo-light {
+    display: block;
+  }
+
+  .logo-dark {
+    display: none;
+  }
+
+  html.dark .logo-light {
+    display: none;
+  }
+
+  html.dark .logo-dark {
+    display: block;
+  }
+
+  .desktop-nav {
+    display: none;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .nav-link {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: var(--font-medium);
+    font-size: var(--text-sm);
+    padding: 0.55rem 0.85rem;
+    border-radius: var(--radius-full);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  .nav-link:hover,
+  .nav-link.active {
+    background: var(--brand-primary-light);
+    color: var(--brand-primary-hover);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .search-btn,
+  .mobile-menu-btn {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    width: var(--space-10);
+    height: var(--space-10);
+    padding: 0;
+    border-radius: var(--radius-full);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .search-btn:hover,
+  .mobile-menu-btn:hover {
+    background: var(--brand-primary-light);
+    border-color: color-mix(in srgb, var(--brand-primary) 28%, var(--border));
+    color: var(--text);
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .mobile-nav {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    border-top: 0;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-8px);
+    overflow: hidden;
+    transition:
+      max-height 0.35s var(--ease-out),
+      opacity 0.25s var(--ease-out),
+      transform 0.35s var(--ease-out);
+  }
+
+  .mobile-nav.active {
+    max-height: 400px;
+    opacity: 1;
+    transform: translateY(0);
+    border-top: 1px solid var(--border);
+  }
+
+  .mobile-nav-link {
+    padding: var(--space-4) var(--space-6);
+    color: var(--text);
+    text-decoration: none;
+    font-weight: var(--font-medium);
+    border-bottom: 1px solid var(--border-subtle);
+    transition:
+      background var(--transition-fast),
+      padding-left var(--transition-fast);
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+  }
+
+  .mobile-nav-link:hover,
+  .mobile-nav-link:active {
+    background: var(--bg-alt);
+    padding-left: calc(var(--space-6) + 4px);
+  }
+
+  .search-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-overlay);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+    z-index: var(--z-modal);
+  }
+
+  .search-modal.active {
+    display: flex;
+  }
+
+  .search-modal-content {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    width: 90%;
+    max-width: 600px;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+  }
+
+  .search-header h2 {
+    font-size: var(--text-2xl);
+    margin: 0;
+    color: var(--text);
+  }
+
+  .close-search {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  .close-search:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+
+  .search-form {
+    display: flex;
+    gap: var(--space-4);
+    flex-direction: column;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.875rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    font-size: var(--text-base);
+    background: var(--bg);
+    color: var(--text);
+    transition:
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
+  }
+
+  .search-input:focus-visible {
+    outline: none;
+    border-color: var(--brand-secondary);
+    box-shadow: var(--shadow-focus);
+  }
+
+  .search-submit {
+    padding: 0.875rem 2rem;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-full);
+    font-weight: var(--font-semibold);
+    cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  .search-submit:hover {
+    background: var(--brand-primary-hover);
+    transform: translateY(-1px);
+  }
+
+  @media (min-width: 768px) {
+    .header-container {
+      padding: 0 var(--space-6);
+    }
+
+    .logo {
+      margin-left: 0.1rem;
+    }
+
+    .logo-img {
+      height: 60px;
+    }
+
+    .desktop-nav {
+      display: flex;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+    }
+
+    .mobile-nav {
+      display: none;
+    }
+
+    .search-modal-content {
+      width: 90%;
+      padding: 2rem;
+    }
+
+    .search-form {
+      flex-direction: row;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .desktop-nav {
+      gap: 0.5rem;
+    }
+
+    .nav-link {
+      padding: 0.35rem 0.5rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  @media (min-width: 1024px) and (max-width: 1200px) {
+    .desktop-nav {
+      gap: 1rem;
+    }
+
+    .nav-link {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+    }
+  }
+  @media (max-width: 768px) {
+    .site-header {
+      backdrop-filter: blur(8px);
+    }
+  }
+</style>
+
+<script>
+  // Mobile menu toggle
+  const mobileMenuBtn = document.querySelector(".mobile-menu-btn");
+  const mobileNav = document.querySelector("#mobile-nav");
+
+  const toggleMobileNav = (forceState?: boolean) => {
+    const isOpen =
+      typeof forceState === "boolean"
+        ? forceState
+        : !mobileNav?.classList.contains("active");
+    mobileNav?.classList.toggle("active", isOpen);
+    mobileMenuBtn?.setAttribute("aria-expanded", String(isOpen));
+  };
+
+  mobileMenuBtn?.addEventListener("click", () => {
+    toggleMobileNav();
+  });
+
+  // Search modal
+  const searchBtn = document.querySelector(".search-btn");
+  const searchModal = document.querySelector("#search-modal");
+  const closeSearch = document.querySelector(".close-search");
+
+  const openSearch = () => {
+    searchModal?.classList.add("active");
+    searchModal?.setAttribute("aria-hidden", "false");
+    searchBtn?.setAttribute("aria-expanded", "true");
+    (document.querySelector(".search-input") as HTMLElement)?.focus();
+  };
+
+  const closeSearchModal = () => {
+    searchModal?.classList.remove("active");
+    searchModal?.setAttribute("aria-hidden", "true");
+    searchBtn?.setAttribute("aria-expanded", "false");
+  };
+
+  searchBtn?.addEventListener("click", () => {
+    openSearch();
+  });
+
+  closeSearch?.addEventListener("click", () => {
+    closeSearchModal();
+  });
+
+  searchModal?.addEventListener("click", (e) => {
+    if (e.target === searchModal) {
+      closeSearchModal();
+    }
+  });
+
+  // Close on escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeSearchModal();
+      toggleMobileNav(false);
+    }
+  });
+</script>

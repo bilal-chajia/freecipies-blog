@@ -43,7 +43,19 @@ export const GET: APIRoute = async ({ locals, site }) => {
       board_name?: string;
     }
 
-    const pins = (results as unknown as PinResult[]) || [];
+    const pins: PinResult[] = (results || []).map((row: any) => ({
+      id: Number(row.id),
+      title: String(row.title ?? ''),
+      description: String(row.description ?? ''),
+      image_url: String(row.image_url ?? ''),
+      image_alt: row.image_alt ? String(row.image_alt) : undefined,
+      image_width: Number(row.image_width ?? 0),
+      image_height: Number(row.image_height ?? 0),
+      created_at: String(row.created_at ?? ''),
+      article_slug: row.article_slug ? String(row.article_slug) : undefined,
+      article_label: row.article_label ? String(row.article_label) : undefined,
+      board_name: row.board_name ? String(row.board_name) : undefined,
+    }));
 
     // Generate RSS feed
     const rss = `<?xml version="1.0" encoding="UTF-8"?>
@@ -52,8 +64,8 @@ export const GET: APIRoute = async ({ locals, site }) => {
      xmlns:media="http://search.yahoo.com/mrss/"
      xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
-    <title>Freecipies Pinterest - Latest Pins (24h)</title>
-    <description>All new Pinterest pins from Freecipies created in the last 24 hours</description>
+    <title>SaaS Blog Pinterest - Latest Pins (24h)</title>
+    <description>All new Pinterest pins from SaaS Blog created in the last 24 hours</description>
     <link>${siteUrl}/rss/pinterest.xml</link>
     <atom:link href="${siteUrl}/rss/pinterest.xml" rel="self" type="application/rss+xml"/>
     <language>en-us</language>
@@ -61,7 +73,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
     <ttl>60</ttl>
     <image>
       <url>${siteUrl}/logo.png</url>
-      <title>Freecipies Pinterest</title>
+      <title>SaaS Blog Pinterest</title>
       <link>${siteUrl}</link>
     </image>
     ${pins.map(pin => {

@@ -1,29 +1,29 @@
 ---
 import { env } from 'cloudflare:workers';
-import Layout from "../../layouts/Layout.astro";
-import CategoryCard from "../../components/CategoryCard.astro";
+import Layout from "@layouts/Layout.astro";
+import CategoryCard from "@components/CategoryCard.astro";
 import { getCategories } from "@modules/categories";
 import { hydrateCategory } from "@shared/utils";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 let categories: any[] = [];
 
 try {
-  const rawCategories = await getCategories(env.DB, { isOnline: true });
+  const rawCategories = await getCategories(env.DB, { workflow_status: 'published' });
   categories = rawCategories.map(hydrateCategory);
 } catch (error) {
   console.error("Categories index: Error fetching categories:", error);
 }
 
 // Featured category (first one or one marked as featured)
-const featured = categories.find((c) => c.isFeatured) || categories[0];
+const featured = categories.find((c) => c.is_featured) || categories[0];
 const otherCategories = categories.filter((c) => c.id !== featured?.id);
 
 // Get featured image
 const featuredImage = featured
-  ? extractImage(featured.imagesJson, "cover", 1200)
+  ? extractImage(featured.images_json, "hero", 1200)
   : null;
 const featuredSrcSet = featured
-  ? getImageSrcSet(featured.imagesJson, "cover")
+  ? getImageSrcSet(featured.images_json, "hero")
   : "";
 ---
 
@@ -36,7 +36,7 @@ const featuredSrcSet = featured
           <div class="hero-image">
             <img
               src={
-                featuredImage?.imageUrl ||
+                featuredImage?.image_url ||
                 "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200"
               }
               alt={featuredImage?.imageAlt || featured.label}
@@ -50,7 +50,7 @@ const featuredSrcSet = featured
           <div class="hero-content">
             <span class="hero-badge">Featured Collection</span>
             <h1 class="hero-title">{featured.label}</h1>
-            <p class="hero-description">{featured.shortDescription}</p>
+            <p class="hero-description">{featured.short_description}</p>
             <span class="hero-cta">
               Explore Collection
               <svg
@@ -132,7 +132,7 @@ const featuredSrcSet = featured
     right: 0;
     padding: 2rem;
     color: white;
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
   }
 
@@ -192,7 +192,7 @@ const featuredSrcSet = featured
 
   /* Grid Section */
   .categories-grid-section {
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 3rem 1.5rem 4rem;
   }

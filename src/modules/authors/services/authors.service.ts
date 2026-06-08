@@ -7,27 +7,44 @@
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { authors, type Author, type NewAuthor } from '../schema/authors.schema';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+import { articles } from '../../articles/schema/articles.schema';
+import { syncCachedFields } from '../../articles/services/articles.service';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
+
+async function getArticleIdsForAuthor(drizzle: DrizzleDb, author_id: number): Promise<number[]> {
+  const rows = await drizzle
+    .select({ id: articles.id })
+    .from(articles)
+    .where(and(eq(articles.author_id, author_id), isNull(articles.deleted_at)));
+
+  return rows.map((row) => row.id);
+}
+
+async function refreshAuthorArticleCaches(db: D1Database | DrizzleDb, articleIds: number[]): Promise<void> {
+  for (const article_id of articleIds) {
+    await syncCachedFields(db, article_id);
+  }
+}
 
 /**
  * Get all authors
  */
 export async function getAuthors(
   db: D1Database | DrizzleDb,
-  options?: { isOnline?: boolean }
+  options?: { workflow_status?: 'draft' | 'published' | 'archived' }
 ): Promise<Author[]> {
   const drizzle = getDb(db);
 
-  const conditions = [isNull(authors.deletedAt)];
-  if (options?.isOnline !== undefined) {
-    conditions.push(eq(authors.isOnline, options.isOnline));
+  const conditions = [isNull(authors.deleted_at)];
+  if (options?.workflow_status !== undefined) {
+    conditions.push(eq(authors.workflow_status, options.workflow_status));
   }
 
   return await drizzle
     .select()
     .from(authors)
     .where(and(...conditions))
-    .orderBy(asc(authors.sortOrder), asc(authors.name));
+    .orderBy(asc(authors.sort_order), asc(authors.name));
 }
 
 /**
@@ -36,7 +53,7 @@ export async function getAuthors(
 export async function getAuthorBySlug(db: D1Database | DrizzleDb, slug: string): Promise<Author | null> {
   const drizzle = getDb(db);
   return await drizzle.query.authors.findFirst({
-    where: and(eq(authors.slug, slug), isNull(authors.deletedAt)),
+    where: and(eq(authors.slug, slug), isNull(authors.deleted_at)),
   }) || null;
 }
 
@@ -46,7 +63,7 @@ export async function getAuthorBySlug(db: D1Database | DrizzleDb, slug: string):
 export async function getAuthorById(db: D1Database | DrizzleDb, id: number): Promise<Author | null> {
   const drizzle = getDb(db);
   return await drizzle.query.authors.findFirst({
-    where: and(eq(authors.id, id), isNull(authors.deletedAt)),
+    where: and(eq(authors.id, id), isNull(authors.deleted_at)),
   }) || null;
 }
 
@@ -72,18 +89,20 @@ export async function updateAuthor(
   author: Partial<NewAuthor>
 ): Promise<Author | null> {
   const drizzle = getDb(db);
+  const existing = await getAuthorBySlug(db, slug);
+  if (!existing) return null;
+  const affectedArticleIds = await getArticleIdsForAuthor(drizzle, existing.id);
 
   const updateData = {
     ...author,
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   await drizzle.update(authors)
     .set(updateData)
     .where(eq(authors.slug, slug));
 
-  // Note: cached_author_json in articles is auto-refreshed by SQL trigger
-  // defined in db/triggers-cached-fields.sql
+  await refreshAuthorArticleCaches(db, affectedArticleIds);
 
   return getAuthorBySlug(db, slug);
 }
@@ -94,7 +113,7 @@ export async function updateAuthor(
 export async function deleteAuthor(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
   const drizzle = getDb(db);
   await drizzle.update(authors)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deleted_at: new Date().toISOString() })
     .where(eq(authors.slug, slug));
   return true;
 }
@@ -108,17 +127,21 @@ export async function updateAuthorById(
   author: Partial<NewAuthor>
 ): Promise<Author | null> {
   const drizzle = getDb(db);
+  const existing = await getAuthorById(db, id);
+  if (!existing) return null;
+  const affectedArticleIds = await getArticleIdsForAuthor(drizzle, id);
 
   const updateData = {
     ...author,
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   await drizzle.update(authors)
     .set(updateData)
     .where(eq(authors.id, id));
 
-  // Note: cached_author_json in articles is auto-refreshed by SQL trigger
+  await refreshAuthorArticleCaches(db, affectedArticleIds);
+
   return getAuthorById(db, id);
 }
 
@@ -128,32 +151,15 @@ export async function updateAuthorById(
 export async function deleteAuthorById(db: D1Database | DrizzleDb, id: number): Promise<boolean> {
   const drizzle = getDb(db);
   await drizzle.update(authors)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deleted_at: new Date().toISOString() })
     .where(eq(authors.id, id));
   return true;
 }
 
-/**
- * Toggle isOnline status by ID
- */
-export async function toggleOnlineById(db: D1Database | DrizzleDb, id: number): Promise<Author | null> {
-  const drizzle = getDb(db);
 
-  const author = await getAuthorById(db, id);
-  if (!author) return null;
-
-  await drizzle.update(authors)
-    .set({
-      isOnline: !author.isOnline,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(authors.id, id));
-
-  return getAuthorById(db, id);
-}
 
 /**
- * Toggle isFeatured status by ID
+ * Toggle is_featured status by ID
  */
 export async function toggleFeaturedById(db: D1Database | DrizzleDb, id: number): Promise<Author | null> {
   const drizzle = getDb(db);
@@ -163,8 +169,8 @@ export async function toggleFeaturedById(db: D1Database | DrizzleDb, id: number)
 
   await drizzle.update(authors)
     .set({
-      isFeatured: !author.isFeatured,
-      updatedAt: new Date().toISOString(),
+      is_featured: !author.is_featured,
+      updated_at: new Date().toISOString(),
     })
     .where(eq(authors.id, id));
 

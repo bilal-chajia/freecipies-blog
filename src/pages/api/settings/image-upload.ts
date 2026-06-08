@@ -1,13 +1,14 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getImageUploadSettings, updateImageUploadSettings, resetImageUploadSettings, IMAGE_UPLOAD_DEFAULTS } from '@modules/settings';
-import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateBody } from '@shared/validation';
 import { ImageUploadSettingsSchema } from '@shared/validation/schemas/settings';
 
 export const prerender = false;
+
+const getSettingsCache = () => env?.SETTINGS_CACHE ?? env?.SESSION ?? null;
 
 /**
  * GET /api/settings/image-upload
@@ -23,7 +24,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       return createAuthError('Authentication required', 401);
     }
 
-    const settings = await getImageUploadSettings(env.DB);
+    const settings = await getImageUploadSettings(env.DB, { cache: getSettingsCache() });
 
     const { body, status, headers } = formatSuccessResponse({
       success: true,
@@ -58,7 +59,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     // Validate and parse body via Zod
     const updates = await validateBody(request, ImageUploadSettingsSchema);
 
-    const newSettings = await updateImageUploadSettings(env.DB, updates);
+    const newSettings = await updateImageUploadSettings(env.DB, updates, { cache: getSettingsCache() });
 
     const { body, status, headers } = formatSuccessResponse({
       success: true,
@@ -90,7 +91,7 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       return createAuthError('Admin role required to reset settings', 403);
     }
 
-    const settings = await resetImageUploadSettings(env.DB);
+    const settings = await resetImageUploadSettings(env.DB, { cache: getSettingsCache() });
 
     const { body, status, headers } = formatSuccessResponse({
       success: true,

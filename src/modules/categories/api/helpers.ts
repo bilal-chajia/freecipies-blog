@@ -8,36 +8,35 @@ import type { CategoryImagesJson, ImageVariants } from '../../articles/types/ima
 import { resolveVariantUrl } from '@shared/types/images';
 
 interface SeoJson {
-  metaTitle?: string;
-  metaDescription?: string;
-  noIndex?: boolean;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  no_index?: boolean;
   canonical?: string;
-  ogImage?: string;
-  ogTitle?: string;
-  ogDescription?: string;
-  twitterCard?: string;
-  robots?: string;
+  og_image?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  twitter_card?: 'summary' | 'summary_large_image';
 }
 
 interface ConfigJson {
-  postsPerPage?: number;
+  posts_per_page?: number;
   tldr?: string;
-  showInNav?: boolean;
-  showInFooter?: boolean;
-  layout?: 'grid' | 'list' | 'masonry';
-  cardStyle?: 'compact' | 'full' | 'minimal';
-  showSidebar?: boolean;
-  showFilters?: boolean;
-  showBreadcrumb?: boolean;
-  showPagination?: boolean;
-  sortBy?: 'publishedAt' | 'title' | 'viewCount';
-  sortOrder?: 'asc' | 'desc';
-  headerStyle?: 'hero' | 'minimal' | 'none';
-  featuredArticleId?: number;
-  showFeaturedRecipe?: boolean;
-  showHeroCta?: boolean;
-  heroCtaText?: string;
-  heroCtaLink?: string;
+  show_in_nav?: boolean;
+  show_in_footer?: boolean;
+  layout_mode?: 'grid' | 'list' | 'masonry';
+  card_style?: 'compact' | 'full' | 'minimal';
+  show_sidebar?: boolean;
+  show_filters?: boolean;
+  show_breadcrumb?: boolean;
+  show_pagination?: boolean;
+  article_sort_by?: 'published_at' | 'title' | 'view_count';
+  article_sort_order?: 'asc' | 'desc';
+  header_style?: 'hero' | 'minimal' | 'none';
+  featured_article_id?: number;
+  show_featured_recipe?: boolean;
+  show_hero_cta?: boolean;
+  hero_cta_text?: string;
+  hero_cta_link?: string;
 }
 
 const getBestVariant = (variants?: ImageVariants) => {
@@ -55,79 +54,103 @@ const extractR2KeyFromUrl = (url: string): string | null => {
   return null;
 };
 
-const normalizeImageSlot = (slot: any) => {
+const normalizeImageVariant = (variant: any) => {
+  if (!variant || typeof variant !== 'object') return undefined;
+  const r2Key = typeof variant.r2_key === 'string'
+    ? variant.r2_key
+    : typeof variant.url === 'string'
+      ? extractR2KeyFromUrl(variant.url)
+      : null;
+  const width = Number(variant.width);
+  const height = Number(variant.height);
+  if (!r2Key || !Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0) return undefined;
+  return {
+    r2_key: r2Key,
+    width,
+    height,
+    ...(Number.isFinite(Number(variant.size_bytes))
+      ? { size_bytes: Number(variant.size_bytes) }
+      : {}),
+  };
+};
+
+const normalizeImageSlot = (slot: any, variantKeys: string[], fallbackAspectRatio: string) => {
   if (!slot || typeof slot !== 'object') return slot;
 
-  if (slot.variants && typeof slot.variants === 'object') {
-    return slot;
-  }
-
-  if (slot.url) {
+  const sourceVariants = slot.variants && typeof slot.variants === 'object' ? slot.variants : {};
+  if (slot.url && Object.keys(sourceVariants).length === 0) {
     const r2Key = extractR2KeyFromUrl(slot.url);
-    return {
-      ...slot,
-      variants: {
-        original: {
-          ...(r2Key ? { r2_key: r2Key } : { url: slot.url }),
-          width: slot.width ?? 0,
-          height: slot.height ?? 0,
-        },
-      },
-    };
+    for (const key of variantKeys) {
+      sourceVariants[key] = {
+        ...(r2Key ? { r2_key: r2Key } : {}),
+        width: slot.width ?? 0,
+        height: slot.height ?? 0,
+      };
+    }
   }
 
-  return slot;
+  const variants: Record<string, unknown> = {};
+  for (const key of variantKeys) {
+    const normalized = normalizeImageVariant(sourceVariants[key]);
+    if (normalized) variants[key] = normalized;
+  }
+
+  return {
+    ...(typeof slot.media_id === 'number' ? { media_id: slot.media_id } : {}),
+    alt: typeof slot.alt === 'string' ? slot.alt : '',
+    placeholder: typeof slot.placeholder === 'string' ? slot.placeholder : '',
+    aspect_ratio: typeof slot.aspect_ratio === 'string'
+      ? slot.aspect_ratio
+      : fallbackAspectRatio,
+    ...(slot.focal_point && typeof slot.focal_point === 'object' ? { focal_point: slot.focal_point } : {}),
+    variants,
+  };
 };
 
 const normalizeSeoJsonObject = (value: any): SeoJson => {
   if (!value || typeof value !== 'object') return {};
 
   return {
-    metaTitle: value.metaTitle,
-    metaDescription: value.metaDescription,
-    noIndex: value.noIndex,
-    canonical: value.canonical ?? value.canonicalUrl,
-    ogImage: value.ogImage,
-    ogTitle: value.ogTitle,
-    ogDescription: value.ogDescription,
-    twitterCard: value.twitterCard,
-    robots: value.robots,
+    meta_title: value.meta_title ?? null,
+    meta_description: value.meta_description ?? null,
+    no_index: Boolean(value.no_index ?? false),
+    canonical: value.canonical,
+    og_image: value.og_image ?? null,
+    og_title: value.og_title ?? null,
+    og_description: value.og_description ?? null,
+    twitter_card: value.twitter_card ?? 'summary_large_image',
   };
 };
 
 const normalizeConfigJsonObject = (value: any): ConfigJson => {
   if (!value || typeof value !== 'object') return {};
 
-  const postsPerPage = value.postsPerPage ?? value.numEntriesPerPage ?? value.entriesPerPage;
-  const layout = value.layout ?? value.layoutMode;
-  const featuredArticleIdRaw = value.featuredArticleId ?? value.featured_article_id;
+  const featuredArticleIdRaw = value.featured_article_id;
   const featuredArticleId = typeof featuredArticleIdRaw === 'number'
     ? featuredArticleIdRaw
     : typeof featuredArticleIdRaw === 'string'
       ? parseInt(featuredArticleIdRaw, 10)
       : undefined;
-  const showFeaturedRecipe = value.showFeaturedRecipe ?? value.show_featured_recipe;
-  const showHeroCta = value.showHeroCta ?? value.show_hero_cta;
   const normalized: ConfigJson = {};
 
-  if (typeof postsPerPage === 'number') normalized.postsPerPage = postsPerPage;
+  if (typeof value.posts_per_page === 'number') normalized.posts_per_page = value.posts_per_page;
   if (typeof value.tldr === 'string') normalized.tldr = value.tldr;
-  if (typeof value.showInNav === 'boolean') normalized.showInNav = value.showInNav;
-  if (typeof value.showInFooter === 'boolean') normalized.showInFooter = value.showInFooter;
-  if (typeof layout === 'string') normalized.layout = layout as ConfigJson['layout'];
-  if (typeof value.cardStyle === 'string') normalized.cardStyle = value.cardStyle as ConfigJson['cardStyle'];
-  if (typeof value.showSidebar === 'boolean') normalized.showSidebar = value.showSidebar;
-  if (typeof value.showFilters === 'boolean') normalized.showFilters = value.showFilters;
-  if (typeof value.showBreadcrumb === 'boolean') normalized.showBreadcrumb = value.showBreadcrumb;
-  if (typeof value.showPagination === 'boolean') normalized.showPagination = value.showPagination;
-  if (typeof value.sortBy === 'string') normalized.sortBy = value.sortBy as ConfigJson['sortBy'];
-  if (typeof value.sortOrder === 'string') normalized.sortOrder = value.sortOrder as ConfigJson['sortOrder'];
-  if (typeof value.headerStyle === 'string') normalized.headerStyle = value.headerStyle as ConfigJson['headerStyle'];
-  if (Number.isFinite(featuredArticleId)) normalized.featuredArticleId = featuredArticleId as number;
-  if (typeof showFeaturedRecipe === 'boolean') normalized.showFeaturedRecipe = showFeaturedRecipe;
-  if (typeof showHeroCta === 'boolean') normalized.showHeroCta = showHeroCta;
-  if (typeof value.heroCtaText === 'string') normalized.heroCtaText = value.heroCtaText;
-  if (typeof value.heroCtaLink === 'string') normalized.heroCtaLink = value.heroCtaLink;
+  if (typeof value.show_in_nav === 'boolean') normalized.show_in_nav = value.show_in_nav;
+  if (typeof value.show_in_footer === 'boolean') normalized.show_in_footer = value.show_in_footer;
+  if (typeof value.layout_mode === 'string') normalized.layout_mode = value.layout_mode as ConfigJson['layout_mode'];
+  if (typeof value.card_style === 'string') normalized.card_style = value.card_style as ConfigJson['card_style'];
+  if (typeof value.show_sidebar === 'boolean') normalized.show_sidebar = value.show_sidebar;
+  if (typeof value.show_filters === 'boolean') normalized.show_filters = value.show_filters;
+  if (typeof value.show_breadcrumb === 'boolean') normalized.show_breadcrumb = value.show_breadcrumb;
+  if (typeof value.show_pagination === 'boolean') normalized.show_pagination = value.show_pagination;
+  if (typeof value.article_sort_by === 'string') normalized.article_sort_by = value.article_sort_by as ConfigJson['article_sort_by'];
+  if (typeof value.article_sort_order === 'string') normalized.article_sort_order = value.article_sort_order as ConfigJson['article_sort_order'];
+  if (typeof value.header_style === 'string') normalized.header_style = value.header_style as ConfigJson['header_style'];
+  if (Number.isFinite(featuredArticleId)) normalized.featured_article_id = featuredArticleId as number;
+  if (typeof value.show_featured_recipe === 'boolean') normalized.show_featured_recipe = value.show_featured_recipe;
+  if (typeof value.show_hero_cta === 'boolean') normalized.show_hero_cta = value.show_hero_cta;
+  if (typeof value.hero_cta_text === 'string') normalized.hero_cta_text = value.hero_cta_text;
+  if (typeof value.hero_cta_link === 'string') normalized.hero_cta_link = value.hero_cta_link;
 
   return normalized;
 };
@@ -157,8 +180,8 @@ export function parseImagesJson(value: any): string {
       const parsed = JSON.parse(value);
       const images = typeof parsed === 'object' && parsed ? parsed : {};
       const normalized: CategoryImagesJson = {
-        thumbnail: normalizeImageSlot(images.thumbnail),
-        cover: normalizeImageSlot(images.cover),
+        thumbnail: normalizeImageSlot(images.thumbnail, ['xs', 'sm'], '1:1'),
+        hero: normalizeImageSlot(images.hero, ['sm', 'md', 'lg'], '16:9'),
       };
       return JSON.stringify(normalized);
     } catch {
@@ -168,8 +191,8 @@ export function parseImagesJson(value: any): string {
 
   if (typeof value === 'object') {
     const normalized: CategoryImagesJson = {
-      thumbnail: normalizeImageSlot(value.thumbnail),
-      cover: normalizeImageSlot(value.cover),
+      thumbnail: normalizeImageSlot(value.thumbnail, ['xs', 'sm'], '1:1'),
+      hero: normalizeImageSlot(value.hero, ['sm', 'md', 'lg'], '16:9'),
     };
     return JSON.stringify(normalized);
   }
@@ -226,16 +249,16 @@ export function parseConfigJson(value: any): string {
  */
 export function transformCategoryRequestBody(body: any): any {
   const transformed = { ...body };
-  const hasLegacyImageFields = ['imageUrl', 'imageAlt', 'imageWidth', 'imageHeight']
+  const hasLegacyImageFields = ['image_url', 'imageAlt', 'imageWidth', 'imageHeight']
     .some((key) => Object.prototype.hasOwnProperty.call(body, key));
   const configOverrides: Record<string, any> = {};
 
   if (body.numEntriesPerPage !== undefined) {
-    configOverrides.postsPerPage = body.numEntriesPerPage;
+    configOverrides.posts_per_page = body.numEntriesPerPage;
     delete transformed.numEntriesPerPage;
   }
   if (body.postsPerPage !== undefined) {
-    configOverrides.postsPerPage = body.postsPerPage;
+    configOverrides.posts_per_page = body.postsPerPage;
     delete transformed.postsPerPage;
   }
   if (body.tldr !== undefined) {
@@ -243,132 +266,135 @@ export function transformCategoryRequestBody(body: any): any {
     delete transformed.tldr;
   }
   if (body.showInNav !== undefined) {
-    configOverrides.showInNav = body.showInNav;
+    configOverrides.show_in_nav = body.showInNav;
     delete transformed.showInNav;
   }
   if (body.showInFooter !== undefined) {
-    configOverrides.showInFooter = body.showInFooter;
+    configOverrides.show_in_footer = body.showInFooter;
     delete transformed.showInFooter;
   }
   if (body.layout !== undefined) {
-    configOverrides.layout = body.layout;
+    configOverrides.layout_mode = body.layout;
     delete transformed.layout;
   }
   if (body.layoutMode !== undefined) {
-    configOverrides.layout = body.layoutMode;
+    configOverrides.layout_mode = body.layoutMode;
     delete transformed.layoutMode;
   }
   if (body.cardStyle !== undefined) {
-    configOverrides.cardStyle = body.cardStyle;
+    configOverrides.card_style = body.cardStyle;
     delete transformed.cardStyle;
   }
   if (body.showSidebar !== undefined) {
-    configOverrides.showSidebar = body.showSidebar;
+    configOverrides.show_sidebar = body.showSidebar;
     delete transformed.showSidebar;
   }
   if (body.showFilters !== undefined) {
-    configOverrides.showFilters = body.showFilters;
+    configOverrides.show_filters = body.showFilters;
     delete transformed.showFilters;
   }
   if (body.showBreadcrumb !== undefined) {
-    configOverrides.showBreadcrumb = body.showBreadcrumb;
+    configOverrides.show_breadcrumb = body.showBreadcrumb;
     delete transformed.showBreadcrumb;
   }
   if (body.showPagination !== undefined) {
-    configOverrides.showPagination = body.showPagination;
+    configOverrides.show_pagination = body.showPagination;
     delete transformed.showPagination;
   }
   if (body.sortBy !== undefined) {
-    configOverrides.sortBy = body.sortBy;
+    configOverrides.article_sort_by = body.sortBy;
     delete transformed.sortBy;
   }
-  if (body.sortOrder !== undefined) {
-    configOverrides.sortOrder = body.sortOrder;
-    delete transformed.sortOrder;
+  if (body.sort_order !== undefined) {
+    configOverrides.article_sort_order = body.sort_order;
+    delete transformed.sort_order;
   }
   if (body.headerStyle !== undefined) {
-    configOverrides.headerStyle = body.headerStyle;
+    configOverrides.header_style = body.headerStyle;
     delete transformed.headerStyle;
   }
   if (body.featuredArticleId !== undefined) {
     const parsed = typeof body.featuredArticleId === 'string'
       ? parseInt(body.featuredArticleId, 10)
       : body.featuredArticleId;
-    configOverrides.featuredArticleId = Number.isFinite(parsed) ? parsed : null;
+    configOverrides.featured_article_id = Number.isFinite(parsed) ? parsed : null;
     delete transformed.featuredArticleId;
   }
   if (body.showFeaturedRecipe !== undefined) {
-    configOverrides.showFeaturedRecipe = body.showFeaturedRecipe;
+    configOverrides.show_featured_recipe = body.showFeaturedRecipe;
     delete transformed.showFeaturedRecipe;
   }
   if (body.showHeroCta !== undefined) {
-    configOverrides.showHeroCta = body.showHeroCta;
+    configOverrides.show_hero_cta = body.showHeroCta;
     delete transformed.showHeroCta;
   }
   if (body.heroCtaText !== undefined) {
-    configOverrides.heroCtaText = body.heroCtaText;
+    configOverrides.hero_cta_text = body.heroCtaText;
     delete transformed.heroCtaText;
   }
   if (body.heroCtaLink !== undefined) {
-    configOverrides.heroCtaLink = body.heroCtaLink;
+    configOverrides.hero_cta_link = body.heroCtaLink;
     delete transformed.heroCtaLink;
   }
 
-  if (body.imagesJson !== undefined) {
-    transformed.imagesJson = parseImagesJson(body.imagesJson);
+  if (body.images_json !== undefined) {
+    transformed.images_json = parseImagesJson(body.images_json);
   } else if (hasLegacyImageFields) {
-    const images: CategoryImagesJson = {};
-    if (body.imageUrl) {
-      const r2Key = extractR2KeyFromUrl(body.imageUrl);
+    const images: Partial<Record<'thumbnail', unknown>> = {};
+    if (body.image_url) {
+      const r2Key = extractR2KeyFromUrl(body.image_url);
       images.thumbnail = {
         alt: body.imageAlt,
-        variants: {
-          original: {
-            ...(r2Key ? { r2_key: r2Key } : { url: body.imageUrl }),
-            width: body.imageWidth ?? 0,
-            height: body.imageHeight ?? 0,
-          },
-        },
+        url: r2Key ? `/api/images/${r2Key}` : body.image_url,
+        width: body.imageWidth ?? 0,
+        height: body.imageHeight ?? 0,
       };
     }
-    transformed.imagesJson = JSON.stringify(images);
-    delete transformed.imageUrl;
+    transformed.images_json = JSON.stringify(images);
+    delete transformed.image_url;
     delete transformed.imageAlt;
     delete transformed.imageWidth;
     delete transformed.imageHeight;
   }
 
-  if (body.seoJson !== undefined) {
-    transformed.seoJson = parseSeoJson(body.seoJson);
+  if (body.seo_json !== undefined) {
+    transformed.seo_json = parseSeoJson(body.seo_json);
   } else if (
-    body.metaTitle ||
-    body.metaDescription ||
-    body.canonicalUrl ||
-    body.canonical ||
-    body.ogImage ||
-    body.ogTitle ||
-    body.ogDescription ||
-    body.twitterCard ||
-    body.robots ||
-    body.noIndex
+    body.metaTitle !== undefined ||
+    body.metaDescription !== undefined ||
+    body.canonicalUrl !== undefined ||
+    body.canonical !== undefined ||
+    body.ogImage !== undefined ||
+    body.ogTitle !== undefined ||
+    body.ogDescription !== undefined ||
+    body.twitterCard !== undefined ||
+    body.robots !== undefined ||
+    body.noIndex !== undefined
   ) {
-    transformed.seoJson = parseSeoJson({
-      metaTitle: body.metaTitle,
-      metaDescription: body.metaDescription,
-      canonical: body.canonical,
-      canonicalUrl: body.canonicalUrl,
-      ogImage: body.ogImage,
-      ogTitle: body.ogTitle,
-      ogDescription: body.ogDescription,
-      twitterCard: body.twitterCard,
+    transformed.seo_json = parseSeoJson({
+      meta_title: body.metaTitle,
+      meta_description: body.metaDescription,
+      canonical: body.canonical ?? body.canonicalUrl,
+      og_image: body.ogImage,
+      og_title: body.ogTitle,
+      og_description: body.ogDescription,
+      twitter_card: body.twitterCard,
       robots: body.robots,
-      noIndex: body.noIndex,
+      no_index: body.noIndex,
     });
   }
 
-  if (body.configJson !== undefined || Object.keys(configOverrides).length > 0) {
-    const baseConfig = parseConfigJsonValue(body.configJson);
-    transformed.configJson = parseConfigJson({ ...baseConfig, ...configOverrides });
+  const existingConfig = body.config_json !== undefined
+    ? JSON.parse(parseConfigJson(body.config_json))
+    : {};
+  const mergedConfig = {
+    ...existingConfig,
+    ...configOverrides,
+  };
+  if (Object.keys(mergedConfig).length > 0) {
+    transformed.config_json = JSON.stringify(mergedConfig);
+  } else {
+    delete transformed.config_json;
   }
 
   // Basic required field validation REMOVED to allow partial updates (PATCH)
@@ -377,7 +403,7 @@ export function transformCategoryRequestBody(body: any): any {
   const missing: string[] = [];
   if (!transformed.slug) missing.push('slug');
   if (!transformed.label) missing.push('label');
-  if (!transformed.shortDescription) missing.push('shortDescription');
+  if (!transformed.short_description) missing.push('short_description');
   if (missing.length) {
     const error = new Error(`Missing required fields: ${missing.join(', ')}`);
     (error as any).code = 'VALIDATION_ERROR';
@@ -388,10 +414,10 @@ export function transformCategoryRequestBody(body: any): any {
   // Clean up any flat fields from admin form that are NOT
   // actual DB columns — they would cause Drizzle to fail silently.
   const dbColumns = new Set([
-    'slug', 'label', 'parentId', 'depth', 'headline', 'collectionTitle',
-    'shortDescription', 'imagesJson', 'color', 'iconSvg', 'isFeatured',
-    'seoJson', 'configJson', 'i18nJson', 'sortOrder', 'isOnline',
-    'cachedPostCount', 'createdAt', 'updatedAt', 'deletedAt',
+    'slug', 'label', 'parent_id', 'depth', 'headline', 'collection_title',
+    'short_description', 'images_json', 'color', 'is_featured',
+    'seo_json', 'config_json', 'sort_order', 'workflow_status',
+    'cached_post_count', 'created_at', 'updated_at', 'deleted_at',
   ]);
   for (const key of Object.keys(transformed)) {
     if (!dbColumns.has(key)) {
@@ -406,16 +432,13 @@ export function transformCategoryResponse(category: any): any {
   if (!category) return category;
 
   const response = { ...category };
-  if (!response.iconSvg && (category as any).icon_svg) {
-    response.iconSvg = (category as any).icon_svg;
-  }
 
-  if (category.imagesJson) {
+  if (category.images_json) {
     try {
-      const images: CategoryImagesJson = JSON.parse(category.imagesJson);
-      const primarySlot = images.thumbnail ?? images.cover;
+      const images: CategoryImagesJson = JSON.parse(category.images_json);
+      const primarySlot = images.thumbnail ?? images.hero;
       const variant = getBestVariant(primarySlot?.variants);
-      response.imageUrl = resolveVariantUrl(variant);
+      response.image_url = resolveVariantUrl(variant);
       response.imageAlt = primarySlot?.alt;
       response.imageWidth = variant?.width;
       response.imageHeight = variant?.height;
@@ -423,86 +446,78 @@ export function transformCategoryResponse(category: any): any {
     }
   }
 
-  if (category.seoJson) {
+  if (category.seo_json) {
     try {
-      const seo: SeoJson = JSON.parse(category.seoJson);
-      if (!response.metaTitle) response.metaTitle = seo.metaTitle;
-      if (!response.metaDescription) response.metaDescription = seo.metaDescription;
-      if (!response.canonicalUrl && seo.canonical) response.canonicalUrl = seo.canonical;
-      if (response.ogImage === undefined && seo.ogImage !== undefined) response.ogImage = seo.ogImage;
-      if (response.ogTitle === undefined && seo.ogTitle !== undefined) response.ogTitle = seo.ogTitle;
-      if (response.ogDescription === undefined && seo.ogDescription !== undefined) response.ogDescription = seo.ogDescription;
-      if (response.twitterCard === undefined && seo.twitterCard !== undefined) response.twitterCard = seo.twitterCard;
-      if (response.robots === undefined && seo.robots !== undefined) response.robots = seo.robots;
-      if (response.noIndex === undefined && seo.noIndex !== undefined) response.noIndex = seo.noIndex;
+      const seo: SeoJson = JSON.parse(category.seo_json);
+      if (response.meta_title === undefined && seo.meta_title !== undefined) response.meta_title = seo.meta_title ?? undefined;
+      if (response.meta_description === undefined && seo.meta_description !== undefined) response.meta_description = seo.meta_description ?? undefined;
+      if (response.canonical === undefined && seo.canonical !== undefined) response.canonical = seo.canonical;
+      if (response.og_image === undefined && seo.og_image !== undefined) response.og_image = seo.og_image;
+      if (response.og_title === undefined && seo.og_title !== undefined) response.og_title = seo.og_title;
+      if (response.og_description === undefined && seo.og_description !== undefined) response.og_description = seo.og_description;
+      if (response.twitter_card === undefined && seo.twitter_card !== undefined) response.twitter_card = seo.twitter_card;
+      if (response.no_index === undefined && seo.no_index !== undefined) response.no_index = seo.no_index;
     } catch {
       // Invalid JSON, skip
     }
   }
 
-  if (category.configJson) {
+  if (category.config_json) {
     try {
-      const config: ConfigJson = JSON.parse(category.configJson);
-      const configIconSvg = (config as any)?.iconSvg ?? (config as any)?.icon_svg;
-      if (!response.iconSvg && typeof configIconSvg === 'string') {
-        response.iconSvg = configIconSvg;
-      }
-      if (response.numEntriesPerPage === undefined && typeof config.postsPerPage === 'number') {
-        response.numEntriesPerPage = config.postsPerPage;
+      const config: ConfigJson = JSON.parse(category.config_json);
+      if (response.posts_per_page === undefined && typeof config.posts_per_page === 'number') {
+        response.posts_per_page = config.posts_per_page;
       }
       if (response.tldr === undefined && typeof config.tldr === 'string') {
         response.tldr = config.tldr;
       }
-      if (response.showInNav === undefined && typeof config.showInNav === 'boolean') {
-        response.showInNav = config.showInNav;
+      if (response.show_in_nav === undefined && typeof config.show_in_nav === 'boolean') {
+        response.show_in_nav = config.show_in_nav;
       }
-      if (response.showInFooter === undefined && typeof config.showInFooter === 'boolean') {
-        response.showInFooter = config.showInFooter;
+      if (response.show_in_footer === undefined && typeof config.show_in_footer === 'boolean') {
+        response.show_in_footer = config.show_in_footer;
       }
-      if (response.layoutMode === undefined && typeof config.layout === 'string') {
-        response.layoutMode = config.layout;
+      if (response.layout_mode === undefined && typeof config.layout_mode === 'string') {
+        response.layout_mode = config.layout_mode;
       }
-      if (response.cardStyle === undefined && typeof config.cardStyle === 'string') {
-        response.cardStyle = config.cardStyle;
+      if (response.card_style === undefined && typeof config.card_style === 'string') {
+        response.card_style = config.card_style;
       }
-      if (response.showSidebar === undefined && typeof config.showSidebar === 'boolean') {
-        response.showSidebar = config.showSidebar;
+      if (response.show_sidebar === undefined && typeof config.show_sidebar === 'boolean') {
+        response.show_sidebar = config.show_sidebar;
       }
-      if (response.showFilters === undefined && typeof config.showFilters === 'boolean') {
-        response.showFilters = config.showFilters;
+      if (response.show_filters === undefined && typeof config.show_filters === 'boolean') {
+        response.show_filters = config.show_filters;
       }
-      if (response.showBreadcrumb === undefined && typeof config.showBreadcrumb === 'boolean') {
-        response.showBreadcrumb = config.showBreadcrumb;
+      if (response.show_breadcrumb === undefined && typeof config.show_breadcrumb === 'boolean') {
+        response.show_breadcrumb = config.show_breadcrumb;
       }
-      if (response.showPagination === undefined && typeof config.showPagination === 'boolean') {
-        response.showPagination = config.showPagination;
+      if (response.show_pagination === undefined && typeof config.show_pagination === 'boolean') {
+        response.show_pagination = config.show_pagination;
       }
-      // sortOrder from config (direction) must use a different check since
-      // the DB column 'sortOrder' (numeric display-order) is always present
-      // and would shadow the config direction string.
-      if (typeof config.sortBy === 'string') {
-        response.sortBy = config.sortBy;
+      if (typeof config.article_sort_by === 'string') {
+        response.article_sort_by = config.article_sort_by;
       }
-      if (typeof config.sortOrder === 'string') {
-        response.configSortOrder = config.sortOrder;
+      if (typeof config.article_sort_order === 'string') {
+        response.article_sort_order = config.article_sort_order;
       }
-      if (response.headerStyle === undefined && typeof config.headerStyle === 'string') {
-        response.headerStyle = config.headerStyle;
+      if (response.header_style === undefined && typeof config.header_style === 'string') {
+        response.header_style = config.header_style;
       }
-      if (response.featuredArticleId === undefined && typeof config.featuredArticleId === 'number') {
-        response.featuredArticleId = config.featuredArticleId;
+      if (response.featured_article_id === undefined && typeof config.featured_article_id === 'number') {
+        response.featured_article_id = config.featured_article_id;
       }
-      if (response.showFeaturedRecipe === undefined && typeof config.showFeaturedRecipe === 'boolean') {
-        response.showFeaturedRecipe = config.showFeaturedRecipe;
+      if (response.show_featured_recipe === undefined && typeof config.show_featured_recipe === 'boolean') {
+        response.show_featured_recipe = config.show_featured_recipe;
       }
-      if (response.showHeroCta === undefined && typeof config.showHeroCta === 'boolean') {
-        response.showHeroCta = config.showHeroCta;
+      if (response.show_hero_cta === undefined && typeof config.show_hero_cta === 'boolean') {
+        response.show_hero_cta = config.show_hero_cta;
       }
-      if (response.heroCtaText === undefined && typeof config.heroCtaText === 'string') {
-        response.heroCtaText = config.heroCtaText;
+      if (response.hero_cta_text === undefined && typeof config.hero_cta_text === 'string') {
+        response.hero_cta_text = config.hero_cta_text;
       }
-      if (response.heroCtaLink === undefined && typeof config.heroCtaLink === 'string') {
-        response.heroCtaLink = config.heroCtaLink;
+      if (response.hero_cta_link === undefined && typeof config.hero_cta_link === 'string') {
+        response.hero_cta_link = config.hero_cta_link;
       }
     } catch {
       // Invalid JSON, skip

@@ -1,16 +1,16 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import Layout from "@layouts/Layout.astro";
 ---
 
 <Layout
-	title="About Us | FreeCipies"
-	description="Learn about FreeCipies - your destination for delicious, easy-to-follow recipes from around the world."
+	title="About Us | SaaS Blog"
+	description="Learn about SaaS Blog - your destination for delicious, easy-to-follow recipes from around the world."
 >
 	<main class="about-page">
 		<!-- Hero Section -->
 		<section class="hero">
 			<div class="hero-content">
-				<h1>About <span class="highlight">FreeCipies</span></h1>
+				<h1>About <span class="highlight">SaaS Blog</span></h1>
 				<p class="tagline">Where passion meets flavor</p>
 			</div>
 		</section>
@@ -22,7 +22,7 @@ import Layout from "../layouts/Layout.astro";
 					<div class="mission-icon">🍳</div>
 					<h2>Our Mission</h2>
 					<p>
-						At FreeCipies, we believe that great food should be
+						At SaaS Blog, we believe that great food should be
 						accessible to everyone. Our mission is to inspire home
 						cooks around the world with delicious, easy-to-follow
 						recipes that bring joy to the kitchen and smiles to the
@@ -44,7 +44,7 @@ import Layout from "../layouts/Layout.astro";
 					<div class="story-text">
 						<h2>Our Story</h2>
 						<p>
-							FreeCipies started with a simple idea: sharing the
+							SaaS Blog started with a simple idea: sharing the
 							recipes we love with the world. What began as a
 							small collection of family favorites has grown into
 							a vibrant community of food lovers.
@@ -154,7 +154,7 @@ import Layout from "../layouts/Layout.astro";
 	}
 
 	.container {
-		max-width: 1200px;
+		max-width: var(--container-max);
 		margin: 0 auto;
 		padding: 0 24px;
 	}
@@ -431,4 +431,3 @@ import Layout from "../layouts/Layout.astro";
 		}
 	}
 </style>
-

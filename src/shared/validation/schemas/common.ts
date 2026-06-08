@@ -15,11 +15,14 @@ export const SlugOrIdParam = z.object({
   slug: z.string().min(1, 'Slug or ID is required'),
 });
 
-/** Pagination query params with sensible defaults + computed offset */
-export const PaginationQuery = z.object({
+/** Pagination query params schema for extension */
+export const PaginationSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(100).default(12),
-}).transform(({ page, limit }) => ({
+});
+
+/** Pagination query params with sensible defaults + computed offset */
+export const PaginationQuery = PaginationSchema.transform(({ page, limit }) => ({
   page,
   limit,
   offset: (page - 1) * limit,

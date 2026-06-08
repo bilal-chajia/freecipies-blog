@@ -1,46 +1,45 @@
 import type { BlockAdapter } from '../BlockAdapter';
-import type { FAQSectionBlock, FAQItem } from '@modules/articles/types/content-blocks.types';
+import type { MainFaqBlock } from '@modules/articles/types/content-blocks.types';
 import type { AppBlock } from '../../types/editor.types';
+import { parseJsonArray, parseJsonObject } from '../../utils/json';
 
-export const FAQAdapter: BlockAdapter<FAQSectionBlock> = {
-  type: 'faq_section',
+type StoredFaqItem = {
+  question?: unknown;
+  answer?: unknown;
+  q?: unknown;
+  a?: unknown;
+};
 
-  toEditor(block) {
+function normalizeFaqItems(value: unknown) {
+  return parseJsonArray<StoredFaqItem>(value).map((item) => ({
+    q: typeof item.q === 'string' ? item.q : typeof item.question === 'string' ? item.question : '',
+    a: typeof item.a === 'string' ? item.a : typeof item.answer === 'string' ? item.answer : '',
+  }));
+}
+
+export const FAQAdapter: BlockAdapter<MainFaqBlock> = {
+  type: 'main_faq',
+
+  toEditor(_block, context) {
+    const faqs = parseJsonObject<Record<string, unknown>>(context?.faqs_json, {});
+    const title = typeof faqs.heading === 'string' && faqs.heading.trim()
+      ? faqs.heading
+      : 'Frequently Asked Questions';
+    const items = normalizeFaqItems(faqs.items);
+
     return {
       type: 'faqSection',
       props: {
-        title: block.title || '',
-        itemsJson: JSON.stringify(Array.isArray(block.items) ? block.items : []),
+        title,
+        itemsJson: JSON.stringify(items),
       },
     };
   },
 
-  fromEditor(block: AppBlock): FAQSectionBlock | null {
-    const props = block.props as Record<string, unknown>;
-    const rawItemsJson = props.itemsJson;
-    let items: FAQItem[];
-
-    try {
-      const parsed = JSON.parse(typeof rawItemsJson === 'string' ? rawItemsJson : '[]');
-      items = Array.isArray(parsed) ? parsed : [];
-    } catch {
-      items = [];
-    }
-
-    // Backward compat: also check legacy 'items' prop (pre-Phase 3.2 blocks)
-    if (items.length === 0 && props.items) {
-      const rawItems = props.items;
-      items = Array.isArray(rawItems)
-        ? (rawItems as FAQItem[])
-        : [];
-    }
-
-    if (items.length === 0) return null;
-
+  fromEditor(_block: AppBlock): MainFaqBlock {
     return {
-      type: 'faq_section',
-      title: props.title ? String(props.title) : undefined,
-      items: items.filter((item) => item && typeof item.q === 'string' && item.q.trim()),
+      ...(typeof _block.id === 'string' ? { id: _block.id } : {}),
+      type: 'main_faq',
     };
   },
 };

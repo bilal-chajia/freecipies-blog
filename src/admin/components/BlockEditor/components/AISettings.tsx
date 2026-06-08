@@ -1,0 +1,393 @@
+/**
+ * AI Settings Component for Editor Sidebar
+ * =========================================
+ * Allows users to generate content using AI directly from the editor.
+ */
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { Sparkles, Loader2, Wand2, Check, AlertCircle, ChevronDown, RefreshCw } from 'lucide-react';
+import { Button } from '@/ui/button';
+import { Textarea } from '@/ui/textarea';
+import { Label } from '@/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
+import { Alert, AlertDescription } from '@/ui/alert';
+import { Badge } from '@/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/ui/collapsible';
+import { cn } from '@/lib/utils';
+import { aiAPI } from '@/services/api';
+
+type AIModel = {
+    id: string;
+    name?: string;
+    max_tokens?: number;
+    context_window?: number;
+    supports_thinking?: boolean;
+};
+
+type ProviderInfo = {
+    icon?: string;
+    name?: string;
+};
+
+type AISettingsProps = {
+    contentType?: string;
+    onContentGenerated?: (content: GeneratedContent) => void;
+    disabled?: boolean;
+};
+
+type GeneratedContent = {
+    label?: string;
+    short_description?: string;
+    [key: string]: unknown;
+};
+
+type ProviderDefaults = {
+    provider?: string;
+    model?: string;
+};
+
+type ProvidersResponse = {
+    configured_providers?: string[];
+    available_models?: Record<string, AIModel[]>;
+    provider_info?: Record<string, ProviderInfo>;
+    defaults?: ProviderDefaults;
+};
+
+type ApiErrorLike = {
+    response?: {
+        data?: {
+            error?: string;
+        };
+    };
+    message?: string;
+};
+
+/**
+ * AI Settings Panel for Block Editor Sidebar
+ */
+export default function AISettings({
+    contentType = 'recipe',
+    onContentGenerated,
+    disabled = false,
+}: AISettingsProps) {
+    const [loading, setLoading] = useState(true);
+    const [generating, setGenerating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
+
+    // Provider/Model configuration
+    const [providers, setProviders] = useState<string[]>([]);
+    const [availableModels, setAvailableModels] = useState<Record<string, AIModel[]>>({});
+    const [providerInfo, setProviderInfo] = useState<Record<string, ProviderInfo>>({});
+    const [, setDefaults] = useState<ProviderDefaults>({});
+
+    // User selections
+    const [selectedProvider, setSelectedProvider] = useState('');
+    const [selectedModel, setSelectedModel] = useState('');
+    const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium');
+    const [prompt, setPrompt] = useState('');
+
+    // Generated content preview
+    const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+    const [showAdvanced, setShowAdvanced] = useState(false);
+
+    // Load available providers
+    const loadProviders = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await aiAPI.getProviders();
+            if (response.data.success) {
+                const { configured_providers = [], available_models: models, provider_info: info, defaults: defs } = response.data.data as ProvidersResponse;
+                setProviders(configured_providers);
+                setAvailableModels(models || {});
+                setProviderInfo(info || {});
+                setDefaults(defs || {});
+
+                // Set defaults
+                if (defs?.provider && configured_providers?.includes(defs.provider)) {
+                    setSelectedProvider(defs.provider);
+                    setSelectedModel(defs.model || '');
+                } else if (configured_providers?.length > 0) {
+                    setSelectedProvider(configured_providers[0]);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load AI providers:', err);
+            setError('Failed to load AI configuration. Check Settings > AI.');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadProviders();
+    }, [loadProviders]);
+
+    // Update model when provider changes
+    useEffect(() => {
+        if (selectedProvider && availableModels[selectedProvider]?.length > 0) {
+            // Try to keep the same model if it exists in new provider
+            const modelsForProvider = availableModels[selectedProvider];
+            const currentModelExists = modelsForProvider.some(m => m.id === selectedModel);
+            if (!currentModelExists) {
+                setSelectedModel(modelsForProvider[0].id);
+            }
+        }
+    }, [selectedProvider, availableModels, selectedModel]);
+
+    // Generate content
+    const handleGenerate = async () => {
+        if (!prompt.trim() || !selectedProvider || !selectedModel) return;
+
+        try {
+            setGenerating(true);
+            setError(null);
+            setSuccess(false);
+            setGeneratedContent(null);
+
+            const response = await aiAPI.generate({
+                prompt: prompt.trim(),
+                content_type: contentType,
+                provider: selectedProvider,
+                model: selectedModel,
+                reasoning_effort: currentModel?.supports_thinking ? reasoningEffort : undefined,
+            });
+
+            if (response.data.success) {
+                setGeneratedContent(response.data.data.content);
+                setSuccess(true);
+            } else {
+                throw new Error(response.data.error || 'Generation failed');
+            }
+        } catch (err) {
+            console.error('AI generation failed:', err);
+            const apiError = err as ApiErrorLike;
+            setError(apiError.response?.data?.error || apiError.message || 'Generation failed');
+        } finally {
+            setGenerating(false);
+        }
+    };
+
+    // Apply generated content to editor
+    const handleApply = () => {
+        if (generatedContent && onContentGenerated) {
+            onContentGenerated(generatedContent);
+            setSuccess(false);
+            setGeneratedContent(null);
+            setPrompt('');
+        }
+    };
+
+    // Reset state
+    const handleReset = () => {
+        setGeneratedContent(null);
+        setSuccess(false);
+        setError(null);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (providers.length === 0) {
+        return (
+            <div className="p-4 space-y-3">
+                <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                        No AI providers configured. Go to <strong>Settings → AI</strong> to add your API keys.
+                    </AlertDescription>
+                </Alert>
+                <Button variant="outline" size="sm" onClick={loadProviders} className="w-full">
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                </Button>
+            </div>
+        );
+    }
+
+    const currentProviderInfo = providerInfo[selectedProvider] || {};
+    const currentModels = availableModels[selectedProvider] || [];
+    const currentModel = currentModels.find((m) => m.id === selectedModel);
+
+    return (
+        <div className="p-4 space-y-4">
+            {/* Header */}
+            <div className="flex items-center gap-2 text-sm font-medium">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>AI Content Generator</span>
+                <Badge variant="outline" className="text-[10px] ml-auto">
+                    {contentType}
+                </Badge>
+            </div>
+
+            {/* Error */}
+            {error && (
+                <Alert variant="destructive" className="py-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">{error}</AlertDescription>
+                </Alert>
+            )}
+
+            {/* Success with Preview */}
+            {success && generatedContent && (
+                <div className="space-y-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <Check className="w-4 h-4" />
+                        <span className="text-sm font-medium">Content generated!</span>
+                    </div>
+
+                    <div className="text-xs space-y-1">
+                        {generatedContent.label && (
+                            <div><strong>Title:</strong> {generatedContent.label}</div>
+                        )}
+                        {generatedContent.short_description && (
+                            <div className="text-muted-foreground line-clamp-2">
+                                {generatedContent.short_description}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-2">
+                        <Button size="sm" onClick={handleApply} className="flex-1">
+                            <Wand2 className="w-3 h-3 mr-1" />
+                            Apply to Editor
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleReset}>
+                            Discard
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Prompt Input */}
+            {!success && (
+                <>
+                    <div className="space-y-2">
+                        <Label className="text-xs">Describe your content</Label>
+                        <Textarea
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            placeholder={
+                                contentType === 'recipe'
+                                    ? "e.g., Classic French onion soup with crispy cheese croutons"
+                                    : "e.g., 10 tips for meal prepping on a budget"
+                            }
+                            rows={3}
+                            disabled={generating || disabled}
+                            className="text-sm resize-none"
+                        />
+                    </div>
+
+                    {/* Advanced Options */}
+                    <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+                        <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
+                            <ChevronDown className={cn('w-3 h-3 transition-transform', showAdvanced && 'rotate-180')} />
+                            Advanced options
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pt-3 space-y-3">
+                            {/* Provider Selection */}
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Provider</Label>
+                                <Select value={selectedProvider} onValueChange={setSelectedProvider} disabled={generating}>
+                                    <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {providers.map((p) => (
+                                            <SelectItem key={p} value={p} className="text-xs">
+                                                <span className="flex items-center gap-2">
+                                                    <span>{providerInfo[p]?.icon}</span>
+                                                    <span>{providerInfo[p]?.name || p}</span>
+                                                </span>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Model Selection */}
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Model</Label>
+                                <Select value={selectedModel} onValueChange={setSelectedModel} disabled={generating}>
+                                    <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {currentModels.map((m) => (
+                                            <SelectItem key={m.id} value={m.id} className="text-xs">
+                                                <span className="flex items-center gap-2">
+                                                    <span>{m.name || m.id}</span>
+                                                </span>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {currentModel && (
+                                <div className="text-xs text-muted-foreground space-y-1">
+                                    <div className="flex flex-wrap gap-3 text-[10px] uppercase tracking-wider">
+                                        {currentModel.max_tokens && (
+                                            <span>Max tokens: {currentModel.max_tokens.toLocaleString()}</span>
+                                        )}
+                                        {currentModel.context_window && (
+                                            <span>Context: {currentModel.context_window.toLocaleString()}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            {currentModel?.supports_thinking && (
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs">Reasoning effort</Label>
+                                    <Select
+                                        value={reasoningEffort}
+                                        onValueChange={(value) => setReasoningEffort(value as 'low' | 'medium' | 'high')}
+                                        disabled={generating}
+                                    >
+                                        <SelectTrigger className="h-8 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="low" className="text-xs">Low</SelectItem>
+                                            <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+                                            <SelectItem value="high" className="text-xs">High</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                        </CollapsibleContent>
+                    </Collapsible>
+
+                    {/* Generate Button */}
+                    <Button
+                        onClick={handleGenerate}
+                        disabled={!prompt.trim() || generating || disabled}
+                        className="w-full"
+                    >
+                        {generating ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles className="w-4 h-4 mr-2" />
+                                Generate Content
+                            </>
+                        )}
+                    </Button>
+
+                    {/* Current provider indicator */}
+                    <div className="text-center text-[10px] text-muted-foreground">
+                        Using {currentProviderInfo.icon} {currentProviderInfo.name || selectedProvider}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}

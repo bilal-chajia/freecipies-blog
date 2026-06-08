@@ -1,7 +1,7 @@
 # Project Architecture
 
-> **Last Updated:** 2026-04-06
-> **Framework:** Astro 6 + React 19
+> **Last Updated:** 2026-05-11
+> **Framework:** Astro 6.3.3 + React 19
 > **Deployment:** Cloudflare Pages + D1 + R2 + KV
 
 ---
@@ -10,7 +10,7 @@
 
 This is a **recipe/food blog SaaS** built with:
 
-- **Astro 6** - SSR framework with islands architecture
+- **Astro 6.3.3** - SSR framework with islands architecture
 - **React 19** - Admin panel and interactive components
 - **Cloudflare D1** - SQLite database
 - **Cloudflare R2** - Image storage with responsive variants
@@ -23,7 +23,7 @@ This is a **recipe/food blog SaaS** built with:
 
 | Layer          | Technology            | Purpose                  |
 | -------------- | --------------------- | ------------------------ |
-| **Framework**  | Astro 6               | SSR with islands         |
+| **Framework**  | Astro 6.3.3           | SSR with islands         |
 | **UI Library** | React 19              | Interactive components   |
 | **Styling**    | Tailwind CSS 4        | Utility-first CSS        |
 | **Components** | shadcn/ui + Radix     | Accessible UI primitives |
@@ -48,25 +48,25 @@ This is a **recipe/food blog SaaS** built with:
 recipes-saas/
 ├── src/
 │   ├── admin/              # React Admin Panel (SPA)
-│   │   ├── components/     # Admin UI components
-│   │   ├── pages/          # Admin routes
+│   │   ├── app/            # Admin app shell and routing entrypoint
+│   │   │   └── routes.jsx  # Admin route registry
+│   │   ├── features/       # Admin feature modules with routeable pages
+│   │   ├── components/     # Admin shared shell/components only
+│   │   ├── styles/         # Admin dashboard visual theme
 │   │   ├── services/       # API client
 │   │   ├── store/          # Zustand stores
 │   │   ├── ui/             # shadcn/ui components
-│   │   └── AdminApp.jsx    # Admin entrypoint
+│   │   └── AdminApp.jsx    # Compatibility re-export
 │   │
-│   ├── components/         # Astro/React components
-│   │   ├── ArticleCard.astro
-│   │   ├── CategoryCard.astro
-│   │   └── ...
+│   ├── site/               # Public blog/frontend surface
+│   │   ├── components/     # Astro site components
+│   │   ├── layouts/        # Public page layouts
+│   │   └── styles/         # Public global styles
 │   │
-│   ├── layouts/            # Page layouts
-│   │   └── Layout.astro
-│   │
-│   ├── lib/                # Utilities
-│   │   ├── api.ts          # Frontend API client
-│   │   ├── drizzle.ts      # DB client factory
-│   │   └── utils.ts        # Helper functions
+│   ├── server/             # Request handlers and server-only boundaries
+│   │   ├── api/            # API route handlers called by src/pages/api
+│   │   ├── cloudflare/     # Binding/env helpers
+│   │   └── site-data/      # Server loaders for public Astro pages
 │   │
 │   ├── modules/            # Domain modules (DDD)
 │   │   ├── articles/       # Articles domain (recipes, articles, roundups)
@@ -76,7 +76,7 @@ recipes-saas/
 │   │   ├── equipment/      # Kitchen equipment with affiliate links
 │   │   ├── media/          # Media/uploads domain
 │   │   ├── pinterest/      # Pinterest integration
-│   │   ├── templates/      # Pin templates + canvas editor
+│   │   ├── templates/      # Pin template domain
 │   │   ├── settings/       # Site settings
 │   │   ├── menus/          # Navigation menus
 │   │   ├── auth/           # Authentication
@@ -90,13 +90,11 @@ recipes-saas/
 │   │   ├── tags/           # Tag pages
 │   │   └── api/            # API endpoints
 │   │
-│   ├── shared/             # Cross-cutting concerns
-│   │   ├── database/       # Schema re-exports
-│   │   ├── types/          # Shared TypeScript types
-│   │   └── utils/          # Shared utilities
-│   │
-│   └── styles/             # Global styles
-│       └── global.css
+│   └── shared/             # Cross-cutting concerns
+│       ├── database/       # Schema re-exports
+│       ├── types/          # Shared TypeScript types
+│       ├── design-tokens.css # Neutral CSS primitives only
+│       └── utils/          # Shared utilities
 │
 ├── db/
 │   ├── schema.sql          # Full SQL schema
@@ -111,12 +109,48 @@ recipes-saas/
 ├── astro.config.mjs        # Astro configuration
 ├── drizzle.config.ts       # Drizzle configuration
 ├── tsconfig.json           # TypeScript config
-└── wrangler.toml           # Cloudflare config
+└── wrangler.jsonc           # Cloudflare config
 ```
 
 ---
 
 ## Module Structure
+
+## Runtime Boundaries
+
+The app stays as one Astro 6.3.3 application and one Cloudflare deployment, but the
+internal runtime boundaries are strict:
+
+- `src/pages` owns Astro file-based routes. Public pages call server data
+  loaders, and API route files should stay as thin adapters.
+- `src/site` owns public Astro UI only. Components and layouts must not import
+  `cloudflare:workers` or access `env.DB`, `env.IMAGES`, or `env.SESSION`
+  directly.
+- `src/server` owns request handlers, Cloudflare binding helpers, auth guards,
+  R2/D1/KV access, and server-side site data loaders.
+- `src/modules` owns domain logic only: schemas, services, transforms,
+  validation, and domain types. It must not import admin/site UI.
+- `src/admin` owns the React 19 admin SPA. It calls API endpoints and must not
+  import server runtime code or Cloudflare bindings.
+- `src/shared` remains universal and pure: shared types, validation, response
+  helpers, image DTOs, constants, and storage-neutral utilities.
+
+Cloudflare storage note: the project uses a Cloudflare R2 bucket binding named
+`IMAGES` in `wrangler.jsonc`. This is not the Cloudflare Images product. Code
+and docs should refer to it as the R2 bucket binding `IMAGES` unless the infra
+binding is intentionally renamed in a separate migration.
+
+API route convention: new or migrated API logic belongs in
+`src/server/api/**/*.handler.ts`; `src/pages/api/**` keeps the public URL and
+delegates to the handler. Resource collection endpoints with sibling subroutes
+use `src/pages/api/{resource}/index.ts` instead of
+`src/pages/api/{resource}.ts`.
+
+Boundary checks can be run with:
+
+```bash
+pnpm check:boundaries
+```
 
 Each domain module follows this pattern:
 
@@ -142,15 +176,15 @@ src/modules/{module}/
 | `equipment`  | Kitchen tools with affiliate links |
 | `media`      | Image library and variants    |
 | `pinterest`  | Boards and pins               |
-| `templates`  | Pin canvas templates + editor |
+| `templates`  | Pin template schema, types, services, and utilities |
 | `settings`   | Site configuration            |
 | `menus`      | Navigation menus              |
 | `auth`       | Admin authentication          |
 | `ai`         | Multi-provider AI generation  |
 
-### Templates Module (Self-Contained)
+### Templates Module Boundary
 
-The `templates` module is **fully self-contained** with UI components, stores, and API handlers:
+The `templates` module is server-safe domain code. React/Konva editor UI and editor stores live under `src/admin/features/templates/`.
 
 ```
 src/modules/templates/
@@ -163,24 +197,99 @@ src/modules/templates/
 ├── utils/
 │   ├── placeholders.ts              # {{article.title}} substitution
 │   └── fontLoader.ts                # Google Fonts loader
-├── store/
-│   ├── useEditorStore.ts            # Canvas state
-│   └── useUIStore.ts                # Theme state
-├── components/
-│   ├── canvas/                      # PinCanvas, ElementPanel, toolbars
-│   │   ├── hooks/                   # useKeyboardShortcuts, etc.
-│   │   └── modern/                  # TopToolbar, SidePanel, etc.
-│   ├── editor/                      # TemplateEditor, TemplatesList
-│   └── pins/                        # TemplateSelector
 ├── README.md
 └── index.ts                         # Barrel export
 ```
 
-**Admin imports from module:**
+```
+src/admin/features/templates/
+├── components/
+│   ├── canvas/                      # PinCanvas, ElementPanel, toolbars
+│   ├── editor/                      # TemplateEditor, TemplatesList
+│   └── pins/                        # TemplateSelector
+└── store/                           # Canvas/editor Zustand stores
+```
+
+```
+src/admin/features/pins/
+└── components/
+    ├── PinCreator.jsx               # Quick pin creation workflow
+    ├── TemplateSelector.jsx         # Template picker for pin creation
+    └── index.js                     # Feature component exports
+```
+
+```
+src/admin/features/{feature}/
+├── pages/                           # Routeable dashboard screens
+└── components/                      # Feature-owned UI components
+```
+
+Current admin feature modules include:
+
+| Feature      | Owns |
+| ------------ | ---- |
+| `articles`   | Article list/editors and article preview |
+| `auth`       | Login screen |
+| `authors`    | Author editor/list and author editor panels |
+| `categories` | Category list/editor |
+| `dashboard`  | Dashboard landing screen |
+| `equipment`  | Equipment list |
+| `homepage`   | Homepage editor and homepage section cards |
+| `media`      | Media library, media dialog, image editor, image uploader |
+| `pins`       | Quick pin creation workflow |
+| `pinterest`  | Pinterest board list/editor |
+| `recipes`    | Recipe list |
+| `redirects`  | Redirect list |
+| `roundups`   | Roundup list |
+| `settings`   | Settings screen, tabs, and settings UI components |
+| `tags`       | Tag list/editor |
+| `templates`  | Pin template editor/canvas/stores |
+
+**Admin imports UI from admin features:**
 
 ```javascript
-import { TemplateEditor, PinCanvas, useEditorStore } from "@modules/templates";
+import { TemplateEditor, PinCanvas } from "@admin/features/templates/components";
+import { useEditorStore } from "@admin/features/templates/store";
+import { PinCreator } from "@admin/features/pins/components";
+import { MediaDialog, ImageUploader } from "@admin/features/media/components";
 ```
+
+### Admin App Boundary
+
+The admin shell is a React SPA mounted by `src/pages/admin/[...path].astro`.
+Astro owns the route entrypoint, while React owns the admin dashboard routing.
+
+```
+src/pages/admin/[...path].astro
+└── mounts src/admin/AdminApp.jsx
+    └── re-exports src/admin/app/AdminApp.jsx
+        ├── AdminLayout / auth boundary
+        └── routes.jsx
+            ├── fullScreenAdminRoutes  # editors that bypass AdminLayout
+            └── adminLayoutRoutes      # dashboard modules inside AdminLayout
+```
+
+Admin pages live under `src/admin/features/{feature}/pages`. New admin modules
+should expose routeable screens through `src/admin/app/routes.jsx`.
+
+### Design Surface Boundary
+
+The admin dashboard and public food blog use separate visual systems.
+
+```
+src/shared/design-tokens.css      # Neutral primitives only
+src/site/styles/site-theme.css    # Public food blog identity
+src/site/styles/global.css        # Public site CSS entrypoint
+src/admin/styles/admin-theme.css  # Admin dashboard identity
+src/admin/index.css               # Admin CSS entrypoint
+```
+
+- Public pages are rendered with `data-surface="site"` from `src/site/layouts/Layout.astro`.
+- Admin pages are rendered with `data-surface="admin"` from `src/pages/admin/[...path].astro`.
+- `src/shared` must not own visual identity. It can expose spacing, neutral colors, type scale, motion, z-index, and feedback primitives only.
+- Admin visual components stay in `src/admin/ui`, `src/admin/components`, or `src/admin/features/*`.
+- Public visual components stay in `src/site/components`, `src/site/components/ui`, or `src/site/layouts`.
+- Do not import `site-theme.css` from admin code, and do not import `admin-theme.css` from public site code.
 
 ---
 
@@ -235,10 +344,10 @@ Raw database rows → Hydrated objects with parsed JSON and computed fields.
 
 ```typescript
 // Raw DB row
-{ images_json: '{"cover":{...}}', slug: 'recipe' }
+{ images_json: '{"hero":{...}}', slug: 'recipe' }
 
 // Hydrated
-{ images: { cover: {...} }, slug: 'recipe', route: '/recipes/recipe' }
+{ images: { hero: {...} }, slug: 'recipe', route: '/recipes/recipe' }
 ```
 
 ### 2. Zero-Join Rendering
@@ -296,10 +405,10 @@ import { getArticles } from "../../../modules/articles";
 
 ## Environment Variables
 
-Environment variables are configured in `wrangler.toml` for Cloudflare bindings:
+Environment variables are configured in `wrangler.jsonc` for Cloudflare bindings:
 
 ```toml
-# wrangler.toml
+# wrangler.jsonc
 [[d1_databases]]
 binding = "DB"
 database_name = "freecipies-db"
@@ -353,10 +462,12 @@ Defined in `tsconfig.json`:
 | `@/*`           | `src/admin/*`      |
 | `@modules/*`    | `src/modules/*`    |
 | `@shared/*`     | `src/shared/*`     |
-| `@components/*` | `src/components/*` |
+| `@site/*`       | `src/site/*`       |
+| `@server/*`     | `src/server/*`     |
+| `@components/*` | `src/site/components/*` |
 | `@lib/*`        | `src/lib/*`        |
 | `@admin/*`      | `src/admin/*`      |
-| `@layouts/*`    | `src/layouts/*`    |
+| `@layouts/*`    | `src/site/layouts/*` |
 
 ---
 
@@ -374,16 +485,46 @@ The `articles` table supports three content types:
 
 ### Content Blocks
 
-Articles use a block-based JSON structure (`content_json`):
+Articles use a versioned block document in `content_json`. The container contract is documented in `docs/CONTENT_JSON_CONTRACT.md`; the block vocabulary contract is documented in `docs/CONTENT_BLOCKS_CONTRACT.md` and implemented by `src/modules/content-blocks`.
+
+Database and JSON documentation is split by responsibility:
+
+- `docs/DATABASE_CONTENT_MODEL.md`: tables, relationships, source fields, caches, and runtime usage.
+- `docs/ARTICLE_JSON_CONTRACTS.md`: article JSON fields except `content_json`.
+- `docs/ARTICLE_TABLE_CONTRACT.md`: complete `articles` table contract.
+- `docs/ARTICLE_CACHED_FIELDS_CONTRACT.md`: cached field contracts for `articles`.
+- `docs/CONTENT_JSON_CONTRACT.md`: only the `articles.content_json` container document.
+- `docs/CONTENT_BLOCKS_CONTRACT.md`: block vocabulary stored in `articles.content_json.blocks`.
+- `docs/MEDIA_TABLE_CONTRACT.md`: complete `media` table contract.
+- `docs/IMAGE_JSON_CONTRACT.md`: media variants, image slots, and public/private image rules.
+- `docs/CATEGORIES_TABLE_CONTRACT.md`: complete `categories` table contract.
+- `docs/AUTHORS_TABLE_CONTRACT.md`: complete `authors` table contract.
+- `docs/TAGS_TABLE_CONTRACT.md`: complete `tags` and `articles_to_tags` contract.
+- `docs/SITE_SETTINGS_TABLE_CONTRACT.md`: complete `site_settings` table contract.
+- `docs/EQUIPMENT_TABLE_CONTRACT.md`: complete `equipment` table contract.
+- `docs/REDIRECTS_TABLE_CONTRACT.md`: complete `redirects` table contract.
+
+```json
+{
+  "version": 1,
+  "kind": "content_document",
+  "blocks": []
+}
+```
+
+Naming rule: `docs/NAMING_CONTRACT.md` is canonical. Stored `block.type` values follow `docs/CONTENT_BLOCKS_CONTRACT.md`. Compatibility mappings for older editor names live in `docs/IMPLEMENTATION_GAPS.md`.
+
+Source file rule: new logic uses `.ts`, React components use `.tsx`, and new `.js`/`.jsx` files should not be introduced.
 
 | Category | Types |
 |----------|-------|
 | **Text** | `paragraph`, `heading`, `blockquote`, `list` |
 | **Media** | `image`, `video` |
 | **Callouts** | `tip_box` |
-| **Embeds** | `embed`, `product_card` |
-| **Layout** | `divider`, `spacer`, `ad_slot`, `table` |
-| **Food Blog** | `before_after`, `ingredient_spotlight`, `faq_section`, `related_content` |
+| **Layout** | `divider`, `table`, `main_recipe` |
+| **Food Blog** | `before_after`, `main_faq`, `related_content`, `main_roundup` |
+| **Reserved Future** | `embed`, `product_card`, `ingredient_spotlight` |
+| **Reserved System/Layout** | `spacer`, `ad_slot` |
 
 ---
 
@@ -399,7 +540,7 @@ The project features a sophisticated responsive image system:
 | `sm` | 720px | Mobile full-width |
 | `md` | 1200px | Tablet / small desktop |
 | `lg` | 2048px | Full desktop / retina |
-| `original` | >2048px | Optional, hero images only |
+| `original` | source size | Required in `media.variants_json` for Pinterest generation; not used for normal public rendering |
 
 ### Key Features
 
@@ -414,10 +555,10 @@ The project features a sophisticated responsive image system:
 ```typescript
 // Public types (consumer code, API responses)
 import type { 
-  ImageVariant,      // { url, width, height, sizeBytes }
+  ImageVariant,      // public/runtime shape; storage JSON uses size_bytes
   ImageVariants,     // { xs, sm, md, lg, original }
   ImageSlot,         // Full slot with media_id, alt, caption, variants
-  ArticleImagesJson, // { cover?, thumbnail?, pinterest?, contentImages? }
+  ArticleImagesJson, // { hero?, thumbnail?, recipe_steps? }
 } from '@shared/types/images';
 
 // Storage types (media module ONLY)

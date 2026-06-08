@@ -9,7 +9,7 @@ import { validateParams, validateBody, SlugOrIdParam, UpdateAuthorSchema } from 
 
 export const prerender = false;
 
-const getAvatarUrlFromImagesJson = (value: any): string | null => {
+const getAvatarUrlFromImagesJson = (value: unknown): string | null => {
     if (!value) return null;
     try {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;

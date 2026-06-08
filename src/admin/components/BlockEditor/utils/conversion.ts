@@ -4,54 +4,42 @@
  * Replaces the monolithic switch-case conversion with the BlockAdapter registry.
  * Each block type's conversion logic lives in its own adapter file.
  */
-import type { ContentBlock } from '@modules/articles/types/content-blocks.types';
+import type { ContentBlock, ContentDocument } from '@modules/content-blocks';
+import { normalizeContentDocument } from '@modules/content-blocks';
 import type { AppBlock } from '../types/editor.types';
-import type { BlockAdapter } from '../blocks/BlockAdapter';
-import { getBlockAdapter, blockAdapters } from '../blocks/BlockAdapter';
+import type { BlockAdapter, BlockAdapterContext } from '../blocks/BlockAdapter';
+import { getBlockAdapter } from '../blocks/BlockAdapter';
 import { registerAllBlockAdapters } from '../blocks/adapters';
+import { EDITOR_TYPE_TO_CONTENT_TYPE } from '../blocks/registry';
 import { parseInlineMarkdown, extractText } from './inlineContent';
 
 // ── Init: register all adapters on module load ──────────────────────────────
 registerAllBlockAdapters();
 
-// ── Reverse map: editor block type → adapter ───────────────────────────────
+if (import.meta.env?.DEV) {
+  // Guard: every content type declared in the registry must resolve to a
+  // registered adapter. Catches a typo'd registry contentType at startup.
+  const missing = [...new Set(Object.values(EDITOR_TYPE_TO_CONTENT_TYPE))].filter(
+    (contentType) => !getBlockAdapter(contentType)
+  );
+  if (missing.length) {
+    console.error('[conversion] Registry content types without a registered adapter:', missing);
+  }
+}
+
 let editorTypeToAdapter: Map<string, BlockAdapter> | null = null;
 
 function getEditorTypeMap(): Map<string, BlockAdapter> {
-    if (editorTypeToAdapter) return editorTypeToAdapter;
-    editorTypeToAdapter = new Map();
-    for (const adapter of blockAdapters.values()) {
-        // Probe: call toEditor on a minimal block to discover the editor type
-        // We build the map lazily from a known mapping instead.
-        // (See buildEditorTypeMap below)
-    }
-    // Hardcoded mapping — kept in sync with adapter implementations
-    const mapping: Record<string, string> = {
-        'paragraph':        'paragraph',
-        'heading':          'heading',
-        'customImage':      'image',
-        'video':            'video',
-        'alert':            'tip_box',
-        'blockquote':       'blockquote',
-        'bulletListItem':   'list',
-        'numberedListItem': 'list',
-        'checkListItem':    'list',
-        'faqSection':       'faq_section',
-        'relatedContent':   'related_content',
-        'divider':          'divider',
-        'simpleTable':      'table',
-        'beforeAfter':      'before_after',
- 'roundupList': 'roundup_item',
-    'mainRecipe': 'main_recipe',
-  };
+  if (editorTypeToAdapter) return editorTypeToAdapter;
+  editorTypeToAdapter = new Map();
 
-    for (const [editorType, contentType] of Object.entries(mapping)) {
-        const adapter = getBlockAdapter(contentType);
-        if (adapter) {
-            editorTypeToAdapter.set(editorType, adapter);
-        }
+  for (const [editorType, contentType] of Object.entries(EDITOR_TYPE_TO_CONTENT_TYPE)) {
+    const adapter = getBlockAdapter(contentType);
+    if (adapter) {
+      editorTypeToAdapter.set(editorType, adapter);
     }
-    return editorTypeToAdapter;
+  }
+  return editorTypeToAdapter;
 }
 
 // ── List grouping helpers ───────────────────────────────────────────────────
@@ -63,63 +51,64 @@ const editorTypeToListStyle: Record<string, 'ordered' | 'unordered' | 'checklist
     checkListItem:    'checklist',
 };
 
+function createUniqueEditorId(baseId: unknown, index: number, usedIds: Set<string>): string {
+    const rawBase = typeof baseId === 'string' && baseId.trim()
+        ? baseId.trim()
+        : `block-${index}`;
+
+    if (!usedIds.has(rawBase)) {
+        usedIds.add(rawBase);
+        return rawBase;
+    }
+
+    let suffix = 2;
+    let nextId = `${rawBase}-${suffix}`;
+    while (usedIds.has(nextId)) {
+        suffix += 1;
+        nextId = `${rawBase}-${suffix}`;
+    }
+    usedIds.add(nextId);
+    return nextId;
+}
+
 // ── Public API ──────────────────────────────────────────────────────────────
 
 /**
  * Convert content_json (API/storage format) into BlockNote editor blocks.
- *
- * Accepts:
- * - A JSON string
- * - A raw array of ContentBlock objects
- * - A wrapped { blocks: [...] } object
- *
- * Returns an array of partial AppBlock objects for the editor.
+ * The stored format is ContentDocument v1; legacy arrays are normalized here
+ * only so local drafts/seeds do not crash the editor during development.
  */
 export function contentJsonToBlocks(
-    contentJson: string | any[] | { blocks: any[] } | undefined
+    content_json: unknown,
+    context: BlockAdapterContext = {}
 ): AppBlock[] | undefined {
-    if (!contentJson) return undefined;
-
-    // Parse input
-    let parsed = contentJson;
-    if (typeof contentJson === 'string') {
-        try {
-            parsed = JSON.parse(contentJson);
-        } catch (e) {
-            console.warn('[conversion] contentJsonToBlocks: failed to parse JSON string', e);
-            return undefined;
-        }
-    }
-
-    let blocks = parsed as any[];
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        blocks = (parsed as any).blocks;
-    }
-    if (!blocks || !Array.isArray(blocks)) return undefined;
+    if (!content_json) return undefined;
 
     try {
-        const rawBlocks: any[] = [];
+        const { blocks } = normalizeContentDocument(content_json);
+        const rawBlocks: AppBlock[] = [];
+        const usedEditorIds = new Set<string>();
 
         for (let i = 0; i < blocks.length; i++) {
             const block = blocks[i];
             if (!block || typeof block !== 'object') continue;
 
-            const id = block.id || `block-${i}`;
+            const id = createUniqueEditorId(block.id, i, usedEditorIds);
             const contentType = block.type as string;
             const adapter = getBlockAdapter(contentType);
 
             if (adapter) {
-                const partial = adapter.toEditor(block);
+                const partial = adapter.toEditor(block, context);
                 // List blocks expand into multiple editor items
-                if (contentType === 'list' && Array.isArray(block.items)) {
-                    const listItems = block.items.map((item: any, j: number) => ({
-                        id: `${id}-${j}`,
+                if (contentType === 'list' && Array.isArray((block as { items?: unknown[] }).items)) {
+                    const listItems = ((block as { items?: unknown[] }).items || []).map((item: unknown, j: number) => ({
+                        id: createUniqueEditorId(`${id}-${j}`, i + j, usedEditorIds),
                         ...partial,
                         content: parseInlineMarkdown(typeof item === 'string' ? item : ''),
-                    }));
+                    } as AppBlock));
                     rawBlocks.push(...listItems);
                 } else {
-                    rawBlocks.push({ id, ...partial });
+                    rawBlocks.push({ id, ...partial } as AppBlock);
                 }
             } else {
                 // Fallback: unknown block types become paragraphs
@@ -127,32 +116,32 @@ export function contentJsonToBlocks(
                 rawBlocks.push({
                     id,
                     type: 'paragraph',
-                    content: parseInlineMarkdown(block.text || `[${contentType}]`),
-                });
+                    content: parseInlineMarkdown((block as { text?: string }).text || `[${contentType}]`),
+                } as AppBlock);
             }
         }
 
         const cleanBlocks = rawBlocks.filter(
-            (b) => b && typeof b === 'object' && typeof b.type === 'string'
+            (b): b is AppBlock => !!(b && typeof b === 'object' && typeof b.type === 'string')
         );
 
         return cleanBlocks.length > 0
-            ? (cleanBlocks as AppBlock[])
-            : ([{ id: 'init-0', type: 'paragraph', props: {}, content: [], children: [] }] as AppBlock[]);
+            ? cleanBlocks
+            : [{ id: 'init-0', type: 'paragraph', props: {}, content: [], children: [] }];
     } catch (error) {
-        console.error('[conversion] Error converting contentJson to blocks:', error);
-        return [{ id: 'error-0', type: 'paragraph', props: {}, content: [], children: [] }] as AppBlock[];
+        console.error('[conversion] Error converting content_json to blocks:', error);
+        return [{ id: 'error-0', type: 'paragraph', props: {}, content: [], children: [] }];
     }
 }
 
 /**
- * Convert BlockNote editor blocks back into ContentBlock[] (API/storage format).
+ * Convert BlockNote editor blocks back into ContentDocument v1 (API/storage format).
  *
  * Handles list item grouping: consecutive bulletListItem/numberedListItem/checkListItem
  * of the same style are merged into a single ListBlock.
  */
-export function blocksToContentJson(blocks: AppBlock[]): ContentBlock[] {
-    if (!blocks || !Array.isArray(blocks)) return [];
+export function blocksToContentJson(blocks: AppBlock[]): ContentDocument {
+    if (!blocks || !Array.isArray(blocks)) return normalizeContentDocument([]);
 
     const result: ContentBlock[] = [];
     let currentList: { type: 'list'; style: 'ordered' | 'unordered' | 'checklist'; items: string[] } | null = null;
@@ -161,8 +150,9 @@ export function blocksToContentJson(blocks: AppBlock[]): ContentBlock[] {
 
     for (const block of blocks) {
         // ── List grouping ────────────────────────────────────────────
-        if (LIST_EDITOR_TYPES.has(block.type)) {
-            const style = editorTypeToListStyle[block.type] || 'unordered';
+        const editorType = String(block.type || '');
+        if (LIST_EDITOR_TYPES.has(editorType)) {
+            const style = editorTypeToListStyle[editorType] || 'unordered';
             const text = extractText((block as any).content);
 
             if (currentList && currentList.style === style) {
@@ -181,11 +171,14 @@ export function blocksToContentJson(blocks: AppBlock[]): ContentBlock[] {
         }
 
         // ── Adapter dispatch ─────────────────────────────────────────
-        const adapter = editorTypeMap.get(block.type);
+        const adapter = editorTypeMap.get(editorType);
         if (adapter) {
             const contentBlock = adapter.fromEditor(block);
             if (contentBlock) {
-                result.push(contentBlock as any);
+                result.push({
+                    id: block.id,
+                    ...contentBlock,
+                } as any);
             }
         } else {
             // Fallback: unknown editor types become paragraphs if they have text
@@ -199,5 +192,5 @@ export function blocksToContentJson(blocks: AppBlock[]): ContentBlock[] {
     // Flush trailing list
     if (currentList) result.push(currentList as any);
 
-    return result;
+    return normalizeContentDocument(result);
 }

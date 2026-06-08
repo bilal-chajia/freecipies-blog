@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { getArticles } from '@modules/articles';
-import type { Env } from '@shared/types';
+import { getArticles, type RecipeContent } from '@modules/articles';
+import type { ArticleQueryOptions } from '@modules/articles/services/articles.service';
+import { normalizeRecipeForRender } from '@site/utils/recipe-render';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateQuery, PaginationQuery } from '@shared/validation';
 
@@ -19,7 +20,7 @@ export const prerender = false;
  * - limit: number (default: 12, max: 100)
  * - difficulty: 'Easy' | 'Medium' | 'Hard'
  */
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
     const url = new URL(request.url);
 
     // Validate pagination query params
@@ -36,10 +37,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        // Build query options - always filter by type='recipe'
-        const options: any = {
+        const options: ArticleQueryOptions = {
             type: 'recipe',
-            isOnline: true,
+            workflow_status: 'published',
             limit,
             offset,
         };
@@ -52,26 +52,25 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
         // Transform for recipe cards
         const items = result.items.map(article => {
+            const recipeArticle = article.type === 'recipe' ? article as RecipeContent : null;
             // Parse recipe JSON for card data
-            let recipeData: any = {};
-            if ((article as any).recipeJson) {
+            let recipeData = null;
+            if (recipeArticle?.recipe_json) {
                 try {
-                    recipeData = typeof (article as any).recipeJson === 'string'
-                        ? JSON.parse((article as any).recipeJson)
-                        : (article as any).recipeJson;
+                    recipeData = normalizeRecipeForRender(recipeArticle.recipe_json);
                 } catch {
-                    recipeData = {};
+                    recipeData = null;
                 }
             }
 
             // Parse images for thumbnail
             let thumbnail = null;
-            if (article.imagesJson) {
+            if (article.images_json) {
                 try {
-                    const images = typeof article.imagesJson === 'string'
-                        ? JSON.parse(article.imagesJson)
-                        : article.imagesJson;
-                    thumbnail = images.thumbnail || images.cover;
+                    const images = typeof article.images_json === 'string'
+                        ? JSON.parse(article.images_json)
+                        : article.images_json;
+                    thumbnail = images.thumbnail || images.hero;
                 } catch {
                     thumbnail = null;
                 }
@@ -81,21 +80,21 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 id: article.id,
                 slug: article.slug,
                 headline: article.headline,
-                shortDescription: article.shortDescription,
+                short_description: article.short_description,
                 thumbnail,
-                categoryLabel: (article as any).categoryLabel,
-                categorySlug: (article as any).categorySlug,
-                categoryColor: (article as any).categoryColor,
-                authorName: (article as any).authorName,
-                authorSlug: (article as any).authorSlug,
-                publishedAt: article.publishedAt,
+                categoryLabel: article.categoryLabel,
+                categorySlug: article.categorySlug,
+                categoryColor: article.categoryColor,
+                authorName: article.authorName,
+                authorSlug: article.authorSlug,
+                published_at: article.published_at,
                 // Recipe-specific fields
-                totalTime: recipeData.total,
-                prepTime: recipeData.prep,
-                cookTime: recipeData.cook,
-                difficulty: recipeData.difficulty,
-                servings: recipeData.servings,
-                rating: recipeData.aggregateRating,
+                totalTime: recipeData?.total,
+                prepTime: recipeData?.prep,
+                cookTime: recipeData?.cook,
+                difficulty: recipeData?.difficulty,
+                servings: recipeData?.servings,
+                rating: recipeData?.aggregate_rating,
             };
         });
 

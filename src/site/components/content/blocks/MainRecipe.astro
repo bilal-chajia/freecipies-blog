@@ -1,0 +1,12 @@
+---
+import RecipeCard from '../../RecipeCard.astro';
+const { block, article, recipe_json, author, category } = Astro.props as {
+  block: { type: 'main_recipe' };
+  article: Record<string, unknown>;
+  recipe_json: Record<string, unknown>;
+  author: Record<string, unknown> | null;
+  category: Record<string, unknown> | null;
+};
+if (!article || !recipe_json) return null;
+---
+<RecipeCard article={article} recipe_json={recipe_json} author={author} category={category} embedded={true} />

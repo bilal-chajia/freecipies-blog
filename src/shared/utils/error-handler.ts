@@ -6,24 +6,24 @@
 export interface ApiError {
   code: string;
   message: string;
-  statusCode: number;
+  status_code: number;
   details?: Record<string, any>;
 }
 
 export class AppError extends Error implements ApiError {
   code: string;
-  statusCode: number;
+  status_code: number;
   details?: Record<string, any>;
 
   constructor(
     code: string,
     message: string,
-    statusCode: number = 500,
+    status_code: number = 500,
     details?: Record<string, any>
   ) {
     super(message);
     this.code = code;
-    this.statusCode = statusCode;
+    this.status_code = status_code;
     this.details = details;
     this.name = 'AppError';
   }
@@ -75,7 +75,7 @@ export function formatErrorResponse(error: unknown): {
       code: appError.code,
       ...(appError.details && { details: appError.details }),
     }),
-    status: appError.statusCode,
+    status: appError.status_code,
     headers: {
       'Content-Type': 'application/json',
     },
@@ -125,12 +125,3 @@ export function formatSuccessResponse<T>(
   };
 }
 
-/**
- * Create error response for API endpoints
- */
-export function handleError(message: string, statusCode: number = 500): Response {
-  const { body, status, headers } = formatErrorResponse(
-    new AppError(ErrorCodes.INTERNAL_ERROR, message, statusCode)
-  );
-  return new Response(body, { status, headers });
-}

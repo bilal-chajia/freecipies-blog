@@ -9,10 +9,10 @@ export const VideoAdapter: BlockAdapter<VideoBlock> = {
         return {
             type: 'video',
             props: {
-                url: block.videoId ? `https://www.youtube.com/watch?v=${block.videoId}` : '',
+                url: block.video_id ? `https://www.youtube.com/watch?v=${block.video_id}` : '',
                 provider: block.provider || '',
-                videoId: block.videoId || '',
-                aspectRatio: block.aspectRatio || '16:9',
+                videoId: block.video_id || '',
+                aspectRatio: block.aspect_ratio || '16:9',
             },
         };
     },
@@ -25,8 +25,8 @@ export const VideoAdapter: BlockAdapter<VideoBlock> = {
         return {
             type: 'video',
             provider,
-            videoId,
-            aspectRatio: (props.aspectRatio as '16:9' | '4:3' | '1:1' | '9:16') || '16:9',
+            video_id: videoId,
+            aspect_ratio: (props.aspectRatio as '16:9' | '4:3' | '1:1' | '9:16') || '16:9',
         };
     },
 };

@@ -1,0 +1,1197 @@
+---
+import Icon from "../ui/Icon.astro";
+/**
+ * NutritionFacts - Modern nutrition label component
+ *
+ * Grid variant inspired by premium health-app design:
+ * - Circular calorie ring with energy summary
+ * - 4 macro cards with icons & mini progress bars
+ * - Two-column micronutrient/vitamin grid
+ * - Responsive: full-width desktop, stacked mobile
+ */
+
+interface Props {
+  nutrition?: Record<string, unknown> | null;
+  variant?: "label" | "grid" | "compact";
+}
+
+type NutritionValue = string | number | null | undefined;
+
+interface NutritionServingSize {
+  label?: string | null;
+  grams?: number | null;
+}
+
+interface RecipeNutritionPayload extends Record<string, unknown> {
+  serving_size?: NutritionServingSize | null;
+  calories?: NutritionValue;
+  total_fat_g?: NutritionValue;
+  saturated_fat_g?: NutritionValue;
+  trans_fat_g?: NutritionValue;
+  cholesterol_mg?: NutritionValue;
+  sodium_mg?: NutritionValue;
+  total_carbohydrate_g?: NutritionValue;
+  dietary_fiber_g?: NutritionValue;
+  total_sugars_g?: NutritionValue;
+  protein_g?: NutritionValue;
+  vitamin_c_mg?: NutritionValue;
+  calcium_mg?: NutritionValue;
+  iron_mg?: NutritionValue;
+  vitamin_d_mcg?: NutritionValue;
+  potassium_mg?: NutritionValue;
+  servings_per_recipe?: NutritionValue;
+  proteinPercent?: NutritionValue;
+  totalFatPercent?: NutritionValue;
+  carbohydratePercent?: NutritionValue;
+  fiberPercent?: NutritionValue;
+  vitaminDPercent?: NutritionValue;
+  calciumPercent?: NutritionValue;
+  ironPercent?: NutritionValue;
+}
+
+const { nutrition, variant = "label" } = Astro.props;
+const nutritionData = nutrition as RecipeNutritionPayload | null | undefined;
+const servingSize =
+  typeof nutritionData?.serving_size === "object" &&
+  nutritionData.serving_size !== null &&
+  "label" in nutritionData.serving_size
+    ? nutritionData.serving_size.label
+    : null;
+
+const data = {
+  calories: nutritionData?.calories ?? null,
+  totalFat: nutritionData?.total_fat_g ?? null,
+  saturatedFat:
+    nutritionData?.saturated_fat_g ?? null,
+  transFat: nutritionData?.trans_fat_g ?? null,
+  cholesterol: nutritionData?.cholesterol_mg ?? null,
+  sodium: nutritionData?.sodium_mg ?? null,
+  totalCarbohydrates:
+    nutritionData?.total_carbohydrate_g ?? null,
+  dietaryFiber: nutritionData?.dietary_fiber_g ?? null,
+  totalSugars: nutritionData?.total_sugars_g ?? null,
+  protein: nutritionData?.protein_g ?? null,
+  vitaminC: nutritionData?.vitamin_c_mg ?? null,
+  calcium: nutritionData?.calcium_mg ?? null,
+  iron: nutritionData?.iron_mg ?? null,
+  vitaminD: nutritionData?.vitamin_d_mcg ?? null,
+  potassium: nutritionData?.potassium_mg ?? null,
+  servingSize: servingSize ?? "1 serving",
+  servingsPerRecipe: nutritionData?.servings_per_recipe ?? 1,
+};
+
+const hasData = Object.entries(data).some(([key, value]) => {
+  if (["servingSize", "servingsPerRecipe"].includes(key)) return false;
+  return value !== null && value !== undefined;
+});
+
+if (!hasData) return null;
+
+function fmt(
+  value: string | number | null | undefined,
+  unit: string = "g",
+): string {
+  if (value === null || value === undefined || value === "") return "-";
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num)) return String(value);
+  return Math.round(num) + unit;
+}
+
+function fmtPct(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return "-";
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num)) return "-";
+  return `${Math.round(num)}%`;
+}
+
+function pctNum(value: string | number | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  return isNaN(num) ? 0 : Math.min(100, Math.max(0, Math.round(num)));
+}
+
+function numVal(value: string | number | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  return isNaN(num) ? 0 : Math.round(num);
+}
+
+// SVG ring math (r=40, circumference = 2*PI*40 ≈ 251.3)
+const ringR = 40;
+const ringC = 2 * Math.PI * ringR;
+// We'll show the ring at a fixed 65% fill as a visual indicator
+const ringOffset = ringC * (1 - 0.65);
+
+// FDA Daily Values (2,000 cal diet) — reference for auto-calculating DV%
+// Source: FDA 2020 Nutrition Facts Label (21 CFR 101.9)
+const dvRecommended: Record<string, number> = {
+  // Macronutrients (grams)
+  protein: 50,
+  totalFat: 78,
+  saturatedFat: 20,
+  carbs: 275,
+  fiber: 28,
+  totalSugars: 50, // Added sugars DV
+  // Minerals (milligrams unless noted)
+  sodium: 2300, // mg
+  cholesterol: 300, // mg
+  calcium: 1300, // mg
+  iron: 18, // mg
+  potassium: 4700, // mg
+  magnesium: 420, // mg
+  zinc: 11, // mg
+  phosphorus: 1250, // mg
+  copper: 0.9, // mg
+  manganese: 2.3, // mg
+  selenium: 55, // mcg → mg = 0.055
+  // Vitamins
+  vitaminA: 900, // mcg RAE
+  vitaminC: 90, // mg
+  vitaminD: 20, // mcg
+  vitaminE: 15, // mg
+  vitaminK: 120, // mcg
+  vitaminB6: 1.7, // mg
+  vitaminB12: 2.4, // mcg
+  thiamin: 1.2, // mg
+  riboflavin: 1.3, // mg
+  niacin: 16, // mg
+  folate: 400, // mcg DFE
+  biotin: 30, // mcg
+  pantothenicAcid: 5, // mg
+  choline: 550, // mg
+};
+
+function autoDvPct(
+  rawValue: string | number | null | undefined,
+  providedPct: string | number | null | undefined,
+  dvGrams: number,
+): number {
+  const provided = pctNum(providedPct);
+  if (provided > 0) return provided;
+  const raw = numVal(rawValue);
+  if (raw <= 0 || dvGrams <= 0) return 0;
+  return Math.min(100, Math.round((raw / dvGrams) * 100));
+}
+
+const proteinPct = autoDvPct(
+  data.protein,
+  nutritionData?.proteinPercent,
+  dvRecommended.protein,
+);
+const fatPct = autoDvPct(
+  data.totalFat,
+  nutritionData?.totalFatPercent,
+  dvRecommended.totalFat,
+);
+const carbsPct = autoDvPct(
+  data.totalCarbohydrates,
+  nutritionData?.carbohydratePercent,
+  dvRecommended.carbs,
+);
+const fiberPct = autoDvPct(
+  data.dietaryFiber,
+  nutritionData?.fiberPercent,
+  dvRecommended.fiber,
+);
+
+// Check which secondary/vitamin items exist
+const hasMicros =
+  data.sodium || data.potassium || data.calcium || data.cholesterol;
+const hasVitamins =
+  data.vitaminD ||
+  data.vitaminC ||
+  data.iron ||
+  data.totalSugars ||
+  data.dietaryFiber;
+---
+
+{
+  variant === "grid" ? (
+    <section
+      class="recipe-card-section nutrition-section"
+      id="recipe-nutrition"
+    >
+      {/* ── Header (Premium Style) ── */}
+      <div class="section-heading-group">
+        <span class="section-heading-icon">
+          <Icon name="calendar-1" />
+        </span>
+        <div class="nf-title-group">
+          <h2 class="section-heading">Nutrition Facts</h2>
+          <p class="nf-subtitle">Daily values based on a 2,000 calorie diet.</p>
+        </div>
+        <div class="nf-serving-badge">
+          <span class="nf-serving-prefix">Per Serving</span>
+          <span class="nf-serving-value">{data.servingSize}</span>
+        </div>
+      </div>
+
+      {/* ── Energy Summary (Calorie Ring + Text) ── */}
+      {data.calories && (
+        <div class="nf-energy">
+          <div class="nf-ring-wrap">
+            <svg class="nf-ring" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r={ringR}
+                fill="none"
+                stroke="var(--bg-hover)"
+                stroke-width="8"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r={ringR}
+                fill="none"
+                stroke="var(--accent-sage)"
+                stroke-width="8"
+                stroke-linecap="round"
+                stroke-dasharray={ringC}
+                stroke-dashoffset={ringOffset}
+                transform="rotate(-90 50 50)"
+              />
+            </svg>
+            <div class="nf-ring-text">
+              <span class="nf-ring-value">{numVal(data.calories)}</span>
+              <span class="nf-ring-label">KCAL</span>
+            </div>
+          </div>
+          <div class="nf-energy-info">
+            <h3 class="nf-energy-title">Energy Summary</h3>
+            <p class="nf-energy-desc">
+              This serving provides <strong>{numVal(data.calories)}</strong>{" "}
+              calories
+              {data.protein ? ` with ${fmt(data.protein)} protein` : ""}
+              {data.totalFat ? ` and ${fmt(data.totalFat)} fat` : ""}.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── 4 Macro Cards ── */}
+      <div class="nf-macros-grid">
+        {data.protein && (
+          <div class="nf-macro-card">
+            <div class="nf-macro-icon nf-icon-protein">
+              <Icon name="lock" />
+            </div>
+            <span class="nf-macro-val">{fmt(data.protein)}</span>
+            <span class="nf-macro-name">Protein</span>
+            <div class="nf-mini-bar">
+              <div
+                class="nf-mini-fill nf-fill-protein"
+                style={`width:${proteinPct || 8}%`}
+              />
+            </div>
+            {proteinPct > 0 && (
+              <span class="nf-macro-dv">{proteinPct}% DV</span>
+            )}
+          </div>
+        )}
+
+        {data.totalFat && (
+          <div class="nf-macro-card">
+            <div class="nf-macro-icon nf-icon-fat">
+              <Icon name="shield" />
+            </div>
+            <span class="nf-macro-val">{fmt(data.totalFat)}</span>
+            <span class="nf-macro-name">Total Fat</span>
+            <div class="nf-mini-bar">
+              <div
+                class="nf-mini-fill nf-fill-fat"
+                style={`width:${fatPct || 8}%`}
+              />
+            </div>
+            {fatPct > 0 && <span class="nf-macro-dv">{fatPct}% DV</span>}
+          </div>
+        )}
+
+        {data.totalCarbohydrates && (
+          <div class="nf-macro-card">
+            <div class="nf-macro-icon nf-icon-carbs">
+              <Icon name="scale" />
+            </div>
+            <span class="nf-macro-val">{fmt(data.totalCarbohydrates)}</span>
+            <span class="nf-macro-name">Carbs</span>
+            <div class="nf-mini-bar">
+              <div
+                class="nf-mini-fill nf-fill-carbs"
+                style={`width:${carbsPct || 8}%`}
+              />
+            </div>
+            {carbsPct > 0 && <span class="nf-macro-dv">{carbsPct}% DV</span>}
+          </div>
+        )}
+
+        {data.dietaryFiber && (
+          <div class="nf-macro-card">
+            <div class="nf-macro-icon nf-icon-fiber">
+              <Icon name="leaf-alt" />
+            </div>
+            <span class="nf-macro-val">{fmt(data.dietaryFiber)}</span>
+            <span class="nf-macro-name">Fiber</span>
+            <div class="nf-mini-bar">
+              <div
+                class="nf-mini-fill nf-fill-fiber"
+                style={`width:${fiberPct || 8}%`}
+              />
+            </div>
+            {fiberPct > 0 && <span class="nf-macro-dv">{fiberPct}% DV</span>}
+          </div>
+        )}
+      </div>
+
+      {/* ── Two-column Micronutrients & Vitamins ── */}
+      {(hasMicros || hasVitamins) && (
+        <div class="nf-details-grid">
+          {/* Left column */}
+          <div class="nf-detail-col">
+            <h4 class="nf-detail-heading">Micronutrients</h4>
+            {data.sodium && (
+              <div class="nf-detail-row">
+                <span class="nf-detail-name">Sodium</span>
+                <span class="nf-detail-val">{fmt(data.sodium, "mg")}</span>
+              </div>
+            )}
+            {data.potassium && (
+              <div class="nf-detail-row">
+                <span class="nf-detail-name">Potassium</span>
+                <span class="nf-detail-val">{fmt(data.potassium, "mg")}</span>
+              </div>
+            )}
+            {data.calcium && (
+              <div class="nf-detail-row">
+                <span class="nf-detail-name">Calcium</span>
+                <span class="nf-detail-val">{fmt(data.calcium, "mg")}</span>
+              </div>
+            )}
+            {data.cholesterol && (
+              <div class="nf-detail-row">
+                <span class="nf-detail-name">Cholesterol</span>
+                <span class="nf-detail-val">{fmt(data.cholesterol, "mg")}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Right column */}
+          <div class="nf-detail-col">
+            <h4 class="nf-detail-heading">Vitamins & Others</h4>
+            {data.vitaminD && (
+              <div class="nf-detail-row">
+                <span class="nf-detail-name">Vitamin D</span>
+                <span class="nf-detail-val">{fmt(data.vitaminD, "mcg")}</span>
+              </div>
+            )}
+            {data.iron && (
+              <div class="nf-detail-row">
+                <span class="nf-detail-name">Iron</span>
+                <span class="nf-detail-val">{fmt(data.iron, "mg")}</span>
+              </div>
+            )}
+            {data.totalSugars && (
+              <div class="nf-detail-row">
+                <span class="nf-detail-name">Sugars</span>
+                <span class="nf-detail-val">{fmt(data.totalSugars)}</span>
+              </div>
+            )}
+            {data.vitaminC && (
+              <div class="nf-detail-row">
+                <span class="nf-detail-name">Vitamin C</span>
+                <span class="nf-detail-val">{fmt(data.vitaminC, "mg")}</span>
+              </div>
+            )}
+            {data.saturatedFat && (
+              <div class="nf-detail-row">
+                <span class="nf-detail-name">Sat. Fat</span>
+                <span class="nf-detail-val">{fmt(data.saturatedFat)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Footer ── */}
+      <div class="nf-footer">
+        <span class="nf-disclaimer">
+          * The % Daily Value (DV) tells you how much a nutrient in a serving
+          contributes to a daily diet.
+        </span>
+        <button type="button" class="nf-toggle-btn" data-toggle-nutrition>
+          Full Details
+        </button>
+      </div>
+
+      {/* Full USDA label (hidden by default) */}
+      <div class="full-nutrition" hidden data-full-nutrition>
+        <hr class="nutrition-divider" />
+        <div class="nutrition-facts-label">
+          <div class="label-header">
+            <h3 class="label-title">Nutrition Facts</h3>
+          </div>
+          <div class="nutrient-row serving-row-label">
+            <span class="nutrient-name">
+              <strong>Serving Size</strong>
+            </span>
+            <span class="nutrient-val">{data.servingSize}</span>
+          </div>
+          <div class="daily-value-header">%Daily Value*</div>
+          <div class="nutrient-row">
+            <span class="nutrient-name">
+              <strong>Calories</strong>
+            </span>
+            <span class="nutrient-val">{data.calories ?? "-"}</span>
+          </div>
+          <div class="nutrient-row">
+            <span class="nutrient-name">
+              <strong>Total Fat</strong>
+            </span>
+            <span class="nutrient-val">{fmt(data.totalFat)}</span>
+          </div>
+          {data.saturatedFat && (
+            <div class="nutrient-row sub">
+              <span class="nutrient-name">– Saturated Fat</span>
+              <span class="nutrient-val">{fmt(data.saturatedFat)}</span>
+            </div>
+          )}
+          {data.transFat && (
+            <div class="nutrient-row sub">
+              <span class="nutrient-name">– Trans Fat</span>
+              <span class="nutrient-val">{fmt(data.transFat)}</span>
+            </div>
+          )}
+          <div class="nutrient-row">
+            <span class="nutrient-name">
+              <strong>Cholesterol</strong>
+            </span>
+            <span class="nutrient-val">{fmt(data.cholesterol, "mg")}</span>
+          </div>
+          <div class="nutrient-row">
+            <span class="nutrient-name">
+              <strong>Sodium</strong>
+            </span>
+            <span class="nutrient-val">{fmt(data.sodium, "mg")}</span>
+          </div>
+          <div class="nutrient-row">
+            <span class="nutrient-name">
+              <strong>Total Carbohydrates</strong>
+            </span>
+            <span class="nutrient-val">{fmt(data.totalCarbohydrates)}</span>
+          </div>
+          {data.dietaryFiber && (
+            <div class="nutrient-row sub">
+              <span class="nutrient-name">– Dietary Fiber</span>
+              <span class="nutrient-val">{fmt(data.dietaryFiber)}</span>
+            </div>
+          )}
+          {data.totalSugars && (
+            <div class="nutrient-row sub">
+              <span class="nutrient-name">– Sugars</span>
+              <span class="nutrient-val">{fmt(data.totalSugars)}</span>
+            </div>
+          )}
+          <div class="nutrient-row">
+            <span class="nutrient-name">
+              <strong>Protein</strong>
+            </span>
+            <span class="nutrient-val">{fmt(data.protein)}</span>
+          </div>
+          {data.vitaminD && (
+            <div class="nutrient-row">
+              <span class="nutrient-name">Vitamin D</span>
+              <span class="nutrient-val">
+                {fmt(data.vitaminD, "mcg")}
+                {nutritionData?.vitaminDPercent
+                  ? ` (${fmtPct(nutritionData.vitaminDPercent)} DV)`
+                  : ""}
+              </span>
+            </div>
+          )}
+          {data.potassium && (
+            <div class="nutrient-row">
+              <span class="nutrient-name">Potassium</span>
+              <span class="nutrient-val">{fmt(data.potassium, "mg")}</span>
+            </div>
+          )}
+          {data.calcium && (
+            <div class="nutrient-row">
+              <span class="nutrient-name">Calcium</span>
+              <span class="nutrient-val">
+                {fmt(data.calcium, "mg")}
+                {nutritionData?.calciumPercent
+                  ? ` (${fmtPct(nutritionData.calciumPercent)} DV)`
+                  : ""}
+              </span>
+            </div>
+          )}
+          {data.iron && (
+            <div class="nutrient-row">
+              <span class="nutrient-name">Iron</span>
+              <span class="nutrient-val">
+                {fmt(data.iron, "mg")}
+                {nutritionData?.ironPercent
+                  ? ` (${fmtPct(nutritionData.ironPercent)} DV)`
+                  : ""}
+              </span>
+            </div>
+          )}
+          <p class="footnote">
+            DV stands for Daily Value, and it is based on a 2,000 calorie diet.
+            These values are approximate and can vary based on preparation.
+          </p>
+        </div>
+      </div>
+    </section>
+  ) : variant === "compact" ? (
+    <div class="nutrition-compact">
+      {data.calories && <span class="nutrition-pill">{data.calories} cal</span>}
+      {data.protein && (
+        <span class="nutrition-pill">{fmt(data.protein)} protein</span>
+      )}
+      {data.totalFat && (
+        <span class="nutrition-pill">{fmt(data.totalFat)} fat</span>
+      )}
+    </div>
+  ) : (
+    <div class="nutrition-facts-label">
+      <div class="label-header">
+        <h3 class="label-title">Nutrition Facts</h3>
+      </div>
+      <div class="nutrient-row serving-row-label">
+        <span class="nutrient-name">
+          <strong>Serving Size</strong>
+        </span>
+        <span class="nutrient-val">{data.servingSize}</span>
+      </div>
+      <div class="daily-value-header">%Daily Value*</div>
+      <div class="nutrient-row">
+        <span class="nutrient-name">
+          <strong>Calories</strong>
+        </span>
+        <span class="nutrient-val">{data.calories ?? "-"}</span>
+      </div>
+      <div class="nutrient-row">
+        <span class="nutrient-name">
+          <strong>Total Fat</strong>
+        </span>
+        <span class="nutrient-val">{fmt(data.totalFat)}</span>
+      </div>
+      {data.saturatedFat && (
+        <div class="nutrient-row sub">
+          <span class="nutrient-name">– Saturated Fat</span>
+          <span class="nutrient-val">{fmt(data.saturatedFat)}</span>
+        </div>
+      )}
+      {data.transFat && (
+        <div class="nutrient-row sub">
+          <span class="nutrient-name">– Trans Fat</span>
+          <span class="nutrient-val">{fmt(data.transFat)}</span>
+        </div>
+      )}
+      <div class="nutrient-row">
+        <span class="nutrient-name">
+          <strong>Cholesterol</strong>
+        </span>
+        <span class="nutrient-val">{fmt(data.cholesterol, "mg")}</span>
+      </div>
+      <div class="nutrient-row">
+        <span class="nutrient-name">
+          <strong>Sodium</strong>
+        </span>
+        <span class="nutrient-val">{fmt(data.sodium, "mg")}</span>
+      </div>
+      <div class="nutrient-row">
+        <span class="nutrient-name">
+          <strong>Total Carbohydrates</strong>
+        </span>
+        <span class="nutrient-val">{fmt(data.totalCarbohydrates)}</span>
+      </div>
+      {data.dietaryFiber && (
+        <div class="nutrient-row sub">
+          <span class="nutrient-name">– Dietary Fiber</span>
+          <span class="nutrient-val">{fmt(data.dietaryFiber)}</span>
+        </div>
+      )}
+      {data.totalSugars && (
+        <div class="nutrient-row sub">
+          <span class="nutrient-name">– Sugars</span>
+          <span class="nutrient-val">{fmt(data.totalSugars)}</span>
+        </div>
+      )}
+      <div class="nutrient-row">
+        <span class="nutrient-name">
+          <strong>Protein</strong>
+        </span>
+        <span class="nutrient-val">{fmt(data.protein)}</span>
+      </div>
+      {data.vitaminD && (
+        <div class="nutrient-row">
+          <span class="nutrient-name">Vitamin D</span>
+          <span class="nutrient-val">
+            {fmt(data.vitaminD, "mcg")}
+            {nutritionData?.vitaminDPercent
+              ? ` (${fmtPct(nutritionData.vitaminDPercent)} DV)`
+              : ""}
+          </span>
+        </div>
+      )}
+      {data.potassium && (
+        <div class="nutrient-row">
+          <span class="nutrient-name">Potassium</span>
+          <span class="nutrient-val">{fmt(data.potassium, "mg")}</span>
+        </div>
+      )}
+      {data.calcium && (
+        <div class="nutrient-row">
+          <span class="nutrient-name">Calcium</span>
+          <span class="nutrient-val">
+            {fmt(data.calcium, "mg")}
+            {nutritionData?.calciumPercent
+              ? ` (${fmtPct(nutritionData.calciumPercent)} DV)`
+              : ""}
+          </span>
+        </div>
+      )}
+      {data.iron && (
+        <div class="nutrient-row">
+          <span class="nutrient-name">Iron</span>
+          <span class="nutrient-val">
+            {fmt(data.iron, "mg")}
+            {nutritionData?.ironPercent
+              ? ` (${fmtPct(nutritionData.ironPercent)} DV)`
+              : ""}
+          </span>
+        </div>
+      )}
+      <p class="footnote">
+        DV stands for Daily Value, and it is based on a 2,000 calorie diet.
+        These values are approximate and can vary based on preparation.
+      </p>
+    </div>
+  )
+}
+
+<style>
+  /* ================================================
+     GRID VARIANT — Health-app inspired design
+     ================================================ */
+
+  /* ── Header ── */
+  .section-heading-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+    padding: 0 0 var(--space-3);
+    background: transparent;
+    border-left: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    position: relative;
+  }
+
+  @container (min-width: 0px) {
+  } /* fallback if no container query */
+
+  .nf-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .section-heading-group .section-heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-tight);
+    color: var(--text);
+    margin: 0;
+    position: relative;
+    letter-spacing: 0;
+  }
+
+  .section-heading-group .section-heading::after {
+    display: none;
+  }
+
+  .section-heading-icon {
+    width: var(--space-9);
+    height: var(--space-9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--bg-inset);
+    border-radius: var(--radius-sm);
+    color: var(--brand-primary);
+    flex-shrink: 0;
+  }
+
+  .nf-subtitle {
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    margin: 0;
+    line-height: var(--leading-snug);
+  }
+
+  .nf-serving-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--space-9);
+    padding: var(--space-1) var(--space-3);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  .nf-serving-prefix {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    font-weight: var(--font-medium);
+  }
+
+  .nf-serving-value {
+    font-size: var(--text-sm);
+    color: var(--text);
+    font-weight: var(--font-semibold);
+  }
+
+  /* ── Energy Summary (Ring + Text) ── */
+  .nf-energy {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    padding: var(--space-5);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-5);
+  }
+
+  .nf-ring-wrap {
+    position: relative;
+    width: var(--space-24);
+    height: var(--space-24);
+    flex-shrink: 0;
+  }
+
+  .nf-ring {
+    width: 100%;
+    height: 100%;
+  }
+
+  .nf-ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 0;
+  }
+
+  .nf-ring-value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .nf-ring-label {
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--brand-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .nf-energy-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .nf-energy-title {
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: var(--text);
+    margin: 0 0 var(--space-2);
+  }
+
+  .nf-energy-desc {
+    font-size: var(--text-base);
+    color: var(--text-tertiary);
+    line-height: var(--leading-relaxed);
+    margin: 0;
+  }
+
+  .nf-energy-desc strong {
+    color: var(--text);
+    font-weight: var(--font-semibold);
+    text-decoration: none;
+  }
+
+  /* ── 4 Macro Cards ── */
+  .nf-macros-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+
+  .nf-macro-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-4);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      transform var(--transition-fast);
+  }
+
+  .nf-macro-card:hover {
+    background: var(--bg-inset);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+  }
+
+  .nf-macro-icon {
+    width: var(--space-9);
+    height: var(--space-9);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
+  }
+
+  .nf-icon-protein {
+    background: var(--bg-inset);
+    color: var(--brand-primary);
+  }
+  .nf-icon-fat {
+    background: var(--bg-inset);
+    color: var(--brand-secondary);
+  }
+  .nf-icon-carbs {
+    background: var(--bg-inset);
+    color: var(--text-secondary);
+  }
+  .nf-icon-fiber {
+    background: var(--bg-inset);
+    color: var(--brand-primary);
+  }
+
+  .nf-macro-val {
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .nf-macro-name {
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .nf-mini-bar {
+    width: 100%;
+    height: var(--space-1);
+    background: var(--border);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-top: var(--space-1);
+    flex-basis: 100%;
+  }
+
+  .nf-mini-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    min-width: var(--space-1);
+    transition: width var(--transition-slow);
+  }
+
+  .nf-fill-protein {
+    background: var(--brand-primary);
+  }
+  .nf-fill-fat {
+    background: var(--brand-secondary);
+  }
+  .nf-fill-carbs {
+    background: var(--text-secondary);
+  }
+  .nf-fill-fiber {
+    background: var(--brand-primary);
+  }
+
+  .nf-macro-dv {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    font-weight: var(--font-medium);
+  }
+
+  /* ── Two-column Details ── */
+  .nf-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    margin-bottom: var(--space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+  }
+
+  .nf-detail-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nf-detail-heading {
+    font-size: var(--text-xs);
+    font-weight: var(--font-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary);
+    margin: 0 0 var(--space-3);
+  }
+
+  .nf-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .nf-detail-row:last-child {
+    border-bottom: none;
+  }
+
+  .nf-detail-name {
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+  }
+
+  .nf-detail-val {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: var(--text);
+  }
+
+  /* ── Footer ── */
+  .nf-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
+  }
+
+  .nf-disclaimer {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    line-height: var(--leading-relaxed);
+    flex: 1;
+  }
+
+  .nf-toggle-btn {
+    flex-shrink: 0;
+    min-height: var(--space-9);
+    padding: var(--space-1) var(--space-3);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
+    white-space: nowrap;
+  }
+
+  .nf-toggle-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
+  }
+
+  .full-nutrition {
+    margin-top: 1rem;
+  }
+  .full-nutrition[hidden] {
+    display: none;
+  }
+  .nutrition-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: var(--space-4) 0;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .section-heading-group {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-3);
+    }
+    .nf-serving-badge {
+      margin-left: 0;
+      align-self: flex-start;
+    }
+    .nf-energy {
+      flex-direction: column;
+      text-align: center;
+      gap: var(--space-4);
+      padding: var(--space-4);
+    }
+    .nf-macros-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-2);
+    }
+    .nf-details-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-5);
+      padding: var(--space-4);
+    }
+    .nf-footer {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+
+  /* ================================================
+     USDA Label Style (shared by label + full detail)
+     ================================================ */
+  .nutrition-facts-label {
+    border: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+    max-width: 420px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .label-header {
+    border-bottom: 4px solid var(--border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .label-title {
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1;
+    color: var(--text);
+  }
+  .serving-row-label {
+    border-bottom: 2px solid var(--border) !important;
+    padding: 0.5rem 0 !important;
+    font-size: 0.95rem !important;
+  }
+  .daily-value-header {
+    text-align: right;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    padding: 0.25rem 0;
+    color: var(--text-secondary);
+  }
+  .nutrient-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .nutrient-row.sub {
+    padding-left: 1.5rem;
+    font-size: 0.85rem;
+  }
+  .nutrient-name {
+    flex: 1;
+  }
+  .nutrient-val {
+    text-align: right;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .footnote {
+    font-size: 0.625rem;
+    margin: 0.5rem 0 0 0;
+    line-height: 1.4;
+  }
+
+  /* ================================================
+     Compact Variant
+     ================================================ */
+  .nutrition-compact {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .nutrition-pill {
+    padding: 0.25rem 0.5rem;
+    background: var(--bg-hover);
+    border-radius: var(--radius-xs);
+    font-size: 0.75rem;
+    color: var(--neutral-700);
+  }
+
+  /* ================================================
+     Print
+     ================================================ */
+  @media print {
+    .nutrition-facts-label {
+      break-inside: avoid;
+    }
+    .nf-toggle-btn {
+      display: none;
+    }
+    .full-nutrition {
+      display: block !important;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document
+      .querySelectorAll("[data-toggle-nutrition]")
+      .forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const section =
+            btn.closest(".recipe-card-section") ||
+            btn.closest(".nutrition-section");
+          const full = section
+            ? section.querySelector("[data-full-nutrition]")
+            : null;
+          if (full) {
+            const isHidden = full.hasAttribute("hidden");
+            full.toggleAttribute("hidden", !isHidden);
+            btn.textContent = isHidden ? "Hide Details" : "Full Details";
+          }
+        });
+      });
+  });
+</script>

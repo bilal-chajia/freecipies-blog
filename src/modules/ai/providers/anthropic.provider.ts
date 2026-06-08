@@ -6,8 +6,10 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
+import { normalizeOpenAiModels } from '../discovery/normalize';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_MODELS_URL = 'https://api.anthropic.com/v1/models';
 
 interface AnthropicResponse {
     id?: string;
@@ -35,10 +37,16 @@ export class AnthropicProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'claude-3-5-sonnet-latest';
 
-        const body = {
+        const body: {
+            model: string;
+            max_tokens: number;
+            system: string;
+            messages: Array<{ role: string; content: string }>;
+            thinking?: { type: 'enabled'; budget_tokens: number };
+        } = {
             model,
             max_tokens: 4096,
             system: systemPrompt,
@@ -46,6 +54,12 @@ export class AnthropicProvider implements IAIProvider {
                 { role: 'user', content: request.prompt }
             ],
         };
+        if (request.reasoning_effort) {
+            const budgets = { low: 4096, medium: 8192, high: 16384 } as const;
+            const budget_tokens = budgets[request.reasoning_effort];
+            body.thinking = { type: 'enabled', budget_tokens };
+            body.max_tokens = budget_tokens + 1024;
+        }
 
         try {
             const response = await fetch(ANTHROPIC_API_URL, {
@@ -122,6 +136,21 @@ export class AnthropicProvider implements IAIProvider {
             return response.ok;
         } catch {
             return false;
+        }
+    }
+
+    async listModels(apiKey: string) {
+        try {
+            const response = await fetch(ANTHROPIC_MODELS_URL, {
+                headers: {
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                },
+            });
+            if (!response.ok) return { supported: true, models: [] };
+            return { supported: true, models: normalizeOpenAiModels(await response.json()) };
+        } catch {
+            return { supported: true, models: [] };
         }
     }
 }

@@ -5,7 +5,7 @@
  * Zero-join rendering optimization
  */
 
-import type { ImageSlot, ImageVariants } from './images.types';
+import type { ImageVariants } from './images.types';
 
 // ============================================
 // Cached Author
@@ -45,9 +45,6 @@ export interface CachedCategoryJson {
     /** Display name */
     name: string;
 
-    /** Optional SVG icon */
-    icon_svg?: string;
-
     /** Category color */
     color?: string;
 }
@@ -59,59 +56,15 @@ export interface CachedCategoryJson {
 export type CachedTagsJson = string[];
 
 // ============================================
-// Cached Equipment
-// ============================================
-
-export interface CachedEquipmentItem {
-    /** Equipment ID */
-    id: number;
-
-    /** Display name */
-    name: string;
-
-    /** URL slug */
-    slug: string;
-
-    /** Brand name */
-    brand?: string;
-
-    /** Short description */
-    description?: string;
-
-    /** Equipment category (cookware, appliances, tools, bakeware, etc.) */
-    category?: string;
-
-    /** Affiliate link URL */
-    affiliate_url?: string;
-
-    /** Affiliate provider name (e.g. Amazon, Williams Sonoma) */
-    affiliate_provider?: string;
-
-    /** Affiliate note (e.g. "As an Amazon Associate...") */
-    affiliate_note?: string;
-
-    /** Display price (e.g. "$299.99") */
-    price_display?: string;
-
-    /** Product image URL */
-    image_url?: string;
-
-    /** Whether required for recipe */
-    required: boolean;
-}
-
-export type CachedEquipmentJson = CachedEquipmentItem[];
-
-// ============================================
 // Cached Rating
 // ============================================
 
 export interface CachedRatingJson {
     /** Average rating (1-5 or null) */
-    ratingValue: number | null;
+    rating_value: number | null;
 
     /** Total number of ratings */
-    ratingCount: number;
+    rating_count: number;
 }
 
 // ============================================
@@ -137,10 +90,14 @@ export type CachedTocJson = CachedTocItem[];
 
 export interface CachedRecipeJson {
     /** Quick flag for card type selection */
-    isRecipe: boolean;
+    is_recipe: boolean;
+
+    prep_time_minutes?: number | null;
+
+    cook_time_minutes?: number | null;
 
     /** Total time in minutes */
-    totalTimeMinutes?: number | null;
+    total_time_minutes?: number | null;
 
     /** Difficulty level */
     difficulty?: string | null;
@@ -148,26 +105,45 @@ export interface CachedRecipeJson {
     /** Number of servings */
     servings?: number | null;
 
+    recipe_yield?: string | null;
+
+    recipe_category?: string | null;
+
+    recipe_cuisine?: string | null;
+
+    cooking_method?: string | null;
+
+    estimated_cost?: string | null;
+
     /** Calories per serving */
-    caloriesPerServing?: number | null;
+    calories_per_serving?: number | null;
+
+    protein_g?: number | null;
+
+    carbohydrate_g?: number | null;
+
+    fat_g?: number | null;
 
     /** Diet labels for badges */
-    primaryDietLabels?: string[];
+    diet_labels?: string[];
 
-    /** Occasion labels (Christmas, Weeknight) */
-    primaryOccasionLabels?: string[];
+    /** Keyword labels for filters/search */
+    keyword_labels?: string[];
 
     /** Main ingredients for search */
-    mainIngredients?: string[];
+    main_ingredients?: string[];
 
-    /** Under 30 min flag */
-    isQuick?: boolean;
-
-    /** Meets healthy criteria */
-    isHealthy?: boolean;
-
-    /** Budget-friendly flag */
-    isBudget?: boolean;
+    badges?: {
+        is_quick?: boolean;
+        is_budget?: boolean;
+        is_healthy?: boolean;
+        is_high_protein?: boolean;
+        is_low_calorie?: boolean;
+        is_vegetarian?: boolean;
+        is_vegan?: boolean;
+        is_gluten_free?: boolean;
+        is_dairy_free?: boolean;
+    };
 }
 
 // ============================================
@@ -190,10 +166,14 @@ export interface CachedCardJson {
     /** Short description */
     short_description?: string;
 
-    /** Thumbnail image */
-    thumbnail?: {
+    /** Card image slot (replaces thumbnail to match image contract) */
+    image?: {
+        media_id?: number;
         alt?: string;
         variants?: ImageVariants;
+        placeholder?: string;
+        aspect_ratio?: string;
+        focal_point?: { x: number; y: number };
     };
 
     // Recipe-specific (when type='recipe')
@@ -270,22 +250,40 @@ export const DEFAULT_CACHED_CATEGORY: CachedCategoryJson = {
 };
 
 export const DEFAULT_CACHED_RATING: CachedRatingJson = {
-    ratingValue: null,
-    ratingCount: 0,
+    rating_value: null,
+    rating_count: 0,
 };
 
 export const DEFAULT_CACHED_RECIPE: CachedRecipeJson = {
-    isRecipe: false,
-    totalTimeMinutes: null,
+    is_recipe: false,
+    prep_time_minutes: null,
+    cook_time_minutes: null,
+    total_time_minutes: null,
     difficulty: null,
     servings: null,
-    caloriesPerServing: null,
-    primaryDietLabels: [],
-    primaryOccasionLabels: [],
-    mainIngredients: [],
-    isQuick: false,
-    isHealthy: false,
-    isBudget: false,
+    recipe_yield: null,
+    recipe_category: null,
+    recipe_cuisine: null,
+    cooking_method: null,
+    estimated_cost: null,
+    calories_per_serving: null,
+    protein_g: null,
+    carbohydrate_g: null,
+    fat_g: null,
+    diet_labels: [],
+    keyword_labels: [],
+    main_ingredients: [],
+    badges: {
+        is_quick: false,
+        is_budget: false,
+        is_healthy: false,
+        is_high_protein: false,
+        is_low_calorie: false,
+        is_vegetarian: false,
+        is_vegan: false,
+        is_gluten_free: false,
+        is_dairy_free: false,
+    },
 };
 
 export const DEFAULT_CONFIG: ConfigJson = {

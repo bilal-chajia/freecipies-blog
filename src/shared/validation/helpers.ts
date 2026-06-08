@@ -4,7 +4,8 @@
  * Bridge between Zod schemas and the existing AppError system.
  * Provides validate(), validateBody(), validateParams(), validateQuery().
  */
-import { z, ZodError, ZodSchema } from 'zod';
+import { z, ZodError } from 'zod';
+import type { ZodType } from 'zod';
 import { AppError, ErrorCodes } from '../utils/error-handler';
 
 /**
@@ -26,7 +27,7 @@ function formatZodIssues(error: ZodError): Record<string, string> {
  * @example
  * const { name, slug } = validate(CreateCategorySchema, body);
  */
-export function validate<T extends ZodSchema>(schema: T, data: unknown): z.infer<T> {
+export function validate<T extends ZodType>(schema: T, data: unknown): z.infer<T> {
   const result = schema.safeParse(data);
   if (!result.success) {
     throw new AppError(
@@ -46,7 +47,7 @@ export function validate<T extends ZodSchema>(schema: T, data: unknown): z.infer
  * @example
  * const body = await validateBody(request, CreateCategorySchema);
  */
-export async function validateBody<T extends ZodSchema>(
+export async function validateBody<T extends ZodType>(
   request: Request,
   schema: T,
 ): Promise<z.infer<T>> {
@@ -66,7 +67,7 @@ export async function validateBody<T extends ZodSchema>(
  * @example
  * const { id } = validateParams(params, IdParam);
  */
-export function validateParams<T extends ZodSchema>(
+export function validateParams<T extends ZodType>(
   params: Record<string, string | undefined>,
   schema: T,
 ): z.infer<T> {
@@ -80,7 +81,7 @@ export function validateParams<T extends ZodSchema>(
  * @example
  * const { page, limit, offset } = validateQuery(url.searchParams, PaginationQuery);
  */
-export function validateQuery<T extends ZodSchema>(
+export function validateQuery<T extends ZodType>(
   searchParams: URLSearchParams | Record<string, string | undefined>,
   schema: T,
 ): z.infer<T> {

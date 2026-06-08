@@ -21,23 +21,12 @@ import {
     SplitSquareVertical
 } from 'lucide-react';
 import type { BlockIconMap } from './types';
+import { CUSTOM_EDITOR_TYPES } from '../blocks/registry';
 
 export const MAX_STRUCTURE_LABEL = 48;
 
 export const CUSTOM_BLOCK_TYPES = new Set<string>([
-    'title',
-    'headline',
-    'customImage',
-    'alert',
-    'divider',
-    'faqSection',
-    'beforeAfter',
-    'simpleTable',
-    'video',
-    'relatedContent',
-    'featuredImage',
-    'mainRecipe',
-    'roundupList',
+    ...CUSTOM_EDITOR_TYPES,
 ]);
 
 export const BLOCK_TYPE_ICONS: BlockIconMap = {

@@ -4,12 +4,10 @@
  * Database operations for equipment.
  */
 
-import { eq, and, asc, isNull, like, or } from 'drizzle-orm';
+import { eq, and, asc, isNull } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { equipment, type Equipment, type NewEquipment } from '../schema/equipment.schema';
-import { articles } from '../../articles/schema/articles.schema';
-import { createDb, getDb, type DrizzleDb } from '../../../shared/database/drizzle';
-import { resolveVariantUrl } from '../../../shared/types/images';
+import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 /**
  * Get all equipment
@@ -20,10 +18,10 @@ export async function getEquipment(
 ): Promise<Equipment[]> {
     const drizzle = getDb(db);
 
-    const conditions = [isNull(equipment.deletedAt)];
+    const conditions = [isNull(equipment.deleted_at)];
 
     if (options?.activeOnly) {
-        conditions.push(eq(equipment.isActive, true));
+        conditions.push(eq(equipment.is_active, true));
     }
 
     if (options?.category) {
@@ -34,7 +32,7 @@ export async function getEquipment(
         .select()
         .from(equipment)
         .where(and(...conditions))
-        .orderBy(asc(equipment.sortOrder), asc(equipment.name));
+        .orderBy(asc(equipment.sort_order), asc(equipment.name));
 
     if (options?.limit) {
         return await query.limit(options.limit);
@@ -51,7 +49,7 @@ export async function getEquipmentBySlug(db: D1Database | DrizzleDb, slug: strin
     const [found] = await drizzle
         .select()
         .from(equipment)
-        .where(and(eq(equipment.slug, slug), isNull(equipment.deletedAt)))
+        .where(and(eq(equipment.slug, slug), isNull(equipment.deleted_at)))
         .limit(1);
     return found || null;
 }
@@ -64,7 +62,7 @@ export async function getEquipmentById(db: D1Database | DrizzleDb, id: number): 
     const [found] = await drizzle
         .select()
         .from(equipment)
-        .where(and(eq(equipment.id, id), isNull(equipment.deletedAt)))
+        .where(and(eq(equipment.id, id), isNull(equipment.deleted_at)))
         .limit(1);
     return found || null;
 }
@@ -93,7 +91,7 @@ export async function updateEquipment(
 
     const updateData = {
         ...item,
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
     };
 
     await drizzle.update(equipment)
@@ -109,7 +107,7 @@ export async function updateEquipment(
 export async function deleteEquipment(db: D1Database | DrizzleDb, slug: string): Promise<boolean> {
     const drizzle = getDb(db);
     await drizzle.update(equipment)
-        .set({ deletedAt: new Date().toISOString() })
+        .set({ deleted_at: new Date().toISOString() })
         .where(eq(equipment.slug, slug));
     return true;
 }
@@ -196,88 +194,4 @@ export async function matchEquipmentInText(
     matches.sort((a, b) => b.confidence - a.confidence);
 
     return matches;
-}
-
-/**
- * After updating an equipment item, refresh cachedEquipmentJson
- * for every article that references it.
- *
- * Strategy:
- *  1. Fetch all articles that have a non-empty cachedEquipmentJson
- *  2. Filter to articles where the cached array contains the equipment id
- *  3. For each match, rebuild the array with fresh equipment data and save
- */
-export async function refreshCachedEquipmentForArticles(
-    db: D1Database | DrizzleDb,
-    equipmentId: number
-): Promise<number> {
-    const drizzle = getDb(db);
-
-    // 1. Fetch all articles with cached equipment
-    const allArticles = await drizzle
-        .select({
-            id: articles.id,
-            cachedEquipmentJson: articles.cachedEquipmentJson,
-        })
-        .from(articles)
-        .where(isNull(articles.deletedAt))
-        .all();
-
-    // 2. Find articles that contain this equipment id
-    const affected: { id: number; cached: any[] }[] = [];
-    for (const art of allArticles) {
-        if (!art.cachedEquipmentJson) continue;
-        try {
-            const cached = typeof art.cachedEquipmentJson === 'string'
-                ? JSON.parse(art.cachedEquipmentJson)
-                : art.cachedEquipmentJson;
-            if (Array.isArray(cached) && cached.some((e: any) => e.id === equipmentId)) {
-                affected.push({ id: art.id, cached });
-            }
-        } catch { /* skip broken JSON */ }
-    }
-
-    if (affected.length === 0) return 0;
-
-    // 3. Fetch the updated equipment item
-    const updatedEquip = await getEquipmentById(db, equipmentId);
-    if (!updatedEquip) return 0;
-
-    // Parse image URL from the updated equipment
-    let imageUrl: string | undefined;
-    try {
-        const imgData = typeof updatedEquip.imageJson === 'string'
-            ? JSON.parse(updatedEquip.imageJson)
-            : updatedEquip.imageJson;
-        imageUrl = resolveVariantUrl(imgData?.variants?.md || imgData?.variants?.sm || null)
-            || imgData?.url || undefined;
-    } catch { /* ignore */ }
-
-    // 4. For each affected article, replace the old entry with fresh data
-    let count = 0;
-    for (const art of affected) {
-        const rebuilt = art.cached.map((entry: any) => {
-            if (entry.id !== equipmentId) return entry;
-            return {
-                ...entry,
-                name: updatedEquip.name,
-                slug: updatedEquip.slug,
-                brand: updatedEquip.brand || undefined,
-                description: updatedEquip.description || undefined,
-                category: updatedEquip.category || undefined,
-                affiliate_url: updatedEquip.affiliateUrl || undefined,
-                affiliate_provider: updatedEquip.affiliateProvider || undefined,
-                affiliate_note: updatedEquip.affiliateNote || undefined,
-                price_display: updatedEquip.priceDisplay || undefined,
-                image_url: imageUrl,
-            };
-        });
-
-        await drizzle.update(articles)
-            .set({ cachedEquipmentJson: JSON.stringify(rebuilt) })
-            .where(eq(articles.id, art.id));
-        count++;
-    }
-
-    return count;
 }

@@ -1,17 +1,6 @@
 import { safeInsertBlock } from "./utils/insert-block";
 import type { BlockNoteEditor } from "@blocknote/core";
-import { 
-    AlertTriangle, 
-    Utensils, 
-    LayoutGrid, 
-    SplitSquareVertical, 
-    Table, 
-    Minus,
-    ClipboardList,
-    BookOpen,
-    Image as ImageIcon,
-    Video,
-    HelpCircle,
+import {
     Type,
     List,
     ListOrdered,
@@ -24,6 +13,7 @@ import {
     Quote
 } from "lucide-react";
 import React from "react";
+import { SLASH_BLOCKS } from "./blocks/registry";
 
 interface SlashMenuOptions {
     contentType?: 'article' | 'recipe' | 'roundup';
@@ -57,103 +47,25 @@ export const getCustomSlashMenuItems = (
         return false;
     };
 
-    // Define our premium custom blocks
-    const customItems = [
-        {
-            title: 'Image',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'customImage'),
-            aliases: ['image', 'photo', 'picture', 'media'],
-            group: 'Media',
-            subtext: 'Upload or select from library',
-            icon: React.createElement(ImageIcon, { className: "size-4 text-blue-500" }),
-        },
-        {
-            title: 'Video',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'video'),
-            aliases: ['video', 'movie', 'youtube', 'media'],
-            group: 'Media',
-            subtext: 'Embed a video player',
-            icon: React.createElement(Video, { className: "size-4 text-indigo-500" }),
-        },
-        {
-            title: 'Before / After',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'beforeAfter'),
-            aliases: ['before', 'after', 'compare'],
-            group: 'Media',
-            subtext: 'Compare two images',
-            icon: React.createElement(SplitSquareVertical, { className: "size-4 text-purple-500" }),
-        },
-        {
-            title: 'Alert Box',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'alert', { type: 'warning' }),
-            aliases: ['alert', 'tip', 'warning'],
-            group: 'Engagement',
-            subtext: 'Insert a tip/warning box',
-            icon: React.createElement(AlertTriangle, { className: "size-4 text-amber-500" }),
-        },
-        {
-            title: 'FAQ Section',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'faqSection'),
-            aliases: ['faq', 'questions', 'answers'],
-            group: 'Engagement',
-            subtext: 'Add structured questions',
-            icon: React.createElement(HelpCircle, { className: "size-4 text-sky-500" }),
-        },
-        {
-            title: 'Related Content',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'relatedContent'),
-            aliases: ['related', 'recommend'],
-            group: 'Linked Content',
-            subtext: 'Curate related recipes or articles',
-            icon: React.createElement(LayoutGrid, { className: "size-4 text-indigo-500" }),
-        },
-        {
-            title: 'Table',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'simpleTable'),
-            aliases: ['table', 'grid', 'matrix'],
-            group: 'Layout',
-            subtext: 'Add a table',
-            icon: React.createElement(Table, { className: "size-4 text-muted-foreground" }),
-        },
-        {
-            title: 'Divider',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'divider'),
-            aliases: ['divider', 'separator', 'line'],
-            group: 'Layout',
-            subtext: 'Add a horizontal divider',
-            icon: React.createElement(Minus, { className: "size-4 text-muted-foreground/70" }),
-        },
-        {
-            title: 'Roundup List',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'roundupList'),
-            aliases: ['roundup', 'list', 'curated', 'collection'],
-            group: 'Engagement',
-            subtext: 'Manage a collection of curated recipes',
-            icon: React.createElement(List, { className: "size-4 text-rose-500" }),
-        },
-    ];
+    // Custom blocks, derived from the unified block registry.
+    const toSlashItem = (block: typeof SLASH_BLOCKS[number]) => ({
+        title: block.slash.title,
+        onItemClick: () =>
+            safeInsertBlock(editor, block.editorType, block.slash.defaultProps),
+        aliases: block.slash.aliases,
+        group: block.slash.group,
+        subtext: block.slash.subtext,
+        icon: React.createElement(block.slash.icon, { className: block.slash.iconClassName }),
+    });
 
- // Contextual blocks (pushed to the top if applicable)
- if (contentType === 'recipe') {
-        customItems.unshift({
-            title: 'Recipe Details',
-            onItemClick: () =>
-                safeInsertBlock(editor, 'mainRecipe'),
-            aliases: ['recipe', 'main', 'details'],
-            group: 'Primary',
-            subtext: 'The main recipe editor',
-            icon: React.createElement(ClipboardList, { className: "size-4 text-rose-500" }),
-        });
-    }
+    const customItems = SLASH_BLOCKS
+        .filter((block) => !block.slash.contextual)
+        .map(toSlashItem);
+
+    // Contextual blocks (pinned to the top when their context matches).
+    SLASH_BLOCKS
+        .filter((block) => block.slash.contextual === contentType)
+        .forEach((block) => customItems.unshift(toSlashItem(block)));
 
     // Curated Essential Default Blocks
     const defaultItems = [

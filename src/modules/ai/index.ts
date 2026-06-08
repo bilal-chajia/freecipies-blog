@@ -8,6 +8,9 @@ export * from './types';
 
 // Service
 export {
+    getAiSettings,
+    saveAiSettings,
+    replaceAiSettings,
     getAISettings,
     saveAISettings,
     createProvider,
@@ -15,7 +18,9 @@ export {
     getModelsForProvider,
     generateContent,
     validateProviderApiKey,
+    patchAiSettings,
 } from './ai.service';
+export type { AiSettingsPatch } from './ai.service';
 
 // Prompts
 export { getSystemPrompt } from './prompts';

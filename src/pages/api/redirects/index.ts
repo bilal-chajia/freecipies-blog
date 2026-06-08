@@ -27,10 +27,10 @@ export const GET: APIRoute = async ({ request }) => {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || undefined;
-    const isActiveStr = searchParams.get('isActive');
-    const isActive = isActiveStr === 'true' ? true : isActiveStr === 'false' ? false : undefined;
+    const isActiveStr = searchParams.get('is_active');
+    const is_active = isActiveStr === 'true' ? true : isActiveStr === 'false' ? false : undefined;
 
-    const redirects = await getRedirects(env.DB, { search, isActive });
+    const redirects = await getRedirects(env.DB, { search, is_active });
     const responseData = redirects.map(transformRedirectResponse);
 
     const { body, status, headers } = formatSuccessResponse(responseData);

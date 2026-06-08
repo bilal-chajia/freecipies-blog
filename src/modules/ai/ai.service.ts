@@ -2,85 +2,62 @@
  * AI Module - Main Service
  * ========================
  * Factory and service for AI content generation.
- * Supports 10 providers: Gemini, OpenAI, Anthropic, DeepSeek, OpenRouter, Qwen, Zhipu, Moonshot, Mistral, xAI.
  */
 
 import type { D1Database } from '@cloudflare/workers-types';
 import type {
     AIProvider,
-    AISettings,
+    AiSettings,
+    BuiltInProvider,
+    CustomProviderConfig,
     GenerateContentRequest,
     GenerateContentResponse,
-    IAIProvider
+    IAIProvider,
+    ModelSelection,
+    ProviderConfig,
 } from './types';
-import { DEFAULT_AI_SETTINGS, AVAILABLE_MODELS, ALL_PROVIDERS } from './types';
+import { ALL_PROVIDERS } from './types';
+import { getAiSettings, saveAiSettings, type AiSettingsPatch } from './settings-store';
 import {
-    GeminiProvider,
-    OpenAIProvider,
     AnthropicProvider,
     DeepSeekProvider,
+    GeminiProvider,
+    MistralProvider,
+    MoonshotProvider,
+    OpenAICompatibleProvider,
+    OpenAIProvider,
     OpenRouterProvider,
     QwenProvider,
-    ZhipuProvider,
-    MoonshotProvider,
-    MistralProvider,
     XAIProvider,
+    ZhipuProvider,
 } from './providers';
 
-const AI_SETTINGS_KEY = 'ai_settings';
+export { getAiSettings, saveAiSettings, replaceAiSettings } from './settings-store';
+export type { AiSettingsPatch } from './settings-store';
 
-/**
- * Get AI settings from database
- */
-export async function getAISettings(db: D1Database): Promise<AISettings> {
-    try {
-        const result = await db
-            .prepare('SELECT value FROM site_settings WHERE key = ?')
-            .bind(AI_SETTINGS_KEY)
-            .first<{ value: string }>();
+export const getAISettings = getAiSettings;
+export const saveAISettings = saveAiSettings;
 
-        if (result?.value) {
-            const parsed = JSON.parse(result.value);
-            return { ...DEFAULT_AI_SETTINGS, ...parsed };
-        }
-    } catch (error) {
-        console.error('Failed to load AI settings:', error);
-    }
-
-    return DEFAULT_AI_SETTINGS;
+function isBuiltInProvider(provider: AIProvider): provider is BuiltInProvider {
+    return ALL_PROVIDERS.includes(provider as BuiltInProvider);
 }
 
-/**
- * Save AI settings to database
- */
-export async function saveAISettings(db: D1Database, settings: Partial<AISettings>): Promise<boolean> {
-    try {
-        const current = await getAISettings(db);
-        const merged = { ...current, ...settings };
-        const value = JSON.stringify(merged);
-
-        await db
-            .prepare(`
-        INSERT INTO site_settings (key, value, category, type, updated_at)
-        VALUES (?, ?, 'ai', 'json', CURRENT_TIMESTAMP)
-        ON CONFLICT(key) DO UPDATE SET
-          value = excluded.value,
-          updated_at = CURRENT_TIMESTAMP
-      `)
-            .bind(AI_SETTINGS_KEY, value)
-            .run();
-
-        return true;
-    } catch (error) {
-        console.error('Failed to save AI settings:', error);
-        return false;
+function getProviderConfig(
+    settings: AiSettings,
+    provider: AIProvider,
+): (ProviderConfig | CustomProviderConfig) | undefined {
+    if (isBuiltInProvider(provider)) {
+        return settings.providers[provider] ?? settings.custom_providers[provider];
     }
+    return settings.custom_providers[provider];
 }
 
-/**
- * Create AI provider instance based on provider type and API key
- */
-export function createProvider(provider: AIProvider, apiKey: string): IAIProvider {
+function getProviderBaseUrl(settings: AiSettings, provider: AIProvider): string | undefined {
+    const custom = settings.custom_providers[provider];
+    return custom?.base_url;
+}
+
+export function createProvider(provider: AIProvider, apiKey: string, baseUrl?: string): IAIProvider {
     switch (provider) {
         case 'gemini':
             return new GeminiProvider(apiKey);
@@ -103,94 +80,76 @@ export function createProvider(provider: AIProvider, apiKey: string): IAIProvide
         case 'xai':
             return new XAIProvider(apiKey);
         default:
-            throw new Error(`Unknown provider: ${provider}`);
+            if (!baseUrl) throw new Error(`Unknown provider: ${provider}`);
+            return new OpenAICompatibleProvider(provider, baseUrl, apiKey);
     }
 }
 
-/**
- * Get list of configured (enabled with API key) providers
- */
 export async function getConfiguredProviders(db: D1Database): Promise<AIProvider[]> {
-    const settings = await getAISettings(db);
+    const settings = await getAiSettings(db);
     const configured: AIProvider[] = [];
 
     for (const provider of ALL_PROVIDERS) {
-        const config = settings.providers?.[provider];
-        if (config?.enabled && config.apiKey) {
-            configured.push(provider);
-        }
+        const config = settings.providers[provider];
+        if (config?.enabled && config.api_key) configured.push(provider);
+    }
+
+    for (const [provider, config] of Object.entries(settings.custom_providers)) {
+        if (config.enabled && config.api_key) configured.push(provider);
     }
 
     return configured;
 }
 
-/**
- * Get available models for a provider from database settings
- * Falls back to hardcoded AVAILABLE_MODELS if not found in settings
- */
-export async function getModelsForProvider(db: D1Database, provider: AIProvider) {
-    try {
-        const settings = await getAISettings(db);
-        const providerConfig = settings.providers?.[provider];
-
-        // Return models from database if available
-        if (providerConfig?.availableModels && Array.isArray(providerConfig.availableModels)) {
-            // Filter to only enabled models
-            return providerConfig.availableModels.filter(m => m.enabled !== false);
-        }
-    } catch (error) {
-        console.error(`Failed to load models for ${provider}:`, error);
-    }
-
-    // Fallback to hardcoded models
-    return AVAILABLE_MODELS[provider] || [];
+export async function getModelsForProvider(db: D1Database, provider: AIProvider): Promise<ModelSelection[]> {
+    const settings = await getAiSettings(db);
+    const config = getProviderConfig(settings, provider);
+    return (config?.models ?? []).filter((model) => model.enabled && model.status !== 'unavailable');
 }
 
-/**
- * Generate content using the specified provider
- */
 export async function generateContent(
     db: D1Database,
-    request: GenerateContentRequest
+    request: GenerateContentRequest,
 ): Promise<GenerateContentResponse> {
-    const settings = await getAISettings(db);
-    const provider = request.provider || settings.defaultProvider;
-    const providerConfig = settings.providers?.[provider];
+    const settings = await getAiSettings(db);
+    const provider = request.provider || settings.default_provider;
+    const config = getProviderConfig(settings, provider);
 
-    if (!providerConfig?.apiKey) {
+    if (!config?.api_key) {
         return {
             success: false,
             error: `No API key configured for provider: ${provider}`,
         };
     }
 
-    if (!providerConfig.enabled) {
+    if (!config.enabled) {
         return {
             success: false,
             error: `Provider is disabled: ${provider}`,
         };
     }
 
-    const aiProvider = createProvider(provider, providerConfig.apiKey);
-
-    // Use request model or fall back to default
-    const model = request.model || (provider === settings.defaultProvider ? settings.defaultModel : undefined);
+    const model = request.model || (provider === settings.default_provider ? settings.default_model : '');
+    const aiProvider = createProvider(provider, config.api_key, getProviderBaseUrl(settings, provider));
 
     return aiProvider.generateContent({
         ...request,
-        model: model || request.model,
+        provider,
+        model,
         temperature: request.temperature ?? settings.temperature,
-        systemPrompt: request.systemPrompt || settings.systemPrompt,
+        system_prompt: request.system_prompt || settings.system_prompt,
     });
 }
 
-/**
- * Validate an API key for a specific provider
- */
 export async function validateProviderApiKey(
     provider: AIProvider,
-    apiKey: string
+    apiKey: string,
+    baseUrl?: string,
 ): Promise<boolean> {
-    const aiProvider = createProvider(provider, apiKey);
+    const aiProvider = createProvider(provider, apiKey, baseUrl);
     return aiProvider.validateApiKey(apiKey);
+}
+
+export async function patchAiSettings(db: D1Database, patch: AiSettingsPatch): Promise<boolean> {
+    return saveAiSettings(db, patch);
 }

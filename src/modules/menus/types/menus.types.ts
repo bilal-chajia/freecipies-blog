@@ -4,48 +4,83 @@
  * TypeScript interfaces for mega menu items and configuration.
  */
 
-/**
- * Single link within a menu column
- */
-export interface MenuLink {
-    id: string;
-    label: string;
-    url: string;
-    openInNewTab?: boolean;
+export type MenuLocation = 'header' | 'footer' | 'sidebar' | 'mobile';
+export type MenuVisibility = 'all' | 'desktop' | 'mobile';
+export type MenuItemType = 'link' | 'group' | 'mega' | 'separator';
+export type MenuTargetType =
+    | 'internal_route'
+    | 'category'
+    | 'tag'
+    | 'article'
+    | 'author'
+    | 'external_url'
+    | 'affiliate'
+    | 'cookbook';
+
+export interface MenuTarget {
+    type: MenuTargetType;
+    href: string;
+    id?: number;
+    slug?: string;
+    snapshot?: Record<string, unknown>;
 }
 
-/**
- * Column within a mega menu dropdown
- */
+export interface MenuImageVariant {
+    r2_key: string;
+    width: number;
+    height: number;
+    size_bytes?: number;
+}
+
+export interface MenuImageSnapshot {
+    media_id?: number;
+    alt: string;
+    placeholder: string;
+    variants: {
+        xs: MenuImageVariant;
+        sm: MenuImageVariant;
+    };
+}
+
 export interface MenuColumn {
     id: string;
     title: string;
-    links: MenuLink[];
+    items: MenuItem[];
 }
 
-/**
- * Featured content section in mega menu
- */
-export interface MenuFeatured {
-    enabled: boolean;
-    title?: string;
-    image?: string;
-    url?: string;
+export interface MenuFeaturedItem {
+    id: string;
+    type: 'featured_item';
+    label: string;
     description?: string;
+    target: MenuTarget;
+    image?: MenuImageSnapshot;
+    disclosure_label?: string;
 }
 
-/**
- * Individual menu item (can be mega or simple link)
- */
 export interface MenuItem {
     id: string;
-    label: string;
-    type: 'mega' | 'link';
-    url?: string;
-    openInNewTab?: boolean;
-    highlight?: boolean;
+    type: MenuItemType;
+    label?: string;
+    is_enabled: boolean;
+    visibility: MenuVisibility;
+    highlight: boolean;
+    open_in_new_tab?: boolean;
+    target?: MenuTarget;
+    overview_target?: MenuTarget;
+    layout?: 'columns' | 'columns_with_featured_carousel' | 'featured_left';
+    items?: MenuItem[];
     columns?: MenuColumn[];
-    featured?: MenuFeatured;
+    featured_items?: MenuFeaturedItem[];
+    image?: MenuImageSnapshot;
+    disclosure_label?: string;
+}
+
+export interface MenuDocument {
+    location: MenuLocation;
+    is_enabled: boolean;
+    fallback_to: 'header' | null;
+    items: MenuItem[];
 }
 
 /**
@@ -57,10 +92,11 @@ export interface MenuConfig {
     label: string;
     items: MenuItem[];
     isEnabled: boolean;
-    location: 'header' | 'footer' | 'sidebar' | 'mobile';
+    location: MenuLocation;
+    document: MenuDocument;
     description?: string;
-    createdAt: string;
-    updatedAt: string;
+    created_at: string;
+    updated_at: string;
 }
 
 /**
@@ -70,7 +106,7 @@ export interface CreateMenuInput {
     key: string;
     label: string;
     items?: MenuItem[];
-    location?: 'header' | 'footer' | 'sidebar' | 'mobile';
+    location?: MenuLocation;
     description?: string;
 }
 
@@ -81,7 +117,8 @@ export interface UpdateMenuInput {
     label?: string;
     items?: MenuItem[];
     isEnabled?: boolean;
-    location?: 'header' | 'footer' | 'sidebar' | 'mobile';
+    location?: MenuLocation;
+    fallbackTo?: 'header' | null;
     description?: string;
 }
 

@@ -18,18 +18,17 @@ import { validateParams, validateBody, SlugOrIdParam, UpdateCategorySchema } fro
 
 export const prerender = false;
 
-const getThumbnailUrlFromImagesJson = (value: any): string | null => {
+const getThumbnailUrlFromImagesJson = (value: unknown): string | null => {
     if (!value) return null;
     try {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
-        const primarySlot = parsed?.thumbnail ?? parsed?.cover;
+        const primarySlot = parsed?.thumbnail ?? parsed?.hero;
         if (!primarySlot) return null;
         if (primarySlot.variants && typeof primarySlot.variants === 'object') {
             const variant =
                 primarySlot.variants.lg ||
                 primarySlot.variants.md ||
                 primarySlot.variants.sm ||
-                primarySlot.variants.original ||
                 primarySlot.variants.xs;
             return resolveVariantUrl(variant) || null;
         }
@@ -97,9 +96,6 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
 
         const body = await validateBody(request, UpdateCategorySchema);
         const transformedBody = transformCategoryRequestBody(body);
-
-        // DEBUG: Check if iconSvg is in the transformed body
-        console.log('Backend received iconSvg:', transformedBody.iconSvg ? transformedBody.iconSvg.substring(0, 50) : 'NOT PRESENT');
 
         const isNumeric = /^\d+$/.test(slug);
 

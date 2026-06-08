@@ -5,7 +5,6 @@ import { getCategories } from '@modules/categories';
 import { getTags } from '@modules/tags';
 import { getAuthors } from '@modules/authors';
 import { extractImage } from '@shared/utils';
-import type { Env } from '@shared/types';
 
 export const prerender = false;
 
@@ -20,10 +19,10 @@ export const GET: APIRoute = async ({ site }) => {
 
     try {
         const [recipesResult, categoriesResult, tagsResult, authorsResult] = await Promise.all([
-            getArticles(env.DB, { type: 'recipe', limit: 1000 }),
-            getCategories(env.DB, { isOnline: true }),
-            getTags(env.DB, { isOnline: true }),
-            getAuthors(env.DB, { isOnline: true })
+            getArticles(env.DB, { type: 'recipe', workflow_status: 'published', limit: 1000 }),
+            getCategories(env.DB, { workflow_status: 'published' }),
+            getTags(env.DB),
+            getAuthors(env.DB, { workflow_status: 'published' })
         ]);
 
         recipes = recipesResult.items;
@@ -56,9 +55,9 @@ export const GET: APIRoute = async ({ site }) => {
     };
 
     const getRecipeImageUrl = (recipe: any) => {
-        const cover = extractImage(recipe.imagesJson, 'cover', 1200);
-        const thumbnail = extractImage(recipe.imagesJson, 'thumbnail', 1200);
-        return cover.imageUrl || thumbnail.imageUrl || recipe.imageUrl || '';
+        const hero = extractImage(recipe.images_json, 'hero', 1200);
+        const thumbnail = extractImage(recipe.images_json, 'thumbnail', 1200);
+        return hero.image_url || thumbnail.image_url || recipe.image_url || '';
     };
 
     // Generate sitemap XML
@@ -73,15 +72,15 @@ export const GET: APIRoute = async ({ site }) => {
         <priority>${page.priority}</priority>
     </url>`).join('')}
     ${recipes.map(recipe => {
-        const imageUrl = getRecipeImageUrl(recipe);
+        const image_url = getRecipeImageUrl(recipe);
         return `
     <url>
         <loc>${baseUrl}/recipes/${recipe.slug}</loc>
-        <lastmod>${recipe.updatedAt ? new Date(recipe.updatedAt).toISOString().split('T')[0] : today}</lastmod>
+        <lastmod>${recipe.updated_at ? new Date(recipe.updated_at).toISOString().split('T')[0] : today}</lastmod>
         <changefreq>weekly</changefreq>
-        <priority>0.8</priority>${imageUrl ? `
+        <priority>0.8</priority>${image_url ? `
         <image:image>
-            <image:loc>${escapeXml(getAbsoluteImageUrl(imageUrl))}</image:loc>
+            <image:loc>${escapeXml(getAbsoluteImageUrl(image_url))}</image:loc>
             <image:title>${escapeXml(recipe.headline)}</image:title>
         </image:image>` : ''}
     </url>`;

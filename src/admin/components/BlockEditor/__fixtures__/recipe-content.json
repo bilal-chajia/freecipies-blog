@@ -1,28 +1,40 @@
-[
-  {
-    "type": "paragraph",
-    "text": "These lemon pancakes are fluffy and bright."
-  },
-  {
-    "type": "main_recipe"
-  },
-  {
-    "type": "tip_box",
-    "variant": "tip",
-    "title": "Chef Tip",
-    "text": "Do not overmix the batter."
-  },
-  {
-    "type": "video",
-    "provider": "youtube",
-    "videoId": "dQw4w9WgXcQ",
-    "aspectRatio": "16:9"
-  },
-  {
-    "type": "faq_section",
-    "title": "Recipe FAQs",
-    "items": [
-      { "q": "Can I use buttermilk?", "a": "Yes, and reduce lemon juice slightly." }
-    ]
-  }
-]
+{
+  "version": 1,
+  "kind": "content_document",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "paragraph",
+      "text": "These lemon pancakes are fluffy and bright."
+    },
+    {
+      "id": "main-recipe",
+      "type": "main_recipe"
+    },
+    {
+      "id": "chef-tip",
+      "type": "tip_box",
+      "variant": "tip",
+      "title": "Chef Tip",
+      "text": "Do not overmix the batter."
+    },
+    {
+      "id": "recipe-video",
+      "type": "video",
+      "provider": "youtube",
+      "video_id": "dQw4w9WgXcQ",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "recipe-faq",
+      "type": "faq_section",
+      "title": "Recipe FAQs",
+      "items": [
+        {
+          "question": "Can I use buttermilk?",
+          "answer": "Yes, and reduce lemon juice slightly."
+        }
+      ]
+    }
+  ]
+}

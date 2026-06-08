@@ -6,8 +6,10 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
+import { normalizeOpenAiModels } from '../discovery/normalize';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const OPENAI_MODELS_URL = 'https://api.openai.com/v1/models';
 
 interface OpenAIResponse {
     id?: string;
@@ -37,10 +39,17 @@ export class OpenAIProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'gpt-4o-mini';
 
-        const body = {
+        const body: {
+            model: string;
+            messages: Array<{ role: string; content: string }>;
+            temperature: number;
+            max_tokens: number;
+            response_format: { type: 'json_object' };
+            reasoning_effort?: 'low' | 'medium' | 'high';
+        } = {
             model,
             messages: [
                 { role: 'system', content: systemPrompt },
@@ -50,6 +59,9 @@ export class OpenAIProvider implements IAIProvider {
             max_tokens: 4096,
             response_format: { type: 'json_object' },
         };
+        if (request.reasoning_effort) {
+            body.reasoning_effort = request.reasoning_effort;
+        }
 
         try {
             const response = await fetch(OPENAI_API_URL, {
@@ -102,7 +114,7 @@ export class OpenAIProvider implements IAIProvider {
 
     async validateApiKey(apiKey: string): Promise<boolean> {
         try {
-            const response = await fetch('https://api.openai.com/v1/models', {
+            const response = await fetch(OPENAI_MODELS_URL, {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                 },
@@ -110,6 +122,20 @@ export class OpenAIProvider implements IAIProvider {
             return response.ok;
         } catch {
             return false;
+        }
+    }
+
+    async listModels(apiKey: string) {
+        try {
+            const response = await fetch(OPENAI_MODELS_URL, {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+            });
+            if (!response.ok) return { supported: true, models: [] };
+            return { supported: true, models: normalizeOpenAiModels(await response.json()) };
+        } catch {
+            return { supported: true, models: [] };
         }
     }
 }

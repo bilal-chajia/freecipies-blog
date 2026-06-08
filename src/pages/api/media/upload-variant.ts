@@ -7,24 +7,24 @@
  * POST /api/media/upload-variant
  *   FormData:
  *     - file: Blob
- *     - variantName: string (original, lg, md, sm, xs)
- *     - baseName: string
- *     - uploadId: string (for grouping variants)
+ *     - variant_name: string (original, lg, md, sm, xs)
+ *     - base_name: string
+ *     - upload_id: string (for grouping variants)
  * 
- *   Returns: { r2Key, url, width, height }
+ *   Returns: { upload_key, url, width, height, size_bytes }
  */
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { uploadImage } from '@modules/media';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils';
-import type { Env } from '@shared/types';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { getImageUploadSettings } from '@modules/settings';
 import { IMAGE_SUPPORTED_TYPES } from '@shared/constants/image-upload';
 import { validate, VariantUploadFields } from '@shared/validation';
+import { buildMediaImageR2Key, normalizeImageAssetId, normalizeImageExtension } from '@shared/images/r2-naming';
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
 
 
@@ -43,8 +43,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const publicUrl = '/api/images';
 
     // Load upload settings
-    const settings = await getImageUploadSettings(env.DB);
-    const MAX_SIZE_BYTES = settings.maxFileSizeMB * 1024 * 1024;
+    const settings = await getImageUploadSettings(env.DB, { cache: env.SETTINGS_CACHE ?? env.SESSION ?? null });
+    const MAX_SIZE_BYTES = settings.max_file_size_mb * 1024 * 1024;
     const allowedTypes = IMAGE_SUPPORTED_TYPES;
 
     // Parse form data
@@ -52,10 +52,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const file = formData.get('file') as File;
 
     // Validate variant fields via Zod
-    const { variantName, baseName, uploadId, width, height } = validate(VariantUploadFields, {
-      variantName: formData.get('variantName'),
-      baseName: formData.get('baseName'),
-      uploadId: formData.get('uploadId') || undefined,
+    const { variant_name: variantName, base_name: baseName, upload_id: uploadId, width, height } = validate(VariantUploadFields, {
+      variant_name: formData.get('variant_name'),
+      base_name: formData.get('base_name'),
+      upload_id: formData.get('upload_id') || undefined,
       width: formData.get('width') || '0',
       height: formData.get('height') || '0',
     });
@@ -75,22 +75,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, `Invalid file type: ${file.type}`, 400);
     }
 
-    // Build key path
-    const suffix = variantName === 'original' ? '' : `-${variantName}`;
-    const ext = file.name.split('.').pop() || 'webp';
-    const folder = 'media';
-    const r2Key = `${folder}/${baseName}${suffix}-${uploadId || Date.now()}.${ext}`;
+    const ext = normalizeImageExtension(file.name.split('.').pop());
+    const assetId = normalizeImageAssetId(uploadId);
+    const r2Key = buildMediaImageR2Key({
+      slugBase: baseName,
+      variant: variantName,
+      assetId,
+      extension: ext,
+    });
 
     // Upload to R2
     const arrayBuffer = await file.arrayBuffer();
 
-    const result = await uploadImage(
+    await uploadImage(
       env.IMAGES,
       {
         file,
-        filename: `${baseName}${suffix}.${ext}`,
+        filename: `${baseName}-${variantName}.${ext}`,
         contentType: file.type || 'image/webp',
-        folder,
         key: r2Key,
         arrayBuffer,
       },
@@ -98,10 +100,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
 
     const { body, status, headers } = formatSuccessResponse({
-      r2Key: r2Key,
+      upload_key: r2Key,
       url: `${publicUrl}/${r2Key}`,
       width,
       height,
+      size_bytes: arrayBuffer.byteLength,
     });
 
     return new Response(body, { status, headers });

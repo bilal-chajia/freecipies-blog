@@ -2,71 +2,66 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { generateJWT } from '@modules/auth';
 import { validateBody, LoginSchema } from '@shared/validation';
+import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils/error-handler';
 
 export const prerender = false;
 
-/**
- * Handle Admin Login POST request
- */
 export const POST: APIRoute = async ({ request }) => {
   try {
     const { username, password } = await validateBody(request, LoginSchema);
 
-    // Get secrets from Cloudflare env or local import.meta.env
     const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
     const adminUser = env.ADMIN_USERNAME || import.meta.env.ADMIN_USERNAME;
     const adminPass = env.ADMIN_PASSWORD || import.meta.env.ADMIN_PASSWORD;
 
+    console.log('[DEBUG LOGIN] Received:', { username, passwordLength: password?.length });
+    console.log('[DEBUG LOGIN] Env Config:', { 
+      hasSecret: !!jwtSecret, 
+      adminUser, 
+      adminPass,
+      envKeys: Object.keys(env || {}),
+      metaEnvKeys: Object.keys(import.meta.env || {})
+    });
+
     if (!jwtSecret || !adminUser || !adminPass) {
-      console.error('Missing auth environment variables');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Server configuration error' 
-        }), 
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      console.error('[DEBUG LOGIN] Missing config keys:', {
+        jwtSecret: !!jwtSecret,
+        adminUser: !!adminUser,
+        adminPass: !!adminPass
+      });
+      const { body, status, headers } = formatErrorResponse(
+        new AppError(ErrorCodes.INTERNAL_ERROR, 'Server configuration error', 500)
       );
+      return new Response(body, { status, headers });
     }
 
-    // Simple credential check
     if (username === adminUser && password === adminPass) {
-      // Generate JWT
       const token = await generateJWT(
         { sub: adminUser, role: 'admin' },
         jwtSecret,
         '24h'
       );
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          token,
-          user: {
-            username: adminUser,
-            role: 'admin'
-          }
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+      const { body, status, headers } = formatSuccessResponse({
+        token,
+        user: {
+          username: adminUser,
+          role: 'admin',
+        },
+      });
+      return new Response(body, { status, headers });
     }
 
-    // Invalid credentials
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'Invalid credentials' 
-      }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    const { body, status, headers } = formatErrorResponse(
+      new AppError(ErrorCodes.UNAUTHORIZED, 'Invalid credentials', 401)
     );
+    return new Response(body, { status, headers });
 
   } catch (error) {
     console.error('Login error:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'Login failed' 
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    const { body, status, headers } = formatErrorResponse(
+      new AppError(ErrorCodes.INTERNAL_ERROR, 'Login failed', 500)
     );
+    return new Response(body, { status, headers });
   }
 };

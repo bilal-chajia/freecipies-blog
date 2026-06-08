@@ -1,12 +1,3 @@
 {
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "files.associations": {
-    "*.astro": "astro"
-  },
-  "[astro]": {
-    "editor.defaultFormatter": "astro-build.astro-vscode",
-    "typescript.validate.enable": false,
-    "javascript.validate.enable": false
-  },
-  "typescript.validate.enable": true
+  "css.lint.unknownAtRules": "ignore"
 }

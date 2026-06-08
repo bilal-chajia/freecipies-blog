@@ -14,40 +14,37 @@ export const categories = sqliteTable('categories', {
   // 1. NAVIGATION & HIERARCHY
   slug: text('slug').unique().notNull(),
   label: text('label').notNull(),
-  parentId: integer('parent_id'),
+  parent_id: integer('parent_id'),
   depth: integer('depth').default(0),
   
   // 2. DISPLAY TEXT (Landing Page Content)
   headline: text('headline'),
-  collectionTitle: text('collection_title'),
-  shortDescription: text('short_description').notNull(),
+  collection_title: text('collection_title'),
+  short_description: text('short_description').notNull(),
   
   // 3. VISUALS (Display-Ready Image Data)
-  imagesJson: text('images_json').default('{}'),
+  images_json: text('images_json').default('{}'),
   
   // 4. LOGIC & THEME
   color: text('color').default('#ff6600ff'),
-  iconSvg: text('icon_svg'),
-  isFeatured: integer('is_featured', { mode: 'boolean' }).default(false),
+  is_featured: integer('is_featured', { mode: 'boolean' }).default(false),
   
   // 5. JSON CONFIG CONTAINERS
-  seoJson: text('seo_json').default('{}'),
-  configJson: text('config_json').default('{}'),
-  i18nJson: text('i18n_json').default('{}'),
+  seo_json: text('seo_json').default('{}'),
   
   // 6. SYSTEM & METRICS
-  sortOrder: integer('sort_order').default(0),
-  isOnline: integer('is_online', { mode: 'boolean' }).default(false),
-  cachedPostCount: integer('cached_post_count').default(0),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
-  deletedAt: text('deleted_at'),
+  sort_order: integer('sort_order').default(0),
+  workflow_status: text('workflow_status').default('draft'),
+  cached_post_count: integer('cached_post_count').default(0),
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  deleted_at: text('deleted_at'),
 }, (table) => [
   index('idx_categories_slug').on(table.slug),
-  index('idx_categories_parent').on(table.parentId),
-  index('idx_categories_display').on(table.isOnline, table.sortOrder),
-  index('idx_categories_featured').on(table.isFeatured),
-  index('idx_categories_active').on(table.deletedAt),
+  index('idx_categories_parent').on(table.parent_id),
+  index('idx_categories_display').on(table.workflow_status, table.sort_order),
+  index('idx_categories_featured').on(table.is_featured),
+  index('idx_categories_active').on(table.deleted_at),
 ]);
 
 // Type exports

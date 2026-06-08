@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getArticleBySlug } from '@modules/articles';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateParams, SlugOrIdParam } from '@shared/validation';
 
@@ -12,7 +11,7 @@ export const prerender = false;
  * Public endpoint to get article by slug
  * For mutations (PUT/DELETE), use /api/articles/:id instead
  */
-export const GET: APIRoute = async ({ params, locals }) => {
+export const GET: APIRoute = async ({ params }) => {
     const { slug } = validateParams(params, SlugOrIdParam);
 
     try {

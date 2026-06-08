@@ -16,22 +16,19 @@ export const tags = sqliteTable('tags', {
   label: text('label').notNull(),
   description: text('description'),
   
-  // 2. FILTER LOGIC (Multi-Grouping)
-  filterGroupsJson: text('filter_groups_json').default('[]'),
+  // 2. VISUAL STYLING
+  style_json: text('style_json').default('{}'),
   
-  // 3. VISUAL STYLING
-  styleJson: text('style_json').default('{}'),
-  
-  // 4. SYSTEM & METRICS
-  cachedPostCount: integer('cached_post_count').default(0),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
-  deletedAt: text('deleted_at'),
+  // 3. SYSTEM & METRICS
+  cached_post_count: integer('cached_post_count').default(0),
+  created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  deleted_at: text('deleted_at'),
 }, (table) => [
   index('idx_tags_slug').on(table.slug),
-  index('idx_tags_popular').on(table.cachedPostCount),
+  index('idx_tags_popular').on(table.cached_post_count),
   index('idx_tags_label').on(table.label),
-  index('idx_tags_active').on(table.deletedAt),
+  index('idx_tags_active').on(table.deleted_at),
 ]);
 
 // Type exports

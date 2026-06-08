@@ -92,7 +92,7 @@
     /* ========================================
    * Typography
    * ======================================== */
-    --wp-editor-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    --wp-editor-font-family: var(--font-sans);
     --wp-editor-font-size: 16px;
     --wp-editor-line-height: 1.6;
 
@@ -119,6 +119,40 @@
     --wp-z-inserter: 90;
     --wp-z-sidebar: 80;
     --wp-z-popover: 110;
+
+    /* ========================================
+   * Custom Alert Block Tokens (Light Mode)
+   * ======================================== */
+    --alert-tip-bg: linear-gradient(180deg, #f2fcf5 0%, #ffffff 100%);
+    --alert-tip-border: #e2e8f0;
+    --alert-tip-icon-color: #10b981;
+    --alert-tip-icon-bg: rgba(16, 185, 129, 0.12);
+    --alert-tip-title: #0f172a;
+    --alert-tip-subtitle: #475569;
+
+    --alert-warning-bg: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+    --alert-warning-border: #e2e8f0;
+    --alert-warning-icon-color: #f59e0b;
+    --alert-warning-icon-bg: rgba(245, 158, 11, 0.12);
+    --alert-warning-title: #0f172a;
+    --alert-warning-subtitle: #475569;
+
+    --alert-info-bg: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+    --alert-info-border: #e2e8f0;
+    --alert-info-icon-color: #3b82f6;
+    --alert-info-icon-bg: rgba(59, 130, 246, 0.12);
+    --alert-info-title: #0f172a;
+    --alert-info-subtitle: #475569;
+
+    --alert-note-bg: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    --alert-note-border: #e2e8f0;
+    --alert-note-icon-color: #64748b;
+    --alert-note-icon-bg: rgba(100, 116, 139, 0.12);
+    --alert-note-title: #0f172a;
+    --alert-note-subtitle: #475569;
+
+    /* Radial Grid dot color (Very subtle accessibility texture) */
+    --editor-grid-dot: rgba(15, 23, 42, 0.05);
 }
 
 /* ========================================
@@ -185,12 +219,12 @@
     box-shadow: 0 0 0 3px var(--wp-block-focus-ring);
 }
 
-.block-editor-wrapper .bn-editor [data-block-root="true"][data-custom-block="true"]::after {
+.block-editor-wrapper .bn-editor [data-block-root="true"]:has(.wp-block--custom)::after {
     outline-color: transparent;
     box-shadow: none;
 }
 
-.block-editor-wrapper .bn-editor [data-block-root="true"][data-custom-block="true"]:focus-visible::after {
+.block-editor-wrapper .bn-editor [data-block-root="true"]:has(.wp-block--custom):focus-visible::after {
     outline-color: transparent;
     box-shadow: none;
 }
@@ -198,66 +232,79 @@
 .wp-block--custom::after {
     content: '';
     position: absolute;
-    inset: calc(-1 * var(--wp-block-outline-offset));
-    border: 0;
-    outline: var(--wp-block-border-selected-width) solid transparent;
-    outline-offset: calc(-1 * var(--wp-block-outline-offset));
-    border-radius: var(--wp-block-border-radius);
+    inset: -2px;
+    border: var(--wp-block-border-selected-width) solid transparent;
+    border-radius: calc(var(--wp-block-border-radius) + 2px);
     pointer-events: none;
     transition:
-        outline-color var(--wp-transition-duration) var(--wp-transition-timing),
+        border-color var(--wp-transition-duration) var(--wp-transition-timing),
         box-shadow var(--wp-transition-duration) var(--wp-transition-timing);
+}
+
+.wp-block--custom[data-radius="lg"]::after {
+    border-radius: calc(var(--radius-lg) + 2px);
+}
+
+.wp-block--custom[data-radius="2xl"]::after {
+    border-radius: calc(var(--radius-2xl) + 2px);
 }
 
 .wp-block--custom.is-selected::after,
 .wp-block--custom[data-selected="true"]::after {
-    outline-color: var(--wp-block-border-selected);
+    border-color: var(--wp-block-border-selected);
 }
 
 /* Disable any default BlockNote/ProseMirror selection outlines & overlays.
    ProseMirror marks atom nodes (content:"none" blocks) as ProseMirror-selectednode
-   which triggers a native browser selection highlight making content invisible. */
+   which triggers a native browser selection highlight making content invisible.
+   user-select: none on parent + children prevents the native highlight overlay. */
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode {
     outline: none !important;
     box-shadow: none !important;
     background: transparent !important;
-    -webkit-user-select: none !important;
-    user-select: none !important;
 }
 
-/* Force form inputs inside selected blocks to remain visible.
-   The browser node-selection marks <input> values as "selected text",
-   causing them to disappear. Only inputs/textareas need color reset. */
+/* Force ALL children inside selected nodes to remain fully visible.
+   Do NOT set user-select: auto here — that undoes the parent's user-select: none
+   and re-enables the native selection highlight that makes text invisible. */
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode * {
+    -webkit-user-select: none;
+    user-select: none;
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Custom-block form controls must always allow native text selection,
+   regardless of the block's node-selection state. */
+.block-editor-wrapper .bn-editor .wp-block--custom input,
+.block-editor-wrapper .bn-editor .wp-block--custom textarea,
+.block-editor-wrapper .bn-editor .wp-block--custom select {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -webkit-user-drag: none;
+}
+
+/* Form inputs need user-select: auto so the user can type and select text,
+   plus caret and color revert */
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode input,
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode textarea,
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode select {
-    -webkit-text-fill-color: initial !important;
-    color: revert !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-    user-select: auto !important;
     -webkit-user-select: auto !important;
+    user-select: auto !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
     caret-color: auto !important;
 }
 
-/* Other elements only need opacity/pointer-events fix, NOT color override.
-   Overriding color on buttons breaks styled components (e.g. dark bg + white text). */
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode button,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode label,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode span,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode div,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode p,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode h1,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode h2,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode h3 {
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-    user-select: auto !important;
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode [data-simple-table-control="true"] {
     -webkit-user-select: auto !important;
-    /* Ensure default cursor unless explicitly overridden */
-    cursor: default;
+    user-select: auto !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
 /* Explicitly allow pointer cursor for buttons and interactive elements */
@@ -269,10 +316,26 @@
 
 /* Prevent browser ::selection highlight from hiding block content */
 .block-editor-wrapper .bn-editor .ProseMirror-selectednode::selection,
-.block-editor-wrapper .bn-editor .ProseMirror-selectednode *::selection {
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode *::selection,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode input::selection,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode textarea::selection,
+.block-editor-wrapper .bn-editor .ProseMirror-selectednode [data-simple-table-control="true"]::selection {
     background: transparent !important;
-    color: inherit !important;
-    -webkit-text-fill-color: inherit !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
+}
+
+/* ...but real form controls must show a visible text-selection highlight.
+   Overrides the transparent rule above (equal specificity, later in source). */
+.block-editor-wrapper .bn-editor .wp-block--custom input::selection,
+.block-editor-wrapper .bn-editor .wp-block--custom textarea::selection,
+.block-editor-wrapper .bn-editor .wp-block--custom select::selection {
+    /* Only override the background (literal color — var() in ::selection resolves
+       against :root where admin vars are undefined). Do NOT set
+       -webkit-text-fill-color here: forcing it prevents Chrome from painting the
+       ::selection background on <input>/<textarea>. Text color is left to the
+       inherited rules so highlighted glyphs stay readable. */
+    background-color: rgba(37, 99, 235, 0.4) !important;
 }
 
 .block-editor-wrapper .block-editor-block-list__block,
@@ -757,8 +820,10 @@
     }
 
     .wp-block,
+    .wp-block--custom,
     .wp-block-toolbar,
-    .wp-block-placeholder {
+    .wp-block-placeholder,
+    .block-editor-wrapper .bn-editor [data-block-root="true"]::after {
         transition: none !important;
         animation: none !important;
     }
@@ -849,4 +914,42 @@
         --wp-canvas-padding-y: 12px;
         --wp-title-font-size: 1.75rem;
     }
+}
+
+.dark,
+[data-surface="admin"].dark,
+[data-surface="admin"] .dark {
+    /* ========================================
+   * Custom Alert Block Tokens (Dark Mode)
+   * ======================================== */
+    --alert-tip-bg: linear-gradient(180deg, #091e14 0%, #020a06 100%);
+    --alert-tip-border: rgba(16, 185, 129, 0.4);
+    --alert-tip-icon-color: #34d399;
+    --alert-tip-icon-bg: rgba(52, 211, 153, 0.2);
+    --alert-tip-title: #a7f3d0;
+    --alert-tip-subtitle: #34d399;
+
+    --alert-warning-bg: linear-gradient(180deg, #241805 0%, #0d0801 100%);
+    --alert-warning-border: rgba(245, 158, 11, 0.4);
+    --alert-warning-icon-color: #fbbf24;
+    --alert-warning-icon-bg: rgba(251, 191, 36, 0.2);
+    --alert-warning-title: #fef08a;
+    --alert-warning-subtitle: #fbbf24;
+
+    --alert-info-bg: linear-gradient(180deg, #051329 0%, #010612 100%);
+    --alert-info-border: rgba(59, 130, 246, 0.4);
+    --alert-info-icon-color: #60a5fa;
+    --alert-info-icon-bg: rgba(96, 165, 250, 0.2);
+    --alert-info-title: #93c5fd;
+    --alert-info-subtitle: #60a5fa;
+
+    --alert-note-bg: linear-gradient(180deg, #131924 0%, #07090e 100%);
+    --alert-note-border: rgba(148, 163, 184, 0.4);
+    --alert-note-icon-color: #94a3b8;
+    --alert-note-icon-bg: rgba(148, 163, 184, 0.2);
+    --alert-note-title: #f1f5f9;
+    --alert-note-subtitle: #cbd5e1;
+
+    /* Radial Grid dot color in dark mode (Highly subtle 4% opacity to minimize visual noise) */
+    --editor-grid-dot: rgba(255, 255, 255, 0.04);
 }

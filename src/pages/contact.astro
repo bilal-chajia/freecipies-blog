@@ -1,9 +1,9 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import Layout from "@layouts/Layout.astro";
 
-const siteTitle = "Contact Us - Freecipies";
+const siteTitle = "Contact Us - SaaS Blog";
 const siteDescription =
-    "Get in touch with the Freecipies team. We'd love to hear from you!";
+    "Get in touch with the SaaS Blog team. We'd love to hear from you!";
 ---
 
 <Layout title={siteTitle} description={siteDescription}>
@@ -258,7 +258,7 @@ const siteDescription =
     }
 
     .container {
-        max-width: 1200px;
+        max-width: var(--container-max);
         margin: 0 auto;
         padding: 0 clamp(1rem, 3vw, 2rem);
     }

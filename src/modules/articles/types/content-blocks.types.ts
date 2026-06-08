@@ -1,328 +1,80 @@
 /**
- * Content Block Types
- * =====================
- * TypeScript types for content_json blocks
- * Discriminated union for all 20+ block types
+ * Compatibility export for the canonical content_json contract.
+ *
+ * New code should import from `@modules/content-blocks`. This file remains so
+ * older admin adapters and article services can move gradually without changing
+ * every import in the same refactor.
  */
+export type {
+  AdSlotBlock,
+  BeforeAfterBlock,
+  BlockId,
+  BlockquoteBlock,
+  ContentBlock,
+  ContentBlockType,
+  DividerBlock,
+  EmbedBlock,
+  FAQItem,
+  HeadingBlock,
+  ImageBlock,
+  IngredientSpotlightBlock,
+  ListBlock,
+  MainFaqBlock,
+  MainRecipeBlock,
+  MainRoundupBlock,
+  NormalizedContentBlock,
+  ParagraphBlock,
+  ProductCardBlock,
+  RelatedArticleCard,
+  RelatedContentBlock,
+  RelatedContentItem,
+  SpacerBlock,
+  TableBlock,
+  TipBoxBlock,
+  VideoBlock,
+} from '@modules/content-blocks';
 
-import type { ImageSlot, ImageVariants } from './images.types';
+export {
+  CONTENT_BLOCK_TYPES,
+  extractFAQsFromContentDocument,
+  extractTocFromContentDocument,
+  normalizeContentDocument,
+  serializeContentDocument,
+  slugifyHeading as slugify,
+} from '@modules/content-blocks';
 
-// ============================================
-// TEXT BLOCKS
-// ============================================
+import { slugifyHeading } from '@modules/content-blocks';
 
-export interface ParagraphBlock {
-    type: 'paragraph';
-    /** Markdown-enabled text content */
-    text: string;
-}
+export { extractFAQsFromContentDocument as extractFAQs } from '@modules/content-blocks';
 
-export interface HeadingBlock {
-    type: 'heading';
-    /** Heading level (H1 reserved for headline) */
-    level: 2 | 3 | 4 | 5 | 6;
-    /** Heading text */
-    text: string;
-    /** Auto-generated anchor ID */
-    id?: string;
-}
-
-export interface BlockquoteBlock {
-    type: 'blockquote';
-    /** Quote text (Markdown enabled) */
-    text: string;
-    /** Attribution / source */
-    cite?: string;
-}
-
-export interface ListBlock {
-    type: 'list';
-    /** List style */
-    style: 'ordered' | 'unordered' | 'checklist';
-    /** List items (Markdown enabled) */
-    items: string[];
-}
-
-// ============================================
-// MEDIA BLOCKS
-// ============================================
-
-export interface ImageBlock {
-    type: 'image';
-    /** Reference to media table */
-    media_id: number;
-    /** Alt text */
-    alt: string;
-    /** Optional caption */
-    caption?: string;
-    /** Optional credit/attribution */
-    credit?: string;
-    /** Responsive variants */
-    variants?: ImageVariants;
-}
-
-export interface VideoBlock {
-    type: 'video';
-    /** Video platform */
-    provider: 'youtube' | 'vimeo' | 'self';
-    /** Video ID */
-    videoId: string;
-    /** Display aspect ratio */
-    aspectRatio: '16:9' | '4:3' | '1:1' | '9:16';
-}
-
-// ============================================
-// CALLOUT BLOCKS
-// ============================================
-
-export interface TipBoxBlock {
-    type: 'tip_box';
-    /** Visual style/severity */
-    variant: 'tip' | 'warning' | 'info' | 'note';
-    /** Optional heading */
-    title?: string;
-    /** Content (Markdown enabled) */
-    text: string;
-}
-
-// ============================================
-// EMBED BLOCKS
-// ============================================
-
-export interface EmbedBlock {
-    type: 'embed';
-    /** Social platform */
-    provider: 'instagram' | 'pinterest' | 'tiktok' | 'twitter';
-    /** Original URL */
-    url: string;
-    /** Pre-rendered HTML (for SSR) */
-    html?: string;
-}
-
-
-
-export interface ProductCardBlock {
-    type: 'product_card';
-    /** Product name */
-    name: string;
-    /** Affiliate/product URL */
-    url: string;
-    /** Price display */
-    price?: string;
-    /** Product image */
-    image?: ImageSlot;
-    /** Is affiliate link */
-    affiliate?: boolean;
-}
-
-// ============================================
-// LAYOUT BLOCKS
-// ============================================
-
-export interface DividerBlock {
-    type: 'divider';
-}
-
-export interface SpacerBlock {
-    type: 'spacer';
-    /** Spacing size */
-    size: 'sm' | 'md' | 'lg' | 'xl';
-}
-
-export interface AdSlotBlock {
-    type: 'ad_slot';
-    /** Ad placement type */
-    variant: 'in-content' | 'newsletter' | 'sidebar';
-}
-
-export interface TableBlock {
-    type: 'table';
-    /** Column headers */
-    headers: string[];
-    /** Table rows */
-    rows: string[][];
-}
-
-export interface RoundupItemPlaceholderBlock {
-    type: 'roundup_item';
-    article_id?: number | null;
-    external_url?: string;
-    title?: string;
-    subtitle?: string;
-    note?: string;
-    cover?: string | null;
-}
-
-// ============================================
-// FOOD BLOG BLOCKS
-// ============================================
-
-export interface BeforeAfterImage {
-    media_id: number;
-    alt: string;
-    label?: string;
-    variants?: ImageVariants;
-}
-
-export interface BeforeAfterBlock {
-    type: 'before_after';
-    /** Comparison layout */
-    layout: 'slider' | 'side_by_side';
-    /** Before image */
-    before: BeforeAfterImage;
-    /** After image */
-    after: BeforeAfterImage;
-}
-
-export interface IngredientSpotlightBlock {
-    type: 'ingredient_spotlight';
-    /** Ingredient name */
-    name: string;
-    /** Description text */
-    description: string;
-    /** Ingredient image */
-    image?: ImageSlot;
-    /** Usage tips */
-    tips?: string;
-    /** Substitutes list */
-    substitutes?: string[];
-    /** Internal link to ingredient page */
-    link?: string;
-}
-
-export interface FAQItem {
-    /** Question */
-    q: string;
-    /** Answer (Markdown enabled) */
-    a: string;
-}
-
-export interface FAQSectionBlock {
-    type: 'faq_section';
-    /** Optional section title */
-    title?: string;
-    /** FAQ items */
-    items: FAQItem[];
-}
-
-export interface RelatedArticleCard {
-    id: number;
-    slug: string;
-    headline: string;
-    thumbnail?: ImageSlot;
-    total_time?: number;
-    difficulty?: string;
-    reading_time?: number;
-    item_count?: number;
-}
-
-export interface RelatedContentBlock {
-    type: 'related_content';
-    /** Section heading */
-    title?: string;
-    /** Display layout */
-    layout: 'grid' | 'carousel' | 'list';
-    /** Selection mode */
-    mode?: 'manual' | 'auto';
-    /** Max items per type */
-    limit?: number;
-    /** Related recipes */
-    recipes?: RelatedArticleCard[];
-    /** Related articles */
-    articles?: RelatedArticleCard[];
-    /** Related roundups */
-    roundups?: RelatedArticleCard[];
-}
-
-// ============================================
-// DISCRIMINATED UNION
-// ============================================
-
-export type ContentBlock =
-    // Text
-    | ParagraphBlock
-    | HeadingBlock
-    | BlockquoteBlock
-    | ListBlock
-    // Media
-    | ImageBlock
-    | VideoBlock
-    // Callouts
-    | TipBoxBlock
-    // Embeds
-    | EmbedBlock
-    | ProductCardBlock
-    // Layout
-    | DividerBlock
-    | SpacerBlock
-    | AdSlotBlock
-    | TableBlock
-    | RoundupItemPlaceholderBlock
-    // Food Blog
-    | BeforeAfterBlock
-    | IngredientSpotlightBlock
-    | FAQSectionBlock
-    | RelatedContentBlock;
-
-// ============================================
-// Type Guards
-// ============================================
-
-export function isHeadingBlock(block: ContentBlock): block is HeadingBlock {
-    return block.type === 'heading';
-}
-
-export function isFAQSectionBlock(block: ContentBlock): block is FAQSectionBlock {
-    return block.type === 'faq_section';
-}
-
-export function isImageBlock(block: ContentBlock): block is ImageBlock {
-    return block.type === 'image';
-}
-
-// ============================================
-// Utilities
-// ============================================
-
-/**
- * Extract all headings from content for TOC generation
- */
-export function extractHeadings(content: ContentBlock[]): HeadingBlock[] {
-    return content.filter(isHeadingBlock);
-}
-
-/**
- * Extract all FAQ items from content for JSON-LD
- */
-export function extractFAQs(content: ContentBlock[]): FAQItem[] {
-    return content
-        .filter(isFAQSectionBlock)
-        .flatMap(block => block.items);
-}
-
-/**
- * Slugify text for anchor IDs
- */
-export function slugify(text: string): string {
-    return text
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-}
-
-/**
- * Generate TOC from content blocks
- */
 export interface TocItem {
-    id: string;
-    text: string;
-    level: 2 | 3 | 4 | 5 | 6;
+  id: string;
+  text: string;
+  level: 2 | 3 | 4 | 5 | 6;
 }
 
-export function generateTOC(content: ContentBlock[]): TocItem[] {
-    return extractHeadings(content).map(heading => ({
-        id: heading.id || slugify(heading.text),
-        text: heading.text,
-        level: heading.level,
+export function isHeadingBlock(block: import('@modules/content-blocks').ContentBlock): block is import('@modules/content-blocks').HeadingBlock {
+  return block.type === 'heading';
+}
+
+export function isFAQSectionBlock(block: import('@modules/content-blocks').ContentBlock): block is import('@modules/content-blocks').MainFaqBlock {
+  return block.type === 'main_faq';
+}
+
+export function isImageBlock(block: import('@modules/content-blocks').ContentBlock): block is import('@modules/content-blocks').ImageBlock {
+  return block.type === 'image';
+}
+
+export function extractHeadings(content: import('@modules/content-blocks').ContentBlock[]): import('@modules/content-blocks').HeadingBlock[] {
+  return content.filter(isHeadingBlock);
+}
+
+export function generateTOC(content: import('@modules/content-blocks').ContentBlock[]): TocItem[] {
+  return content
+    .filter(isHeadingBlock)
+    .map((heading) => ({
+      id: heading.id || slugifyHeading(heading.text),
+      text: heading.text,
+      level: heading.level,
     }));
 }

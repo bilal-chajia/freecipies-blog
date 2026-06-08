@@ -1,0 +1,380 @@
+---
+import type { TocSettings } from "@modules/settings/types/settings.types";
+import { normalizeContentDocument } from "@modules/content-blocks";
+
+// Block partials
+import Alert from "./content/blocks/Alert.astro";
+import BlockBlock from "./content/blocks/Blockquote.astro";
+import BeforeAfter from "./content/blocks/BeforeAfter.astro";
+import Divider from "./content/blocks/Divider.astro";
+import FaqSection from "./content/FAQSection.astro";
+import Heading from "./content/blocks/Heading.astro";
+import Image from "./content/blocks/Image.astro";
+import List from "./content/blocks/List.astro";
+import MainRecipe from "./content/blocks/MainRecipe.astro";
+import Paragraph from "./content/blocks/Paragraph.astro";
+import RelatedContent from "./content/blocks/RelatedContent.astro";
+import RoundupList from "./content/blocks/RoundupList.astro";
+import TableBlock from "./content/blocks/Table.astro";
+import Video from "./content/blocks/Video.astro";
+
+import type { NormalizedContentBlock } from "@modules/content-blocks/contract/content-blocks.types";
+import { safeParseJson } from "@shared/utils/hydration";
+
+const { article, settings } = Astro.props as {
+  article: Record<string, unknown>;
+  settings?: TocSettings;
+};
+
+const parsed = normalizeContentDocument(article?.content_json).blocks;
+
+// Recipe/FAQ/Roundup from dedicated columns
+const recipe_json = article?.recipe_json
+  ? safeParseJson<Record<string, unknown>>(article.recipe_json)
+  : null;
+const roundup_json = article?.roundup_json
+  ? safeParseJson<Record<string, unknown>>(article.roundup_json)
+  : null;
+const images_json = article?.images_json
+  ? safeParseJson<Record<string, unknown>>(article.images_json)
+  : {};
+
+// Author/category from hydration
+const author = (article as Record<string, unknown>)?.author || null;
+const category = (article as Record<string, unknown>)?.category || null;
+
+// Heading numbering
+const numberingEnabled = settings?.numbering ?? true;
+let h2 = 0,
+  h3 = 0,
+  h4 = 0;
+const processedBlocks = parsed.map((block: NormalizedContentBlock) => {
+  if (block?.type === "heading") {
+    const level = (block as Record<string, unknown>).level || 2;
+    let num = "";
+    if (numberingEnabled) {
+      if (level === 2) {
+        h2++;
+        h3 = 0;
+        h4 = 0;
+        num = `${h2}`;
+      } else if (level === 3) {
+        h3++;
+        h4 = 0;
+        num = `${h2}.${h3}`;
+      } else if (level === 4) {
+        h4++;
+        num = `${h2}.${h3}.${h4}`;
+      }
+    }
+    return { ...block, headingNumber: num };
+  }
+  if (block?.type === "before_after") {
+    const contentImages = ((images_json as Record<string, unknown>)?.content_images || {}) as Record<string, Record<string, unknown>>;
+    const b = block as Record<string, unknown>;
+    const resolveSlot = (ref: unknown, label: unknown) => {
+      const slot = typeof ref === "string" ? contentImages[ref] : null;
+      if (!slot) return undefined;
+      return {
+        ...slot,
+        imageAlt: (slot.alt as string) || "",
+        label: (label as string) || (slot.label as string) || undefined,
+      };
+    };
+    return {
+      ...block,
+      before: resolveSlot(b.before_image_ref, b.before_label),
+      after: resolveSlot(b.after_image_ref, b.after_label),
+    };
+  }
+  return block;
+});
+
+let globalRoundupIndex = 1;
+const hasRoundupList = processedBlocks.some(
+  (b: NormalizedContentBlock) => b.type === "main_roundup",
+);
+const standaloneRoundup =
+  !hasRoundupList && (roundup_json as Record<string, unknown>)?.items?.length > 0;
+---
+
+<div class="content-blocks">
+  {processedBlocks.map((block: NormalizedContentBlock) => {
+    if (!block?.type) return null;
+    switch (block.type) {
+      case "paragraph":
+        return <Paragraph block={block} />;
+      case "heading":
+        return <Heading block={block} />;
+      case "list":
+        return <List block={block} />;
+      case "blockquote":
+        return <BlockBlock block={block} />;
+      case "tip_box":
+        return <Alert block={block} />;
+      case "image":
+        return (
+          <Image
+            block={{
+              ...(images_json?.content_images?.[block.image_ref] || {}),
+              ...block,
+            }}
+          />
+        );
+      case "video":
+        return <Video block={block} />;
+      case "divider":
+        return <Divider block={block} />;
+      case "table":
+        return <TableBlock block={block} />;
+      case "before_after":
+        return <BeforeAfter block={block} />;
+      case "related_content":
+        return <RelatedContent block={block} />;
+      case "main_roundup": {
+        const idx = globalRoundupIndex;
+        globalRoundupIndex += roundup_json?.items?.length || 1;
+        return (
+          <RoundupList
+            block={block}
+            roundup_json={roundup_json}
+            startNumber={idx}
+          />
+        );
+      }
+      case "main_recipe":
+        return (
+          <MainRecipe
+            block={block}
+            article={article}
+            recipe_json={recipe_json}
+            author={author}
+            category={category}
+          />
+        );
+      case "main_faq":
+        return <FaqSection faqs={article.faqs_json} />;
+      default:
+        return null;
+    }
+  })}
+  {standaloneRoundup && (
+    <div class="standalone-roundup-list">
+      <div class="standalone-header">
+        <h2 class="standalone-title">Featured Recipes</h2>
+      </div>
+      <RoundupList roundup={roundup_json} />
+    </div>
+  )}
+</div>
+
+<style>
+  /* Unified block spacing — matches editor --wp-block-spacing: 1.25rem */
+  .content-blocks {
+    --block-spacing: 1.25rem;
+    font-family: var(--font-sans);
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .content-blocks > :global(*) {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .content-blocks > :global(* + *) {
+    margin-top: var(--block-spacing);
+  }
+
+  /* General list styling for the main content */
+  /* Exclude ingredient lists and other custom lists */
+  .content-blocks :global(ul:not(.group-items)) {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: var(--block-spacing);
+  }
+
+  .content-blocks :global(ol:not(.group-items)) {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: var(--block-spacing);
+  }
+
+  .content-blocks :global(li) {
+    margin-bottom: 0.5rem;
+  }
+
+  .content-blocks :global(li:last-child) {
+    margin-bottom: 0;
+  }
+
+  /* Headings get extra top space for visual hierarchy */
+  .content-blocks > :global(h2) {
+    margin-top: calc(var(--block-spacing) * 2);
+  }
+
+  .content-blocks > :global(h3) {
+    margin-top: calc(var(--block-spacing) * 1.5);
+  }
+
+  .content-blocks > :global(figure) {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .content-blocks > :global(figcaption) {
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+
+  .content-blocks > :global(.credit) {
+    font-style: italic;
+    color: var(--neutral-400);
+  }
+
+  .content-blocks > :global(.video-embed) {
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── Premium Tip Box ── */
+  .content-blocks :global(.tip-box-premium) {
+    position: relative;
+    background: var(--bg);
+    border: 1.5px solid var(--tip-accent, var(--accent-sage));
+    border-radius: var(--radius-lg);
+    margin: var(--space-8) 0;
+    padding: 48px 32px 32px;
+  }
+
+  .content-blocks :global(.tip-box-header) {
+    position: absolute;
+    top: -22px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg);
+    padding: 0 6px;
+  }
+
+  .content-blocks :global(.tip-box-icon-badge) {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tip-accent, var(--success));
+    border-radius: 50%;
+    color: var(--bg);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .content-blocks :global(.tip-box-title) {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 26px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text);
+    line-height: 44px;
+    letter-spacing: -0.01em;
+    background: var(--bg);
+    padding: 0 8px;
+  }
+
+  .content-blocks :global(.tip-box-content) {
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+  }
+
+  .content-blocks :global(.tip-box-content p:not(:last-child)) {
+    margin-bottom: 12px;
+  }
+
+  /* Unordered list styling */
+  .content-blocks :global(.tip-box-premium .tip-box-content ul) {
+    margin: 0;
+    padding-left: 16px;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .content-blocks :global(.tip-box-premium .tip-box-content ul li) {
+    position: relative;
+    padding-left: 24px;
+    margin: 0;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .content-blocks :global(.tip-box-premium .tip-box-content ul li::before) {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--tip-accent, var(--success));
+  }
+
+  /* Ordered list - dark numbered circles */
+  .content-blocks :global(.tip-box-premium .tip-box-content ol) {
+    margin: 0;
+    padding-left: 16px;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    counter-reset: tip-counter;
+  }
+
+  .content-blocks :global(.tip-box-premium .tip-box-content ol li) {
+    position: relative;
+    padding-left: 34px;
+    margin: 0;
+    counter-increment: tip-counter;
+    min-height: 30px;
+    line-height: 1.75;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  .content-blocks :global(.tip-box-premium .tip-box-content ol li::before) {
+    content: counter(tip-counter);
+    position: absolute;
+    left: 0;
+    top: 3px;
+    width: 22px;
+    height: 22px;
+    background: var(--tip-accent, var(--success)) !important;
+    color: var(--bg) !important;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  @media (max-width: 640px) {
+    .content-blocks :global(.tip-box-premium) {
+      padding: 36px 20px 24px;
+      margin: 32px 0;
+    }
+    .content-blocks :global(.tip-box-title) {
+      font-size: 22px;
+    }
+    .content-blocks :global(.tip-box-premium .tip-box-content ol li) {
+      padding-left: 42px;
+    }
+  }
+</style>

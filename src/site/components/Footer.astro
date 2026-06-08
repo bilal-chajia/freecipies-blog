@@ -1,0 +1,272 @@
+---
+import {
+  getPublicOrganizationProfile,
+  getPublicSiteIdentity,
+  getPublicSocialLinks,
+} from "@server/site-data";
+
+const currentYear = new Date().getFullYear();
+const [siteIdentity, organization, socialLinks] = await Promise.all([
+  getPublicSiteIdentity(),
+  getPublicOrganizationProfile(),
+  getPublicSocialLinks(),
+]);
+const contactHref = organization.contact_email ? `mailto:${organization.contact_email}` : null;
+---
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-grid">
+      <!-- Column 1 -->
+      <div class="footer-column">
+        <h3>Main Pages</h3>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/authors">Writers</a></li>
+          <li><a href="/categories">Topics</a></li>
+          <li><a href="/tags">Keywords</a></li>
+          <li><a href="/favorites">Favorites</a></li>
+        </ul>
+      </div>
+
+      <!-- Column 2 -->
+      <div class="footer-column">
+        <h3>Content</h3>
+        <ul>
+          <li><a href="/recipes">Discover</a></li>
+          <li><a href="/blog">Posts</a></li>
+          <li><a href="/recipes">Recipes</a></li>
+          <li><a href="/about">About Us</a></li>
+          <li><a href="/privacy">Privacy</a></li>
+        </ul>
+      </div>
+
+      <!-- Column 3 -->
+      <div class="footer-column">
+        <h3>Support</h3>
+        <ul>
+          <li><a href="/faqs">FAQs</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/search">Search</a></li>
+          <li><a href="/sitemap.xml">Sitemap</a></li>
+          <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Social -->
+    <div class="footer-social">
+      {
+        socialLinks.map((link) => (
+          <a
+            href={link.url}
+            target={link.network === "email" ? undefined : "_blank"}
+            rel={link.network === "email" ? undefined : "noopener"}
+            aria-label={link.label || link.network}
+          >
+            <span>{link.label || link.network}</span>
+          </a>
+        ))
+      }
+      {
+        contactHref && (
+          <a href={contactHref} aria-label="Email">
+            <span>Email</span>
+          </a>
+        )
+      }
+    </div>
+
+    <!-- Copyright -->
+    <div class="footer-bottom">
+      <p>
+        &copy; {currentYear} {siteIdentity.site_name}. All rights reserved. <span
+          class="version">V6.0</span
+        >
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* Container Query Setup */
+  .site-footer {
+    background: var(--neutral-900);
+    color: var(--neutral-300);
+    padding: var(--space-12) 0 var(--space-6);
+    margin-top: var(--space-16);
+    container-type: inline-size;
+    container-name: site-footer;
+  }
+
+  .footer-container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    margin-bottom: var(--space-10);
+  }
+
+  /* Container query for responsive grid */
+  @container site-footer (min-width: 40rem) {
+    .footer-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @container site-footer (min-width: 64rem) {
+    .footer-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* :has() selector - Adjust column spacing when multiple columns exist */
+  .footer-grid:has(> :nth-child(3)) {
+    gap: clamp(2rem, 4vw, 3rem);
+  }
+
+  .footer-column h3 {
+    color: var(--text-inverse);
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    margin-bottom: var(--space-4);
+  }
+
+  .footer-column ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .footer-column li {
+    margin-bottom: var(--space-3);
+  }
+
+  .footer-column a {
+    color: var(--neutral-400);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+    font-size: var(--text-sm);
+    border-radius: var(--radius-sm);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+
+  /* Enhanced focus-visible for keyboard navigation */
+  .footer-column a:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+    color: var(--brand-secondary);
+  }
+
+  .footer-column a:hover {
+    color: var(--brand-secondary);
+  }
+
+  /* :has() selector - Highlight column when it contains a hovered link */
+  .footer-column:has(a:hover) h3 {
+    color: var(--brand-secondary);
+  }
+
+  .footer-social {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    padding: var(--space-8) 0;
+    border-top: 1px solid var(--neutral-800);
+    border-bottom: 1px solid var(--neutral-800);
+  }
+
+  .footer-social a {
+    color: var(--neutral-400);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--space-11);
+    height: var(--space-11);
+    border-radius: var(--radius-full);
+    background: var(--neutral-800);
+    border: 2px solid transparent;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+
+  /* Enhanced focus-visible for social icons */
+  .footer-social a:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+    border-color: var(--brand-secondary);
+    color: var(--brand-secondary);
+  }
+
+  .footer-social a:hover {
+    color: var(--brand-secondary);
+    background: var(--neutral-700);
+    transform: translateY(-2px);
+  }
+
+  /* :has() selector - Scale up icons when any icon is hovered */
+  .footer-social:has(a:hover) a:not(:hover) {
+    opacity: 0.7;
+    transform: scale(0.95);
+  }
+
+  .footer-bottom {
+    text-align: center;
+    padding-top: var(--space-8);
+  }
+
+  .footer-bottom p {
+    color: var(--neutral-300);
+    font-size: var(--text-sm);
+    margin: 0;
+  }
+
+  .version {
+    color: var(--neutral-400);
+    font-size: var(--text-xs);
+  }
+
+  /* prefers-contrast: high adjustments */
+  @media (prefers-contrast: high) {
+    .site-footer {
+      border-top: 2px solid var(--text-inverse);
+    }
+
+    .footer-column a,
+    .footer-social a {
+      border: 1px solid currentColor;
+    }
+
+    .footer-social a {
+      background: transparent;
+    }
+
+    .footer-column a:focus-visible,
+    .footer-social a:focus-visible {
+      outline: 3px solid var(--text-inverse);
+    }
+  }
+
+  /* Fallback for browsers without container query support */
+  @supports not (container-type: inline-size) {
+    @media (min-width: 640px) {
+      .footer-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .footer-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  }
+</style>

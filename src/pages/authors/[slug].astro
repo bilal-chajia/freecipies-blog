@@ -35,13 +35,13 @@ if (!author) {
   return Astro.redirect("/404");
 }
 
-const avatar = extractImage(author.imagesJson, "avatar", 200);
-const avatarSrcSet = getImageSrcSet(author.imagesJson, "avatar");
+const avatar = extractImage(author.images_json, "avatar", 200);
+const avatarSrcSet = getImageSrcSet(author.images_json, "avatar");
 const avatarSizes = "150px";
-const pageTitle = author.metaTitle || `${author.name} - Freecipies`;
+const pageTitle = author.metaTitle || `${author.name} - SaaS Blog`;
 const pageDescription =
   author.metaDescription ||
-  author.shortDescription ||
+  author.short_description ||
   `Recipes and tips by ${author.name}.`;
 
 // Helper function for social icons
@@ -78,12 +78,12 @@ function getSocialIcon(networkName: string) {
 let bioParagraphs: string[] = [];
 let socialNetworks: { name: string; url: string }[] = [];
 
-if (author.bioJson) {
+if (author.bio_json) {
   try {
     const bio =
-      typeof author.bioJson === "string"
-        ? JSON.parse(author.bioJson)
-        : author.bioJson;
+      typeof author.bio_json === "string"
+        ? JSON.parse(author.bio_json)
+        : author.bio_json;
     bioParagraphs = bio.paragraphs || [];
     socialNetworks = bio.networks || [];
   } catch (e) {
@@ -102,9 +102,9 @@ if (author.bioJson) {
           <div class="avatar-wrapper">
             <div class="avatar-container">
               {
-                avatar.imageUrl || author.imageUrl ? (
+                avatar.image_url || author.image_url ? (
                   <img
-                    src={avatar.imageUrl || author.imageUrl}
+                    src={avatar.image_url || author.image_url}
                     alt={avatar.imageAlt || author.imageAlt || author.name}
                     width={avatar.imageWidth || author.imageWidth || 150}
                     height={avatar.imageHeight || author.imageHeight || 150}
@@ -143,7 +143,7 @@ if (author.bioJson) {
             <div class="author-header-top">
               <h1 class="author-name">{author.name}</h1>
               {
-                author.isFeatured && (
+                author.is_featured && (
                   <span class="featured-badge">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -162,7 +162,7 @@ if (author.bioJson) {
             </div>
             {author.job && <p class="author-job">{author.job}</p>}
             <p class="author-description">
-              {author.shortDescription}
+              {author.short_description}
             </p>
 
             <!-- Stats -->
@@ -309,7 +309,7 @@ if (author.bioJson) {
               {articles.map((article) => (
                 <RecipePreviewCard
                   article={article}
-                  recipeJson={article.recipeJson}
+                  recipe_json={article.recipe_json}
                 />
               ))}
             </div>
@@ -387,7 +387,7 @@ if (author.bioJson) {
   }
 
   .hero-container {
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 1.5rem);
     position: relative;
@@ -649,7 +649,7 @@ if (author.bioJson) {
   }
 
   .section-container {
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin: 0 auto;
     padding: 0 clamp(1rem, 3vw, 1.5rem);
   }

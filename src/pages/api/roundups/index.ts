@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getArticles } from '@modules/articles';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateQuery, PaginationQuery } from '@shared/validation';
 
@@ -18,7 +17,7 @@ export const prerender = false;
  * - page: number (default: 1)
  * - limit: number (default: 12, max: 100)
  */
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
     const url = new URL(request.url);
 
     // Validate pagination query params
@@ -36,9 +35,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
         }
 
         // Build query options - always filter by type='roundup'
-        const options: any = {
+        const options: Record<string, unknown> = {
             type: 'roundup',
-            isOnline: true,
+            workflow_status: 'published',
             limit,
             offset,
         };
@@ -51,14 +50,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
         // Transform for roundup cards
         const items = result.items.map(article => {
+            const articleData = article as any;
             // Parse roundup JSON for item count
             let itemCount = 0;
-            if ((article as any).roundupJson) {
+            if (articleData.roundup_json) {
                 try {
-                    const roundupData = typeof (article as any).roundupJson === 'string'
-                        ? JSON.parse((article as any).roundupJson)
-                        : (article as any).roundupJson;
-                    itemCount = roundupData.items?.length || 0;
+                    const roundupData = typeof articleData.roundup_json === 'string'
+                        ? JSON.parse(articleData.roundup_json as string)
+                        : articleData.roundup_json;
+                    itemCount = (roundupData as { items?: unknown[] }).items?.length || 0;
                 } catch {
                     itemCount = 0;
                 }
@@ -66,12 +66,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
             // Parse images for thumbnail
             let thumbnail = null;
-            if (article.imagesJson) {
+            if (article.images_json) {
                 try {
-                    const images = typeof article.imagesJson === 'string'
-                        ? JSON.parse(article.imagesJson)
-                        : article.imagesJson;
-                    thumbnail = images.thumbnail || images.cover;
+                    const images = typeof article.images_json === 'string'
+                        ? JSON.parse(article.images_json)
+                        : article.images_json;
+                    thumbnail = images.thumbnail || images.hero;
                 } catch {
                     thumbnail = null;
                 }
@@ -81,14 +81,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 id: article.id,
                 slug: article.slug,
                 headline: article.headline,
-                shortDescription: article.shortDescription,
+                short_description: article.short_description,
                 thumbnail,
-                categoryLabel: (article as any).categoryLabel,
-                categorySlug: (article as any).categorySlug,
-                categoryColor: (article as any).categoryColor,
-                authorName: (article as any).authorName,
-                authorSlug: (article as any).authorSlug,
-                publishedAt: article.publishedAt,
+                categoryLabel: articleData.categoryLabel,
+                categorySlug: articleData.categorySlug,
+                categoryColor: articleData.categoryColor,
+                authorName: articleData.authorName,
+                authorSlug: articleData.authorSlug,
+                published_at: article.published_at,
                 // Roundup-specific
                 itemCount,
             };

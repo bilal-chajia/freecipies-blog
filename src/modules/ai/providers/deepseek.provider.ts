@@ -7,8 +7,10 @@
 
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse } from '../types';
 import { getSystemPrompt } from '../prompts';
+import { normalizeOpenAiModels } from '../discovery/normalize';
 
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+const DEEPSEEK_MODELS_URL = 'https://api.deepseek.com/models';
 
 interface DeepSeekResponse {
     id?: string;
@@ -39,7 +41,7 @@ export class DeepSeekProvider implements IAIProvider {
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
-        const systemPrompt = getSystemPrompt(request.contentType, request.systemPrompt);
+        const systemPrompt = getSystemPrompt(request.content_type, request.system_prompt);
         const model = request.model || 'deepseek-chat';
 
         const body = {
@@ -52,6 +54,7 @@ export class DeepSeekProvider implements IAIProvider {
             max_tokens: 8192,
             response_format: { type: 'json_object' },
         };
+        // DeepSeek reasoning is model-selected (`deepseek-reasoner`); no extra request field required.
 
         try {
             const response = await fetch(DEEPSEEK_API_URL, {
@@ -118,6 +121,20 @@ export class DeepSeekProvider implements IAIProvider {
             return response.ok;
         } catch {
             return false;
+        }
+    }
+
+    async listModels(apiKey: string) {
+        try {
+            const response = await fetch(DEEPSEEK_MODELS_URL, {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+            });
+            if (!response.ok) return { supported: true, models: [] };
+            return { supported: true, models: normalizeOpenAiModels(await response.json()) };
+        } catch {
+            return { supported: true, models: [] };
         }
     }
 }

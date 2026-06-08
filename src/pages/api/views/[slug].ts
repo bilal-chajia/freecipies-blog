@@ -1,13 +1,12 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getArticleBySlug, incrementViewCount } from '@modules/articles';
-import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateParams, SlugOrIdParam } from '@shared/validation';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ params, locals }) => {
+export const GET: APIRoute = async ({ params }) => {
   try {
     const { slug } = validateParams(params, SlugOrIdParam);
 
@@ -17,7 +16,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
 
     const article = await getArticleBySlug(env.DB, slug);
     const { body, status, headers } = formatSuccessResponse({
-      viewCount: article?.viewCount || 0
+      view_count: article?.view_count || 0
     });
     return new Response(body, { status, headers });
   } catch (error) {
@@ -31,7 +30,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
   }
 };
 
-export const POST: APIRoute = async ({ params, locals }) => {
+export const POST: APIRoute = async ({ params }) => {
   try {
     const { slug } = validateParams(params, SlugOrIdParam);
 

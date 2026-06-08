@@ -11,6 +11,7 @@
     "strict": true,
     "strictNullChecks": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
     "noImplicitAny": true,
     "baseUrl": ".",
     "module": "esnext",
@@ -25,20 +26,23 @@
       "@admin/*": [
         "src/admin/*"
       ],
+      "@site/*": [
+        "src/site/*"
+      ],
+      "@server/*": [
+        "src/server/*"
+      ],
       "@shared/*": [
         "src/shared/*"
       ],
       "@components/*": [
-        "src/components/*"
+        "src/site/components/*"
       ],
       "@layouts/*": [
-        "src/layouts/*"
+        "src/site/layouts/*"
       ],
       "@styles/*": [
-        "src/styles/*"
-      ],
-      "@lib/*": [
-        "src/lib/*"
+        "src/site/styles/*"
       ]
     }
   }

@@ -1,48 +1,24 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { hardDeleteMedia, getMediaById } from '@modules/media';
-import type { Env } from '@shared/types';
+import { deleteMedia, getMediaById, hardDeleteMedia } from '@modules/media';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
 import { formatSuccessResponse, formatErrorResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateBody, BulkDeleteSchema } from '@shared/validation';
 
 export const prerender = false;
 
-// Helper to extract all R2 keys from variants JSON
-function getAllR2Keys(variantsJson: string | null): string[] {
-    if (!variantsJson) return [];
-    const keys: string[] = [];
-    try {
-        const data = JSON.parse(variantsJson);
-        
-        // Handle new structure: { variants: { lg: { r2_key: ... }, ... } }
-        if (data.variants && typeof data.variants === 'object') {
-            Object.values(data.variants).forEach((variant: any) => {
-                if (variant?.r2_key) {
-                    keys.push(variant.r2_key);
-                }
-            });
-        } 
-        // Handle potential legacy flat structure or other formats
-        else {
-             // Try to find R2 key in simple object
-            const simpleVariant = data.original || data.lg || data.md || data.sm || data.xs;
-            if (simpleVariant?.r2_key) keys.push(simpleVariant.r2_key);
-        }
-    } catch {
-        // Ignore parsing errors
-    }
-    return keys;
-}
-
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, url }) => {
     try {
 
         const jwtSecret = env.JWT_SECRET || import.meta.env.JWT_SECRET;
+        const isHardDelete = url.searchParams.get('hard') === 'true';
 
-        // Check authentication
+        // Check authentication — hard-delete requires ADMIN role
         const authContext = await extractAuthContext(request, jwtSecret);
-        if (!hasRole(authContext, AuthRoles.EDITOR)) {
+        if (isHardDelete && !hasRole(authContext, AuthRoles.ADMIN)) {
+            return createAuthError('Admin role required for hard delete (permanent R2 cleanup)', 403);
+        }
+        if (!isHardDelete && !hasRole(authContext, AuthRoles.EDITOR)) {
             return createAuthError('Editor role required to delete media files', 403);
         }
 
@@ -70,22 +46,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
                         return;
                     }
 
-                    // 2. Delete all R2 files
-                    const r2Keys = getAllR2Keys(mediaRecord.variantsJson);
-                    await Promise.all(r2Keys.map(key => env.IMAGES.delete(key).catch(e => console.warn(`R2 delete failed for ${key}`, e))));
-
-                    // 3. Delete from DB (hard delete)
-                    const success = await hardDeleteMedia(env.DB, id);
+                    // Hard delete: clean R2 objects + remove DB record permanently
+                    // Soft delete: mark deleted_at only (default)
+                    let success: boolean;
+                    if (isHardDelete) {
+                        success = await hardDeleteMedia(env.DB, env.IMAGES, id);
+                    } else {
+                        success = await deleteMedia(env.DB, id);
+                    }
                     if (success) {
                         stats.deleted++;
                     } else {
                         stats.failed++;
                         stats.errors.push(`Failed to delete media ${id} from DB`);
                     }
-                } catch (err: any) {
+                } catch (err: unknown) {
                     console.error(`Error deleting media ${id}:`, err);
                     stats.failed++;
-                    stats.errors.push(`Error deleting ${id}: ${err.message}`);
+                    const message = err instanceof Error ? err.message : String(err);
+                    stats.errors.push(`Error deleting ${id}: ${message}`);
                 } finally {
                     stats.processed++;
                 }

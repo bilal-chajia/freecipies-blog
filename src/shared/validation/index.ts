@@ -3,18 +3,21 @@
  * Usage: import { validate, validateBody, validateParams, validateQuery, z, IdParam, PaginationQuery } from '@shared/validation';
  */
 export { validate, validateBody, validateParams, validateQuery, z } from './helpers';
-export { IdParam, SlugOrIdParam, PaginationQuery, LabelField, SlugField, DescriptionField } from './schemas/common';
+export { IdParam, SlugOrIdParam, PaginationSchema, PaginationQuery, LabelField, SlugField, DescriptionField } from './schemas/common';
 export { ArticleListQuery, CreateArticleSchema, UpdateArticleSchema, ArticleActionQuery } from './schemas/articles';
+export { ContentDocumentInputSchema, ContentDocumentSchema, ContentBlockSchema } from '@modules/content-blocks';
 export { CreateCategorySchema, UpdateCategorySchema } from './schemas/categories';
 export { CreateTagSchema, UpdateTagSchema } from './schemas/tags';
-export { UploadFromUrlSchema, ProxyImageQuery } from './schemas/media';
+export { ProxyImageQuery } from './schemas/media';
 export {
   MediaListQuery,
   BulkDeleteSchema,
   ConfirmUploadSchema,
-  UploadUrlsSchema,
+  UpdateMediaSchema,
   VariantUploadFields,
-  UploadUrlsQuery,
+  StoredVariantSchema,
+  MediaVariantsJsonSchema,
+  type MediaVariantsJsonInput,
 } from './schemas/media';
 export { CreateAuthorSchema, UpdateAuthorSchema } from './schemas/authors';
 export {
@@ -27,7 +30,7 @@ export {
   ImageUploadSettingsSchema,
 } from './schemas/settings';
 export { CreateEquipmentSchema, UpdateEquipmentSchema } from './schemas/equipment';
-export { CreateTemplateSchema, UpdateTemplateSchema } from './schemas/templates';
+export { CreateTemplateSchema, UpdateTemplateSchema, TemplateThumbnailUploadFields } from './schemas/templates';
 export { CreateRedirectSchema, UpdateRedirectSchema } from './schemas/redirects';
 export {
   GenerateSchema,
@@ -37,6 +40,8 @@ export {
   UpdateModelSchema,
   UpdateSettingsSchema,
   ValidateApiKeySchema,
+  CreateCustomProviderSchema,
+  UpdateCustomProviderSchema,
 } from './schemas/ai';
 export { LoginSchema, RefreshSchema } from './schemas/auth';
 export {
