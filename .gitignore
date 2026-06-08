@@ -79,7 +79,6 @@ content.json
 .vibe/
 .windsurf/
 .zencoder/
-db/DATABASE_SCHEMA.md
 .gitignore
 
 # System & Agent Memory caches
