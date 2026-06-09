@@ -17,8 +17,8 @@ Freecipies Blog: Astro app with public SSR site, React admin SPA, and Cloudflare
 
 ## Commands
 
-- `pnpm dev`: local Astro dev server, no D1/R2/KV bindings
-- `pnpm preview`: build plus Wrangler dev; use when D1/R2/KV matters
+- `pnpm dev`: local Astro dev server with local D1/R2/KV bindings (uses `.dev.vars`)
+- `pnpm preview`: full build plus Wrangler dev; use for production-like runtime checks
 - `pnpm test`: Vitest
 - `pnpm check:boundaries`: module boundary checks
 - `pnpm build`: production build; ask before running
