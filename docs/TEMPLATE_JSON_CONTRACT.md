@@ -163,6 +163,7 @@ A JSON array of element objects. Order = z-order (first = back, last = front).
    appears in template JSON.
 4. Canonical TypeScript types live in `src/modules/templates/types/elements.types.ts`
    and must mirror this contract 1:1.
-5. The store (`useEditorStore`) currently uses camelCase internally (pre-migration);
-   a serialisation layer must convert to snake_case before writing to DB and
-   deserialise on read.
+5. No conversion layer: the editor store (`useEditorStore`) holds elements in
+   this exact snake_case shape, identical to what is stored in `elements_json`.
+   Serialization is `JSON.stringify` / `JSON.parse` only — no key renaming on
+   read or write.
