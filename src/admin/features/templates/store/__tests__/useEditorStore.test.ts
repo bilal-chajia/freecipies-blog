@@ -66,7 +66,7 @@ describe('useEditorStore', () => {
                 height: 1500,
             };
             const elements_json = JSON.stringify([
-                { id: 'image-1', type: 'imageSlot', x: 0, y: 0, width: 500, height: 500, rotation: 0, locked: false }
+                { id: 'image-1', type: 'image_slot', x: 0, y: 0, width: 500, height: 500, rotation: 0, locked: false }
             ]);
 
             store.loadTemplateToStore(sampleTemplate, elements_json);
@@ -74,7 +74,7 @@ describe('useEditorStore', () => {
             const updatedState = useEditorStore.getState();
             expect(updatedState.template.name).toBe('Json Loaded Pin');
             expect(updatedState.elements).toHaveLength(1);
-            expect(updatedState.elements[0].type).toBe('imageSlot');
+            expect(updatedState.elements[0].type).toBe('image_slot');
             expect(updatedState.hasUnsavedChanges).toBe(false);
         });
     });

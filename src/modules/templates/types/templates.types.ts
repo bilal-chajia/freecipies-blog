@@ -5,7 +5,7 @@
  */
 
 import type { TemplateElement } from './elements.types';
-import { toEditorTemplateElements } from '../utils/elementSerialization';
+import { parseStoredTemplateElements } from '../utils/elementSerialization';
 
 // Template interface (matches database schema)
 export interface Template {
@@ -119,6 +119,6 @@ export function hydrateTemplate(row: TemplateRow): TemplateWithElements {
     is_active: row.is_active === 1,
     created_at: row.created_at,
     updated_at: row.updated_at,
-    elements: toEditorTemplateElements<TemplateElement>(row.elements_json),
+    elements: parseStoredTemplateElements(row.elements_json),
   };
 }

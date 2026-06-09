@@ -13,7 +13,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
-import { toEditorTemplateElements } from '@modules/templates/utils';
+import { parseStoredTemplateElements } from '@modules/templates/utils';
 
 export const CANVAS_WIDTH = 1000;
 export const CANVAS_HEIGHT = 1500;
@@ -24,112 +24,32 @@ export const SNAP_THRESHOLD = 8;
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-export type ElementType = 'text' | 'imageSlot' | 'shape' | 'logo' | 'overlay';
+import {
+  type ElementType,
+  type TemplateElement,
+  type TextShadow,
+  type TextEffect,
+  type TextBackground,
+  type TextElement,
+  type ImageSlotElement,
+  type ShapeElement,
+  type LogoElement,
+  type OverlayElement,
+} from '@modules/templates/types';
 
-export interface TextShadow {
-  enabled: boolean;
-  color: string;
-  blur: number;
-  offsetX: number;
-  offsetY: number;
-}
-
-export interface TextEffect {
-  type: 'none' | 'shadow' | 'lift' | 'hollow' | 'outline' | 'echo' | 'glitch' | 'neon' | 'splice';
-  color?: string;
-  offset?: number;
-  direction?: number;
-  blur?: number;
-  transparency?: number;
-  thickness?: number;
-}
-
-export interface TextBackground {
-  color?: string;
-  opacity?: number;
-  padding?: number;
-  borderRadius?: number;
-}
-
-export interface BaseElement {
-  id: string;
-  type: ElementType;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  locked: boolean;
-  visible?: boolean;
-  opacity?: number;
-  name?: string;
-}
-
-export interface TextElement extends BaseElement {
-  type: 'text';
-  content?: string;
-  binding?: string;
-  fontFamily?: string;
-  fontSize?: number;
-  fontWeight?: string | number;
-  fontStyle?: string;
-  color?: string;
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
-  verticalAlign?: 'top' | 'middle' | 'bottom';
-  lineHeight?: number;
-  letterSpacing?: number;
-  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  textDecoration?: string;
-  shadow?: TextShadow;
-  effect?: TextEffect;
-  background?: TextBackground;
-  autoFit?: boolean;
-  wrap?: string;
-  ellipsis?: boolean;
-  stroke?: string;
-  strokeWidth?: number;
-}
-
-export interface ImageSlotElement extends BaseElement {
-  type: 'imageSlot';
-  image_url?: string;
-  src?: string;
-  binding?: string;
-  fit?: 'cover' | 'contain' | 'fill';
-  clipRadius?: number;
-  imageOffset?: { x: number; y: number };
-  imageScale?: number;
-  placeholder?: string;
-  borderRadius?: number;
-  sourceType?: string;
-}
-
-export interface ShapeElement extends BaseElement {
-  type: 'shape';
-  shapeType?: 'rect' | 'circle' | 'ellipse';
-  fill?: string;
-  stroke?: string;
-  strokeWidth?: number;
-  borderRadius?: number;
-}
-
-export interface LogoElement extends BaseElement {
-  type: 'logo';
-  src?: string;
-  fit?: 'cover' | 'contain' | 'fill';
-}
-
-export interface OverlayElement extends BaseElement {
-  type: 'overlay';
-  fill?: string;
-}
-
-export type EditorElement =
-  | TextElement
-  | ImageSlotElement
-  | ShapeElement
-  | LogoElement
-  | OverlayElement;
+/** Editor alias for the canonical element union (kept for existing importers). */
+export type EditorElement = TemplateElement;
+export type {
+  ElementType,
+  TextShadow,
+  TextEffect,
+  TextBackground,
+  TextElement,
+  ImageSlotElement,
+  ShapeElement,
+  LogoElement,
+  OverlayElement,
+};
 
 export interface CustomFont {
   name: string;
@@ -283,7 +203,7 @@ const useEditorStore = create<EditorState & EditorActions>()(
     },
 
     loadTemplateToStore: (templateData, elements_json) => {
-      const parsedElements = toEditorTemplateElements<EditorElement>(elements_json);
+      const parsedElements = parseStoredTemplateElements(elements_json);
 
       set({
         template: { ...get().template, ...templateData },
