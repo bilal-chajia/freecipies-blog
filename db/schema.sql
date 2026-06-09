@@ -235,6 +235,11 @@ CREATE TABLE IF NOT EXISTS categories (
     -- SEO overrides for the category landing page.
     seo_json TEXT DEFAULT '{}' CHECK (json_valid(seo_json)),
 
+    -- 5b. PER-CATEGORY EDITORIAL OVERRIDES
+    -- Holds featured_article snapshot, tldr, and hero_cta. Read for free with the row.
+    -- See docs/CATEGORIES_TABLE_CONTRACT.md. Page settings are global (site_settings).
+    presentation_json TEXT DEFAULT '{}' CHECK (json_valid(presentation_json)),
+
     -- 6. PROMOTION & VISIBILITY
 
     -- Featured flag for homepage and sidebar widgets.

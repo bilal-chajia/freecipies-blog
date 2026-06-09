@@ -31,7 +31,8 @@ export const categories = sqliteTable('categories', {
   
   // 5. JSON CONFIG CONTAINERS
   seo_json: text('seo_json').default('{}'),
-  
+  presentation_json: text('presentation_json').default('{}'),
+
   // 6. SYSTEM & METRICS
   sort_order: integer('sort_order').default(0),
   workflow_status: text('workflow_status').default('draft'),
