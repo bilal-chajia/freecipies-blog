@@ -246,6 +246,9 @@ import {
   SEO_DEFAULTS,
   SITE_IDENTITY_DEFAULTS,
   normalizeTocSettings,
+  normalizeCategoryPageSettings,
+  type CategoryPageSettings,
+  type CategoryPageSettingsInput,
   type HomepageSettings,
   type OrganizationProfileSettings,
   type PublicSocialLink,
@@ -404,4 +407,36 @@ export async function getPublicSocialLinksSettings(
 ): Promise<PublicSocialLink[]> {
   const stored = await getSettingValue<PublicSocialLink[]>(db, 'public_social_links', options);
   return Array.isArray(stored) ? stored : PUBLIC_SOCIAL_LINKS_DEFAULTS;
+}
+
+// ============================================
+// CATEGORY PAGE SETTINGS (global, per CATEGORIES_TABLE_CONTRACT.md)
+// ============================================
+
+const CATEGORY_PAGE_SETTINGS_KEY = 'category_page_settings';
+
+export async function getCategoryPageSettings(
+  db: D1Database | DrizzleDb,
+  options?: SettingServiceOptions,
+): Promise<CategoryPageSettings> {
+  const stored = await getSettingValue<CategoryPageSettingsInput>(db, CATEGORY_PAGE_SETTINGS_KEY, options);
+  return normalizeCategoryPageSettings(stored);
+}
+
+export async function updateCategoryPageSettings(
+  db: D1Database | DrizzleDb,
+  updates: CategoryPageSettingsInput,
+  options?: SettingServiceOptions,
+): Promise<CategoryPageSettings> {
+  const current = await getCategoryPageSettings(db);
+  const merged = normalizeCategoryPageSettings({ ...current, ...normalizeCategoryPageSettings(updates) });
+
+  await upsertSetting(db, CATEGORY_PAGE_SETTINGS_KEY, merged, {
+    description: 'Global category page display settings',
+    category: 'appearance',
+    type: 'json',
+    cache: options?.cache,
+  });
+
+  return merged;
 }
