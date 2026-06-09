@@ -35,7 +35,7 @@ import TemplateCanvas from '@admin/features/templates/components/canvas/Template
 import TemplateSelector from './TemplateSelector';
 import { templatesAPI, pinterestBoardsAPI, pinterestPinsAPI } from '@/services/api';
 import { useFontLoader } from '@/utils/FontLoader';
-import { FONTS } from '@admin/features/templates/components/canvas/ElementPanel';
+import { FONTS } from '@admin/features/templates/components/canvas/utils/editorConstants';
 import type { EditorElement } from '@admin/features/templates/store';
 import type { ExportFormat } from '@admin/features/templates/hooks';
 

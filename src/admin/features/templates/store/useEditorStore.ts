@@ -13,7 +13,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
-import { toEditorTemplateElements } from '../../../../modules/templates/utils';
+import { toEditorTemplateElements } from '@modules/templates/utils';
 
 export const CANVAS_WIDTH = 1000;
 export const CANVAS_HEIGHT = 1500;

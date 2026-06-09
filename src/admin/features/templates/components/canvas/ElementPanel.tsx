@@ -937,5 +937,5 @@ const AddElementPanel: React.FC<AddElementPanelProps> = ({ onAddElement }) => {
     );
 };
 
-export { ElementPanel, AddElementPanel, FONTS, COLOR_PRESETS };
+export { ElementPanel, AddElementPanel };
 export default ElementPanel;
