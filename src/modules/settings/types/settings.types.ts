@@ -161,3 +161,46 @@ export const ORGANIZATION_PROFILE_DEFAULTS: OrganizationProfileSettings = {
 };
 
 export const PUBLIC_SOCIAL_LINKS_DEFAULTS: PublicSocialLink[] = [];
+
+export interface CategoryPageSettings {
+  posts_per_page: number;
+  layout_mode: 'grid' | 'list' | 'masonry';
+  card_style: 'compact' | 'full' | 'minimal';
+  show_sidebar: boolean;
+  show_filters: boolean;
+  show_breadcrumb: boolean;
+  article_sort_by: 'published_at' | 'title' | 'view_count';
+  article_sort_order: 'asc' | 'desc';
+  header_style: 'hero' | 'minimal' | 'none';
+}
+
+export const CATEGORY_PAGE_SETTINGS_DEFAULTS: CategoryPageSettings = {
+  posts_per_page: 12,
+  layout_mode: 'grid',
+  card_style: 'full',
+  show_sidebar: true,
+  show_filters: true,
+  show_breadcrumb: true,
+  article_sort_by: 'published_at',
+  article_sort_order: 'desc',
+  header_style: 'hero',
+};
+
+export type CategoryPageSettingsInput = Partial<CategoryPageSettings> | null | undefined;
+
+export function normalizeCategoryPageSettings(
+  input: CategoryPageSettingsInput,
+): CategoryPageSettings {
+  const canonical = input ?? {};
+  return {
+    posts_per_page: canonical.posts_per_page ?? CATEGORY_PAGE_SETTINGS_DEFAULTS.posts_per_page,
+    layout_mode: canonical.layout_mode ?? CATEGORY_PAGE_SETTINGS_DEFAULTS.layout_mode,
+    card_style: canonical.card_style ?? CATEGORY_PAGE_SETTINGS_DEFAULTS.card_style,
+    show_sidebar: canonical.show_sidebar ?? CATEGORY_PAGE_SETTINGS_DEFAULTS.show_sidebar,
+    show_filters: canonical.show_filters ?? CATEGORY_PAGE_SETTINGS_DEFAULTS.show_filters,
+    show_breadcrumb: canonical.show_breadcrumb ?? CATEGORY_PAGE_SETTINGS_DEFAULTS.show_breadcrumb,
+    article_sort_by: canonical.article_sort_by ?? CATEGORY_PAGE_SETTINGS_DEFAULTS.article_sort_by,
+    article_sort_order: canonical.article_sort_order ?? CATEGORY_PAGE_SETTINGS_DEFAULTS.article_sort_order,
+    header_style: canonical.header_style ?? CATEGORY_PAGE_SETTINGS_DEFAULTS.header_style,
+  };
+}
