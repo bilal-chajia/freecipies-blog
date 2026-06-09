@@ -18,6 +18,7 @@ export const CreateCategorySchema = z.object({
   images_json: z.string().optional(),
   seo_json: z.string().optional(),
   config_json: z.string().optional(),
+  presentation_json: z.string().optional(),
 }).passthrough();
 
 export const UpdateCategorySchema = CreateCategorySchema.partial().passthrough();

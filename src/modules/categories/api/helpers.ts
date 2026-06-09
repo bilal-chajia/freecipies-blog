@@ -6,6 +6,7 @@
 
 import type { CategoryImagesJson, ImageVariants } from '../../articles/types/images.types';
 import { resolveVariantUrl } from '@shared/types/images';
+import { parsePresentationJson } from './presentation';
 
 interface SeoJson {
   meta_title?: string | null;
@@ -384,6 +385,10 @@ export function transformCategoryRequestBody(body: any): any {
     });
   }
 
+  if (body.presentation_json !== undefined) {
+    transformed.presentation_json = parsePresentationJson(body.presentation_json);
+  }
+
   const existingConfig = body.config_json !== undefined
     ? JSON.parse(parseConfigJson(body.config_json))
     : {};
@@ -416,7 +421,7 @@ export function transformCategoryRequestBody(body: any): any {
   const dbColumns = new Set([
     'slug', 'label', 'parent_id', 'depth', 'headline', 'collection_title',
     'short_description', 'images_json', 'color', 'is_featured',
-    'seo_json', 'config_json', 'sort_order', 'workflow_status',
+    'seo_json', 'config_json', 'presentation_json', 'sort_order', 'workflow_status',
     'cached_post_count', 'created_at', 'updated_at', 'deleted_at',
   ]);
   for (const key of Object.keys(transformed)) {
