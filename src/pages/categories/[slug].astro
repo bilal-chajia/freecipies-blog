@@ -11,6 +11,9 @@ import { getCategories } from "@modules/categories";
 import { hydrateCategories } from "@shared/utils/hydration";
 import { getArticles, getArticleById } from "@modules/articles";
 import { safeParseJson } from "@shared/utils";
+import { getCategoryPageSettings } from "@modules/settings";
+import { mergeEffectiveCategorySettings } from "@modules/categories/services/effective-settings";
+import type { CategoryPresentation } from "@modules/categories/types/presentation.types";
 import type { HydratedCategory } from "@modules/categories/types/categories.types";
 import type { HydratedArticle } from "@modules/articles/types";
 
@@ -68,18 +71,23 @@ if (!category) {
   return Astro.redirect("/404");
 }
 
-// Display settings come from admin config only (no user overrides)
-const perPage = category.posts_per_page || 12;
-const sortBy = category.article_sort_by || "published_at";
-const sort_order = category.article_sort_order || "desc";
-const layoutMode = category.layout_mode || "grid";
-const showPagination = category.show_pagination !== false;
-const showBreadcrumb = category.show_breadcrumb !== false;
-const showSidebar = category.show_sidebar !== false;
-const headerStyle = category.header_style || "hero";
-const cardStyle = category.card_style || "full";
+// Page settings are GLOBAL (site_settings.category_page_settings); per-category
+// editorial content comes from presentation_json (read for free with the row).
+const pageSettings = await getCategoryPageSettings(env.DB);
+const presentation = safeParseJson<CategoryPresentation>(category.presentation_json) ?? {};
+const eff = mergeEffectiveCategorySettings(pageSettings, presentation);
+
+const perPage = eff.posts_per_page;
+const sortBy = eff.article_sort_by;
+const sort_order = eff.article_sort_order;
+const layoutMode = eff.layout_mode;
+const showPagination = true;
+const showBreadcrumb = eff.show_breadcrumb;
+const showSidebar = eff.show_sidebar;
+const headerStyle = eff.header_style;
+const cardStyle = eff.card_style;
 const showHeader = headerStyle !== "none";
-const showFeaturedRecipe = category.show_featured_recipe !== false;
+const showFeaturedRecipe = headerStyle === "hero";
 
 const breadcrumbItems = showBreadcrumb
   ? [{ label: "Categories", href: "/categories" }, { label: category.label }]
