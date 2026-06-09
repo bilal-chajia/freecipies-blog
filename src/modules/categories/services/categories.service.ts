@@ -77,6 +77,28 @@ export async function getCategoryById(db: D1Database | DrizzleDb, id: number): P
 }
 
 /**
+ * Returns true if setting `categoryId`'s parent to `newParentId` would create a cycle.
+ * Pure: walks the parent chain via the injected resolver. Guards against
+ * pre-existing loops with a visited set.
+ */
+export async function wouldCreateParentCycle(
+  categoryId: number,
+  newParentId: number | null | undefined,
+  getParentId: (id: number) => Promise<number | null>,
+): Promise<boolean> {
+  if (newParentId === null || newParentId === undefined) return false;
+  let currentId: number | null = newParentId;
+  const visited = new Set<number>();
+  while (currentId !== null) {
+    if (currentId === categoryId) return true;
+    if (visited.has(currentId)) return false;
+    visited.add(currentId);
+    currentId = await getParentId(currentId);
+  }
+  return false;
+}
+
+/**
  * Calculate depth based on parent_id
  * Returns 0 for root categories, parent.depth + 1 for child categories
  */
@@ -119,6 +141,20 @@ export async function updateCategory(
   const drizzle = getDb(db);
   const existing = await getCategoryBySlug(db, slug);
   if (!existing) return null;
+
+  if (category.parent_id !== undefined) {
+    const cycle = await wouldCreateParentCycle(
+      existing.id,
+      category.parent_id,
+      async (id) => (await getCategoryById(db, id))?.parent_id ?? null,
+    );
+    if (cycle) {
+      const error = new Error('parent_id would create a category cycle');
+      (error as { code?: string }).code = 'VALIDATION_ERROR';
+      throw error;
+    }
+  }
+
   const affectedArticleIds = await getArticleIdsForCategory(drizzle, existing.id);
 
   // Recalculate depth if parent_id is being changed
@@ -152,6 +188,20 @@ export async function updateCategoryById(
   const drizzle = getDb(db);
   const existing = await getCategoryById(db, id);
   if (!existing) return null;
+
+  if (category.parent_id !== undefined) {
+    const cycle = await wouldCreateParentCycle(
+      id,
+      category.parent_id,
+      async (cid) => (await getCategoryById(db, cid))?.parent_id ?? null,
+    );
+    if (cycle) {
+      const error = new Error('parent_id would create a category cycle');
+      (error as { code?: string }).code = 'VALIDATION_ERROR';
+      throw error;
+    }
+  }
+
   const affectedArticleIds = await getArticleIdsForCategory(drizzle, id);
 
   // Recalculate depth if parent_id is being changed
