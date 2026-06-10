@@ -18,35 +18,33 @@ interface Props {
 }
 
 const {
-  roundup: rawRoundup,
+  roundup: rawRoundupProp,
   block,
   roundup_json: rawRoundupJson,
   startNumber = 1,
 } = Astro.props;
 
-// Parse roundup if it's a string (Legacy support)
-let items: RoundupItem[] = [];
-let groupTitle = "";
-let groupDescription = "";
-let showStats = true;
+// Both entry points (in-body main_roundup marker, standalone roundup) carry the
+// same roundup_json shape. Pick whichever prop was supplied and parse once.
+const rawRoundup =
+  block?.type === "main_roundup" ? rawRoundupJson : rawRoundupProp;
+const roundup: RoundupJson =
+  (typeof rawRoundup === "string"
+    ? (() => {
+        try {
+          return JSON.parse(rawRoundup);
+        } catch {
+          return null;
+        }
+      })()
+    : rawRoundup) || { list_type: "ItemList", items: [] };
 
-if (block?.type === "main_roundup") {
-  const roundup =
-    typeof rawRoundupJson === "string"
-      ? JSON.parse(rawRoundupJson)
-      : rawRoundupJson || { list_type: "ItemList", items: [] };
-  items = (roundup.items || []).sort(
-    (a: RoundupItem, b: RoundupItem) => (a.position || 0) - (b.position || 0),
-  );
-} else {
-  const roundup: RoundupJson =
-    typeof rawRoundup === "string"
-      ? JSON.parse(rawRoundup)
-      : rawRoundup || { list_type: "ItemList", items: [] };
-  items = (roundup.items || []).sort(
-    (a: RoundupItem, b: RoundupItem) => (a.position || 0) - (b.position || 0),
-  );
-}
+const items: RoundupItem[] = [...(roundup.items || [])].sort(
+  (a: RoundupItem, b: RoundupItem) => (a.position || 0) - (b.position || 0),
+);
+const groupTitle = roundup.group_title || "";
+const groupDescription = roundup.group_description || "";
+const showStats = roundup.show_stats !== false;
 
 if (!items || items.length === 0) return null;
 
@@ -80,6 +78,9 @@ const renderedItems = items.map((item, index) => {
     srcSet,
     subtitle,
     title,
+    totalTime: item.recipe?.total_time_minutes ?? null,
+    difficulty: item.recipe?.difficulty ?? null,
+    ratingValue: item.rating?.rating_value ?? null,
   };
 });
 
@@ -100,14 +101,17 @@ const renderedItems = items.map((item, index) => {
   {
     renderedItems.map(({
       author,
+      difficulty,
       href,
       imgData,
       isInternal,
       note,
       position,
+      ratingValue,
       srcSet,
       subtitle,
       title,
+      totalTime,
     }) => (
         <div class="roundup-item-card" id={`item-${position}`}>
           <div class="item-header">
@@ -116,6 +120,14 @@ const renderedItems = items.map((item, index) => {
               <a href={href}>{title}</a>
             </h3>
           </div>
+
+          {showStats && (totalTime || difficulty || ratingValue) && (
+            <div class="item-stats">
+              {totalTime && <span class="stat">{totalTime} min</span>}
+              {difficulty && <span class="stat">{difficulty}</span>}
+              {ratingValue && <span class="stat stat-rating">★ {ratingValue}</span>}
+            </div>
+          )}
 
           {imgData.image_url && (
             <div class="item-media">
@@ -241,6 +253,25 @@ const renderedItems = items.map((item, index) => {
     font-weight: 800;
     flex-shrink: 0;
     box-shadow: var(--shadow-md);
+  }
+
+  .item-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: -0.5rem;
+  }
+
+  .stat {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .stat-rating {
+    color: var(--brand-secondary);
   }
 
   .item-title {
