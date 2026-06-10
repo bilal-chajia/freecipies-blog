@@ -17,7 +17,6 @@ export const CreateCategorySchema = z.object({
   sort_order: z.number().int().min(0).optional(),
   images_json: z.string().optional(),
   seo_json: z.string().optional(),
-  config_json: z.string().optional(),
   presentation_json: z.string().optional(),
 }).passthrough();
 

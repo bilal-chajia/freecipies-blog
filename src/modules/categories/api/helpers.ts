@@ -252,91 +252,6 @@ export function transformCategoryRequestBody(body: any): any {
   const transformed = { ...body };
   const hasLegacyImageFields = ['image_url', 'imageAlt', 'imageWidth', 'imageHeight']
     .some((key) => Object.prototype.hasOwnProperty.call(body, key));
-  const configOverrides: Record<string, any> = {};
-
-  if (body.numEntriesPerPage !== undefined) {
-    configOverrides.posts_per_page = body.numEntriesPerPage;
-    delete transformed.numEntriesPerPage;
-  }
-  if (body.postsPerPage !== undefined) {
-    configOverrides.posts_per_page = body.postsPerPage;
-    delete transformed.postsPerPage;
-  }
-  if (body.tldr !== undefined) {
-    configOverrides.tldr = body.tldr;
-    delete transformed.tldr;
-  }
-  if (body.showInNav !== undefined) {
-    configOverrides.show_in_nav = body.showInNav;
-    delete transformed.showInNav;
-  }
-  if (body.showInFooter !== undefined) {
-    configOverrides.show_in_footer = body.showInFooter;
-    delete transformed.showInFooter;
-  }
-  if (body.layout !== undefined) {
-    configOverrides.layout_mode = body.layout;
-    delete transformed.layout;
-  }
-  if (body.layoutMode !== undefined) {
-    configOverrides.layout_mode = body.layoutMode;
-    delete transformed.layoutMode;
-  }
-  if (body.cardStyle !== undefined) {
-    configOverrides.card_style = body.cardStyle;
-    delete transformed.cardStyle;
-  }
-  if (body.showSidebar !== undefined) {
-    configOverrides.show_sidebar = body.showSidebar;
-    delete transformed.showSidebar;
-  }
-  if (body.showFilters !== undefined) {
-    configOverrides.show_filters = body.showFilters;
-    delete transformed.showFilters;
-  }
-  if (body.showBreadcrumb !== undefined) {
-    configOverrides.show_breadcrumb = body.showBreadcrumb;
-    delete transformed.showBreadcrumb;
-  }
-  if (body.showPagination !== undefined) {
-    configOverrides.show_pagination = body.showPagination;
-    delete transformed.showPagination;
-  }
-  if (body.sortBy !== undefined) {
-    configOverrides.article_sort_by = body.sortBy;
-    delete transformed.sortBy;
-  }
-  if (body.sort_order !== undefined) {
-    configOverrides.article_sort_order = body.sort_order;
-    delete transformed.sort_order;
-  }
-  if (body.headerStyle !== undefined) {
-    configOverrides.header_style = body.headerStyle;
-    delete transformed.headerStyle;
-  }
-  if (body.featuredArticleId !== undefined) {
-    const parsed = typeof body.featuredArticleId === 'string'
-      ? parseInt(body.featuredArticleId, 10)
-      : body.featuredArticleId;
-    configOverrides.featured_article_id = Number.isFinite(parsed) ? parsed : null;
-    delete transformed.featuredArticleId;
-  }
-  if (body.showFeaturedRecipe !== undefined) {
-    configOverrides.show_featured_recipe = body.showFeaturedRecipe;
-    delete transformed.showFeaturedRecipe;
-  }
-  if (body.showHeroCta !== undefined) {
-    configOverrides.show_hero_cta = body.showHeroCta;
-    delete transformed.showHeroCta;
-  }
-  if (body.heroCtaText !== undefined) {
-    configOverrides.hero_cta_text = body.heroCtaText;
-    delete transformed.heroCtaText;
-  }
-  if (body.heroCtaLink !== undefined) {
-    configOverrides.hero_cta_link = body.heroCtaLink;
-    delete transformed.heroCtaLink;
-  }
 
   if (body.images_json !== undefined) {
     transformed.images_json = parseImagesJson(body.images_json);
@@ -389,19 +304,6 @@ export function transformCategoryRequestBody(body: any): any {
     transformed.presentation_json = parsePresentationJson(body.presentation_json);
   }
 
-  const existingConfig = body.config_json !== undefined
-    ? JSON.parse(parseConfigJson(body.config_json))
-    : {};
-  const mergedConfig = {
-    ...existingConfig,
-    ...configOverrides,
-  };
-  if (Object.keys(mergedConfig).length > 0) {
-    transformed.config_json = JSON.stringify(mergedConfig);
-  } else {
-    delete transformed.config_json;
-  }
-
   // Basic required field validation REMOVED to allow partial updates (PATCH)
   // The database schema or specialized Creation validation should handle requirements.
   /*
@@ -421,7 +323,7 @@ export function transformCategoryRequestBody(body: any): any {
   const dbColumns = new Set([
     'slug', 'label', 'parent_id', 'depth', 'headline', 'collection_title',
     'short_description', 'images_json', 'color', 'is_featured',
-    'seo_json', 'config_json', 'presentation_json', 'sort_order', 'workflow_status',
+    'seo_json', 'presentation_json', 'sort_order', 'workflow_status',
     'cached_post_count', 'created_at', 'updated_at', 'deleted_at',
   ]);
   for (const key of Object.keys(transformed)) {
@@ -462,68 +364,6 @@ export function transformCategoryResponse(category: any): any {
       if (response.og_description === undefined && seo.og_description !== undefined) response.og_description = seo.og_description;
       if (response.twitter_card === undefined && seo.twitter_card !== undefined) response.twitter_card = seo.twitter_card;
       if (response.no_index === undefined && seo.no_index !== undefined) response.no_index = seo.no_index;
-    } catch {
-      // Invalid JSON, skip
-    }
-  }
-
-  if (category.config_json) {
-    try {
-      const config: ConfigJson = JSON.parse(category.config_json);
-      if (response.posts_per_page === undefined && typeof config.posts_per_page === 'number') {
-        response.posts_per_page = config.posts_per_page;
-      }
-      if (response.tldr === undefined && typeof config.tldr === 'string') {
-        response.tldr = config.tldr;
-      }
-      if (response.show_in_nav === undefined && typeof config.show_in_nav === 'boolean') {
-        response.show_in_nav = config.show_in_nav;
-      }
-      if (response.show_in_footer === undefined && typeof config.show_in_footer === 'boolean') {
-        response.show_in_footer = config.show_in_footer;
-      }
-      if (response.layout_mode === undefined && typeof config.layout_mode === 'string') {
-        response.layout_mode = config.layout_mode;
-      }
-      if (response.card_style === undefined && typeof config.card_style === 'string') {
-        response.card_style = config.card_style;
-      }
-      if (response.show_sidebar === undefined && typeof config.show_sidebar === 'boolean') {
-        response.show_sidebar = config.show_sidebar;
-      }
-      if (response.show_filters === undefined && typeof config.show_filters === 'boolean') {
-        response.show_filters = config.show_filters;
-      }
-      if (response.show_breadcrumb === undefined && typeof config.show_breadcrumb === 'boolean') {
-        response.show_breadcrumb = config.show_breadcrumb;
-      }
-      if (response.show_pagination === undefined && typeof config.show_pagination === 'boolean') {
-        response.show_pagination = config.show_pagination;
-      }
-      if (typeof config.article_sort_by === 'string') {
-        response.article_sort_by = config.article_sort_by;
-      }
-      if (typeof config.article_sort_order === 'string') {
-        response.article_sort_order = config.article_sort_order;
-      }
-      if (response.header_style === undefined && typeof config.header_style === 'string') {
-        response.header_style = config.header_style;
-      }
-      if (response.featured_article_id === undefined && typeof config.featured_article_id === 'number') {
-        response.featured_article_id = config.featured_article_id;
-      }
-      if (response.show_featured_recipe === undefined && typeof config.show_featured_recipe === 'boolean') {
-        response.show_featured_recipe = config.show_featured_recipe;
-      }
-      if (response.show_hero_cta === undefined && typeof config.show_hero_cta === 'boolean') {
-        response.show_hero_cta = config.show_hero_cta;
-      }
-      if (response.hero_cta_text === undefined && typeof config.hero_cta_text === 'string') {
-        response.hero_cta_text = config.hero_cta_text;
-      }
-      if (response.hero_cta_link === undefined && typeof config.hero_cta_link === 'string') {
-        response.hero_cta_link = config.hero_cta_link;
-      }
     } catch {
       // Invalid JSON, skip
     }
