@@ -464,13 +464,11 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
 
         // Synchronously blur any active input/textarea to trigger their local draft commits (like SimpleTable)
         if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
-            console.log('[handleSave] Blurring active element:', document.activeElement.id);
             (document.activeElement as HTMLElement).blur();
         }
 
         if (editorInstance) {
             const docBlocks = editorInstance.document;
-            console.log('[handleSave] docBlocks after blur:', JSON.stringify(docBlocks));
             const contentObj = blocksToContentJson(docBlocks as any[]);
             finalContentJson = JSON.stringify(contentObj, null, 2);
 
