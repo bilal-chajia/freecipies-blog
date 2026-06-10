@@ -140,4 +140,24 @@ describe('recipe_json contract normalization', () => {
     });
     expect(roundup.items[1]).not.toHaveProperty('external_url');
   });
+
+  it('preserves roundup presentation settings (group title/description/show_stats)', () => {
+    const roundup = normalizeRoundupJson({
+      list_type: 'ItemList',
+      group_title: 'Summer Salads',
+      group_description: 'Warm-weather bowls.',
+      show_stats: false,
+      items: [{ source_type: 'internal_recipe', article_id: 7, slug: 'a', title: 'A' }],
+    }) as Record<string, unknown>;
+
+    expect(roundup.group_title).toBe('Summer Salads');
+    expect(roundup.group_description).toBe('Warm-weather bowls.');
+    expect(roundup.show_stats).toBe(false);
+  });
+
+  it('omits blank presentation fields on normalization', () => {
+    const roundup = normalizeRoundupJson({ items: [] }) as Record<string, unknown>;
+    expect(roundup.group_title).toBeUndefined();
+    expect('show_stats' in roundup).toBe(false);
+  });
 });
