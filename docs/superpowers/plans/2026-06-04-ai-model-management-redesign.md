@@ -1,5 +1,7 @@
 # AI Model Management Redesign Implementation Plan
 
+> **Status: COMPLETED** (all tasks done; module shipped with tests).
+
 > **STATUS — 2026-06-04: ✅ COMPLETED, REVIEWED & FIXED.** All phases implemented (snake_case types/store/discovery/providers/custom providers/endpoints/reasoning/admin UI + data migration). Code review fixes applied (`a71be82`: anthropic max_tokens>budget, provider-id collision guard, un-deprecate, editor reasoning_effort). Stored `ai_settings` blob migrated locally (`migrate-ai-settings --apply`). Verified: typecheck 0 · tests green · boundaries ✅. Ops: run `migrate-ai-settings --apply` on prod D1 at deploy.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -64,7 +66,7 @@
 **Files:**
 - Modify: `src/modules/ai/types.ts`
 
-- [ ] **Step 1: Replace the data-shape interfaces with snake_case**
+- [x] **Step 1: Replace the data-shape interfaces with snake_case**
 
 Replace `AIModel`, `AISettings`, `DEFAULT_AI_SETTINGS`, and remove `AVAILABLE_MODELS`. Keep
 `AIProvider`, `ALL_PROVIDERS`, `PROVIDER_INFO`, `IAIProvider`, `GenerateContentRequest`,
@@ -152,13 +154,13 @@ export interface GenerateContentRequest {
 }
 ```
 
-- [ ] **Step 2: Typecheck (expect downstream breakages — they are fixed in later phases)**
+- [x] **Step 2: Typecheck (expect downstream breakages — they are fixed in later phases)**
 
 Run: `pnpm typecheck 2>&1 | head -40`
 Expected: errors only in AI files that consume the old names (ai.service, providers, endpoints,
 admin). These are addressed in Phases 1–7. Do NOT fix unrelated files here.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/modules/ai/types.ts
@@ -181,7 +183,7 @@ git commit -m "refactor(ai): snake_case AiSettings + add discovery/selection mod
 - Create: `src/modules/ai/__tests__/settings-store.test.ts`
 - Create: `src/modules/ai/__tests__/api-key.test.ts`
 
-- [ ] **Step 1: Write failing tests for api-key masking**
+- [x] **Step 1: Write failing tests for api-key masking**
 
 `src/modules/ai/__tests__/api-key.test.ts`:
 ```ts
@@ -215,7 +217,7 @@ describe('stripApiKeys', () => {
 
 Run: `pnpm test src/modules/ai/__tests__/api-key.test.ts` → Expected: FAIL (module missing).
 
-- [ ] **Step 2: Implement `api-key.ts`**
+- [x] **Step 2: Implement `api-key.ts`**
 
 ```ts
 import type { AiSettings } from './types';
@@ -247,7 +249,7 @@ export function stripApiKeys(settings: AiSettings) {
 
 Run: `pnpm test src/modules/ai/__tests__/api-key.test.ts` → Expected: PASS.
 
-- [ ] **Step 3: Implement the Zod stored-blob schema (`settings-schema.ts`)**
+- [x] **Step 3: Implement the Zod stored-blob schema (`settings-schema.ts`)**
 
 ```ts
 import { z } from 'zod';
@@ -287,7 +289,7 @@ export const AiSettingsSchema = z.object({
 });
 ```
 
-- [ ] **Step 4: Write failing tests for the store (deep merge + validate + fallback)**
+- [x] **Step 4: Write failing tests for the store (deep merge + validate + fallback)**
 
 `src/modules/ai/__tests__/settings-store.test.ts`:
 ```ts
@@ -319,7 +321,7 @@ describe('mergeAiSettings', () => {
 
 Run: `pnpm test src/modules/ai/__tests__/settings-store.test.ts` → Expected: FAIL.
 
-- [ ] **Step 5: Implement `settings-store.ts`**
+- [x] **Step 5: Implement `settings-store.ts`**
 
 ```ts
 import type { D1Database } from '@cloudflare/workers-types';
@@ -382,7 +384,7 @@ export async function saveAiSettings(db: D1Database, patch: Partial<AiSettings>)
 Run: `pnpm test src/modules/ai/__tests__/settings-store.test.ts src/modules/ai/__tests__/api-key.test.ts`
 → Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/modules/ai/settings-schema.ts src/modules/ai/api-key.ts src/modules/ai/settings-store.ts src/modules/ai/__tests__/settings-store.test.ts src/modules/ai/__tests__/api-key.test.ts
@@ -401,7 +403,7 @@ git commit -m "feat(ai): validated deep-merge settings store + write-only key ma
 - Modify: `src/modules/ai/types.ts` (add `listModels` to `IAIProvider`)
 - Modify: `src/modules/ai/providers/openai.provider.ts`
 
-- [ ] **Step 1: Write failing tests for `normalize.ts`**
+- [x] **Step 1: Write failing tests for `normalize.ts`**
 
 `src/modules/ai/__tests__/normalize.test.ts`:
 ```ts
@@ -438,7 +440,7 @@ describe('normalizeOpenAiModels', () => {
 
 Run: `pnpm test src/modules/ai/__tests__/normalize.test.ts` → Expected: FAIL.
 
-- [ ] **Step 2: Implement `discovery/normalize.ts`**
+- [x] **Step 2: Implement `discovery/normalize.ts`**
 
 ```ts
 import type { DiscoveredModel, ModelModality } from '../types';
@@ -472,7 +474,7 @@ export function normalizeOpenAiModels(raw: unknown): DiscoveredModel[] {
 
 Run: `pnpm test src/modules/ai/__tests__/normalize.test.ts` → Expected: PASS.
 
-- [ ] **Step 3: Write failing tests for `reconcile.ts`**
+- [x] **Step 3: Write failing tests for `reconcile.ts`**
 
 `src/modules/ai/__tests__/reconcile.test.ts`:
 ```ts
@@ -496,7 +498,7 @@ describe('reconcileSelection', () => {
 
 Run: `pnpm test src/modules/ai/__tests__/reconcile.test.ts` → Expected: FAIL.
 
-- [ ] **Step 4: Implement `discovery/reconcile.ts`**
+- [x] **Step 4: Implement `discovery/reconcile.ts`**
 
 ```ts
 import type { DiscoveredModel, ModelSelection, ModelStatus } from '../types';
@@ -530,7 +532,7 @@ export function reconcileSelection(
 
 Run: `pnpm test src/modules/ai/__tests__/reconcile.test.ts` → Expected: PASS.
 
-- [ ] **Step 5: Add `listModels` to `IAIProvider` and implement it for OpenAI**
+- [x] **Step 5: Add `listModels` to `IAIProvider` and implement it for OpenAI**
 
 In `types.ts`, extend the interface:
 ```ts
@@ -561,13 +563,13 @@ async listModels(apiKey: string): Promise<{ supported: boolean; models: Discover
 ```
 Add the `DiscoveredModel` import to `openai.provider.ts`.
 
-- [ ] **Step 6: Run the phase tests**
+- [x] **Step 6: Run the phase tests**
 
 Run: `pnpm test src/modules/ai/__tests__/normalize.test.ts src/modules/ai/__tests__/reconcile.test.ts`
 → Expected: PASS. (Full `pnpm typecheck` is still red until other providers gain `listModels` in
 Phase 3 — expected.)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/modules/ai/discovery src/modules/ai/__tests__/normalize.test.ts src/modules/ai/__tests__/reconcile.test.ts src/modules/ai/types.ts src/modules/ai/providers/openai.provider.ts
@@ -584,7 +586,7 @@ git commit -m "feat(ai): discovery normalizer + obsolescence reconcile + openai 
 For each provider class, add a `listModels(apiKey)` method using the provider's models endpoint and
 the shared normalizer where the response is OpenAI-shaped.
 
-- [ ] **Step 1: OpenAI-compatible `/v1/models` providers**
+- [x] **Step 1: OpenAI-compatible `/v1/models` providers**
 
 For `openrouter` (`https://openrouter.ai/api/v1/models`), `mistral`
 (`https://api.mistral.ai/v1/models`), `moonshot` (`https://api.moonshot.cn/v1/models`), `xai`
@@ -608,7 +610,7 @@ Use `Authorization: Bearer ${apiKey}` for all except anthropic (`'x-api-key': ap
 'anthropic-version': '2023-06-01'`). Anthropic and OpenRouter return `{ data: [{ id }] }`, which
 `normalizeOpenAiModels` already handles.
 
-- [ ] **Step 2: Gemini (different response shape)**
+- [x] **Step 2: Gemini (different response shape)**
 
 `gemini.provider.ts` — endpoint `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
 returns `{ models: [{ name: 'models/gemini-...' }] }`. Add a small local mapper:
@@ -629,7 +631,7 @@ async listModels(apiKey: string): Promise<{ supported: boolean; models: Discover
 ```
 Import `classifyModality, detectThinking` from `../discovery/normalize`.
 
-- [ ] **Step 3: Providers without a usable list endpoint**
+- [x] **Step 3: Providers without a usable list endpoint**
 
 For `qwen` and `zhipu`, return unsupported so the UI falls back to manual/bulk:
 ```ts
@@ -640,13 +642,13 @@ async listModels(): Promise<{ supported: boolean; models: DiscoveredModel[] }> {
 (If during implementation a working models endpoint is confirmed for either, implement it like
 Step 1 instead. Default to `supported: false` when unverified.)
 
-- [ ] **Step 4: Verify every provider satisfies `IAIProvider`**
+- [x] **Step 4: Verify every provider satisfies `IAIProvider`**
 
 Run: `pnpm typecheck 2>&1 | rg "provider" | head`
 Expected: no "Property 'listModels' is missing" errors for any provider class. (Other AI files may
 still be red until Phase 7.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/modules/ai/providers
@@ -665,7 +667,7 @@ git commit -m "feat(ai): listModels for all built-in providers (qwen/zhipu fall 
 - Modify: `src/shared/validation/schemas/ai.ts` (custom provider schemas)
 - Create: `src/modules/ai/__tests__/openai-compatible.test.ts`
 
-- [ ] **Step 1: Failing test for the generic provider's normalization**
+- [x] **Step 1: Failing test for the generic provider's normalization**
 
 `src/modules/ai/__tests__/openai-compatible.test.ts`:
 ```ts
@@ -689,7 +691,7 @@ describe('OpenAICompatibleProvider.listModels', () => {
 
 Run: `pnpm test src/modules/ai/__tests__/openai-compatible.test.ts` → Expected: FAIL.
 
-- [ ] **Step 2: Implement `openai-compatible.provider.ts`**
+- [x] **Step 2: Implement `openai-compatible.provider.ts`**
 
 ```ts
 import type { IAIProvider, GenerateContentRequest, GenerateContentResponse, DiscoveredModel } from '../types';
@@ -743,7 +745,7 @@ export class OpenAICompatibleProvider implements IAIProvider {
 
 Run: `pnpm test src/modules/ai/__tests__/openai-compatible.test.ts` → Expected: PASS.
 
-- [ ] **Step 3: Open the factory to custom providers (`ai.service.ts`)**
+- [x] **Step 3: Open the factory to custom providers (`ai.service.ts`)**
 
 Change `createProvider` to accept an optional base_url and route unknown ids to the generic class:
 ```ts
@@ -767,7 +769,7 @@ export function createProvider(provider: AIProvider, apiKey: string, baseUrl?: s
 ```
 Import `OpenAICompatibleProvider`.
 
-- [ ] **Step 4: Custom-provider Zod schemas (`ai.ts`)**
+- [x] **Step 4: Custom-provider Zod schemas (`ai.ts`)**
 
 Add to `src/shared/validation/schemas/ai.ts`:
 ```ts
@@ -786,7 +788,7 @@ export const UpdateCustomProviderSchema = z.object({
 });
 ```
 
-- [ ] **Step 5: Custom-provider CRUD routes**
+- [x] **Step 5: Custom-provider CRUD routes**
 
 `src/pages/api/admin/ai/custom-providers/index.ts` — `GET` returns
 `stripApiKeys(settings).custom_providers`; `POST` validates `CreateCustomProviderSchema` then
@@ -798,7 +800,7 @@ dedicated `replaceAiSettings` (full overwrite) — add `replaceAiSettings(db, se
 `settings-store.ts` that validates + writes without merge. Both require `AuthRoles.ADMIN` via
 `extractAuthContext`/`hasRole` (follow `migrate-models.ts` auth pattern).
 
-- [ ] **Step 6: Verify + commit**
+- [x] **Step 6: Verify + commit**
 
 Run: `pnpm test src/modules/ai/__tests__/openai-compatible.test.ts`
 → Expected: PASS.
@@ -820,7 +822,7 @@ git commit -m "feat(ai): OpenAI-compatible custom providers + CRUD"
 - Modify: `src/modules/ai/ai.service.ts` (`getModelsForProvider`, `generateContent`,
   `getConfiguredProviders`, resolution helper)
 
-- [ ] **Step 1: Rewrite `ai.ts` request schemas to snake_case**
+- [x] **Step 1: Rewrite `ai.ts` request schemas to snake_case**
 
 Update `GenerateSchema`, `UpdateSettingsSchema`, `AddModelSchema`, `UpdateModelSchema`,
 `ProviderModelParam`, `ValidateApiKeySchema` to snake_case keys:
@@ -867,7 +869,7 @@ export const ValidateApiKeySchema = z.object({ provider: z.string().min(1), api_
 (`ProviderEnum` is replaced by `z.string()` since custom providers exist; validity is checked
 against settings at runtime.)
 
-- [ ] **Step 2: Discovery endpoint**
+- [x] **Step 2: Discovery endpoint**
 
 `src/pages/api/admin/ai/models/[provider]/discover.ts` (`GET`, `AuthRoles.ADMIN`):
 ```ts
@@ -882,7 +884,7 @@ against settings at runtime.)
 Use `formatSuccessResponse`/`formatErrorResponse` and the `validateParams`-style param read used by
 sibling routes.
 
-- [ ] **Step 3: `settings.ts` GET (masked) / PUT (deep merge)**
+- [x] **Step 3: `settings.ts` GET (masked) / PUT (deep merge)**
 
 GET: `formatSuccessResponse(stripApiKeys(await getAiSettings(db)))`.
 PUT: `validateBody(request, UpdateSettingsSchema)` → `saveAiSettings(db, body)` → return
@@ -890,7 +892,7 @@ PUT: `validateBody(request, UpdateSettingsSchema)` → `saveAiSettings(db, body)
 POST (validate key): `createProvider(provider, api_key, base_url?).validateApiKey(api_key)`.
 Remove every camelCase field; require `AuthRoles.ADMIN`.
 
-- [ ] **Step 4: `providers.ts`, `generate.ts`, model CRUD to snake_case + selection**
+- [x] **Step 4: `providers.ts`, `generate.ts`, model CRUD to snake_case + selection**
 
 `providers.ts` GET → `{ configured_providers, available_models, provider_info, defaults }` where
 `available_models[p] = getModelsForProvider(db, p)` (stored selection, enabled only). Strip keys.
@@ -899,7 +901,7 @@ Remove every camelCase field; require `AuthRoles.ADMIN`.
 operate on `providers[p].models` (or `custom_providers[p].models`) via `saveAiSettings`, snake_case
 fields, `source: 'manual'` for manually added models.
 
-- [ ] **Step 5: `ai.service.ts` resolution + generate**
+- [x] **Step 5: `ai.service.ts` resolution + generate**
 
 ```ts
 export async function getModelsForProvider(db: D1Database, provider: AIProvider): Promise<ModelSelection[]> {
@@ -926,14 +928,14 @@ export async function generateContent(db: D1Database, request: GenerateContentRe
 ```
 Update `getConfiguredProviders` to iterate `providers` + `custom_providers` reading `api_key`/`enabled`.
 
-- [ ] **Step 6: Delete the obsolete migration endpoint**
+- [x] **Step 6: Delete the obsolete migration endpoint**
 
 ```bash
 git rm src/pages/api/admin/ai/migrate-models.ts
 ```
 Then `rg -n "migrate-models|AVAILABLE_MODELS" src` and remove every remaining reference.
 
-- [ ] **Step 7: Verify + commit**
+- [x] **Step 7: Verify + commit**
 
 Run: `pnpm test && pnpm check:boundaries`
 Expected: PASS / "Boundary check passed." (`pnpm typecheck` may still be red until admin UI in
@@ -951,7 +953,7 @@ git commit -m "feat(ai): discovery + snake_case settings/providers/generate endp
 - Modify: providers that support reasoning — `openai`, `anthropic`, `deepseek`, `openai-compatible`
 - Modify: `src/modules/ai/__tests__/...` (one mapping test)
 
-- [ ] **Step 1: Map `reasoning_effort` per provider at the fetch boundary**
+- [x] **Step 1: Map `reasoning_effort` per provider at the fetch boundary**
 
 In `openai.provider.ts` and `openai-compatible.provider.ts`, when `request.reasoning_effort` is set,
 add `reasoning_effort: request.reasoning_effort` to the request body. In `anthropic.provider.ts`,
@@ -959,12 +961,12 @@ map to `thinking: { type: 'enabled', budget_tokens: <low|medium|high → 4096|81
 `deepseek.provider.ts`, no body change is required (reasoner is model-selected) — leave a comment.
 Providers without support ignore the field (no change).
 
-- [ ] **Step 2: Test the mapping (openai body includes reasoning_effort)**
+- [x] **Step 2: Test the mapping (openai body includes reasoning_effort)**
 
 Add to an existing/new provider test that mocks `fetch` and asserts the request body passed to
 `fetch` contains `reasoning_effort: 'high'` when set. Run that test → Expected: PASS.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/modules/ai/providers src/modules/ai/__tests__
@@ -982,14 +984,14 @@ git commit -m "feat(ai): map reasoning_effort to provider-native thinking params
   `src/admin/components/BlockEditor/components/AISettings.tsx`,
   `src/admin/features/settings/pages/Settings.tsx`
 
-- [ ] **Step 1: `api.ts` AI client methods → snake_case + discover + custom providers**
+- [x] **Step 1: `api.ts` AI client methods → snake_case + discover + custom providers**
 
 Add/repoint methods: `aiSettings.get/update`, `aiProviders.get`, `aiModels.discover(provider)`,
 `aiModels.add/update/remove`, `aiCustomProviders.list/create/update/remove`, `aiGenerate(payload)`.
 All payloads/reads use snake_case (`content_type`, `reasoning_effort`, `default_provider`,
 `has_api_key`, `context_window`, `max_tokens`).
 
-- [ ] **Step 2: ModelManager — discovery checklist**
+- [x] **Step 2: ModelManager — discovery checklist**
 
 Rework `ManagedModel` to snake_case (`context_window`, `max_tokens`, `enabled`, `deprecated`,
 `status`). Add a "Fetch latest models" button calling `aiModels.discover(provider)`; render the
@@ -997,7 +999,7 @@ returned `models` as a checklist with `status` badges (`unavailable`/`deprecated
 saves it into the selection via `aiSettings.update`/`aiModels.add`. Keep manual add + bulk import
 visible as fallback (and shown automatically when `discover` returns `supported: false`).
 
-- [ ] **Step 3: BulkImportModels + both AISettings tabs + Settings.tsx**
+- [x] **Step 3: BulkImportModels + both AISettings tabs + Settings.tsx**
 
 Rename all AI data-key reads/writes to snake_case (`context_window`, `max_tokens`, `api_key`→write
 only, render `has_api_key`/`api_key_masked` instead of the raw key, `default_provider`,
@@ -1005,12 +1007,12 @@ only, render `has_api_key`/`api_key_masked` instead of the raw key, `default_pro
 `supports_thinking`). Add a custom-provider add/edit form (id/label/base_url/api_key) backed by
 `aiCustomProviders`.
 
-- [ ] **Step 4: Verify full green**
+- [x] **Step 4: Verify full green**
 
 Run: `pnpm typecheck && pnpm test && pnpm check:boundaries`
 Expected: all green (this is the phase where typecheck returns fully clean).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/admin
@@ -1025,7 +1027,7 @@ git commit -m "feat(ai): snake_case admin AI UI + model discovery UX + write-onl
 - Create: `scripts/migrate-ai-settings.mts`
 - Create: `src/modules/ai/__tests__/migrate-ai-settings.test.ts`
 
-- [ ] **Step 1: Failing test for the pure transform**
+- [x] **Step 1: Failing test for the pure transform**
 
 `src/modules/ai/__tests__/migrate-ai-settings.test.ts`:
 ```ts
@@ -1054,7 +1056,7 @@ describe('migrateAiSettingsBlob', () => {
 
 Run: `pnpm test src/modules/ai/__tests__/migrate-ai-settings.test.ts` → Expected: FAIL.
 
-- [ ] **Step 2: Implement `scripts/migrate-ai-settings.mts`**
+- [x] **Step 2: Implement `scripts/migrate-ai-settings.mts`**
 
 Export a pure `migrateAiSettingsBlob(legacy)` (camelCase → snake_case, `availableModels` → `models`
 with `modality:'text'`, `status:'available'`, `source:'discovered'`, `order` by index) plus a
@@ -1065,13 +1067,13 @@ prints a dry-run diff, and writes the transformed blob under `--apply`. Validate
 
 Run: `pnpm test src/modules/ai/__tests__/migrate-ai-settings.test.ts` → Expected: PASS.
 
-- [ ] **Step 3: Dry-run against local D1**
+- [x] **Step 3: Dry-run against local D1**
 
 Run: `node_modules/.bin/tsx scripts/migrate-ai-settings.mts`
 Expected: prints the would-be snake_case blob; no write. (If no `ai_settings` row exists locally,
 it prints "no ai_settings row — nothing to migrate".)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/migrate-ai-settings.mts src/modules/ai/__tests__/migrate-ai-settings.test.ts
@@ -1086,19 +1088,19 @@ git commit -m "chore(ai): one-shot migration of stored ai_settings to snake_case
 - Modify: `docs/NAMING_CONTRACT.md` (only if it still implies AI is pending)
 - Modify: `.hermes/plans/2026-06-03_contract-audit-report.md` (local record)
 
-- [ ] **Step 1: Full regression gate**
+- [x] **Step 1: Full regression gate**
 
 Run: `pnpm typecheck && pnpm test && pnpm check:boundaries`
 Expected: all green.
 
-- [ ] **Step 2: Contract audit — no AI camelCase regressions**
+- [x] **Step 2: Contract audit — no AI camelCase regressions**
 
 Run: `rg -n "\b(defaultProvider|defaultModel|systemPrompt|apiKey|availableModels|contextWindow|maxTokens|modelId)\b" src/modules/ai src/pages/api/admin/ai src/admin --glob '!**/*.test.*'`
 Expected: matches only inside provider classes at the external fetch boundary (allowed exception)
 and local variables — no app-owned data-shape keys. Then
 `node scripts/local-contract-audit.mjs --summary` → no new camelCase violation.
 
-- [ ] **Step 3: Commit (if docs changed)**
+- [x] **Step 3: Commit (if docs changed)**
 
 ```bash
 git add docs/NAMING_CONTRACT.md

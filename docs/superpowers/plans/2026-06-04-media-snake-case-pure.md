@@ -1,5 +1,7 @@
 # Media Snake Case Pure Implementation Plan
 
+> **Status: COMPLETED** (media snake_case E2E migration merged).
+
 > **STATUS — 2026-06-04: ✅ COMPLETED & VERIFIED.** Media resource fully migrated to snake_case end to end (schema → service → API → admin), including the Drizzle/handler layer completion (`cf3b0532`) and upload-variant FormData (`126b87b`). Verified green.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -48,7 +50,7 @@
 - Modify: `src/admin/services/api.ts`
 - Test: `src/shared/validation/schemas/__tests__/media.test.ts`
 
-- [ ] **Step 1: Update the media confirm request type to snake_case only**
+- [x] **Step 1: Update the media confirm request type to snake_case only**
 
 Replace the current camelCase `ConfirmUploadInput` and delete `toConfirmUploadPayload` in `src/admin/services/api.ts`.
 
@@ -81,7 +83,7 @@ interface ConfirmUploadInput {
 }
 ```
 
-- [ ] **Step 2: Post the payload directly without conversion**
+- [x] **Step 2: Post the payload directly without conversion**
 
 In `src/admin/services/api.ts`, replace the existing `confirmUpload` implementation.
 
@@ -92,13 +94,13 @@ confirmUpload: async (payload: ConfirmUploadInput, config: AxiosRequestConfig = 
 
 Expected change: `toConfirmUploadPayload` no longer exists anywhere in the file.
 
-- [ ] **Step 3: Run a targeted search to confirm the conversion layer is gone**
+- [x] **Step 3: Run a targeted search to confirm the conversion layer is gone**
 
 Run: `pnpm exec rg "toConfirmUploadPayload|uploadId|baseName|altText|mimeType" src/admin/services/api.ts`
 
 Expected: no matches for `toConfirmUploadPayload`, `uploadId`, `baseName`, `altText`, or `mimeType` inside the media confirm client path.
 
-- [ ] **Step 4: Commit the client-boundary cleanup**
+- [x] **Step 4: Commit the client-boundary cleanup**
 
 Run:
 
@@ -115,7 +117,7 @@ Expected: one commit containing only the request-type / request-send cleanup.
 - Modify: `src/shared/validation/schemas/media.ts`
 - Test: `src/shared/validation/schemas/__tests__/media.test.ts`
 
-- [ ] **Step 1: Remove camelCase fallback from confirm/update preprocessors**
+- [x] **Step 1: Remove camelCase fallback from confirm/update preprocessors**
 
 In `src/shared/validation/schemas/media.ts`, replace the migration adapters with snake_case-only pass-through normalization.
 
@@ -150,7 +152,7 @@ const normalizeUpdateMediaInput = (value: unknown): unknown => {
 };
 ```
 
-- [ ] **Step 2: Fix the top-of-file naming comment so it matches reality**
+- [x] **Step 2: Fix the top-of-file naming comment so it matches reality**
 
 Replace the stale header note in `src/shared/validation/schemas/media.ts:6-10` with:
 
@@ -160,7 +162,7 @@ Replace the stale header note in `src/shared/validation/schemas/media.ts:6-10` w
  * They do not normalize data-shape keys to camelCase.
 ```
 
-- [ ] **Step 3: Update schema tests to expect snake_case outputs**
+- [x] **Step 3: Update schema tests to expect snake_case outputs**
 
 In `src/shared/validation/schemas/__tests__/media.test.ts`, replace the two test descriptions and the update-schema expectation.
 
@@ -192,13 +194,13 @@ it('keeps snake_case update payloads in canonical snake_case form', () => {
 });
 ```
 
-- [ ] **Step 4: Run the schema test to verify the contract**
+- [x] **Step 4: Run the schema test to verify the contract**
 
 Run: `pnpm test src/shared/validation/schemas/__tests__/media.test.ts`
 
 Expected: PASS, with no test name or assertion still referring to camelCase normalization.
 
-- [ ] **Step 5: Commit the schema-boundary cleanup**
+- [x] **Step 5: Commit the schema-boundary cleanup**
 
 Run:
 
@@ -213,7 +215,7 @@ git commit -m "refactor(media): enforce snake case validation shapes"
 - Modify: `src/admin/utils/helpers.ts`
 - Test: `src/admin/features/media/utils/__tests__/mediaHelpers.test.ts`
 
-- [ ] **Step 1: Narrow the media helper input shape to snake_case data keys**
+- [x] **Step 1: Narrow the media helper input shape to snake_case data keys**
 
 In `src/admin/utils/helpers.ts`, replace the mixed `MediaItem` interface properties.
 
@@ -239,7 +241,7 @@ interface ImageSlotOverrides {
 }
 ```
 
-- [ ] **Step 2: Remove camelCase fallback reads in `buildImageSlotFromMedia`**
+- [x] **Step 2: Remove camelCase fallback reads in `buildImageSlotFromMedia`**
 
 In the same file, replace the mixed readers.
 
@@ -254,13 +256,13 @@ const focalPointRaw = overrides.focal_point ?? item?.focal_point_json;
 
 Expected change: no `variantsJson`, `altText`, `aspectRatio`, or `focalPointJson` references remain in this file.
 
-- [ ] **Step 3: Run targeted tests for media helper behavior**
+- [x] **Step 3: Run targeted tests for media helper behavior**
 
 Run: `pnpm test src/admin/features/media/utils/__tests__/mediaHelpers.test.ts`
 
 Expected: PASS, proving media helper consumers still build slots correctly from snake_case media rows.
 
-- [ ] **Step 4: Commit the helper cleanup**
+- [x] **Step 4: Commit the helper cleanup**
 
 Run:
 
@@ -277,7 +279,7 @@ git commit -m "refactor(media): drop mixed casing in admin helpers"
 - Modify: `src/admin/components/BlockEditor/blocks/BeforeAfterBlock.tsx`
 - Test: `src/admin/components/BlockEditor/utils/__tests__/image-selection.test.ts`
 
-- [ ] **Step 1: Make `image-selection.ts` read only snake_case media keys**
+- [x] **Step 1: Make `image-selection.ts` read only snake_case media keys**
 
 In `src/admin/components/BlockEditor/utils/image-selection.ts`, replace the mixed readers.
 
@@ -290,7 +292,7 @@ const aspectRatio = item.aspect_ratio ?? undefined;
 
 Also remove `aspectRatio?` / `focalPoint?` camelCase properties from the media item type used in this file if they exist only for media-row compatibility.
 
-- [ ] **Step 2: Update the image selection test fixtures to snake_case**
+- [x] **Step 2: Update the image selection test fixtures to snake_case**
 
 In `src/admin/components/BlockEditor/utils/__tests__/image-selection.test.ts`, replace camelCase fixture fields such as:
 
@@ -302,7 +304,7 @@ alt_text: 'Replacement',
 
 Do not keep `aspectRatio` or `focalPoint` in media-row fixtures.
 
-- [ ] **Step 3: Remove `altText` fallback in other BlockEditor media readers**
+- [x] **Step 3: Remove `altText` fallback in other BlockEditor media readers**
 
 Apply these exact replacements:
 
@@ -316,13 +318,13 @@ alt: item.alt_text || item.name || '',
 alt: existing?.alt || item.alt_text || item.name || '',
 ```
 
-- [ ] **Step 4: Run the focused BlockEditor test**
+- [x] **Step 4: Run the focused BlockEditor test**
 
 Run: `pnpm test src/admin/components/BlockEditor/utils/__tests__/image-selection.test.ts`
 
 Expected: PASS, proving media picker → image slot conversion still works with snake_case-only media rows.
 
-- [ ] **Step 5: Commit the BlockEditor media cleanup**
+- [x] **Step 5: Commit the BlockEditor media cleanup**
 
 Run:
 
@@ -338,7 +340,7 @@ git commit -m "refactor(media): align block editor media reads to snake case"
 - Modify: `src/admin/features/articles/pages/shared/useContentEditor.ts`
 - Modify: `src/admin/features/pinterest/pages/BoardEditor.tsx`
 
-- [ ] **Step 1: Replace camelCase media alt reads in category/article/pinterest consumers**
+- [x] **Step 1: Replace camelCase media alt reads in category/article/pinterest consumers**
 
 Apply these exact replacements:
 
@@ -358,13 +360,13 @@ heroAlt: slot?.alt || item.alt_text || prev.heroAlt
 alt: item.alt_text || formData.name || '',
 ```
 
-- [ ] **Step 2: Run a targeted search to confirm media alt camelCase fallback is gone from admin consumers**
+- [x] **Step 2: Run a targeted search to confirm media alt camelCase fallback is gone from admin consumers**
 
 Run: `pnpm exec rg "item\.altText|media\.altText|altText \|\| item\.alt_text|item\.altText \?\?" src/admin`
 
 Expected: no matches in category/article/pinterest/media consumer paths that are part of the media pilot.
 
-- [ ] **Step 3: Commit the cross-feature cleanup**
+- [x] **Step 3: Commit the cross-feature cleanup**
 
 Run:
 
@@ -379,7 +381,7 @@ git commit -m "refactor(media): remove camel case media fallbacks"
 - Modify: `src/shared/images/image-contract.ts`
 - Test: `src/shared/images/__tests__/image-contract.test.ts`
 
-- [ ] **Step 1: Remove camelCase media-pilot fallback reads that only exist for migration**
+- [x] **Step 1: Remove camelCase media-pilot fallback reads that only exist for migration**
 
 In `src/shared/images/image-contract.ts`, replace mixed focal-point / aspect-ratio reads used for media data shapes.
 
@@ -407,7 +409,7 @@ if (aspectRatio !== undefined) slot.aspect_ratio = aspectRatio;
 
 Do not remove camelCase fallback that belongs to external exception boundaries documented in `NAMING_CONTRACT.md` unless you confirm it is only for app-owned media shapes.
 
-- [ ] **Step 2: Update / add a focused test for snake_case-only media shape handling**
+- [x] **Step 2: Update / add a focused test for snake_case-only media shape handling**
 
 In `src/shared/images/__tests__/image-contract.test.ts`, add or update a test like this:
 
@@ -429,13 +431,13 @@ it('reads focal_point and aspect_ratio from canonical snake_case media slots', (
 });
 ```
 
-- [ ] **Step 3: Run the shared image contract test**
+- [x] **Step 3: Run the shared image contract test**
 
 Run: `pnpm test src/shared/images/__tests__/image-contract.test.ts`
 
 Expected: PASS, confirming the media pilot keeps working with canonical snake_case image-slot metadata.
 
-- [ ] **Step 4: Commit the shared-image cleanup**
+- [x] **Step 4: Commit the shared-image cleanup**
 
 Run:
 
@@ -450,7 +452,7 @@ git commit -m "refactor(media): remove migration fallbacks from image contract"
 - Modify: none expected unless a final targeted fix is needed
 - Test: existing test files above plus repo checks
 
-- [ ] **Step 1: Run a focused repository search for remaining media-pilot compat markers**
+- [x] **Step 1: Run a focused repository search for remaining media-pilot compat markers**
 
 Run:
 
@@ -460,19 +462,19 @@ pnpm exec rg "toConfirmUploadPayload|uploadId|baseName|altText \?\? item\.alt_te
 
 Expected: only legitimate UI-local variables or multipart transport field names remain; no app-owned media data-shape compatibility reads/writes remain.
 
-- [ ] **Step 2: Run typecheck**
+- [x] **Step 2: Run typecheck**
 
 Run: `pnpm test -- --runInBand`
 
 Expected: PASS. If this repo separates typecheck elsewhere in your normal workflow, also run the project’s usual typecheck command before claiming completion.
 
-- [ ] **Step 3: Run boundaries check**
+- [x] **Step 3: Run boundaries check**
 
 Run: `pnpm check:boundaries`
 
 Expected: PASS.
 
-- [ ] **Step 4: Summarize the remaining intentional exceptions before committing the verification checkpoint**
+- [x] **Step 4: Summarize the remaining intentional exceptions before committing the verification checkpoint**
 
 Record these intentionally out-of-scope exceptions in your PR notes / handoff:
 
@@ -482,7 +484,7 @@ Record these intentionally out-of-scope exceptions in your PR notes / handoff:
 - Any remaining camelCase at third-party or documented exception boundaries must match `docs/NAMING_CONTRACT.md`.
 ```
 
-- [ ] **Step 5: Commit the verification checkpoint**
+- [x] **Step 5: Commit the verification checkpoint**
 
 Run:
 

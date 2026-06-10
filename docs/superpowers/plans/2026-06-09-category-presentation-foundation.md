@@ -1,5 +1,7 @@
 # Category Presentation Foundation — Implementation Plan
 
+> **Status: COMPLETED 2026-06-10** (all tasks + follow-on Plans 2-4 merged to main). **Correction:** the featured_article image snapshot described below as a resolved `url` was WRONG per IMAGE_JSON_CONTRACT - stored snapshots keep `r2_key` variants, built server-side at save; resolution to `url` happens only at the API/render boundary. See docs/CATEGORIES_TABLE_CONTRACT.md (corrected).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the reliable data/snapshot layer for per-category editorial presentation: a real `categories.presentation_json` column, the `CategoryPresentation` types, a pure featured-article snapshot builder, a pure parser/normalizer that strips `r2_key`, an effective-settings merge, and a one-shot migration.
@@ -38,7 +40,7 @@ This is **Plan 1 of 4** — the data/snapshot foundation. It is self-contained a
 - Modify: `src/modules/categories/schema/categories.schema.ts`
 - Create: `db/migrations/0002_add_category_presentation_json.sql`
 
-- [ ] **Step 1: Add the column to the executable schema**
+- [x] **Step 1: Add the column to the executable schema**
 
 In `db/schema.sql`, inside `CREATE TABLE IF NOT EXISTS categories (...)`, immediately after the `seo_json TEXT DEFAULT '{}' CHECK (json_valid(seo_json)),` line, add:
 
@@ -49,7 +51,7 @@ In `db/schema.sql`, inside `CREATE TABLE IF NOT EXISTS categories (...)`, immedi
     presentation_json TEXT DEFAULT '{}' CHECK (json_valid(presentation_json)),
 ```
 
-- [ ] **Step 2: Add the column to the Drizzle schema**
+- [x] **Step 2: Add the column to the Drizzle schema**
 
 In `src/modules/categories/schema/categories.schema.ts`, after the `seo_json` line in the table definition, add:
 
@@ -57,7 +59,7 @@ In `src/modules/categories/schema/categories.schema.ts`, after the `seo_json` li
   presentation_json: text('presentation_json').default('{}'),
 ```
 
-- [ ] **Step 3: Create the versioned DDL migration**
+- [x] **Step 3: Create the versioned DDL migration**
 
 Create `db/migrations/0002_add_category_presentation_json.sql`:
 
@@ -67,12 +69,12 @@ Create `db/migrations/0002_add_category_presentation_json.sql`:
 ALTER TABLE categories ADD COLUMN presentation_json TEXT DEFAULT '{}' CHECK (json_valid(presentation_json));
 ```
 
-- [ ] **Step 4: Verify the test suite still passes (no behavior change yet)**
+- [x] **Step 4: Verify the test suite still passes (no behavior change yet)**
 
 Run: `pnpm test`
 Expected: all tests pass (211).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add db/schema.sql src/modules/categories/schema/categories.schema.ts db/migrations/0002_add_category_presentation_json.sql
@@ -86,7 +88,7 @@ git commit -m "feat(categories): add presentation_json column (schema + DDL migr
 **Files:**
 - Create: `src/modules/categories/types/presentation.types.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/modules/categories/types/__tests__/presentation.types.test.ts`:
 
@@ -107,12 +109,12 @@ describe('presentation types', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run src/modules/categories/types/__tests__/presentation.types.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/modules/categories/types/presentation.types.ts`:
 
@@ -151,12 +153,12 @@ export interface CategoryPresentation {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/modules/categories/types/__tests__/presentation.types.test.ts`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/modules/categories/types/presentation.types.ts src/modules/categories/types/__tests__/presentation.types.test.ts
@@ -173,7 +175,7 @@ git commit -m "feat(categories): add CategoryPresentation/FeaturedArticleSnapsho
 
 Context: source is an article card snapshot `CachedCardJson` (`src/modules/articles/types/cache.types.ts`) with `id`, `slug`, `headline`, and `image?.variants` (`ImageVariants` keyed `xs/sm/md/lg/original`). `resolveVariantUrl` (`src/shared/types/images.ts`) turns a variant into a public URL string (never r2_key in output).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/modules/categories/snapshot/__tests__/featured-article.test.ts`:
 
@@ -220,12 +222,12 @@ describe('buildFeaturedArticleSnapshot', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run src/modules/categories/snapshot/__tests__/featured-article.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/modules/categories/snapshot/featured-article.ts`:
 
@@ -261,12 +263,12 @@ export function buildFeaturedArticleSnapshot(card: CachedCardJson): FeaturedArti
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/modules/categories/snapshot/__tests__/featured-article.test.ts`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/modules/categories/snapshot/featured-article.ts src/modules/categories/snapshot/__tests__/featured-article.test.ts
@@ -281,7 +283,7 @@ git commit -m "feat(categories): pure buildFeaturedArticleSnapshot (resolves url
 - Create: `src/modules/categories/api/presentation.ts`
 - Test: `src/modules/categories/api/__tests__/presentation.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/modules/categories/api/__tests__/presentation.test.ts`:
 
@@ -342,12 +344,12 @@ describe('parsePresentationJson', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run src/modules/categories/api/__tests__/presentation.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/modules/categories/api/presentation.ts`:
 
@@ -418,12 +420,12 @@ export function parsePresentationJson(value: unknown): string {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/modules/categories/api/__tests__/presentation.test.ts`
 Expected: PASS (6 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/modules/categories/api/presentation.ts src/modules/categories/api/__tests__/presentation.test.ts
@@ -440,7 +442,7 @@ git commit -m "feat(categories): pure normalizePresentation/parsePresentationJso
 
 Context: combine global `CategoryPageSettings` (`src/modules/settings/types/settings.types.ts`, from Phase 1) with per-category `CategoryPresentation` into one render-ready object.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/modules/categories/services/__tests__/effective-settings.test.ts`:
 
@@ -472,12 +474,12 @@ describe('mergeEffectiveCategorySettings', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run src/modules/categories/services/__tests__/effective-settings.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/modules/categories/services/effective-settings.ts`:
 
@@ -509,12 +511,12 @@ export function mergeEffectiveCategorySettings(
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/modules/categories/services/__tests__/effective-settings.test.ts`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/modules/categories/services/effective-settings.ts src/modules/categories/services/__tests__/effective-settings.test.ts
@@ -531,7 +533,7 @@ git commit -m "feat(categories): mergeEffectiveCategorySettings (global base + e
 
 Context: mirror `scripts/migrate-category-config.mts` + `src/modules/categories/__tests__/migrate-category-config.test.ts`. The script exposes a pure transform `buildPresentationFromLegacy(legacyConfig, cardLookup)` that the test exercises directly (the `.mts` script wires it to D1). Legacy `config_json` may contain `featured_article_id` and `tldr`; build a `presentation_json` from them, resolving the snapshot from the provided card lookup. No-op when there is nothing to migrate.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/modules/categories/__tests__/migrate-category-presentation.test.ts`:
 
@@ -565,12 +567,12 @@ describe('buildPresentationFromLegacy', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run src/modules/categories/__tests__/migrate-category-presentation.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `scripts/migrate-category-presentation.mts`:
 
@@ -613,17 +615,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/modules/categories/__tests__/migrate-category-presentation.test.ts`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Run full suite + boundaries**
+- [x] **Step 5: Run full suite + boundaries**
 
 Run: `pnpm test && pnpm check:boundaries`
 Expected: all pass; `Boundary check passed.`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/migrate-category-presentation.mts src/modules/categories/__tests__/migrate-category-presentation.test.ts

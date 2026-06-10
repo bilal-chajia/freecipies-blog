@@ -1,5 +1,7 @@
 # Category Module Contract Compliance — Implementation Plan
 
+> **Status: COMPLETED 2026-06-10** (Phase 1 + follow-on Plans B-E all merged to main).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Bring the Category module into compliance with `docs/CATEGORIES_TABLE_CONTRACT.md` and `docs/NAMING_CONTRACT.md` by moving per-page settings to global `site_settings.category_page_settings`, eliminating camelCase dual-handling, stopping `r2_key` leakage, and adding `parent_id` cycle protection.
@@ -34,7 +36,7 @@ This plan is **Phase 1 (foundation) + the self-contained `parent_id` fix**, full
 - Modify: `src/modules/settings/types/settings.types.ts` (append at end, after `PUBLIC_SOCIAL_LINKS_DEFAULTS`)
 - Test: `src/modules/settings/services/__tests__/category-page-settings.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/modules/settings/services/__tests__/category-page-settings.test.ts`:
 
@@ -84,12 +86,12 @@ describe('normalizeCategoryPageSettings', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run src/modules/settings/services/__tests__/category-page-settings.test.ts`
 Expected: FAIL — `normalizeCategoryPageSettings` / `CATEGORY_PAGE_SETTINGS_DEFAULTS` not exported.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Append to `src/modules/settings/types/settings.types.ts`:
 
@@ -140,12 +142,12 @@ export function normalizeCategoryPageSettings(
 
 Note: the camelCase-alias test passes because `normalize` only reads known snake_case keys; unknown camelCase keys are never copied (matches the `normalizeTocSettings` contract behavior).
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/modules/settings/services/__tests__/category-page-settings.test.ts`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/modules/settings/types/settings.types.ts src/modules/settings/services/__tests__/category-page-settings.test.ts
@@ -160,7 +162,7 @@ git commit -m "feat(settings): add global category_page_settings type, defaults,
 - Modify: `src/modules/settings/services/settings.service.ts` (add after `getTocSettings`/`updateTocSettings`, reusing the existing imports block at lines 242-256)
 - Test: covered by Task 1's normalizer tests + a smoke assertion below
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `src/modules/settings/services/__tests__/category-page-settings.test.ts`:
 
@@ -200,12 +202,12 @@ describe('category page settings service (defaults path)', () => {
 
 > Execution note: if the existing Drizzle test harness in this repo provides a real in-memory D1 (check `src/test` / `vitest.setup`), prefer it over the stub and assert a full round-trip (`update` then `get`). Use the stub only if no harness exists. Do not weaken the assertion below the defaults check.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run src/modules/settings/services/__tests__/category-page-settings.test.ts`
 Expected: FAIL — `getCategoryPageSettings` not exported.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `src/modules/settings/services/settings.service.ts`, add `CategoryPageSettings`, `CATEGORY_PAGE_SETTINGS_DEFAULTS`, `normalizeCategoryPageSettings`, and `CategoryPageSettingsInput` to the existing type import from `'../types/settings.types'` (the block at lines 242-256). Then append:
 
@@ -243,17 +245,17 @@ export async function updateCategoryPageSettings(
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/modules/settings/services/__tests__/category-page-settings.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Run full settings tests + boundaries**
+- [x] **Step 5: Run full settings tests + boundaries**
 
 Run: `pnpm vitest run src/modules/settings && pnpm check:boundaries`
 Expected: PASS; `Boundary check passed.`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/modules/settings/services/settings.service.ts src/modules/settings/services/__tests__/category-page-settings.test.ts
@@ -268,7 +270,7 @@ git commit -m "feat(settings): add get/update service for global category_page_s
 - Modify: `src/modules/categories/services/categories.service.ts`
 - Test: `src/modules/categories/services/__tests__/parent-cycle.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/modules/categories/services/__tests__/parent-cycle.test.ts`:
 
@@ -308,12 +310,12 @@ describe('wouldCreateParentCycle', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run src/modules/categories/services/__tests__/parent-cycle.test.ts`
 Expected: FAIL — `wouldCreateParentCycle` not exported.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `src/modules/categories/services/categories.service.ts`, add the pure helper near `calculateDepth`:
 
@@ -362,17 +364,17 @@ Then guard both update functions. In `updateCategory` (after `if (!existing) ret
 
 The API routes already map `(error as any)?.code === 'VALIDATION_ERROR'` to a 400 `AppError` (see `src/pages/api/categories/index.ts:61`), so no route change is needed.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/modules/categories/services/__tests__/parent-cycle.test.ts`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Run full suite + boundaries**
+- [x] **Step 5: Run full suite + boundaries**
 
 Run: `pnpm test && pnpm check:boundaries`
 Expected: all tests PASS; `Boundary check passed.`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/modules/categories/services/categories.service.ts src/modules/categories/services/__tests__/parent-cycle.test.ts

@@ -1,5 +1,7 @@
 # JSON Dual Handling Elimination Implementation Plan
 
+> **Status: COMPLETED 2026-06-04** (audits #1-#6 closed; local-contract-audit.mjs = 0 violations).
+
 > **STATUS — 2026-06-04: ✅ COMPLETED, REVIEWED & FIXED.** Dual-handling removed (A dead read fallbacks, A′ camelCase output chains + consumers, B duplicate `x ?? x`); keep-list C preserved (`c5d154be`). Code review found a critical gap → category `config_json` data migration written + applied (`6b030e34`). Behavior findings (#3 keywords / #4 video / #5 is_optional) resolved. Final scan `snake ?? camel` returns only keep-list C. Verified: typecheck 0 · tests green · boundaries ✅. Ops: run `migrate-category-config --apply` on prod D1 at deploy.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -80,7 +82,7 @@ The spec direction is correct and matches `docs/NAMING_CONTRACT.md`: remove dual
 - Read: `docs/CATEGORIES_TABLE_CONTRACT.md`
 - Create temporary notes only if needed; do not commit notes.
 
-- [ ] Run targeted scans:
+- [x] Run targeted scans:
 
 ```powershell
 rg --pcre2 "\?\?\s*\w+\.\w*[A-Z]\w*" src
@@ -89,8 +91,8 @@ rg --pcre2 "\b(recipeYield|recipeCategory|recipeCuisine|suitableForDiet|cookingM
 rg --pcre2 "\b(postsPerPage|layoutMode|cardStyle|showSidebar|showPagination|featuredArticleId|showFeaturedRecipe|showHeroCta|heroCtaText|heroCtaLink)\b" src
 ```
 
-- [ ] Classify each hit as one of: remove now, migrate output+consumer, approved keep-list, or unrelated local variable.
-- [ ] Re-check the spec C keep-list before deleting any fallback.
+- [x] Classify each hit as one of: remove now, migrate output+consumer, approved keep-list, or unrelated local variable.
+- [x] Re-check the spec C keep-list before deleting any fallback.
 
 **Commit:** none yet.
 
@@ -104,10 +106,10 @@ rg --pcre2 "\b(postsPerPage|layoutMode|cardStyle|showSidebar|showPagination|feat
 - Modify: `src/admin/components/BlockEditor/components/block-settings/RoundupListSettings.tsx`
 - Modify: `src/admin/components/BlockEditor/blocks/roundup-serialization.ts`
 
-- [ ] Replace exact duplicates like `x ?? x` with a single canonical read.
-- [ ] For related/roundup article references, keep only `article_id` plus an explicitly justified non-JSON UI fallback such as `id` if the UI object is not persisted JSON.
-- [ ] Add or update a focused test if a touched adapter already has a nearby test.
-- [ ] Verify:
+- [x] Replace exact duplicates like `x ?? x` with a single canonical read.
+- [x] For related/roundup article references, keep only `article_id` plus an explicitly justified non-JSON UI fallback such as `id` if the UI object is not persisted JSON.
+- [x] Add or update a focused test if a touched adapter already has a nearby test.
+- [x] Verify:
 
 ```powershell
 pnpm typecheck
@@ -130,12 +132,12 @@ pnpm check:boundaries
 - Modify: `src/admin/features/settings/pages/Settings.tsx`
 - Modify: `src/modules/settings/types/settings.types.ts`
 
-- [ ] In render/read helpers, keep only snake_case JSON keys for `recipe_json`, `seo_json`, cached rating, TOC, and image variant `size_bytes`.
-- [ ] In article/author/category API helpers, remove camel alias reads inside JSON object normalizers.
-- [ ] Do not remove explicitly flat admin form fields unless they are serialized JSON fields; if a flat camel UI field remains, convert it once into snake_case at the API boundary.
-- [ ] Remove `LegacyTocSettings` and camel TOC API response support.
-- [ ] Add regression tests for `normalizeTocSettings`, SEO parsing, or recipe render normalization if nearby tests exist; otherwise add minimal tests for the highest-risk helper.
-- [ ] Verify:
+- [x] In render/read helpers, keep only snake_case JSON keys for `recipe_json`, `seo_json`, cached rating, TOC, and image variant `size_bytes`.
+- [x] In article/author/category API helpers, remove camel alias reads inside JSON object normalizers.
+- [x] Do not remove explicitly flat admin form fields unless they are serialized JSON fields; if a flat camel UI field remains, convert it once into snake_case at the API boundary.
+- [x] Remove `LegacyTocSettings` and camel TOC API response support.
+- [x] Add regression tests for `normalizeTocSettings`, SEO parsing, or recipe render normalization if nearby tests exist; otherwise add minimal tests for the highest-risk helper.
+- [x] Verify:
 
 ```powershell
 pnpm typecheck
@@ -155,12 +157,12 @@ pnpm check:boundaries
 - Modify: `src/admin/features/authors/components/AuthorSidebar/SEOSection.tsx`
 - Inspect/modify: site author page consumers under `src/pages/authors/**` and `src/site/**author**`
 
-- [ ] Decide the UI boundary: either make the author SEO form state snake_case or keep camel local state and convert once before writing `seo_json`.
-- [ ] Ensure any `seo_json` produced by author admin contains only `meta_title`, `meta_description`, `canonical`, `og_image`, `og_title`, `og_description`, `twitter_card`, and `no_index`.
-- [ ] Stop `seoJsonToFlat` from returning camel JSON aliases; if flat UI fields remain, name them as UI-only fields and never stringify them directly.
-- [ ] Update author sidebar/page consumers to the chosen shape.
-- [ ] Add a test or fixture proving `deprecated camel SEO input` is not read from `seo_json` after this change.
-- [ ] Verify:
+- [x] Decide the UI boundary: either make the author SEO form state snake_case or keep camel local state and convert once before writing `seo_json`.
+- [x] Ensure any `seo_json` produced by author admin contains only `meta_title`, `meta_description`, `canonical`, `og_image`, `og_title`, `og_description`, `twitter_card`, and `no_index`.
+- [x] Stop `seoJsonToFlat` from returning camel JSON aliases; if flat UI fields remain, name them as UI-only fields and never stringify them directly.
+- [x] Update author sidebar/page consumers to the chosen shape.
+- [x] Add a test or fixture proving `deprecated camel SEO input` is not read from `seo_json` after this change.
+- [x] Verify:
 
 ```powershell
 pnpm typecheck
@@ -183,14 +185,14 @@ pnpm check:boundaries
 - Modify: `src/site/components/content/IngredientsSection.astro`
 - Inspect/modify: recipe public components and JSON-LD generators that read `recipeYield`, `aggregateRating`, `isOptional`, or other camel recipe fields.
 
-- [ ] Change stored `RecipeJson` interfaces/defaults to snake_case keys for recipe classification, diet, method/cost, aggregate rating, video upload/content/embed URLs, and ingredient `is_optional`.
-- [ ] Update `formatIngredient`, `flattenIngredients`, and Schema.org output helpers to read snake_case stored keys and output Schema.org names only in JSON-LD objects.
-- [ ] Update `RecipeBuilder.tsx` to emit snake_case recipe JSON. Keep any legacy migration function clearly named and isolated to editor load if still needed.
-- [ ] Update hydration to avoid mapping stored `is_optional` back to `isOptional`.
-- [ ] Update public components to consume `is_optional`.
-- [ ] Remove camel read fallbacks from `normalizeRecipeJson` except explicitly named legacy migration helpers, if those helpers are still required for editor-only old drafts.
-- [ ] Add tests for one recipe with camel aliases rejected/ignored and one canonical snake_case recipe rendering correctly.
-- [ ] Verify:
+- [x] Change stored `RecipeJson` interfaces/defaults to snake_case keys for recipe classification, diet, method/cost, aggregate rating, video upload/content/embed URLs, and ingredient `is_optional`.
+- [x] Update `formatIngredient`, `flattenIngredients`, and Schema.org output helpers to read snake_case stored keys and output Schema.org names only in JSON-LD objects.
+- [x] Update `RecipeBuilder.tsx` to emit snake_case recipe JSON. Keep any legacy migration function clearly named and isolated to editor load if still needed.
+- [x] Update hydration to avoid mapping stored `is_optional` back to `isOptional`.
+- [x] Update public components to consume `is_optional`.
+- [x] Remove camel read fallbacks from `normalizeRecipeJson` except explicitly named legacy migration helpers, if those helpers are still required for editor-only old drafts.
+- [x] Add tests for one recipe with camel aliases rejected/ignored and one canonical snake_case recipe rendering correctly.
+- [x] Verify:
 
 ```powershell
 pnpm typecheck
@@ -212,12 +214,12 @@ pnpm check:boundaries
 - Modify: `src/site/components/ArticleGrid.astro`
 - Inspect/modify: category admin/editor consumers under `src/admin/features/categories/**`
 
-- [ ] Change category config normalized output from `postsPerPage`, `layoutMode`, `featuredArticleId`, `showFeaturedRecipe`, `showHeroCta`, etc. to `posts_per_page`, `layout_mode`, `featured_article_id`, `show_featured_recipe`, `show_hero_cta`, etc.
-- [ ] Keep the current behavior and defaults; do not add config fields beyond what existing code already uses.
-- [ ] Update site category page/components to read the snake_case config/hydrated fields.
-- [ ] Remove camel fallback reads from category SEO/image/config normalizers except approved keep-list items.
-- [ ] Add or update category helper tests proving snake_case config is emitted and camel aliases are not accepted from stored JSON.
-- [ ] Verify:
+- [x] Change category config normalized output from `postsPerPage`, `layoutMode`, `featuredArticleId`, `showFeaturedRecipe`, `showHeroCta`, etc. to `posts_per_page`, `layout_mode`, `featured_article_id`, `show_featured_recipe`, `show_hero_cta`, etc.
+- [x] Keep the current behavior and defaults; do not add config fields beyond what existing code already uses.
+- [x] Update site category page/components to read the snake_case config/hydrated fields.
+- [x] Remove camel fallback reads from category SEO/image/config normalizers except approved keep-list items.
+- [x] Add or update category helper tests proving snake_case config is emitted and camel aliases are not accepted from stored JSON.
+- [x] Verify:
 
 ```powershell
 pnpm typecheck
@@ -239,7 +241,7 @@ pnpm check:boundaries
   - `src/admin/features/templates/**`
   - `src/modules/content-blocks/**`
 
-- [ ] Confirm these remain intact where applicable:
+- [x] Confirm these remain intact where applicable:
   - `images.thumbnail ?? images.hero`
   - image variant fallback order
   - `SETTINGS_CACHE ?? SESSION`
@@ -248,7 +250,7 @@ pnpm check:boundaries
   - cache-builder category id fallback
   - TemplateEditor width/height UI fallback
   - editor-to-stored conversion arms for content blocks and image contracts
-- [ ] If a scan flags these patterns, document them in code review notes rather than deleting them.
+- [x] If a scan flags these patterns, document them in code review notes rather than deleting them.
 
 **Commit:** include with previous task only if no code changes; otherwise `test: document json fallback keep list`.
 
@@ -259,7 +261,7 @@ pnpm check:boundaries
 **Files:**
 - All touched files.
 
-- [ ] Run forbidden-pattern scans and manually classify any remaining hits:
+- [x] Run forbidden-pattern scans and manually classify any remaining hits:
 
 ```powershell
 rg --pcre2 "\?\?\s*\w+\.\w*[A-Z]\w*" src
@@ -268,8 +270,8 @@ rg --pcre2 "\b(recipeYield|recipeCategory|recipeCuisine|suitableForDiet|cookingM
 rg --pcre2 "\b(postsPerPage|layoutMode|cardStyle|showSidebar|showPagination|featuredArticleId|showFeaturedRecipe|showHeroCta|heroCtaText|heroCtaLink)\b" src
 ```
 
-- [ ] Confirm remaining camel hits are local UI state, third-party Schema.org output names, or spec C keep-list items.
-- [ ] Run full allowed verification:
+- [x] Confirm remaining camel hits are local UI state, third-party Schema.org output names, or spec C keep-list items.
+- [x] Run full allowed verification:
 
 ```powershell
 pnpm typecheck
@@ -277,8 +279,8 @@ pnpm test
 pnpm check:boundaries
 ```
 
-- [ ] Do not run `pnpm build` unless the user explicitly approves.
-- [ ] Prepare a short review note listing remaining intentional camelCase local variables and keep-list exceptions.
+- [x] Do not run `pnpm build` unless the user explicitly approves.
+- [x] Prepare a short review note listing remaining intentional camelCase local variables and keep-list exceptions.
 
 **Commit:** `test: verify json snake case cleanup`
 

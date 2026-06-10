@@ -1,5 +1,7 @@
 # Media Snake Case Task 7b Implementation Plan
 
+> **Status: COMPLETED** (merged with the media snake_case migration).
+
 > **STATUS — 2026-06-04: ✅ COMPLETED.** Final media snake_case cleanup task executed as part of the media pilot completion. Verified green.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -41,7 +43,7 @@
 - Modify: `src/admin/features/categories/pages/CategoryEditor.tsx`
 - Modify: `src/admin/features/articles/pages/shared/useContentEditor.ts`
 
-- [ ] **Step 1: Write the failing grep expectation for admin media item typings**
+- [x] **Step 1: Write the failing grep expectation for admin media item typings**
 
 Run:
 
@@ -51,7 +53,7 @@ pnpm exec rg "altText\?:" src/admin/features/categories/pages/CategoryEditor.tsx
 
 Expected: current output includes `altText?:` in these media-selection item types.
 
-- [ ] **Step 2: Remove `altText` from the CategoryEditor media select callback type**
+- [x] **Step 2: Remove `altText` from the CategoryEditor media select callback type**
 
 In `src/admin/features/categories/pages/CategoryEditor.tsx`, replace:
 
@@ -65,7 +67,7 @@ With:
 const handleMediaSelect = (item: Record<string, unknown>) => {
 ```
 
-- [ ] **Step 3: Remove `altText` from the content editor local MediaItem type**
+- [x] **Step 3: Remove `altText` from the content editor local MediaItem type**
 
 In `src/admin/features/articles/pages/shared/useContentEditor.ts`, replace the local media item typing block from:
 
@@ -88,7 +90,7 @@ interface MediaItem {
 }
 ```
 
-- [ ] **Step 4: Re-run the grep to prove the fallback typing is gone**
+- [x] **Step 4: Re-run the grep to prove the fallback typing is gone**
 
 Run:
 
@@ -98,7 +100,7 @@ pnpm exec rg "altText\?:" src/admin/features/categories/pages/CategoryEditor.tsx
 
 Expected: no matches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add "src/admin/features/categories/pages/CategoryEditor.tsx" "src/admin/features/articles/pages/shared/useContentEditor.ts"
@@ -110,7 +112,7 @@ git commit -m "refactor(media): remove admin altText media typings"
 **Files:**
 - Modify: `src/admin/components/BlockEditor/components/block-settings/helpers.ts`
 
-- [ ] **Step 1: Write the failing grep expectation for BlockEditor media payload compatibility**
+- [x] **Step 1: Write the failing grep expectation for BlockEditor media payload compatibility**
 
 Run:
 
@@ -120,7 +122,7 @@ pnpm exec rg "altText|variantsJson" src/admin/components/BlockEditor/components/
 
 Expected: output currently includes `altText` in `MediaSelectPayload` / `UploadPayload` and `variantsJson` in helper output.
 
-- [ ] **Step 2: Remove `altText` from media payload types and use snake_case-only input**
+- [x] **Step 2: Remove `altText` from media payload types and use snake_case-only input**
 
 In `src/admin/components/BlockEditor/components/block-settings/helpers.ts`, replace:
 
@@ -187,7 +189,7 @@ With:
 alt: data.alt_text || '',
 ```
 
-- [ ] **Step 3: Decide whether `variantsJson` is a real compat seam or an editor-internal output key**
+- [x] **Step 3: Decide whether `variantsJson` is a real compat seam or an editor-internal output key**
 
 Read the surrounding file and verify whether `variantsJson` is being emitted as a BlockEditor prop contract rather than a media-row input fallback.
 
@@ -195,7 +197,7 @@ If it is an editor-internal prop contract, leave it unchanged and record that in
 
 If it is a media input fallback, replace it with the canonical snake_case output key expected by the downstream consumer.
 
-- [ ] **Step 4: Re-run the grep and record the remaining intentional result**
+- [x] **Step 4: Re-run the grep and record the remaining intentional result**
 
 Run:
 
@@ -207,7 +209,7 @@ Expected:
 - `altText` no longer appears.
 - `variantsJson` remains only if it is confirmed to be an editor-internal prop/output contract rather than media-row compatibility.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add "src/admin/components/BlockEditor/components/block-settings/helpers.ts"
@@ -220,7 +222,7 @@ git commit -m "refactor(media): remove block settings altText fallback"
 - Modify: `src/modules/authors/api/helpers.ts`
 - Modify: `src/modules/categories/api/helpers.ts`
 
-- [ ] **Step 1: Write the failing grep expectation for app-owned slot fallback reads**
+- [x] **Step 1: Write the failing grep expectation for app-owned slot fallback reads**
 
 Run:
 
@@ -230,7 +232,7 @@ pnpm exec rg "mediaId|aspectRatio|focalPoint" src/modules/authors/api/helpers.ts
 
 Expected: matches currently show camelCase slot fallback reads.
 
-- [ ] **Step 2: Remove `mediaId` / `aspectRatio` / `focalPoint` fallback from author image slot normalization**
+- [x] **Step 2: Remove `mediaId` / `aspectRatio` / `focalPoint` fallback from author image slot normalization**
 
 In `src/modules/authors/api/helpers.ts`, replace the normalization block from:
 
@@ -268,7 +270,7 @@ const normalized: StoredImageSlot = {
 if (slot.focal_point && typeof slot.focal_point === 'object') normalized.focal_point = slot.focal_point as StoredImageSlot['focal_point'];
 ```
 
-- [ ] **Step 3: Remove `mediaId` / `aspectRatio` / `focalPoint` fallback from category image slot normalization**
+- [x] **Step 3: Remove `mediaId` / `aspectRatio` / `focalPoint` fallback from category image slot normalization**
 
 In `src/modules/categories/api/helpers.ts`, replace:
 
@@ -304,7 +306,7 @@ return {
 };
 ```
 
-- [ ] **Step 4: Re-run the grep to prove the app-owned slot fallbacks are gone**
+- [x] **Step 4: Re-run the grep to prove the app-owned slot fallbacks are gone**
 
 Run:
 
@@ -314,7 +316,7 @@ pnpm exec rg "mediaId|aspectRatio|focalPoint" src/modules/authors/api/helpers.ts
 
 Expected: no matches in these files.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add "src/modules/authors/api/helpers.ts" "src/modules/categories/api/helpers.ts"
@@ -327,7 +329,7 @@ git commit -m "refactor(media): remove module slot camel case fallbacks"
 - Modify: `src/shared/types/images.ts` (only if the current camelCase support is truly a media-pilot compat seam)
 - Modify: `docs/superpowers/plans/2026-06-04-media-snake-case-pure.md` only if you need to correct the stale Task 4 path reference during wrap-up; otherwise leave plan docs untouched
 
-- [ ] **Step 1: Inspect `src/shared/types/images.ts` and classify each camelCase support path**
+- [x] **Step 1: Inspect `src/shared/types/images.ts` and classify each camelCase support path**
 
 Review these current compat points in `src/shared/types/images.ts`:
 
@@ -339,7 +341,7 @@ Decide per item:
 - keep if it is a documented external/legacy boundary outside the media pilot,
 - remove if it is an app-owned media-pilot compat seam still masking drift.
 
-- [ ] **Step 2: If `variantsJson` is still used in shared type helpers for app-owned media pilot input, remove it**
+- [x] **Step 2: If `variantsJson` is still used in shared type helpers for app-owned media pilot input, remove it**
 
 If the file contains code like:
 
@@ -355,7 +357,7 @@ const json = item.variants_json;
 
 Do the same for any app-owned `r2Key` / `sizeBytes` fallback that is not a documented exception.
 
-- [ ] **Step 3: Run the focused Task 7 search again and inspect every remaining match**
+- [x] **Step 3: Run the focused Task 7 search again and inspect every remaining match**
 
 Run:
 
@@ -368,7 +370,7 @@ Expected remaining matches should be limited to:
 - local UI-only camelCase state/variables
 - documented exception-boundary helpers you deliberately kept and can justify against `docs/NAMING_CONTRACT.md`
 
-- [ ] **Step 4: Run full verification**
+- [x] **Step 4: Run full verification**
 
 Run:
 
@@ -381,7 +383,7 @@ Expected:
 - tests pass
 - boundaries pass
 
-- [ ] **Step 5: Write the final exception summary in your handoff / PR notes and commit**
+- [x] **Step 5: Write the final exception summary in your handoff / PR notes and commit**
 
 Record this exact structure in your notes:
 

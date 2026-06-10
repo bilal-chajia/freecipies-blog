@@ -1,5 +1,7 @@
 # Template Editor Refactor — Phases 0-2 Implementation Plan
 
+> **Status: COMPLETED** (phases 0-2 merged to main; TEMPLATE_JSON_CONTRACT.md created).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Establish a functional baseline, remove dead code and boundary violations, then make the template editor's in-memory data shape identical to the stored snake_case JSON, governed by a new `docs/TEMPLATE_JSON_CONTRACT.md`.
@@ -27,54 +29,54 @@
 **Files:**
 - Create: `docs/superpowers/specs/2026-06-09-template-editor-baseline.md`
 
-- [ ] **Step 0.1: Start the dev server**
+- [x] **Step 0.1: Start the dev server**
 
 Run in the worktree: `pnpm dev`
 Open `http://localhost:4321/admin/templates` (templates list) and the editor at `/admin/templates/<slug>` or via "new template".
 
-- [ ] **Step 0.2: Guided functional tour — user drives, agent records**
+- [x] **Step 0.2: Guided functional tour — user drives, agent records**
 
 Walk through this checklist with the user. For each item record: ✅ works / 🐛 buggy (describe) / ❌ broken / ➖ not present.
 
 ```markdown
 ## Editor baseline checklist
 ### Templates list
-- [ ] List loads, thumbnails shown
-- [ ] Create new template
-- [ ] Duplicate template
-- [ ] Delete template
-- [ ] Open existing template
+- [x] List loads, thumbnails shown
+- [x] Create new template
+- [x] Duplicate template
+- [x] Delete template
+- [x] Open existing template
 ### Canvas basics
-- [ ] Add text element / image slot / shape / logo / overlay
-- [ ] Drag, resize, rotate an element
-- [ ] Multi-select (shift-click), drag multi-selection
-- [ ] Smart guides / snapping appear during drag
-- [ ] Zoom in/out, grid toggle
-- [ ] Lock/unlock element; locked element resists drag
-- [ ] Layer reorder (list drag, bring to front / send to back)
-- [ ] Delete element, duplicate element
+- [x] Add text element / image slot / shape / logo / overlay
+- [x] Drag, resize, rotate an element
+- [x] Multi-select (shift-click), drag multi-selection
+- [x] Smart guides / snapping appear during drag
+- [x] Zoom in/out, grid toggle
+- [x] Lock/unlock element; locked element resists drag
+- [x] Layer reorder (list drag, bring to front / send to back)
+- [x] Delete element, duplicate element
 ### Text
-- [ ] Edit text content, font family, size, weight, color, align
-- [ ] Custom font upload + applies on canvas
-- [ ] Text effects panel (shadow, outline, …) applies
-- [ ] Binding {{article.title}} renders placeholder
+- [x] Edit text content, font family, size, weight, color, align
+- [x] Custom font upload + applies on canvas
+- [x] Text effects panel (shadow, outline, …) applies
+- [x] Binding {{article.title}} renders placeholder
 ### Image slot
-- [ ] Set image (upload / URL), fit modes, offset/scale
-- [ ] **Reload test:** set image_url, save, reload page → is the image still there? (expected 🐛 lost — latent bug)
+- [x] Set image (upload / URL), fit modes, offset/scale
+- [x] **Reload test:** set image_url, save, reload page → is the image still there? (expected 🐛 lost — latent bug)
 ### Persistence & history
-- [ ] Undo / redo (buttons + Ctrl+Z / Ctrl+Y)
-- [ ] Save; "unsaved changes" indicator clears
-- [ ] Reload page → all elements identical (position, style, content)
-- [ ] Keyboard shortcuts (arrows nudge, Delete)
+- [x] Undo / redo (buttons + Ctrl+Z / Ctrl+Y)
+- [x] Save; "unsaved changes" indicator clears
+- [x] Reload page → all elements identical (position, style, content)
+- [x] Keyboard shortcuts (arrows nudge, Delete)
 ### Export
-- [ ] PNG/JPEG export produces correct image
+- [x] PNG/JPEG export produces correct image
 ```
 
-- [ ] **Step 0.3: Write the baseline doc**
+- [x] **Step 0.3: Write the baseline doc**
 
 Save the filled checklist + bug notes to `docs/superpowers/specs/2026-06-09-template-editor-baseline.md`. This is the non-regression checklist for all later phases.
 
-- [ ] **Step 0.4: Commit**
+- [x] **Step 0.4: Commit**
 
 ```bash
 git add docs/superpowers/specs/2026-06-09-template-editor-baseline.md
@@ -90,7 +92,7 @@ git commit -m "docs(templates): functional baseline audit of template editor"
 - Delete: `src/modules/templates/components/` (entire dir — only contains orphan `canvas/hooks/useCustomFontLoader.js`)
 - Delete: `src/admin/features/templates/store/store.types.ts` (zero importers; the store defines its own types inline)
 
-- [ ] **Step 1.1: Prove the files are dead**
+- [x] **Step 1.1: Prove the files are dead**
 
 ```bash
 grep -rn "modules/templates/store\|modules/templates/components" src --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" | grep -v "^src/modules/templates"
@@ -98,7 +100,7 @@ grep -rn "store.types\|store/store.types" src --include="*.ts" --include="*.tsx"
 ```
 Expected: both commands print nothing (exit 1). If anything prints, STOP and re-evaluate — do not delete.
 
-- [ ] **Step 1.2: Delete**
+- [x] **Step 1.2: Delete**
 
 ```bash
 git rm src/modules/templates/store/useEditorStore.ts
@@ -106,11 +108,11 @@ git rm -r src/modules/templates/components
 git rm src/admin/features/templates/store/store.types.ts
 ```
 
-- [ ] **Step 1.3: Verify**
+- [x] **Step 1.3: Verify**
 
 Run: `pnpm test` → all tests pass. Run: `pnpm check:boundaries` → green.
 
-- [ ] **Step 1.4: Commit**
+- [x] **Step 1.4: Commit**
 
 ```bash
 git commit -m "chore(templates): remove dead module store, orphan js hook, unused store.types"
@@ -129,14 +131,14 @@ git commit -m "chore(templates): remove dead module store, orphan js hook, unuse
 
 Context: `FONTS` and `COLOR_PRESETS` already live in `canvas/utils/editorConstants.ts`; `ElementPanel.tsx` merely re-exports them, forcing consumers to import a 941-line legacy component for a constant.
 
-- [ ] **Step 2.1: Find every importer of ElementPanel re-exports**
+- [x] **Step 2.1: Find every importer of ElementPanel re-exports**
 
 ```bash
 grep -rn "from.*ElementPanel" src --include="*.tsx" --include="*.ts"
 ```
 Expected importers: `PinCreator.tsx`, `TemplateEditor.tsx`, `components/index.ts` (plus ElementPanel itself). If more appear, apply the same rewrite to them.
 
-- [ ] **Step 2.2: Point importers at editorConstants**
+- [x] **Step 2.2: Point importers at editorConstants**
 
 In `TemplateEditor.tsx` line 8:
 ```typescript
@@ -172,7 +174,7 @@ export { ElementPanel, AddElementPanel };
 ```
 (If other files imported `COLOR_PRESETS` from ElementPanel in Step 2.1, rewrite them to editorConstants too.)
 
-- [ ] **Step 2.3: Replace deep relative imports with aliases**
+- [x] **Step 2.3: Replace deep relative imports with aliases**
 
 In `TemplateEditor.tsx` line 15:
 ```typescript
@@ -196,12 +198,12 @@ grep -rn "\.\./\.\./\.\./\.\./.*modules/templates" src/admin --include="*.tsx" -
 ```
 Expected: nothing.
 
-- [ ] **Step 2.4: Verify + manual check**
+- [x] **Step 2.4: Verify + manual check**
 
 Run: `pnpm test` and `pnpm check:boundaries` → green.
 **STOP — user verification:** open the editor, confirm font dropdown lists fonts, open PinCreator screen, confirm it renders.
 
-- [ ] **Step 2.5: Commit**
+- [x] **Step 2.5: Commit**
 
 ```bash
 git commit -am "refactor(templates): import FONTS/COLOR_PRESETS from editorConstants, alias deep relative imports"
@@ -214,7 +216,7 @@ git commit -am "refactor(templates): import FONTS/COLOR_PRESETS from editorConst
 **Files:**
 - Create: `docs/TEMPLATE_JSON_CONTRACT.md`
 
-- [ ] **Step 3.1: Write the contract**
+- [x] **Step 3.1: Write the contract**
 
 Create `docs/TEMPLATE_JSON_CONTRACT.md` with this content (informed by the Task 0 baseline — adjust property lists ONLY if the audit proved a property is dead; otherwise keep as-is):
 
@@ -308,7 +310,7 @@ fill? (rgba string)
    and mirror this contract 1:1.
 ```
 
-- [ ] **Step 3.2: Commit**
+- [x] **Step 3.2: Commit**
 
 ```bash
 git add docs/TEMPLATE_JSON_CONTRACT.md
@@ -325,7 +327,7 @@ git commit -m "docs(templates): add TEMPLATE_JSON_CONTRACT as source of truth fo
 - Rewrite: `src/modules/templates/utils/elementSerialization.ts`
 - Rewrite test: `src/modules/templates/utils/__tests__/elementSerialization.test.ts`
 
-- [ ] **Step 4.1: Rewrite the serialization test (TDD — new canonical expectations)**
+- [x] **Step 4.1: Rewrite the serialization test (TDD — new canonical expectations)**
 
 Replace the whole test file with:
 
@@ -383,12 +385,12 @@ describe('template element serialization (canonical snake_case)', () => {
 });
 ```
 
-- [ ] **Step 4.2: Run the test — must fail**
+- [x] **Step 4.2: Run the test — must fail**
 
 Run: `pnpm test -- elementSerialization`
 Expected: FAIL — `parseStoredTemplateElements` is not exported.
 
-- [ ] **Step 4.3: Rewrite elements.types.ts (canonical, merged from store + module shapes)**
+- [x] **Step 4.3: Rewrite elements.types.ts (canonical, merged from store + module shapes)**
 
 Replace the whole file with:
 
@@ -530,7 +532,7 @@ export function isOverlayElement(el: TemplateElement): el is OverlayElement {
 
 Note: the old module file had an `ImageElement` (`type: 'image'`) and `isImageElement` — `'image'` does not exist in stored data (the editor never produced it); it is replaced by `ImageSlotElement`. Step 4.6 greps for stale references.
 
-- [ ] **Step 4.4: Rewrite elementSerialization.ts (identity + validation only)**
+- [x] **Step 4.4: Rewrite elementSerialization.ts (identity + validation only)**
 
 Replace the whole file with:
 
@@ -565,7 +567,7 @@ export function parseStoredTemplateElements(
 
 (`toStoredTemplateElements` / `toEditorTemplateElements` are deleted. Importers are fixed in Steps 4.5 and Task 5.)
 
-- [ ] **Step 4.5: Fix templates.types.ts**
+- [x] **Step 4.5: Fix templates.types.ts**
 
 Line 8:
 ```typescript
@@ -582,19 +584,19 @@ Line 122 in `hydrateTemplate`:
     elements: parseStoredTemplateElements(row.elements_json),
 ```
 
-- [ ] **Step 4.6: Sweep for stale references**
+- [x] **Step 4.6: Sweep for stale references**
 
 ```bash
 grep -rn "toEditorTemplateElements\|toStoredTemplateElements\|isImageElement\|'image'" src/modules/templates src/admin/features/templates --include="*.ts" --include="*.tsx"
 ```
 Fix every hit: serializer call sites → `parseStoredTemplateElements` / `stringifyStoredTemplateElements`; `isImageElement` → `isImageSlotElement`. (The admin store call site is handled in Task 5 — if Task 5 runs immediately after, leaving it red until then is fine, but tests must pass before commit.)
 
-- [ ] **Step 4.7: Run tests**
+- [x] **Step 4.7: Run tests**
 
 Run: `pnpm test -- elementSerialization`
 Expected: PASS (4 tests).
 
-- [ ] **Step 4.8: Commit (together with Task 5 if the store import breaks compile — see Task 5 note)**
+- [x] **Step 4.8: Commit (together with Task 5 if the store import breaks compile — see Task 5 note)**
 
 ```bash
 git add -A
@@ -611,14 +613,14 @@ git commit -m "feat(templates): canonical snake_case element types + identity se
 
 Note: if `pnpm test` cannot pass at the end of Task 4 because the store still imports the deleted `toEditorTemplateElements`, fold Task 4's commit into this task's commit — one atomic "canonicalization core" commit. Never commit with red tests.
 
-- [ ] **Step 5.1: Verify local D1 data is already canonical**
+- [x] **Step 5.1: Verify local D1 data is already canonical**
 
 ```bash
 pnpm exec wrangler d1 execute DB --local --command "SELECT slug, substr(elements_json, 1, 200) FROM pin_templates LIMIT 5"
 ```
 Expected: keys in snake_case (`font_family`, `image_url`, type `image_slot`). If ANY camelCase key or `imageSlot` type appears, STOP and write a one-off migration script modeled on `src/modules/categories/__tests__/migrate-category-config.test.ts` patterns before proceeding.
 
-- [ ] **Step 5.2: Replace the store's inline types with module imports**
+- [x] **Step 5.2: Replace the store's inline types with module imports**
 
 In `useEditorStore.ts`, delete the inline definitions of `ElementType`, `TextShadow`, `TextEffect`, `TextBackground`, `BaseElement`, `TextElement`, `ImageSlotElement`, `ShapeElement`, `LogoElement`, `OverlayElement`, `EditorElement` (lines 27-132) and replace with:
 
@@ -652,7 +654,7 @@ export type {
 ```
 This keeps every existing `import type { EditorElement, ElementType } from '@admin/features/templates/store/useEditorStore'` working unchanged.
 
-- [ ] **Step 5.3: Replace the serializer call**
+- [x] **Step 5.3: Replace the serializer call**
 
 Line 16 import:
 ```typescript
@@ -669,7 +671,7 @@ In `loadTemplateToStore`:
       const parsedElements = parseStoredTemplateElements(elements_json);
 ```
 
-- [ ] **Step 5.4: Fix `addElement` height check**
+- [x] **Step 5.4: Fix `addElement` height check**
 
 `addElement` uses `type === 'text' ? 50 : 200` — unchanged, but `generateId(type)` now produces ids like `image_slot-<uuid>` instead of `imageSlot-<uuid>`. This is fine (ids are opaque), but verify no code parses element ids to recover the type:
 ```bash
@@ -677,7 +679,7 @@ grep -rn "split('-')\|startsWith('imageSlot\|startsWith(\"imageSlot" src/admin -
 ```
 Expected: nothing. If hits exist, fix them to read `el.type` instead.
 
-- [ ] **Step 5.5: Update the store test**
+- [x] **Step 5.5: Update the store test**
 
 In `store/__tests__/useEditorStore.test.ts`, replace every `'imageSlot'` with `'image_slot'` and every camelCase element prop with its snake_case equivalent per the Task 6 rename map. Run:
 ```bash
@@ -685,11 +687,11 @@ pnpm test -- useEditorStore
 ```
 Expected: PASS.
 
-- [ ] **Step 5.6: Full test run + boundaries**
+- [x] **Step 5.6: Full test run + boundaries**
 
 Run: `pnpm test` and `pnpm check:boundaries` → green. (React components still use camelCase props — that's type errors at `astro check` level, not vitest failures; they are fixed in Task 6 immediately after. Do NOT pause for browser verification between Tasks 5 and 6: the app is functionally broken mid-migration.)
 
-- [ ] **Step 5.7: Commit**
+- [x] **Step 5.7: Commit**
 
 ```bash
 git add -A
@@ -751,7 +753,7 @@ git commit -m "feat(templates): admin store consumes canonical snake_case elemen
 | `cornerRadius` | `corner_radius` (shape uses `border_radius`; rename only if the prop reads element data) |
 | `offsetX` / `offsetY` (TextShadow) | `offset_x` / `offset_y` |
 
-- [ ] **Step 6.1: ⚠️ CRITICAL — do NOT blind sed. CSS collision warning**
+- [x] **Step 6.1: ⚠️ CRITICAL — do NOT blind sed. CSS collision warning**
 
 `borderRadius`, `fontFamily`, `fontSize`, `fontWeight`, `letterSpacing`, `lineHeight`, `textAlign`, `textTransform`, `textDecoration` are ALSO valid React CSS style props (`style={{ borderRadius: 8 }}`) and Konva node attrs (`fontFamily` on `Konva.Text`). Rename ONLY accesses on element data objects (`el.fontSize`, `element.borderRadius`, `updates: { fontFamily: v }` passed to `updateElement`). KEEP camelCase when the identifier is:
 1. a React `style={{ … }}` object key,
@@ -764,11 +766,11 @@ grep -rn "fontFamily\|fontSize\|fontWeight\|fontStyle\|textAlign\|verticalAlign\
 ```
 For each file, open it, classify every hit (element data vs CSS/Konva), rename only element-data accesses.
 
-- [ ] **Step 6.2: After each file, run the test suite**
+- [x] **Step 6.2: After each file, run the test suite**
 
 Run: `pnpm test` → must stay green after every file.
 
-- [ ] **Step 6.3: Type-level sweep**
+- [x] **Step 6.3: Type-level sweep**
 
 Run Astro/TS checking to catch missed renames:
 ```bash
@@ -776,18 +778,18 @@ pnpm exec astro check 2>&1 | grep -i "templates\|pins" | head -40
 ```
 Expected: no NEW errors in templates/pins files versus the count before Task 4 (capture the before-count at the start of Task 4 with the same command). Fix any new ones.
 
-- [ ] **Step 6.4: Residual grep — element-data camelCase must be gone**
+- [x] **Step 6.4: Residual grep — element-data camelCase must be gone**
 
 ```bash
 grep -rn "\.fontSize\b\|\.fontFamily\b\|\.borderRadius\b\|\.imageOffset\b\|\.sourceType\b\|\.shapeType\b\|\.clipRadius\b\|'imageSlot'" src/admin/features/templates src/admin/features/pins --include="*.tsx" --include="*.ts" | grep -v "style=\|Konva\|node\."
 ```
 Review every remaining hit — each must be a justified Konva/CSS usage.
 
-- [ ] **Step 6.5: STOP — full user verification against the baseline**
+- [x] **Step 6.5: STOP — full user verification against the baseline**
 
 User runs the COMPLETE Task 0 baseline checklist in the browser. Every ✅ from the baseline must still be ✅. The image slot reload bug (`image_url` lost) must now be FIXED — image survives save → reload.
 
-- [ ] **Step 6.6: Commit**
+- [x] **Step 6.6: Commit**
 
 ```bash
 git add -A
@@ -801,7 +803,7 @@ git commit -m "feat(templates): admin UI consumes canonical snake_case element p
 **Files:**
 - Create: `src/modules/templates/utils/__tests__/element-contract.test.ts`
 
-- [ ] **Step 7.1: Write a contract-conformance test**
+- [x] **Step 7.1: Write a contract-conformance test**
 
 ```typescript
 import { describe, expect, it } from 'vitest';
@@ -840,23 +842,23 @@ describe('TEMPLATE_JSON_CONTRACT conformance', () => {
 });
 ```
 
-- [ ] **Step 7.2: Run it**
+- [x] **Step 7.2: Run it**
 
 Run: `pnpm test -- element-contract`
 Expected: PASS.
 
-- [ ] **Step 7.3: Full suite + boundaries, final**
+- [x] **Step 7.3: Full suite + boundaries, final**
 
 Run: `pnpm test` (all green) and `pnpm check:boundaries` (green).
 
-- [ ] **Step 7.4: Commit**
+- [x] **Step 7.4: Commit**
 
 ```bash
 git add src/modules/templates/utils/__tests__/element-contract.test.ts
 git commit -m "test(templates): contract-conformance test for canonical element JSON"
 ```
 
-- [ ] **Step 7.5: Update the spec status + queue phases 3-5**
+- [x] **Step 7.5: Update the spec status + queue phases 3-5**
 
 Edit `docs/superpowers/specs/2026-06-09-template-editor-refactor-design.md` header: `**Status:** Phases 0-2 complete — phases 3-5 (store slices, component split, perf) pending their own plan.` Commit:
 ```bash

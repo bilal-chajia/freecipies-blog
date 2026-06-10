@@ -1,5 +1,7 @@
 # snake_case End-to-End Migration (All Resources) Implementation Plan
 
+> **Status: COMPLETED 2026-06-04** (all Drizzle-backed resources snake_case end to end; see NAMING_CONTRACT migration note).
+
 > **STATUS — 2026-06-04: ✅ COMPLETED & VERIFIED.** All 9 Drizzle resources (settings, articles_to_tags, tags, templates, redirects, equipment, categories, authors, pinterest, articles) migrated to snake_case end to end; NAMING_CONTRACT migration-status note updated. Verified: typecheck 0 · tests green · boundaries ✅ · contract audit no camelCase data violations.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -37,12 +39,12 @@
 Inputs each task supplies: `<RES>` (resource label), `<SCHEMA_GLOB>`, the **field rename map**, and
 the **commit message**.
 
-- [ ] **G1: Snapshot the green baseline**
+- [x] **G1: Snapshot the green baseline**
 
 Run: `pnpm test && pnpm check:boundaries && node scripts/local-contract-audit.mjs --summary`
 Expected: tests PASS, "Boundary check passed.", and note the current violation count (baseline).
 
-- [ ] **G2: Rename the Drizzle field names in the schema**
+- [x] **G2: Rename the Drizzle field names in the schema**
 
 In `<SCHEMA_GLOB>`, for every entry in the field rename map, change only the JS property name to
 match its column literal. Example transform:
@@ -58,7 +60,7 @@ Also update every in-file reference: `(table) => [...]` index/constraint builder
 (e.g. `index('idx_x').on(table.sortOrder)` → `.on(table.sort_order)`) and any `relations(...)`
 `fields`/`references` arrays in the same file.
 
-- [ ] **G3: Find every downstream reference to the old names**
+- [x] **G3: Find every downstream reference to the old names**
 
 Run (one alternation of all OLD camelCase names from the map):
 `rg -n "\.(oldName1|oldName2|...)\b" src --glob '!**/*.test.ts' --glob '!**/*.test.tsx'`
@@ -67,26 +69,26 @@ Also run without the leading dot to catch object-literal keys and destructuring:
 Expected: a list of files to fix in G4. Ignore matches that are CSS/DOM props, local variables, or
 JSON-blob string contents (per Scope notes).
 
-- [ ] **G4: Update every data-key reference to snake_case**
+- [x] **G4: Update every data-key reference to snake_case**
 
 For each file from G3, rename the data-key usages to snake_case: service queries
 (`where`/`orderBy`/`with`), API handler payload construction, Zod schema keys (drop any
 `x.fooBar ?? x.foo_bar` fallback — keep snake only), serializers, admin SPA reads, `src/shared/types`
 type members, and test fixtures. Leave CSS/DOM/local-variable camelCase untouched.
 
-- [ ] **G5: Re-grep to confirm zero residual data-key seams**
+- [x] **G5: Re-grep to confirm zero residual data-key seams**
 
 Run: `rg -n "\b(oldName1|oldName2|...)\b" src --glob '!**/*.test.ts'`
 Expected: only CSS/DOM props, local variables, or JSON-blob string literals remain (no Drizzle row
 field, payload key, or type member). No `x ?? x` / `x || x` dedup remnants.
 
-- [ ] **G6: Run the full regression gate**
+- [x] **G6: Run the full regression gate**
 
 Run: `pnpm test && pnpm check:boundaries && node scripts/local-contract-audit.mjs --summary`
 Expected: tests PASS, "Boundary check passed.", and violation count **≤ G1 baseline** (no new
 camelCase violation for `<RES>`).
 
-- [ ] **G7: Commit**
+- [x] **G7: Commit**
 
 ```bash
 git add -A
@@ -103,7 +105,7 @@ git commit -m "<COMMIT MESSAGE>"
 
 **Field rename map:** `sortOrder`→`sort_order`, `updatedAt`→`updated_at`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with the map above.
+- [x] Run the Generic Migration Procedure (G1–G7) with the map above.
   - G3/G5 alternation: `(sortOrder|updatedAt)`
   - G7 commit message:
     `refactor(settings): migrate data shapes to snake_case end to end (audit #3)`
@@ -116,7 +118,7 @@ git commit -m "<COMMIT MESSAGE>"
 
 **Field rename map:** `articleId`→`article_id`, `tagId`→`tag_id`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with the map above.
+- [x] Run the Generic Migration Procedure (G1–G7) with the map above.
   - G3/G5 alternation: `(articleId|tagId)` — NOTE: `articleId`/`tagId` are common names; scope the
     grep to join-row usage (`articlesToTags`, `article_tags`) and verify each hit is the join row,
     not an unrelated local. Do not rename unrelated `articleId` locals.
@@ -132,7 +134,7 @@ git commit -m "<COMMIT MESSAGE>"
 **Field rename map:** `styleJson`→`style_json`, `cachedPostCount`→`cached_post_count`,
 `createdAt`→`created_at`, `updatedAt`→`updated_at`, `deletedAt`→`deleted_at`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with the map above.
+- [x] Run the Generic Migration Procedure (G1–G7) with the map above.
   - G3/G5 alternation: `(styleJson|cachedPostCount|createdAt|updatedAt|deletedAt)`
   - G7 commit message:
     `refactor(tags): migrate data shapes to snake_case end to end (audit #3)`
@@ -147,7 +149,7 @@ git commit -m "<COMMIT MESSAGE>"
 `elementsJson`→`elements_json`, `isActive`→`is_active`, `createdAt`→`created_at`,
 `updatedAt`→`updated_at`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with the map above.
+- [x] Run the Generic Migration Procedure (G1–G7) with the map above.
   - G3/G5 alternation: `(backgroundColor|thumbnailUrl|elementsJson|isActive|createdAt|updatedAt)`
     — NOTE: `backgroundColor` may also be a CSS/DOM style prop; keep those camelCase, rename only
     the template data field.
@@ -164,7 +166,7 @@ git commit -m "<COMMIT MESSAGE>"
 `isActive`→`is_active`, `hitCount`→`hit_count`, `lastHitAt`→`last_hit_at`,
 `createdAt`→`created_at`, `updatedAt`→`updated_at`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with the map above.
+- [x] Run the Generic Migration Procedure (G1–G7) with the map above.
   - G3/G5 alternation: `(fromPath|toPath|statusCode|isActive|hitCount|lastHitAt|createdAt|updatedAt)`
   - G7 commit message:
     `refactor(redirects): migrate data shapes to snake_case end to end (audit #3)`
@@ -180,7 +182,7 @@ git commit -m "<COMMIT MESSAGE>"
 `isActive`→`is_active`, `sortOrder`→`sort_order`, `createdAt`→`created_at`,
 `updatedAt`→`updated_at`, `deletedAt`→`deleted_at`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with the map above.
+- [x] Run the Generic Migration Procedure (G1–G7) with the map above.
   - G3/G5 alternation: `(imageJson|affiliateUrl|affiliateProvider|affiliateNote|isActive|sortOrder|createdAt|updatedAt|deletedAt)`
   - NOTE: equipment snapshots are copied into `recipe_json.equipment[]` at save (see
     `RECIPE_JSON_CONTRACT.md`). That JSON is already snake_case — do not touch it; only rename the
@@ -201,7 +203,7 @@ git commit -m "<COMMIT MESSAGE>"
 `cachedPostCount`→`cached_post_count`, `createdAt`→`created_at`, `updatedAt`→`updated_at`,
 `deletedAt`→`deleted_at`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with the map above.
+- [x] Run the Generic Migration Procedure (G1–G7) with the map above.
   - G3/G5 alternation: `(parentId|collectionTitle|shortDescription|imagesJson|isFeatured|seoJson|sortOrder|workflowStatus|cachedPostCount|createdAt|updatedAt|deletedAt)`
   - G7 commit message:
     `refactor(categories): migrate data shapes to snake_case end to end (audit #3)`
@@ -221,7 +223,7 @@ git commit -m "<COMMIT MESSAGE>"
 `sortOrder`→`sort_order`, `cachedPostCount`→`cached_post_count`, `createdAt`→`created_at`,
 `updatedAt`→`updated_at`, `deletedAt`→`deleted_at`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with the map above, plus the
+- [x] Run the Generic Migration Procedure (G1–G7) with the map above, plus the
   `buildAuthorCreditSnapshot` fallback removal noted above.
   - G3/G5 alternation: `(jobTitle|shortDescription|imagesJson|bioJson|personaJson|seoJson|workflowStatus|isFeatured|sortOrder|cachedPostCount|createdAt|updatedAt|deletedAt)`
   - G7 commit message:
@@ -241,7 +243,7 @@ git commit -m "<COMMIT MESSAGE>"
 `tagsJson`→`tags_json`, `pinterestPinId`→`pinterest_pin_id`, `exportedAt`→`exported_at`,
 `exportBatchId`→`export_batch_id`, `createdAt`→`created_at`, `updatedAt`→`updated_at`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with both maps above.
+- [x] Run the Generic Migration Procedure (G1–G7) with both maps above.
   - G3/G5 alternation: `(boardUrl|coverImageUrl|articleId|boardId|sectionName|imageUrl|destinationUrl|tagsJson|pinterestPinId|exportedAt|exportBatchId|isActive|createdAt|updatedAt|deletedAt)`
   - NOTE: `imageUrl` may appear as CSS/DOM or unrelated locals — confirm each hit is the pin row.
   - G7 commit message:
@@ -266,7 +268,7 @@ git commit -m "<COMMIT MESSAGE>"
 `publishedAt`→`published_at`, `createdAt`→`created_at`, `updatedAt`→`updated_at`,
 `deletedAt`→`deleted_at`.
 
-- [ ] Run the Generic Migration Procedure (G1–G7) with the map above.
+- [x] Run the Generic Migration Procedure (G1–G7) with the map above.
   - This is the largest, most-referenced resource — expect many files in G3. Work file-by-file and
     re-run `pnpm test` frequently, not only at G6.
   - Reminder: rename only the Drizzle *field* `jsonldJson`→`jsonld_json`; never touch the
@@ -282,25 +284,25 @@ git commit -m "<COMMIT MESSAGE>"
 - Modify: `docs/NAMING_CONTRACT.md`
 - Modify: `.hermes/plans/2026-06-03_contract-audit-report.md` (local, gitignored — update for the record)
 
-- [ ] **Step 1: Update the migration-status note**
+- [x] **Step 1: Update the migration-status note**
 
 In `docs/NAMING_CONTRACT.md`, replace the "Migration status (2026-06-03)" block (the paragraph
 stating media is migrated and other resources are tolerated) with a statement that all
 Drizzle-backed resources are now snake_case end to end and the tolerance clause is removed.
 
-- [ ] **Step 2: Run the full contract audit**
+- [x] **Step 2: Run the full contract audit**
 
 Run: `node scripts/local-contract-audit.mjs --summary`
 Expected: no camelCase data-shape violations remain. The only acceptable remaining violations are
 the separately-tracked items #5 (`code_legacy_blocks`) and #6 (`recipe_json` external equipment
 url) — confirm no NEW camelCase violation was introduced by this migration.
 
-- [ ] **Step 3: Final regression gate**
+- [x] **Step 3: Final regression gate**
 
 Run: `pnpm test && pnpm check:boundaries`
 Expected: tests PASS, "Boundary check passed."
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/NAMING_CONTRACT.md
