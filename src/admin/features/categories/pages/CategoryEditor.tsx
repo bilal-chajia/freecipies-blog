@@ -257,11 +257,6 @@ const CategoryEditor = () => {
   }, [slug]);
 
   useEffect(() => {
-    if (!formData.showFeaturedRecipe) {
-      setFeaturedSearchResults([]);
-      setFeaturedSearchError('');
-      return;
-    }
     if (skipFeaturedSearchRef.current) {
       skipFeaturedSearchRef.current = false;
       return;
@@ -810,6 +805,109 @@ const CategoryEditor = () => {
                     className="resize-none min-h-[60px]"
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Featured Article & Hero CTA — per-category editorial (presentation_json) */}
+            <Card className="border-0 shadow-sm ring-1 ring-border/50">
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-primary/10 rounded-md">
+                    <Settings className="size-4 text-primary" />
+                  </div>
+                  <CardTitle className="text-base">Featured Article & Hero</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-5 pt-5">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Featured Article</Label>
+                  {featuredLookup.article ? (
+                    <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                      <span className="text-sm">
+                        {featuredLookup.article.label || featuredLookup.article.title || featuredLookup.article.slug}
+                      </span>
+                      <Button type="button" variant="ghost" size="sm" onClick={handleClearFeatured}>
+                        Clear
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Input
+                        value={featuredSearchQuery}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          skipFeaturedSearchRef.current = false;
+                          setFeaturedSearchQuery(e.target.value);
+                        }}
+                        placeholder="Search a recipe by title…"
+                        className="h-9"
+                      />
+                      {featuredSearchLoading && (
+                        <p className="text-xs text-muted-foreground">Searching…</p>
+                      )}
+                      {featuredSearchError && (
+                        <p className="text-xs text-destructive">{featuredSearchError}</p>
+                      )}
+                      {featuredSearchResults.length > 0 && (
+                        <ul className="rounded-md border divide-y divide-border/60 max-h-56 overflow-auto">
+                          {featuredSearchResults.map((r) => (
+                            <li key={r.id}>
+                              <button
+                                type="button"
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, featuredArticleId: r.id ?? null }));
+                                  setFeaturedLookup({ loading: false, error: '', article: r });
+                                  setFeaturedSearchResults([]);
+                                  skipFeaturedSearchRef.current = true;
+                                  setFeaturedSearchQuery(r.label || r.title || r.slug || '');
+                                }}
+                              >
+                                {r.label || r.title || r.slug}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Shown in the category hero. Leave empty to use the latest article.
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium">Hero CTA button</p>
+                    <p className="text-xs text-muted-foreground">Show a call-to-action in the hero</p>
+                  </div>
+                  <Switch
+                    checked={formData.showHeroCta}
+                    onCheckedChange={(checked: boolean) => handleChange('showHeroCta', checked)}
+                  />
+                </div>
+
+                {formData.showHeroCta && (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium text-muted-foreground">CTA text</Label>
+                      <Input
+                        value={formData.heroCtaText}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('heroCtaText', e.target.value)}
+                        placeholder="Join my mailing list"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium text-muted-foreground">CTA link</Label>
+                      <Input
+                        value={formData.heroCtaLink}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('heroCtaLink', e.target.value)}
+                        placeholder="#newsletter"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
