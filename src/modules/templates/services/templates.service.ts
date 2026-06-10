@@ -74,7 +74,7 @@ function normalizeElementsJson(elements_json: CreateTemplatePayload['elements_js
   }
 
   if (Array.isArray(elements_json)) {
-    return stringifyStoredTemplateElements(elements_json as TemplateElement[]);
+    return stringifyStoredTemplateElements(elements_json as unknown as TemplateElement[]);
   }
 
   return '[]';
