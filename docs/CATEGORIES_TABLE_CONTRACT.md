@@ -38,6 +38,7 @@ The `categories` row is the source of truth for category identity, hierarchy, di
 | `images_json` | no | Admin/media | Category image slots. See `docs/IMAGE_JSON_CONTRACT.md`. |
 | `color` | no | Admin/design | Category accent color. Stored as hex, default `#ff6600ff`. |
 | `seo_json` | no | Admin/SEO | Category SEO overrides. Empty object means derive from base fields. |
+| `presentation_json` | no | Admin/editorial | Per-category editorial content: featured-article snapshot, `tldr`, `hero_cta`. See JSON Fields. Page layout/paging/sorting are NOT here — they are global. |
 | `is_featured` | no | Admin/editorial | Homepage/sidebar feature flag. |
 | `workflow_status` | no | Admin/workflow | Public category visibility: `draft`, `published`, `archived`. Publicly visible only if `published` (and `deleted_at IS NULL`). |
 | `cached_post_count` | no | App/DB | Denormalized count of published, non-deleted articles in this category. |
@@ -163,6 +164,36 @@ Rules:
 - `seo_json` must not contain Schema.org or JSON-LD payloads.
 - `seo_json` must not contain article-list data, category settings, social
   handles, or image snapshots.
+
+### `presentation_json`
+
+Purpose: per-category editorial content. Page layout/paging/sorting settings are
+global and live in `site_settings.category_page_settings`, NOT here.
+
+```json
+{
+  "featured_article": {
+    "id": 42,
+    "slug": "fluffy-pancakes",
+    "title": "Fluffy Pancakes",
+    "image": { "url": "/api/images/...", "alt": "...", "width": 1200, "height": 675 }
+  },
+  "tldr": "Short intro for the top of the category page.",
+  "hero_cta": { "show": true, "text": "Join my mailing list", "link": "#newsletter" }
+}
+```
+
+Rules:
+
+- `featured_article` is a regenerable **snapshot** (source of truth = the article).
+  Rebuild it when the featured article is set/changed, when the source article's
+  display fields change, and clear it when the source is deleted/unpublished. The
+  hero falls back to the first listed article when absent.
+- `featured_article.title` is the article's `headline`; `image.url` is a resolved
+  public URL and never stores `r2_key`.
+- `tldr` is optional category intro text.
+- `hero_cta` overrides the global hero CTA for this category.
+- The deprecated per-category `config_json` blob is removed; do not reintroduce it.
 
 ## Relationships
 
