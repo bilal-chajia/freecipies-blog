@@ -21,8 +21,8 @@ const {
 const showHeader = headerStyle !== "none";
 const isHeroHeader = headerStyle === "hero";
 const isMinimalHeader = headerStyle === "minimal";
-const hasFeatured = Boolean(featuredArticle && isHeroHeader);
 const showBreadcrumb = breadcrumbItems.length > 0;
+const hasFeatured = Boolean(featuredArticle && isHeroHeader);
 const showHeroCta = category.show_hero_cta !== false;
 const heroCtaText =
   typeof category.hero_cta_text === "string" && category.hero_cta_text.trim()
@@ -32,14 +32,6 @@ const heroCtaLink =
   typeof category.hero_cta_link === "string" && category.hero_cta_link.trim()
     ? category.hero_cta_link.trim()
     : "#newsletter";
-const categoryHero = extractImage(category.images_json, "hero", 1600);
-const categoryThumb = extractImage(category.images_json, "thumbnail", 1200);
-const categorySlot = categoryHero.image_url ? "hero" : "thumbnail";
-const categoryImage = categoryHero.image_url ? categoryHero : categoryThumb;
-const categorySrcSet = getImageSrcSet(category.images_json, categorySlot);
-const showCategoryImage =
-  isHeroHeader && Boolean(categoryImage.image_url || category.image_url);
-
 const getFeaturedImage = (article: HydratedArticle) => {
   const hero = extractImage(article.images_json, "hero", 1200);
   const thumbnail = extractImage(article.images_json, "thumbnail", 1200);
@@ -52,7 +44,7 @@ const getFeaturedImage = (article: HydratedArticle) => {
 const featuredImage = featuredArticle
   ? getFeaturedImage(featuredArticle)
   : null;
-const featuredSizes = "(max-width: 1024px) 100vw, 50vw";
+const featuredSizes = "(max-width: 1024px) 100vw, 40vw";
 const featuredAuthorName =
   featuredArticle?.authorName || featuredArticle?.authorSlug || "Unknown";
 const featuredAuthorSlot = featuredArticle?.authorImagesJson
@@ -67,87 +59,19 @@ const featuredAuthorAvatar =
     <section
       class:list={[
         "category-hero",
-        { "is-minimal": isMinimalHeader, "has-bg": showCategoryImage },
+        { "is-minimal": isMinimalHeader, "has-featured": hasFeatured },
       ]}
     >
-      {showCategoryImage && (
-        <div class="hero-bg">
-          <img
-            src={categoryImage.image_url || category.image_url}
-            alt={categoryImage.imageAlt || category.imageAlt || category.label}
-            width={categoryImage.imageWidth || category.imageWidth || 1600}
-            height={categoryImage.imageHeight || category.imageHeight || 900}
-            srcset={categorySrcSet || undefined}
-            sizes={categorySrcSet ? "100vw" : undefined}
-            loading="eager"
-            style={categoryImage.imageStyle || undefined}
-          />
-          <div class="hero-bg-overlay" />
-        </div>
-      )}
-      {showBreadcrumb && (
-        <nav class="hero-breadcrumb" aria-label="Breadcrumb">
-          <ol class="hero-breadcrumb-list">
-            <li class="hero-breadcrumb-item">
-              <a href="/" class="hero-breadcrumb-link" aria-label="Home">
-                <svg
-                  class="hero-breadcrumb-home"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                  />
-                </svg>
-              </a>
-            </li>
-            {breadcrumbItems.map((item, index) => (
-              <li class="hero-breadcrumb-item">
-                <svg
-                  class="hero-breadcrumb-separator"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                {item.href && index < breadcrumbItems.length - 1 ? (
-                  <a href={item.href} class="hero-breadcrumb-link">
-                    {item.label}
-                  </a>
-                ) : (
-                  <span class="hero-breadcrumb-current" aria-current="page">
-                    {item.label}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
-      <div
-        class:list={[
-          "hero-container",
-          { "has-featured": hasFeatured, "is-minimal": isMinimalHeader },
-        ]}
-      >
-        {isHeroHeader && featuredArticle && featuredImage && (
+      <div class="hero-grid">
+        {hasFeatured && featuredArticle && featuredImage && (
           <a href={`/recipes/${featuredArticle.slug}`} class="featured-card">
             <div class="featured-image">
               {(featuredImage.selected.image_url ||
                 featuredArticle.image_url) && (
                 <img
                   src={
-                    featuredImage.selected.image_url || featuredArticle.image_url
+                    featuredImage.selected.image_url ||
+                    featuredArticle.image_url
                   }
                   alt={
                     featuredImage.selected.imageAlt ||
@@ -171,75 +95,146 @@ const featuredAuthorAvatar =
                   style={featuredImage.selected.imageStyle || undefined}
                 />
               )}
-              <div class="featured-overlay">
-                <h2 class="featured-title">{featuredArticle.label}</h2>
-                {featuredArticle.short_description && (
-                  <p class="featured-description">
-                    {featuredArticle.short_description}
-                  </p>
-                )}
-                <div class="featured-meta">
-                  <div class="featured-meta-left">
-                    {featuredAuthorAvatar ? (
-                      <img
-                        src={featuredAuthorAvatar}
-                        alt={featuredAuthorName}
-                        width="28"
-                        height="28"
-                        class="featured-avatar"
-                        loading="lazy"
-                        style={featuredAuthorSlot.imageStyle || undefined}
-                      />
-                    ) : (
-                      <span class="featured-avatar placeholder">
-                        {featuredAuthorName.charAt(0)}
-                      </span>
-                    )}
-                    <span class="featured-author">{featuredAuthorName}</span>
-                    <span class="featured-separator">|</span>
-                    <span class="featured-date">
-                      <FormattedDate
-                        date={
-                          featuredArticle.published_at ||
-                          featuredArticle.created_at ||
-                          undefined
-                        }
-                      />
+              <span class="featured-badge">Featured</span>
+            </div>
+            <div class="featured-body">
+              <span class="featured-eyebrow">Featured Recipe</span>
+              <h2 class="featured-title">{featuredArticle.label}</h2>
+              {featuredArticle.short_description && (
+                <p class="featured-description">
+                  {featuredArticle.short_description}
+                </p>
+              )}
+              <div class="featured-meta">
+                <div class="featured-meta-left">
+                  {featuredAuthorAvatar ? (
+                    <img
+                      src={featuredAuthorAvatar}
+                      alt={featuredAuthorName}
+                      width="28"
+                      height="28"
+                      class="featured-avatar"
+                      loading="lazy"
+                      style={featuredAuthorSlot.imageStyle || undefined}
+                    />
+                  ) : (
+                    <span class="featured-avatar placeholder">
+                      {featuredAuthorName.charAt(0)}
                     </span>
-                  </div>
-                  <button
-                    type="button"
-                    class="featured-bookmark"
-                    data-bookmark-button
-                    data-bookmark-slug={featuredArticle.slug}
-                    aria-pressed="false"
-                    aria-label="Bookmark recipe"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-4-6 4V4z"
-                      />
-                    </svg>
-                  </button>
+                  )}
+                  <span class="featured-author">{featuredAuthorName}</span>
+                  <span class="featured-separator">|</span>
+                  <span class="featured-date">
+                    <FormattedDate
+                      date={
+                        featuredArticle.published_at ||
+                        featuredArticle.created_at ||
+                        undefined
+                      }
+                    />
+                  </span>
                 </div>
+                <button
+                  type="button"
+                  class="featured-bookmark"
+                  data-bookmark-button
+                  data-bookmark-slug={featuredArticle.slug}
+                  aria-pressed="false"
+                  aria-label="Bookmark recipe"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-4-6 4V4z"
+                    />
+                  </svg>
+                </button>
               </div>
+              <span class="featured-link">
+                View Recipe
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
+              </span>
             </div>
           </a>
         )}
-        <div class:list={["hero-content", { "is-minimal": isMinimalHeader }]}>
-          <h1 class="category-title">{category.headline || category.label}</h1>
-          <p class="category-description">
-            {category.short_description || category.headline}
-          </p>
-          {category.tldr && <p class="category-tldr">{category.tldr}</p>}
-          {isHeroHeader && showHeroCta && (
-            <a href={heroCtaLink} class="cta-button">
-              {heroCtaText}
-            </a>
-          )}
+        <div class="hero-panel">
+        {showBreadcrumb && (
+          <nav class="hero-breadcrumb" aria-label="Breadcrumb">
+            <ol class="hero-breadcrumb-list">
+              <li class="hero-breadcrumb-item">
+                <a href="/" class="hero-breadcrumb-link" aria-label="Home">
+                  <svg
+                    class="hero-breadcrumb-home"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                  </svg>
+                </a>
+              </li>
+              {breadcrumbItems.map((item, index) => (
+                <li class="hero-breadcrumb-item">
+                  <svg
+                    class="hero-breadcrumb-separator"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                  {item.href && index < breadcrumbItems.length - 1 ? (
+                    <a href={item.href} class="hero-breadcrumb-link">
+                      {item.label}
+                    </a>
+                  ) : (
+                    <span class="hero-breadcrumb-current" aria-current="page">
+                      {item.label}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
+        <h1 class="category-title">{category.headline || category.label}</h1>
+        {isHeroHeader && <div class="title-rule" aria-hidden="true" />}
+        <p class="category-description">
+          {category.short_description || category.headline}
+        </p>
+        {category.tldr && <p class="category-tldr">{category.tldr}</p>}
+        {isHeroHeader && showHeroCta && (
+          <a href={heroCtaLink} class="cta-button">
+            {heroCtaText}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 8l4 4m0 0l-4 4m4-4H3"
+              />
+            </svg>
+          </a>
+        )}
         </div>
       </div>
     </section>
@@ -247,62 +242,66 @@ const featuredAuthorAvatar =
 }
 
 <style>
-  /* Hero Section */
+  /* Pinch-of-Yum-style hero: featured recipe card on the left half,
+     category title/description/CTA on the right. */
   .category-hero {
-    background: #0f172a;
-    padding: clamp(2rem, 4vw, 3rem) 0;
+    background: var(--bg-alt);
     position: relative;
-    overflow: hidden;
   }
 
   .category-hero.is-minimal {
-    background: #fff;
-    padding: 2rem 0 1rem;
+    background: var(--bg-elevated);
   }
 
-  .hero-container {
+  .hero-grid {
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: 0 clamp(1rem, 3vw, 2rem);
+    width: 100%;
+    padding: clamp(1.25rem, 2.5vw, 2rem) clamp(1.25rem, 4vw, 2rem);
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2rem;
-    align-items: center;
-    position: relative;
-    z-index: 1;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    align-items: stretch;
   }
 
-  .hero-bg {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    animation: heroFade 1s ease both;
+  @media (min-width: 1024px) {
+    .category-hero.has-featured .hero-grid {
+      grid-template-columns: minmax(0, 42fr) minmax(0, 58fr);
+    }
+
+    /* Category info reads left, featured card sits right. */
+    .category-hero.has-featured .featured-card {
+      order: 2;
+    }
   }
 
-  .hero-bg img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .hero-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+    animation: heroFadeUp 0.7s ease both;
   }
 
-  .hero-bg-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      180deg,
-      rgba(15, 23, 42, 0.65) 0%,
-      rgba(15, 23, 42, 0.45) 40%,
-      rgba(15, 23, 42, 0.85) 100%
-    );
+  /* Title block reads first on mobile, featured card follows. */
+  @media (max-width: 1023.98px) {
+    .category-hero.has-featured .hero-panel {
+      order: -1;
+    }
+  }
+
+  .category-hero.is-minimal .hero-grid {
+    padding: 2rem clamp(1rem, 3vw, 2rem) 1rem;
+  }
+
+  .category-hero.is-minimal .hero-panel {
+    align-items: flex-start;
+    text-align: left;
   }
 
   .hero-breadcrumb {
-    max-width: var(--container-max);
-    margin: 0 auto 1.5rem;
-    padding: 0 clamp(1rem, 3vw, 2rem);
-    animation: heroFadeUp 0.6s ease both;
-    position: relative;
-    z-index: 1;
+    margin-bottom: 1.5rem;
   }
 
   .hero-breadcrumb-list {
@@ -326,122 +325,250 @@ const featuredAuthorAvatar =
 
   .hero-breadcrumb-link,
   .hero-breadcrumb-current {
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-tertiary);
     text-decoration: none;
     font-weight: 600;
   }
 
   .hero-breadcrumb-link:hover {
-    color: #fff;
+    color: var(--text-brand);
   }
 
   .hero-breadcrumb-current {
-    color: #fff;
+    color: var(--text-secondary);
   }
 
   .hero-breadcrumb-separator,
   .hero-breadcrumb-home {
     width: 16px;
     height: 16px;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-tertiary);
     flex-shrink: 0;
     transition: color 0.2s ease;
   }
 
-  .category-hero.is-minimal .hero-breadcrumb-link,
-  .category-hero.is-minimal .hero-breadcrumb-current {
-    color: #111;
+  .category-title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin: 0;
   }
 
-  .category-hero.is-minimal .hero-breadcrumb-separator,
-  .category-hero.is-minimal .hero-breadcrumb-home {
-    color: #9ca3af;
+  .title-rule {
+    width: 64px;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--brand-gradient);
+    margin: 1.25rem 0 1.5rem;
   }
 
+  .category-hero.is-minimal .category-title {
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    margin-bottom: 0.75rem;
+  }
+
+  .category-description {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    max-width: 58ch;
+    margin: 0;
+  }
+
+  .category-tldr {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-tertiary);
+    max-width: 46ch;
+    margin: 1rem 0 0;
+    padding-left: 1rem;
+    border-left: 3px solid var(--border-strong);
+  }
+
+  .cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--brand-secondary-accessible);
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    margin-top: 1.5rem;
+  }
+
+  .cta-button svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+  }
+
+  .cta-button:hover {
+    color: var(--brand-secondary-accessible-hover);
+  }
+
+  .cta-button:hover svg {
+    transform: translateX(4px);
+  }
+
+  .cta-button:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 3px;
+  }
+
+  /* Pin the CTA to the card's bottom edge on desktop. */
   @media (min-width: 1024px) {
-    .hero-container.has-featured {
-      grid-template-columns: 1fr 1fr;
+    .category-hero.has-featured .cta-button {
+      margin-top: auto;
+      padding-top: 1.5rem;
     }
   }
 
+  /* ---- Featured recipe card (right half of the hero, image left / text right) ---- */
   .featured-card {
-    display: block;
+    display: grid;
+    grid-template-columns: 1fr;
     text-decoration: none;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    position: relative;
-    animation: heroSlideIn 0.8s ease both;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-lg);
+    animation: heroFadeUp 0.8s ease both;
+    animation-delay: 0.1s;
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .featured-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  @media (min-width: 640px) {
+    .featured-card {
+      grid-template-columns: minmax(0, 42fr) minmax(0, 58fr);
+    }
   }
 
   .featured-image {
     position: relative;
-    aspect-ratio: 4/3;
+    aspect-ratio: 16/9;
+    background: var(--bg-inset);
+  }
+
+  @media (min-width: 640px) {
+    .featured-image {
+      aspect-ratio: auto;
+      min-height: 220px;
+      height: 100%;
+    }
+  }
+
+  .featured-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--brand-secondary-accessible);
+  }
+
+  .featured-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.375rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--brand-secondary-accessible);
+  }
+
+  .featured-link svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+  }
+
+  .featured-card:hover .featured-link svg {
+    transform: translateX(4px);
   }
 
   .featured-hero-image {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-  }
-
-  .featured-overlay {
-    position: absolute;
-    inset: 0;
-    padding: 2rem;
-    background: linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.15) 0%,
-      rgba(0, 0, 0, 0.65) 60%,
-      rgba(0, 0, 0, 0.9) 100%
-    );
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 0.5rem;
+    display: block;
   }
 
   .featured-badge {
-    display: inline-block;
-    background: #ff3366;
-    color: white;
-    font-size: 0.75rem;
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1;
+    background: var(--brand-gradient);
+    color: #fff;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.08em;
     padding: 0.375rem 0.75rem;
     border-radius: var(--radius-xs);
-    margin-bottom: 0.75rem;
+  }
+
+  .featured-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: clamp(1.25rem, 2.5vw, 2rem);
   }
 
   .featured-title {
-    color: white;
-    font-size: clamp(1.25rem, 3vw, 1.75rem);
-    font-weight: 800;
-    line-height: 1.25;
+    color: var(--text);
+    font-family: var(--font-heading);
+    font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+    font-weight: 700;
+    line-height: 1.2;
     margin: 0;
-    letter-spacing: -0.02em;
-    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    letter-spacing: -0.01em;
+  }
+
+  .featured-card:hover .featured-title {
+    color: var(--text-brand);
   }
 
   .featured-description {
-    color: rgba(255, 255, 255, 0.75);
-    font-size: 0.9rem;
-    line-height: 1.6;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.65;
     margin: 0;
+    max-width: 60ch;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .featured-meta {
-    margin-top: 1rem;
+    margin-top: 0.375rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    width: 100%;
   }
 
   .featured-meta-left {
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--text-tertiary);
     font-size: 0.85rem;
     flex-wrap: wrap;
   }
@@ -451,7 +578,7 @@ const featuredAuthorAvatar =
     height: 28px;
     border-radius: var(--radius-full);
     object-fit: cover;
-    border: 2px solid rgba(255, 255, 255, 0.6);
+    border: 2px solid var(--border);
   }
 
   .featured-avatar.placeholder {
@@ -460,30 +587,39 @@ const featuredAuthorAvatar =
     justify-content: center;
     font-size: 0.75rem;
     font-weight: 700;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    background: var(--bg-inset);
+    color: var(--text-secondary);
+    border: 2px solid var(--border);
   }
 
   .featured-author {
     font-weight: 600;
+    color: var(--text-secondary);
   }
 
   .featured-separator {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--border-strong);
   }
 
   .featured-bookmark {
     width: 36px;
     height: 36px;
     border-radius: var(--radius-full);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    color: white;
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.2);
+    background: transparent;
     cursor: pointer;
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .featured-bookmark:hover {
+    color: var(--text-brand);
+    border-color: var(--text-brand);
   }
 
   .featured-bookmark svg {
@@ -492,89 +628,9 @@ const featuredAuthorAvatar =
   }
 
   .featured-bookmark[data-bookmarked="true"] {
-    background: rgba(255, 255, 255, 0.92);
-    color: #111;
-  }
-
-  .hero-content {
-    color: white;
-    text-align: center;
-    animation: heroFadeUp 0.8s ease both;
-  }
-
-  .hero-content.is-minimal {
-    color: #111;
-    text-align: left;
-  }
-
-  @media (min-width: 1024px) {
-    .hero-content {
-      text-align: right;
-      padding-right: 2rem;
-    }
-    .hero-content.is-minimal {
-      text-align: left;
-      padding-right: 0;
-    }
-  }
-
-  .category-title {
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    font-weight: 900;
-    margin: 0 0 1rem;
-    letter-spacing: -0.03em;
-    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-  }
-
-  .category-description {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.8);
-    line-height: 1.7;
-    margin: 0 0 2rem;
-  }
-
-  .category-hero.is-minimal .category-description {
-    color: #444;
-  }
-
-  .cta-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: linear-gradient(135deg, #ff3366, #ff6b35);
-    color: white;
-    padding: 0.9375rem 2.25rem;
-    border-radius: var(--radius-md);
-    font-weight: 700;
-    font-size: 1rem;
-    text-decoration: none;
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
-    animation: heroFadeUp 0.9s ease both;
-    animation-delay: 0.1s;
-    box-shadow: 0 4px 16px rgba(255, 51, 102, 0.3);
-  }
-
-  .cta-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 28px rgba(255, 51, 102, 0.4);
-  }
-
-  .cta-button:focus-visible {
-    outline: 2px solid white;
-    outline-offset: 3px;
-  }
-
-  @keyframes heroFade {
-    from {
-      opacity: 0;
-      transform: scale(1.02);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+    background: var(--brand-primary-light);
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
   }
 
   @keyframes heroFadeUp {
@@ -588,22 +644,8 @@ const featuredAuthorAvatar =
     }
   }
 
-  @keyframes heroSlideIn {
-    from {
-      opacity: 0;
-      transform: translateX(-18px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .hero-bg,
-    .hero-breadcrumb,
-    .hero-content,
-    .cta-button,
+    .hero-panel,
     .featured-card {
       animation: none;
     }

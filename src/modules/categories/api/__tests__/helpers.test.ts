@@ -1,37 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { parseConfigJson, parseImagesJson, parseSeoJson, transformCategoryRequestBody, transformCategoryResponse } from '../helpers';
+import { parseImagesJson, parseSeoJson, transformCategoryRequestBody, transformCategoryResponse } from '../helpers';
 
 describe('category API JSON helpers', () => {
-  it('normalizes category config with snake_case keys only', () => {
-    const config = JSON.parse(parseConfigJson({
-      posts_per_page: 9,
-      postsPerPage: 99,
-      layout_mode: 'list',
-      layoutMode: 'masonry',
-      card_style: 'compact',
-      show_sidebar: false,
-      featured_article_id: '12',
-      featuredArticleId: 99,
-      show_featured_recipe: false,
-      showHeroCta: false,
-      hero_cta_text: 'Cook now',
-      heroCtaText: 'Legacy',
-    }));
-
-    expect(config).toEqual({
-      posts_per_page: 9,
-      layout_mode: 'list',
-      card_style: 'compact',
-      show_sidebar: false,
-      featured_article_id: 12,
-      show_featured_recipe: false,
-      hero_cta_text: 'Cook now',
-    });
-    expect(JSON.stringify(config)).not.toContain('postsPerPage');
-    expect(JSON.stringify(config)).not.toContain('featuredArticleId');
-    expect(JSON.stringify(config)).not.toContain('heroCtaText');
-  });
-
   it('does not read camel SEO aliases from seo_json', () => {
     const seo = JSON.parse(parseSeoJson({
       metaTitle: 'Legacy title',
@@ -53,59 +23,24 @@ describe('category API JSON helpers', () => {
     });
   });
 
-  it('emits snake_case config fields from category responses', () => {
-    const response = transformCategoryResponse({
-      id: 1,
-      slug: 'dinners',
-      config_json: JSON.stringify({
-        posts_per_page: 6,
-        layout_mode: 'grid',
-        card_style: 'full',
-        show_sidebar: true,
-        article_sort_by: 'published_at',
-        article_sort_order: 'desc',
-        show_hero_cta: false,
-      }),
-    });
-
-    expect(response.posts_per_page).toBe(6);
-    expect(response.layout_mode).toBe('grid');
-    expect(response.card_style).toBe('full');
-    expect(response.show_sidebar).toBe(true);
-    expect(response.article_sort_by).toBe('published_at');
-    expect(response.article_sort_order).toBe('desc');
-    expect(response.show_hero_cta).toBe(false);
-    expect(response.postsPerPage).toBeUndefined();
-    expect(response.layoutMode).toBeUndefined();
-    expect(response.showHeroCta).toBeUndefined();
-  });
-
-  it('persists category config overrides as snake_case config_json', () => {
+  it('round-trips presentation_json and no longer emits config_json', () => {
     const transformed = transformCategoryRequestBody({
       slug: 'dinners',
       label: 'Dinners',
       short_description: 'Dinner recipes',
-      postsPerPage: 8,
-      layoutMode: 'list',
-      showHeroCta: false,
-      heroCtaText: 'Cook now',
-      config_json: JSON.stringify({
-        card_style: 'compact',
-        show_sidebar: true,
+      presentation_json: JSON.stringify({
+        featured_article: { id: 7, slug: 'roast', title: 'Roast' },
+        tldr: 'Cozy dinners',
+        hero_cta: { show: true, text: 'Cook', link: '/r/roast' },
+        extra: 'drop',
       }),
     });
 
-    expect(transformed.postsPerPage).toBeUndefined();
-    expect(transformed.layoutMode).toBeUndefined();
-    expect(transformed.showHeroCta).toBeUndefined();
-    expect(transformed.config_json).toBeTypeOf('string');
-    expect(JSON.parse(transformed.config_json)).toEqual({
-      card_style: 'compact',
-      show_sidebar: true,
-      posts_per_page: 8,
-      layout_mode: 'list',
-      show_hero_cta: false,
-      hero_cta_text: 'Cook now',
+    expect(transformed.config_json).toBeUndefined();
+    expect(JSON.parse(transformed.presentation_json)).toEqual({
+      featured_article: { id: 7, slug: 'roast', title: 'Roast' },
+      tldr: 'Cozy dinners',
+      hero_cta: { show: true, text: 'Cook', link: '/r/roast' },
     });
   });
 
@@ -130,5 +65,65 @@ describe('category API JSON helpers', () => {
       height: 240,
     });
     expect(JSON.stringify(images)).not.toContain('sizeBytes');
+  });
+
+  it('response never leaks r2_key and emits no camelCase image fields', () => {
+    const response = transformCategoryResponse({
+      slug: 'dinners',
+      images_json: JSON.stringify({
+        thumbnail: {
+          alt: 'Dinner',
+          aspect_ratio: '1:1',
+          variants: {
+            sm: { r2_key: 'media/category/dinner-sm.webp', width: 320, height: 240 },
+          },
+        },
+      }),
+    });
+
+    expect(response.image_url).toBe('/api/images/media/category/dinner-sm.webp');
+    expect(response.imageAlt).toBeUndefined();
+    expect(response.imageWidth).toBeUndefined();
+    expect(response.imageHeight).toBeUndefined();
+    expect(JSON.stringify(response)).not.toContain('r2_key');
+
+    const images = JSON.parse(response.images_json);
+    expect(images.thumbnail.variants.sm).toEqual({
+      url: '/api/images/media/category/dinner-sm.webp',
+      width: 320,
+      height: 240,
+    });
+  });
+
+  it('resolved response images round-trip through the request parser back to r2_key', () => {
+    const response = transformCategoryResponse({
+      images_json: JSON.stringify({
+        hero: {
+          alt: 'Hero',
+          variants: { lg: { r2_key: 'media/category/hero-lg.webp', width: 1600, height: 900 } },
+        },
+      }),
+    });
+
+    const saved = JSON.parse(parseImagesJson(response.images_json));
+    expect(saved.hero.variants.lg).toEqual({
+      r2_key: 'media/category/hero-lg.webp',
+      width: 1600,
+      height: 900,
+    });
+  });
+
+  it('ignores legacy camelCase image fields in request bodies', () => {
+    const transformed = transformCategoryRequestBody({
+      slug: 'dinners',
+      image_url: '/api/images/media/x.webp',
+      imageAlt: 'X',
+      imageWidth: 100,
+      imageHeight: 100,
+    });
+
+    expect(transformed.images_json).toBeUndefined();
+    expect(transformed.imageAlt).toBeUndefined();
+    expect(transformed.image_url).toBeUndefined();
   });
 });

@@ -19,27 +19,6 @@ interface SeoJson {
   twitter_card?: 'summary' | 'summary_large_image';
 }
 
-interface ConfigJson {
-  posts_per_page?: number;
-  tldr?: string;
-  show_in_nav?: boolean;
-  show_in_footer?: boolean;
-  layout_mode?: 'grid' | 'list' | 'masonry';
-  card_style?: 'compact' | 'full' | 'minimal';
-  show_sidebar?: boolean;
-  show_filters?: boolean;
-  show_breadcrumb?: boolean;
-  show_pagination?: boolean;
-  article_sort_by?: 'published_at' | 'title' | 'view_count';
-  article_sort_order?: 'asc' | 'desc';
-  header_style?: 'hero' | 'minimal' | 'none';
-  featured_article_id?: number;
-  show_featured_recipe?: boolean;
-  show_hero_cta?: boolean;
-  hero_cta_text?: string;
-  hero_cta_link?: string;
-}
-
 const getBestVariant = (variants?: ImageVariants) => {
   return variants?.lg || variants?.md || variants?.sm || variants?.original || variants?.xs;
 };
@@ -123,53 +102,6 @@ const normalizeSeoJsonObject = (value: any): SeoJson => {
   };
 };
 
-const normalizeConfigJsonObject = (value: any): ConfigJson => {
-  if (!value || typeof value !== 'object') return {};
-
-  const featuredArticleIdRaw = value.featured_article_id;
-  const featuredArticleId = typeof featuredArticleIdRaw === 'number'
-    ? featuredArticleIdRaw
-    : typeof featuredArticleIdRaw === 'string'
-      ? parseInt(featuredArticleIdRaw, 10)
-      : undefined;
-  const normalized: ConfigJson = {};
-
-  if (typeof value.posts_per_page === 'number') normalized.posts_per_page = value.posts_per_page;
-  if (typeof value.tldr === 'string') normalized.tldr = value.tldr;
-  if (typeof value.show_in_nav === 'boolean') normalized.show_in_nav = value.show_in_nav;
-  if (typeof value.show_in_footer === 'boolean') normalized.show_in_footer = value.show_in_footer;
-  if (typeof value.layout_mode === 'string') normalized.layout_mode = value.layout_mode as ConfigJson['layout_mode'];
-  if (typeof value.card_style === 'string') normalized.card_style = value.card_style as ConfigJson['card_style'];
-  if (typeof value.show_sidebar === 'boolean') normalized.show_sidebar = value.show_sidebar;
-  if (typeof value.show_filters === 'boolean') normalized.show_filters = value.show_filters;
-  if (typeof value.show_breadcrumb === 'boolean') normalized.show_breadcrumb = value.show_breadcrumb;
-  if (typeof value.show_pagination === 'boolean') normalized.show_pagination = value.show_pagination;
-  if (typeof value.article_sort_by === 'string') normalized.article_sort_by = value.article_sort_by as ConfigJson['article_sort_by'];
-  if (typeof value.article_sort_order === 'string') normalized.article_sort_order = value.article_sort_order as ConfigJson['article_sort_order'];
-  if (typeof value.header_style === 'string') normalized.header_style = value.header_style as ConfigJson['header_style'];
-  if (Number.isFinite(featuredArticleId)) normalized.featured_article_id = featuredArticleId as number;
-  if (typeof value.show_featured_recipe === 'boolean') normalized.show_featured_recipe = value.show_featured_recipe;
-  if (typeof value.show_hero_cta === 'boolean') normalized.show_hero_cta = value.show_hero_cta;
-  if (typeof value.hero_cta_text === 'string') normalized.hero_cta_text = value.hero_cta_text;
-  if (typeof value.hero_cta_link === 'string') normalized.hero_cta_link = value.hero_cta_link;
-
-  return normalized;
-};
-
-const parseConfigJsonValue = (value: any): Record<string, any> => {
-  if (!value) return {};
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return typeof parsed === 'object' && parsed ? parsed : {};
-    } catch {
-      return {};
-    }
-  }
-  if (typeof value === 'object') return value;
-  return {};
-};
-
 /**
  * Parse and validate ImagesJson from request body
  */
@@ -224,182 +156,21 @@ export function parseSeoJson(value: any): string {
 }
 
 /**
- * Parse and validate ConfigJson from request body
- */
-export function parseConfigJson(value: any): string {
-  if (!value) return '{}';
-
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return JSON.stringify(normalizeConfigJsonObject(parsed));
-    } catch {
-      return '{}';
-    }
-  }
-
-  if (typeof value === 'object') {
-    return JSON.stringify(normalizeConfigJsonObject(value));
-  }
-
-  return '{}';
-}
-
-/**
- * Transform request body to handle both legacy flat fields and new JSON fields
+ * Transform request body: normalize the canonical snake_case JSON fields.
  */
 export function transformCategoryRequestBody(body: any): any {
   const transformed = { ...body };
-  const hasLegacyImageFields = ['image_url', 'imageAlt', 'imageWidth', 'imageHeight']
-    .some((key) => Object.prototype.hasOwnProperty.call(body, key));
-  const configOverrides: Record<string, any> = {};
-
-  if (body.numEntriesPerPage !== undefined) {
-    configOverrides.posts_per_page = body.numEntriesPerPage;
-    delete transformed.numEntriesPerPage;
-  }
-  if (body.postsPerPage !== undefined) {
-    configOverrides.posts_per_page = body.postsPerPage;
-    delete transformed.postsPerPage;
-  }
-  if (body.tldr !== undefined) {
-    configOverrides.tldr = body.tldr;
-    delete transformed.tldr;
-  }
-  if (body.showInNav !== undefined) {
-    configOverrides.show_in_nav = body.showInNav;
-    delete transformed.showInNav;
-  }
-  if (body.showInFooter !== undefined) {
-    configOverrides.show_in_footer = body.showInFooter;
-    delete transformed.showInFooter;
-  }
-  if (body.layout !== undefined) {
-    configOverrides.layout_mode = body.layout;
-    delete transformed.layout;
-  }
-  if (body.layoutMode !== undefined) {
-    configOverrides.layout_mode = body.layoutMode;
-    delete transformed.layoutMode;
-  }
-  if (body.cardStyle !== undefined) {
-    configOverrides.card_style = body.cardStyle;
-    delete transformed.cardStyle;
-  }
-  if (body.showSidebar !== undefined) {
-    configOverrides.show_sidebar = body.showSidebar;
-    delete transformed.showSidebar;
-  }
-  if (body.showFilters !== undefined) {
-    configOverrides.show_filters = body.showFilters;
-    delete transformed.showFilters;
-  }
-  if (body.showBreadcrumb !== undefined) {
-    configOverrides.show_breadcrumb = body.showBreadcrumb;
-    delete transformed.showBreadcrumb;
-  }
-  if (body.showPagination !== undefined) {
-    configOverrides.show_pagination = body.showPagination;
-    delete transformed.showPagination;
-  }
-  if (body.sortBy !== undefined) {
-    configOverrides.article_sort_by = body.sortBy;
-    delete transformed.sortBy;
-  }
-  if (body.sort_order !== undefined) {
-    configOverrides.article_sort_order = body.sort_order;
-    delete transformed.sort_order;
-  }
-  if (body.headerStyle !== undefined) {
-    configOverrides.header_style = body.headerStyle;
-    delete transformed.headerStyle;
-  }
-  if (body.featuredArticleId !== undefined) {
-    const parsed = typeof body.featuredArticleId === 'string'
-      ? parseInt(body.featuredArticleId, 10)
-      : body.featuredArticleId;
-    configOverrides.featured_article_id = Number.isFinite(parsed) ? parsed : null;
-    delete transformed.featuredArticleId;
-  }
-  if (body.showFeaturedRecipe !== undefined) {
-    configOverrides.show_featured_recipe = body.showFeaturedRecipe;
-    delete transformed.showFeaturedRecipe;
-  }
-  if (body.showHeroCta !== undefined) {
-    configOverrides.show_hero_cta = body.showHeroCta;
-    delete transformed.showHeroCta;
-  }
-  if (body.heroCtaText !== undefined) {
-    configOverrides.hero_cta_text = body.heroCtaText;
-    delete transformed.heroCtaText;
-  }
-  if (body.heroCtaLink !== undefined) {
-    configOverrides.hero_cta_link = body.heroCtaLink;
-    delete transformed.heroCtaLink;
-  }
 
   if (body.images_json !== undefined) {
     transformed.images_json = parseImagesJson(body.images_json);
-  } else if (hasLegacyImageFields) {
-    const images: Partial<Record<'thumbnail', unknown>> = {};
-    if (body.image_url) {
-      const r2Key = extractR2KeyFromUrl(body.image_url);
-      images.thumbnail = {
-        alt: body.imageAlt,
-        url: r2Key ? `/api/images/${r2Key}` : body.image_url,
-        width: body.imageWidth ?? 0,
-        height: body.imageHeight ?? 0,
-      };
-    }
-    transformed.images_json = JSON.stringify(images);
-    delete transformed.image_url;
-    delete transformed.imageAlt;
-    delete transformed.imageWidth;
-    delete transformed.imageHeight;
   }
 
   if (body.seo_json !== undefined) {
     transformed.seo_json = parseSeoJson(body.seo_json);
-  } else if (
-    body.metaTitle !== undefined ||
-    body.metaDescription !== undefined ||
-    body.canonicalUrl !== undefined ||
-    body.canonical !== undefined ||
-    body.ogImage !== undefined ||
-    body.ogTitle !== undefined ||
-    body.ogDescription !== undefined ||
-    body.twitterCard !== undefined ||
-    body.robots !== undefined ||
-    body.noIndex !== undefined
-  ) {
-    transformed.seo_json = parseSeoJson({
-      meta_title: body.metaTitle,
-      meta_description: body.metaDescription,
-      canonical: body.canonical ?? body.canonicalUrl,
-      og_image: body.ogImage,
-      og_title: body.ogTitle,
-      og_description: body.ogDescription,
-      twitter_card: body.twitterCard,
-      robots: body.robots,
-      no_index: body.noIndex,
-    });
   }
 
   if (body.presentation_json !== undefined) {
     transformed.presentation_json = parsePresentationJson(body.presentation_json);
-  }
-
-  const existingConfig = body.config_json !== undefined
-    ? JSON.parse(parseConfigJson(body.config_json))
-    : {};
-  const mergedConfig = {
-    ...existingConfig,
-    ...configOverrides,
-  };
-  if (Object.keys(mergedConfig).length > 0) {
-    transformed.config_json = JSON.stringify(mergedConfig);
-  } else {
-    delete transformed.config_json;
   }
 
   // Basic required field validation REMOVED to allow partial updates (PATCH)
@@ -421,7 +192,7 @@ export function transformCategoryRequestBody(body: any): any {
   const dbColumns = new Set([
     'slug', 'label', 'parent_id', 'depth', 'headline', 'collection_title',
     'short_description', 'images_json', 'color', 'is_featured',
-    'seo_json', 'config_json', 'presentation_json', 'sort_order', 'workflow_status',
+    'seo_json', 'presentation_json', 'sort_order', 'workflow_status',
     'cached_post_count', 'created_at', 'updated_at', 'deleted_at',
   ]);
   for (const key of Object.keys(transformed)) {
@@ -432,6 +203,34 @@ export function transformCategoryRequestBody(body: any): any {
 
   return transformed;
 }
+
+/**
+ * Resolve a stored image slot for API output: variants carry a public `url`
+ * (round-trips through parseImagesJson, which re-extracts the r2_key on save).
+ */
+const resolveSlotForResponse = (slot: any) => {
+  if (!slot || typeof slot !== 'object') return undefined;
+  const variants: Record<string, { url: string; width?: number; height?: number }> = {};
+  const sourceVariants = slot.variants && typeof slot.variants === 'object' ? slot.variants : {};
+  for (const [key, variant] of Object.entries(sourceVariants)) {
+    const url = resolveVariantUrl(variant as { r2_key?: string; url?: string });
+    if (!url) continue;
+    const v = variant as { width?: number; height?: number };
+    variants[key] = {
+      url,
+      ...(typeof v.width === 'number' ? { width: v.width } : {}),
+      ...(typeof v.height === 'number' ? { height: v.height } : {}),
+    };
+  }
+  return {
+    ...(typeof slot.media_id === 'number' ? { media_id: slot.media_id } : {}),
+    alt: typeof slot.alt === 'string' ? slot.alt : '',
+    ...(typeof slot.placeholder === 'string' && slot.placeholder ? { placeholder: slot.placeholder } : {}),
+    ...(typeof slot.aspect_ratio === 'string' ? { aspect_ratio: slot.aspect_ratio } : {}),
+    ...(slot.focal_point && typeof slot.focal_point === 'object' ? { focal_point: slot.focal_point } : {}),
+    variants,
+  };
+};
 
 export function transformCategoryResponse(category: any): any {
   if (!category) return category;
@@ -444,9 +243,30 @@ export function transformCategoryResponse(category: any): any {
       const primarySlot = images.thumbnail ?? images.hero;
       const variant = getBestVariant(primarySlot?.variants);
       response.image_url = resolveVariantUrl(variant);
-      response.imageAlt = primarySlot?.alt;
-      response.imageWidth = variant?.width;
-      response.imageHeight = variant?.height;
+      // Never ship raw r2_key to the frontend: re-emit images_json resolved.
+      const resolved: Record<string, unknown> = {};
+      const thumbnail = resolveSlotForResponse(images.thumbnail);
+      const hero = resolveSlotForResponse(images.hero);
+      if (thumbnail) resolved.thumbnail = thumbnail;
+      if (hero) resolved.hero = hero;
+      response.images_json = JSON.stringify(resolved);
+    } catch {
+    }
+  }
+
+  if (category.presentation_json) {
+    try {
+      const presentation = JSON.parse(category.presentation_json);
+      const featured = presentation?.featured_article;
+      if (featured && typeof featured === 'object' && featured.image) {
+        const resolved = resolveSlotForResponse(featured.image);
+        if (resolved && Object.keys(resolved.variants).length > 0) {
+          featured.image = resolved;
+        } else {
+          delete featured.image;
+        }
+      }
+      response.presentation_json = JSON.stringify(presentation);
     } catch {
     }
   }
@@ -462,68 +282,6 @@ export function transformCategoryResponse(category: any): any {
       if (response.og_description === undefined && seo.og_description !== undefined) response.og_description = seo.og_description;
       if (response.twitter_card === undefined && seo.twitter_card !== undefined) response.twitter_card = seo.twitter_card;
       if (response.no_index === undefined && seo.no_index !== undefined) response.no_index = seo.no_index;
-    } catch {
-      // Invalid JSON, skip
-    }
-  }
-
-  if (category.config_json) {
-    try {
-      const config: ConfigJson = JSON.parse(category.config_json);
-      if (response.posts_per_page === undefined && typeof config.posts_per_page === 'number') {
-        response.posts_per_page = config.posts_per_page;
-      }
-      if (response.tldr === undefined && typeof config.tldr === 'string') {
-        response.tldr = config.tldr;
-      }
-      if (response.show_in_nav === undefined && typeof config.show_in_nav === 'boolean') {
-        response.show_in_nav = config.show_in_nav;
-      }
-      if (response.show_in_footer === undefined && typeof config.show_in_footer === 'boolean') {
-        response.show_in_footer = config.show_in_footer;
-      }
-      if (response.layout_mode === undefined && typeof config.layout_mode === 'string') {
-        response.layout_mode = config.layout_mode;
-      }
-      if (response.card_style === undefined && typeof config.card_style === 'string') {
-        response.card_style = config.card_style;
-      }
-      if (response.show_sidebar === undefined && typeof config.show_sidebar === 'boolean') {
-        response.show_sidebar = config.show_sidebar;
-      }
-      if (response.show_filters === undefined && typeof config.show_filters === 'boolean') {
-        response.show_filters = config.show_filters;
-      }
-      if (response.show_breadcrumb === undefined && typeof config.show_breadcrumb === 'boolean') {
-        response.show_breadcrumb = config.show_breadcrumb;
-      }
-      if (response.show_pagination === undefined && typeof config.show_pagination === 'boolean') {
-        response.show_pagination = config.show_pagination;
-      }
-      if (typeof config.article_sort_by === 'string') {
-        response.article_sort_by = config.article_sort_by;
-      }
-      if (typeof config.article_sort_order === 'string') {
-        response.article_sort_order = config.article_sort_order;
-      }
-      if (response.header_style === undefined && typeof config.header_style === 'string') {
-        response.header_style = config.header_style;
-      }
-      if (response.featured_article_id === undefined && typeof config.featured_article_id === 'number') {
-        response.featured_article_id = config.featured_article_id;
-      }
-      if (response.show_featured_recipe === undefined && typeof config.show_featured_recipe === 'boolean') {
-        response.show_featured_recipe = config.show_featured_recipe;
-      }
-      if (response.show_hero_cta === undefined && typeof config.show_hero_cta === 'boolean') {
-        response.show_hero_cta = config.show_hero_cta;
-      }
-      if (response.hero_cta_text === undefined && typeof config.hero_cta_text === 'string') {
-        response.hero_cta_text = config.hero_cta_text;
-      }
-      if (response.hero_cta_link === undefined && typeof config.hero_cta_link === 'string') {
-        response.hero_cta_link = config.hero_cta_link;
-      }
     } catch {
       // Invalid JSON, skip
     }
