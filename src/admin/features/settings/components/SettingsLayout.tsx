@@ -23,6 +23,7 @@ import {
   Image,
   Menu,
   Sparkles,
+  LayoutGrid,
 } from 'lucide-react';
 
 // Navigation items for Settings tabs
@@ -32,6 +33,7 @@ const settingsTabs = [
   { id: 'email', label: 'Email', icon: Mail },
   { id: 'social', label: 'Social', icon: Share2 },
   { id: 'content', label: 'Content', icon: FileText },
+  { id: 'category', label: 'Category Pages', icon: LayoutGrid },
   { id: 'menus', label: 'Menus', icon: Menu },
   { id: 'ads', label: 'Ads', icon: Monitor },
   { id: 'appearance', label: 'Appearance', icon: Laptop },

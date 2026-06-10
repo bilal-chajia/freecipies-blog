@@ -14,6 +14,7 @@ import SeoSettings, { seoSettingsTabs } from './tabs/SeoSettings';
 import EmailSettings from './tabs/EmailSettings';
 import SocialSettings from './tabs/SocialSettings';
 import ContentSettings from './tabs/ContentSettings';
+import CategoryPageSettings from './tabs/CategoryPageSettings';
 import MenuSettings, { menuSettingsTabs } from './tabs/MenuSettings';
 import AdsSettings from './tabs/AdsSettings';
 import AppearanceSettings from './tabs/AppearanceSettings';
@@ -30,6 +31,7 @@ type MainSettingsTab =
   | 'email'
   | 'social'
   | 'content'
+  | 'category'
   | 'menus'
   | 'ads'
   | 'appearance'
@@ -78,6 +80,17 @@ interface SettingsApiResponse {
     show_jump_button?: boolean;
     accent_color?: string;
     max_depth?: number;
+  };
+  category_page?: {
+    posts_per_page?: number;
+    layout_mode?: string;
+    card_style?: string;
+    show_sidebar?: boolean;
+    show_filters?: boolean;
+    show_breadcrumb?: boolean;
+    article_sort_by?: string;
+    article_sort_order?: string;
+    header_style?: string;
   };
 }
 
@@ -145,6 +158,17 @@ const Settings = () => {
     tocShowJumpButton: true,
     tocAccentColor: 'hsl(var(--primary))',
     tocMaxDepth: 4,
+
+    // Category Page Settings (global)
+    catPostsPerPage: 12,
+    catLayoutMode: 'grid',
+    catCardStyle: 'full',
+    catShowSidebar: true,
+    catShowFilters: true,
+    catShowBreadcrumb: true,
+    catSortBy: 'published_at',
+    catSortOrder: 'desc',
+    catHeaderStyle: 'hero',
 
     // SEO Settings
     defaultMetaTitle: 'SaaS Blog - Delicious Recipes & Cooking Tips',
@@ -326,6 +350,28 @@ const Settings = () => {
         }
       })
       .catch(() => toast.error('Failed to load appearance settings'));
+
+    // Load global category page settings from API
+    api.get('/settings/category-page')
+      .then(res => res.data)
+      .then((res: { success: boolean; data: SettingsApiResponse }) => {
+        const cp = res.data?.category_page;
+        if (cp) {
+          setFormData(prev => ({
+            ...prev,
+            catPostsPerPage: cp.posts_per_page ?? 12,
+            catLayoutMode: cp.layout_mode ?? 'grid',
+            catCardStyle: cp.card_style ?? 'full',
+            catShowSidebar: cp.show_sidebar ?? true,
+            catShowFilters: cp.show_filters ?? true,
+            catShowBreadcrumb: cp.show_breadcrumb ?? true,
+            catSortBy: cp.article_sort_by ?? 'published_at',
+            catSortOrder: cp.article_sort_order ?? 'desc',
+            catHeaderStyle: cp.header_style ?? 'hero',
+          }));
+        }
+      })
+      .catch(() => toast.error('Failed to load category page settings'));
   }, [setSettings]);
 
 
@@ -361,6 +407,21 @@ const Settings = () => {
             accent_color: formData.tocAccentColor,
             max_depth: formData.tocMaxDepth,
           },
+        });
+      }
+
+      // Save global category page settings if on category tab
+      if (tab === 'category') {
+        await api.put('/settings/category-page', {
+          posts_per_page: formData.catPostsPerPage,
+          layout_mode: formData.catLayoutMode,
+          card_style: formData.catCardStyle,
+          show_sidebar: formData.catShowSidebar,
+          show_filters: formData.catShowFilters,
+          show_breadcrumb: formData.catShowBreadcrumb,
+          article_sort_by: formData.catSortBy,
+          article_sort_order: formData.catSortOrder,
+          header_style: formData.catHeaderStyle,
         });
       }
 
@@ -423,6 +484,8 @@ const Settings = () => {
         return <SocialSettings {...props} />;
       case 'content':
         return <ContentSettings {...props} />;
+      case 'category':
+        return <CategoryPageSettings {...props} />;
       case 'menus':
         return <MenuSettings {...props} />;
       case 'ads':
