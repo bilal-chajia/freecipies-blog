@@ -108,6 +108,7 @@ type CategoryRecord = Partial<Omit<CategoryFormData, 'sort_order'>> & {
   article_sort_order?: string;
   header_style?: string;
   featured_article_id?: number;
+  presentation_json?: string;
   show_featured_recipe?: boolean;
   show_hero_cta?: boolean;
   hero_cta_text?: string;
@@ -363,6 +364,19 @@ const CategoryEditor = () => {
           }
         })();
 
+        const presentation = (() => {
+          if (!category.presentation_json) return {} as Record<string, unknown>;
+          try {
+            return typeof category.presentation_json === 'string'
+              ? JSON.parse(category.presentation_json)
+              : (category.presentation_json as Record<string, unknown>);
+          } catch {
+            return {} as Record<string, unknown>;
+          }
+        })();
+        const featuredFromPresentation = (presentation.featured_article ?? null) as { id?: number; slug?: string; title?: string } | null;
+        const heroCtaFromPresentation = (presentation.hero_cta ?? {}) as { show?: boolean; text?: string; link?: string };
+
         const imageFromJsonThumbnail = parsedImages?.thumbnail || null;
         const imageFromJsonHero = parsedImages?.hero || null;
         const legacyImage = category.image_url ? {
@@ -386,7 +400,7 @@ const CategoryEditor = () => {
           robots: category.robots || '',
           noIndex: category.no_index || false,
           short_description: category.short_description || '',
-          tldr: category.tldr || '',
+          tldr: (presentation.tldr as string) || '',
           // Map flat image properties back to nested object for UI
           imageThumbnail: imageFromJsonThumbnail || legacyImage,
           imageHero: imageFromJsonHero || null,
@@ -403,11 +417,11 @@ const CategoryEditor = () => {
           sortBy: category.article_sort_by || 'published_at',
           sort_order: category.article_sort_order || 'desc',
           headerStyle: category.header_style || 'hero',
-          featuredArticleId: category.featured_article_id ?? null,
+          featuredArticleId: featuredFromPresentation?.id ?? null,
           showFeaturedRecipe: category.show_featured_recipe ?? true,
-          showHeroCta: category.show_hero_cta ?? true,
-          heroCtaText: category.hero_cta_text || '',
-          heroCtaLink: category.hero_cta_link || '',
+          showHeroCta: heroCtaFromPresentation.show ?? false,
+          heroCtaText: heroCtaFromPresentation.text || '',
+          heroCtaLink: heroCtaFromPresentation.link || '',
           workflow_status: category.workflow_status || 'draft',
           is_featured: category.is_featured || category.is_favorite || false,
           displayOrder: Number.isFinite(Number(category.sort_order)) ? Number(category.sort_order) : 0,
@@ -416,8 +430,8 @@ const CategoryEditor = () => {
           iconSvg: category.iconSvg || '',
         });
 
-        if (typeof category.featured_article_id === 'number') {
-          loadFeaturedArticleById(category.featured_article_id);
+        if (typeof featuredFromPresentation?.id === 'number') {
+          loadFeaturedArticleById(featuredFromPresentation.id);
         } else {
           setFeaturedLookup({ loading: false, error: '', article: null });
           setFeaturedSlug('');
@@ -567,25 +581,24 @@ const CategoryEditor = () => {
           twitter_card: twitterCard || 'summary_large_image',
           no_index: noIndex,
         }),
-        config_json: JSON.stringify({
-          posts_per_page: numEntriesPerPage,
+        // Per-category editorial content. Page settings (layout/paging/sorting) are
+        // GLOBAL (Settings > Category Pages), not stored here.
+        presentation_json: JSON.stringify({
+          ...(featuredArticleId
+            ? {
+                featured_article: {
+                  id: featuredArticleId,
+                  slug: featuredLookup.article?.slug || featuredSlug || '',
+                  title: featuredLookup.article?.title || featuredLookup.article?.label || '',
+                },
+              }
+            : {}),
           tldr: formData.tldr || '',
-          show_in_nav: showInNav,
-          show_in_footer: showInFooter,
-          layout_mode: layoutMode,
-          card_style: cardStyle,
-          show_sidebar: showSidebar,
-          show_filters: showFilters,
-          show_breadcrumb: showBreadcrumb,
-          show_pagination: showPagination,
-          article_sort_by: sortBy,
-          article_sort_order: sort_order,
-          header_style: headerStyle,
-          featured_article_id: featuredArticleId,
-          show_featured_recipe: showFeaturedRecipe,
-          show_hero_cta: showHeroCta,
-          hero_cta_text: heroCtaText,
-          hero_cta_link: heroCtaLink,
+          hero_cta: {
+            show: !!showHeroCta,
+            text: heroCtaText || '',
+            link: heroCtaLink || '',
+          },
         }),
         collection_title: collection_title || formData.label,
       };
