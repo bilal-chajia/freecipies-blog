@@ -9,6 +9,8 @@ import type { D1Database } from '@cloudflare/workers-types';
 import { categories, type Category, type NewCategory } from '../schema/categories.schema';
 import { articles } from '../../articles/schema/articles.schema';
 import { syncCachedFields } from '../../articles/services/articles.service';
+import { enrichPresentationFeatured } from '../snapshot/featured-article';
+import type { CachedCardJson } from '../../articles/types/cache.types';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 async function getArticleIdsForCategory(drizzle: DrizzleDb, category_id: number): Promise<number[]> {
@@ -112,6 +114,51 @@ async function calculateDepth(db: D1Database | DrizzleDb, parent_id: number | nu
 }
 
 /**
+ * Resolve a published article's cached_card_json for the featured snapshot.
+ * Returns null for unknown, unpublished, or deleted articles.
+ */
+async function lookupFeaturedCard(
+  db: D1Database | DrizzleDb,
+  articleId: number,
+): Promise<CachedCardJson | null> {
+  const drizzle = getDb(db);
+  const row = await drizzle
+    .select({
+      cached_card_json: articles.cached_card_json,
+      workflow_status: articles.workflow_status,
+      deleted_at: articles.deleted_at,
+    })
+    .from(articles)
+    .where(eq(articles.id, articleId))
+    .get();
+
+  if (!row || row.workflow_status !== 'published' || row.deleted_at) return null;
+  if (!row.cached_card_json) return null;
+  try {
+    const card = JSON.parse(row.cached_card_json);
+    return card && typeof card === 'object' ? (card as CachedCardJson) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build the stored featured-article snapshot server-side when the save payload
+ * carries a presentation_json (the client only sends the featured article id).
+ */
+async function withEnrichedPresentation<T extends Partial<NewCategory>>(
+  db: D1Database | DrizzleDb,
+  category: T,
+): Promise<T> {
+  if (typeof category.presentation_json !== 'string') return category;
+  const enriched = await enrichPresentationFeatured(
+    category.presentation_json,
+    (articleId) => lookupFeaturedCard(db, articleId),
+  );
+  return { ...category, presentation_json: enriched };
+}
+
+/**
  * Create a new category
  */
 export async function createCategory(
@@ -120,11 +167,13 @@ export async function createCategory(
 ): Promise<Category | null> {
   const drizzle = getDb(db);
 
+  const enriched = await withEnrichedPresentation(db, category);
+
   // Auto-calculate depth based on parent_id
-  const depth = await calculateDepth(db, category.parent_id);
+  const depth = await calculateDepth(db, enriched.parent_id);
 
   const [inserted] = await drizzle.insert(categories).values({
-    ...category,
+    ...enriched,
     depth,
   }).returning();
   return inserted || null;
@@ -157,13 +206,15 @@ export async function updateCategory(
 
   const affectedArticleIds = await getArticleIdsForCategory(drizzle, existing.id);
 
+  const enriched = await withEnrichedPresentation(db, category);
+
   // Recalculate depth if parent_id is being changed
-  const depth = category.parent_id !== undefined
-    ? await calculateDepth(db, category.parent_id)
+  const depth = enriched.parent_id !== undefined
+    ? await calculateDepth(db, enriched.parent_id)
     : undefined;
 
   const updateData = {
-    ...category,
+    ...enriched,
     ...(depth !== undefined ? { depth } : {}),
     updated_at: new Date().toISOString(),
   };
@@ -204,13 +255,15 @@ export async function updateCategoryById(
 
   const affectedArticleIds = await getArticleIdsForCategory(drizzle, id);
 
+  const enriched = await withEnrichedPresentation(db, category);
+
   // Recalculate depth if parent_id is being changed
-  const depth = category.parent_id !== undefined
-    ? await calculateDepth(db, category.parent_id)
+  const depth = enriched.parent_id !== undefined
+    ? await calculateDepth(db, enriched.parent_id)
     : undefined;
 
   const updateData = {
-    ...category,
+    ...enriched,
     ...(depth !== undefined ? { depth } : {}),
     updated_at: new Date().toISOString(),
   };

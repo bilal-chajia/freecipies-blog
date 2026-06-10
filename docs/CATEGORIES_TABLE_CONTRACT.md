@@ -176,7 +176,15 @@ global and live in `site_settings.category_page_settings`, NOT here.
     "id": 42,
     "slug": "fluffy-pancakes",
     "title": "Fluffy Pancakes",
-    "image": { "url": "/api/images/...", "alt": "...", "width": 1200, "height": 675 }
+    "image": {
+      "media_id": 55,
+      "alt": "Stack of fluffy pancakes",
+      "placeholder": "data:image/jpeg;base64,...",
+      "variants": {
+        "sm": { "r2_key": "media/images/fluffy-pancakes-sm-m8f3a91c.webp", "width": 720, "height": 405 },
+        "md": { "r2_key": "media/images/fluffy-pancakes-md-m8f3a91c.webp", "width": 1200, "height": 675 }
+      }
+    }
   },
   "tldr": "Short intro for the top of the category page.",
   "hero_cta": { "show": true, "text": "Join my mailing list", "link": "#newsletter" }
@@ -186,11 +194,18 @@ global and live in `site_settings.category_page_settings`, NOT here.
 Rules:
 
 - `featured_article` is a regenerable **snapshot** (source of truth = the article).
-  Rebuild it when the featured article is set/changed, when the source article's
-  display fields change, and clear it when the source is deleted/unpublished. The
+  It is built **server-side at category save time** from the article's
+  `cached_card_json`, rebuilt when the source article's display fields change
+  (article save sync), and cleared when the source is deleted/unpublished. The
   hero falls back to the first listed article when absent.
-- `featured_article.title` is the article's `headline`; `image.url` is a resolved
-  public URL and never stores `r2_key`.
+- `featured_article.title` is the article's `headline`.
+- `featured_article.image` is a stored image snapshot per
+  `docs/IMAGE_JSON_CONTRACT.md`: variants use `r2_key` (never `url`); the
+  API/render boundary resolves them to public URLs. It mirrors
+  `cached_card_json.image` and must not store `caption`, `credit`, or `original`.
+- Admin write payloads send only `featured_article.id` (plus `slug`/`title` as
+  display hints); the server builds the stored snapshot. Clients never write
+  image data into this snapshot.
 - `tldr` is optional category intro text.
 - `hero_cta` overrides the global hero CTA for this category.
 - The deprecated per-category `config_json` blob is removed; do not reintroduce it.

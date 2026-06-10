@@ -8,13 +8,19 @@ describe('normalizePresentation', () => {
     expect(normalizePresentation(123)).toEqual({});
   });
 
-  it('keeps a valid featured_article snapshot and strips r2_key from its image', () => {
+  it('keeps a contract-shaped stored snapshot (r2_key variants) intact', () => {
     const result = normalizePresentation({
       featured_article: {
         id: 7,
         slug: 'pie',
         title: 'Pie',
-        image: { url: '/api/images/pie.webp', alt: 'Pie', width: 800, height: 600, r2_key: 'media/pie.webp' },
+        image: {
+          media_id: 9,
+          alt: 'Pie',
+          variants: {
+            sm: { r2_key: 'media/pie-sm.webp', width: 720, height: 405 },
+          },
+        },
       },
       tldr: 'Sweet',
       hero_cta: { show: true, text: 'Cook', link: '/r/pie' },
@@ -23,10 +29,27 @@ describe('normalizePresentation', () => {
       id: 7,
       slug: 'pie',
       title: 'Pie',
-      image: { url: '/api/images/pie.webp', alt: 'Pie', width: 800, height: 600 },
+      image: {
+        media_id: 9,
+        alt: 'Pie',
+        variants: { sm: { r2_key: 'media/pie-sm.webp', width: 720, height: 405 } },
+      },
     });
     expect(result.tldr).toBe('Sweet');
     expect(result.hero_cta).toEqual({ show: true, text: 'Cook', link: '/r/pie' });
+  });
+
+  it('drops a client-sent resolved (url) image: the server rebuilds the snapshot', () => {
+    const result = normalizePresentation({
+      featured_article: {
+        id: 7,
+        slug: 'pie',
+        title: 'Pie',
+        image: { url: '/api/images/pie.webp', alt: 'Pie', width: 800, height: 600 },
+      },
+    });
+    expect(result.featured_article).toEqual({ id: 7, slug: 'pie', title: 'Pie' });
+    expect(JSON.stringify(result)).not.toContain('"url"');
   });
 
   it('drops a featured_article missing required id/slug/title', () => {

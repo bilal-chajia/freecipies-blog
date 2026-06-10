@@ -3,18 +3,28 @@
  * Page layout/paging/sorting settings are GLOBAL (site_settings.category_page_settings).
  */
 
+import type { StoredImageVariants } from '@shared/types/images';
+
+/**
+ * Stored image snapshot for the featured article, mirroring `cached_card_json.image`.
+ * Per IMAGE_JSON_CONTRACT, a STORED snapshot keeps `r2_key` variants (never `url`);
+ * the API/render boundary resolves them to public URLs.
+ */
+export interface FeaturedArticleImage {
+  media_id?: number;
+  alt: string;
+  placeholder?: string;
+  aspect_ratio?: string;
+  focal_point?: { x: number; y: number };
+  variants: StoredImageVariants;
+}
+
 export interface FeaturedArticleSnapshot {
   id: number;
   slug: string;
   /** Editorial display title = the source article's headline. */
   title: string;
-  /** Resolved public image; never stores r2_key. */
-  image?: {
-    url: string;
-    alt: string;
-    width?: number;
-    height?: number;
-  };
+  image?: FeaturedArticleImage;
 }
 
 export interface HeroCta {

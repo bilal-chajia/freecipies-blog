@@ -5,7 +5,7 @@
  * Zero-join rendering optimization
  */
 
-import type { ImageVariants } from './images.types';
+import type { ImageVariants, StoredImageVariants } from './images.types';
 
 // ============================================
 // Cached Author
@@ -166,11 +166,14 @@ export interface CachedCardJson {
     /** Short description */
     short_description?: string;
 
-    /** Card image slot (replaces thumbnail to match image contract) */
+    /**
+     * Card image slot (stored snapshot per ARTICLE_CACHED_FIELDS_CONTRACT:
+     * variants carry r2_key; the API/render boundary resolves them to url).
+     */
     image?: {
         media_id?: number;
         alt?: string;
-        variants?: ImageVariants;
+        variants?: StoredImageVariants;
         placeholder?: string;
         aspect_ratio?: string;
         focal_point?: { x: number; y: number };

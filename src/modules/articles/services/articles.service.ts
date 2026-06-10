@@ -699,7 +699,7 @@ export async function syncCachedFields(
     .where(like(categories.presentation_json, '%"featured_article"%'));
 
   for (const candidate of candidates) {
-    const updated = resyncPresentationFeatured(candidate.presentation_json, id, isLive ? card : null);
+    const updated = resyncPresentationFeatured(candidate.presentation_json, id, isLive && card ? card : null);
     if (updated !== null) {
       await drizzle.update(categories)
         .set({ presentation_json: updated, updated_at: new Date().toISOString() })

@@ -254,6 +254,23 @@ export function transformCategoryResponse(category: any): any {
     }
   }
 
+  if (category.presentation_json) {
+    try {
+      const presentation = JSON.parse(category.presentation_json);
+      const featured = presentation?.featured_article;
+      if (featured && typeof featured === 'object' && featured.image) {
+        const resolved = resolveSlotForResponse(featured.image);
+        if (resolved && Object.keys(resolved.variants).length > 0) {
+          featured.image = resolved;
+        } else {
+          delete featured.image;
+        }
+      }
+      response.presentation_json = JSON.stringify(presentation);
+    } catch {
+    }
+  }
+
   if (category.seo_json) {
     try {
       const seo: SeoJson = JSON.parse(category.seo_json);
