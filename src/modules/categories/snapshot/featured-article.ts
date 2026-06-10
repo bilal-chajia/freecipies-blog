@@ -27,3 +27,37 @@ export function buildFeaturedArticleSnapshot(card: CachedCardJson): FeaturedArti
       : {}),
   };
 }
+
+/**
+ * Resync a category's presentation_json after its featured source article changed.
+ * Returns the updated JSON string when a write is needed, or null when nothing changes.
+ * Pass `card = null` when the article is deleted/unpublished: the snapshot is cleared
+ * (the site falls back to the first article of the list).
+ */
+export function resyncPresentationFeatured(
+  presentationJson: string | null | undefined,
+  articleId: number,
+  card: CachedCardJson | null,
+): string | null {
+  if (!presentationJson) return null;
+
+  let presentation: Record<string, unknown>;
+  try {
+    presentation = JSON.parse(presentationJson);
+  } catch {
+    return null;
+  }
+  if (!presentation || typeof presentation !== 'object') return null;
+
+  const featured = presentation.featured_article as { id?: unknown } | null | undefined;
+  if (!featured || typeof featured !== 'object' || featured.id !== articleId) return null;
+
+  if (card) {
+    presentation.featured_article = buildFeaturedArticleSnapshot(card);
+  } else {
+    delete presentation.featured_article;
+  }
+
+  const updated = JSON.stringify(presentation);
+  return updated === presentationJson ? null : updated;
+}

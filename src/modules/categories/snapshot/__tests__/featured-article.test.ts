@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFeaturedArticleSnapshot } from '../featured-article';
+import { buildFeaturedArticleSnapshot, resyncPresentationFeatured } from '../featured-article';
 import type { CachedCardJson } from '../../../articles/types/cache.types';
 
 const baseCard: CachedCardJson = {
@@ -36,5 +36,41 @@ describe('buildFeaturedArticleSnapshot', () => {
   it('omits image when no resolvable variant exists', () => {
     const snap = buildFeaturedArticleSnapshot({ ...baseCard, image: { alt: 'x', variants: {} } });
     expect(snap.image).toBeUndefined();
+  });
+});
+
+describe('resyncPresentationFeatured', () => {
+  const presentation = JSON.stringify({
+    featured_article: { id: 42, slug: 'old-slug', title: 'Old Title' },
+    tldr: 'Keep me',
+  });
+
+  it('returns null when presentation is empty, invalid, or not about this article', () => {
+    expect(resyncPresentationFeatured(null, 42, baseCard)).toBeNull();
+    expect(resyncPresentationFeatured('', 42, baseCard)).toBeNull();
+    expect(resyncPresentationFeatured('not json', 42, baseCard)).toBeNull();
+    expect(resyncPresentationFeatured('{}', 42, baseCard)).toBeNull();
+    expect(resyncPresentationFeatured(presentation, 7, baseCard)).toBeNull();
+  });
+
+  it('rebuilds the snapshot from the fresh card and preserves other fields', () => {
+    const updated = resyncPresentationFeatured(presentation, 42, baseCard);
+    expect(updated).not.toBeNull();
+    expect(JSON.parse(updated as string)).toEqual({
+      featured_article: { id: 42, slug: 'fluffy-pancakes', title: 'Fluffy Pancakes' },
+      tldr: 'Keep me',
+    });
+  });
+
+  it('returns null when the snapshot is already up to date', () => {
+    const fresh = JSON.stringify({
+      featured_article: { id: 42, slug: 'fluffy-pancakes', title: 'Fluffy Pancakes' },
+    });
+    expect(resyncPresentationFeatured(fresh, 42, baseCard)).toBeNull();
+  });
+
+  it('clears the snapshot when the article is deleted/unpublished (card = null)', () => {
+    const updated = resyncPresentationFeatured(presentation, 42, null);
+    expect(JSON.parse(updated as string)).toEqual({ tldr: 'Keep me' });
   });
 });

@@ -10,6 +10,7 @@ import { getTableColumns } from 'drizzle-orm';
 import { articles, type Article, type NewArticle } from '../schema/articles.schema';
 import { articlesToTags } from '../schema/articles-to-tags.schema';
 import { categories } from '../../categories/schema/categories.schema';
+import { resyncPresentationFeatured } from '../../categories/snapshot/featured-article';
 import { authors } from '../../authors/schema/authors.schema';
 import { tags as tagsTable } from '../../tags/schema/tags.schema';
 import { equipment as equipmentTable, type Equipment } from '../../equipment/schema/equipment.schema';
@@ -688,6 +689,23 @@ export async function syncCachedFields(
   await drizzle.update(articles)
     .set(updateData)
     .where(eq(articles.id, id));
+
+  // 5. Resync category featured-article snapshots pointing at this article
+  // (presentation_json snapshot pattern: source of truth = the article).
+  const isLive = article.workflow_status === 'published' && !article.deleted_at;
+  const candidates = await drizzle
+    .select({ id: categories.id, presentation_json: categories.presentation_json })
+    .from(categories)
+    .where(like(categories.presentation_json, '%"featured_article"%'));
+
+  for (const candidate of candidates) {
+    const updated = resyncPresentationFeatured(candidate.presentation_json, id, isLive ? card : null);
+    if (updated !== null) {
+      await drizzle.update(categories)
+        .set({ presentation_json: updated, updated_at: new Date().toISOString() })
+        .where(eq(categories.id, candidate.id));
+    }
+  }
 
   return true;
 }
