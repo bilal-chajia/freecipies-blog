@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-09
 **Branch:** `feat/template-editor` (worktree `../freecipies-templates`)
-**Status:** Approved design, pending implementation plan
+**Status:** Phases 0-2 complete — phases 3-5 (store slices, component split, perf) pending their own plan.
 
 ## Context
 
