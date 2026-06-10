@@ -108,6 +108,18 @@ Stored JSON uses `snake_case`.
 }
 ```
 
+### Presentation Settings
+
+`roundup_json` owns the roundup list's own presentation, alongside its items:
+
+| Field | Required | Source | Rule |
+| --- | --- | --- | --- |
+| `group_title` | no | Roundup editor | Optional editorial heading for the list. Omitted when blank. |
+| `group_description` | no | Roundup editor | Optional editorial description under the heading. Omitted when blank. |
+| `show_stats` | no | Roundup editor | Whether recipe stat badges render on each card. Defaults to `true`. |
+
+These are presentation of the roundup itself (not per-item display features), so they belong to `roundup_json`, not the `content_json.main_roundup` position marker.
+
 Expanded item shape:
 
 ```json

@@ -89,6 +89,15 @@ export interface RoundupJson {
 
     /** Collection of roundup items */
     items: RoundupItem[];
+
+    /** Optional editorial heading shown above the roundup list. */
+    group_title?: string;
+
+    /** Optional editorial description shown under the group heading. */
+    group_description?: string;
+
+    /** Whether recipe stat badges (time/difficulty/rating) render on each card. Defaults to true. */
+    show_stats?: boolean;
 }
 
 // ============================================
