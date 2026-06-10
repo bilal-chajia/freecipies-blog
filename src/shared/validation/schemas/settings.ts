@@ -153,6 +153,25 @@ export const AppearanceSchema = z
   .passthrough();
 
 // ────────────────────────────────────────────
+// Category page settings schema (global)
+// ────────────────────────────────────────────
+
+/** PUT body for global category page settings (partial of the 9 settings). */
+export const CategoryPageSettingsSchema = z
+  .object({
+    posts_per_page: z.number().int().min(1).max(50).optional(),
+    layout_mode: z.enum(['grid', 'list', 'masonry']).optional(),
+    card_style: z.enum(['compact', 'full', 'minimal']).optional(),
+    show_sidebar: z.boolean().optional(),
+    show_filters: z.boolean().optional(),
+    show_breadcrumb: z.boolean().optional(),
+    article_sort_by: z.enum(['published_at', 'title', 'view_count']).optional(),
+    article_sort_order: z.enum(['asc', 'desc']).optional(),
+    header_style: z.enum(['hero', 'minimal', 'none']).optional(),
+  })
+  .strict();
+
+// ────────────────────────────────────────────
 // Image-upload schemas
 // ────────────────────────────────────────────
 
