@@ -533,4 +533,31 @@ describe('BlockEditor hydrated marker blocks', () => {
 
     expect(saved.blocks).toEqual([]);
   });
+
+  it('hydrates roundupList items and presentation from roundup_json context', () => {
+    const adapter = getBlockAdapter('main_roundup');
+    expect(adapter).toBeDefined();
+
+    const roundup_json = {
+      list_type: 'ItemList',
+      group_title: 'Summer Salads',
+      group_description: 'Our favourite warm-weather bowls.',
+      show_stats: false,
+      items: [
+        { position: 1, source_type: 'internal_recipe', article_id: 7, slug: 'a', title: 'A' },
+        { position: 2, source_type: 'external_recipe', external_url: 'https://x.test', title: 'B' },
+      ],
+    };
+
+    const editorBlock = adapter!.toEditor({ type: 'main_roundup' } as any, { roundup_json }) as any;
+
+    expect(editorBlock.type).toBe('roundupList');
+    expect(editorBlock.props.title).toBe('Summer Salads');
+    expect(editorBlock.props.description).toBe('Our favourite warm-weather bowls.');
+    expect(editorBlock.props.showStats).toBe(false);
+    const items = JSON.parse(editorBlock.props.itemsJson);
+    expect(items).toHaveLength(2);
+    expect(items[0].title).toBe('A');
+    expect(items[1].external_url).toBe('https://x.test');
+  });
 });
