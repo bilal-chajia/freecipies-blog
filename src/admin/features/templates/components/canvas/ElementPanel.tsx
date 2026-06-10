@@ -42,7 +42,7 @@ import {
 import { toast } from 'sonner';
 import { MediaDialog } from '@admin/features/media/components';
 import ColorPicker from '@admin/components/ColorPicker';
-import { FONTS, COLOR_PRESETS } from './utils/editorConstants';
+import { FONTS } from './utils/editorConstants';
 import useEditorStore, { type EditorElement } from '@admin/features/templates/store/useEditorStore';
 
 interface CollapsibleSectionProps {
