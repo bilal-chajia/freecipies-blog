@@ -39,7 +39,16 @@ browser tour with code verification (file refs given).
 
 ## Image slot
 
-- ✅ Set image, fit modes, offset/scale while editing
+- 🔴 **Image upload to slots is INTENTIONALLY DISABLED.** Uploading via toolbar /
+  side panel / context toolbar / element panel shows toast "Template image
+  replacement needs the dedicated template asset flow first." (4 call sites:
+  TopToolbar, SidePanel, ContextToolbar, ElementPanel). Comment in
+  `SidePanel.tsx:147-149` explains assets must not go through the editorial media
+  flow; a dedicated template-asset upload route was never built. **Pre-existing,
+  intentional — not caused by the refactor.** Follow-up: build the dedicated
+  template asset upload route (separate feature, out of scope here).
+- ✅ Fit modes, offset/scale work for slots that already have an image
+  (seeded `image_url` or `{{article.image}}` binding)
 - 🐛 **CONFIRMED BUG — image lost on reload.** Save writes `image_url` (snake) to
   DB; on reload `toEditorTemplateElements` rewrites it to `imageUrl` (camel),
   but `useImageLoader` reads `el.image_url`
@@ -96,6 +105,7 @@ browser tour with code verification (file refs given).
 
 - Undo/redo history reset on create-save.
 - Text element Canva-level enrichment.
+- **Dedicated template asset upload route** (image-slot upload is gated until this exists).
 - Export quality.
 - SPA route-tree unification / chunk preloading.
 - `upload-font` `process.cwd` server error.
