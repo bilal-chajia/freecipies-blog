@@ -159,8 +159,8 @@ const SidePanel: React.FC = () => {
     const handleAddText = (style: 'heading' | 'subheading' | 'body') => {
         const defaults = {
             content: style === 'heading' ? 'Heading' : style === 'subheading' ? 'Subheading' : 'Body Text',
-            fontSize: style === 'heading' ? 64 : style === 'subheading' ? 48 : 32,
-            fontWeight: style === 'heading' ? 'bold' : 'normal',
+            font_size: style === 'heading' ? 64 : style === 'subheading' ? 48 : 32,
+            font_weight: style === 'heading' ? 'bold' : 'normal',
             width: 400,
             x: 300,
             y: 500
@@ -177,19 +177,19 @@ const SidePanel: React.FC = () => {
             // Shapes in our system are currently rects, assuming 'shape' type handles borderRadius
             // We can simulate circle with borderRadius
             addElement('shape', {
-                width: 200, height: 200, fill: '#ef4444', x: 350, y: 500, borderRadius: 100
+                width: 200, height: 200, fill: '#ef4444', x: 350, y: 500, border_radius: 100
             });
         }
     };
 
     const handleAddImageSlot = () => {
-        addElement('imageSlot', {
+        addElement('image_slot', {
             width: 400,
             height: 400,
             x: 300,
             y: 500,
             name: 'Image Slot',
-            borderRadius: 0,
+            border_radius: 0,
         });
     };
 
@@ -567,7 +567,7 @@ const SidePanel: React.FC = () => {
                                             y: el.y * scaleY,
                                             width: el.width * scaleX,
                                             height: el.height * scaleY,
-                                            fontSize: el.type === 'text' && el.fontSize ? el.fontSize * Math.min(scaleX, scaleY) : undefined
+                                            font_size: el.type === 'text' && el.font_size ? el.font_size * Math.min(scaleX, scaleY) : undefined
                                         }));
                                         setElements(newElements);
 
@@ -626,7 +626,7 @@ const SidePanel: React.FC = () => {
                                             y: el.y * sY,
                                             width: el.width * sX,
                                             height: el.height * sY,
-                                            fontSize: el.type === 'text' && el.fontSize ? el.fontSize * Math.min(sX, sY) : undefined
+                                            font_size: el.type === 'text' && el.font_size ? el.font_size * Math.min(sX, sY) : undefined
                                         }));
                                         setElements(newElements);
 

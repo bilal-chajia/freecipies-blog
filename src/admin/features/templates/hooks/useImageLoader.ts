@@ -180,7 +180,7 @@ export function useImageLoader({
     setError(null);
 
     const imageElements = elements.filter(
-      (el): el is ImageSlotElement => el.type === 'imageSlot'
+      (el): el is ImageSlotElement => el.type === 'image_slot'
     );
 
     const tasks: Promise<void>[] = [];

@@ -81,7 +81,7 @@ const ElementRenderer = memo(function ElementRenderer({
   const imageOffset = (articleData?.imageOffsets as Record<string, { x: number; y: number }> | undefined)?.[element.id] ?? { x: 0, y: 0 };
 
   switch (element.type) {
-    case 'imageSlot': {
+    case 'image_slot': {
       const imgEl = element as ImageSlotElementType;
       return (
         <ImageSlotElement
@@ -110,11 +110,11 @@ const ElementRenderer = memo(function ElementRenderer({
       if (textEl.content?.includes('{{')) {
         text = replaceVariables(text);
       }
-      if (textEl.textTransform === 'uppercase') {
+      if (textEl.text_transform === 'uppercase') {
         text = text.toUpperCase();
-      } else if (textEl.textTransform === 'lowercase') {
+      } else if (textEl.text_transform === 'lowercase') {
         text = text.toLowerCase();
-      } else if (textEl.textTransform === 'capitalize') {
+      } else if (textEl.text_transform === 'capitalize') {
         text = text.replace(/\b\w/g, (l: string) => l.toUpperCase());
       }
       return (

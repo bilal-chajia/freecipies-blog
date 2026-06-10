@@ -181,7 +181,7 @@ const ContextToolbar: React.FC = () => {
                             document.fonts.add(fontFace);
 
                             // Select the new font
-                            updateProp('fontFamily', fontName);
+                            updateProp('font_family', fontName);
                         } catch (error) {
                             console.error('[FontUpload] Failed:', error);
                         }
@@ -189,7 +189,7 @@ const ContextToolbar: React.FC = () => {
                     }}
                 />
 
-                <Select value={selectedElement.fontFamily} onValueChange={(val) => updateProp('fontFamily', val)}>
+                <Select value={selectedElement.font_family} onValueChange={(val) => updateProp('font_family', val)}>
                     <SelectTrigger className="w-40 h-8 text-xs">
                         <SelectValue placeholder="Font" />
                     </SelectTrigger>
@@ -239,9 +239,9 @@ const ContextToolbar: React.FC = () => {
                 </Select>
 
                 <div className="flex items-center gap-1 border rounded bg-zinc-50 p-0.5">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => updateProp('fontSize', Math.max(8, (selectedElement.fontSize || 16) - 1))}>-</Button>
-                    <span className="w-8 text-center text-xs">{selectedElement.fontSize}</span>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => updateProp('fontSize', (selectedElement.fontSize || 16) + 1)}>+</Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => updateProp('font_size', Math.max(8, (selectedElement.font_size || 16) - 1))}>-</Button>
+                    <span className="w-8 text-center text-xs">{selectedElement.font_size}</span>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => updateProp('font_size', (selectedElement.font_size || 16) + 1)}>+</Button>
                 </div>
 
                 <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -270,23 +270,23 @@ const ContextToolbar: React.FC = () => {
 
                 <div className="flex items-center bg-zinc-50 rounded border p-0.5">
                     <Button
-                        variant={selectedElement.fontWeight === 'bold' ? 'secondary' : 'ghost'}
+                        variant={selectedElement.font_weight === 'bold' ? 'secondary' : 'ghost'}
                         size="icon" className="h-7 w-7"
-                        onClick={() => updateProp('fontWeight', selectedElement.fontWeight === 'bold' ? 'normal' : 'bold')}
+                        onClick={() => updateProp('font_weight', selectedElement.font_weight === 'bold' ? 'normal' : 'bold')}
                     >
                         <Bold className="w-3 h-3" />
                     </Button>
                     <Button
-                        variant={selectedElement.fontStyle === 'italic' ? 'secondary' : 'ghost'}
+                        variant={selectedElement.font_style === 'italic' ? 'secondary' : 'ghost'}
                         size="icon" className="h-7 w-7"
-                        onClick={() => updateProp('fontStyle', selectedElement.fontStyle === 'italic' ? 'normal' : 'italic')}
+                        onClick={() => updateProp('font_style', selectedElement.font_style === 'italic' ? 'normal' : 'italic')}
                     >
                         <Italic className="w-3 h-3" />
                     </Button>
                     <Button
-                        variant={selectedElement.textDecoration === 'underline' ? 'secondary' : 'ghost'}
+                        variant={selectedElement.text_decoration === 'underline' ? 'secondary' : 'ghost'}
                         size="icon" className="h-7 w-7"
-                        onClick={() => updateProp('textDecoration', selectedElement.textDecoration === 'underline' ? 'none' : 'underline')}
+                        onClick={() => updateProp('text_decoration', selectedElement.text_decoration === 'underline' ? 'none' : 'underline')}
                     >
                         <Underline className="w-3 h-3" />
                     </Button>
@@ -294,23 +294,23 @@ const ContextToolbar: React.FC = () => {
 
                 <div className="flex items-center bg-zinc-50 rounded border p-0.5">
                     <Button
-                        variant={selectedElement.textAlign === 'left' ? 'secondary' : 'ghost'}
+                        variant={selectedElement.text_align === 'left' ? 'secondary' : 'ghost'}
                         size="icon" className="h-7 w-7"
-                        onClick={() => updateProp('align', 'left')}
+                        onClick={() => updateProp('text_align', 'left')}
                     >
                         <AlignLeft className="w-3 h-3" />
                     </Button>
                     <Button
-                        variant={selectedElement.textAlign === 'center' ? 'secondary' : 'ghost'}
+                        variant={selectedElement.text_align === 'center' ? 'secondary' : 'ghost'}
                         size="icon" className="h-7 w-7"
-                        onClick={() => updateProp('align', 'center')}
+                        onClick={() => updateProp('text_align', 'center')}
                     >
                         <AlignCenter className="w-3 h-3" />
                     </Button>
                     <Button
-                        variant={selectedElement.textAlign === 'right' ? 'secondary' : 'ghost'}
+                        variant={selectedElement.text_align === 'right' ? 'secondary' : 'ghost'}
                         size="icon" className="h-7 w-7"
-                        onClick={() => updateProp('align', 'right')}
+                        onClick={() => updateProp('text_align', 'right')}
                     >
                         <AlignRight className="w-3 h-3" />
                     </Button>
@@ -372,7 +372,7 @@ const ContextToolbar: React.FC = () => {
     }
 
     // Image Slot Toolbar
-    if (selectedElement.type === 'imageSlot') {
+    if (selectedElement.type === 'image_slot') {
         return (
             <div className="h-12 bg-white border-b border-zinc-200 flex items-center px-4 gap-4" onMouseDown={(e) => e.stopPropagation()}>
                 <span className="text-xs font-semibold text-zinc-500 uppercase flex items-center gap-2">
@@ -404,15 +404,15 @@ const ContextToolbar: React.FC = () => {
                         <div className="flex items-center gap-2 w-48">
                             <ZoomIn className="w-4 h-4 text-zinc-400" />
                             <Slider
-                                value={[selectedElement.imageScale || 1]}
+                                value={[selectedElement.image_scale || 1]}
                                 min={1}
                                 max={3}
                                 step={0.1}
-                                onValueChange={([val]) => updateProp('scale', val)}
+                                onValueChange={([val]) => updateProp('image_scale', val)}
                                 className="flex-1"
                             />
                             <span className="text-xs text-zinc-500 w-8 text-right">
-                                {(selectedElement.imageScale || 1).toFixed(1)}x
+                                {(selectedElement.image_scale || 1).toFixed(1)}x
                             </span>
                         </div>
                     )}
@@ -421,8 +421,8 @@ const ContextToolbar: React.FC = () => {
                         <span className="text-xs text-zinc-600">Radius</span>
                         <Input
                             type="number"
-                            value={selectedElement.borderRadius || 0}
-                            onChange={(e) => updateProp('borderRadius', parseInt(e.target.value))}
+                            value={selectedElement.border_radius || 0}
+                            onChange={(e) => updateProp('border_radius', parseInt(e.target.value))}
                             className="w-16 h-8 text-xs"
                         />
                     </div>
@@ -463,8 +463,8 @@ const ContextToolbar: React.FC = () => {
                     <span className="text-xs text-zinc-600">Radius</span>
                     <Input
                         type="number"
-                        value={selectedElement.borderRadius || 0}
-                        onChange={(e) => updateProp('borderRadius', parseInt(e.target.value))}
+                        value={selectedElement.border_radius || 0}
+                        onChange={(e) => updateProp('border_radius', parseInt(e.target.value))}
                         className="w-16 h-8 text-xs"
                     />
                 </div>

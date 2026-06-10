@@ -120,7 +120,7 @@ const DraggableLayersList: React.FC<DraggableLayersListProps> = ({
     const getElementIcon = (type: string) => {
         switch (type) {
             case 'text': return Type;
-            case 'imageSlot': return ImageIcon;
+            case 'image_slot': return ImageIcon;
             case 'shape': return Square;
             case 'overlay': return Layers;
             default: return Square;

@@ -77,7 +77,7 @@ export default function useElementTransform({
           // For single selection, check element type for keepRatio
           if (selectedNodes.length === 1) {
             const element = elements.find((el) => el.id === [...selectedIds][0]);
-            if (element?.type === 'imageSlot') {
+            if (element?.type === 'image_slot') {
               transformerRef.current.keepRatio(true);
             } else {
               transformerRef.current.keepRatio(false);
@@ -141,7 +141,7 @@ export default function useElementTransform({
 
   const handleTextTransformStart = useCallback((e: any, element: EditorElement) => {
     const node = e.target;
-    node.setAttr('_originalFontSize', (element as TextElement).fontSize || 32);
+    node.setAttr('_originalFontSize', (element as TextElement).font_size || 32);
     node.setAttr('_originalWidth', element.width || 300);
   }, []);
 
@@ -159,7 +159,7 @@ export default function useElementTransform({
       const newWidth = Math.max(50, Math.round(originalWidth * scaleX));
 
       handleElementChange(id, {
-        fontSize: newFontSize,
+        font_size: newFontSize,
         width: newWidth,
       });
 

@@ -176,7 +176,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
 
             // Apply to selected element
             if (selectedElement?.type === 'text') {
-                updateProp('fontFamily', fontName);
+                updateProp('font_family', fontName);
             }
         } catch (error) {
             console.error('Font upload failed:', error);
@@ -243,10 +243,10 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                     <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" onChange={handleFontUpload} />
 
                     {/* Font Select */}
-                    <Select value={selectedElement.fontFamily} onValueChange={(val) => updateProp('fontFamily', val)}>
+                    <Select value={selectedElement.font_family} onValueChange={(val) => updateProp('font_family', val)}>
                         <SelectTrigger className={`w-36 h-8 text-xs ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`} aria-label="Select font">
                             <SelectValue placeholder="Font">
-                                <span style={{ fontFamily: selectedElement.fontFamily }}>{selectedElement.fontFamily || 'Font'}</span>
+                                <span style={{ fontFamily: selectedElement.font_family }}>{selectedElement.font_family || 'Font'}</span>
                             </SelectValue>
                         </SelectTrigger>
                         <SelectContent className={`${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`}>
@@ -302,19 +302,19 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
 
                     {/* Bold/Italic */}
                     <Button
-                        variant={selectedElement.fontWeight === 'bold' ? 'secondary' : 'ghost'}
+                        variant={selectedElement.font_weight === 'bold' ? 'secondary' : 'ghost'}
                         size="icon"
                         className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
-                        onClick={() => updateProp('fontWeight', selectedElement.fontWeight === 'bold' ? 'normal' : 'bold')}
+                        onClick={() => updateProp('font_weight', selectedElement.font_weight === 'bold' ? 'normal' : 'bold')}
                         aria-label="Toggle bold"
                     >
                         <Bold className="w-4 h-4" />
                     </Button>
                     <Button
-                        variant={selectedElement.fontStyle === 'italic' ? 'secondary' : 'ghost'}
+                        variant={selectedElement.font_style === 'italic' ? 'secondary' : 'ghost'}
                         size="icon"
                         className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
-                        onClick={() => updateProp('fontStyle', selectedElement.fontStyle === 'italic' ? 'normal' : 'italic')}
+                        onClick={() => updateProp('font_style', selectedElement.font_style === 'italic' ? 'normal' : 'italic')}
                         aria-label="Toggle italic"
                     >
                         <Italic className="w-4 h-4" />
@@ -322,14 +322,14 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
 
                     {/* Underline */}
                     <Button
-                        variant={selectedElement.textDecoration?.includes('underline') ? 'secondary' : 'ghost'}
+                        variant={selectedElement.text_decoration?.includes('underline') ? 'secondary' : 'ghost'}
                         size="icon"
                         className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                         onClick={() => {
-                            const current = selectedElement.textDecoration || '';
+                            const current = selectedElement.text_decoration || '';
                             const hasUnderline = current.includes('underline');
                             const newDeco = hasUnderline ? current.replace('underline', '').trim() : `${current} underline`.trim();
-                            updateProp('textDecoration', newDeco || '');
+                            updateProp('text_decoration', newDeco || '');
                         }}
                         aria-label="Toggle underline"
                     >
@@ -338,14 +338,14 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
 
                     {/* Strikethrough */}
                     <Button
-                        variant={selectedElement.textDecoration?.includes('line-through') ? 'secondary' : 'ghost'}
+                        variant={selectedElement.text_decoration?.includes('line-through') ? 'secondary' : 'ghost'}
                         size="icon"
                         className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                         onClick={() => {
-                            const current = selectedElement.textDecoration || '';
+                            const current = selectedElement.text_decoration || '';
                             const hasStrike = current.includes('line-through');
                             const newDeco = hasStrike ? current.replace('line-through', '').trim() : `${current} line-through`.trim();
-                            updateProp('textDecoration', newDeco || '');
+                            updateProp('text_decoration', newDeco || '');
                         }}
                         aria-label="Toggle strikethrough"
                     >
@@ -363,46 +363,46 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                                 className={`h-8 w-8 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}
                                 aria-label="Text alignment"
                             >
-                                {selectedElement.textAlign === 'center' ? <AlignCenter className="w-4 h-4" /> :
-                                    selectedElement.textAlign === 'right' ? <AlignRight className="w-4 h-4" /> :
-                                        selectedElement.textAlign === 'justify' ? <AlignJustify className="w-4 h-4" /> :
+                                {selectedElement.text_align === 'center' ? <AlignCenter className="w-4 h-4" /> :
+                                    selectedElement.text_align === 'right' ? <AlignRight className="w-4 h-4" /> :
+                                        selectedElement.text_align === 'justify' ? <AlignJustify className="w-4 h-4" /> :
                                             <AlignLeft className="w-4 h-4" />}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent side="bottom" align="start" className={`w-auto p-1 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200'}`}>
                             <div className="flex items-center gap-0.5">
                                 <Button
-                                    variant={selectedElement.textAlign === 'left' || !selectedElement.textAlign ? 'secondary' : 'ghost'}
+                                    variant={selectedElement.text_align === 'left' || !selectedElement.text_align ? 'secondary' : 'ghost'}
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => updateProp('textAlign', 'left')}
+                                    onClick={() => updateProp('text_align', 'left')}
                                     aria-label="Align left"
                                 >
                                     <AlignLeft className="w-4 h-4" />
                                 </Button>
                                 <Button
-                                    variant={selectedElement.textAlign === 'center' ? 'secondary' : 'ghost'}
+                                    variant={selectedElement.text_align === 'center' ? 'secondary' : 'ghost'}
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => updateProp('textAlign', 'center')}
+                                    onClick={() => updateProp('text_align', 'center')}
                                     aria-label="Align center"
                                 >
                                     <AlignCenter className="w-4 h-4" />
                                 </Button>
                                 <Button
-                                    variant={selectedElement.textAlign === 'right' ? 'secondary' : 'ghost'}
+                                    variant={selectedElement.text_align === 'right' ? 'secondary' : 'ghost'}
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => updateProp('textAlign', 'right')}
+                                    onClick={() => updateProp('text_align', 'right')}
                                     aria-label="Align right"
                                 >
                                     <AlignRight className="w-4 h-4" />
                                 </Button>
                                 <Button
-                                    variant={selectedElement.textAlign === 'justify' ? 'secondary' : 'ghost'}
+                                    variant={selectedElement.text_align === 'justify' ? 'secondary' : 'ghost'}
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => updateProp('textAlign', 'justify')}
+                                    onClick={() => updateProp('text_align', 'justify')}
                                     aria-label="Justify"
                                 >
                                     <AlignJustify className="w-4 h-4" />
@@ -412,7 +412,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                     </Popover>
 
                     {/* Font Weight Dropdown */}
-                    <Select value={String(selectedElement.fontWeight || 'normal')} onValueChange={(val) => updateProp('fontWeight', val)}>
+                    <Select value={String(selectedElement.font_weight || 'normal')} onValueChange={(val) => updateProp('font_weight', val)}>
                         <SelectTrigger className={`w-24 h-8 text-xs ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`} aria-label="Font weight">
                             <SelectValue placeholder="Weight" />
                         </SelectTrigger>
@@ -443,16 +443,16 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                         </PopoverTrigger>
                         <PopoverContent side="bottom" align="start" className={`w-40 p-2 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200'}`}>
                             <div className="space-y-1">
-                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs" onClick={() => updateProp('textTransform', 'none')}>
+                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs" onClick={() => updateProp('text_transform', 'none')}>
                                     Default
                                 </Button>
-                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs uppercase" onClick={() => updateProp('textTransform', 'uppercase')}>
+                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs uppercase" onClick={() => updateProp('text_transform', 'uppercase')}>
                                     UPPERCASE
                                 </Button>
-                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs lowercase" onClick={() => updateProp('textTransform', 'lowercase')}>
+                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs lowercase" onClick={() => updateProp('text_transform', 'lowercase')}>
                                     lowercase
                                 </Button>
-                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs capitalize" onClick={() => updateProp('textTransform', 'capitalize')}>
+                                <Button variant="ghost" size="sm" className="w-full justify-start text-xs capitalize" onClick={() => updateProp('text_transform', 'capitalize')}>
                                     Capitalize
                                 </Button>
                             </div>
@@ -476,27 +476,27 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
                                         <Label className="text-xs">Letter spacing</Label>
-                                        <span className={`text-xs font-mono w-8 text-right ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{selectedElement.letterSpacing || 0}</span>
+                                        <span className={`text-xs font-mono w-8 text-right ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{selectedElement.letter_spacing || 0}</span>
                                     </div>
                                     <Slider
-                                        value={[selectedElement.letterSpacing || 0]}
+                                        value={[selectedElement.letter_spacing || 0]}
                                         min={-5}
                                         max={20}
                                         step={0.5}
-                                        onValueChange={([val]) => updateProp('letterSpacing', val)}
+                                        onValueChange={([val]) => updateProp('letter_spacing', val)}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
                                         <Label className="text-xs">Line spacing</Label>
-                                        <span className={`text-xs font-mono w-8 text-right ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{selectedElement.lineHeight || 1.4}</span>
+                                        <span className={`text-xs font-mono w-8 text-right ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{selectedElement.line_height || 1.4}</span>
                                     </div>
                                     <Slider
-                                        value={[selectedElement.lineHeight || 1.4]}
+                                        value={[selectedElement.line_height || 1.4]}
                                         min={0.8}
                                         max={3}
                                         step={0.1}
-                                        onValueChange={([val]) => updateProp('lineHeight', val)}
+                                        onValueChange={([val]) => updateProp('line_height', val)}
                                     />
                                 </div>
                             </div>
@@ -509,7 +509,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                             variant="ghost"
                             size="icon"
                             className={`h-7 w-7 p-0 rounded-none ${isDark ? 'text-zinc-400 hover:text-white hover:bg-zinc-700' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'}`}
-                            onClick={() => updateProp('fontSize', Math.max(6, (selectedElement.fontSize || 16) - 1))}
+                            onClick={() => updateProp('font_size', Math.max(6, (selectedElement.font_size || 16) - 1))}
                         >
                             -
                         </Button>
@@ -518,7 +518,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                                 <button
                                     className={`w-10 h-7 text-center text-xs font-mono cursor-pointer hover:bg-primary/10 ${isDark ? 'text-white' : 'text-zinc-900'}`}
                                 >
-                                    {selectedElement.fontSize || 16}
+                                    {selectedElement.font_size || 16}
                                 </button>
                             </PopoverTrigger>
                             <PopoverContent
@@ -530,8 +530,8 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                                     {[6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64, 72, 80, 96, 120, 144].map((size) => (
                                         <button
                                             key={size}
-                                            onClick={() => updateProp('fontSize', size)}
-                                            className={`w-full px-2 py-1 text-left text-sm rounded transition-colors ${selectedElement.fontSize === size
+                                            onClick={() => updateProp('font_size', size)}
+                                            className={`w-full px-2 py-1 text-left text-sm rounded transition-colors ${selectedElement.font_size === size
                                                 ? 'bg-primary text-primary-foreground'
                                                 : isDark ? 'hover:bg-zinc-800 text-zinc-300' : 'hover:bg-zinc-100 text-zinc-700'
                                                 }`}
@@ -546,7 +546,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
                             variant="ghost"
                             size="icon"
                             className={`h-7 w-7 p-0 rounded-none ${isDark ? 'text-zinc-400 hover:text-white hover:bg-zinc-700' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'}`}
-                            onClick={() => updateProp('fontSize', Math.min(200, (selectedElement.fontSize || 16) + 1))}
+                            onClick={() => updateProp('font_size', Math.min(200, (selectedElement.font_size || 16) + 1))}
                         >
                             +
                         </Button>
@@ -607,7 +607,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({ onExport, onPreview, onExportIm
             );
         }
 
-        if (selectedElement.type === 'imageSlot') {
+        if (selectedElement.type === 'image_slot') {
             return (
                 <div className="flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()}>
                     <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageReplace} />

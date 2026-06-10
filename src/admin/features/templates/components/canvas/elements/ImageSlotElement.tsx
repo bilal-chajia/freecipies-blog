@@ -136,7 +136,7 @@ const ImageSlotElement = memo(function ImageSlotElement({
     [allowImageDrag, adjustedBaseOffsetX, adjustedBaseOffsetY, onImageOffsetChange, element.id]
   );
 
-  const clipRadius = element.borderRadius || 0;
+  const clipRadius = element.border_radius || 0;
 
   return (
     <Group

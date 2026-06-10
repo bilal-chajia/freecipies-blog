@@ -182,7 +182,7 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
         onUpdate({
             ...element,
             image_url: media.url,
-            sourceType: 'upload',
+            source_type: 'upload',
             name: media.alt_text || element.name || 'Image',
         } as EditorElement);
     };
@@ -194,7 +194,7 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
                         {element.type === 'text' && <Type className="w-4 h-4 text-primary" />}
-                        {element.type === 'imageSlot' && <ImageIcon className="w-4 h-4 text-primary" />}
+                        {element.type === 'image_slot' && <ImageIcon className="w-4 h-4 text-primary" />}
                         {element.type === 'shape' && <Square className="w-4 h-4 text-primary" />}
                         {element.type === 'overlay' && <Layers className="w-4 h-4 text-primary" />}
                     </div>
@@ -242,7 +242,7 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                 className="h-8"
                             />
                         </div>
-                        {(element.type === 'imageSlot' || element.type === 'shape' || element.type === 'overlay') && (
+                        {(element.type === 'image_slot' || element.type === 'shape' || element.type === 'overlay') && (
                             <>
                                 <div>
                                     <Label className="text-xs">Width</Label>
@@ -326,8 +326,8 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                     <Label className="text-xs">Font Family</Label>
                                     <div className="space-y-2">
                                         <Select
-                                            value={el.fontFamily || 'Inter'}
-                                            onValueChange={(v: string) => handleChange('fontFamily', v)}
+                                            value={el.font_family || 'Inter'}
+                                            onValueChange={(v: string) => handleChange('font_family', v)}
                                         >
                                             <SelectTrigger className="h-9">
                                                 <SelectValue />
@@ -385,7 +385,7 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                                                     addCustomFont({ name: fontName, url });
 
                                                                     // 3. Select it
-                                                                    handleChange('fontFamily', fontName);
+                                                                    handleChange('font_family', fontName);
 
                                                                     toast.success(`Font ${fontName} added!`, { id: loadingToast });
                                                                 } catch (error) {
@@ -437,56 +437,56 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                 </div>
 
                                 <div>
-                                    <Label className="text-xs">Font Size: {el.fontSize || 32}px</Label>
+                                    <Label className="text-xs">Font Size: {el.font_size || 32}px</Label>
                                     <Slider
                                         className=""
                                         defaultValue={[32]}
-                                        value={[el.fontSize || 32]}
+                                        value={[el.font_size || 32]}
                                         min={12}
                                         max={120}
                                         step={1}
-                                        onValueChange={([v]: [number]) => handleChange('fontSize', v)}
+                                        onValueChange={([v]: [number]) => handleChange('font_size', v)}
                                     />
                                 </div>
 
                                 <div className="flex gap-1">
                                     <Button
-                                        variant={el.fontWeight === 'bold' ? 'secondary' : 'outline'}
+                                        variant={el.font_weight === 'bold' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('fontWeight', el.fontWeight === 'bold' ? 'normal' : 'bold')}
+                                        onClick={() => handleChange('font_weight', el.font_weight === 'bold' ? 'normal' : 'bold')}
                                     >
                                         <Bold className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={el.fontStyle === 'italic' ? 'secondary' : 'outline'}
+                                        variant={el.font_style === 'italic' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('fontStyle', el.fontStyle === 'italic' ? 'normal' : 'italic')}
+                                        onClick={() => handleChange('font_style', el.font_style === 'italic' ? 'normal' : 'italic')}
                                     >
                                         <Italic className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={el.textAlign === 'left' ? 'secondary' : 'outline'}
+                                        variant={el.text_align === 'left' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('textAlign', 'left')}
+                                        onClick={() => handleChange('text_align', 'left')}
                                     >
                                         <AlignLeft className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={el.textAlign === 'center' ? 'secondary' : 'outline'}
+                                        variant={el.text_align === 'center' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('textAlign', 'center')}
+                                        onClick={() => handleChange('text_align', 'center')}
                                     >
                                         <AlignCenter className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={el.textAlign === 'right' ? 'secondary' : 'outline'}
+                                        variant={el.text_align === 'right' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('textAlign', 'right')}
+                                        onClick={() => handleChange('text_align', 'right')}
                                     >
                                         <AlignRight className="w-4 h-4" />
                                     </Button>
@@ -495,19 +495,19 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                 {/* Text Decoration */}
                                 <div className="flex gap-1">
                                     <Button
-                                        variant={el.textDecoration === 'underline' ? 'secondary' : 'outline'}
+                                        variant={el.text_decoration === 'underline' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('textDecoration', el.textDecoration === 'underline' ? 'none' : 'underline')}
+                                        onClick={() => handleChange('text_decoration', el.text_decoration === 'underline' ? 'none' : 'underline')}
                                         title="Underline"
                                     >
                                         <Underline className="w-4 h-4" />
                                     </Button>
                                     <Button
-                                        variant={el.textDecoration === 'line-through' ? 'secondary' : 'outline'}
+                                        variant={el.text_decoration === 'line-through' ? 'secondary' : 'outline'}
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => handleChange('textDecoration', el.textDecoration === 'line-through' ? 'none' : 'line-through')}
+                                        onClick={() => handleChange('text_decoration', el.text_decoration === 'line-through' ? 'none' : 'line-through')}
                                         title="Strikethrough"
                                     >
                                         <Strikethrough className="w-4 h-4" />
@@ -516,29 +516,29 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
 
                                 {/* Letter Spacing */}
                                 <div>
-                                    <Label className="text-xs">Letter Spacing: {el.letterSpacing || 0}px</Label>
+                                    <Label className="text-xs">Letter Spacing: {el.letter_spacing || 0}px</Label>
                                     <Slider
                                         className=""
                                         defaultValue={[0]}
-                                        value={[el.letterSpacing || 0]}
+                                        value={[el.letter_spacing || 0]}
                                         min={-5}
                                         max={20}
                                         step={0.5}
-                                        onValueChange={([v]: [number]) => handleChange('letterSpacing', v)}
+                                        onValueChange={([v]: [number]) => handleChange('letter_spacing', v)}
                                     />
                                 </div>
 
                                 {/* Line Height */}
                                 <div>
-                                    <Label className="text-xs">Line Height: {el.lineHeight || 1.2}</Label>
+                                    <Label className="text-xs">Line Height: {el.line_height || 1.2}</Label>
                                     <Slider
                                         className=""
                                         defaultValue={[120]}
-                                        value={[(el.lineHeight || 1.2) * 100]}
+                                        value={[(el.line_height || 1.2) * 100]}
                                         min={80}
                                         max={250}
                                         step={5}
-                                        onValueChange={([v]: [number]) => handleChange('lineHeight', v / 100)}
+                                        onValueChange={([v]: [number]) => handleChange('line_height', v / 100)}
                                     />
                                 </div>
 
@@ -546,8 +546,8 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                 <div>
                                     <Label className="text-xs">Text Transform</Label>
                                     <Select
-                                        value={el.textTransform || 'none'}
-                                        onValueChange={(v: string) => handleChange('textTransform', v)}
+                                        value={el.text_transform || 'none'}
+                                        onValueChange={(v: string) => handleChange('text_transform', v)}
                                     >
                                         <SelectTrigger className="h-8">
                                             <SelectValue />
@@ -579,7 +579,7 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                         checked={!!el.background}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                             if (e.target.checked) {
-                                                handleChange('background', { color: 'rgba(0,0,0,0.5)', padding: 12, borderRadius: 8, opacity: 1 });
+                                                handleChange('background', { color: 'rgba(0,0,0,0.5)', padding: 12, border_radius: 8, opacity: 1 });
                                             } else {
                                                 handleChange('background', undefined);
                                             }
@@ -611,15 +611,15 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs">Corner Radius: {el.background?.borderRadius || 0}px</Label>
+                                            <Label className="text-xs">Corner Radius: {el.background?.border_radius || 0}px</Label>
                                             <Slider
                                                 className=""
                                                 defaultValue={[0]}
-                                                value={[el.background?.borderRadius || 0]}
+                                                value={[el.background?.border_radius || 0]}
                                                 min={0}
                                                 max={30}
                                                 step={1}
-                                                onValueChange={([v]: [number]) => handleNestedChange('background', 'borderRadius', v)}
+                                                onValueChange={([v]: [number]) => handleNestedChange('background', 'border_radius', v)}
                                             />
                                         </div>
 
@@ -689,15 +689,15 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
 
                             {element.type === 'shape' && (
                                 <div>
-                                    <Label className="text-xs">Corner Radius: {el.borderRadius || 0}px</Label>
+                                    <Label className="text-xs">Corner Radius: {el.border_radius || 0}px</Label>
                                     <Slider
                                         className=""
                                         defaultValue={[0]}
-                                        value={[el.borderRadius || 0]}
+                                        value={[el.border_radius || 0]}
                                         min={0}
                                         max={100}
                                         step={1}
-                                        onValueChange={([v]: [number]) => handleAnyChange('borderRadius', v)}
+                                        onValueChange={([v]: [number]) => handleAnyChange('border_radius', v)}
                                     />
                                 </div>
                             )}
@@ -706,7 +706,7 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                 )}
 
                 {/* Image Slot options */}
-                {element.type === 'imageSlot' && (
+                {element.type === 'image_slot' && (
                     <CollapsibleSection title="Image Settings" icon={ImageIcon}>
                         <div className="space-y-3">
                             <div>
@@ -722,8 +722,8 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                 <Label className="text-xs">Image Source</Label>
                                 <div className="space-y-2">
                                     <Select
-                                        value={el.sourceType || 'article'}
-                                        onValueChange={(v: string) => handleAnyChange('sourceType', v)}
+                                        value={el.source_type || 'article'}
+                                        onValueChange={(v: string) => handleAnyChange('source_type', v)}
                                     >
                                         <SelectTrigger className="">
                                             <SelectValue />
@@ -734,7 +734,7 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                                         </SelectContent>
                                     </Select>
 
-                                    {el.sourceType === 'upload' && (
+                                    {el.source_type === 'upload' && (
                                         <div className="pt-2">
                                             {el.image_url && (
                                                 <div className="mb-2 rounded overflow-hidden aspect-video relative group border border-zinc-700">
@@ -759,15 +759,15 @@ const ElementPanel: React.FC<ElementPanelProps> = ({
                             </div>
 
                             <div>
-                                <Label className="text-xs">Corner Radius: {el.borderRadius || 0}px</Label>
+                                <Label className="text-xs">Corner Radius: {el.border_radius || 0}px</Label>
                                 <Slider
                                     className=""
                                     defaultValue={[0]}
-                                    value={[el.borderRadius || 0]}
+                                    value={[el.border_radius || 0]}
                                     min={0}
                                     max={100}
                                     step={1}
-                                    onValueChange={([v]: [number]) => handleAnyChange('borderRadius', v)}
+                                    onValueChange={([v]: [number]) => handleAnyChange('border_radius', v)}
                                 />
                             </div>
                         </div>
@@ -799,7 +799,7 @@ const AddElementPanel: React.FC<AddElementPanelProps> = ({ onAddElement }) => {
 
     const elements = [
         {
-            type: 'imageSlot',
+            type: 'image_slot',
             icon: ImageIcon,
             label: 'Image Slot',
             description: 'Placeholder for recipe images',
@@ -810,7 +810,7 @@ const AddElementPanel: React.FC<AddElementPanelProps> = ({ onAddElement }) => {
             icon: Type,
             label: 'Text',
             description: 'Add title or description text',
-            defaults: { content: 'Your Text', fontSize: 48, color: '#ffffff', width: 400, x: 300, y: 600 }
+            defaults: { content: 'Your Text', font_size: 48, color: '#ffffff', width: 400, x: 300, y: 600 }
         },
         {
             type: 'shape',
@@ -831,12 +831,12 @@ const AddElementPanel: React.FC<AddElementPanelProps> = ({ onAddElement }) => {
     const handleMediaSelect = (media: any) => {
         if (!media) return;
 
-        onAddElement('imageSlot', {
+        onAddElement('image_slot', {
             width: 500,
             height: 400,
             x: 250,
             y: 250,
-            sourceType: 'upload',
+            source_type: 'upload',
             image_url: media.url,
             name: media.alt_text || 'Image'
         });
