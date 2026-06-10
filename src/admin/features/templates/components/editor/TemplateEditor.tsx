@@ -5,14 +5,14 @@ import { Button } from '@/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import TemplateCanvas from '../canvas/TemplateCanvas';
-import { FONTS } from '../canvas/ElementPanel';
+import { FONTS } from '../canvas/utils/editorConstants';
 import EditorLayout from '../canvas/modern/EditorLayout';
 import { templatesAPI } from '@admin/services/api';
 import { useFontLoader } from '@modules/templates/utils/fontLoader';
 import { useEditorStore } from '@admin/features/templates/store';
 import type { TemplateState } from '@admin/features/templates/store';
 import { generateSlug } from '@modules/templates/utils/slugUtils';
-import { stringifyStoredTemplateElements } from '../../../../../modules/templates/utils';
+import { stringifyStoredTemplateElements } from '@modules/templates/utils';
 import type { EditorElement, ElementType } from '@admin/features/templates/store/useEditorStore';
 
 // Helper to resize images for thumbnails

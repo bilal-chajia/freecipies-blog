@@ -1,13 +1,12 @@
 /**
  * Template Module - Element Types
  * ================================
- * Type definitions for all canvas elements supported in the template editor.
+ * Canonical element types. Mirror docs/TEMPLATE_JSON_CONTRACT.md 1:1.
+ * snake_case end-to-end: the in-memory editor shape IS the stored JSON shape.
  */
 
-// Element type discriminator
-export type ElementType = 'text' | 'image' | 'shape' | 'logo' | 'overlay';
+export type ElementType = 'text' | 'image_slot' | 'shape' | 'logo' | 'overlay';
 
-// Base element interface (all elements inherit from this)
 export interface BaseElement {
   id: string;
   type: ElementType;
@@ -19,86 +18,106 @@ export interface BaseElement {
   locked: boolean;
   visible?: boolean;
   opacity?: number;
+  name?: string;
 }
 
-// Text shadow configuration
 export interface TextShadow {
   enabled: boolean;
   color: string;
   blur: number;
-  offsetX: number;
-  offsetY: number;
+  offset_x: number;
+  offset_y: number;
 }
 
-// Text element with variable binding support
+export interface TextEffect {
+  type: 'none' | 'shadow' | 'lift' | 'hollow' | 'outline' | 'echo' | 'glitch' | 'neon' | 'splice';
+  color?: string;
+  offset?: number;
+  direction?: number;
+  blur?: number;
+  transparency?: number;
+  thickness?: number;
+}
+
+export interface TextBackground {
+  color?: string;
+  opacity?: number;
+  padding?: number;
+  border_radius?: number;
+}
+
 export interface TextElement extends BaseElement {
   type: 'text';
-  text: string;
-  binding?: string;                    // {{article.title}}, {{article.category}}
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: number;                  // 300, 400, 500, 600, 700, 800
-  fill: string;
-  align: 'left' | 'center' | 'right';
-  verticalAlign?: 'top' | 'middle' | 'bottom';
-  lineHeight?: number;
-  letterSpacing?: number;
-  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  content?: string;
+  binding?: string;
+  font_family?: string;
+  font_size?: number;
+  font_weight?: string | number;
+  font_style?: string;
+  color?: string;
+  text_align?: 'left' | 'center' | 'right' | 'justify';
+  vertical_align?: 'top' | 'middle' | 'bottom';
+  line_height?: number;
+  letter_spacing?: number;
+  text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  text_decoration?: string;
   shadow?: TextShadow;
+  effect?: TextEffect;
+  background?: TextBackground;
+  auto_fit?: boolean;
+  wrap?: string;
+  ellipsis?: boolean;
   stroke?: string;
-  strokeWidth?: number;
+  stroke_width?: number;
 }
 
-// Image element with dynamic source binding
-export interface ImageElement extends BaseElement {
-  type: 'image';
-  src: string;
-  binding?: string;                    // {{article.image}}
-  fit: 'cover' | 'contain' | 'fill';
-  clipRadius?: number;
-  imageOffset?: { x: number; y: number };
-  imageScale?: number;
-  placeholder?: string;                // Blurhash or LQIP
+export interface ImageSlotElement extends BaseElement {
+  type: 'image_slot';
+  image_url?: string;
+  src?: string;
+  binding?: string;
+  fit?: 'cover' | 'contain' | 'fill';
+  clip_radius?: number;
+  image_offset?: { x: number; y: number };
+  image_scale?: number;
+  placeholder?: string;
+  border_radius?: number;
+  source_type?: string;
 }
 
-// Shape element (rectangles, circles, etc.)
 export interface ShapeElement extends BaseElement {
   type: 'shape';
-  shapeType?: 'rect' | 'circle' | 'ellipse';
-  fill: string;
+  shape_type?: 'rect' | 'circle' | 'ellipse';
+  fill?: string;
   stroke?: string;
-  strokeWidth?: number;
-  cornerRadius?: number;
+  stroke_width?: number;
+  border_radius?: number;
 }
 
-// Logo element (company branding)
 export interface LogoElement extends BaseElement {
   type: 'logo';
-  src: string;
-  fit: 'cover' | 'contain' | 'fill';
+  src?: string;
+  fit?: 'cover' | 'contain' | 'fill';
 }
 
-// Overlay element (semi-transparent layer)
 export interface OverlayElement extends BaseElement {
   type: 'overlay';
-  fill: string;                        // rgba format
+  fill?: string;
 }
 
-// Union type for all elements
-export type TemplateElement = 
-  | TextElement 
-  | ImageElement 
-  | ShapeElement 
-  | LogoElement 
+export type TemplateElement =
+  | TextElement
+  | ImageSlotElement
+  | ShapeElement
+  | LogoElement
   | OverlayElement;
 
-// Type guards
 export function isTextElement(el: TemplateElement): el is TextElement {
   return el.type === 'text';
 }
 
-export function isImageElement(el: TemplateElement): el is ImageElement {
-  return el.type === 'image';
+export function isImageSlotElement(el: TemplateElement): el is ImageSlotElement {
+  return el.type === 'image_slot';
 }
 
 export function isShapeElement(el: TemplateElement): el is ShapeElement {

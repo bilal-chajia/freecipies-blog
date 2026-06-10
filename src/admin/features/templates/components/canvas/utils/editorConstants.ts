@@ -27,7 +27,7 @@ export const COLOR_PRESETS = [
 export const DEFAULT_TEXT_SIZE = {
     width: 400,
     height: 50,
-    fontSize: 32,
+    font_size: 32,
 };
 
 export const DEFAULT_IMAGE_SIZE = {

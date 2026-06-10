@@ -5,7 +5,8 @@
 // Canvas components
 export { default as TemplateCanvas } from './canvas/TemplateCanvas';
 export { TemplateCanvas as PinCanvas } from './canvas/TemplateCanvas';
-export { default as ElementPanel, AddElementPanel, FONTS } from './canvas/ElementPanel';
+export { default as ElementPanel, AddElementPanel } from './canvas/ElementPanel';
+export { FONTS, COLOR_PRESETS } from './canvas/utils/editorConstants';
 export { default as FloatingToolbar } from './canvas/FloatingToolbar';
 export { default as CanvasToolbar } from './canvas/CanvasToolbar';
 export { default as DraggableLayersList } from './canvas/DraggableLayersList';

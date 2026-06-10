@@ -32,8 +32,8 @@ const TextElement = memo(function TextElement({
   onTransformStart,
 }: TextElementProps) {
   const isLocked = element.locked;
-  const baseFontSize = element.fontSize || 32;
-  const lineHeight = element.lineHeight || 1.2;
+  const baseFontSize = element.font_size || 32;
+  const lineHeight = element.line_height || 1.2;
   const width = element.width || 300;
   const height = element.height || 100;
 
@@ -119,7 +119,7 @@ const TextElement = memo(function TextElement({
 
   const fontSize = useMemo(() => {
     const hasVariables = element.content?.includes('{{');
-    const shouldAutoFit = element.autoFit !== false && (hasVariables || element.autoFit === true);
+    const shouldAutoFit = element.auto_fit !== false && (hasVariables || element.auto_fit === true);
     if (!shouldAutoFit || !displayText) return baseFontSize;
 
     // Binary search for optimal font size using Konva.Text constructor
@@ -132,8 +132,8 @@ const TextElement = memo(function TextElement({
         text: displayText,
         width,
         fontSize: testSize,
-        fontFamily: element.fontFamily || 'Inter, sans-serif',
-        fontStyle: `${element.fontStyle === 'italic' ? 'italic ' : ''}${element.fontWeight === 'bold' ? 'bold' : ''}`.trim() || 'normal',
+        fontFamily: element.font_family || 'Inter, sans-serif',
+        fontStyle: `${element.font_style === 'italic' ? 'italic ' : ''}${element.font_weight === 'bold' ? 'bold' : ''}`.trim() || 'normal',
         lineHeight,
         wrap: 'word',
       });
@@ -147,7 +147,7 @@ const TextElement = memo(function TextElement({
       }
     }
     return minSize;
-  }, [displayText, baseFontSize, width, height, lineHeight, element.content, element.autoFit, element.fontFamily, element.fontStyle, element.fontWeight]);
+  }, [displayText, baseFontSize, width, height, lineHeight, element.content, element.auto_fit, element.font_family, element.font_style, element.font_weight]);
 
   const handleClick = useCallback(
     (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
@@ -190,13 +190,13 @@ const TextElement = memo(function TextElement({
       const newWidth = Math.max(50, node.width() * scaleX);
       const newHeight = Math.max(30, node.height() * scaleY);
       const scale = Math.max(scaleX, scaleY);
-      const newFontSize = Math.round((element.fontSize || 32) * scale);
+      const newFontSize = Math.round((element.font_size || 32) * scale);
       node.width(newWidth);
       node.height(newHeight);
       // Real-time updates deferred to TransformEnd to avoid store thrashing
       // We only update the Konva node for visual feedback
     },
-    [isLocked, element.fontSize]
+    [isLocked, element.font_size]
   );
 
   const handleTransformEndLocal = useCallback(
@@ -208,7 +208,7 @@ const TextElement = memo(function TextElement({
       const scaleY = node.scaleY();
       node.scaleX(1);
       node.scaleY(1);
-      const currentFontSize = element.fontSize || 32;
+      const currentFontSize = element.font_size || 32;
       const scale = Math.max(scaleX, scaleY);
       const newFontSize = Math.round(currentFontSize * scale);
       const newWidth = Math.round(node.width() * scaleX);
@@ -217,18 +217,18 @@ const TextElement = memo(function TextElement({
         x: node.x(),
         y: node.y(),
         width: newWidth,
-        fontSize: newFontSize,
+        font_size: newFontSize,
         rotation: node.rotation(),
       });
     },
-    [isLocked, element.id, element.fontSize, onTransformEnd, onElementChange, onTransformStart]
+    [isLocked, element.id, element.font_size, onTransformEnd, onElementChange, onTransformStart]
   );
 
   const fontStyleStr = useMemo(() => {
-    const italic = element.fontStyle === 'italic' ? 'italic' : '';
-    const weight = element.fontWeight === 'normal' ? '' : (element.fontWeight || '');
+    const italic = element.font_style === 'italic' ? 'italic' : '';
+    const weight = element.font_weight === 'normal' ? '' : (element.font_weight || '');
     return [italic, weight].filter(Boolean).join(' ') || 'normal';
-  }, [element.fontStyle, element.fontWeight]);
+  }, [element.font_style, element.font_weight]);
 
   return (
     <Text
@@ -239,14 +239,14 @@ const TextElement = memo(function TextElement({
       width={width}
       height={height}
       fontSize={fontSize}
-      fontFamily={element.fontFamily || 'Inter, sans-serif'}
+      fontFamily={element.font_family || 'Inter, sans-serif'}
       fontStyle={fontStyleStr}
       fill={effectProps.fillEnabled === false ? 'transparent' : element.color || '#ffffff'}
-      align={element.textAlign || 'center'}
+      align={element.text_align || 'center'}
       verticalAlign="middle"
-      letterSpacing={element.letterSpacing || 0}
+      letterSpacing={element.letter_spacing || 0}
       lineHeight={lineHeight}
-      textDecoration={element.textDecoration || ''}
+      textDecoration={element.text_decoration || ''}
       {...effectProps}
       wrap="word"
       ellipsis={false}

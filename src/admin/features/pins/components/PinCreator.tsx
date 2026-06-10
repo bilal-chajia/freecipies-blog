@@ -35,7 +35,7 @@ import TemplateCanvas from '@admin/features/templates/components/canvas/Template
 import TemplateSelector from './TemplateSelector';
 import { templatesAPI, pinterestBoardsAPI, pinterestPinsAPI } from '@/services/api';
 import { useFontLoader } from '@/utils/FontLoader';
-import { FONTS } from '@admin/features/templates/components/canvas/ElementPanel';
+import { FONTS } from '@admin/features/templates/components/canvas/utils/editorConstants';
 import type { EditorElement } from '@admin/features/templates/store';
 import type { ExportFormat } from '@admin/features/templates/hooks';
 
@@ -101,8 +101,8 @@ const PinCreator: React.FC<PinCreatorProps> = ({
     const templateFonts = useMemo(() => {
         if (!canvasTemplate?.elements_json) return [];
         const usedFonts = (canvasTemplate.elements_json as EditorElement[])
-            .filter((el): el is EditorElement & { fontFamily: string } => el.type === 'text' && !!(el as any).fontFamily)
-            .map(el => (el as any).fontFamily as string);
+            .filter((el): el is EditorElement & { font_family: string } => el.type === 'text' && !!(el as any).font_family)
+            .map(el => (el as any).font_family as string);
         // Always include default fonts to be safe
         const defaultFonts = FONTS.map(f => f.name);
         return [...new Set([...defaultFonts, ...usedFonts])];
@@ -171,7 +171,7 @@ const PinCreator: React.FC<PinCreatorProps> = ({
         }
 
         // Find all imageSlot elements
-        const imageSlots = elements.filter(el => el.type === 'imageSlot');
+        const imageSlots = elements.filter(el => el.type === 'image_slot');
 
         // Initialize imageUrls array based on number of slots
         const initialUrls = imageSlots.map((slot: any, index: number) => ({

@@ -8,7 +8,8 @@ import { eq } from 'drizzle-orm';
 import type { D1Database } from '@cloudflare/workers-types';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 import { pinTemplates, type PinTemplate, type NewPinTemplate } from '../schema/templates.schema';
-import { toStoredTemplateElements } from '../utils/elementSerialization';
+import { stringifyStoredTemplateElements } from '../utils/elementSerialization';
+import type { TemplateElement } from '../types/elements.types';
 
 export interface TemplateApiPayload {
   id: number;
@@ -69,11 +70,11 @@ function normalizeElementsJson(elements_json: CreateTemplatePayload['elements_js
     if (!Array.isArray(parsed)) {
       throw new Error('elements_json must be an array');
     }
-    return JSON.stringify(toStoredTemplateElements(parsed as Record<string, unknown>[]));
+    return stringifyStoredTemplateElements(parsed as TemplateElement[]);
   }
 
   if (Array.isArray(elements_json)) {
-    return JSON.stringify(toStoredTemplateElements(elements_json));
+    return stringifyStoredTemplateElements(elements_json as unknown as TemplateElement[]);
   }
 
   return '[]';

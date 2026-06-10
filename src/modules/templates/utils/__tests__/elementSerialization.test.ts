@@ -1,79 +1,51 @@
 import { describe, expect, it } from 'vitest';
 import {
+  parseStoredTemplateElements,
   stringifyStoredTemplateElements,
-  toEditorTemplateElements,
-  toStoredTemplateElements,
 } from '../elementSerialization';
 
-describe('template element serialization', () => {
-  it('serializes editor elements to stored snake_case JSON', () => {
-    const stored = toStoredTemplateElements([
+describe('template element serialization (canonical snake_case)', () => {
+  it('round-trips elements identically — no key conversion', () => {
+    const elements = [
       {
-        id: 'image-1',
-        type: 'imageSlot',
-        image_url: '/api/images/template-assets/example.webp',
-        sourceType: 'upload',
-        borderRadius: 8,
-        imageOffset: { x: 10, y: 20 },
-        width: 300,
-        height: 400,
-        x: 0,
-        y: 0,
-        rotation: 0,
-        locked: false,
-      },
-      {
-        id: 'text-1',
-        type: 'text',
-        fontFamily: 'Inter',
-        fontSize: 64,
-        textAlign: 'center',
-        shadow: { enabled: true, offsetX: 1, offsetY: 2, blur: 4, color: '#000000' },
-      },
-    ]);
-
-    expect(stored).toEqual([
-      expect.objectContaining({
+        id: 'image_slot-1',
         type: 'image_slot',
         image_url: '/api/images/template-assets/example.webp',
         source_type: 'upload',
         border_radius: 8,
         image_offset: { x: 10, y: 20 },
-      }),
-      expect.objectContaining({
+        x: 0, y: 0, width: 300, height: 400, rotation: 0, locked: false,
+      },
+      {
+        id: 'text-1',
         type: 'text',
         font_family: 'Inter',
         font_size: 64,
         text_align: 'center',
-        shadow: expect.objectContaining({ offset_x: 1, offset_y: 2 }),
-      }),
-    ]);
-  });
-
-  it('hydrates stored snake_case JSON back to editor elements', () => {
-    const storedJson = JSON.stringify([
-      {
-        id: 'image-1',
-        type: 'image_slot',
-        image_url: '/api/images/template-assets/example.webp',
-        source_type: 'upload',
-        border_radius: 8,
+        shadow: { enabled: true, offset_x: 1, offset_y: 2, blur: 4, color: '#000000' },
+        x: 0, y: 0, width: 200, height: 50, rotation: 0, locked: false,
       },
-    ]);
+    ];
+    expect(parseStoredTemplateElements(stringifyStoredTemplateElements(elements as never))).toEqual(elements);
+  });
 
-    expect(toEditorTemplateElements(storedJson)).toEqual([
-      expect.objectContaining({
-        type: 'imageSlot',
-        imageUrl: '/api/images/template-assets/example.webp',
-        sourceType: 'upload',
-        borderRadius: 8,
-      }),
+  it('parses stored snake_case JSON as-is', () => {
+    const stored = JSON.stringify([
+      { id: 'image_slot-1', type: 'image_slot', image_url: '/x.webp', source_type: 'upload', border_radius: 8 },
+    ]);
+    expect(parseStoredTemplateElements(stored)).toEqual([
+      { id: 'image_slot-1', type: 'image_slot', image_url: '/x.webp', source_type: 'upload', border_radius: 8 },
     ]);
   });
 
-  it('stringifies stored elements as snake_case', () => {
-    expect(stringifyStoredTemplateElements([{ id: 'text-1', type: 'text', fontSize: 32 }])).toBe(
-      '[{"id":"text-1","type":"text","font_size":32}]'
-    );
+  it('returns [] for null, empty, or invalid JSON', () => {
+    expect(parseStoredTemplateElements(null)).toEqual([]);
+    expect(parseStoredTemplateElements('')).toEqual([]);
+    expect(parseStoredTemplateElements('{not json')).toEqual([]);
+    expect(parseStoredTemplateElements('{"not":"array"}')).toEqual([]);
+  });
+
+  it('accepts an already-parsed array', () => {
+    expect(parseStoredTemplateElements([{ id: 'a', type: 'text' }] as never)).toEqual([{ id: 'a', type: 'text' }]);
   });
 });
