@@ -19,27 +19,6 @@ interface SeoJson {
   twitter_card?: 'summary' | 'summary_large_image';
 }
 
-interface ConfigJson {
-  posts_per_page?: number;
-  tldr?: string;
-  show_in_nav?: boolean;
-  show_in_footer?: boolean;
-  layout_mode?: 'grid' | 'list' | 'masonry';
-  card_style?: 'compact' | 'full' | 'minimal';
-  show_sidebar?: boolean;
-  show_filters?: boolean;
-  show_breadcrumb?: boolean;
-  show_pagination?: boolean;
-  article_sort_by?: 'published_at' | 'title' | 'view_count';
-  article_sort_order?: 'asc' | 'desc';
-  header_style?: 'hero' | 'minimal' | 'none';
-  featured_article_id?: number;
-  show_featured_recipe?: boolean;
-  show_hero_cta?: boolean;
-  hero_cta_text?: string;
-  hero_cta_link?: string;
-}
-
 const getBestVariant = (variants?: ImageVariants) => {
   return variants?.lg || variants?.md || variants?.sm || variants?.original || variants?.xs;
 };
@@ -123,53 +102,6 @@ const normalizeSeoJsonObject = (value: any): SeoJson => {
   };
 };
 
-const normalizeConfigJsonObject = (value: any): ConfigJson => {
-  if (!value || typeof value !== 'object') return {};
-
-  const featuredArticleIdRaw = value.featured_article_id;
-  const featuredArticleId = typeof featuredArticleIdRaw === 'number'
-    ? featuredArticleIdRaw
-    : typeof featuredArticleIdRaw === 'string'
-      ? parseInt(featuredArticleIdRaw, 10)
-      : undefined;
-  const normalized: ConfigJson = {};
-
-  if (typeof value.posts_per_page === 'number') normalized.posts_per_page = value.posts_per_page;
-  if (typeof value.tldr === 'string') normalized.tldr = value.tldr;
-  if (typeof value.show_in_nav === 'boolean') normalized.show_in_nav = value.show_in_nav;
-  if (typeof value.show_in_footer === 'boolean') normalized.show_in_footer = value.show_in_footer;
-  if (typeof value.layout_mode === 'string') normalized.layout_mode = value.layout_mode as ConfigJson['layout_mode'];
-  if (typeof value.card_style === 'string') normalized.card_style = value.card_style as ConfigJson['card_style'];
-  if (typeof value.show_sidebar === 'boolean') normalized.show_sidebar = value.show_sidebar;
-  if (typeof value.show_filters === 'boolean') normalized.show_filters = value.show_filters;
-  if (typeof value.show_breadcrumb === 'boolean') normalized.show_breadcrumb = value.show_breadcrumb;
-  if (typeof value.show_pagination === 'boolean') normalized.show_pagination = value.show_pagination;
-  if (typeof value.article_sort_by === 'string') normalized.article_sort_by = value.article_sort_by as ConfigJson['article_sort_by'];
-  if (typeof value.article_sort_order === 'string') normalized.article_sort_order = value.article_sort_order as ConfigJson['article_sort_order'];
-  if (typeof value.header_style === 'string') normalized.header_style = value.header_style as ConfigJson['header_style'];
-  if (Number.isFinite(featuredArticleId)) normalized.featured_article_id = featuredArticleId as number;
-  if (typeof value.show_featured_recipe === 'boolean') normalized.show_featured_recipe = value.show_featured_recipe;
-  if (typeof value.show_hero_cta === 'boolean') normalized.show_hero_cta = value.show_hero_cta;
-  if (typeof value.hero_cta_text === 'string') normalized.hero_cta_text = value.hero_cta_text;
-  if (typeof value.hero_cta_link === 'string') normalized.hero_cta_link = value.hero_cta_link;
-
-  return normalized;
-};
-
-const parseConfigJsonValue = (value: any): Record<string, any> => {
-  if (!value) return {};
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return typeof parsed === 'object' && parsed ? parsed : {};
-    } catch {
-      return {};
-    }
-  }
-  if (typeof value === 'object') return value;
-  return {};
-};
-
 /**
  * Parse and validate ImagesJson from request body
  */
@@ -224,80 +156,17 @@ export function parseSeoJson(value: any): string {
 }
 
 /**
- * Parse and validate ConfigJson from request body
- */
-export function parseConfigJson(value: any): string {
-  if (!value) return '{}';
-
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return JSON.stringify(normalizeConfigJsonObject(parsed));
-    } catch {
-      return '{}';
-    }
-  }
-
-  if (typeof value === 'object') {
-    return JSON.stringify(normalizeConfigJsonObject(value));
-  }
-
-  return '{}';
-}
-
-/**
- * Transform request body to handle both legacy flat fields and new JSON fields
+ * Transform request body: normalize the canonical snake_case JSON fields.
  */
 export function transformCategoryRequestBody(body: any): any {
   const transformed = { ...body };
-  const hasLegacyImageFields = ['image_url', 'imageAlt', 'imageWidth', 'imageHeight']
-    .some((key) => Object.prototype.hasOwnProperty.call(body, key));
 
   if (body.images_json !== undefined) {
     transformed.images_json = parseImagesJson(body.images_json);
-  } else if (hasLegacyImageFields) {
-    const images: Partial<Record<'thumbnail', unknown>> = {};
-    if (body.image_url) {
-      const r2Key = extractR2KeyFromUrl(body.image_url);
-      images.thumbnail = {
-        alt: body.imageAlt,
-        url: r2Key ? `/api/images/${r2Key}` : body.image_url,
-        width: body.imageWidth ?? 0,
-        height: body.imageHeight ?? 0,
-      };
-    }
-    transformed.images_json = JSON.stringify(images);
-    delete transformed.image_url;
-    delete transformed.imageAlt;
-    delete transformed.imageWidth;
-    delete transformed.imageHeight;
   }
 
   if (body.seo_json !== undefined) {
     transformed.seo_json = parseSeoJson(body.seo_json);
-  } else if (
-    body.metaTitle !== undefined ||
-    body.metaDescription !== undefined ||
-    body.canonicalUrl !== undefined ||
-    body.canonical !== undefined ||
-    body.ogImage !== undefined ||
-    body.ogTitle !== undefined ||
-    body.ogDescription !== undefined ||
-    body.twitterCard !== undefined ||
-    body.robots !== undefined ||
-    body.noIndex !== undefined
-  ) {
-    transformed.seo_json = parseSeoJson({
-      meta_title: body.metaTitle,
-      meta_description: body.metaDescription,
-      canonical: body.canonical ?? body.canonicalUrl,
-      og_image: body.ogImage,
-      og_title: body.ogTitle,
-      og_description: body.ogDescription,
-      twitter_card: body.twitterCard,
-      robots: body.robots,
-      no_index: body.noIndex,
-    });
   }
 
   if (body.presentation_json !== undefined) {
@@ -335,6 +204,34 @@ export function transformCategoryRequestBody(body: any): any {
   return transformed;
 }
 
+/**
+ * Resolve a stored image slot for API output: variants carry a public `url`
+ * (round-trips through parseImagesJson, which re-extracts the r2_key on save).
+ */
+const resolveSlotForResponse = (slot: any) => {
+  if (!slot || typeof slot !== 'object') return undefined;
+  const variants: Record<string, { url: string; width?: number; height?: number }> = {};
+  const sourceVariants = slot.variants && typeof slot.variants === 'object' ? slot.variants : {};
+  for (const [key, variant] of Object.entries(sourceVariants)) {
+    const url = resolveVariantUrl(variant as { r2_key?: string; url?: string });
+    if (!url) continue;
+    const v = variant as { width?: number; height?: number };
+    variants[key] = {
+      url,
+      ...(typeof v.width === 'number' ? { width: v.width } : {}),
+      ...(typeof v.height === 'number' ? { height: v.height } : {}),
+    };
+  }
+  return {
+    ...(typeof slot.media_id === 'number' ? { media_id: slot.media_id } : {}),
+    alt: typeof slot.alt === 'string' ? slot.alt : '',
+    ...(typeof slot.placeholder === 'string' && slot.placeholder ? { placeholder: slot.placeholder } : {}),
+    ...(typeof slot.aspect_ratio === 'string' ? { aspect_ratio: slot.aspect_ratio } : {}),
+    ...(slot.focal_point && typeof slot.focal_point === 'object' ? { focal_point: slot.focal_point } : {}),
+    variants,
+  };
+};
+
 export function transformCategoryResponse(category: any): any {
   if (!category) return category;
 
@@ -346,9 +243,13 @@ export function transformCategoryResponse(category: any): any {
       const primarySlot = images.thumbnail ?? images.hero;
       const variant = getBestVariant(primarySlot?.variants);
       response.image_url = resolveVariantUrl(variant);
-      response.imageAlt = primarySlot?.alt;
-      response.imageWidth = variant?.width;
-      response.imageHeight = variant?.height;
+      // Never ship raw r2_key to the frontend: re-emit images_json resolved.
+      const resolved: Record<string, unknown> = {};
+      const thumbnail = resolveSlotForResponse(images.thumbnail);
+      const hero = resolveSlotForResponse(images.hero);
+      if (thumbnail) resolved.thumbnail = thumbnail;
+      if (hero) resolved.hero = hero;
+      response.images_json = JSON.stringify(resolved);
     } catch {
     }
   }

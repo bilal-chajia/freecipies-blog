@@ -82,9 +82,6 @@ interface CategoryFormData {
 type CategoryRecord = Partial<Omit<CategoryFormData, 'sort_order'>> & {
   id?: number;
   image_url?: string;
-  imageAlt?: string;
-  imageWidth?: number;
-  imageHeight?: number;
   images_json?: string | Record<string, unknown> | null;
   meta_title?: string | null;
   meta_description?: string | null;
@@ -374,12 +371,6 @@ const CategoryEditor = () => {
 
         const imageFromJsonThumbnail = parsedImages?.thumbnail || null;
         const imageFromJsonHero = parsedImages?.hero || null;
-        const legacyImage = category.image_url ? {
-          url: category.image_url,
-          alt: category.imageAlt || '',
-          width: category.imageWidth || null,
-          height: category.imageHeight || null,
-        } : null;
 
         setFormData({
           slug: category.slug || '',
@@ -396,8 +387,7 @@ const CategoryEditor = () => {
           noIndex: category.no_index || false,
           short_description: category.short_description || '',
           tldr: (presentation.tldr as string) || '',
-          // Map flat image properties back to nested object for UI
-          imageThumbnail: imageFromJsonThumbnail || legacyImage,
+          imageThumbnail: imageFromJsonThumbnail,
           imageHero: imageFromJsonHero || null,
           collection_title: category.collection_title || '',
           numEntriesPerPage: category.posts_per_page || 12,
