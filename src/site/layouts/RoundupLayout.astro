@@ -83,7 +83,7 @@ const contentBlocks = normalizeContentDocument(article.content_json).blocks;
 ---
 
 <Layout
-  title={article.metaTitle || article.label}
+  title={article.metaTitle || article.headline}
   description={article.metaDescription || article.short_description}
   image={heroSlot.image_url ||
     heroThumb.image_url ||
@@ -101,18 +101,18 @@ const contentBlocks = normalizeContentDocument(article.content_json).blocks;
     <div class="article-container l-page-container">
       <div class="main-content l-main-content">
         {
-          article.categoryLabel && (
+          article.category?.label && (
             <a
-              href={`/categories/${article.categorySlug}`}
+              href={`/categories/${article.category?.slug}`}
               class="badge category-badge"
               style={`--badge-color: ${categoryColor};`}
             >
-              {article.categoryLabel}
+              {article.category?.label}
             </a>
           )
         }
 
-        <h1 class="article-title">{article.label}</h1>
+        <h1 class="article-title">{article.headline}</h1>
 
         {
           article.short_description && (
@@ -121,12 +121,12 @@ const contentBlocks = normalizeContentDocument(article.content_json).blocks;
         }
 
         <SocialShareBar
-          title={article.label}
+          title={article.headline}
           readingTime={`${readingTime} Min Read`}
         />
 
         <RecipeAuthorCard
-          authorName={author?.name || article.authorName}
+          authorName={author?.name || article.author?.name}
           authorImage={authorImage || undefined}
           authorImageSrcSet={authorAvatarSrcSet || undefined}
           authorImageSizes={authorAvatarSizes}
@@ -144,7 +144,7 @@ const contentBlocks = normalizeContentDocument(article.content_json).blocks;
 
         <HeroImage
           src={heroSlot.image_url || heroThumb.image_url || article.image_url}
-          alt={heroSlot.imageAlt || heroThumb.imageAlt || article.label}
+          alt={heroSlot.imageAlt || heroThumb.imageAlt || article.headline}
           width={heroSlot.imageWidth || heroThumb.imageWidth}
           height={heroSlot.imageHeight || heroThumb.imageHeight}
           srcset={heroSrcSet}

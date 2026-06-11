@@ -45,7 +45,7 @@ const hasRating = ratingValue !== null && ratingCount > 0;
 
 const prep = cachedRecipe?.prep_time_minutes ?? null;
 const recipe = cachedRecipe ? { prep } : null;
-const authorLabel = article.authorName || article.authorSlug || "Unknown";
+const authorLabel = article.author?.name || article.author?.slug || "Unknown";
 const showBookmark = article.type === "recipe";
 ---
 
@@ -168,9 +168,9 @@ const showBookmark = article.type === "recipe";
       <div class:list={["flex items-center gap-2", isMinimal || isCompact ? "mb-2.5" : "mb-3"]}>
         <span
           class="text-[10px] font-bold uppercase tracking-[0.05em] px-2 py-1 rounded bg-opacity-10"
-          style={`color: ${article.categoryColor || "#4f46e5"}; background-color: ${article.categoryColor ? article.categoryColor + "1A" : "#4f46e51A"};`}
+          style={`color: ${article.category?.color || "#4f46e5"}; background-color: ${article.category?.color ? article.category.color + "1A" : "#4f46e51A"};`}
         >
-          {article.categoryLabel || article.categorySlug?.replace(/-/g, " ") || "Uncategorized"}
+          {article.category?.label || article.category?.slug?.replace(/-/g, " ") || "Uncategorized"}
         </span>
         
         {recipe && recipe.prep && (

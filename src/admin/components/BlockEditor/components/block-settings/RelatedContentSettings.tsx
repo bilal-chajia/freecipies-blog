@@ -31,7 +31,6 @@ type RelatedItem = {
 
 type SearchResultItem = RelatedItem & {
     images_json?: string | null;
-    categoryLabel?: string | null;
     category?: {
         label?: string | null;
         color?: string | null;
@@ -155,12 +154,12 @@ function RelatedContentSettings({
     }, [searchTerm, activeType, mode]);
 
     const buildRelatedItem = (item: SearchResultItem, type: RelatedType): RelatedItem => {
-        const headline = item.headline || item.label || item.slug || '';
+        const headline = item.headline || item.slug || '';
         const relatedItem: RelatedItem = {
             id: item.id,
             slug: item.slug,
             headline,
-            categoryName: item.categoryLabel || item.categoryName || item.category?.label || null,
+            categoryName: item.categoryName || item.category?.label || null,
             categoryColor: item.categoryColor || item.category?.color || null,
         };
 
@@ -449,7 +448,7 @@ function RelatedContentSettings({
                                         )}
                                     </div>
                                     <div className="min-w-0 flex-1 text-sm font-medium leading-snug">
-                                        {item.headline || item.label || item.slug}
+                                        {item.headline || item.slug}
                                     </div>
                                     <Button
                                         variant="ghost"

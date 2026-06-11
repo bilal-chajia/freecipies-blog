@@ -107,14 +107,14 @@ const breadcrumbItems = [
   ...(category
     ? [{ label: category.label, href: `/categories/${category.slug}` }]
     : []),
-  { label: truncate(recipe.label || recipe.headline, 50) },
+  { label: truncate(recipe.headline || recipe.headline, 50) },
 ];
 
 
 ---
 
 <Layout
-  title={recipe.metaTitle || recipe.label}
+  title={recipe.metaTitle || recipe.headline}
   description={recipe.metaDescription || recipe.short_description}
   image={heroImage.image_url || recipe.image_url || undefined}
 >
@@ -144,19 +144,19 @@ const breadcrumbItems = [
         <Breadcrumb items={breadcrumbItems} />
         <!-- Category Badge -->
         {
-          recipe.categoryLabel && (
+          recipe.category?.label && (
             <a
-              href={`/categories/${recipe.categorySlug}`}
+              href={`/categories/${recipe.category?.slug}`}
               class="badge category-badge"
               style={`--badge-color: ${categoryColor};`}
             >
-              {recipe.categoryLabel}
+              {recipe.category?.label}
             </a>
           )
         }
 
         <!-- Recipe Title -->
-        <h1 class="recipe-title">{recipe.label}</h1>
+        <h1 class="recipe-title">{recipe.headline}</h1>
 
         <!-- Rating -->
         <div class="recipe-rating-header">
@@ -178,13 +178,13 @@ const breadcrumbItems = [
 
         <!-- Social Share Bar -->
         <SocialShareBar
-          title={recipe.label}
+          title={recipe.headline}
           readingTime={`${readingTime} Min Read`}
         />
 
         <!-- Author Card -->
         <RecipeAuthorCard
-          authorName={author?.name || recipe.authorName}
+          authorName={author?.name || recipe.author?.name}
           authorImage={authorImage || undefined}
           authorImageSrcSet={authorAvatarSrcSet || undefined}
           authorImageSizes={authorAvatarSizes}
@@ -210,7 +210,7 @@ const breadcrumbItems = [
         <!-- Hero Image -->
         <HeroImage
           src={heroImage.image_url || recipe.image_url}
-          alt={heroImage.imageAlt || recipe.imageAlt || recipe.label}
+          alt={heroImage.imageAlt || recipe.imageAlt || recipe.headline}
           width={heroImage.imageWidth || recipe.imageWidth}
           height={heroImage.imageHeight || recipe.imageHeight}
           srcset={heroSrcSet}

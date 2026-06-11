@@ -98,6 +98,7 @@ export type CategoryRecord = Partial<Omit<CategoryFormData, 'sort_order'>> & {
 export interface ArticleRecord {
   id?: number;
   slug?: string;
+  headline?: string;
   label?: string;
   title?: string;
 }

@@ -120,7 +120,7 @@ const PinCreator: React.FC<PinCreatorProps> = ({
             setSelectedTemplate(null);
             if (article) {
                 setPinData({
-                    title: article.label || article.title || '',
+                    title: article.headline || article.title || '',
                     description: article.short_description || article.meta_description || '',
                     board_id: '',
                 });
@@ -188,10 +188,10 @@ const PinCreator: React.FC<PinCreatorProps> = ({
     // Include all fields for data binding (dot notation)
     const articleData = article ? {
         // Basic article fields
-        title: pinData.title || article.label || article.title || '',
-        label: pinData.title || article.label || '',
-        categoryLabel: article.category_label || article.categoryLabel || '',
-        authorName: article.author_name || article.authorName || '',
+        title: pinData.title || article.headline || article.title || '',
+        label: pinData.title || article.headline || '',
+        categoryLabel: article.category?.label || '',
+        authorName: article.author?.name || '',
         prepTime: article.prep_time || article.prepTime || '',
         cookTime: article.cook_time || article.cookTime || '',
         image: article.image_url || article.cover_url || article.image || '',

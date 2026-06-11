@@ -51,7 +51,7 @@ export const GET: APIRoute = async ({ locals, site }) => {
       const image_url = getRecipeImageUrl(article);
       return `
     <item>
-      <title>${escapeXml(article.headline || article.label)}</title>
+      <title>${escapeXml(article.headline)}</title>
       <link>${siteUrl}/recipes/${article.slug}</link>
       <guid isPermaLink="true">${siteUrl}/recipes/${article.slug}</guid>
       <description>${escapeXml(article.short_description || '')}</description>

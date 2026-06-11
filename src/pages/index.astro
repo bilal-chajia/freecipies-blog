@@ -122,9 +122,9 @@ const { selected, srcSet } = getRecipeImage(recipe, 1200, "hero");
                     <div class="card-content">
                       <span
                         class="badge card-category"
-                        style={`--badge-color: ${getCategoryColor(recipe.categorySlug)};`}
+                        style={`--badge-color: ${getCategoryColor(recipe.category?.slug)};`}
                       >
-                        {recipe.categoryLabel}
+                        {recipe.category?.label}
                       </span>
                       <h2 class="card-title">{recipe.headline}</h2>
                     </div>
@@ -171,8 +171,8 @@ const { selected, srcSet } = getRecipeImage(recipe, 600, "hero");
                   <div class="card-content">
                     <span
                       class="badge card-category"
-                      style={`--badge-color: ${getCategoryColor(recipe.categorySlug)};`}
-                    >{recipe.categoryLabel}</span>
+                      style={`--badge-color: ${getCategoryColor(recipe.category?.slug)};`}
+                    >{recipe.category?.label}</span>
                     <h3 class="card-title">{recipe.headline}</h3>
                   </div>
                 </a>
@@ -217,9 +217,9 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                     )}
                     <span
                       class="badge foxiz-badge"
-                      style={`--badge-color: ${getCategoryColor(recipe.categorySlug)};`}
+                      style={`--badge-color: ${getCategoryColor(recipe.category?.slug)};`}
                     >
-                      {recipe.categoryLabel}
+                      {recipe.category?.label}
                     </span>
                   </a>
                   <div class="foxiz-card-body">
@@ -227,12 +227,12 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                       <a href={getRecipeUrl(recipe)}>{recipe.headline}</a>
                     </h3>
                     <div class="foxiz-tags">
-                      {recipe.categoryLabel && (
-                        <a href={`/categories/${recipe.categorySlug}`} class="foxiz-tag">
+                      {recipe.category?.label && (
+                        <a href={`/categories/${recipe.category?.slug}`} class="foxiz-tag">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M4 4h6l2 3h8v10H4z"/>
                           </svg>
-                          {recipe.categoryLabel}
+                          {recipe.category?.label}
                         </a>
                       )}
                       {cookTime && (
@@ -386,9 +386,9 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                     )}
                     <span
                       class="badge card-category-badge"
-                      style={`--badge-color: ${getCategoryColor(recipe.categorySlug)};`}
+                      style={`--badge-color: ${getCategoryColor(recipe.category?.slug)};`}
                     >
-                      {recipe.categoryLabel}
+                      {recipe.category?.label}
                     </span>
                   </div>
                   <div class="card-body">

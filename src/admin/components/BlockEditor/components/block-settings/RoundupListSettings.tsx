@@ -144,7 +144,7 @@ function RoundupListSettings({
     }, [searchTerm]);
 
     const buildItem = (item: SearchResultItem): RoundupListItem => {
-        const headline = item.headline || item.label || item.slug || '';
+        const headline = item.headline || item.slug || '';
         const image = getImageSlot(item.images_json, 'thumbnail') || getImageSlot(item.images_json, 'hero');
         const recipe = parseJsonObject(item.cached_recipe_json);
         const rating = parseJsonObject(item.cached_rating_json);
@@ -180,8 +180,8 @@ function RoundupListSettings({
         if (items.some((existing) => existing.article_id === item.id)) return;
         const nextItems = [...items, buildItem(item)];
         updateProps({ itemsJson: JSON.stringify(nextItems) });
-        setSearchTerm('');
-        setResults([]);
+        // Keep the search term and results so the editor can add several recipes
+        // from one search. Already-added rows render disabled via `isAdded`.
     };
 
     const removeItem = (articleIdValue: string | number) => {

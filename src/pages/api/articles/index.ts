@@ -54,7 +54,7 @@ export const GET: APIRoute = async ({ request }) => {
         page,
         limit,
         total: articles.total,
-        totalPages: Math.ceil(articles.total / limit)
+        total_pages: Math.ceil(articles.total / limit)
       },
       cacheControl: 'public, max-age=3600'
     });

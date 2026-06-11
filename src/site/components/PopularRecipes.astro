@@ -36,14 +36,14 @@ const visibleRecipes = recipes
           return (
             <a href={`/recipes/${recipe.slug}`} class="recipe-item">
               <div class="recipe-content">
-                <h4 class="recipe-title">{recipe.label}</h4>
+                <h4 class="recipe-title">{recipe.headline}</h4>
                 <div class="recipe-meta">
-                  {recipe.categoryLabel && (
+                  {recipe.category?.label && (
                     <span
                       class="category"
                       style={`color: ${recipe.category?.color || "#666"}`}
                     >
-                      {recipe.categoryLabel}
+                      {recipe.category?.label}
                     </span>
                   )}
                   {cookTime && (
@@ -59,7 +59,7 @@ const visibleRecipes = recipes
               {(selected.image_url || recipe.image_url) && (
                 <img
                   src={selected.image_url || recipe.image_url}
-                  alt={selected.imageAlt || recipe.imageAlt || recipe.label}
+                  alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
                   width={selected.imageWidth || recipe.imageWidth || 80}
                   height={selected.imageHeight || recipe.imageHeight || 80}
                   srcset={srcSet || undefined}

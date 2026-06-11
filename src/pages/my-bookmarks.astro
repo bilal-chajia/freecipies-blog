@@ -108,8 +108,8 @@ const description = "Saved recipes from SaaS Blog.";
       info.className = 'p-5 flex flex-col gap-2';
 
       const cachedCategory = parseJson(article.cached_category_json) || {};
-      const categoryLabel = article.categoryLabel || cachedCategory.label || '';
-      const categoryColor = article.categoryColor || cachedCategory.color || '#2563eb';
+      const categoryLabel = article.category?.label || cachedCategory.label || '';
+      const categoryColor = article.category?.color || cachedCategory.color || '#2563eb';
 
       if (categoryLabel) {
         const category = document.createElement('span');

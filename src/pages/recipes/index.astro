@@ -262,7 +262,7 @@ const siteDescription =
               {recipes.map((recipe) => {
                 const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
                 const sizes = "(max-width: 768px) 50vw, 25vw";
-                const { badgeColor, badgeText } = getBadgeColors(recipe.categoryColor);
+                const { badgeColor, badgeText } = getBadgeColors(recipe.category?.color);
                 const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
                 const prepTime = cachedRecipe?.prep_time_minutes ?? null;
                 const servings = cachedRecipe?.servings ?? null;
@@ -297,7 +297,7 @@ const siteDescription =
                         class="badge card-badge"
                         style={`background: ${badgeColor}; color: ${badgeText};`}
                       >
-                        {recipe.categoryLabel}
+                        {recipe.category?.label}
                       </span>
                     </a>
                     <div class="card-body">

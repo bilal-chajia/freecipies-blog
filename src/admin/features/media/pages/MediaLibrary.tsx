@@ -241,7 +241,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
           </div>
         )}
 
-        {pagination.totalPages > 1 && (
+        {pagination.total_pages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between mt-8 pt-6 border-t border-border/30 gap-4">
             <div className="text-sm text-muted-foreground">
               Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> assets
@@ -259,14 +259,14 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
               </Button>
 
               <div className="flex items-center gap-1 mx-2">
-                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(5, pagination.total_pages) }, (_, i) => {
                   let pageNum: number;
-                  if (pagination.totalPages <= 5) {
+                  if (pagination.total_pages <= 5) {
                     pageNum = i + 1;
                   } else if (pagination.page <= 3) {
                     pageNum = i + 1;
-                  } else if (pagination.page >= pagination.totalPages - 2) {
-                    pageNum = pagination.totalPages - 4 + i;
+                  } else if (pagination.page >= pagination.total_pages - 2) {
+                    pageNum = pagination.total_pages - 4 + i;
                   } else {
                     pageNum = pagination.page - 2 + i;
                   }
@@ -294,7 +294,7 @@ const MediaLibrary = ({ onSelect, isDialog, variantSizes }: MediaLibraryProps) =
                 variant="outline"
                 size="icon"
                 onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages || loading}
+                disabled={pagination.page === pagination.total_pages || loading}
                 className="h-9 w-9 rounded-lg"
               >
                 <ChevronRight className="size-4" />
