@@ -69,15 +69,21 @@ const renderedItems = items.map((item, index) => {
     srcSet = getImageSrcSet(JSON.stringify(slots), "thumbnail");
   }
 
+  const allBadges = showStats ? resolveRoundupBadges(item, visibleBadges) : [];
+  const ratingBadge = allBadges.find((b) => b.key === "rating");
+  const overlineCategory = item.recipe?.recipe_category;
+
   return {
     author: item.author,
-    badges: showStats ? resolveRoundupBadges(item, visibleBadges) : [],
+    // Rating is surfaced as an image overlay, so keep it out of the chip row.
+    badges: allBadges.filter((b) => b.key !== "rating"),
     href,
     imgData,
     isInternal,
     note,
-    overline: isInternal ? "Featured recipe" : "From the web",
+    overline: overlineCategory || (isInternal ? "Featured recipe" : "From the web"),
     position,
+    ratingText: ratingBadge ? ratingBadge.text : null,
     srcSet,
     subtitle,
     title,
@@ -108,6 +114,7 @@ const renderedItems = items.map((item, index) => {
       note,
       overline,
       position,
+      ratingText,
       srcSet,
       subtitle,
       title,
@@ -129,6 +136,12 @@ const renderedItems = items.map((item, index) => {
                 />
               </a>
               <span class="ri-rank">{position}</span>
+              {ratingText && (
+                <span class="ri-rating">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z" /></svg>
+                  {ratingText}
+                </span>
+              )}
             </div>
           ) : (
             <div class="ri-media ri-media--empty">
@@ -276,6 +289,27 @@ const renderedItems = items.map((item, index) => {
     box-shadow: var(--shadow-md);
   }
 
+  .ri-rating {
+    position: absolute;
+    bottom: 0.85rem;
+    left: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--brand-secondary);
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 800;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ri-rating svg {
+    width: 14px;
+    height: 14px;
+  }
+
   .ri-body {
     display: flex;
     flex-direction: column;
@@ -323,9 +357,9 @@ const renderedItems = items.map((item, index) => {
     align-items: center;
     gap: 5px;
     background: var(--bg-alt);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    padding: 4px 10px;
+    border: 1px solid transparent;
+    color: var(--text);
+    padding: 5px 11px;
     border-radius: var(--radius-full);
     font-size: 0.8125rem;
     font-weight: 600;
@@ -377,8 +411,8 @@ const renderedItems = items.map((item, index) => {
     align-items: center;
     gap: 0.6rem;
     margin-top: 0.5rem;
-    background: var(--text);
-    color: var(--text-inverse);
+    background: var(--brand-secondary);
+    color: #fff;
     padding: 0.75rem 1.6rem;
     border-radius: var(--radius-full);
     font-weight: 700;
@@ -388,7 +422,7 @@ const renderedItems = items.map((item, index) => {
   }
 
   .ri-cta:hover {
-    background: var(--brand-secondary);
+    background: var(--text);
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
   }
