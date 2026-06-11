@@ -23,8 +23,20 @@ export interface RoundupItemImage {
 
 export interface RoundupItemRecipeSnapshot {
     total_time_minutes?: number | null;
+    prep_time_minutes?: number | null;
+    cook_time_minutes?: number | null;
     difficulty?: string | null;
-    servings?: number | null;
+    servings?: number | string | null;
+    calories_per_serving?: number | null;
+    protein_g?: number | null;
+    carbohydrate_g?: number | null;
+    fat_g?: number | null;
+    recipe_category?: string | null;
+    recipe_cuisine?: string | null;
+    cooking_method?: string | null;
+    estimated_cost?: string | null;
+    /** Boolean quality/diet flags mirrored from cached_recipe_json.badges. */
+    badges?: Record<string, boolean> | null;
 }
 
 export interface RoundupItemRatingSnapshot {
@@ -96,8 +108,11 @@ export interface RoundupJson {
     /** Optional editorial description shown under the group heading. */
     group_description?: string;
 
-    /** Whether recipe stat badges (time/difficulty/rating) render on each card. Defaults to true. */
+    /** Whether recipe stat badges render on each card. Master toggle; defaults to true. */
     show_stats?: boolean;
+
+    /** Ordered badge keys to display on each card (see ROUNDUP_BADGES). Empty/undefined falls back to the defaults. */
+    visible_badges?: string[];
 }
 
 // ============================================

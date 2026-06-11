@@ -159,5 +159,14 @@ describe('recipe_json contract normalization', () => {
     const roundup = normalizeRoundupJson({ items: [] }) as Record<string, unknown>;
     expect(roundup.group_title).toBeUndefined();
     expect('show_stats' in roundup).toBe(false);
+    expect('visible_badges' in roundup).toBe(false);
+  });
+
+  it('preserves a valid visible_badges selection and drops non-string entries', () => {
+    const roundup = normalizeRoundupJson({
+      items: [],
+      visible_badges: ['total_time', 42, 'calories', null],
+    }) as Record<string, unknown>;
+    expect(roundup.visible_badges).toEqual(['total_time', 'calories']);
   });
 });

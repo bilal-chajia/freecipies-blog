@@ -324,6 +324,7 @@ export function normalizeRoundupJson(value: unknown) {
     group_title?: string;
     group_description?: string;
     show_stats?: boolean;
+    visible_badges?: string[];
   } = {
     items: arrayOrEmpty(source.items).map((item, index) => {
       if (!isRecord(item)) return { position: index + 1, source_type: 'internal_recipe', title: '' };
@@ -359,6 +360,10 @@ export function normalizeRoundupJson(value: unknown) {
   const groupDescription = stringOrNull(source.group_description);
   if (groupDescription) result.group_description = groupDescription;
   if (typeof source.show_stats === 'boolean') result.show_stats = source.show_stats;
+  if (Array.isArray(source.visible_badges)) {
+    const badges = source.visible_badges.filter((k): k is string => typeof k === 'string');
+    if (badges.length) result.visible_badges = badges;
+  }
 
   return result;
 }

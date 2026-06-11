@@ -116,9 +116,14 @@ Stored JSON uses `snake_case`.
 | --- | --- | --- | --- |
 | `group_title` | no | Roundup editor | Optional editorial heading for the list. Omitted when blank. |
 | `group_description` | no | Roundup editor | Optional editorial description under the heading. Omitted when blank. |
-| `show_stats` | no | Roundup editor | Whether recipe stat badges render on each card. Defaults to `true`. |
+| `show_stats` | no | Roundup editor | Master toggle for whether badges render on each card. Defaults to `true`. |
+| `visible_badges` | no | Roundup editor | Ordered list of badge keys to display on each card. Empty/absent falls back to `["total_time","difficulty","rating"]`. |
 
 These are presentation of the roundup itself (not per-item display features), so they belong to `roundup_json`, not the `content_json.main_roundup` position marker.
+
+Badge keys are defined in `src/modules/articles/utils/roundup-badges.ts` (the single source of truth shared by the admin picker and the public renderer). A badge is rendered only when `show_stats` is true, its key is in `visible_badges`, and the item snapshot carries data for it. Available keys: `total_time`, `prep_time`, `cook_time`, `servings`, `difficulty`, `rating`, `calories`, `protein`, `carbs`, `fat`, `category`, `cuisine`, `cooking_method`, `cost`, and the boolean diet/quality flags `is_vegetarian`, `is_vegan`, `is_gluten_free`, `is_dairy_free`, `is_healthy`, `is_high_protein`, `is_quick`, `is_budget`, `is_low_calorie`.
+
+The `items[].recipe` snapshot carries the compact metadata these badges read: `total_time_minutes`, `prep_time_minutes`, `cook_time_minutes`, `difficulty`, `servings`, `calories_per_serving`, `protein_g`, `carbohydrate_g`, `fat_g`, `recipe_category`, `recipe_cuisine`, `cooking_method`, `estimated_cost`, and a `badges` object of boolean flags mirrored from `cached_recipe_json.badges`. All resolved at write time from the referenced recipe's caches.
 
 Expanded item shape:
 

@@ -10,6 +10,9 @@ export const RoundupListAdapter: BlockAdapter<MainRoundupBlock> = {
         const items = parseJsonArray(roundup.items);
         const groupTitle = typeof roundup.group_title === 'string' ? roundup.group_title : '';
         const groupDescription = typeof roundup.group_description === 'string' ? roundup.group_description : '';
+        const visibleBadges = Array.isArray(roundup.visible_badges)
+            ? roundup.visible_badges.filter((k): k is string => typeof k === 'string')
+            : null;
         return {
             type: 'roundupList',
             props: {
@@ -17,6 +20,7 @@ export const RoundupListAdapter: BlockAdapter<MainRoundupBlock> = {
                 description: groupDescription,
                 showStats: roundup.show_stats !== false,
                 itemsJson: JSON.stringify(items),
+                ...(visibleBadges ? { visibleBadges: JSON.stringify(visibleBadges) } : {}),
             },
         };
     },

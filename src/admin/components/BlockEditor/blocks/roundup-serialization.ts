@@ -33,7 +33,20 @@ export type RoundupPayload = {
   group_title?: string;
   group_description?: string;
   show_stats?: boolean;
+  visible_badges?: string[];
 };
+
+/** Parse a JSON-encoded string[] prop, tolerating absent/malformed values. */
+function parseStringArray(value: unknown): string[] | undefined {
+  if (typeof value !== 'string') return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.filter((k): k is string => typeof k === 'string');
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
 
 /** Pull the raw item array out of a roundupList block's props. */
 function extractRawItems(props: Record<string, unknown> | undefined): unknown[] {
@@ -82,14 +95,16 @@ export function buildRoundupItems(blocks: RoundupSourceBlock[]): RoundupSerializ
 /** Read the singleton roundupList block's presentation settings. */
 function extractPresentation(
   blocks: RoundupSourceBlock[]
-): Pick<RoundupPayload, 'group_title' | 'group_description' | 'show_stats'> {
+): Pick<RoundupPayload, 'group_title' | 'group_description' | 'show_stats' | 'visible_badges'> {
   const props = blocks.find((b) => b.type === 'roundupList')?.props ?? {};
   const groupTitle = typeof props.title === 'string' ? props.title.trim() : '';
   const groupDescription = typeof props.description === 'string' ? props.description.trim() : '';
+  const visibleBadges = parseStringArray(props.visibleBadges);
   return {
     ...(groupTitle ? { group_title: groupTitle } : {}),
     ...(groupDescription ? { group_description: groupDescription } : {}),
     show_stats: props.showStats !== false,
+    ...(visibleBadges ? { visible_badges: visibleBadges } : {}),
   };
 }
 
