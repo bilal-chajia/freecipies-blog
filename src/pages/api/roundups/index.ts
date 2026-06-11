@@ -100,8 +100,8 @@ export const GET: APIRoute = async ({ request }) => {
                 page,
                 limit,
                 total: result.total,
-                totalPages: Math.ceil(result.total / limit),
-                hasMore: page * limit < result.total,
+                total_pages: Math.ceil(result.total / limit),
+                has_more: page * limit < result.total,
             },
         }, {
             cacheControl: 'public, max-age=300',

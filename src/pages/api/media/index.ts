@@ -58,8 +58,8 @@ export const GET: APIRoute = async ({ request, url }) => {
             total: totalCount,
             page,
             limit,
-            totalPages: Math.ceil(totalCount / limit),
-            hasMore: offset + mediaFiles.length < totalCount
+            total_pages: Math.ceil(totalCount / limit),
+            has_more: offset + mediaFiles.length < totalCount
         };
 
         const { body, status, headers } = formatSuccessResponse({

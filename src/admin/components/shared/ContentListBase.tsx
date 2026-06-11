@@ -195,7 +195,7 @@ const ContentListBase = ({
                 setArticles(articlesData);
                 setPagination({
                     total: paginationData.total || articlesData.length,
-                    totalPages: paginationData.totalPages || Math.ceil((paginationData.total || 0) / pagination.limit),
+                    total_pages: paginationData.total_pages || Math.ceil((paginationData.total || 0) / pagination.limit),
                 });
                 setError(null);
             } else {
@@ -594,7 +594,7 @@ const ContentListBase = ({
                             manualPagination={true}
                             pageIndex={pagination.page - 1}
                             pageSize={pagination.limit}
-                            pageCount={pagination.totalPages}
+                            pageCount={pagination.total_pages}
                             totalCount={pagination.total}
                             onPageChange={(idx) => setPagination({ page: idx + 1 })}
                             onPageSizeChange={(size) => setPagination({ page: 1, limit: size })}

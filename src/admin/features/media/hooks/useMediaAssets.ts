@@ -61,7 +61,7 @@ export const useMediaAssets = (options?: UseMediaAssetsOptions) => {
       if (response.data.success) {
         const { data, pagination: paginationData } = response.data.data as {
           data: unknown[];
-          pagination: { page: number; limit: number; total: number; totalPages: number };
+          pagination: { page: number; limit: number; total: number; total_pages: number };
         };
         setMedia(data);
         setPagination(paginationData);
@@ -74,7 +74,7 @@ export const useMediaAssets = (options?: UseMediaAssetsOptions) => {
   };
 
   const handlePageChange = (newPage: number) => {
-    if (newPage < 1 || newPage > pagination.totalPages || newPage === pagination.page) return;
+    if (newPage < 1 || newPage > pagination.total_pages || newPage === pagination.page) return;
     loadMedia(newPage);
   };
 

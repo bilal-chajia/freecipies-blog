@@ -69,7 +69,7 @@ interface PaginationState {
   page: number;
   limit: number;
   total: number;
-  totalPages: number;
+  total_pages: number;
 }
 
 interface ArticlesState {
@@ -104,7 +104,7 @@ export const useArticlesStore = create<ArticlesState>((set) => ({
     page: 1,
     limit: 20,
     total: 0,
-    totalPages: 0,
+    total_pages: 0,
   },
   setArticles: (articles) => set({ articles }),
   setCurrentArticle: (article) => set({ currentArticle: article }),
@@ -161,8 +161,8 @@ interface MediaPagination {
   page: number;
   limit: number;
   total: number;
-  totalPages: number;
-  hasMore: boolean;
+  total_pages: number;
+  has_more: boolean;
 }
 
 interface MediaState {
@@ -193,8 +193,8 @@ export const useMediaStore = create<MediaState>((set) => ({
     page: 1,
     limit: 24,
     total: 0,
-    totalPages: 0,
-    hasMore: false
+    total_pages: 0,
+    has_more: false
   },
   setMedia: (media) => set({ media }),
   appendMedia: (newMedia) => set((state) => ({ media: [...state.media, ...newMedia] })),
