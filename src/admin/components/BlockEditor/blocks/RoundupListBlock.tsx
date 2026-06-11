@@ -10,16 +10,18 @@ import { getBestVariantUrl } from '@shared/types/images';
 
 type RoundupListItem = {
     article_id?: string | number;
-    externalUrl?: string;
+    external_url?: string;
     title?: string;
     subtitle?: string;
     note?: string;
     image?: Parameters<typeof getBestVariantUrl>[0];
-    stats?: {
-        totalTime?: number;
-        difficulty?: string;
-        rating?: number | string;
-    };
+    recipe?: {
+        total_time_minutes?: number | null;
+        difficulty?: string | null;
+    } | null;
+    rating?: {
+        rating_value?: number | null;
+    } | null;
 };
 
 /**
@@ -131,7 +133,7 @@ export const RoundupListBlock = createReactBlockSpec(
                                 <div className="grid grid-cols-1 gap-2">
                                     {items.map((item, index) => (
                                         <div 
-                                            key={`${item.article_id || item.externalUrl}-${index}`}
+                                            key={`${item.article_id || item.external_url}-${index}`}
                                             className="flex gap-4 p-3 rounded-xl border bg-background/50 hover:bg-background transition-colors group"
                                         >
                                             {/* Thumbnail */}
@@ -158,7 +160,7 @@ export const RoundupListBlock = createReactBlockSpec(
                                                     <h4 className="font-bold text-sm text-foreground line-clamp-1">
                                                         {item.title || "Untitled Item"}
                                                     </h4>
-                                                    {item.article_id || item.article_id ? (
+                                                    {item.article_id ? (
                                                         <Link2 className="h-3 w-3 text-muted-foreground opacity-50" />
                                                     ) : (
                                                         <ExternalLink className="h-3 w-3 text-muted-foreground opacity-50" />
@@ -176,23 +178,23 @@ export const RoundupListBlock = createReactBlockSpec(
                                                 </p>
 
                                                 {/* Stats Mini */}
-                                                {(block.props.showStats && item.stats) && (
+                                                {(block.props.showStats && (item.recipe || item.rating)) && (
                                                     <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/50">
-                                                        {item.stats.totalTime && (
+                                                        {item.recipe?.total_time_minutes ? (
                                                             <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
-                                                                {item.stats.totalTime}m
+                                                                {item.recipe.total_time_minutes}m
                                                             </span>
-                                                        )}
-                                                        {item.stats.difficulty && (
+                                                        ) : null}
+                                                        {item.recipe?.difficulty && (
                                                             <span className="text-[10px] font-bold text-muted-foreground">
-                                                                {item.stats.difficulty}
+                                                                {item.recipe.difficulty}
                                                             </span>
                                                         )}
-                                                        {item.stats.rating && (
+                                                        {item.rating?.rating_value ? (
                                                             <span className="text-[10px] font-bold text-orange-500">
-                                                                ★ {item.stats.rating}
+                                                                ★ {item.rating.rating_value}
                                                             </span>
-                                                        )}
+                                                        ) : null}
                                                     </div>
                                                 )}
                                             </div>

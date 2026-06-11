@@ -43,11 +43,52 @@ describe('roundup-serialization', () => {
     const [internal, external] = buildRoundupItems([
       {
         type: 'roundupList',
-        props: { items: [{ slug: 'a' }, { externalUrl: 'https://x.test' }] },
+        props: { items: [{ slug: 'a' }, { external_url: 'https://x.test' }] },
       },
     ]);
     expect(internal.source_type).toBe('internal_recipe');
     expect(external.source_type).toBe('external_recipe');
+  });
+
+  it('does not honor legacy camelCase keys (NAMING_CONTRACT: snake_case only)', () => {
+    const [item] = buildRoundupItems([
+      {
+        type: 'roundupList',
+        props: { items: [{ externalUrl: 'https://x.test', sourceType: 'external_recipe' }] },
+      },
+    ]);
+    expect(item.source_type).toBe('internal_recipe');
+    expect(item.external_url).toBe('');
+  });
+
+  it('serializes group title, description and show_stats from the block props', () => {
+    const json = JSON.parse(
+      buildRoundupJson([
+        {
+          type: 'roundupList',
+          props: { title: 'Summer Salads', description: 'Warm-weather bowls.', showStats: false, itemsJson: '[]' },
+        },
+      ])
+    );
+    expect(json.group_title).toBe('Summer Salads');
+    expect(json.group_description).toBe('Warm-weather bowls.');
+    expect(json.show_stats).toBe(false);
+  });
+
+  it('omits blank group title/description and defaults show_stats to true', () => {
+    const json = JSON.parse(
+      buildRoundupJson([
+        { type: 'roundupList', props: { title: '   ', description: '', itemsJson: '[]' } },
+      ])
+    );
+    expect(json.group_title).toBeUndefined();
+    expect(json.group_description).toBeUndefined();
+    expect(json.show_stats).toBe(true);
+  });
+
+  it('emits no presentation fields when there is no roundupList block', () => {
+    const json = JSON.parse(buildRoundupJson([{ type: 'paragraph', props: {} }]));
+    expect(json).toEqual({ list_type: 'ItemList', items: [] });
   });
 
   it('honors explicit source_type and canonical article_id', () => {

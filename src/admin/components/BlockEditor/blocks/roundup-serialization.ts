@@ -30,6 +30,9 @@ export type RoundupSerializedItem = {
 export type RoundupPayload = {
   list_type: 'ItemList';
   items: RoundupSerializedItem[];
+  group_title?: string;
+  group_description?: string;
+  show_stats?: boolean;
 };
 
 /** Pull the raw item array out of a roundupList block's props. */
@@ -58,11 +61,10 @@ export function buildRoundupItems(blocks: RoundupSourceBlock[]): RoundupSerializ
         position: idx + 1,
         source_type:
           it.source_type ??
-          it.sourceType ??
-          (it.external_url || it.externalUrl ? 'external_recipe' : 'internal_recipe'),
+          (it.external_url ? 'external_recipe' : 'internal_recipe'),
         article_id: it.article_id ?? null,
         slug: it.slug ?? '',
-        external_url: it.external_url ?? it.externalUrl ?? '',
+        external_url: it.external_url ?? '',
         title: it.title ?? '',
         subtitle: it.subtitle ?? '',
         description: it.description ?? '',
@@ -77,11 +79,27 @@ export function buildRoundupItems(blocks: RoundupSourceBlock[]): RoundupSerializ
     });
 }
 
+/** Read the singleton roundupList block's presentation settings. */
+function extractPresentation(
+  blocks: RoundupSourceBlock[]
+): Pick<RoundupPayload, 'group_title' | 'group_description' | 'show_stats'> {
+  const props = blocks.find((b) => b.type === 'roundupList')?.props ?? {};
+  const groupTitle = typeof props.title === 'string' ? props.title.trim() : '';
+  const groupDescription = typeof props.description === 'string' ? props.description.trim() : '';
+  return {
+    ...(groupTitle ? { group_title: groupTitle } : {}),
+    ...(groupDescription ? { group_description: groupDescription } : {}),
+    show_stats: props.showStats !== false,
+  };
+}
+
 /** Serialize editor roundupList blocks into the roundup_json string. */
 export function buildRoundupJson(blocks: RoundupSourceBlock[]): string {
+  const hasBlock = blocks.some((b) => b.type === 'roundupList');
   const payload: RoundupPayload = {
     list_type: 'ItemList',
     items: buildRoundupItems(blocks),
+    ...(hasBlock ? extractPresentation(blocks) : {}),
   };
   return JSON.stringify(payload, null, 2);
 }

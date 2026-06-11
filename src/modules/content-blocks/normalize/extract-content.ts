@@ -46,7 +46,7 @@ function closestParent(stack: Record<number, string>, level: number): string | n
   return null;
 }
 
-function roundupItemAnchor(position: number, title: string): string {
+function roundupItemAnchor(position: number): string {
   return `item-${position}`;
 }
 
@@ -113,7 +113,7 @@ export function extractTocFromContentDocument(input: unknown, headline?: string,
         const position = Number(item?.position) || index + 1;
         const text = String(item?.title || item?.headline || `Item ${position}`).trim();
         toc.push({
-          id: roundupItemAnchor(position, text),
+          id: roundupItemAnchor(position),
           text,
           level: 3,
           number: `${number}.${index + 1}`,

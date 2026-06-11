@@ -16,6 +16,7 @@ const SOURCE_HYDRATED_EDITOR_TYPES = new Set([
   'faqSection',
   'mainRecipe',
   'relatedContent',
+  'roundupList',
   'simpleTable',
 ]);
 

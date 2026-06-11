@@ -160,7 +160,7 @@ function RoundupListSettings({
             slug: item.slug,
             title: headline,
             subtitle: item.subtitle || '',
-            description: item.short_description || item.short_description || '',
+            description: item.short_description || '',
             note: '',
             image,
             recipe: {

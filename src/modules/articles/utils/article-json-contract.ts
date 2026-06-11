@@ -318,7 +318,13 @@ export function buildCachedRecipeJson(recipe_json: unknown, articleType: string)
 
 export function normalizeRoundupJson(value: unknown) {
   const source = isRecord(value) ? value : {};
-  return {
+  const result: {
+    items: JsonRecord[];
+    list_type: 'ItemList';
+    group_title?: string;
+    group_description?: string;
+    show_stats?: boolean;
+  } = {
     items: arrayOrEmpty(source.items).map((item, index) => {
       if (!isRecord(item)) return { position: index + 1, source_type: 'internal_recipe', title: '' };
       const sourceType = item.source_type === 'external_recipe' || item.external_url
@@ -347,4 +353,12 @@ export function normalizeRoundupJson(value: unknown) {
     }),
     list_type: 'ItemList',
   };
+
+  const groupTitle = stringOrNull(source.group_title);
+  if (groupTitle) result.group_title = groupTitle;
+  const groupDescription = stringOrNull(source.group_description);
+  if (groupDescription) result.group_description = groupDescription;
+  if (typeof source.show_stats === 'boolean') result.show_stats = source.show_stats;
+
+  return result;
 }

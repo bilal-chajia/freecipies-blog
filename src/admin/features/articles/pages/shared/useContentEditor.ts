@@ -6,6 +6,7 @@ import { buildImageSlotFromMedia, generateSlug, isValidJSON } from '../../../../
 import type { AppEditor } from '@admin/components/BlockEditor/schema';
 import { blocksToContentJson } from '@admin/components/BlockEditor/utils/conversion';
 import { flattenBlocks } from '@admin/components/BlockEditor/utils/blockHelpers';
+import { buildRoundupJson } from '@admin/components/BlockEditor/blocks/roundup-serialization';
 import { EDITOR_TYPE_TO_CONTENT_TYPE } from '@admin/components/BlockEditor/blocks/registry';
 import { DEFAULT_HEADERS, normalizeRows } from '@admin/components/BlockEditor/blocks/table/TableBlock.defaults';
 import type { TableRow } from '@admin/components/BlockEditor/blocks/table/TableBlock.types';
@@ -463,13 +464,11 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
 
         // Synchronously blur any active input/textarea to trigger their local draft commits (like SimpleTable)
         if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
-            console.log('[handleSave] Blurring active element:', document.activeElement.id);
             (document.activeElement as HTMLElement).blur();
         }
 
         if (editorInstance) {
             const docBlocks = editorInstance.document;
-            console.log('[handleSave] docBlocks after blur:', JSON.stringify(docBlocks));
             const contentObj = blocksToContentJson(docBlocks as any[]);
             finalContentJson = JSON.stringify(contentObj, null, 2);
 
@@ -481,8 +480,10 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             const hasRoundupList = flatBlocks.some(({ block }) => contentTypeOf(block.type) === 'main_roundup');
             const hasFaqSection = flatBlocks.some(({ block }) => contentTypeOf(block.type) === 'main_faq');
 
-            if (!hasRoundupList && contentType === 'roundup') {
-                finalRoundupJson = '{"list_type":"ItemList","items":[]}';
+            if (contentType === 'roundup') {
+                finalRoundupJson = hasRoundupList
+                    ? buildRoundupJson(flatBlocks.map(({ block }) => block))
+                    : '{"list_type":"ItemList","items":[]}';
             }
             if (!hasFaqSection) {
                 finalFaqsJson = EMPTY_FAQS_DOCUMENT;
