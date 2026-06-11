@@ -1,13 +1,13 @@
 ---
 interface Props {
   name: string;
-  slug: string;
+  slug?: string;
   avatar?: string;
   role?: string;
 }
 
 const { name, slug, avatar, role } = Astro.props;
-const authorUrl = `/authors/${slug}`;
+const authorUrl = `/authors/${slug ?? ""}`;
 
 // Get initials for fallback
 const initials = name
