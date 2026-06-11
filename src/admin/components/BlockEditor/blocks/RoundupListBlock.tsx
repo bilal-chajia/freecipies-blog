@@ -7,6 +7,8 @@ import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
 import { useCustomBlock } from './useCustomBlock';
 import { getBestVariantUrl } from '@shared/types/images';
+import type { RoundupItem } from '@modules/articles/types/roundups.types';
+import { resolveRoundupBadges, DEFAULT_ROUNDUP_BADGES } from '@modules/articles/utils/roundup-badges';
 
 type RoundupListItem = {
     article_id?: string | number;
@@ -38,6 +40,7 @@ export const RoundupListBlock = createReactBlockSpec(
             description: { default: "" },
             itemsJson: { default: "[]" },
             showStats: { default: true },
+            visibleBadges: { default: JSON.stringify(DEFAULT_ROUNDUP_BADGES) },
         },
         content: "none",
     },
@@ -63,6 +66,16 @@ export const RoundupListBlock = createReactBlockSpec(
                     return [];
                 }
             }, [block.props.itemsJson]);
+
+            const visibleBadges = useMemo<string[]>(() => {
+                try {
+                    const parsed = JSON.parse(block.props.visibleBadges);
+                    if (Array.isArray(parsed)) return parsed.filter((k): k is string => typeof k === 'string');
+                } catch {
+                    // fall through
+                }
+                return DEFAULT_ROUNDUP_BADGES;
+            }, [block.props.visibleBadges]);
 
             const toolbar = (
                 <BlockToolbar
@@ -178,25 +191,22 @@ export const RoundupListBlock = createReactBlockSpec(
                                                 </p>
 
                                                 {/* Stats Mini */}
-                                                {(block.props.showStats && (item.recipe || item.rating)) && (
-                                                    <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/50">
-                                                        {item.recipe?.total_time_minutes ? (
-                                                            <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
-                                                                {item.recipe.total_time_minutes}m
-                                                            </span>
-                                                        ) : null}
-                                                        {item.recipe?.difficulty && (
-                                                            <span className="text-[10px] font-bold text-muted-foreground">
-                                                                {item.recipe.difficulty}
-                                                            </span>
-                                                        )}
-                                                        {item.rating?.rating_value ? (
-                                                            <span className="text-[10px] font-bold text-orange-500">
-                                                                ★ {item.rating.rating_value}
-                                                            </span>
-                                                        ) : null}
-                                                    </div>
-                                                )}
+                                                {block.props.showStats && (() => {
+                                                    const badges = resolveRoundupBadges(item as unknown as RoundupItem, visibleBadges);
+                                                    if (!badges.length) return null;
+                                                    return (
+                                                        <div className="flex flex-wrap items-center gap-2 mt-3 pt-2 border-t border-border/50">
+                                                            {badges.map((badge) => (
+                                                                <span
+                                                                    key={badge.key}
+                                                                    className="text-[10px] font-bold text-muted-foreground inline-flex items-center gap-1"
+                                                                >
+                                                                    {badge.text}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     ))}

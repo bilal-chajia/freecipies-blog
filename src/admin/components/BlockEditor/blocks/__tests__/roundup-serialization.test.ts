@@ -91,6 +91,25 @@ describe('roundup-serialization', () => {
     expect(json).toEqual({ list_type: 'ItemList', items: [] });
   });
 
+  it('serializes the visible_badges selection from the block prop', () => {
+    const json = JSON.parse(
+      buildRoundupJson([
+        {
+          type: 'roundupList',
+          props: { itemsJson: '[]', visibleBadges: '["total_time","calories","is_vegan"]' },
+        },
+      ])
+    );
+    expect(json.visible_badges).toEqual(['total_time', 'calories', 'is_vegan']);
+  });
+
+  it('omits visible_badges when the prop is absent or malformed', () => {
+    const json = JSON.parse(
+      buildRoundupJson([{ type: 'roundupList', props: { itemsJson: '[]', visibleBadges: 'nope' } }])
+    );
+    expect(json.visible_badges).toBeUndefined();
+  });
+
   it('honors explicit source_type and canonical article_id', () => {
     const [item] = buildRoundupItems([
       {

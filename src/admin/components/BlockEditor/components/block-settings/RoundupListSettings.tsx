@@ -15,14 +15,15 @@ import {
 } from '@/ui/collapsible';
 import { Badge } from '@/ui/badge';
 import { SettingsSection } from '../DocumentSettings';
+import type { RoundupItemRecipeSnapshot } from '@modules/articles/types/roundups.types';
+import {
+    ROUNDUP_BADGES,
+    ROUNDUP_BADGE_GROUP_LABELS,
+    DEFAULT_ROUNDUP_BADGES,
+    type RoundupBadgeGroup,
+} from '@modules/articles/utils/roundup-badges';
 
 type JsonRecord = Record<string, unknown>;
-
-type RoundupRecipe = {
-    total_time_minutes?: number | null;
-    difficulty?: string | null;
-    servings?: number | string | null;
-};
 
 type RoundupListItem = {
     source_type: 'internal_recipe';
@@ -33,7 +34,7 @@ type RoundupListItem = {
     description?: string;
     note?: string;
     image?: ReturnType<typeof getImageSlot>;
-    recipe?: RoundupRecipe;
+    recipe?: RoundupItemRecipeSnapshot;
     rating?: JsonRecord | null;
     author?: JsonRecord | null;
     category?: JsonRecord | null;
@@ -60,6 +61,8 @@ type RoundupListBlockProps = {
     description?: string;
     itemsJson?: string;
     showStats?: boolean;
+    /** JSON-encoded string[] of badge keys to display (see ROUNDUP_BADGES). */
+    visibleBadges?: string;
 };
 
 type RoundupListSelectedBlock = {
@@ -73,6 +76,14 @@ type RoundupListSettingsProps = {
 
 type RoundupItemField = 'title' | 'subtitle' | 'note';
 
+const BADGE_GROUPS = (['value', 'nutrition', 'classification', 'diet'] as RoundupBadgeGroup[]).map(
+    (group) => ({
+        group,
+        label: ROUNDUP_BADGE_GROUP_LABELS[group],
+        badges: ROUNDUP_BADGES.filter((b) => b.group === group),
+    })
+);
+
 const parseJsonObject = (value: unknown): JsonRecord => {
     if (!value) return {};
     if (typeof value === 'object' && !Array.isArray(value)) return value as JsonRecord;
@@ -83,6 +94,38 @@ const parseJsonObject = (value: unknown): JsonRecord => {
     } catch {
         return {};
     }
+};
+
+const numOrNull = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? v : null;
+const strOrNull = (v: unknown): string | null =>
+    typeof v === 'string' && v.trim() ? v.trim() : null;
+
+/** Capture the full compact recipe snapshot the badge catalog can render from. */
+const buildRecipeSnapshot = (recipe: JsonRecord): RoundupItemRecipeSnapshot => {
+    const raw = recipe.badges;
+    const badges =
+        raw && typeof raw === 'object' && !Array.isArray(raw)
+            ? (Object.fromEntries(
+                  Object.entries(raw as JsonRecord).filter(([, v]) => typeof v === 'boolean')
+              ) as Record<string, boolean>)
+            : null;
+    return {
+        total_time_minutes: numOrNull(recipe.total_time_minutes),
+        prep_time_minutes: numOrNull(recipe.prep_time_minutes),
+        cook_time_minutes: numOrNull(recipe.cook_time_minutes),
+        difficulty: strOrNull(recipe.difficulty),
+        servings: numOrNull(recipe.servings) ?? strOrNull(recipe.servings),
+        calories_per_serving: numOrNull(recipe.calories_per_serving),
+        protein_g: numOrNull(recipe.protein_g),
+        carbohydrate_g: numOrNull(recipe.carbohydrate_g),
+        fat_g: numOrNull(recipe.fat_g),
+        recipe_category: strOrNull(recipe.recipe_category),
+        recipe_cuisine: strOrNull(recipe.recipe_cuisine),
+        cooking_method: strOrNull(recipe.cooking_method),
+        estimated_cost: strOrNull(recipe.estimated_cost),
+        badges,
+    };
 };
 
 /**
@@ -104,6 +147,26 @@ function RoundupListSettings({
     const items = useMemo<RoundupListItem[]>(() => {
         return parseJsonArray(selectedBlock.props.itemsJson) as RoundupListItem[];
     }, [selectedBlock.props.itemsJson]);
+
+    const visibleBadges = useMemo<string[]>(() => {
+        const raw = selectedBlock.props.visibleBadges;
+        if (typeof raw === 'string') {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) return parsed.filter((k): k is string => typeof k === 'string');
+            } catch {
+                // fall through to defaults
+            }
+        }
+        return DEFAULT_ROUNDUP_BADGES;
+    }, [selectedBlock.props.visibleBadges]);
+
+    const toggleBadge = (key: string) => {
+        const next = visibleBadges.includes(key)
+            ? visibleBadges.filter((k) => k !== key)
+            : [...visibleBadges, key];
+        updateProps({ visibleBadges: JSON.stringify(next) });
+    };
 
     // Search articles (recipes only)
     useEffect(() => {
@@ -163,11 +226,7 @@ function RoundupListSettings({
             description: item.short_description || '',
             note: '',
             image,
-            recipe: {
-                total_time_minutes: typeof recipe.total_time_minutes === 'number' ? recipe.total_time_minutes : null,
-                difficulty: typeof recipe.difficulty === 'string' ? recipe.difficulty : null,
-                servings: typeof recipe.servings === 'number' || typeof recipe.servings === 'string' ? recipe.servings : null,
-            },
+            recipe: buildRecipeSnapshot(recipe),
             rating: Object.keys(rating).length ? rating : null,
             author: Object.keys(author).length ? author : null,
             category: Object.keys(category).length ? category : null,
@@ -397,19 +456,50 @@ function RoundupListSettings({
 
             {/* Display Options */}
             <SettingsSection title="Display Options" icon={Settings2}>
-                <div className="space-y-3 pt-1">
+                <div className="space-y-4 pt-1">
                      <div className="flex items-center justify-between">
-                        <Label className="text-xs">Show Recipe Stats</Label>
+                        <Label className="text-xs">Show Recipe Badges</Label>
                         <input
                             type="checkbox"
-                            checked={selectedBlock.props.showStats}
+                            checked={selectedBlock.props.showStats !== false}
                             onChange={(e) => updateProps({ showStats: e.target.checked })}
                             className="rounded border-border h-4 w-4"
                         />
                      </div>
                      <p className="text-[10px] text-muted-foreground leading-relaxed">
-                        Display preparation time, difficulty level, and aggregate rating badges on each recipe card in this collection.
+                        Choose which badges appear on each recipe card. Badges with no data for a given recipe are hidden automatically.
                      </p>
+
+                     {selectedBlock.props.showStats !== false && (
+                        <div className="space-y-3">
+                            {BADGE_GROUPS.map(({ group, label, badges }) => (
+                                <div key={group} className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+                                        {label}
+                                    </Label>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {badges.map((badge) => {
+                                            const checked = visibleBadges.includes(badge.key);
+                                            return (
+                                                <label
+                                                    key={badge.key}
+                                                    className="flex items-center gap-2 text-[11px] cursor-pointer rounded-md px-1.5 py-1 hover:bg-muted/40"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checked}
+                                                        onChange={() => toggleBadge(badge.key)}
+                                                        className="rounded border-border h-3.5 w-3.5"
+                                                    />
+                                                    <span className="truncate">{badge.label}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                     )}
                 </div>
             </SettingsSection>
         </div>
