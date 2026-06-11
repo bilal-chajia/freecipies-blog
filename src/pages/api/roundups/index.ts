@@ -83,14 +83,11 @@ export const GET: APIRoute = async ({ request }) => {
                 headline: article.headline,
                 short_description: article.short_description,
                 thumbnail,
-                categoryLabel: articleData.categoryLabel,
-                categorySlug: articleData.categorySlug,
-                categoryColor: articleData.categoryColor,
-                authorName: articleData.authorName,
-                authorSlug: articleData.authorSlug,
+                category: articleData.category ?? null,
+                author: articleData.author ?? null,
                 published_at: article.published_at,
                 // Roundup-specific
-                itemCount,
+                item_count: itemCount,
             };
         });
 

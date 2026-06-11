@@ -11,22 +11,27 @@ import type { ArticleImagesJson } from './images.types';
 // 1. Base Content (Common to all types)
 // Represents the shared structure in the 'articles' table
 export type BaseContent = Omit<DbArticle, 'recipe_json' | 'roundup_json'> & ExtractedImage & ExtractedSeo & {
-  label: string;
   route: string;
 
-  // Hydrated Relations
-  categoryLabel?: string;
-  categorySlug?: string;
-  categoryColor?: string;
-  authorName?: string;
-  authorSlug?: string;
-  authorImagesJson?: string | null;
-  authorAvatar?: string;
+  // Hydrated Relations — nested snake_case objects are the single source of
+  // author/category data (no flat camelCase aliases; see NAMING_CONTRACT).
   category?: {
-    color?: string;
-    label?: string;
-    slug?: string;
-  };
+    id?: number;
+    label?: string | null;
+    slug?: string | null;
+    color?: string | null;
+  } | null;
+  author?: {
+    id?: number;
+    name?: string | null;
+    slug?: string | null;
+    role?: string | null;
+    job_title?: string | null;
+    avatar?: unknown;
+    avatar_url?: string | null;
+    bio?: string | null;
+    social_links?: unknown[];
+  } | null;
   tags?: HydratedTag[];
 };
 

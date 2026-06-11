@@ -42,12 +42,18 @@ interface DashboardStats {
 interface ArticleSummary {
   id: string | number;
   slug: string;
-  label: string;
-  categoryLabel?: string;
+  headline?: string;                              // recent articles (articles API)
+  title?: string;                                 // popular articles (stats API)
+  category?: { label?: string | null } | string | null;
   status?: string;
   view_count?: number;
+  views?: number;
   created_at?: string;
 }
+
+const summaryTitle = (a: ArticleSummary) => a.headline ?? a.title ?? '';
+const summaryCategoryLabel = (a: ArticleSummary) =>
+  typeof a.category === 'string' ? a.category : a.category?.label ?? '';
 
 interface ChartDataPoint {
   month: string;
@@ -387,16 +393,16 @@ const Dashboard = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
-                          {article.label}
+                          {summaryTitle(article)}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground/80">
                           <span className="flex items-center gap-1">
                             <Eye className="size-2.5" />
-                            {formatNumber(article.view_count)}
+                            {formatNumber(article.view_count ?? article.views ?? 0)}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
                           <span>
-                            {article.categoryLabel}
+                            {summaryCategoryLabel(article)}
                           </span>
                         </div>
                       </div>
@@ -452,12 +458,12 @@ const Dashboard = () => {
                       <tr key={article.id} className="group hover:bg-accent/40 transition-colors">
                         <td className="py-2.5 px-3 text-xs">
                           <Link to={`/articles/edit/${article.id}`} className="font-semibold hover:text-primary transition-colors block truncate max-w-[200px] sm:max-w-md">
-                            {article.label}
+                            {summaryTitle(article)}
                           </Link>
                         </td>
                         <td className="py-2.5 px-3 hidden sm:table-cell text-xs">
                           <span className="px-1.5 py-0.5 rounded bg-muted/80 text-[9px] font-bold text-muted-foreground border border-border/40 uppercase tracking-wider">
-                            {article.categoryLabel}
+                            {summaryCategoryLabel(article)}
                           </span>
                         </td>
                         <td className="py-2.5 px-3 hidden md:table-cell text-xs">

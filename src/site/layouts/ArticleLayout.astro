@@ -89,7 +89,7 @@ const breadcrumbItems = [
   ...(category
     ? [{ label: category.label, href: `/categories/${category.slug}` }]
     : []),
-  { label: truncate(article.label || article.headline, 50) },
+  { label: truncate(article.headline || article.headline, 50) },
 ];
 
 
@@ -97,7 +97,7 @@ const breadcrumbItems = [
 ---
 
 <Layout
-  title={article.metaTitle || article.label}
+  title={article.metaTitle || article.headline}
   description={article.metaDescription || article.short_description}
   image={heroSlot.image_url ||
     heroThumb.image_url ||
@@ -128,18 +128,18 @@ const breadcrumbItems = [
       <div class="main-content l-main-content">
         <Breadcrumb items={breadcrumbItems} />
         {
-          article.categoryLabel && (
+          article.category?.label && (
             <a
-              href={`/categories/${article.categorySlug}`}
+              href={`/categories/${article.category?.slug}`}
               class="badge category-badge"
               style={`--badge-color: ${categoryColor};`}
             >
-              {article.categoryLabel}
+              {article.category?.label}
             </a>
           )
         }
 
-        <h1 class="article-title">{article.label}</h1>
+        <h1 class="article-title">{article.headline}</h1>
 
         {
           article.short_description && (
@@ -148,12 +148,12 @@ const breadcrumbItems = [
         }
 
         <SocialShareBar
-          title={article.label}
+          title={article.headline}
           readingTime={`${readingTime} Min Read`}
         />
 
         <RecipeAuthorCard
-          authorName={author?.name || article.authorName}
+          authorName={author?.name || article.author?.name}
           authorImage={authorImage || undefined}
           authorImageSrcSet={authorAvatarSrcSet || undefined}
           authorImageSizes={authorAvatarSizes}
@@ -179,7 +179,7 @@ const breadcrumbItems = [
           alt={heroSlot.imageAlt ||
             heroThumb.imageAlt ||
             article.imageAlt ||
-            article.label}
+            article.headline}
           width={heroSlot.imageWidth ||
             heroThumb.imageWidth ||
             article.imageWidth}

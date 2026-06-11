@@ -83,7 +83,6 @@ const recipe = {
 
     // Title & text
     headline: formData.label || "Preview Title",
-    label: formData.label || "Preview Title",
     short_description: formData.summary || "Preview Description",
     tldr: formData.tldr || null,
 
@@ -107,12 +106,18 @@ const recipe = {
     image_url: formData.heroUrl || undefined,
     imageAlt: formData.label || "Preview Image",
 
-    // Category references (hydrated from DB or formData)
-    categoryLabel: category?.label || formData.categoryLabel || null,
-    categorySlug: category?.slug || formData.categorySlug || null,
+    // Category references (hydrated from DB or formData) — nested snake_case
+    category: (category || formData.categoryLabel) ? {
+      label: category?.label ?? formData.categoryLabel ?? null,
+      slug: category?.slug ?? formData.categorySlug ?? null,
+      color: category?.color ?? formData.categoryColor ?? null,
+    } : null,
 
-    // Author references
-    authorName: author?.name || formData.authorName || null,
+    // Author references — nested snake_case
+    author: (author || formData.authorName) ? {
+      name: author?.name ?? formData.authorName ?? null,
+      slug: author?.slug ?? formData.authorSlug ?? null,
+    } : null,
 
     // Dates
     published_at: formData.published_at || savedArticle?.published_at || null,

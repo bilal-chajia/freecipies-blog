@@ -81,7 +81,7 @@ const FeaturedHeroCard = ({
     setQuery('');
   };
 
-  const articleTitle = (a: ArticleRecord) => a.label || a.title || a.slug || '';
+  const articleTitle = (a: ArticleRecord) => a.headline || a.label || a.title || a.slug || '';
 
   return (
     <Card className="border-0 shadow-sm ring-1 ring-border/50">

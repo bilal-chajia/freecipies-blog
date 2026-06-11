@@ -53,7 +53,7 @@ interface ArticleData {
   type: string;
   category_id: number | string | null;
   author_id: number | string | null;
-  label: string;
+  headline: string;
   subtitle?: string | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
@@ -299,7 +299,7 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
                     type: article.type,
                     category_id,
                     author_id,
-                    label: article.label,
+                    label: article.headline,
                     headline: article.subtitle || '',
                     metaTitle: article.metaTitle || (parsedSeo.meta_title as string | undefined) || (parsedSeo.metaTitle as string | undefined) || '',
                     metaDescription: article.metaDescription || (parsedSeo.meta_description as string | undefined) || (parsedSeo.metaDescription as string | undefined) || '',

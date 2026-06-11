@@ -47,15 +47,13 @@ import { EmptyState } from '@/components/ui/EmptyState';
 type ContentListItem = {
     id: string | number;
     slug?: string;
-    label?: string;
     headline?: string;
     image_url?: string;
     imageAlt?: string;
     is_favorite?: boolean;
-    categoryLabel?: string;
+    category?: { label?: string; color?: string; slug?: string } | null;
+    author?: { name?: string; slug?: string; avatar?: unknown; avatar_url?: string } | null;
     view_count?: number;
-    authorAvatar?: string;
-    authorName?: string;
     workflow_status?: string;
     published_at?: string;
     created_at?: string;
@@ -314,7 +312,7 @@ const ContentListBase = ({
             cell: ({ row }: { row: Row<ContentListItem> }) => {
                 const item = row.original;
                 const image_url = toAdminImageUrl(item.image_url || '');
-                const imageAlt = item.imageAlt || item.label || item.headline || '';
+                const imageAlt = item.imageAlt || item.headline || '';
                 return (
                     <div className="flex items-center gap-4 py-1">
                         <div className="relative group">
@@ -341,11 +339,11 @@ const ContentListBase = ({
                                     to={`${editPathPrefix}/${item[editIdField]}`}
                                     className="font-semibold text-foreground hover:text-primary transition-colors truncate max-w-[280px] focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none rounded-sm"
                                 >
-                                    {item.label}
+                                    {item.headline}
                                 </Link>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span className="truncate">{item.categoryLabel}</span>
+                                <span className="truncate">{item.category?.label}</span>
                                 <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
                                 <span className="flex items-center gap-1">
                                     <Eye className="size-3" />
@@ -366,12 +364,12 @@ const ContentListBase = ({
                 return (
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8 ring-1 ring-border/50">
-                            <AvatarImage src={toAdminImageUrl(item.authorAvatar)} />
+                            <AvatarImage src={toAdminImageUrl(item.author?.avatar_url)} />
                             <AvatarFallback className="text-[10px] font-bold">
-                                {(item.authorName || 'A').charAt(0).toUpperCase()}
+                                {(item.author?.name || 'A').charAt(0).toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-medium">{item.authorName}</span>
+                        <span className="text-sm font-medium">{item.author?.name}</span>
                     </div>
                 );
             },

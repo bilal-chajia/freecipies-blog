@@ -46,12 +46,8 @@ const featuredImage = featuredArticle
   : null;
 const featuredSizes = "(max-width: 1024px) 100vw, 40vw";
 const featuredAuthorName =
-  featuredArticle?.authorName || featuredArticle?.authorSlug || "Unknown";
-const featuredAuthorSlot = featuredArticle?.authorImagesJson
-  ? extractImage(featuredArticle.authorImagesJson, "avatar", 50)
-  : {};
-const featuredAuthorAvatar =
-  featuredAuthorSlot.image_url || featuredArticle?.authorAvatar;
+  featuredArticle?.author?.name || featuredArticle?.author?.slug || "Unknown";
+const featuredAuthorAvatar = featuredArticle?.author?.avatar_url || null;
 ---
 
 {
@@ -115,7 +111,6 @@ const featuredAuthorAvatar =
                       height="28"
                       class="featured-avatar"
                       loading="lazy"
-                      style={featuredAuthorSlot.imageStyle || undefined}
                     />
                   ) : (
                     <span class="featured-avatar placeholder">

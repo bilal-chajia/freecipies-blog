@@ -247,7 +247,7 @@ export function hydrateArticle<T extends {
     slug?: string | null;
     job_title?: string | null;
   } | null;
-  authorName?: string | null;
+  authorName?: string | null;   // join input (admin getArticleById) — consumed, not re-emitted
   authorSlug?: string | null;
   authorJob?: string | null;
   category?: {
@@ -255,10 +255,22 @@ export function hydrateArticle<T extends {
     color?: string | null;
     slug?: string | null;
   } | null;
-  categoryLabel?: string | null;
+  categoryLabel?: string | null; // join input — consumed, not re-emitted
   categoryColor?: string | null;
   categorySlug?: string | null;
 }>(article: T) {
+  // Strip camelCase join inputs from the spread so they are never serialized.
+  const {
+    authorName: joinAuthorName,
+    authorSlug: joinAuthorSlug,
+    authorJob: joinAuthorJob,
+    categoryLabel: joinCategoryLabel,
+    categoryColor: joinCategoryColor,
+    categorySlug: joinCategorySlug,
+    authorImagesJson: joinAuthorImagesJson,
+    ...articleRest
+  } = article;
+
   const image = extractImage(article.images_json);
 
   const cachedAuthor = article.cached_author_json
@@ -269,17 +281,17 @@ export function hydrateArticle<T extends {
     ? safeParseJson<any>(article.cached_category_json)
     : null;
 
-  // Support multiple author source formats
-  let authorAvatar = extractImage(article.authorImagesJson, 'avatar').image_url;
+  // Resolve author avatar URL (cards consume a URL; the slot stays in author.avatar)
+  let authorAvatar = extractImage(joinAuthorImagesJson, 'avatar').image_url;
 
   if (!authorAvatar && cachedAuthor) {
     const avatarSlot = cachedAuthor?.avatar;
     if (typeof avatarSlot === 'string') {
       authorAvatar = avatarSlot;
     } else if (avatarSlot && typeof avatarSlot === 'object') {
-      authorAvatar = resolveVariantUrl(avatarSlot.variants?.sm) 
-        || resolveVariantUrl(avatarSlot.variants?.xs) 
-        || (avatarSlot as any).url 
+      authorAvatar = resolveVariantUrl(avatarSlot.variants?.sm)
+        || resolveVariantUrl(avatarSlot.variants?.xs)
+        || (avatarSlot as any).url
         || null;
     }
   }
@@ -288,24 +300,24 @@ export function hydrateArticle<T extends {
     authorAvatar = extractImage(article.author.images_json, 'avatar').image_url;
   }
 
-  const authorName = article.authorName
+  const authorName = joinAuthorName
     ?? cachedAuthor?.name
     ?? article.author?.name;
-  const authorSlug = article.authorSlug
+  const authorSlug = joinAuthorSlug
     ?? cachedAuthor?.slug
     ?? article.author?.slug;
-  const authorRole = article.authorJob
+  const authorRole = joinAuthorJob
     ?? cachedAuthor?.job_title
     ?? cachedAuthor?.role
     ?? article.author?.job_title;
 
-  const categoryLabel = article.categoryLabel
+  const categoryLabel = joinCategoryLabel
     ?? cachedCategory?.label
     ?? article.category?.label;
-  const categoryColor = article.categoryColor
+  const categoryColor = joinCategoryColor
     ?? cachedCategory?.color
     ?? article.category?.color;
-  const categorySlug = article.categorySlug
+  const categorySlug = joinCategorySlug
     ?? cachedCategory?.slug
     ?? article.category?.slug;
 
@@ -321,8 +333,30 @@ export function hydrateArticle<T extends {
       ? `/roundups/${article.slug}`
       : `/articles/${article.slug}`;
 
+  // Nested objects are the single source of author/category data (snake-compliant).
+  const author = (cachedAuthor || authorName || authorSlug || authorRole || authorAvatar)
+    ? {
+        ...(cachedAuthor ?? {}),
+        name: authorName ?? null,
+        slug: authorSlug ?? null,
+        role: authorRole ?? null,
+        job_title: authorRole ?? cachedAuthor?.job_title ?? null,
+        avatar: cachedAuthor?.avatar ?? null,
+        avatar_url: authorAvatar ?? null,
+      }
+    : null;
+
+  const category = (cachedCategory || categoryLabel || categoryColor || categorySlug)
+    ? {
+        ...(cachedCategory ?? {}),
+        label: categoryLabel ?? null,
+        color: categoryColor ?? null,
+        slug: categorySlug ?? null,
+      }
+    : null;
+
   return {
-    ...article,
+    ...articleRest,
     ...image,
     ...seo,
     content_json: safeParseJson(article.content_json),
@@ -330,18 +364,10 @@ export function hydrateArticle<T extends {
     recipe: extractRecipe(article.recipe_json), // Alias for RecipeContent.recipe
     roundup_json: safeParseJson(article.roundup_json),
     faqs_json: safeParseJson(article.faqs_json),
-    label: article.headline, // Alias for UI consistency
     route,
-    authorAvatar,
-    author: cachedAuthor ? { ...cachedAuthor, role: authorRole, avatar: cachedAuthor.avatar } : null,
-    category: cachedCategory ? { ...cachedCategory, label: categoryLabel, color: categoryColor, slug: categorySlug } : null,
+    author,
+    category,
     tags,
-    ...(typeof authorName === 'string' ? { authorName } : {}),
-    ...(typeof authorSlug === 'string' ? { authorSlug } : {}),
-    ...(typeof authorRole === 'string' ? { authorRole } : {}),
-    ...(typeof categoryLabel === 'string' ? { categoryLabel } : {}),
-    ...(typeof categoryColor === 'string' ? { categoryColor } : {}),
-    ...(typeof categorySlug === 'string' ? { categorySlug } : {}),
   };
 }
 
