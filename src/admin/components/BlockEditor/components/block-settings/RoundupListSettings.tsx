@@ -180,8 +180,8 @@ function RoundupListSettings({
         if (items.some((existing) => existing.article_id === item.id)) return;
         const nextItems = [...items, buildItem(item)];
         updateProps({ itemsJson: JSON.stringify(nextItems) });
-        setSearchTerm('');
-        setResults([]);
+        // Keep the search term and results so the editor can add several recipes
+        // from one search. Already-added rows render disabled via `isAdded`.
     };
 
     const removeItem = (articleIdValue: string | number) => {
