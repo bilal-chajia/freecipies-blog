@@ -113,15 +113,15 @@ const emptyColor = "var(--border)"; // Gray 200
 
   /* Sizes */
   .sm {
-    --star-size: 14px;
+    --star-size: var(--text-sm);
     font-size: var(--text-xs);
   }
   .md {
-    --star-size: 18px;
+    --star-size: var(--text-lg);
     font-size: var(--text-sm);
   }
   .lg {
-    --star-size: 24px;
+    --star-size: var(--space-6);
     font-size: var(--text-base);
   }
 
@@ -146,12 +146,12 @@ const emptyColor = "var(--border)"; // Gray 200
     align-items: center;
     gap: var(--space-1);
     color: var(--text-secondary); /* text-gray-600 */
-    font-weight: 500;
+    font-weight: var(--font-medium);
   }
 
   .rating-number {
     color: var(--text); /* text-gray-900 */
-    font-weight: 700;
+    font-weight: var(--font-bold);
   }
 
   .rating-count {
@@ -162,7 +162,7 @@ const emptyColor = "var(--border)"; // Gray 200
   /* Animations */
   .star-rating-container:hover .star {
     transform: scale(1.1);
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform var(--transition-spring);
   }
 
   .star-rating-container .star:nth-child(2) {

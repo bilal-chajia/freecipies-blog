@@ -13,7 +13,7 @@ const {
 <div class="newsletter-widget">
     <div class="widget-icon">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" fill="#ff6b35"></circle>
+            <circle cx="12" cy="12" r="10" fill="var(--brand-primary)"></circle>
             <path
                 d="M8 12l2 2 4-4"
                 stroke="white"
@@ -42,9 +42,9 @@ const {
     .newsletter-widget {
         position: relative;
         overflow: hidden;
-        background: #0f172a;
+        background: var(--neutral-900);
         border-radius: var(--radius-lg);
-        padding: 2rem 1.5rem;
+        padding: var(--space-8) var(--space-6);
         text-align: center;
     }
 
@@ -56,7 +56,7 @@ const {
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        background: rgba(255, 107, 53, 0.15);
+        background: color-mix(in srgb, var(--brand-primary) 15%, transparent);
         filter: blur(60px);
         pointer-events: none;
     }
@@ -74,31 +74,31 @@ const {
     .widget-icon {
         position: relative;
         z-index: 1;
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-4);
     }
 
     .widget-icon svg {
-        width: 48px;
-        height: 48px;
-        filter: drop-shadow(0 2px 8px rgba(255, 107, 53, 0.4));
+        width: var(--space-12);
+        height: var(--space-12);
+        filter: drop-shadow(0 2px 8px color-mix(in srgb, var(--brand-primary) 40%, transparent));
     }
 
     .widget-title {
         position: relative;
         z-index: 1;
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #fff;
-        margin: 0 0 0.5rem;
+        font-size: var(--text-xl);
+        font-weight: var(--font-bold);
+        color: var(--neutral-50);
+        margin: 0 0 var(--space-2);
         line-height: 1.3;
     }
 
     .widget-subtitle {
         position: relative;
         z-index: 1;
-        font-size: 0.875rem;
-        color: #94a3b8;
-        margin: 0 0 1.5rem;
+        font-size: var(--text-sm);
+        color: var(--neutral-400);
+        margin: 0 0 var(--space-6);
         line-height: 1.5;
     }
 
@@ -107,54 +107,54 @@ const {
         z-index: 1;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: var(--space-3);
     }
 
     .email-input {
         width: 100%;
-        padding: 0.875rem 1rem;
-        background: #1e293b;
-        border: 1px solid #334155;
+        padding: calc((var(--space-3) + var(--space-4)) / 2) var(--space-4);
+        background: var(--neutral-800);
+        border: 1px solid var(--neutral-700);
         border-radius: var(--radius-md);
-        color: #fff;
-        font-size: 0.9375rem;
-        transition: border-color 0.2s ease;
+        color: var(--neutral-50);
+        font-size: var(--text-sm);
+        transition: border-color var(--transition-fast);
     }
 
     .email-input::placeholder {
-        color: #64748b;
+        color: var(--neutral-500);
     }
 
     .email-input:focus-visible {
         outline: none;
-        border-color: #ff6b35;
-        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+        border-color: var(--brand-secondary);
+        box-shadow: var(--shadow-focus);
     }
 
     .subscribe-btn {
         width: 100%;
-        padding: 0.875rem 1.5rem;
-        background: linear-gradient(135deg, #ff3366 0%, #ff6b35 100%);
+        padding: calc((var(--space-3) + var(--space-4)) / 2) var(--space-6);
+        background: var(--brand-gradient);
         border: none;
         border-radius: var(--radius-md);
-        color: #fff;
-        font-size: 0.9375rem;
-        font-weight: 700;
+        color: var(--neutral-25);
+        font-size: var(--text-sm);
+        font-weight: var(--font-bold);
         cursor: pointer;
         transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
-        box-shadow: 0 2px 12px rgba(255, 51, 102, 0.25);
+            transform var(--transition-fast),
+            box-shadow var(--transition-fast);
+        box-shadow: 0 2px 12px color-mix(in srgb, var(--brand-primary) 25%, transparent);
     }
 
     .subscribe-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(255, 51, 102, 0.35);
+        box-shadow: 0 6px 20px color-mix(in srgb, var(--brand-primary) 35%, transparent);
     }
 
     .subscribe-btn:focus-visible {
-        outline: 2px solid white;
-        outline-offset: 3px;
+        outline: var(--focus-ring-width) solid var(--neutral-50);
+        outline-offset: var(--focus-ring-offset);
     }
 
     .subscribe-btn:active {
@@ -185,7 +185,7 @@ const {
                 await new Promise((resolve) => setTimeout(resolve, 1000));
 
                 submitBtn.textContent = "Subscribed! ✓";
-                submitBtn.style.background = "#10b981";
+                submitBtn.style.background = "var(--success)";
                 emailInput.value = "";
 
                 setTimeout(() => {
@@ -195,7 +195,7 @@ const {
                 }, 3000);
             } catch (err) {
                 submitBtn.textContent = "Error - Try again";
-                submitBtn.style.background = "#ef4444";
+                submitBtn.style.background = "var(--error)";
 
                 setTimeout(() => {
                     submitBtn.textContent = originalText;

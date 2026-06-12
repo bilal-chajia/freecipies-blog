@@ -1,62 +1,62 @@
 /* ========================================
  * Public Site Theme
- * Food blog identity: warm palette, editorial type, image-first surfaces.
+ * Food blog identity: Fresh & Organic (Sage Green, Forest Green, Cream)
  * ======================================== */
 
 @layer tokens {
   :root,
   [data-surface="site"] {
-    --brand-primary: #e74c3c;
-    --brand-primary-hover: #c0392b;
-    --brand-primary-light: #fdf2f2;
-    --brand-secondary: #ff6b35;
-    --brand-secondary-hover: #e55a2b;
-    --brand-secondary-accessible: #9a3412;
-    --brand-secondary-accessible-hover: #7c2d12;
-    --brand-secondary-accessible-shadow: rgba(154, 52, 18, 0.25);
-    --brand-secondary-accessible-shadow-hover: rgba(124, 45, 18, 0.35);
-    --brand-accent: #f7931e;
-    --brand-accent-hover: #e8850f;
-    --brand-gradient: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-    --brand-gradient-vertical: linear-gradient(180deg, #ff6b35 0%, #f7931e 100%);
+    --brand-primary: #2a5c36;
+    --brand-primary-hover: #1c3f24;
+    --brand-primary-light: #f1f7f3;
+    --brand-secondary: #6b8f71;
+    --brand-secondary-hover: #597a5e;
+    --brand-secondary-accessible: #2a5c36;
+    --brand-secondary-accessible-hover: #1c3f24;
+    --brand-secondary-accessible-shadow: rgba(42, 92, 54, 0.25);
+    --brand-secondary-accessible-shadow-hover: rgba(28, 63, 36, 0.35);
+    --brand-accent: #d8a43e;
+    --brand-accent-hover: #b8862f;
+    --brand-gradient: linear-gradient(135deg, #2a5c36 0%, #6b8f71 100%);
+    --brand-gradient-vertical: linear-gradient(180deg, #2a5c36 0%, #6b8f71 100%);
 
     /* Functional Colors (Light) — inherited from design-tokens.css */
     --error-hover: #dc2626;
 
-    --bg: #fffdf9;
-    --bg-alt: #fff7ed;
+    --bg: #fcfbfa;
+    --bg-alt: #f3f6f3;
     --bg-elevated: #ffffff;
-    --bg-inset: #f7efe5;
-    --bg-hover: #fff1e5;
-    --bg-active: #ffe4cc;
-    --bg-overlay: rgba(26, 16, 10, 0.52);
-    --bg-glass: rgba(255, 255, 255, 0.7);
-    --border-glass: rgba(255, 255, 255, 0.4);
+    --bg-inset: #eef3ee;
+    --bg-hover: #e6eee7;
+    --bg-active: #dae7dc;
+    --bg-overlay: rgba(22, 33, 24, 0.55);
+    --bg-glass: rgba(252, 251, 250, 0.75);
+    --border-glass: rgba(252, 251, 250, 0.45);
 
-    --text: #221713;
-    --text-secondary: #5c4a42;
-    --text-tertiary: #806a5f;
+    --text: #1e261f;
+    --text-secondary: #4d564e;
+    --text-tertiary: #7b857c;
     --text-inverse: #ffffff;
     --text-brand: var(--brand-primary);
 
-    --border: #eadfd4;
-    --border-strong: #d8c7b7;
-    --border-subtle: #f4ebe2;
+    --border: #e2ebe3;
+    --border-strong: #cbd4cc;
+    --border-subtle: #edf3ee;
 
-    --shadow-color: 66 38 18;
+    --shadow-color: 30 40 32;
     --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.05);
     --shadow-md: 0 4px 14px rgba(var(--shadow-color), 0.08);
     --shadow-lg: 0 10px 28px rgba(var(--shadow-color), 0.12);
     --shadow-xl: 0 18px 52px rgba(var(--shadow-color), 0.16);
     --shadow-hover: 0 14px 34px rgba(var(--shadow-color), 0.14);
-    --shadow-focus: 0 0 0 3px rgba(231, 76, 60, 0.25);
+    --shadow-focus: 0 0 0 3px rgba(42, 92, 54, 0.25);
 
     --accent-sage: #6b8f71;
     --accent-sage-light: #e8f5e9;
     --accent-sage-text: #1b4332;
     --accent-sage-contrast: #ffffff;
     --accent-sage-shadow: rgba(27, 67, 50, 0.25);
-    --toc-active-text: var(--accent-sage-text);
+    --toc-active-text: var(--brand-primary);
 
     /* Radius Tokens — inherited from design-tokens.css */
 
@@ -73,25 +73,31 @@
   html.dark[data-surface="site"],
   [data-surface="site"].dark,
   [data-surface="site"] .dark {
-    --bg: #0f0f0f;
-    --bg-alt: #1a1a1a;
-    --bg-elevated: #1e1e1e;
-    --bg-inset: #0a0a0a;
-    --bg-hover: #252525;
-    --bg-active: #2a2a2a;
+    --brand-primary: #8cb896;
+    --brand-primary-hover: #a3cca9;
+    --brand-primary-light: #18231a;
+    --brand-secondary: #6b8f71;
+    --brand-secondary-hover: #597a5e;
+    
+    --bg: #121613;
+    --bg-alt: #181e19;
+    --bg-elevated: #1e241f;
+    --bg-inset: #0a0e0b;
+    --bg-hover: #262e28;
+    --bg-active: #2e3830;
     --bg-overlay: rgba(0, 0, 0, 0.7);
-    --bg-glass: rgba(20, 20, 20, 0.75);
+    --bg-glass: rgba(20, 26, 22, 0.75);
     --border-glass: rgba(255, 255, 255, 0.1);
 
-    --text: #f7f2ec;
-    --text-secondary: #c8bdb3;
-    --text-tertiary: #9d8f84;
-    --text-inverse: #1a1a1a;
-    --text-brand: #ff8a80;
+    --text: #f4f7f4;
+    --text-secondary: #c5ccc6;
+    --text-tertiary: #949e96;
+    --text-inverse: #121613;
+    --text-brand: #8cb896;
 
-    --border: #333333;
-    --border-strong: #444444;
-    --border-subtle: #222222;
+    --border: #2a332c;
+    --border-strong: #3b473e;
+    --border-subtle: #1e2620;
 
     --shadow-color: 0 0 0;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -99,7 +105,7 @@
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
     --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
     --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.5);
-    --shadow-focus: 0 0 0 3px rgba(255, 107, 107, 0.35);
+    --shadow-focus: 0 0 0 3px rgba(140, 184, 150, 0.35);
 
     --success: #34d399;
     --success-bg: #064e3b;
@@ -114,14 +120,14 @@
     --info: #60a5fa;
     --info-bg: #1e3a8a;
     --info-text: #93c5fd;
-    --brand-secondary-accessible: #ffb199;
-    --brand-secondary-accessible-hover: #ffc4b3;
-    --brand-secondary-accessible-shadow: rgba(255, 177, 153, 0.18);
-    --brand-secondary-accessible-shadow-hover: rgba(255, 196, 179, 0.24);
+    --brand-secondary-accessible: #8cb896;
+    --brand-secondary-accessible-hover: #a3cca9;
+    --brand-secondary-accessible-shadow: rgba(140, 184, 150, 0.18);
+    --brand-secondary-accessible-shadow-hover: rgba(163, 204, 169, 0.24);
     --accent-sage-contrast: #ffffff;
     --accent-sage-shadow: rgba(255, 255, 255, 0.18);
-    --toc-active-text: var(--accent-sage);
+    --toc-active-text: var(--brand-primary);
 
-    --focus-ring-color: #ff8a80;
+    --focus-ring-color: #8cb896;
   }
 }

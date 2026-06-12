@@ -134,28 +134,27 @@ const { article, heroImageUrl } = Astro.props;
   /* ═══════ EXACT STITCH COOK MODE ═══════ */
   .cooking-mode-overlay {
     position: fixed;
-    inset: 0;
-    z-index: 10000;
+    inset: var(--space-0);
+    z-index: var(--z-devtools);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     background-color: var(--bg-inset);
     font-family: inherit;
-    color: var(--text);
+    color: var(--text-inverse);
     min-height: 100vh;
   }
   :global(.dark) .cooking-mode-overlay {
     background-color: var(--bg-active);
-    color: var(--text-inverse);
   }
   .cooking-mode-overlay[hidden] {
     display: none;
   }
   .cm-bg-image {
     position: absolute;
-    inset: 0;
+    inset: var(--space-0);
     background-image:
-      linear-gradient(to bottom, rgba(17, 33, 23, 0.8), rgba(17, 33, 23, 0.95)),
+      linear-gradient(to bottom, color-mix(in srgb, var(--brand-primary-hover) 80%, black), color-mix(in srgb, var(--brand-primary-hover) 95%, black)),
       var(--cm-bg, url(""));
     background-size: cover;
     background-position: center;
@@ -174,33 +173,33 @@ const { article, heroImageUrl } = Astro.props;
   .cm-progress-area {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 24px 24px 16px 24px;
+    gap: var(--space-2);
+    padding: var(--space-6) var(--space-6) var(--space-4) var(--space-6);
   }
   .cm-progress-header {
     display: flex;
-    gap: 24px;
+    gap: var(--space-6);
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
+    margin-bottom: var(--space-1);
   }
   .cm-progress-label {
     color: var(--success);
-    font-size: 12px;
-    font-weight: 700;
+    font-size: var(--text-xs);
+    font-weight: var(--font-bold);
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    margin: 0;
+    margin: var(--space-0);
   }
   .cm-progress-text {
     color: var(--text-tertiary);
-    font-size: 12px;
-    font-weight: 500;
-    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    margin: var(--space-0);
   }
   .cm-progress-track {
     border-radius: var(--radius-full);
-    background-color: rgba(30, 41, 59, 0.5);
+    background-color: color-mix(in srgb, var(--neutral-900) 50%, transparent);
     height: 6px;
     overflow: hidden;
   }
@@ -208,14 +207,14 @@ const { article, heroImageUrl } = Astro.props;
     height: 100%;
     border-radius: var(--radius-full);
     background-color: var(--success);
-    transition: width 0.3s ease;
+    transition: width var(--transition-base);
   }
 
   /* Top Navigation Bar */
   .cm-top-nav {
     display: flex;
     align-items: center;
-    padding: 16px 24px;
+    padding: var(--space-4) var(--space-6);
     justify-content: space-between;
   }
   .cm-top-titles {
@@ -224,33 +223,33 @@ const { article, heroImageUrl } = Astro.props;
   }
   .cm-top-title {
     color: var(--text-inverse);
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 1.25;
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-tight);
     letter-spacing: -0.02em;
-    margin: 0;
+    margin: var(--space-0);
   }
   .cm-top-subtitle {
     color: var(--success);
-    font-size: 14px;
-    font-weight: 500;
-    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    margin: var(--space-0);
   }
   .cm-close-btn {
     display: flex;
-    height: 40px;
-    width: 40px;
+    height: var(--space-10);
+    width: var(--space-10);
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-full);
-    background-color: rgba(30, 41, 59, 0.4);
-    border: 1px solid rgba(51, 65, 85, 0.5);
+    background-color: color-mix(in srgb, var(--neutral-900) 40%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-inverse) 15%, transparent);
     color: var(--text-inverse);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color var(--transition-fast);
   }
   .cm-close-btn:hover {
-    background-color: rgba(51, 65, 85, 0.5);
+    background-color: color-mix(in srgb, var(--neutral-700) 50%, transparent);
   }
 
   /* Main Content */
@@ -260,7 +259,7 @@ const { article, heroImageUrl } = Astro.props;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 16px 32px 0;
+    padding: var(--space-4) var(--space-8) var(--space-0);
     text-align: center;
     overflow-y: auto;
   }
@@ -272,22 +271,22 @@ const { article, heroImageUrl } = Astro.props;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
   }
   .cm-dots :global(.cm-dot) {
     height: 6px;
     width: 6px;
     border-radius: var(--radius-full);
     background-color: var(--neutral-700);
-    transition: background-color 0.2s, transform 0.2s;
+    transition: background-color var(--transition-fast), transform var(--transition-fast);
     border: none;
-    padding: 0;
+    padding: var(--space-0);
     cursor: pointer;
   }
   .cm-dots :global(.cm-dot.active) {
     background-color: var(--success);
-    width: 32px;
+    width: var(--space-8);
   }
   .cm-dots :global(.cm-dot.done) {
     background-color: var(--success);
@@ -302,59 +301,59 @@ const { article, heroImageUrl } = Astro.props;
     align-items: center;
   }
   .cm-steps-container :global(.cook-step) {
-    animation: cmFadeIn 0.3s ease-out;
+    animation: cmFadeIn var(--transition-base);
   }
   .cm-steps-container :global(.cook-step[hidden]) {
     display: none;
   }
   .cm-steps-container :global(.step-counter) {
     color: var(--success);
-    font-size: 14px;
-    font-weight: 700;
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    margin-bottom: 16px;
+    margin-bottom: var(--space-4);
     opacity: 0.8;
   }
   .cm-steps-container :global(.cook-step h3) {
     color: var(--text-inverse);
-    font-size: 30px;
-    font-weight: 700;
-    line-height: 1.25;
-    margin-bottom: 48px;
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-tight);
+    margin-bottom: var(--space-12);
     max-width: 680px;
     margin-left: auto;
     margin-right: auto;
   }
   .cm-steps-container :global(.cook-step p) {
     color: var(--text-tertiary);
-    font-size: 18px;
-    margin-bottom: 24px;
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-6);
   }
   .cm-steps-container :global(.step-timer-badge) {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
+    padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-full);
-    background: rgba(51, 230, 122, 0.1);
-    color: var(--success);
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 16px;
+    background: var(--success-bg);
+    color: var(--success-text);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    margin-bottom: var(--space-4);
   }
   .cm-steps-container :global(.step-timer-badge svg) {
-    width: 16px;
-    height: 16px;
+    width: var(--space-4);
+    height: var(--space-4);
     flex-shrink: 0;
   }
   .cm-steps-container :global(.step-tip) {
-    margin-top: 16px;
-    padding: 12px 16px;
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.05);
+    background: color-mix(in srgb, var(--text-inverse) 5%, transparent);
     color: var(--text-tertiary);
-    font-size: 14px;
+    font-size: var(--text-sm);
     text-align: left;
   }
   @keyframes cmFadeIn {
@@ -370,38 +369,38 @@ const { article, heroImageUrl } = Astro.props;
 
   /* Sophisticated Timer */
   .glass-panel {
-    background: rgba(17, 33, 23, 0.7);
+    background: color-mix(in srgb, var(--brand-primary-hover) 70%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(51, 230, 122, 0.1);
+    border: 1px solid color-mix(in srgb, var(--success) 10%, transparent);
   }
   .cm-timer-panel {
-    padding: 32px;
+    padding: var(--space-8);
     border-radius: var(--radius-xl);
     width: 100%;
     max-width: 320px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    margin: 0 auto 32px auto;
+    box-shadow: var(--shadow-xl);
+    margin: var(--space-0) auto var(--space-8) auto;
   }
   .cm-timer-panel[hidden] {
     display: none;
   }
   .cm-timer-label {
     color: var(--text-tertiary);
-    font-size: 12px;
-    font-weight: 700;
+    font-size: var(--text-xs);
+    font-weight: var(--font-bold);
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    margin-bottom: 8px;
+    margin-bottom: var(--space-2);
   }
   .cm-timer-display {
-    font-size: 60px;
-    font-weight: 300;
+    font-size: 3.75rem;
+    font-weight: var(--font-light);
     color: var(--text-inverse);
-    margin-bottom: 24px;
+    margin-bottom: var(--space-6);
     letter-spacing: -0.05em;
   }
   .cm-timer-display.warning {
@@ -422,7 +421,7 @@ const { article, heroImageUrl } = Astro.props;
   }
   .cm-timer-controls {
     display: flex;
-    gap: 16px;
+    gap: var(--space-4);
     width: 100%;
   }
   .cm-timer-btn {
@@ -430,17 +429,17 @@ const { article, heroImageUrl } = Astro.props;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 12px 0;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-0);
     border-radius: var(--radius-md);
-    font-weight: 600;
+    font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.2s;
+    transition: background-color var(--transition-fast), transform var(--transition-fast);
     border: none;
   }
   .cm-timer-btn svg {
-    width: 18px;
-    height: 18px;
+    width: var(--space-4);
+    height: var(--space-4);
   }
   .cm-timer-btn-stop {
     border: 1px solid var(--neutral-700);
@@ -448,15 +447,15 @@ const { article, heroImageUrl } = Astro.props;
     background: transparent;
   }
   .cm-timer-btn-stop:hover {
-    background: rgba(30, 41, 59, 0.5);
+    background: color-mix(in srgb, var(--neutral-700) 50%, transparent);
   }
   .cm-timer-btn-start {
     background: var(--success);
     color: var(--bg-active);
-    font-weight: 700;
+    font-weight: var(--font-bold);
   }
   .cm-timer-btn-start:hover {
-    box-shadow: 0 0 20px rgba(51, 230, 122, 0.4);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--success) 40%, transparent);
   }
   .cm-timer-btn[hidden] {
     display: none;
@@ -464,46 +463,46 @@ const { article, heroImageUrl } = Astro.props;
 
   /* Floating Bottom Navigation */
   .cm-bottom-nav-wrap {
-    padding: 24px 24px 40px 24px;
+    padding: var(--space-6) var(--space-6) var(--space-10) var(--space-6);
     position: absolute;
-    bottom: 0px;
+    bottom: var(--space-0);
     left: 0;
     width: 100%;
   }
   .cm-bottom-nav {
     border-radius: var(--radius-lg);
-    padding: 12px;
+    padding: var(--space-3);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: var(--shadow-xl);
+    border-color: color-mix(in srgb, var(--text-inverse) 5%, transparent);
   }
   .cm-nav-btn {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 16px 0;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-0);
     border-radius: var(--radius-md);
-    font-weight: 600;
+    font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color var(--transition-fast);
     border: none;
     background: transparent;
   }
   .cm-nav-btn svg,
   .cm-nav-btn :global(svg) {
-    width: 20px;
-    height: 20px;
+    width: var(--space-5);
+    height: var(--space-5);
     flex-shrink: 0;
   }
   .cm-nav-btn.prev {
     color: var(--text-tertiary);
   }
   .cm-nav-btn.prev:hover:not([disabled]) {
-    color: var(--bg-elevated);
+    color: var(--text-inverse);
   }
   .cm-nav-btn.prev[disabled] {
     opacity: 0.3;
@@ -511,47 +510,47 @@ const { article, heroImageUrl } = Astro.props;
   }
 
   .cm-nav-btn.items {
-    color: var(--bg-elevated);
+    color: var(--text-inverse);
   }
   .cm-nav-btn.items:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: color-mix(in srgb, var(--text-inverse) 5%, transparent);
   }
 
   .cm-nav-btn.next {
     background: var(--success);
     color: var(--bg-active);
-    font-weight: 700;
-    box-shadow: 0 10px 15px -3px rgba(51, 230, 122, 0.1);
+    font-weight: var(--font-bold);
+    box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--success) 10%, transparent);
   }
   .cm-nav-btn.next:hover {
-    box-shadow: 0 10px 15px -3px rgba(51, 230, 122, 0.3);
+    box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--success) 30%, transparent);
   }
 
   .cm-nav-divider {
     width: 1px;
-    height: 32px;
-    background-color: rgba(51, 65, 85, 0.5);
-    margin: 0 8px;
+    height: var(--space-8);
+    background-color: color-mix(in srgb, var(--text-inverse) 15%, transparent);
+    margin: var(--space-0) var(--space-2);
   }
 
   /* Ingredients Slide-over */
   .cm-ingredients {
     position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
+    top: var(--space-0);
+    right: var(--space-0);
+    bottom: var(--space-0);
     width: 100%;
     max-width: 400px;
-    z-index: 50;
+    z-index: var(--z-dropdown);
     transform: translateX(100%);
-    transition: transform 0.3s ease;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform var(--transition-base);
+    border-left: 1px solid color-mix(in srgb, var(--text-inverse) 10%, transparent);
   }
   .cm-ingredients:not([hidden]) {
     transform: translateX(0);
   }
   .cm-ingredients-inner {
-    padding: 32px 24px;
+    padding: var(--space-8) var(--space-6);
     height: 100%;
     overflow-y: auto;
   }
@@ -559,98 +558,98 @@ const { article, heroImageUrl } = Astro.props;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: var(--space-6);
   }
   .cm-ingredients-header h3 {
-    margin: 0;
-    font-size: 20px;
+    margin: var(--space-0);
+    font-size: var(--text-xl);
     color: var(--text-inverse);
-    font-weight: 700;
+    font-weight: var(--font-bold);
   }
   .cm-btn-close-ing {
     background: none;
     border: none;
     color: var(--text-tertiary);
     cursor: pointer;
-    padding: 8px;
+    padding: var(--space-2);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     margin-right: -8px;
   }
 
   .cm-btn-close-ing svg {
-    width: 24px;
-    height: 24px;
+    width: var(--space-6);
+    height: var(--space-6);
   }
 
   .cm-btn-close-ing:hover {
     color: var(--text-inverse);
-    background: rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--text-inverse) 10%, transparent);
   }
   .cm-ing-list {
     list-style: none;
-    padding: 0;
-    margin: 0;
+    padding: var(--space-0);
+    margin: var(--space-0);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--space-3);
   }
   .cm-ing-list :global(li) {
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.05);
+    padding: var(--space-4);
+    background: color-mix(in srgb, var(--text-inverse) 5%, transparent);
     border-radius: var(--radius-md);
     color: var(--text-inverse);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--text-sm);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
   }
   .cm-ing-list :global(li:hover) {
-    background: rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--text-inverse) 10%, transparent);
   }
   .cm-ing-list :global(li.checked) {
     opacity: 0.5;
   }
   .cm-ing-list :global(.cm-ing-amount) {
     color: var(--success);
-    font-weight: 700;
-    margin-right: 4px;
+    font-weight: var(--font-bold);
+    margin-right: var(--space-1);
   }
   .cm-ing-list :global(.cm-ing-unit) {
     color: var(--text-tertiary);
-    margin-right: 4px;
+    margin-right: var(--space-1);
   }
 
   /* ── Mobile cook mode ── */
   @media (max-width: 768px) {
     .cm-ingredients {
       position: absolute;
-      inset: 0;
+      inset: var(--space-0);
       width: 100%;
       max-width: none;
       z-index: 10;
-      background: var(--bg-active);
+      background: color-mix(in srgb, var(--brand-primary-hover) 90%, black);
       backdrop-filter: blur(12px);
     }
     .cm-title {
-      font-size: 14px;
+      font-size: var(--text-sm);
       max-width: 50%;
     }
     .cm-steps-container :global(.cook-step h3) {
-      font-size: 22px;
+      font-size: var(--text-2xl);
     }
     .cm-steps-container :global(.cook-step p) {
-      font-size: 17px;
+      font-size: var(--text-base);
     }
     .cm-timer-display {
-      font-size: 40px;
+      font-size: var(--text-4xl);
     }
     .step-nav {
       flex-direction: column;
-      gap: 10px;
+      gap: var(--space-2.5);
     }
     .step-btn {
       min-width: 100%;

@@ -140,87 +140,87 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
 
 <style>
   .roundups-page {
-    background: #fff;
+    background: var(--bg);
     min-height: 100vh;
   }
 
   .container {
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 0 var(--space-6);
   }
 
   .page-header {
-    padding: 5rem 0 3rem;
+    padding: var(--space-20) 0 var(--space-12);
     text-align: center;
   }
 
   .page-title {
-    font-size: clamp(2.5rem, 6vw, 4rem);
-    font-weight: 900;
-    color: #111;
-    margin-bottom: 1.5rem;
+    font-size: clamp(var(--text-4xl), 6vw, var(--text-5xl));
+    font-weight: var(--font-extrabold);
+    color: var(--text);
+    margin-bottom: var(--space-6);
     letter-spacing: -0.02em;
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-heading);
   }
 
   .title-dot {
     display: inline-block;
     width: 14px;
     height: 14px;
-    background: #ff6600;
-    border-radius: 50%;
-    margin-right: 0.5rem;
+    background: var(--brand-primary);
+    border-radius: var(--radius-full);
+    margin-right: var(--space-2);
   }
 
   .subtitle {
-    font-size: 1.25rem;
-    color: #666;
+    font-size: var(--text-xl);
+    color: var(--text-secondary);
     max-width: 600px;
-    margin: 0 auto 2rem;
-    line-height: 1.6;
+    margin: 0 auto var(--space-8);
+    line-height: var(--leading-relaxed);
   }
 
   .header-divider {
     width: 80px;
     height: 4px;
-    background: #111;
+    background: var(--text);
     margin: 0 auto;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
   }
 
   .roundups-grid-section {
-    padding-bottom: 6rem;
+    padding-bottom: var(--space-24);
   }
 
   .roundups-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 3rem;
+    gap: var(--space-12);
   }
 
   .roundup-card {
     display: flex;
     flex-direction: column;
     group-hover: transform translateY(-8px);
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-slow);
   }
 
   .card-image-link {
     display: block;
     position: relative;
     aspect-ratio: 4/3;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-bottom: var(--space-6);
+    box-shadow: var(--shadow-md);
   }
 
   .card-image-link img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform var(--transition-slow);
   }
 
   .roundup-card:hover .card-image-link img {
@@ -229,19 +229,19 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
 
   .card-overlay {
     position: absolute;
-    top: 1.5rem;
-    left: 1.5rem;
+    top: var(--space-6);
+    left: var(--space-6);
     display: flex;
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
 
   .item-count {
-    background: rgba(0,0,0,0.7);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 700;
+    background: var(--bg-overlay);
+    color: var(--text-inverse);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: var(--font-bold);
     text-transform: uppercase;
     backdrop-filter: blur(4px);
   }
@@ -249,31 +249,31 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
   .card-body {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
   }
 
   .card-title {
-    font-size: 1.75rem;
-    font-weight: 800;
-    line-height: 1.25;
+    font-size: var(--text-3xl);
+    font-weight: var(--font-extrabold);
+    line-height: var(--leading-tight);
     margin: 0;
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-heading);
   }
 
   .card-title a {
     text-decoration: none;
-    color: #111;
-    transition: color 0.2s;
+    color: var(--text);
+    transition: color var(--transition-fast);
   }
 
   .card-title a:hover {
-    color: #ff6600;
+    color: var(--brand-primary);
   }
 
   .card-excerpt {
-    font-size: 1.05rem;
-    color: #555;
-    line-height: 1.6;
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    line-height: var(--leading-relaxed);
     margin: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -284,21 +284,21 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
   .read-more {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 700;
-    color: #111;
+    gap: var(--space-2);
+    font-weight: var(--font-bold);
+    color: var(--text);
     text-decoration: none;
-    font-size: 0.9375rem;
-    margin-top: 0.5rem;
-    transition: color 0.2s;
+    font-size: var(--text-sm);
+    margin-top: var(--space-2);
+    transition: color var(--transition-fast);
   }
 
   .read-more:hover {
-    color: #ff6600;
+    color: var(--brand-primary);
   }
 
   .read-more svg {
-    transition: transform 0.2s;
+    transition: transform var(--transition-fast);
   }
 
   .read-more:hover svg {
@@ -307,16 +307,16 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
 
   .no-results {
     text-align: center;
-    padding: 4rem 0;
-    color: #666;
+    padding: var(--space-16) 0;
+    color: var(--text-secondary);
   }
 
   .pagination {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1.5rem;
-    margin-top: 5rem;
+    gap: var(--space-6);
+    margin-top: var(--space-20);
   }
 
   .page-num {
@@ -325,34 +325,25 @@ const siteDescription = "Curated collections of our best recipes, hand-picked fo
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     text-decoration: none;
-    color: #111;
-    font-weight: 700;
-    transition: all 0.2s;
+    color: var(--text);
+    font-weight: var(--font-bold);
+    transition: all var(--transition-fast);
   }
 
   .page-num.active {
-    background: #ff6600;
-    color: white;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
   }
 
   .page-btn {
-    font-weight: 700;
+    font-weight: var(--font-bold);
     text-decoration: none;
-    color: #111;
+    color: var(--text);
   }
 
   .page-btn:hover {
-    color: #ff6600;
+    color: var(--brand-primary);
   }
-
-  /* Dark mode */
-  :global(.dark) .roundups-page { background: #0f172a; }
-  :global(.dark) .page-title { color: #f8fafc; }
-  :global(.dark) .subtitle { color: #9ca3af; }
-  :global(.dark) .header-divider { background: #ff6600; }
-  :global(.dark) .card-title a { color: #f3f4f6; }
-  :global(.dark) .card-excerpt { color: #9ca3af; }
-  :global(.dark) .read-more { color: #f8fafc; }
 </style>

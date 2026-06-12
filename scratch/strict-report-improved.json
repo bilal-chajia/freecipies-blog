@@ -1,0 +1,2530 @@
+[
+  {
+    "file": "src/pages/404.astro",
+    "styleBlocks": [],
+    "inlineStyles": [],
+    "tailwindArbitrary": [
+      {
+        "text": "min-h-[60vh]",
+        "reason": "Tailwind arbitrary class bypasses tokens"
+      },
+      {
+        "text": "text-[120px]",
+        "reason": "Tailwind arbitrary class bypasses tokens"
+      }
+    ]
+  },
+  {
+    "file": "src/pages/500.astro",
+    "styleBlocks": [],
+    "inlineStyles": [],
+    "tailwindArbitrary": [
+      {
+        "text": "min-h-[60vh]",
+        "reason": "Tailwind arbitrary class bypasses tokens"
+      },
+      {
+        "text": "text-[120px]",
+        "reason": "Tailwind arbitrary class bypasses tokens"
+      }
+    ]
+  },
+  {
+    "file": "src/pages/about.astro",
+    "styleBlocks": [
+      {
+        "line": 11,
+        "text": "max-width: 700px;",
+        "reason": "Hardcoded property 'max-width: 700px'"
+      },
+      {
+        "line": 18,
+        "text": "background: linear-gradient(135deg, #ffe4cc, #ffcc99);",
+        "reason": "Hardcoded property 'background: linear-gradient(135deg, #ffe4cc, #ffcc99)'"
+      },
+      {
+        "line": 25,
+        "text": "font-size: 8rem;",
+        "reason": "Hardcoded property 'font-size: 8rem'"
+      },
+      {
+        "line": 11,
+        "text": "max-width: 400px;",
+        "reason": "Hardcoded property 'max-width: 400px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/pages/admin/[...path].astro",
+    "styleBlocks": [
+      {
+        "line": 4,
+        "text": "color: #f8fafc;",
+        "reason": "Hardcoded property 'color: #f8fafc'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/pages/authors/[slug].astro",
+    "styleBlocks": [
+      {
+        "line": 17,
+        "text": "top: -50%;",
+        "reason": "Hardcoded property 'top: -50%'"
+      },
+      {
+        "line": 18,
+        "text": "right: -10%;",
+        "reason": "Hardcoded property 'right: -10%'"
+      },
+      {
+        "line": 19,
+        "text": "width: 500px;",
+        "reason": "Hardcoded property 'width: 500px'"
+      },
+      {
+        "line": 3,
+        "text": "height: 500px;",
+        "reason": "Hardcoded property 'height: 500px'"
+      },
+      {
+        "line": 33,
+        "text": "bottom: -30%;",
+        "reason": "Hardcoded property 'bottom: -30%'"
+      },
+      {
+        "line": 34,
+        "text": "left: -5%;",
+        "reason": "Hardcoded property 'left: -5%'"
+      },
+      {
+        "line": 19,
+        "text": "width: 400px;",
+        "reason": "Hardcoded property 'width: 400px'"
+      },
+      {
+        "line": 3,
+        "text": "height: 400px;",
+        "reason": "Hardcoded property 'height: 400px'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 2.5rem;",
+        "reason": "Hardcoded property 'gap: 2.5rem'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 3rem;",
+        "reason": "Hardcoded property 'gap: 3rem'"
+      },
+      {
+        "line": 19,
+        "text": "width: 180px;",
+        "reason": "Hardcoded property 'width: 180px'"
+      },
+      {
+        "line": 3,
+        "text": "height: 180px;",
+        "reason": "Hardcoded property 'height: 180px'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 12px 40px rgba(255, 107, 53, 0.25), 0 0 0 6px rgba(255, 255, 255, 0.8);",
+        "reason": "Hardcoded property 'box-shadow: 0 12px 40px rgba(255, 107, 53, 0.25), 0 0 0 6px rgba(255, 255, 255, 0.8)'"
+      },
+      {
+        "line": 89,
+        "text": "transition: transform 0.3s ease, box-shadow 0.3s ease;",
+        "reason": "Hardcoded property 'transition: transform 0.3s ease, box-shadow 0.3s ease'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 16px 48px rgba(255, 107, 53, 0.3), 0 0 0 6px rgba(255, 255, 255, 0.9);",
+        "reason": "Hardcoded property 'box-shadow: 0 16px 48px rgba(255, 107, 53, 0.3), 0 0 0 6px rgba(255, 255, 255, 0.9)'"
+      },
+      {
+        "line": 19,
+        "text": "width: 180px;",
+        "reason": "Hardcoded property 'width: 180px'"
+      },
+      {
+        "line": 3,
+        "text": "height: 180px;",
+        "reason": "Hardcoded property 'height: 180px'"
+      },
+      {
+        "line": 8,
+        "text": "background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);",
+        "reason": "Hardcoded property 'background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 12px 40px rgba(255, 107, 53, 0.3), 0 0 0 6px rgba(255, 255, 255, 0.8);",
+        "reason": "Hardcoded property 'box-shadow: 0 12px 40px rgba(255, 107, 53, 0.3), 0 0 0 6px rgba(255, 255, 255, 0.8)'"
+      },
+      {
+        "line": 89,
+        "text": "transition: transform 0.3s ease, box-shadow 0.3s ease;",
+        "reason": "Hardcoded property 'transition: transform 0.3s ease, box-shadow 0.3s ease'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 16px 48px rgba(255, 107, 53, 0.35), 0 0 0 6px rgba(255, 255, 255, 0.9);",
+        "reason": "Hardcoded property 'box-shadow: 0 16px 48px rgba(255, 107, 53, 0.35), 0 0 0 6px rgba(255, 255, 255, 0.9)'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 4.5rem;",
+        "reason": "Hardcoded property 'font-size: 4.5rem'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 700;",
+        "reason": "Hardcoded property 'font-weight: 700'"
+      },
+      {
+        "line": 23,
+        "text": "color: white;",
+        "reason": "Hardcoded property 'color: white'"
+      },
+      {
+        "line": 128,
+        "text": "text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);",
+        "reason": "Hardcoded property 'text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2)'"
+      },
+      {
+        "line": 33,
+        "text": "bottom: 8px;",
+        "reason": "Hardcoded property 'bottom: 8px'"
+      },
+      {
+        "line": 18,
+        "text": "right: 8px;",
+        "reason": "Hardcoded property 'right: 8px'"
+      },
+      {
+        "line": 19,
+        "text": "width: 36px;",
+        "reason": "Hardcoded property 'width: 36px'"
+      },
+      {
+        "line": 3,
+        "text": "height: 36px;",
+        "reason": "Hardcoded property 'height: 36px'"
+      },
+      {
+        "line": 8,
+        "text": "background: linear-gradient(135deg, #10b981 0%, #059669 100%);",
+        "reason": "Hardcoded property 'background: linear-gradient(135deg, #10b981 0%, #059669 100%)'"
+      },
+      {
+        "line": 23,
+        "text": "color: white;",
+        "reason": "Hardcoded property 'color: white'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);",
+        "reason": "Hardcoded property 'box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4)'"
+      },
+      {
+        "line": 26,
+        "text": "border: 3px solid white;",
+        "reason": "Hardcoded property 'border: 3px solid white'"
+      },
+      {
+        "line": 47,
+        "text": "max-width: 700px;",
+        "reason": "Hardcoded property 'max-width: 700px'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 1rem;",
+        "reason": "Hardcoded property 'gap: 1rem'"
+      },
+      {
+        "line": 158,
+        "text": "margin-bottom: 0.5rem;",
+        "reason": "Hardcoded property 'margin-bottom: 0.5rem'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 800;",
+        "reason": "Hardcoded property 'font-weight: 800'"
+      },
+      {
+        "line": 23,
+        "text": "color: #1a1a1a;",
+        "reason": "Hardcoded property 'color: #1a1a1a'"
+      },
+      {
+        "line": 166,
+        "text": "line-height: 1.1;",
+        "reason": "Hardcoded property 'line-height: 1.1'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 0.375rem;",
+        "reason": "Hardcoded property 'gap: 0.375rem'"
+      },
+      {
+        "line": 9,
+        "text": "padding: 0.375rem 0.875rem;",
+        "reason": "Hardcoded property 'padding: 0.375rem 0.875rem'"
+      },
+      {
+        "line": 8,
+        "text": "background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);",
+        "reason": "Hardcoded property 'background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'"
+      },
+      {
+        "line": 23,
+        "text": "color: #92400e;",
+        "reason": "Hardcoded property 'color: #92400e'"
+      },
+      {
+        "line": 26,
+        "text": "border-radius: 9999px;",
+        "reason": "Hardcoded property 'border-radius: 9999px'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 0.75rem;",
+        "reason": "Hardcoded property 'font-size: 0.75rem'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 700;",
+        "reason": "Hardcoded property 'font-weight: 700'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);",
+        "reason": "Hardcoded property 'box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2)'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 1.25rem;",
+        "reason": "Hardcoded property 'font-size: 1.25rem'"
+      },
+      {
+        "line": 23,
+        "text": "color: #ff6b35;",
+        "reason": "Hardcoded property 'color: #ff6b35'"
+      },
+      {
+        "line": 48,
+        "text": "margin: 0.75rem 0 0 0;",
+        "reason": "Hardcoded property 'margin: 0.75rem 0 0 0'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 600;",
+        "reason": "Hardcoded property 'font-weight: 600'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 1.0625rem;",
+        "reason": "Hardcoded property 'font-size: 1.0625rem'"
+      },
+      {
+        "line": 23,
+        "text": "color: #4b5563;",
+        "reason": "Hardcoded property 'color: #4b5563'"
+      },
+      {
+        "line": 166,
+        "text": "line-height: 1.7;",
+        "reason": "Hardcoded property 'line-height: 1.7'"
+      },
+      {
+        "line": 48,
+        "text": "margin: 1rem 0 0 0;",
+        "reason": "Hardcoded property 'margin: 1rem 0 0 0'"
+      },
+      {
+        "line": 47,
+        "text": "max-width: 650px;",
+        "reason": "Hardcoded property 'max-width: 650px'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 1.5rem;",
+        "reason": "Hardcoded property 'gap: 1.5rem'"
+      },
+      {
+        "line": 204,
+        "text": "margin-top: 2rem;",
+        "reason": "Hardcoded property 'margin-top: 2rem'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 0.875rem;",
+        "reason": "Hardcoded property 'gap: 0.875rem'"
+      },
+      {
+        "line": 9,
+        "text": "padding: 0.875rem 1.25rem;",
+        "reason": "Hardcoded property 'padding: 0.875rem 1.25rem'"
+      },
+      {
+        "line": 8,
+        "text": "background: rgba(255, 255, 255, 0.85);",
+        "reason": "Hardcoded property 'background: rgba(255, 255, 255, 0.85)'"
+      },
+      {
+        "line": 26,
+        "text": "border-radius: 12px;",
+        "reason": "Hardcoded property 'border-radius: 12px'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);",
+        "reason": "Hardcoded property 'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06)'"
+      },
+      {
+        "line": 26,
+        "text": "border: 1px solid rgba(255, 255, 255, 0.5);",
+        "reason": "Hardcoded property 'border: 1px solid rgba(255, 255, 255, 0.5)'"
+      },
+      {
+        "line": 89,
+        "text": "transition: all 0.2s ease;",
+        "reason": "Hardcoded property 'transition: all 0.2s ease'"
+      },
+      {
+        "line": 8,
+        "text": "background: rgba(255, 255, 255, 0.95);",
+        "reason": "Hardcoded property 'background: rgba(255, 255, 255, 0.95)'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);",
+        "reason": "Hardcoded property 'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1)'"
+      },
+      {
+        "line": 19,
+        "text": "width: 40px;",
+        "reason": "Hardcoded property 'width: 40px'"
+      },
+      {
+        "line": 3,
+        "text": "height: 40px;",
+        "reason": "Hardcoded property 'height: 40px'"
+      },
+      {
+        "line": 8,
+        "text": "background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);",
+        "reason": "Hardcoded property 'background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'"
+      },
+      {
+        "line": 26,
+        "text": "border-radius: 10px;",
+        "reason": "Hardcoded property 'border-radius: 10px'"
+      },
+      {
+        "line": 23,
+        "text": "color: white;",
+        "reason": "Hardcoded property 'color: white'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 1.5rem;",
+        "reason": "Hardcoded property 'font-size: 1.5rem'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 800;",
+        "reason": "Hardcoded property 'font-weight: 800'"
+      },
+      {
+        "line": 23,
+        "text": "color: #1a1a1a;",
+        "reason": "Hardcoded property 'color: #1a1a1a'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 0.8125rem;",
+        "reason": "Hardcoded property 'font-size: 0.8125rem'"
+      },
+      {
+        "line": 23,
+        "text": "color: #6b7280;",
+        "reason": "Hardcoded property 'color: #6b7280'"
+      },
+      {
+        "line": 204,
+        "text": "margin-top: 0.25rem;",
+        "reason": "Hardcoded property 'margin-top: 0.25rem'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 500;",
+        "reason": "Hardcoded property 'font-weight: 500'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 0.75rem;",
+        "reason": "Hardcoded property 'gap: 0.75rem'"
+      },
+      {
+        "line": 204,
+        "text": "margin-top: 2rem;",
+        "reason": "Hardcoded property 'margin-top: 2rem'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 0.5rem;",
+        "reason": "Hardcoded property 'gap: 0.5rem'"
+      },
+      {
+        "line": 9,
+        "text": "padding: 0.625rem 1.125rem;",
+        "reason": "Hardcoded property 'padding: 0.625rem 1.125rem'"
+      },
+      {
+        "line": 8,
+        "text": "background: white;",
+        "reason": "Hardcoded property 'background: white'"
+      },
+      {
+        "line": 26,
+        "text": "border-radius: 10px;",
+        "reason": "Hardcoded property 'border-radius: 10px'"
+      },
+      {
+        "line": 23,
+        "text": "color: #374151;",
+        "reason": "Hardcoded property 'color: #374151'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 0.875rem;",
+        "reason": "Hardcoded property 'font-size: 0.875rem'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 600;",
+        "reason": "Hardcoded property 'font-weight: 600'"
+      },
+      {
+        "line": 89,
+        "text": "transition: all 0.2s ease;",
+        "reason": "Hardcoded property 'transition: all 0.2s ease'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);",
+        "reason": "Hardcoded property 'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08)'"
+      },
+      {
+        "line": 26,
+        "text": "border: 1px solid rgba(0, 0, 0, 0.06);",
+        "reason": "Hardcoded property 'border: 1px solid rgba(0, 0, 0, 0.06)'"
+      },
+      {
+        "line": 8,
+        "text": "background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);",
+        "reason": "Hardcoded property 'background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'"
+      },
+      {
+        "line": 23,
+        "text": "color: white;",
+        "reason": "Hardcoded property 'color: white'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);",
+        "reason": "Hardcoded property 'box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3)'"
+      },
+      {
+        "line": 8,
+        "text": "background: white;",
+        "reason": "Hardcoded property 'background: white'"
+      },
+      {
+        "line": 158,
+        "text": "margin-bottom: 2rem;",
+        "reason": "Hardcoded property 'margin-bottom: 2rem'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 0.75rem;",
+        "reason": "Hardcoded property 'gap: 0.75rem'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 800;",
+        "reason": "Hardcoded property 'font-weight: 800'"
+      },
+      {
+        "line": 48,
+        "text": "margin: 0 0 1rem 0;",
+        "reason": "Hardcoded property 'margin: 0 0 1rem 0'"
+      },
+      {
+        "line": 23,
+        "text": "color: #1a1a1a;",
+        "reason": "Hardcoded property 'color: #1a1a1a'"
+      },
+      {
+        "line": 23,
+        "text": "color: #ff6b35;",
+        "reason": "Hardcoded property 'color: #ff6b35'"
+      },
+      {
+        "line": 19,
+        "text": "width: 60px;",
+        "reason": "Hardcoded property 'width: 60px'"
+      },
+      {
+        "line": 3,
+        "text": "height: 4px;",
+        "reason": "Hardcoded property 'height: 4px'"
+      },
+      {
+        "line": 8,
+        "text": "background: linear-gradient(90deg, #ff6b35 0%, #f7931e 100%);",
+        "reason": "Hardcoded property 'background: linear-gradient(90deg, #ff6b35 0%, #f7931e 100%)'"
+      },
+      {
+        "line": 47,
+        "text": "max-width: 800px;",
+        "reason": "Hardcoded property 'max-width: 800px'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 1.0625rem;",
+        "reason": "Hardcoded property 'font-size: 1.0625rem'"
+      },
+      {
+        "line": 166,
+        "text": "line-height: 1.8;",
+        "reason": "Hardcoded property 'line-height: 1.8'"
+      },
+      {
+        "line": 23,
+        "text": "color: #374151;",
+        "reason": "Hardcoded property 'color: #374151'"
+      },
+      {
+        "line": 48,
+        "text": "margin: 0 0 1.25rem 0;",
+        "reason": "Hardcoded property 'margin: 0 0 1.25rem 0'"
+      },
+      {
+        "line": 8,
+        "text": "background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);",
+        "reason": "Hardcoded property 'background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%)'"
+      },
+      {
+        "line": 158,
+        "text": "margin-bottom: 2.5rem;",
+        "reason": "Hardcoded property 'margin-bottom: 2.5rem'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 1.5rem;",
+        "reason": "Hardcoded property 'gap: 1.5rem'"
+      },
+      {
+        "line": 158,
+        "text": "margin-bottom: 1rem;",
+        "reason": "Hardcoded property 'margin-bottom: 1rem'"
+      },
+      {
+        "line": 19,
+        "text": "width: 80px;",
+        "reason": "Hardcoded property 'width: 80px'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 0.5rem;",
+        "reason": "Hardcoded property 'gap: 0.5rem'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 0.875rem;",
+        "reason": "Hardcoded property 'font-size: 0.875rem'"
+      },
+      {
+        "line": 23,
+        "text": "color: #6b7280;",
+        "reason": "Hardcoded property 'color: #6b7280'"
+      },
+      {
+        "line": 8,
+        "text": "background: white;",
+        "reason": "Hardcoded property 'background: white'"
+      },
+      {
+        "line": 9,
+        "text": "padding: 0.625rem 1.25rem;",
+        "reason": "Hardcoded property 'padding: 0.625rem 1.25rem'"
+      },
+      {
+        "line": 26,
+        "text": "border-radius: 9999px;",
+        "reason": "Hardcoded property 'border-radius: 9999px'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 600;",
+        "reason": "Hardcoded property 'font-weight: 600'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);",
+        "reason": "Hardcoded property 'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06)'"
+      },
+      {
+        "line": 26,
+        "text": "border: 1px solid rgba(0, 0, 0, 0.06);",
+        "reason": "Hardcoded property 'border: 1px solid rgba(0, 0, 0, 0.06)'"
+      },
+      {
+        "line": 23,
+        "text": "color: #ff6b35;",
+        "reason": "Hardcoded property 'color: #ff6b35'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 2rem;",
+        "reason": "Hardcoded property 'gap: 2rem'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 1.5rem;",
+        "reason": "Hardcoded property 'gap: 1.5rem'"
+      },
+      {
+        "line": 9,
+        "text": "padding: 4rem 2rem;",
+        "reason": "Hardcoded property 'padding: 4rem 2rem'"
+      },
+      {
+        "line": 8,
+        "text": "background: white;",
+        "reason": "Hardcoded property 'background: white'"
+      },
+      {
+        "line": 26,
+        "text": "border-radius: 16px;",
+        "reason": "Hardcoded property 'border-radius: 16px'"
+      },
+      {
+        "line": 86,
+        "text": "box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);",
+        "reason": "Hardcoded property 'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06)'"
+      },
+      {
+        "line": 158,
+        "text": "margin-bottom: 1.5rem;",
+        "reason": "Hardcoded property 'margin-bottom: 1.5rem'"
+      },
+      {
+        "line": 23,
+        "text": "color: #d1d5db;",
+        "reason": "Hardcoded property 'color: #d1d5db'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 1.5rem;",
+        "reason": "Hardcoded property 'font-size: 1.5rem'"
+      },
+      {
+        "line": 126,
+        "text": "font-weight: 700;",
+        "reason": "Hardcoded property 'font-weight: 700'"
+      },
+      {
+        "line": 23,
+        "text": "color: #1a1a1a;",
+        "reason": "Hardcoded property 'color: #1a1a1a'"
+      },
+      {
+        "line": 48,
+        "text": "margin: 0 0 0.5rem 0;",
+        "reason": "Hardcoded property 'margin: 0 0 0.5rem 0'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 1rem;",
+        "reason": "Hardcoded property 'font-size: 1rem'"
+      },
+      {
+        "line": 23,
+        "text": "color: #6b7280;",
+        "reason": "Hardcoded property 'color: #6b7280'"
+      },
+      {
+        "line": 3,
+        "text": "height: 140px;",
+        "reason": "Hardcoded property 'height: 140px'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 3.5rem;",
+        "reason": "Hardcoded property 'font-size: 3.5rem'"
+      },
+      {
+        "line": 19,
+        "text": "width: 32px;",
+        "reason": "Hardcoded property 'width: 32px'"
+      },
+      {
+        "line": 3,
+        "text": "height: 32px;",
+        "reason": "Hardcoded property 'height: 32px'"
+      },
+      {
+        "line": 33,
+        "text": "bottom: 4px;",
+        "reason": "Hardcoded property 'bottom: 4px'"
+      },
+      {
+        "line": 18,
+        "text": "right: 4px;",
+        "reason": "Hardcoded property 'right: 4px'"
+      },
+      {
+        "line": 9,
+        "text": "padding: 0.75rem 1rem;",
+        "reason": "Hardcoded property 'padding: 0.75rem 1rem'"
+      },
+      {
+        "line": 19,
+        "text": "width: 36px;",
+        "reason": "Hardcoded property 'width: 36px'"
+      },
+      {
+        "line": 3,
+        "text": "height: 36px;",
+        "reason": "Hardcoded property 'height: 36px'"
+      },
+      {
+        "line": 125,
+        "text": "font-size: 1.375rem;",
+        "reason": "Hardcoded property 'font-size: 1.375rem'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 0.5rem;",
+        "reason": "Hardcoded property 'gap: 0.5rem'"
+      },
+      {
+        "line": 59,
+        "text": "gap: 0.5rem;",
+        "reason": "Hardcoded property 'gap: 0.5rem'"
+      },
+      {
+        "line": 9,
+        "text": "padding: 0.5rem 0.75rem;",
+        "reason": "Hardcoded property 'padding: 0.5rem 0.75rem'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/pages/categories/index.astro",
+    "styleBlocks": [
+      {
+        "line": 5,
+        "text": "height: 60vh;",
+        "reason": "Hardcoded property 'height: 60vh'"
+      },
+      {
+        "line": 5,
+        "text": "min-height: 400px;",
+        "reason": "Hardcoded property 'min-height: 400px'"
+      },
+      {
+        "line": 14,
+        "text": "max-height: 600px;",
+        "reason": "Hardcoded property 'max-height: 600px'"
+      },
+      {
+        "line": 4,
+        "text": "background: linear-gradient( to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0.2) 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0.2) 100% )'"
+      },
+      {
+        "line": 73,
+        "text": "text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);",
+        "reason": "Hardcoded property 'text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3)'"
+      },
+      {
+        "line": 4,
+        "text": "background: white;",
+        "reason": "Hardcoded property 'background: white'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/pages/categories/[slug].astro",
+    "styleBlocks": [
+      {
+        "line": 13,
+        "text": "padding: 0.3rem 0.875rem;",
+        "reason": "Hardcoded property 'padding: 0.3rem 0.875rem'"
+      },
+      {
+        "line": 44,
+        "text": "gap: 0.625rem;",
+        "reason": "Hardcoded property 'gap: 0.625rem'"
+      },
+      {
+        "line": 77,
+        "text": "min-width: 100px;",
+        "reason": "Hardcoded property 'min-width: 100px'"
+      },
+      {
+        "line": 11,
+        "text": "width: 76px;",
+        "reason": "Hardcoded property 'width: 76px'"
+      },
+      {
+        "line": 12,
+        "text": "height: 76px;",
+        "reason": "Hardcoded property 'height: 76px'"
+      },
+      {
+        "line": 23,
+        "text": "max-width: 95px;",
+        "reason": "Hardcoded property 'max-width: 95px'"
+      },
+      {
+        "line": 23,
+        "text": "max-width: 500px;",
+        "reason": "Hardcoded property 'max-width: 500px'"
+      },
+      {
+        "line": 23,
+        "text": "max-width: 900px;",
+        "reason": "Hardcoded property 'max-width: 900px'"
+      },
+      {
+        "line": 11,
+        "text": "width: 200px;",
+        "reason": "Hardcoded property 'width: 200px'"
+      },
+      {
+        "line": 12,
+        "text": "height: 200px;",
+        "reason": "Hardcoded property 'height: 200px'"
+      },
+      {
+        "line": 31,
+        "text": "background: rgba(255, 107, 53, 0.12);",
+        "reason": "Hardcoded property 'background: rgba(255, 107, 53, 0.12)'"
+      },
+      {
+        "line": 35,
+        "text": "top: -60px;",
+        "reason": "Hardcoded property 'top: -60px'"
+      },
+      {
+        "line": 42,
+        "text": "bottom: -60px;",
+        "reason": "Hardcoded property 'bottom: -60px'"
+      },
+      {
+        "line": 13,
+        "text": "padding: 0.8125rem 1.125rem;",
+        "reason": "Hardcoded property 'padding: 0.8125rem 1.125rem'"
+      },
+      {
+        "line": 77,
+        "text": "min-width: 260px;",
+        "reason": "Hardcoded property 'min-width: 260px'"
+      }
+    ],
+    "inlineStyles": [
+      {
+        "text": "Style=\"compact\"",
+        "reason": "Inline style without CSS tokens"
+      }
+    ],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/pages/contact.astro",
+    "styleBlocks": [
+      {
+        "line": 5,
+        "text": "min-height: 150px;",
+        "reason": "Hardcoded property 'min-height: 150px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/pages/faqs.astro",
+    "styleBlocks": [
+      {
+        "line": 9,
+        "text": "max-width: 900px;",
+        "reason": "Hardcoded property 'max-width: 900px'"
+      },
+      {
+        "line": 60,
+        "text": "top: 76px;",
+        "reason": "Hardcoded property 'top: 76px'"
+      },
+      {
+        "line": 9,
+        "text": "max-width: 500px;",
+        "reason": "Hardcoded property 'max-width: 500px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/pages/index.astro",
+    "styleBlocks": [
+      {
+        "line": 89,
+        "text": "min-height: 500px;",
+        "reason": "Hardcoded property 'min-height: 500px'"
+      },
+      {
+        "line": 15,
+        "text": "background: linear-gradient( to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100% )'"
+      },
+      {
+        "line": 168,
+        "text": "text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);",
+        "reason": "Hardcoded property 'text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3)'"
+      },
+      {
+        "line": 89,
+        "text": "min-height: 500px;",
+        "reason": "Hardcoded property 'min-height: 500px'"
+      },
+      {
+        "line": 89,
+        "text": "min-height: 155px;",
+        "reason": "Hardcoded property 'min-height: 155px'"
+      },
+      {
+        "line": 89,
+        "text": "min-height: 200px;",
+        "reason": "Hardcoded property 'min-height: 200px'"
+      },
+      {
+        "line": 15,
+        "text": "background: linear-gradient( to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100% )'"
+      },
+      {
+        "line": 168,
+        "text": "text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);",
+        "reason": "Hardcoded property 'text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3)'"
+      },
+      {
+        "line": 19,
+        "text": "max-width: 1000px;",
+        "reason": "Hardcoded property 'max-width: 1000px'"
+      },
+      {
+        "line": 19,
+        "text": "max-width: 420px;",
+        "reason": "Hardcoded property 'max-width: 420px'"
+      },
+      {
+        "line": 90,
+        "text": "box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);",
+        "reason": "Hardcoded property 'box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15)'"
+      },
+      {
+        "line": 19,
+        "text": "max-width: 400px;",
+        "reason": "Hardcoded property 'max-width: 400px'"
+      },
+      {
+        "line": 19,
+        "text": "max-width: 500px;",
+        "reason": "Hardcoded property 'max-width: 500px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/pages/recipes/index.astro",
+    "styleBlocks": [
+      {
+        "line": 9,
+        "text": "width: 70px;",
+        "reason": "Hardcoded property 'width: 70px'"
+      },
+      {
+        "line": 5,
+        "text": "height: 70px;",
+        "reason": "Hardcoded property 'height: 70px'"
+      }
+    ],
+    "inlineStyles": [
+      {
+        "text": "style=\"margin-top: 3rem;\"",
+        "reason": "Inline style without CSS tokens"
+      }
+    ],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/pages/roundups/index.astro",
+    "styleBlocks": [
+      {
+        "line": 4,
+        "text": "background: rgba(0,0,0,0.7);",
+        "reason": "Hardcoded property 'background: rgba(0,0,0,0.7)'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/ArticleCard.astro",
+    "styleBlocks": [
+      {
+        "line": 30,
+        "text": "min-height: 240px;",
+        "reason": "Hardcoded property 'min-height: 240px'"
+      },
+      {
+        "line": 30,
+        "text": "min-height: 140px;",
+        "reason": "Hardcoded property 'min-height: 140px'"
+      },
+      {
+        "line": 64,
+        "text": "max-height: 200px;",
+        "reason": "Hardcoded property 'max-height: 200px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": [
+      {
+        "text": "tracking-[0.05em]",
+        "reason": "Tailwind arbitrary class bypasses tokens"
+      },
+      {
+        "text": "tracking-[0.05em]",
+        "reason": "Tailwind arbitrary class bypasses tokens"
+      }
+    ]
+  },
+  {
+    "file": "src/site/components/AuthorCard.astro",
+    "styleBlocks": [
+      {
+        "line": 34,
+        "text": "width: 120px;",
+        "reason": "Hardcoded property 'width: 120px'"
+      },
+      {
+        "line": 71,
+        "text": "text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);",
+        "reason": "Hardcoded property 'text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2)'"
+      },
+      {
+        "line": 4,
+        "text": "background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);",
+        "reason": "Hardcoded property 'background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'"
+      },
+      {
+        "line": 7,
+        "text": "box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);",
+        "reason": "Hardcoded property 'box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4)'"
+      },
+      {
+        "line": 30,
+        "text": "margin: 0 0 0.375rem 0;",
+        "reason": "Hardcoded property 'margin: 0 0 0.375rem 0'"
+      },
+      {
+        "line": 34,
+        "text": "width: 100px;",
+        "reason": "Hardcoded property 'width: 100px'"
+      },
+      {
+        "line": 25,
+        "text": "height: 100px;",
+        "reason": "Hardcoded property 'height: 100px'"
+      },
+      {
+        "line": 68,
+        "text": "font-size: 2.5rem;",
+        "reason": "Hardcoded property 'font-size: 2.5rem'"
+      },
+      {
+        "line": 34,
+        "text": "width: 90px;",
+        "reason": "Hardcoded property 'width: 90px'"
+      },
+      {
+        "line": 25,
+        "text": "height: 90px;",
+        "reason": "Hardcoded property 'height: 90px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/BeforeAfter.astro",
+    "styleBlocks": [
+      {
+        "line": 75,
+        "text": "box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);",
+        "reason": "Hardcoded property 'box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25)'"
+      },
+      {
+        "line": 18,
+        "text": "width: 34px;",
+        "reason": "Hardcoded property 'width: 34px'"
+      },
+      {
+        "line": 54,
+        "text": "height: 34px;",
+        "reason": "Hardcoded property 'height: 34px'"
+      },
+      {
+        "line": 75,
+        "text": "box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);",
+        "reason": "Hardcoded property 'box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18)'"
+      },
+      {
+        "line": 70,
+        "text": "left: 7px;",
+        "reason": "Hardcoded property 'left: 7px'"
+      },
+      {
+        "line": 106,
+        "text": "right: 7px;",
+        "reason": "Hardcoded property 'right: 7px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/CategoryCard.astro",
+    "styleBlocks": [
+      {
+        "line": 8,
+        "text": "transition: transform 0.6s ease;",
+        "reason": "Hardcoded property 'transition: transform 0.6s ease'"
+      },
+      {
+        "line": 6,
+        "text": "background: linear-gradient( to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.2) 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.2) 100% )'"
+      },
+      {
+        "line": 8,
+        "text": "transition: opacity 0.4s ease;",
+        "reason": "Hardcoded property 'transition: opacity 0.4s ease'"
+      },
+      {
+        "line": 6,
+        "text": "background: linear-gradient( to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.3) 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.3) 100% )'"
+      },
+      {
+        "line": 6,
+        "text": "background: linear-gradient( to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.6) 60%, transparent 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.6) 60%, transparent 100% )'"
+      },
+      {
+        "line": 6,
+        "text": "background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);",
+        "reason": "Hardcoded property 'background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'"
+      },
+      {
+        "line": 7,
+        "text": "box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);",
+        "reason": "Hardcoded property 'box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3)'"
+      },
+      {
+        "line": 32,
+        "text": "width: 10px;",
+        "reason": "Hardcoded property 'width: 10px'"
+      },
+      {
+        "line": 33,
+        "text": "height: 10px;",
+        "reason": "Hardcoded property 'height: 10px'"
+      },
+      {
+        "line": 113,
+        "text": "text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 0, 0, 0.4);",
+        "reason": "Hardcoded property 'text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 0, 0, 0.4)'"
+      },
+      {
+        "line": 15,
+        "text": "color: rgba(255, 255, 255, 0.85);",
+        "reason": "Hardcoded property 'color: rgba(255, 255, 255, 0.85)'"
+      },
+      {
+        "line": 73,
+        "text": "min-height: 2.625rem;",
+        "reason": "Hardcoded property 'min-height: 2.625rem'"
+      },
+      {
+        "line": 7,
+        "text": "box-shadow: 0 2px 10px rgba(255, 107, 53, 0.35);",
+        "reason": "Hardcoded property 'box-shadow: 0 2px 10px rgba(255, 107, 53, 0.35)'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/CategoryHeader.astro",
+    "styleBlocks": [
+      {
+        "line": 112,
+        "text": "line-height: 1.08;",
+        "reason": "Hardcoded property 'line-height: 1.08'"
+      },
+      {
+        "line": 15,
+        "text": "max-width: 58ch;",
+        "reason": "Hardcoded property 'max-width: 58ch'"
+      },
+      {
+        "line": 15,
+        "text": "max-width: 46ch;",
+        "reason": "Hardcoded property 'max-width: 46ch'"
+      },
+      {
+        "line": 105,
+        "text": "transition: transform 0.25s ease, box-shadow 0.25s ease;",
+        "reason": "Hardcoded property 'transition: transform 0.25s ease, box-shadow 0.25s ease'"
+      },
+      {
+        "line": 224,
+        "text": "min-height: 220px;",
+        "reason": "Hardcoded property 'min-height: 220px'"
+      },
+      {
+        "line": 112,
+        "text": "line-height: 1.65;",
+        "reason": "Hardcoded property 'line-height: 1.65'"
+      },
+      {
+        "line": 15,
+        "text": "max-width: 60ch;",
+        "reason": "Hardcoded property 'max-width: 60ch'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/blocks/Image.astro",
+    "styleBlocks": [
+      {
+        "line": 30,
+        "text": "min-width: max-content;",
+        "reason": "Hardcoded property 'min-width: max-content'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/CookModeOverlay.astro",
+    "styleBlocks": [
+      {
+        "line": 12,
+        "text": "background-color: rgba(30, 41, 59, 0.5);",
+        "reason": "Hardcoded property 'background-color: rgba(30, 41, 59, 0.5)'"
+      },
+      {
+        "line": 12,
+        "text": "background-color: rgba(30, 41, 59, 0.4);",
+        "reason": "Hardcoded property 'background-color: rgba(30, 41, 59, 0.4)'"
+      },
+      {
+        "line": 72,
+        "text": "border: 1px solid rgba(51, 65, 85, 0.5);",
+        "reason": "Hardcoded property 'border: 1px solid rgba(51, 65, 85, 0.5)'"
+      },
+      {
+        "line": 12,
+        "text": "background-color: rgba(51, 65, 85, 0.5);",
+        "reason": "Hardcoded property 'background-color: rgba(51, 65, 85, 0.5)'"
+      },
+      {
+        "line": 40,
+        "text": "width: 6px;",
+        "reason": "Hardcoded property 'width: 6px'"
+      },
+      {
+        "line": 169,
+        "text": "max-width: 680px;",
+        "reason": "Hardcoded property 'max-width: 680px'"
+      },
+      {
+        "line": 12,
+        "text": "background: rgba(51, 230, 122, 0.1);",
+        "reason": "Hardcoded property 'background: rgba(51, 230, 122, 0.1)'"
+      },
+      {
+        "line": 12,
+        "text": "background: rgba(17, 33, 23, 0.7);",
+        "reason": "Hardcoded property 'background: rgba(17, 33, 23, 0.7)'"
+      },
+      {
+        "line": 72,
+        "text": "border: 1px solid rgba(51, 230, 122, 0.1);",
+        "reason": "Hardcoded property 'border: 1px solid rgba(51, 230, 122, 0.1)'"
+      },
+      {
+        "line": 169,
+        "text": "max-width: 320px;",
+        "reason": "Hardcoded property 'max-width: 320px'"
+      },
+      {
+        "line": 12,
+        "text": "background: rgba(30, 41, 59, 0.5);",
+        "reason": "Hardcoded property 'background: rgba(30, 41, 59, 0.5)'"
+      },
+      {
+        "line": 256,
+        "text": "box-shadow: 0 0 20px rgba(51, 230, 122, 0.4);",
+        "reason": "Hardcoded property 'box-shadow: 0 0 20px rgba(51, 230, 122, 0.4)'"
+      },
+      {
+        "line": 350,
+        "text": "border-color: rgba(255, 255, 255, 0.05);",
+        "reason": "Hardcoded property 'border-color: rgba(255, 255, 255, 0.05)'"
+      },
+      {
+        "line": 256,
+        "text": "box-shadow: 0 10px 15px -3px rgba(51, 230, 122, 0.1);",
+        "reason": "Hardcoded property 'box-shadow: 0 10px 15px -3px rgba(51, 230, 122, 0.1)'"
+      },
+      {
+        "line": 256,
+        "text": "box-shadow: 0 10px 15px -3px rgba(51, 230, 122, 0.3);",
+        "reason": "Hardcoded property 'box-shadow: 0 10px 15px -3px rgba(51, 230, 122, 0.3)'"
+      },
+      {
+        "line": 12,
+        "text": "background-color: rgba(51, 65, 85, 0.5);",
+        "reason": "Hardcoded property 'background-color: rgba(51, 65, 85, 0.5)'"
+      },
+      {
+        "line": 169,
+        "text": "max-width: 400px;",
+        "reason": "Hardcoded property 'max-width: 400px'"
+      }
+    ],
+    "inlineStyles": [
+      {
+        "text": "style=\"width: 0%;\"",
+        "reason": "Inline style without CSS tokens"
+      }
+    ],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/EquipmentSection.astro",
+    "styleBlocks": [
+      {
+        "line": 16,
+        "text": "background: rgba(255, 255, 255, 0.9);",
+        "reason": "Hardcoded property 'background: rgba(255, 255, 255, 0.9)'"
+      },
+      {
+        "line": 13,
+        "text": "gap: 0.2rem;",
+        "reason": "Hardcoded property 'gap: 0.2rem'"
+      },
+      {
+        "line": 6,
+        "text": "padding: 0.1rem 0.4rem;",
+        "reason": "Hardcoded property 'padding: 0.1rem 0.4rem'"
+      },
+      {
+        "line": 28,
+        "text": "font-size: 0.68rem;",
+        "reason": "Hardcoded property 'font-size: 0.68rem'"
+      },
+      {
+        "line": 30,
+        "text": "line-height: 1.45;",
+        "reason": "Hardcoded property 'line-height: 1.45'"
+      },
+      {
+        "line": 5,
+        "text": "margin: 0.15rem 0 0;",
+        "reason": "Hardcoded property 'margin: 0.15rem 0 0'"
+      },
+      {
+        "line": 223,
+        "text": "padding-top: 0.6rem;",
+        "reason": "Hardcoded property 'padding-top: 0.6rem'"
+      },
+      {
+        "line": 13,
+        "text": "gap: 0.3rem;",
+        "reason": "Hardcoded property 'gap: 0.3rem'"
+      },
+      {
+        "line": 23,
+        "text": "width: 0.8rem;",
+        "reason": "Hardcoded property 'width: 0.8rem'"
+      },
+      {
+        "line": 30,
+        "text": "height: 0.8rem;",
+        "reason": "Hardcoded property 'height: 0.8rem'"
+      },
+      {
+        "line": 23,
+        "text": "width: 0.85rem;",
+        "reason": "Hardcoded property 'width: 0.85rem'"
+      },
+      {
+        "line": 30,
+        "text": "height: 0.85rem;",
+        "reason": "Hardcoded property 'height: 0.85rem'"
+      },
+      {
+        "line": 222,
+        "text": "margin-top: 0.05rem;",
+        "reason": "Hardcoded property 'margin-top: 0.05rem'"
+      },
+      {
+        "line": 16,
+        "text": "background: linear-gradient( 135deg, rgba(107, 143, 113, 0.1) 0%, rgba(107, 143, 113, 0.05) 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( 135deg, rgba(107, 143, 113, 0.1) 0%, rgba(107, 143, 113, 0.05) 100% )'"
+      },
+      {
+        "line": 90,
+        "text": "box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);",
+        "reason": "Hardcoded property 'box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3)'"
+      },
+      {
+        "line": 16,
+        "text": "background: rgba(30, 30, 30, 0.9);",
+        "reason": "Hardcoded property 'background: rgba(30, 30, 30, 0.9)'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/IngredientsSection.astro",
+    "styleBlocks": [
+      {
+        "line": 7,
+        "text": "width: 22px;",
+        "reason": "Hardcoded property 'width: 22px'"
+      },
+      {
+        "line": 22,
+        "text": "height: 22px;",
+        "reason": "Hardcoded property 'height: 22px'"
+      },
+      {
+        "line": 18,
+        "text": "margin: 0.375rem 0 0 2.125rem;",
+        "reason": "Hardcoded property 'margin: 0.375rem 0 0 2.125rem'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/InstructionsSection.astro",
+    "styleBlocks": [
+      {
+        "line": 7,
+        "text": "gap: 18px;",
+        "reason": "Hardcoded property 'gap: 18px'"
+      },
+      {
+        "line": 94,
+        "text": "transition: background 0.25s ease, color 0.25s ease;",
+        "reason": "Hardcoded property 'transition: background 0.25s ease, color 0.25s ease'"
+      },
+      {
+        "line": 94,
+        "text": "transition: border-color 0.25s ease, box-shadow 0.25s ease;",
+        "reason": "Hardcoded property 'transition: border-color 0.25s ease, box-shadow 0.25s ease'"
+      },
+      {
+        "line": 90,
+        "text": "box-shadow: 0 4px 12px rgba(249, 115, 22, 0.06);",
+        "reason": "Hardcoded property 'box-shadow: 0 4px 12px rgba(249, 115, 22, 0.06)'"
+      },
+      {
+        "line": 115,
+        "text": "min-width: 30px;",
+        "reason": "Hardcoded property 'min-width: 30px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/NutritionFacts.astro",
+    "styleBlocks": [
+      {
+        "line": 377,
+        "text": "max-width: 420px;",
+        "reason": "Hardcoded property 'max-width: 420px'"
+      },
+      {
+        "line": 13,
+        "text": "padding: 0.4rem 0;",
+        "reason": "Hardcoded property 'padding: 0.4rem 0'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/PrintRecipeOverlay.astro",
+    "styleBlocks": [
+      {
+        "line": 107,
+        "text": "max-height: 380px;",
+        "reason": "Hardcoded property 'max-height: 380px'"
+      },
+      {
+        "line": 25,
+        "text": "padding: 5px 0;",
+        "reason": "Hardcoded property 'padding: 5px 0'"
+      },
+      {
+        "line": 238,
+        "text": "min-width: 55px;",
+        "reason": "Hardcoded property 'min-width: 55px'"
+      },
+      {
+        "line": 25,
+        "text": "padding: 10px 0;",
+        "reason": "Hardcoded property 'padding: 10px 0'"
+      },
+      {
+        "line": 96,
+        "text": "width: 26px;",
+        "reason": "Hardcoded property 'width: 26px'"
+      },
+      {
+        "line": 107,
+        "text": "height: 26px;",
+        "reason": "Hardcoded property 'height: 26px'"
+      },
+      {
+        "line": 178,
+        "text": "margin-top: 6px !important;",
+        "reason": "Hardcoded property 'margin-top: 6px !important'"
+      },
+      {
+        "line": 25,
+        "text": "padding: 6px 0;",
+        "reason": "Hardcoded property 'padding: 6px 0'"
+      },
+      {
+        "line": 107,
+        "text": "max-height: 300px;",
+        "reason": "Hardcoded property 'max-height: 300px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/RecipeMetaPills.astro",
+    "styleBlocks": [
+      {
+        "line": 38,
+        "text": "box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);",
+        "reason": "Hardcoded property 'box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05)'"
+      },
+      {
+        "line": 42,
+        "text": "width: 0.875rem;",
+        "reason": "Hardcoded property 'width: 0.875rem'"
+      },
+      {
+        "line": 43,
+        "text": "height: 0.875rem;",
+        "reason": "Hardcoded property 'height: 0.875rem'"
+      },
+      {
+        "line": 7,
+        "text": "padding: 0.375rem 0.625rem;",
+        "reason": "Hardcoded property 'padding: 0.375rem 0.625rem'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/StarRating.astro",
+    "styleBlocks": [
+      {
+        "line": 61,
+        "text": "transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);",
+        "reason": "Hardcoded property 'transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/content/TableOfContents.astro",
+    "styleBlocks": [
+      {
+        "line": 16,
+        "text": "max-height: 16rem;",
+        "reason": "Hardcoded property 'max-height: 16rem'"
+      },
+      {
+        "line": 16,
+        "text": "max-height: none !important;",
+        "reason": "Hardcoded property 'max-height: none !important'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/ContentRenderer.astro",
+    "styleBlocks": [
+      {
+        "line": 13,
+        "text": "top: -22px;",
+        "reason": "Hardcoded property 'top: -22px'"
+      },
+      {
+        "line": 25,
+        "text": "padding: 0 6px;",
+        "reason": "Hardcoded property 'padding: 0 6px'"
+      },
+      {
+        "line": 106,
+        "text": "box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);",
+        "reason": "Hardcoded property 'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15)'"
+      },
+      {
+        "line": 25,
+        "text": "left: 6px;",
+        "reason": "Hardcoded property 'left: 6px'"
+      },
+      {
+        "line": 13,
+        "text": "top: 10px;",
+        "reason": "Hardcoded property 'top: 10px'"
+      },
+      {
+        "line": 25,
+        "text": "padding-left: 34px;",
+        "reason": "Hardcoded property 'padding-left: 34px'"
+      },
+      {
+        "line": 177,
+        "text": "min-height: 30px;",
+        "reason": "Hardcoded property 'min-height: 30px'"
+      },
+      {
+        "line": 13,
+        "text": "top: 3px;",
+        "reason": "Hardcoded property 'top: 3px'"
+      },
+      {
+        "line": 70,
+        "text": "width: 22px;",
+        "reason": "Hardcoded property 'width: 22px'"
+      },
+      {
+        "line": 8,
+        "text": "height: 22px;",
+        "reason": "Hardcoded property 'height: 22px'"
+      },
+      {
+        "line": 25,
+        "text": "padding-left: 42px;",
+        "reason": "Hardcoded property 'padding-left: 42px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/Footer.astro",
+    "styleBlocks": [
+      {
+        "line": 66,
+        "text": "border: 1px solid currentColor;",
+        "reason": "Hardcoded property 'border: 1px solid currentColor'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/Header.astro",
+    "styleBlocks": [
+      {
+        "line": 17,
+        "text": "left: -9999px;",
+        "reason": "Hardcoded property 'left: -9999px'"
+      },
+      {
+        "line": 43,
+        "text": "height: 76px;",
+        "reason": "Hardcoded property 'height: 76px'"
+      },
+      {
+        "line": 43,
+        "text": "height: 52px;",
+        "reason": "Hardcoded property 'height: 52px'"
+      },
+      {
+        "line": 142,
+        "text": "max-height: 400px;",
+        "reason": "Hardcoded property 'max-height: 400px'"
+      },
+      {
+        "line": 189,
+        "text": "padding-top: 10vh;",
+        "reason": "Hardcoded property 'padding-top: 10vh'"
+      },
+      {
+        "line": 48,
+        "text": "margin-left: 0.1rem;",
+        "reason": "Hardcoded property 'margin-left: 0.1rem'"
+      },
+      {
+        "line": 43,
+        "text": "height: 60px;",
+        "reason": "Hardcoded property 'height: 60px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/MegaMenu.astro",
+    "styleBlocks": [
+      {
+        "line": 63,
+        "text": "min-width: 600px;",
+        "reason": "Hardcoded property 'min-width: 600px'"
+      },
+      {
+        "line": 63,
+        "text": "min-width: 140px;",
+        "reason": "Hardcoded property 'min-width: 140px'"
+      },
+      {
+        "line": 63,
+        "text": "width: 220px;",
+        "reason": "Hardcoded property 'width: 220px'"
+      },
+      {
+        "line": 63,
+        "text": "min-width: 500px;",
+        "reason": "Hardcoded property 'min-width: 500px'"
+      },
+      {
+        "line": 63,
+        "text": "width: 180px;",
+        "reason": "Hardcoded property 'width: 180px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/NewsletterWidget.astro",
+    "styleBlocks": [
+      {
+        "line": 16,
+        "text": "width: 120px;",
+        "reason": "Hardcoded property 'width: 120px'"
+      },
+      {
+        "line": 25,
+        "text": "top: -30px;",
+        "reason": "Hardcoded property 'top: -30px'"
+      },
+      {
+        "line": 30,
+        "text": "bottom: -30px;",
+        "reason": "Hardcoded property 'bottom: -30px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/Pagination.astro",
+    "styleBlocks": [
+      {
+        "line": 87,
+        "text": "max-width: 8rem;",
+        "reason": "Hardcoded property 'max-width: 8rem'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/PopularRecipes.astro",
+    "styleBlocks": [
+      {
+        "line": 22,
+        "text": "width: 10px;",
+        "reason": "Hardcoded property 'width: 10px'"
+      },
+      {
+        "line": 23,
+        "text": "height: 10px;",
+        "reason": "Hardcoded property 'height: 10px'"
+      },
+      {
+        "line": 8,
+        "text": "box-shadow: 0 1px 4px rgba(255, 51, 102, 0.3);",
+        "reason": "Hardcoded property 'box-shadow: 0 1px 4px rgba(255, 51, 102, 0.3)'"
+      },
+      {
+        "line": 7,
+        "text": "padding: 0.625rem;",
+        "reason": "Hardcoded property 'padding: 0.625rem'"
+      },
+      {
+        "line": 22,
+        "text": "width: 6px;",
+        "reason": "Hardcoded property 'width: 6px'"
+      },
+      {
+        "line": 18,
+        "text": "margin: 0 0 0.3rem;",
+        "reason": "Hardcoded property 'margin: 0 0 0.3rem'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/RecipeCard.astro",
+    "styleBlocks": [
+      {
+        "line": 7,
+        "text": "box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);",
+        "reason": "Hardcoded property 'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)'"
+      },
+      {
+        "line": 28,
+        "text": "height: 26px;",
+        "reason": "Hardcoded property 'height: 26px'"
+      },
+      {
+        "line": 331,
+        "text": "top: 3px;",
+        "reason": "Hardcoded property 'top: 3px'"
+      },
+      {
+        "line": 177,
+        "text": "left: 3px;",
+        "reason": "Hardcoded property 'left: 3px'"
+      },
+      {
+        "line": 52,
+        "text": "transition: transform 0.3s;",
+        "reason": "Hardcoded property 'transition: transform 0.3s'"
+      },
+      {
+        "line": 28,
+        "text": "height: 3px;",
+        "reason": "Hardcoded property 'height: 3px'"
+      },
+      {
+        "line": 714,
+        "text": "margin-top: 6px;",
+        "reason": "Hardcoded property 'margin-top: 6px'"
+      },
+      {
+        "line": 8,
+        "text": "width: 38px;",
+        "reason": "Hardcoded property 'width: 38px'"
+      },
+      {
+        "line": 28,
+        "text": "height: 38px;",
+        "reason": "Hardcoded property 'height: 38px'"
+      },
+      {
+        "line": 7,
+        "text": "box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);",
+        "reason": "Hardcoded property 'box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3)'"
+      },
+      {
+        "line": 8,
+        "text": "max-width: 18ch;",
+        "reason": "Hardcoded property 'max-width: 18ch'"
+      },
+      {
+        "line": 8,
+        "text": "max-width: 64ch;",
+        "reason": "Hardcoded property 'max-width: 64ch'"
+      },
+      {
+        "line": 999,
+        "text": "min-height: 7.5rem;",
+        "reason": "Hardcoded property 'min-height: 7.5rem'"
+      },
+      {
+        "line": 65,
+        "text": "min-width: 5.5rem;",
+        "reason": "Hardcoded property 'min-width: 5.5rem'"
+      },
+      {
+        "line": 999,
+        "text": "min-height: 7rem;",
+        "reason": "Hardcoded property 'min-height: 7rem'"
+      },
+      {
+        "line": 7,
+        "text": "box-shadow: none !important;",
+        "reason": "Hardcoded property 'box-shadow: none !important'"
+      },
+      {
+        "line": 6,
+        "text": "border: 2px solid currentColor;",
+        "reason": "Hardcoded property 'border: 2px solid currentColor'"
+      },
+      {
+        "line": 6,
+        "text": "border: 2px solid currentColor;",
+        "reason": "Hardcoded property 'border: 2px solid currentColor'"
+      },
+      {
+        "line": 6,
+        "text": "border: 1px solid currentColor;",
+        "reason": "Hardcoded property 'border: 1px solid currentColor'"
+      }
+    ],
+    "inlineStyles": [
+      {
+        "text": "style=\"width: 14px; height: 14px;\"",
+        "reason": "Inline style without CSS tokens"
+      },
+      {
+        "text": "style=\"width: 14px; height: 14px;\"",
+        "reason": "Inline style without CSS tokens"
+      }
+    ],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/RecipePreviewCard.astro",
+    "styleBlocks": [
+      {
+        "line": 8,
+        "text": "transition: transform 0.4s ease;",
+        "reason": "Hardcoded property 'transition: transform 0.4s ease'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/RelatedContent.astro",
+    "styleBlocks": [
+      {
+        "line": 102,
+        "text": "box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);",
+        "reason": "Hardcoded property 'box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'"
+      },
+      {
+        "line": 32,
+        "text": "background: linear-gradient(to top, rgba(0, 0, 0, 0.2), transparent);",
+        "reason": "Hardcoded property 'background: linear-gradient(to top, rgba(0, 0, 0, 0.2), transparent)'"
+      },
+      {
+        "line": 119,
+        "text": "padding-top: 0.625rem;",
+        "reason": "Hardcoded property 'padding-top: 0.625rem'"
+      },
+      {
+        "line": 30,
+        "text": "width: 3px;",
+        "reason": "Hardcoded property 'width: 3px'"
+      },
+      {
+        "line": 26,
+        "text": "height: 3px;",
+        "reason": "Hardcoded property 'height: 3px'"
+      },
+      {
+        "line": 102,
+        "text": "box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);",
+        "reason": "Hardcoded property 'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06)'"
+      },
+      {
+        "line": 30,
+        "text": "width: 90px;",
+        "reason": "Hardcoded property 'width: 90px'"
+      },
+      {
+        "line": 26,
+        "text": "height: 90px;",
+        "reason": "Hardcoded property 'height: 90px'"
+      },
+      {
+        "line": 8,
+        "text": "margin: 0 0 0.375rem;",
+        "reason": "Hardcoded property 'margin: 0 0 0.375rem'"
+      },
+      {
+        "line": 102,
+        "text": "box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);",
+        "reason": "Hardcoded property 'box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2)'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/RoundupItemList.astro",
+    "styleBlocks": [
+      {
+        "line": 29,
+        "text": "max-width: 60ch;",
+        "reason": "Hardcoded property 'max-width: 60ch'"
+      },
+      {
+        "line": 72,
+        "text": "transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);",
+        "reason": "Hardcoded property 'transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'"
+      },
+      {
+        "line": 28,
+        "text": "top: 0.85rem;",
+        "reason": "Hardcoded property 'top: 0.85rem'"
+      },
+      {
+        "line": 11,
+        "text": "left: 0.85rem;",
+        "reason": "Hardcoded property 'left: 0.85rem'"
+      },
+      {
+        "line": 29,
+        "text": "width: 42px;",
+        "reason": "Hardcoded property 'width: 42px'"
+      },
+      {
+        "line": 18,
+        "text": "height: 42px;",
+        "reason": "Hardcoded property 'height: 42px'"
+      },
+      {
+        "line": 38,
+        "text": "bottom: 0.85rem;",
+        "reason": "Hardcoded property 'bottom: 0.85rem'"
+      },
+      {
+        "line": 11,
+        "text": "left: 0.85rem;",
+        "reason": "Hardcoded property 'left: 0.85rem'"
+      },
+      {
+        "line": 72,
+        "text": "transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;",
+        "reason": "Hardcoded property 'transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s'"
+      },
+      {
+        "line": 72,
+        "text": "transition: transform 0.2s;",
+        "reason": "Hardcoded property 'transition: transform 0.2s'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/SocialShareBar.astro",
+    "styleBlocks": [
+      {
+        "line": 23,
+        "text": "width: 38px;",
+        "reason": "Hardcoded property 'width: 38px'"
+      },
+      {
+        "line": 24,
+        "text": "height: 38px;",
+        "reason": "Hardcoded property 'height: 38px'"
+      },
+      {
+        "line": 30,
+        "text": "box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);",
+        "reason": "Hardcoded property 'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1)'"
+      },
+      {
+        "line": 28,
+        "text": "color: #1877f2;",
+        "reason": "Hardcoded property 'color: #1877f2'"
+      },
+      {
+        "line": 27,
+        "text": "background: #1877f2;",
+        "reason": "Hardcoded property 'background: #1877f2'"
+      },
+      {
+        "line": 27,
+        "text": "background: rgba(0, 0, 0, 0);",
+        "reason": "Hardcoded property 'background: rgba(0, 0, 0, 0)'"
+      },
+      {
+        "line": 30,
+        "text": "transition: background 0.35s ease, backdrop-filter 0.35s ease, visibility 0s 0.35s;",
+        "reason": "Hardcoded property 'transition: background 0.35s ease, backdrop-filter 0.35s ease, visibility 0s 0.35s'"
+      },
+      {
+        "line": 27,
+        "text": "background: rgba(0, 0, 0, 0.45);",
+        "reason": "Hardcoded property 'background: rgba(0, 0, 0, 0.45)'"
+      },
+      {
+        "line": 30,
+        "text": "transition: background 0.35s ease, backdrop-filter 0.35s ease, visibility 0s;",
+        "reason": "Hardcoded property 'transition: background 0.35s ease, backdrop-filter 0.35s ease, visibility 0s'"
+      },
+      {
+        "line": 143,
+        "text": "max-width: 420px;",
+        "reason": "Hardcoded property 'max-width: 420px'"
+      },
+      {
+        "line": 4,
+        "text": "padding: 0 0 env(safe-area-inset-bottom, 16px) 0;",
+        "reason": "Hardcoded property 'padding: 0 0 env(safe-area-inset-bottom, 16px) 0'"
+      },
+      {
+        "line": 30,
+        "text": "transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);",
+        "reason": "Hardcoded property 'transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)'"
+      },
+      {
+        "line": 143,
+        "text": "max-width: 380px;",
+        "reason": "Hardcoded property 'max-width: 380px'"
+      },
+      {
+        "line": 30,
+        "text": "transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease;",
+        "reason": "Hardcoded property 'transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease'"
+      },
+      {
+        "line": 6,
+        "text": "margin: 10px auto 0;",
+        "reason": "Hardcoded property 'margin: 10px auto 0'"
+      },
+      {
+        "line": 13,
+        "text": "gap: 6px 0;",
+        "reason": "Hardcoded property 'gap: 6px 0'"
+      },
+      {
+        "line": 23,
+        "text": "width: 52px;",
+        "reason": "Hardcoded property 'width: 52px'"
+      },
+      {
+        "line": 24,
+        "text": "height: 52px;",
+        "reason": "Hardcoded property 'height: 52px'"
+      },
+      {
+        "line": 27,
+        "text": "background: #1877f2;",
+        "reason": "Hardcoded property 'background: #1877f2'"
+      },
+      {
+        "line": 27,
+        "text": "background: #000000;",
+        "reason": "Hardcoded property 'background: #000000'"
+      },
+      {
+        "line": 27,
+        "text": "background: #25d366;",
+        "reason": "Hardcoded property 'background: #25d366'"
+      },
+      {
+        "line": 27,
+        "text": "background: #e60023;",
+        "reason": "Hardcoded property 'background: #e60023'"
+      },
+      {
+        "line": 27,
+        "text": "background: #0088cc;",
+        "reason": "Hardcoded property 'background: #0088cc'"
+      },
+      {
+        "line": 27,
+        "text": "background: #0a66c2;",
+        "reason": "Hardcoded property 'background: #0a66c2'"
+      },
+      {
+        "line": 27,
+        "text": "background: #ff4500;",
+        "reason": "Hardcoded property 'background: #ff4500'"
+      },
+      {
+        "line": 27,
+        "text": "background: linear-gradient(135deg, #0695ff, #a334fa, #ff6968);",
+        "reason": "Hardcoded property 'background: linear-gradient(135deg, #0695ff, #a334fa, #ff6968)'"
+      },
+      {
+        "line": 27,
+        "text": "background: #6366f1;",
+        "reason": "Hardcoded property 'background: #6366f1'"
+      },
+      {
+        "line": 27,
+        "text": "background: #6b7280;",
+        "reason": "Hardcoded property 'background: #6b7280'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/StoriesBar.astro",
+    "styleBlocks": [
+      {
+        "line": 4,
+        "text": "background: linear-gradient( 45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( 45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100% )'"
+      },
+      {
+        "line": 83,
+        "text": "box-shadow: 0 10px 20px -5px rgba(220, 39, 67, 0.4);",
+        "reason": "Hardcoded property 'box-shadow: 0 10px 20px -5px rgba(220, 39, 67, 0.4)'"
+      },
+      {
+        "line": 67,
+        "text": "height: 2.4em;",
+        "reason": "Hardcoded property 'height: 2.4em'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/TagCard.astro",
+    "styleBlocks": [
+      {
+        "line": 29,
+        "text": "width: 60px;",
+        "reason": "Hardcoded property 'width: 60px'"
+      },
+      {
+        "line": 30,
+        "text": "height: 60px;",
+        "reason": "Hardcoded property 'height: 60px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/ui/Button.astro",
+    "styleBlocks": [
+      {
+        "line": 41,
+        "text": "min-height: 52px;",
+        "reason": "Hardcoded property 'min-height: 52px'"
+      },
+      {
+        "line": 17,
+        "text": "box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15), 0 4px 14px rgba(231, 76, 60, 0.35);",
+        "reason": "Hardcoded property 'box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15), 0 4px 14px rgba(231, 76, 60, 0.35)'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/ui/SectionTitle.astro",
+    "styleBlocks": [
+      {
+        "line": 26,
+        "text": "width: 10px;",
+        "reason": "Hardcoded property 'width: 10px'"
+      },
+      {
+        "line": 27,
+        "text": "height: 10px;",
+        "reason": "Hardcoded property 'height: 10px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/ui/Skeleton.astro",
+    "styleBlocks": [
+      {
+        "line": 4,
+        "text": "background: linear-gradient( 90deg, transparent 0%, rgba(255, 255, 255, 0.25) 50%, transparent 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( 90deg, transparent 0%, rgba(255, 255, 255, 0.25) 50%, transparent 100% )'"
+      },
+      {
+        "line": 4,
+        "text": "background: linear-gradient( 90deg, transparent 0%, rgba(255, 255, 255, 0.06) 50%, transparent 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( 90deg, transparent 0%, rgba(255, 255, 255, 0.06) 50%, transparent 100% )'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/components/WebStoryViewer.astro",
+    "styleBlocks": [
+      {
+        "line": 24,
+        "text": "max-width: 500px;",
+        "reason": "Hardcoded property 'max-width: 500px'"
+      },
+      {
+        "line": 35,
+        "text": "right: 60px;",
+        "reason": "Hardcoded property 'right: 60px'"
+      },
+      {
+        "line": 46,
+        "text": "border-radius: 3px;",
+        "reason": "Hardcoded property 'border-radius: 3px'"
+      },
+      {
+        "line": 48,
+        "text": "box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);",
+        "reason": "Hardcoded property 'box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5)'"
+      },
+      {
+        "line": 13,
+        "text": "transition: width 5s linear;",
+        "reason": "Hardcoded property 'transition: width 5s linear'"
+      },
+      {
+        "line": 10,
+        "text": "background: rgba(0, 0, 0, 0.6);",
+        "reason": "Hardcoded property 'background: rgba(0, 0, 0, 0.6)'"
+      },
+      {
+        "line": 46,
+        "text": "border: 2px solid white;",
+        "reason": "Hardcoded property 'border: 2px solid white'"
+      },
+      {
+        "line": 10,
+        "text": "background: linear-gradient( to bottom, rgba(0, 0, 0, 0.6) 0%, transparent 25%, transparent 55%, rgba(0, 0, 0, 0.85) 100% );",
+        "reason": "Hardcoded property 'background: linear-gradient( to bottom, rgba(0, 0, 0, 0.6) 0%, transparent 25%, transparent 55%, rgba(0, 0, 0, 0.85) 100% )'"
+      },
+      {
+        "line": 139,
+        "text": "text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);",
+        "reason": "Hardcoded property 'text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5)'"
+      },
+      {
+        "line": 139,
+        "text": "text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);",
+        "reason": "Hardcoded property 'text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5)'"
+      },
+      {
+        "line": 13,
+        "text": "transition: transform 0.2s, box-shadow 0.2s;",
+        "reason": "Hardcoded property 'transition: transform 0.2s, box-shadow 0.2s'"
+      },
+      {
+        "line": 48,
+        "text": "box-shadow: 0 6px 20px rgba(255, 102, 0, 0.5);",
+        "reason": "Hardcoded property 'box-shadow: 0 6px 20px rgba(255, 102, 0, 0.5)'"
+      },
+      {
+        "line": 46,
+        "text": "border: 2px solid rgba(255, 255, 255, 0.5);",
+        "reason": "Hardcoded property 'border: 2px solid rgba(255, 255, 255, 0.5)'"
+      }
+    ],
+    "inlineStyles": [
+      {
+        "text": "style=\"flex:1;height:6px;background:rgba(255,255,255,0.3);border-radius:3px;overflow:hidden;\"",
+        "reason": "Inline style without CSS tokens"
+      },
+      {
+        "text": "style=\"position:absolute;inset:0;opacity:0;visibility:hidden;\"",
+        "reason": "Inline style without CSS tokens"
+      },
+      {
+        "text": "style=\"position:absolute;inset:0;\"",
+        "reason": "Inline style without CSS tokens"
+      },
+      {
+        "text": "style=\"${overlayStyle}\"",
+        "reason": "Inline style without CSS tokens"
+      },
+      {
+        "text": "style=\"${titleStyle}\"",
+        "reason": "Inline style without CSS tokens"
+      },
+      {
+        "text": "style=\"${textStyle}\"",
+        "reason": "Inline style without CSS tokens"
+      }
+    ],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/layouts/RecipeLayout.astro",
+    "styleBlocks": [
+      {
+        "line": 41,
+        "text": "text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);",
+        "reason": "Hardcoded property 'text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4)'"
+      },
+      {
+        "line": 19,
+        "text": "min-width: 120px;",
+        "reason": "Hardcoded property 'min-width: 120px'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  },
+  {
+    "file": "src/site/layouts/RoundupLayout.astro",
+    "styleBlocks": [
+      {
+        "line": 11,
+        "text": "transition: filter 0.2s;",
+        "reason": "Hardcoded property 'transition: filter 0.2s'"
+      }
+    ],
+    "inlineStyles": [],
+    "tailwindArbitrary": []
+  }
+]

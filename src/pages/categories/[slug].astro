@@ -500,11 +500,11 @@ const categoryJsonLd = {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.625rem;
+    gap: var(--space-2);
     text-decoration: none;
-    padding: 0.75rem;
-    border-radius: 16px;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
     min-width: 100px;
   }
 
@@ -522,15 +522,15 @@ const categoryJsonLd = {
   .chip-svg {
     width: 76px;
     height: 76px;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: #f1f5f9;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 2px solid #e2e8f0;
+    background: var(--bg-inset);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+    box-shadow: var(--shadow-sm);
+    border: 2px solid var(--border);
   }
 
   .chip-svg svg,
@@ -546,20 +546,20 @@ const categoryJsonLd = {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
   }
 
   .chip-placeholder span {
     font-size: 1.75rem;
-    font-weight: 800;
-    color: white;
+    font-weight: var(--font-extrabold);
+    color: var(--neutral-25);
     text-transform: uppercase;
   }
 
   .category-chip:hover .chip-svg,
   .category-chip:focus .chip-svg {
     transform: scale(1.12);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-md);
     border-color: transparent;
   }
 
@@ -728,89 +728,89 @@ const categoryJsonLd = {
   }
 
   .newsletter-text h3 {
-    color: white;
-    font-size: clamp(1.125rem, 2vw, 1.375rem);
-    font-weight: 700;
-    margin: 0 0 0.25rem;
+    color: var(--neutral-25);
+    font-size: clamp(var(--text-lg), 2vw, var(--text-xl));
+    font-weight: var(--font-bold);
+    margin: 0 0 var(--space-1);
     letter-spacing: -0.01em;
   }
 
   .newsletter-text p {
-    color: #ff8c5a;
-    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
     margin: 0;
-    font-weight: 500;
+    font-weight: var(--font-medium);
   }
 
   .newsletter-form {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .newsletter-form input[type="email"] {
-    padding: 0.8125rem 1.125rem;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 12px;
-    color: white;
-    font-size: 0.9375rem;
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--neutral-25);
+    font-size: var(--text-sm);
     min-width: 260px;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--transition-fast);
   }
 
   .newsletter-form input[type="email"]:focus-visible {
     outline: none;
-    border-color: #ff6b35;
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 20%, transparent);
   }
 
   .newsletter-form input[type="email"]::placeholder {
-    color: #64748b;
+    color: var(--text-tertiary);
   }
 
   .terms-checkbox {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    color: #94a3b8;
-    font-size: 0.75rem;
+    gap: var(--space-2);
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
     cursor: pointer;
   }
 
   .terms-checkbox input {
     width: 16px;
     height: 16px;
-    accent-color: #ff6b35;
+    accent-color: var(--brand-primary);
   }
 
   .terms-checkbox input:focus-visible {
-    outline: 2px solid #ff6b35;
+    outline: 2px solid var(--brand-primary);
     outline-offset: 2px;
   }
 
   .newsletter-form button {
-    padding: 0.8125rem 1.75rem;
-    background: linear-gradient(135deg, #ff3366, #ff6b35);
+    padding: var(--space-3) var(--space-7);
+    background: var(--brand-gradient);
     border: none;
-    border-radius: 12px;
-    color: white;
-    font-weight: 700;
-    font-size: 0.9375rem;
+    border-radius: var(--radius-md);
+    color: var(--neutral-25);
+    font-weight: var(--font-bold);
+    font-size: var(--text-sm);
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    box-shadow: 0 2px 12px rgba(255, 51, 102, 0.25);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--brand-primary) 25%, transparent);
   }
 
   .newsletter-form button:hover,
   .newsletter-form button:focus {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 51, 102, 0.35);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--brand-primary) 35%, transparent);
   }
 
   .newsletter-form button:focus-visible {
-    outline: 2px solid white;
+    outline: 2px solid var(--neutral-25);
     outline-offset: 3px;
   }
 

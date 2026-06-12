@@ -581,7 +581,7 @@ const navItems = [
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
@@ -671,7 +671,7 @@ const navItems = [
     width: 32px;
     height: 32px;
     aspect-ratio: 1 / 1;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     object-fit: cover;
   }
 
@@ -794,7 +794,7 @@ const navItems = [
     background: var(--bg-inset);
     white-space: nowrap;
     flex-shrink: 0;
-    transition: transform 0.2s ease;
+    transition: transform var(--transition-fast);
   }
 
   .meta-pill:hover {
@@ -827,23 +827,23 @@ const navItems = [
   }
 
   .difficulty-medium {
-    background: #fef3c7;
+    background: var(--warning-bg);
   }
   .difficulty-medium .meta-value,
   .difficulty-medium .meta-label {
-    color: #92400e;
+    color: var(--warning-text);
   }
 
   .difficulty-hard {
-    background: #fee2e2;
+    background: var(--error-bg);
   }
   .difficulty-hard .meta-value,
   .difficulty-hard .meta-label {
-    color: #991b1b;
+    color: var(--error-text);
   }
   .diet-pill {
-    background: #dbeafe;
-    color: #1e40af;
+    background: var(--info-bg);
+    color: var(--info-text);
   }
 
   .recipe-description {
@@ -990,7 +990,7 @@ const navItems = [
   .servings-btn {
     width: 28px;
     height: 28px;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     border: 1px solid var(--border-strong);
     background: var(--bg-elevated);
     color: var(--text-secondary);
@@ -1005,9 +1005,9 @@ const navItems = [
 
   /* Enhanced focus-visible for keyboard navigation */
   .servings-btn:focus-visible {
-    outline: 2px solid var(--focus-ring-color, #3b82f6);
+    outline: 2px solid var(--focus-ring-color, var(--info));
     outline-offset: 2px;
-    border-color: #6b8f71;
+    border-color: var(--brand-secondary);
   }
 
   .servings-btn:hover {
@@ -1049,7 +1049,7 @@ const navItems = [
   .diet-badge {
     background: var(--success-bg);
     color: var(--success-text); /* Darkened from #059669 for accessibility */
-    transition: filter 0.2s ease, transform 0.2s ease;
+    transition: filter var(--transition-fast), transform var(--transition-fast);
   }
 
   .diet-badge:hover {
@@ -1133,7 +1133,7 @@ const navItems = [
     border-radius: var(--radius-lg);
     text-decoration: none;
     color: var(--text-tertiary);
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+    transition: background-color var(--transition-base), color var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
     min-width: 64px;
     border: 1px solid transparent;
   }
@@ -1151,7 +1151,7 @@ const navItems = [
   .nav-icon {
     width: 24px;
     height: 24px;
-    transition: color 0.3s ease, transform 0.3s ease;
+    transition: color var(--transition-base), transform var(--transition-base);
   }
 
   .nav-item:hover .nav-icon {
@@ -1194,7 +1194,7 @@ const navItems = [
     background: var(--border-strong);
     border-radius: var(--radius-md);
     position: relative;
-    transition: background 0.3s;
+    transition: background var(--transition-base);
   }
 
   .toggle-slider::after {
@@ -1205,8 +1205,8 @@ const navItems = [
     width: 20px;
     height: 20px;
     background: var(--bg-elevated);
-    border-radius: 50%;
-    transition: transform 0.3s;
+    border-radius: var(--radius-full);
+    transition: transform var(--transition-base);
   }
 
   .cook-mode-toggle input:checked + .toggle-slider {
@@ -1337,11 +1337,11 @@ const navItems = [
     margin: 0;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .equipment-item {
-    padding: 12px 16px;
+    padding: var(--space-3) var(--space-4);
     background: var(--bg-inset);
     border-radius: var(--radius-md);
   }
@@ -1349,13 +1349,12 @@ const navItems = [
   .checkbox-label {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
     cursor: pointer;
-    padding: 4px;
-    margin: -4px;
+    padding: var(--space-1);
+    margin: calc(-1 * var(--space-1));
     border-radius: var(--radius-xs);
-    transition: background var(--transition-fast, 150ms)
-      var(--ease-default, ease);
+    transition: background var(--transition-fast);
     outline: 2px solid transparent;
     outline-offset: 2px;
   }
@@ -1379,20 +1378,20 @@ const navItems = [
   }
 
   .checkmark {
-    width: 20px;
-    height: 20px;
+    width: var(--space-5);
+    height: var(--space-5);
     border: 2px solid var(--border-strong);
     border-radius: var(--radius-xs);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color var(--transition-fast, 150ms) var(--ease-default, ease), border-color var(--transition-fast, 150ms) var(--ease-default, ease);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
   }
 
   /* Focus indicator for checkbox */
   .equipment-check:focus + .checkmark {
-    border-color: var(--focus-ring-color, #3b82f6);
+    border-color: var(--focus-ring-color, var(--info));
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
   }
 
@@ -1404,7 +1403,7 @@ const navItems = [
   .equipment-check:checked + .checkmark::after {
     content: "✓";
     color: var(--text-inverse);
-    font-size: 12px;
+    font-size: var(--text-xs);
   }
 
   .equipment-check:checked ~ .item-text {
@@ -1428,15 +1427,15 @@ const navItems = [
   }
 
   .item-text {
-    font-size: 15px;
+    font-size: var(--text-sm);
     color: var(--text-secondary);
   }
 
   .optional-tag {
-    font-size: 12px;
+    font-size: var(--text-xs);
     color: var(--text-tertiary);
     font-style: italic;
-    margin-left: 4px;
+    margin-left: var(--space-1);
   }
 
   /* ===== Video ===== */
@@ -1460,13 +1459,13 @@ const navItems = [
   .notes-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--space-4);
   }
 
   .note-item {
     display: flex;
-    gap: 12px;
-    padding: 16px;
+    gap: var(--space-3);
+    padding: var(--space-4);
     background: var(--bg-alt);
     border-left: 4px solid var(--success-text);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
@@ -1479,20 +1478,20 @@ const navItems = [
 
   .note-item p {
     margin: 0;
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
     color: var(--success-text);
   }
 
   /* ===== Footer ===== */
   .recipe-footer {
-    margin-top: 40px;
-    padding-top: 24px;
+    margin-top: var(--space-10);
+    padding-top: var(--space-6);
     border-top: 1px solid var(--border);
   }
 
   .disclaimer {
-    font-size: 13px;
+    font-size: var(--text-xs);
     color: var(--text-tertiary);
     text-align: center;
     margin: 0;
@@ -2027,7 +2026,7 @@ const navItems = [
       }
 
       .stat-card:nth-child(2n) {
-        border-right: 1px solid #e5e7eb;
+        border-right: 1px solid var(--border);
       }
 
       .stat-card:last-child {

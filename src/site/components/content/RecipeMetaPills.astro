@@ -212,10 +212,13 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
 
 <style>
   .recipe-meta-pills {
+    --space-1-5: 0.375rem;
+    --space-2-5: 0.625rem;
+    --space-3-5: 0.875rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 1.25rem 1.5rem;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-6);
     background: linear-gradient(135deg, var(--neutral-25) 0%, var(--neutral-50) 100%);
     border-bottom: 1px solid var(--border);
   }
@@ -223,42 +226,42 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
   .pill-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
 
   .meta-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.875rem;
+    gap: var(--space-1-5);
+    padding: var(--space-2) var(--space-3-5);
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-full);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--neutral-700);
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    color: var(--text-secondary);
+    transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
   }
 
   .meta-pill:hover {
     border-color: var(--border-strong);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm);
   }
 
   .pill-icon {
-    width: 0.875rem;
-    height: 0.875rem;
-    color: var(--neutral-500);
+    width: var(--space-3-5);
+    height: var(--space-3-5);
+    color: var(--text-tertiary);
   }
 
   .pill-label {
-    color: var(--neutral-500);
-    font-weight: 400;
+    color: var(--text-tertiary);
+    font-weight: var(--font-normal);
   }
 
   .pill-value {
     color: var(--text);
-    font-weight: 600;
+    font-weight: var(--font-semibold);
   }
 
   /* Time pills */
@@ -294,7 +297,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
 
   /* Difficulty pill */
   .difficulty-pill {
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
 
   .difficulty-bars {
@@ -303,18 +306,18 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
   }
 
   .diff-bar {
-    width: 4px;
-    height: 12px;
+    width: var(--space-1);
+    height: var(--space-3);
     background: var(--border);
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
   }
 
   .diff-bar.active {
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
   }
 
   .difficulty-label {
-    font-size: 0.6875rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.02em;
   }
@@ -323,7 +326,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
   .diet-pill {
     background: var(--bg-hover);
     border-color: var(--border);
-    border-radius: var(--radius-full); /* Keep pill shape for this specific component */
+    border-radius: var(--radius-full);
   }
 
   .diet-pill[data-diet="VeganDiet"],
@@ -349,7 +352,7 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
   @media print {
     .recipe-meta-pills {
       background: var(--bg);
-      padding: 0.75rem 0;
+      padding: var(--space-3) var(--space-0);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
     }
@@ -362,16 +365,16 @@ if (!hasTime && !hasServings && !hasDifficulty && !hasCuisine && !hasDiets)
   /* Mobile */
   @media (max-width: 640px) {
     .recipe-meta-pills {
-      padding: 1rem;
+      padding: var(--space-4);
     }
 
     .pill-group {
-      gap: 0.375rem;
+      gap: var(--space-1-5);
     }
 
     .meta-pill {
-      padding: 0.375rem 0.625rem;
-      font-size: 0.75rem;
+      padding: var(--space-1-5) var(--space-2-5);
+      font-size: var(--text-xs);
     }
   }
 </style>

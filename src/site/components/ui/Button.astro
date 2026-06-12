@@ -76,25 +76,25 @@ const isExternal = href?.startsWith("http");
   /* Sizes */
   .ui-btn--sm {
     font-size: var(--text-sm);
-    padding: 0.5rem 1rem;
-    min-height: 36px;
+    padding: var(--space-2) var(--space-4);
+    min-height: var(--space-9);
   }
 
   .ui-btn--md {
     font-size: var(--text-base);
-    padding: 0.625rem 1.25rem;
-    min-height: 44px;
+    padding: calc((var(--space-2) + var(--space-3)) / 2) var(--space-5);
+    min-height: calc(var(--space-10) + var(--space-1));
   }
 
   .ui-btn--lg {
     font-size: var(--text-lg);
-    padding: 0.75rem 1.5rem;
-    min-height: 52px;
+    padding: var(--space-3) var(--space-6);
+    min-height: calc(var(--space-12) + var(--space-1));
   }
 
   .ui-btn--icon {
-    width: 44px;
-    height: 44px;
+    width: calc(var(--space-10) + var(--space-1));
+    height: calc(var(--space-10) + var(--space-1));
     padding: 0;
     border-radius: var(--radius-full);
   }
@@ -109,7 +109,7 @@ const isExternal = href?.startsWith("http");
     background: var(--brand-primary-hover);
     box-shadow:
       inset 0 0 0 1px rgba(0, 0, 0, 0.15),
-      0 4px 14px rgba(231, 76, 60, 0.35);
+      0 4px 14px var(--brand-secondary-accessible-shadow-hover);
     transform: translateY(-1px);
   }
 

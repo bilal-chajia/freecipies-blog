@@ -49,32 +49,32 @@ const tagUrl = `/tags/${tag.slug}`;
 <style>
   .tag-card {
     display: block;
-    background: white;
+    background: var(--bg-elevated);
     border-radius: var(--radius-md);
     overflow: hidden;
     text-decoration: none;
     color: inherit;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
-    border: 1px solid #eee;
+    box-shadow: var(--shadow-sm);
+    transition: background-color var(--transition-base), color var(--transition-base), transform var(--transition-base);
+    border: 1px solid var(--border-subtle);
   }
 
   .tag-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    border-color: #ff6b35;
+    box-shadow: var(--shadow-hover);
+    border-color: var(--brand-accent);
   }
 
   .tag-content {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem;
+    gap: var(--space-4);
+    padding: var(--space-4);
   }
 
   .tag-image {
-    width: 60px;
-    height: 60px;
+    width: var(--space-14);
+    height: var(--space-14);
     border-radius: var(--radius-sm);
     overflow: hidden;
     flex-shrink: 0;
@@ -92,22 +92,22 @@ const tagUrl = `/tags/${tag.slug}`;
   }
 
   .tag-label {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #1a1a1a;
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--text);
     margin: 0;
-    transition: color 0.2s ease;
+    transition: color var(--transition-fast);
   }
 
   .tag-card:hover .tag-label {
-    color: #ff6b35;
+    color: var(--brand-accent);
   }
 
   .tag-headline {
-    font-size: 0.8rem;
-    color: #666;
-    margin: 0.25rem 0 0 0;
-    line-height: 1.4;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin: var(--space-1) 0 0 0;
+    line-height: var(--leading-snug);
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
@@ -116,11 +116,11 @@ const tagUrl = `/tags/${tag.slug}`;
 
   .article-count {
     display: inline-block;
-    margin-top: 0.5rem;
-    font-size: 0.75rem;
-    color: #555;
-    background: #ececec;
-    padding: 0.25rem 0.5rem;
+    margin-top: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    background: var(--bg-inset);
+    padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-xs);
   }
 </style>

@@ -124,7 +124,7 @@ const initials = authorName
     .author-avatar img {
         width: var(--space-12);
         height: var(--space-12);
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         object-fit: cover;
         border: 2px solid var(--border);
     }
@@ -132,11 +132,11 @@ const initials = authorName
     .avatar-fallback {
         width: var(--space-12);
         height: var(--space-12);
-        border-radius: 50%;
-        background: linear-gradient(135deg, #ff3366, #ff6b35);
-        color: white;
-        font-size: 1rem;
-        font-weight: 700;
+        border-radius: var(--radius-full);
+        background: var(--brand-gradient);
+        color: var(--text-inverse);
+        font-size: var(--text-base);
+        font-weight: var(--font-bold);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -153,8 +153,8 @@ const initials = authorName
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 0.35rem;
-        font-size: 0.9375rem;
+        gap: calc((var(--space-1) + var(--space-2)) / 2);
+        font-size: var(--text-sm);
         color: var(--text-secondary);
     }
 
@@ -164,7 +164,7 @@ const initials = authorName
 
     .author-name {
         color: var(--text);
-        font-weight: 600;
+        font-weight: var(--font-semibold);
         text-decoration: none;
     }
 
@@ -186,17 +186,17 @@ const initials = authorName
     }
 
     .view-count {
-        color: #4b5563;
-        font-weight: 600;
+        color: var(--text-secondary);
+        font-weight: var(--font-semibold);
     }
 
     @media (max-width: 480px) {
         .author-meta {
-            font-size: 0.875rem;
+            font-size: var(--text-sm);
         }
 
         .last-updated {
-            font-size: 0.75rem;
+            font-size: var(--text-xs);
         }
     }
 </style>

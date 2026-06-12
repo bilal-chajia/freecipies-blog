@@ -236,7 +236,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
   }
 
   .logo-text {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
     font-weight: var(--font-extrabold);
     background: var(--brand-gradient);
     -webkit-background-clip: text;
@@ -268,7 +268,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
 
   .desktop-nav {
     display: none;
-    gap: 2rem;
+    gap: var(--space-8);
     align-items: center;
   }
 
@@ -277,7 +277,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     text-decoration: none;
     font-weight: var(--font-medium);
     font-size: var(--text-sm);
-    padding: 0.55rem 0.85rem;
+    padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-full);
     transition: background-color var(--transition-fast), color var(--transition-fast);
   }
@@ -331,9 +331,9 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     transform: translateY(-8px);
     overflow: hidden;
     transition:
-      max-height 0.35s var(--ease-out),
-      opacity 0.25s var(--ease-out),
-      transform 0.35s var(--ease-out);
+      max-height var(--transition-slow),
+      opacity var(--transition-base),
+      transform var(--transition-slow);
   }
 
   .mobile-nav.active {
@@ -360,7 +360,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
   .mobile-nav-link:hover,
   .mobile-nav-link:active {
     background: var(--bg-alt);
-    padding-left: calc(var(--space-6) + 4px);
+    padding-left: calc(var(--space-6) + var(--space-1));
   }
 
   .search-modal {
@@ -427,7 +427,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
 
   .search-input {
     flex: 1;
-    padding: 0.875rem 1.25rem;
+    padding: calc((var(--space-3) + var(--space-4)) / 2) var(--space-5);
     border: 1px solid var(--border);
     border-radius: var(--radius-full);
     font-size: var(--text-base);
@@ -445,7 +445,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
   }
 
   .search-submit {
-    padding: 0.875rem 2rem;
+    padding: calc((var(--space-3) + var(--space-4)) / 2) var(--space-8);
     background: var(--brand-primary);
     color: var(--text-inverse);
     border: none;
@@ -466,7 +466,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     }
 
     .logo {
-      margin-left: 0.1rem;
+      margin-left: var(--space-px);
     }
 
     .logo-img {
@@ -487,7 +487,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
 
     .search-modal-content {
       width: 90%;
-      padding: 2rem;
+      padding: var(--space-8);
     }
 
     .search-form {
@@ -497,23 +497,23 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
 
   @media (min-width: 768px) and (max-width: 1023px) {
     .desktop-nav {
-      gap: 0.5rem;
+      gap: var(--space-2);
     }
 
     .nav-link {
-      padding: 0.35rem 0.5rem;
-      font-size: 0.85rem;
+      padding: calc((var(--space-1) + var(--space-2)) / 2) var(--space-2);
+      font-size: var(--text-sm);
     }
   }
 
   @media (min-width: 1024px) and (max-width: 1200px) {
     .desktop-nav {
-      gap: 1rem;
+      gap: var(--space-4);
     }
 
     .nav-link {
-      padding: 0.4rem 0.6rem;
-      font-size: 0.9rem;
+      padding: calc((var(--space-1) + var(--space-2)) / 2) calc((var(--space-2) + var(--space-3)) / 2);
+      font-size: var(--text-sm);
     }
   }
   @media (max-width: 768px) {

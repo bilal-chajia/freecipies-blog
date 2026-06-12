@@ -109,7 +109,7 @@ const description = "Saved recipes from SaaS Blog.";
 
       const cachedCategory = parseJson(article.cached_category_json) || {};
       const categoryLabel = article.category?.label || cachedCategory.label || '';
-      const categoryColor = article.category?.color || cachedCategory.color || '#2563eb';
+      const categoryColor = article.category?.color || cachedCategory.color || 'var(--brand-primary)';
 
       if (categoryLabel) {
         const category = document.createElement('span');
@@ -216,7 +216,7 @@ const description = "Saved recipes from SaaS Blog.";
   <style>
     :global(.bookmark-card) {
       position: relative;
-      transition: opacity 0.25s ease, transform 0.25s ease, filter 0.25s ease;
+      transition: opacity var(--transition-base), transform var(--transition-base), filter var(--transition-base);
     }
 
     :global(.bookmark-card.is-removing) {
@@ -227,30 +227,31 @@ const description = "Saved recipes from SaaS Blog.";
 
     :global(.bookmark-chip) {
       position: absolute;
-      top: 0.75rem;
-      right: 0.75rem;
-      width: 36px;
-      height: 36px;
-      border-radius: 9999px;
+      top: var(--space-3);
+      right: var(--space-3);
+      width: var(--space-9);
+      height: var(--space-9);
+      border-radius: var(--radius-full);
       border: none;
-      background: #ef4444;
-      color: #fff;
+      background: var(--error);
+      color: var(--text-inverse);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+      box-shadow: var(--shadow-lg);
       cursor: pointer;
       z-index: 2;
+      transition: background var(--transition-fast), transform var(--transition-fast);
     }
 
     :global(.bookmark-chip svg) {
-      width: 18px;
-      height: 18px;
+      width: var(--text-lg);
+      height: var(--text-lg);
     }
 
     :global(.bookmark-chip:hover) {
-      background: #dc2626;
-      transform: translateY(-1px);
+      background: var(--error-hover);
+      transform: translateY(calc(-1 * var(--space-px)));
     }
 
   </style>

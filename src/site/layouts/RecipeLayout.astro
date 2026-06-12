@@ -311,17 +311,17 @@ const breadcrumbItems = [
   .recipe-page {
     background: var(--bg-elevated);
     min-height: 100vh;
-    padding-bottom: 4rem;
+    padding-bottom: var(--space-16);
     contain: style;
   }
 
   .recipe-container {
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: clamp(0px, 2vw, 2rem) clamp(1rem, 3vw, 2rem);
+    padding: clamp(0px, 2vw, var(--space-8)) clamp(var(--space-4), 3vw, var(--space-8));
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: clamp(1.5rem, 3vw, 2rem);
+    gap: clamp(var(--space-6), 3vw, var(--space-8));
   }
 
   @media (min-width: 1024px) {
@@ -333,7 +333,7 @@ const breadcrumbItems = [
   /* Main Content */
   .main-content {
     background: var(--bg-elevated);
-    padding: clamp(1rem, 2vw, 1rem) 0;
+    padding: clamp(var(--space-4), 2vw, var(--space-4)) 0;
     min-width: 0; /* prevent grid blowout */
     overflow-x: hidden; /* prevent child content from expanding the grid track */
   }
@@ -343,8 +343,8 @@ const breadcrumbItems = [
     background: var(--badge-color, var(--brand-secondary));
     color: var(--text-inverse);
     text-decoration: none;
-    margin-bottom: 1rem;
-    transition: filter 0.2s;
+    margin-bottom: var(--space-4);
+    transition: filter var(--transition-fast);
     /* Improved accessibility: ensure contrast on bright backgrounds */
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -357,21 +357,21 @@ const breadcrumbItems = [
   /* Jump to Recipe & Print Buttons */
   .jump-to-recipe {
     display: flex;
-    gap: 0.75rem;
-    margin: 1.25rem 0;
+    gap: var(--space-3);
+    margin: var(--space-5) 0;
   }
 
   .jump-btn,
   .print-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.875rem;
-    font-weight: 600;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-fast);
     text-decoration: none;
   }
 
@@ -413,15 +413,15 @@ const breadcrumbItems = [
 
   /* Title */
   .recipe-title {
-    font-size: clamp(1.375rem, 3vw + 0.5rem, 2.5rem);
-    font-weight: 800;
+    font-size: clamp(var(--text-xl), 3vw + 0.5rem, var(--text-4xl));
+    font-weight: var(--font-extrabold);
     color: var(--text);
-    line-height: 1.2;
-    margin: 0 0 clamp(0.75rem, 2vw, 1rem);
+    line-height: var(--leading-tight);
+    margin: 0 0 clamp(var(--space-3), 2vw, var(--space-4));
   }
 
   .recipe-rating-header {
-    margin-bottom: 1.25rem;
+    margin-bottom: var(--space-5);
     display: flex;
     align-items: center;
   }
@@ -429,21 +429,21 @@ const breadcrumbItems = [
   /* Description */
   .recipe-description {
     font-family: var(--font-sans);
-    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    font-size: clamp(var(--text-base), 0.95rem + 0.25vw, var(--text-lg));
     color: var(--text-secondary);
-    line-height: 1.6;
-    margin: 0 0 clamp(1rem, 2vw, 1.5rem);
+    line-height: var(--leading-relaxed);
+    margin: 0 0 clamp(var(--space-4), 2vw, var(--space-6));
   }
 
   /* Disclosure Notice */
   .disclosure-notice {
     background: var(--bg-inset);
     border-left: 3px solid var(--border-strong);
-    padding: clamp(0.75rem, 2vw, 1rem) clamp(0.875rem, 2vw, 1.25rem);
-    font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.8125rem);
+    padding: clamp(var(--space-3), 2vw, var(--space-4)) clamp(var(--text-sm), 2vw, var(--space-5));
+    font-size: clamp(var(--text-xs), 0.7rem + 0.15vw, var(--text-sm));
     color: var(--text-secondary);
-    line-height: 1.6;
-    margin: clamp(1rem, 2vw, 1.5rem) 0;
+    line-height: var(--leading-relaxed);
+    margin: clamp(var(--space-4), 2vw, var(--space-6)) 0;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   }
 
@@ -453,7 +453,7 @@ const breadcrumbItems = [
 
   /* Hero Image */
   .hero-image {
-    margin: 1.5rem 0;
+    margin: var(--space-6) 0;
     overflow: hidden;
     border-radius: var(--radius-md);
   }
@@ -469,18 +469,18 @@ const breadcrumbItems = [
   .recipe-meta-pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
-    padding: 1.5rem 0;
+    gap: var(--space-4);
+    padding: var(--space-6) 0;
     border-bottom: 1px solid var(--border-subtle);
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-8);
   }
 
   .meta-pill {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     background: var(--bg-inset);
-    padding: 0.75rem 1rem;
+    padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-sm);
     flex: 1;
     min-width: 120px;
@@ -494,91 +494,91 @@ const breadcrumbItems = [
   }
 
   .meta-pill .label {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--text-tertiary);
     text-transform: uppercase;
   }
 
   .meta-pill .value {
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
     color: var(--text-secondary);
   }
 
   /* Content Sections */
   .content-section {
-    margin-bottom: 2.5rem;
+    margin-bottom: var(--space-10);
     content-visibility: auto;
     contain-intrinsic-size: auto 500px;
   }
 
   .content-section h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
     color: var(--text);
-    margin: 0 0 1.25rem;
-    padding-bottom: 0.75rem;
+    margin: 0 0 var(--space-5);
+    padding-bottom: var(--space-3);
     border-bottom: 2px solid var(--text);
   }
 
   .content-section h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
     color: var(--text-secondary);
-    margin: 1.5rem 0 0.75rem;
+    margin: var(--space-6) 0 var(--space-3);
   }
 
   /* Numbered Headings - Size Hierarchy (global for child components) */
   :global(.numbered-heading .heading-number) {
-    color: var(--toc-accent, #f97316);
-    font-weight: 700;
-    margin-right: 0.4rem;
+    color: var(--toc-accent, var(--brand-accent));
+    font-weight: var(--font-bold);
+    margin-right: var(--space-2);
   }
 
   :global(h2.numbered-heading) {
-    font-family: "Playfair Display", Georgia, serif;
-    font-size: clamp(1.6rem, 1.4rem + 1vw, 2rem);
-    font-weight: 800;
+    font-family: var(--font-heading);
+    font-size: clamp(var(--text-2xl), 1.4rem + 1vw, var(--text-3xl));
+    font-weight: var(--font-extrabold);
     color: var(--text);
-    margin: 2.5rem 0 1rem;
-    padding-bottom: 0.6rem;
+    margin: var(--space-10) 0 var(--space-4);
+    padding-bottom: var(--space-2);
     border-bottom: 2px solid var(--border-subtle);
     letter-spacing: -0.01em;
   }
 
   :global(h3.numbered-heading) {
-    font-family: "Playfair Display", Georgia, serif;
-    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-size: clamp(var(--text-xl), 1.1rem + 0.6vw, var(--text-2xl));
+    font-weight: var(--font-bold);
     color: var(--text);
-    margin: 2rem 0 0.75rem;
+    margin: var(--space-8) 0 var(--space-3);
   }
 
   :global(h4.numbered-heading) {
-    font-family: "Playfair Display", Georgia, serif;
-    font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
-    font-weight: 600;
+    font-family: var(--font-heading);
+    font-size: clamp(var(--text-base), 1rem + 0.3vw, var(--text-lg));
+    font-weight: var(--font-semibold);
     color: var(--text-secondary);
-    margin: 1.5rem 0 0.5rem;
+    margin: var(--space-6) 0 var(--space-2);
   }
 
   /* TLDR */
   .tldr-section {
     background: var(--bg-alt);
-    margin: 0 calc(-1 * clamp(1rem, 3vw, 2rem)) clamp(1.5rem, 3vw, 2.5rem);
-    padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem);
+    margin: 0 calc(-1 * clamp(var(--space-4), 3vw, var(--space-8))) clamp(var(--space-6), 3vw, var(--space-10));
+    padding: clamp(var(--space-4), 2vw, var(--space-6)) clamp(var(--space-4), 3vw, var(--space-8));
     border-left: 4px solid var(--warning);
   }
 
   .tldr-section h2 {
     border-bottom: none;
     padding-bottom: 0;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-3);
   }
 
   .prose {
     color: var(--text-secondary);
-    line-height: 1.7;
+    line-height: var(--leading-relaxed);
   }
 
   /* Ingredients */
@@ -591,8 +591,8 @@ const breadcrumbItems = [
   .ingredient-list li {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.625rem 0;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
     border-bottom: 1px solid var(--border-subtle);
     color: var(--text-secondary);
   }
@@ -601,11 +601,11 @@ const breadcrumbItems = [
     width: 20px;
     height: 20px;
     border: 2px solid var(--success);
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     flex-shrink: 0;
     margin-top: 2px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-fast);
   }
 
   .ingredient-list li:hover .checkbox {
@@ -622,8 +622,8 @@ const breadcrumbItems = [
 
   .instruction-list li {
     display: flex;
-    gap: 1rem;
-    padding: 1.25rem 0;
+    gap: var(--space-4);
+    padding: var(--space-5) 0;
     border-bottom: 1px solid var(--border-subtle);
   }
 
@@ -635,16 +635,16 @@ const breadcrumbItems = [
     height: 32px;
     background: var(--brand-primary);
     color: var(--text-inverse);
-    font-weight: 700;
-    font-size: 0.875rem;
-    border-radius: 50%;
+    font-weight: var(--font-bold);
+    font-size: var(--text-sm);
+    border-radius: var(--radius-full);
     flex-shrink: 0;
   }
 
   .instruction-list p {
     margin: 0;
     color: var(--text-secondary);
-    line-height: 1.7;
+    line-height: var(--leading-relaxed);
   }
 
   /* Nutrition Grid (Mobile) */
@@ -669,61 +669,61 @@ const breadcrumbItems = [
   .nutrition-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .nutrition-item {
     background: var(--bg-inset);
-    padding: 1rem;
+    padding: var(--space-4);
     border-radius: var(--radius-sm);
     text-align: center;
   }
 
   .nutrition-value {
     display: block;
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
     color: var(--text);
   }
 
   .nutrition-label {
     display: block;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--text-tertiary);
     text-transform: capitalize;
-    margin-top: 0.25rem;
+    margin-top: var(--space-1);
   }
 
   /* Sidebar */
   .sidebar {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--space-6);
     content-visibility: auto;
     contain-intrinsic-size: auto 800px;
   }
 
   .sidebar-sticky {
     position: sticky;
-    top: 2rem;
+    top: var(--space-8);
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--space-6);
   }
 
   .sidebar-widget {
     background: var(--bg-elevated);
     border-radius: var(--radius-sm);
-    padding: 1.5rem;
+    padding: var(--space-6);
     border: 1px solid var(--border-subtle);
   }
 
   .sidebar-widget h3 {
-    font-size: 1.125rem;
-    font-weight: 700;
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
     color: var(--text);
-    margin: 0 0 1rem;
-    padding-bottom: 0.75rem;
+    margin: 0 0 var(--space-4);
+    padding-bottom: var(--space-3);
     border-bottom: 3px solid var(--text);
   }
 
@@ -735,14 +735,14 @@ const breadcrumbItems = [
   .nutrition-row {
     display: flex;
     justify-content: space-between;
-    padding: 0.625rem 0;
+    padding: var(--space-2) 0;
     border-bottom: 1px solid var(--border-subtle);
-    font-size: 0.9375rem;
+    font-size: var(--text-sm);
   }
 
   .nutrition-key {
     color: var(--text-secondary);
-    font-weight: 500;
+    font-weight: var(--font-medium);
     text-transform: capitalize;
   }
 
@@ -752,27 +752,27 @@ const breadcrumbItems = [
 
   /* Fluid responsive — no max-width media queries needed */
   .recipe-meta-pills {
-    gap: clamp(0.5rem, 1.5vw, 1rem);
-    padding: clamp(1rem, 2vw, 1.5rem) 0;
+    gap: clamp(var(--space-2), 1.5vw, var(--space-4));
+    padding: clamp(var(--space-4), 2vw, var(--space-6)) 0;
   }
 
   .meta-pill {
-    padding: clamp(0.5rem, 1vw, 0.75rem) clamp(0.625rem, 1.5vw, 1rem);
+    padding: clamp(var(--space-2), 1vw, var(--space-3)) clamp(var(--space-2), 1.5vw, var(--space-4));
     min-width: auto;
     flex: 1 1 auto;
   }
 
   .content-section h2 {
-    font-size: clamp(1.25rem, 1rem + 0.6vw, 1.5rem);
+    font-size: clamp(var(--text-xl), 1rem + 0.6vw, var(--text-2xl));
   }
 
   .content-section h3 {
-    font-size: clamp(1rem, 0.9rem + 0.4vw, 1.125rem);
+    font-size: clamp(var(--text-base), 0.9rem + 0.4vw, var(--text-lg));
   }
 
   .ingredient-list li {
-    padding: clamp(0.5rem, 1vw, 0.625rem) 0;
-    font-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+    padding: clamp(var(--space-2), 1vw, var(--space-3)) 0;
+    font-size: clamp(var(--text-sm), 0.9rem + 0.15vw, var(--text-base));
   }
 
   /* Sidebar becomes full-width below 1024px (handled by grid-template-columns: 1fr) */

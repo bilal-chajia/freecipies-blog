@@ -147,35 +147,30 @@ import Layout from "@layouts/Layout.astro";
 
 <style>
 	.about-page {
-		--primary-color: #ff6600;
-		--text-dark: #1a1a2e;
-		--text-light: #666;
-		--bg-light: #fafafa;
+		--primary-color: var(--brand-primary);
+		--text-dark: var(--text);
+		--text-light: var(--text-secondary);
+		--bg-light: var(--bg-alt);
 	}
 
 	.container {
 		max-width: var(--container-max);
 		margin: 0 auto;
-		padding: 0 24px;
+		padding: 0 var(--space-6);
 	}
 
 	/* Hero Section */
 	.hero {
-		background: linear-gradient(
-			135deg,
-			#ff6600 0%,
-			#ff8533 50%,
-			#ffad33 100%
-		);
-		padding: 100px 24px;
+		background: var(--brand-gradient);
+		padding: var(--space-24) var(--space-6);
 		text-align: center;
-		color: #fff;
+		color: var(--text-inverse);
 	}
 
 	.hero h1 {
 		font-size: clamp(2.5rem, 6vw, 4rem);
-		font-weight: 800;
-		margin: 0 0 16px;
+		font-weight: var(--font-extrabold);
+		margin: 0 0 var(--space-4);
 	}
 
 	.hero .highlight {
@@ -183,15 +178,15 @@ import Layout from "@layouts/Layout.astro";
 	}
 
 	.tagline {
-		font-size: 1.25rem;
+		font-size: var(--text-xl);
 		opacity: 0.9;
 		margin: 0;
 	}
 
 	/* Mission Section */
 	.mission {
-		padding: 80px 0;
-		background: #fff;
+		padding: var(--space-20) 0;
+		background: var(--bg-elevated);
 	}
 
 	.mission-content {
@@ -201,63 +196,63 @@ import Layout from "@layouts/Layout.astro";
 	}
 
 	.mission-icon {
-		font-size: 4rem;
-		margin-bottom: 24px;
+		font-size: calc(4 * var(--text-base));
+		margin-bottom: var(--space-6);
 	}
 
 	.mission h2 {
-		font-size: 2rem;
+		font-size: var(--text-3xl);
 		color: var(--text-dark);
-		margin: 0 0 20px;
+		margin: 0 0 var(--space-5);
 	}
 
 	.mission p {
-		font-size: 1.125rem;
-		line-height: 1.8;
+		font-size: var(--text-lg);
+		line-height: var(--leading-relaxed);
 		color: var(--text-light);
 		margin: 0;
 	}
 
 	/* Story Section */
 	.story {
-		padding: 80px 0;
+		padding: var(--space-20) 0;
 		background: var(--bg-light);
 	}
 
 	.story-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 60px;
+		gap: var(--space-14);
 		align-items: center;
 	}
 
 	.story-image {
 		aspect-ratio: 1;
-		border-radius: 20px;
+		border-radius: var(--radius-xl);
 		overflow: hidden;
 	}
 
 	.image-placeholder {
 		width: 100%;
 		height: 100%;
-		background: linear-gradient(135deg, #ffe4cc, #ffcc99);
+		background: linear-gradient(135deg, var(--brand-primary-light), var(--bg-inset));
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 8rem;
+		font-size: calc(8 * var(--text-base));
 	}
 
 	.story-text h2 {
-		font-size: 2rem;
+		font-size: var(--text-3xl);
 		color: var(--text-dark);
-		margin: 0 0 24px;
+		margin: 0 0 var(--space-6);
 	}
 
 	.story-text p {
-		font-size: 1.0625rem;
-		line-height: 1.8;
+		font-size: var(--text-base);
+		line-height: var(--leading-relaxed);
 		color: var(--text-light);
-		margin: 0 0 16px;
+		margin: 0 0 var(--space-4);
 	}
 
 	.story-text p:last-child {
@@ -266,129 +261,129 @@ import Layout from "@layouts/Layout.astro";
 
 	/* Values Section */
 	.values {
-		padding: 80px 0;
-		background: #fff;
+		padding: var(--space-20) 0;
+		background: var(--bg-elevated);
 		text-align: center;
 	}
 
 	.values h2 {
-		font-size: 2rem;
+		font-size: var(--text-3xl);
 		color: var(--text-dark);
-		margin: 0 0 48px;
+		margin: 0 0 var(--space-12);
 	}
 
 	.values-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		gap: 32px;
+		gap: var(--space-8);
 	}
 
 	.value-card {
-		padding: 32px 24px;
+		padding: var(--space-8) var(--space-6);
 		background: var(--bg-light);
-		border-radius: 16px;
+		border-radius: var(--radius-lg);
 		transition:
-			transform 0.3s,
-			box-shadow 0.3s;
+			transform var(--transition-base),
+			box-shadow var(--transition-base);
 	}
 
 	.value-card:hover {
-		transform: translateY(-8px);
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+		transform: translateY(calc(-1 * var(--space-2)));
+		box-shadow: var(--shadow-xl);
 	}
 
 	.value-icon {
-		font-size: 3rem;
-		margin-bottom: 16px;
+		font-size: var(--text-5xl);
+		margin-bottom: var(--space-4);
 	}
 
 	.value-card h3 {
-		font-size: 1.25rem;
+		font-size: var(--text-xl);
 		color: var(--text-dark);
-		margin: 0 0 12px;
+		margin: 0 0 var(--space-3);
 	}
 
 	.value-card p {
-		font-size: 0.9375rem;
-		line-height: 1.6;
+		font-size: var(--text-sm);
+		line-height: var(--leading-normal);
 		color: var(--text-light);
 		margin: 0;
 	}
 
 	/* Stats Section */
 	.stats {
-		padding: 60px 0;
-		background: linear-gradient(135deg, #1a1a2e, #2d2d44);
-		color: #fff;
+		padding: var(--space-14) 0;
+		background: linear-gradient(135deg, var(--neutral-950), var(--neutral-900));
+		color: var(--text-inverse);
 	}
 
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		gap: 32px;
+		gap: var(--space-8);
 		text-align: center;
 	}
 
 	.stat-item {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: var(--space-2);
 	}
 
 	.stat-number {
-		font-size: 2.5rem;
-		font-weight: 800;
+		font-size: var(--text-4xl);
+		font-weight: var(--font-extrabold);
 		color: var(--primary-color);
 	}
 
 	.stat-label {
-		font-size: 1rem;
+		font-size: var(--text-base);
 		opacity: 0.8;
 	}
 
 	/* CTA Section */
 	.cta {
-		padding: 80px 0;
+		padding: var(--space-20) 0;
 		background: var(--bg-light);
 		text-align: center;
 	}
 
 	.cta h2 {
-		font-size: 2rem;
+		font-size: var(--text-3xl);
 		color: var(--text-dark);
-		margin: 0 0 16px;
+		margin: 0 0 var(--space-4);
 	}
 
 	.cta p {
-		font-size: 1.125rem;
+		font-size: var(--text-lg);
 		color: var(--text-light);
-		margin: 0 0 32px;
+		margin: 0 0 var(--space-8);
 	}
 
 	.cta-button {
 		display: inline-block;
-		padding: 16px 40px;
-		background: linear-gradient(135deg, #ff6600, #ff8533);
-		color: #fff;
+		padding: var(--space-4) var(--space-10);
+		background: var(--brand-gradient);
+		color: var(--text-inverse);
 		text-decoration: none;
-		font-weight: 700;
-		font-size: 1.0625rem;
-		border-radius: 50px;
+		font-weight: var(--font-bold);
+		font-size: var(--text-base);
+		border-radius: var(--radius-full);
 		transition:
-			transform 0.2s,
-			box-shadow 0.2s;
+			transform var(--transition-fast),
+			box-shadow var(--transition-fast);
 	}
 
 	.cta-button:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 10px 30px rgba(255, 102, 0, 0.4);
+		transform: translateY(calc(-3 * var(--space-px)));
+		box-shadow: var(--shadow-lg);
 	}
 
 	/* Responsive */
 	@media (max-width: 900px) {
 		.story-grid {
 			grid-template-columns: 1fr;
-			gap: 40px;
+			gap: var(--space-10);
 		}
 
 		.story-image {
@@ -407,14 +402,14 @@ import Layout from "@layouts/Layout.astro";
 
 	@media (max-width: 600px) {
 		.hero {
-			padding: 60px 24px;
+			padding: var(--space-14) var(--space-6);
 		}
 
 		.mission,
 		.story,
 		.values,
 		.cta {
-			padding: 60px 0;
+			padding: var(--space-14) 0;
 		}
 
 		.values-grid {
@@ -423,11 +418,11 @@ import Layout from "@layouts/Layout.astro";
 
 		.stats-grid {
 			grid-template-columns: repeat(2, 1fr);
-			gap: 24px;
+			gap: var(--space-6);
 		}
 
 		.stat-number {
-			font-size: 2rem;
+			font-size: var(--text-3xl);
 		}
 	}
 </style>

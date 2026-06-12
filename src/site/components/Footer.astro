@@ -102,13 +102,13 @@ const contactHref = organization.contact_email ? `mailto:${organization.contact_
   .footer-container {
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: 0 clamp(1rem, 3vw, 1.5rem);
+    padding: 0 clamp(var(--space-4), 3vw, var(--space-6));
   }
 
   .footer-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: clamp(1.5rem, 3vw, 2.5rem);
+    gap: clamp(var(--space-6), 3vw, var(--space-10));
     margin-bottom: var(--space-10);
   }
 
@@ -127,7 +127,7 @@ const contactHref = organization.contact_email ? `mailto:${organization.contact_
 
   /* :has() selector - Adjust column spacing when multiple columns exist */
   .footer-grid:has(> :nth-child(3)) {
-    gap: clamp(2rem, 4vw, 3rem);
+    gap: clamp(var(--space-8), 4vw, var(--space-12));
   }
 
   .footer-column h3 {
@@ -251,7 +251,7 @@ const contactHref = organization.contact_email ? `mailto:${organization.contact_
 
     .footer-column a:focus-visible,
     .footer-social a:focus-visible {
-      outline: 3px solid var(--text-inverse);
+      outline: var(--focus-ring-width) solid var(--text-inverse);
     }
   }
 

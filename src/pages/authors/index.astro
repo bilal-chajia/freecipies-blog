@@ -75,59 +75,59 @@ const pageDescription =
   }
 
   .hero-section {
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-    padding: clamp(3rem, 8vw, 5rem) 0;
+    background: var(--bg-alt);
+    padding: clamp(var(--space-12), 8vw, var(--space-20)) 0;
     text-align: center;
   }
 
   .hero-container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 0 clamp(1rem, 3vw, 1.5rem);
+    padding: 0 clamp(var(--space-4), 3vw, var(--space-6));
   }
 
   .hero-title {
-    font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 800;
-    margin: 0 0 1rem 0;
-    color: #1a1a1a;
+    font-size: clamp(var(--text-4xl), 5vw, var(--text-5xl));
+    font-weight: var(--font-extrabold);
+    margin: 0 0 var(--space-4) 0;
+    color: var(--text);
     letter-spacing: -0.02em;
   }
 
   .hero-subtitle {
-    font-size: clamp(1rem, 2vw, 1.125rem);
-    line-height: 1.6;
-    color: #555;
+    font-size: clamp(var(--text-base), 2vw, var(--text-lg));
+    line-height: var(--leading-relaxed);
+    color: var(--text-secondary);
     margin: 0;
   }
 
   .authors-section {
-    padding: clamp(3rem, 8vw, 5rem) 0;
-    background: #f9f9f9;
+    padding: clamp(var(--space-12), 8vw, var(--space-20)) 0;
+    background: var(--bg);
   }
 
   .section-container {
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: 0 clamp(1rem, 3vw, 1.5rem);
+    padding: 0 clamp(var(--space-4), 3vw, var(--space-6));
   }
 
   .authors-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
+    gap: var(--space-8);
   }
 
   .empty-state {
     text-align: center;
-    padding: 4rem 0;
-    color: #666;
+    padding: var(--space-16) 0;
+    color: var(--text-secondary);
   }
 
   @media (max-width: 768px) {
     .authors-grid {
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 1.5rem;
+      gap: var(--space-6);
     }
   }
 </style>
