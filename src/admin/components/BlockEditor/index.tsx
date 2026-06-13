@@ -62,7 +62,6 @@ export default function BlockEditor({
   onSelectedBlockChange,
   forceSelectBlockId,
   onForceSelectHandled,
-  onRoundupChange,
   onEditorReady,
   placeholder = 'Start writing your article...',
   className = '',
@@ -141,7 +140,7 @@ export default function BlockEditor({
   // --- Hooks ---
   const { structureItems, structureItemsRef } = useEditorStateManager({
     editor: mountedEditor, onChange, onStructureUpdate, onSelectedBlockChange,
-    contentType, onRoundupChange, activeBlockId,
+    contentType, activeBlockId,
     lastEmittedValueRef, lastSerializedRef,
   });
 

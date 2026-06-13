@@ -50,7 +50,6 @@ export interface BlockEditorProps {
   isSidebarOpen?: boolean;
   onStructureUpdate?: (payload: { items: BlockStructureRow[]; activeBlockId: string | null }) => void;
   onSelectedBlockChange?: (block: unknown | null) => void;
-  onRoundupChange?: (nextValue: unknown) => void; // Phase 4 will merge into content_json
   onEditorReady?: (editor: unknown) => void;
   forceSelectBlockId?: string | null;
   onForceSelectHandled?: () => void;

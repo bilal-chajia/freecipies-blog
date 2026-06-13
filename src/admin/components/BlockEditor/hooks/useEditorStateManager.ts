@@ -15,7 +15,6 @@ interface EditorStateManagerProps {
     onStructureUpdate?: (info: { items: StructureItem[]; activeBlockId: string | null }) => void;
     onSelectedBlockChange?: (block: Record<string, unknown> | null) => void;
     contentType?: string;
-    onRoundupChange?: (roundup_json: string) => void;
     activeBlockId: string | null;
     /**
      * Shared with useBlockEditorHydration so the hydration echo-guard can
@@ -35,7 +34,6 @@ export function useEditorStateManager({
     onStructureUpdate,
     onSelectedBlockChange,
     contentType,
-    onRoundupChange,
     activeBlockId,
     lastEmittedValueRef,
     lastSerializedRef,
@@ -43,9 +41,7 @@ export function useEditorStateManager({
     const onChangeRef = useRef(onChange);
     const onStructureUpdateRef = useRef(onStructureUpdate);
     const onSelectedBlockChangeRef = useRef(onSelectedBlockChange);
-    const onRoundupChangeRef = useRef(onRoundupChange);
     const activeBlockIdRef = useRef(activeBlockId);
-    const lastRoundupRef = useRef('');
 
     const updateStructure = useBlockEditorStore((state) => state.updateStructure);
 
@@ -56,7 +52,6 @@ export function useEditorStateManager({
     useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
     useEffect(() => { onStructureUpdateRef.current = onStructureUpdate; }, [onStructureUpdate]);
     useEffect(() => { onSelectedBlockChangeRef.current = onSelectedBlockChange; }, [onSelectedBlockChange]);
-    useEffect(() => { onRoundupChangeRef.current = onRoundupChange; }, [onRoundupChange]);
     useEffect(() => { activeBlockIdRef.current = activeBlockId; }, [activeBlockId]);
     useEffect(() => { structureItemsRef.current = structureItems; }, [structureItems]);
 
@@ -94,7 +89,7 @@ export function useEditorStateManager({
                 onSelectedBlockChangeRef.current(activeBlock);
             }
 
-            // 3. Debounce the heavy serialization + roundup emit to avoid typing lag.
+            // 3. Debounce the heavy serialization to avoid typing lag.
             if (debounceTimeoutRef.current) {
                 clearTimeout(debounceTimeoutRef.current);
             }
@@ -102,13 +97,9 @@ export function useEditorStateManager({
             debounceTimeoutRef.current = setTimeout(() => {
                 emitSerializedContent({
                     blocks,
-                    flatBlocks,
-                    contentType,
                     onChange: onChangeRef.current,
-                    onRoundupChange: onRoundupChangeRef.current,
                     lastEmittedValueRef,
                     lastSerializedRef,
-                    lastRoundupRef,
                 });
             }, 800);
         };
@@ -135,6 +126,5 @@ export function useEditorStateManager({
         structureItemsRef,
         lastEmittedValueRef,
         lastSerializedRef,
-        lastRoundupRef,
     };
 }
