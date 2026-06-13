@@ -2,16 +2,16 @@ import { cn } from '@/lib/utils';
 import { memo, useRef, useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { CaptureButton } from './InsertIndicators';
+import { renderInlineMarkdown as renderInlineMarkdownShared } from '@shared/utils/inline-markdown';
+
+/** Link styling for inline markdown inside admin table cells. */
+const TABLE_CELL_LINK_CLASS = 'text-primary underline font-medium hover:text-primary/80';
 
 export function renderInlineMarkdown(text?: string): string {
-    const source = String(text || '').trim();
-    if (!source) return '';
-    return source
-        .replace(/\*\*\*([\s\S]+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-        .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
-        .replace(/_([^_]+?)_/g, '<em>$1</em>')
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline font-medium hover:text-primary/80">$1</a>');
+    return renderInlineMarkdownShared(String(text || '').trim(), {
+        linkClassName: TABLE_CELL_LINK_CLASS,
+        externalLinkTarget: true,
+    });
 }
 
 interface CaretPosition { offsetNode: Node; offset: number; }

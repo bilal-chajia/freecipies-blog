@@ -1,36 +1,20 @@
+import {
+  renderInlineMarkdown as renderInlineMarkdownShared,
+  sanitizeHref as sanitizeHrefShared,
+} from "@shared/utils/inline-markdown";
+
+/** Public-site link styling applied to rendered inline links. */
+const SITE_LINK_CLASS = "text-[var(--info-text)] underline underline-offset-2";
+
 export function sanitizeHref(href: string): string {
-  if (!href) return "";
-  const trimmed = href.trim();
-  if (trimmed.startsWith("/") || trimmed.startsWith("#")) return trimmed;
-  try {
-    const url = new URL(trimmed);
-    if (["http:", "https:", "mailto:", "tel:"].includes(url.protocol)) {
-      return trimmed;
-    }
-  } catch {
-    return "";
-  }
-  return "";
+  return sanitizeHrefShared(String(href ?? "").trim());
 }
 
 export function renderInlineMarkdown(text?: string): string {
-  const source = String(text || "");
-  if (!source) return "";
-  const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
-
-  const withLinks = source.replace(pattern, (_, label, href) => {
-    const safeHref = sanitizeHref(href || "");
-    if (!safeHref) return label;
-    const isExternal = safeHref.startsWith("http");
-    const target = isExternal ? ' target="_blank"' : "";
-    const rel = isExternal ? ' rel="noreferrer noopener"' : "";
-    return `<a href="${safeHref}" class="text-[var(--info-text)] underline underline-offset-2"${target}${rel}>${label}</a>`;
+  return renderInlineMarkdownShared(text, {
+    linkClassName: SITE_LINK_CLASS,
+    externalLinkTarget: true,
   });
-
-  return withLinks
-    .replace(/\*\*\*([\s\S]+?)\*\*\*/g, "<strong><em>$1</em></strong>")
-    .replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*([^*]+?)\*/g, "<em>$1</em>");
 }
 
 /**
