@@ -68,6 +68,7 @@
     --input: 214 32% 91%;
     --ring: 221 83% 53%;
     --radius: 0.5rem;
+    --primary-muted: hsl(var(--primary) / 0.08);
     --chart-1: 221 83% 53%;
     --chart-2: 173 80% 40%;
     --chart-3: 262 83% 58%;
