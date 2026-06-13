@@ -1,4 +1,4 @@
-import { BlockNoteSchema, defaultBlockSpecs } from '@blocknote/core';
+import { BlockNoteSchema, defaultBlockSpecs, defaultStyleSpecs } from '@blocknote/core';
 import type { BlockNoteEditor } from '@blocknote/core';
 import {
     Alert,
@@ -56,6 +56,18 @@ export const schema = BlockNoteSchema.create({
             ...customSpecs,
         };
     })(),
+    // Restrict inline styles to the subset the content_json contract can persist
+    // and the renderer can produce: bold + italic only. BlockNote's default
+    // styleSchema also ships underline/strike/code/text+background color, none of
+    // which the markdown serializer can represent — they would be applied in the
+    // editor then silently dropped at save. Constraining the schema keeps
+    // editor = contract = render. Links are inline content, not a style, so they
+    // are unaffected. Block-level textColor/backgroundColor props are separate
+    // from this inline styleSchema and remain intact.
+    styleSpecs: {
+        bold: defaultStyleSpecs.bold,
+        italic: defaultStyleSpecs.italic,
+    },
 });
 
 export type AppSchema = typeof schema;
