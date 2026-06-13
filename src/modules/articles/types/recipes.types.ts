@@ -849,20 +849,30 @@ export function migrateNutrition(
     };
     const servingsPerRecipe = firstNumber(n.servings_per_recipe, n.servingsPerRecipe);
 
-    const hasData = [calories, totalFat, carbs, protein, sodium, ssLabel, ssGrams, servingsPerRecipe]
-        .concat(Object.values(optional))
-        .some((value) => value !== undefined);
-    if (!hasData) return null;
+    // Core macros must ALL be genuinely present. A partial set would otherwise be
+    // emitted as a full "validated" Nutrition Facts label with fabricated 0g
+    // values — false data in the UI and in Google rich snippets (JSON-LD reads
+    // every present field and ignores `status`). Drop incomplete nutrition rather
+    // than fake it. Serving context may still default; it is not a health claim.
+    if (
+        calories === undefined ||
+        totalFat === undefined ||
+        carbs === undefined ||
+        protein === undefined ||
+        sodium === undefined
+    ) {
+        return null;
+    }
 
     const result: NutritionInfo = {
         basis: 'per_serving',
         serving_size: { label: ssLabel ?? '1 serving', grams: ssGrams ?? 0 },
         servings_per_recipe: servingsPerRecipe ?? servings ?? 1,
-        calories: calories ?? 0,
-        total_fat_g: totalFat ?? 0,
-        sodium_mg: sodium ?? 0,
-        total_carbohydrate_g: carbs ?? 0,
-        protein_g: protein ?? 0,
+        calories,
+        total_fat_g: totalFat,
+        sodium_mg: sodium,
+        total_carbohydrate_g: carbs,
+        protein_g: protein,
         status: 'validated',
     };
     for (const [key, value] of Object.entries(optional)) {
