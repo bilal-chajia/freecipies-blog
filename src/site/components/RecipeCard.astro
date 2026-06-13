@@ -16,6 +16,7 @@ import type { Author } from "@modules/authors/schema/authors.schema";
 import type { Category } from "@modules/categories/schema/categories.schema";
 import type { RecipeJson } from "@modules/articles/types/recipes.types";
 import type { ArticleImagesJson } from "@shared/types/images";
+import { resolveVariantUrl } from "@shared/types/images";
 import { extractImage, getImageSrcSet, formatAmount, formatTime } from "@shared/utils";
 import { normalizeRecipeForRender } from "@site/utils/recipe-render";
 
@@ -193,8 +194,26 @@ const navItems = [
                 itemtype="https://schema.org/Person"
               >
                 {(() => {
-                  const authorImg = extractImage(author.images_json, "avatar");
-                  const hasAuthorImage = authorImg.image_url;
+                  const authorData = author as any;
+                  let authorImgUrl = "";
+                  if (authorData.images_json) {
+                    authorImgUrl = extractImage(authorData.images_json, "avatar").image_url || "";
+                  }
+                  if (!authorImgUrl && authorData.avatar) {
+                    if (typeof authorData.avatar === "string") {
+                      authorImgUrl = authorData.avatar;
+                    } else if (typeof authorData.avatar === "object") {
+                      const avatarSlot = authorData.avatar;
+                      const variants = avatarSlot.variants || {};
+                      const bestVariant = variants.xs || variants.sm || null;
+                      authorImgUrl = resolveVariantUrl(bestVariant) || avatarSlot.url || "";
+                    }
+                  }
+                  if (!authorImgUrl && authorData.image_url) {
+                    authorImgUrl = authorData.image_url;
+                  }
+
+                  const hasAuthorImage = authorImgUrl.length > 0;
                   const initials = author.name
                     .split(" ")
                     .map((word) => word.charAt(0))
@@ -205,15 +224,18 @@ const navItems = [
                     <>
                       {hasAuthorImage ? (
                         <img
-                          src={authorImg.image_url}
+                          src={authorImgUrl}
                           alt={author.name}
                           class="author-avatar"
-                          width={authorImg.imageWidth || 48}
-                          height={authorImg.imageHeight || 48}
+                          width={32}
+                          height={32}
                           loading="lazy"
                         />
                       ) : (
-                        <div class="author-avatar author-avatar-fallback">
+                        <div 
+                          class="author-avatar author-avatar-fallback"
+                          style={category?.color ? { background: category.color } : undefined}
+                        >
                           {initials}
                         </div>
                       )}
@@ -636,7 +658,7 @@ const navItems = [
 
   /* ===== Header ===== */
   .recipe-header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 32px;
   }
 
@@ -651,14 +673,20 @@ const navItems = [
   .recipe-author {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 16px 6px 6px;
-    border: 1.5px solid var(--border);
+    gap: var(--space-2);
+    padding: var(--space-1-5) var(--space-4) var(--space-1-5) var(--space-1-5);
+    border: 1px solid var(--border);
     border-radius: var(--radius-full);
-    font-size: 14px;
-    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
     background: var(--bg-elevated);
     margin-bottom: 0;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .recipe-author:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
   }
 
   .recipe-rating-card {
@@ -668,18 +696,18 @@ const navItems = [
   }
 
   .author-avatar {
-    width: 32px;
-    height: 32px;
+    width: var(--space-8);
+    height: var(--space-8);
     aspect-ratio: 1 / 1;
     border-radius: var(--radius-full);
     object-fit: cover;
   }
 
   .author-avatar-fallback {
-    background: linear-gradient(135deg, var(--success-text), var(--success));
+    background: var(--brand-gradient);
     color: var(--text-inverse);
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: var(--text-xs);
+    font-weight: var(--font-bold);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -773,7 +801,7 @@ const navItems = [
   /* Centering logic for wider cards */
   @container recipe-card (min-width: 500px) {
     .metadata-pills {
-      justify-content: center;
+      justify-content: flex-start;
       overflow-x: visible; /* No scroll needed for wide cards */
     }
   }
@@ -851,7 +879,7 @@ const navItems = [
     line-height: 1.6;
     color: var(--text-secondary);
     max-width: 600px;
-    margin: 0 auto;
+    margin: 0 0 16px 0;
   }
 
   /* ===== Time Stats ===== */
@@ -1041,7 +1069,7 @@ const navItems = [
     display: flex;
     flex-wrap: wrap;
     gap: clamp(6px, 1cqi, 10px);
-    justify-content: center;
+    justify-content: flex-start;
     margin-bottom: 16px;
     width: 100%;
   }
