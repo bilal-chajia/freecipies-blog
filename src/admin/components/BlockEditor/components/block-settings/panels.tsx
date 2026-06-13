@@ -29,6 +29,8 @@ export interface BlockSettingsPanelProps {
   updateProps: (props: Record<string, unknown>) => void;
   recipeData?: any;
   onRecipeChange?: (recipe: any) => void;
+  roundupData?: unknown;
+  onRoundupChange?: (next: string) => void;
   relatedContext?: any;
   imagesData?: unknown;
   onImagesChange?: (next: unknown) => void;
@@ -41,8 +43,8 @@ export const BLOCK_SETTINGS_PANELS: Record<
   mainRecipe: ({ recipeData, onRecipeChange }) => (
     <RecipeSettingsSidebar recipe={recipeData} setRecipe={onRecipeChange} />
   ),
-  roundupList: ({ selectedBlock, updateProps }) => (
-    <RoundupListSettings selectedBlock={selectedBlock} updateProps={updateProps} />
+  roundupList: ({ roundupData, onRoundupChange }) => (
+    <RoundupListSettings roundup={roundupData} onRoundupChange={onRoundupChange!} />
   ),
   heading: ({ selectedBlock, updateProps }) => (
     <HeadingSettings selectedBlock={selectedBlock} updateProps={updateProps} />

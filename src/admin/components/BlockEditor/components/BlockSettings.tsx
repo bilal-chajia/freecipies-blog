@@ -12,6 +12,8 @@ export interface BlockSettingsProps {
     relatedContext: any;
     recipeData?: any;
     onRecipeChange?: (recipe: any) => void;
+    roundupData?: unknown;
+    onRoundupChange?: (next: string) => void;
     imagesData?: unknown;
     onImagesChange?: (next: unknown) => void;
 }
@@ -22,6 +24,8 @@ export default function BlockSettings({
     relatedContext,
     recipeData,
     onRecipeChange,
+    roundupData,
+    onRoundupChange,
     imagesData,
     onImagesChange
 }: BlockSettingsProps) {
@@ -92,6 +96,8 @@ export default function BlockSettings({
                 updateProps={updateProps}
                 recipeData={recipeData}
                 onRecipeChange={onRecipeChange}
+                roundupData={roundupData}
+                onRoundupChange={onRoundupChange}
                 relatedContext={relatedContext}
                 imagesData={imagesData}
                 onImagesChange={onImagesChange}

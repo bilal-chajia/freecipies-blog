@@ -5,6 +5,8 @@ interface BlockSettingsRouterProps {
   updateProps: (props: Record<string, unknown>) => void;
   recipeData?: any;
   onRecipeChange?: (recipe: any) => void;
+  roundupData?: unknown;
+  onRoundupChange?: (next: string) => void;
   relatedContext?: any;
   imagesData?: unknown;
   onImagesChange?: (next: unknown) => void;
@@ -16,6 +18,8 @@ export function BlockSettingsRouter({
   updateProps,
   recipeData,
   onRecipeChange,
+  roundupData,
+  onRoundupChange,
   relatedContext,
   imagesData,
   onImagesChange,
@@ -24,7 +28,7 @@ export function BlockSettingsRouter({
   const renderPanel = BLOCK_SETTINGS_PANELS[selectedBlock.type];
 
   if (renderPanel) {
-    return <>{renderPanel({ selectedBlock, updateProps, recipeData, onRecipeChange, relatedContext, imagesData, onImagesChange })}</>;
+    return <>{renderPanel({ selectedBlock, updateProps, recipeData, onRecipeChange, roundupData, onRoundupChange, relatedContext, imagesData, onImagesChange })}</>;
   }
 
   return <>{children}</>;

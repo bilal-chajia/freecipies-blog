@@ -405,12 +405,10 @@ export function GutenbergEditorShell({
                                         forceSelectBlockId={forceSelectBlockId}
                                         onForceSelectHandled={handleClearForceSelect}
                                         blockEditorProps={{
+                                            // roundup_json stays for hydration/display; the
+                                            // sidebar (BlockSettings) now writes it directly,
+                                            // so the editor no longer emits onRoundupChange.
                                             roundup_json,
-                                            onRoundupChange: (newValue: any) => {
-                                                const nextValue = newValue ?? '';
-                                                setRoundupJson(nextValue);
-                                                validateJSON('roundup', nextValue);
-                                            },
                                             faqs_json,
                                             onFaqsChange: (newValue: any) => {
                                                 const nextValue = Array.isArray(newValue)
@@ -514,6 +512,16 @@ export function GutenbergEditorShell({
                                                 const nextValue = newValue ?? '';
                                                 setRecipeJson(nextValue);
                                                 validateJSON('recipe', nextValue);
+                                            }
+                                            : undefined
+                                    }
+                                    roundupData={contentType === 'roundup' ? roundup_json : undefined}
+                                    onRoundupChange={
+                                        contentType === 'roundup'
+                                            ? (newValue: string) => {
+                                                const nextValue = newValue ?? '';
+                                                setRoundupJson(nextValue);
+                                                validateJSON('roundup', nextValue);
                                             }
                                             : undefined
                                     }
