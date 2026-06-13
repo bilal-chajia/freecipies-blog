@@ -50,7 +50,13 @@ if (import.meta.env?.DEV) {
 
 export const schema = BlockNoteSchema.create({
     blockSpecs: (() => {
-        const { table, ...rest } = defaultBlockSpecs;
+        // Drop BlockNote default blocks that have no canonical content_json mapping
+        // (no adapter). `table` is replaced by the custom `simpleTable`. The native
+        // `image`/`audio`/`file` blocks have no adapter, so anything that created
+        // one (e.g. pasting an image file → blob URL via the stub uploadFile) would
+        // be silently dropped at save. Removing them prevents that data-loss path;
+        // images go through the custom `customImage` block + R2 upload instead.
+        const { table, image, audio, file, ...rest } = defaultBlockSpecs;
         return {
             ...rest,
             ...customSpecs,
