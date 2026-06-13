@@ -1,6 +1,6 @@
 # Content Blocks Contract
 
-> **Last Updated:** 2026-05-13
+> **Last Updated:** 2026-06-13
 
 This document is the canonical contract for block types stored inside
 `articles.content_json.blocks`.
@@ -118,7 +118,15 @@ Every stored block must follow these rules:
 Rules:
 
 - `text` stores visible editorial text.
-- Inline markdown-like syntax is allowed only when sanitized by render utilities.
+- Inline syntax is limited to a fixed subset: bold (`**bold**`), italic
+  (`*italic*`), bold-italic (`***both***`), and links (`[label](href)`).
+- The renderer HTML-escapes `text` before applying that subset, so raw HTML in
+  `text` is never executed. Link hrefs are sanitized (only `/`, `#`, `http(s):`,
+  `mailto:`, `tel:` are kept).
+- There is no escape for literal `*`/`[`/`]`; authors and generators should
+  avoid unbalanced markers where emphasis is not intended.
+- Underline, strikethrough, inline code, and text/background color are NOT part
+  of this contract; the editor style schema is constrained to match.
 - Raw unsafe HTML is not part of this contract.
 
 ### `heading`
@@ -384,7 +392,6 @@ Each item stores:
         "image": {
           "media_id": 55,
           "alt": "Bowl of easy pasta",
-          "placeholder": "data:image/jpeg;base64,...",
           "variants": {
             "xs": { "r2_key": "media/easy-pasta-xs.webp", "width": 360, "height": 240 },
             "sm": { "r2_key": "media/easy-pasta-sm.webp", "width": 720, "height": 480 }
@@ -432,7 +439,6 @@ Each item stores:
         "image": {
           "media_id": 78,
           "alt": "Stored pasta in a glass container",
-          "placeholder": "data:image/jpeg;base64,...",
           "variants": {
             "xs": { "r2_key": "media/stored-pasta-xs.webp", "width": 360, "height": 240 },
             "sm": { "r2_key": "media/stored-pasta-sm.webp", "width": 720, "height": 480 }
@@ -452,7 +458,6 @@ Each item stores:
           "avatar": {
             "media_id": 22,
             "alt": "Jane Doe",
-            "placeholder": "data:image/jpeg;base64,...",
             "variants": {
               "xs": { "r2_key": "media/jane-avatar-xs.webp", "width": 50, "height": 50 },
               "sm": { "r2_key": "media/jane-avatar-sm.webp", "width": 100, "height": 100 }
@@ -478,11 +483,14 @@ Rules:
 - `items` order is editorial order.
 - Normal public rendering uses the stored item snapshot directly and must not
   read D1 per related item.
-- Item snapshots are refreshed from referenced article `cached_card_json` when
-  the referenced article changes meaningfully.
+- Item snapshots are point-in-time copies and are NOT automatically refreshed
+  when the referenced article changes. Refresh is best-effort — e.g. when the
+  referencing article is re-saved, or via a scheduled reconciliation task — so
+  related cards may show stale data between refreshes.
 - `snapshot.image` stores a compact snapshot with `r2_key`, never public `url`.
 - `snapshot.image.variants` stores `xs` and `sm`.
-- `snapshot.image` must not store `caption` or `credit`.
+- `snapshot.image` must not store `caption`, `credit`, or `placeholder`
+  (blur-up LQIP is out of scope for compact related snapshots).
 - Public/admin/rendered output converts related image `r2_key` values to URLs
   and must not expose `r2_key`.
 - `snapshot.image` must not store `original`.
