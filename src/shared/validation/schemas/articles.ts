@@ -6,6 +6,7 @@
 import { z } from '../helpers';
 import { PaginationSchema } from './common';
 import { ContentDocumentInputSchema } from '@modules/content-blocks';
+import { RoundupJsonInputSchema } from '@modules/articles/validation/roundup-json.schema';
 
 /** GET /api/articles query params */
 export const ArticleListQuery = PaginationSchema.extend({
@@ -33,7 +34,7 @@ export const CreateArticleSchema = z.object({
   short_description: z.string().optional(),
   content_json: ContentDocumentInputSchema.optional(),
   recipe_json: z.string().optional(),
-  roundup_json: z.string().optional(),
+  roundup_json: RoundupJsonInputSchema.optional(),
   images_json: z.string().optional(),
   author_id: z.number().int().positive().optional(),
   category_id: z.number().int().positive().optional(),
