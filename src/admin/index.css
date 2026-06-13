@@ -438,3 +438,23 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ========================================
+ * Skip Link (admin SPA — site stylesheet is not loaded here)
+ * ======================================== */
+.skip-link {
+  position: absolute;
+  top: -48px;
+  left: 0;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: top 150ms ease;
+}
+
+.skip-link:focus {
+  top: 0;
+}
