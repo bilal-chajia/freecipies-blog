@@ -6,6 +6,8 @@ import { Badge } from "@/ui/badge";
 import BlockWrapper from '../components/BlockWrapper';
 import BlockToolbar from '../components/BlockToolbar';
 import { useCustomBlock } from './useCustomBlock';
+import { useBlockEditorSourceData } from '../source-data-context';
+import { parseRoundup } from './roundup-edit';
 import { getBestVariantUrl } from '@shared/types/images';
 import type { RoundupItem } from '@modules/articles/types/roundups.types';
 import { resolveRoundupBadges, DEFAULT_ROUNDUP_BADGES } from '@modules/articles/utils/roundup-badges';
@@ -28,9 +30,14 @@ type RoundupListItem = {
 
 /**
  * RoundupListBlock
- * 
- * A BlockNote custom block representing a collection of items in a roundup.
- * This is the "Smart List" version where multiple items are managed within one block.
+ *
+ * A BlockNote custom block that displays the roundup collection. Like
+ * MainRecipeBlock, the source-data JSON (roundup_json from the source-data
+ * context) is the single source of truth, written by the sidebar
+ * (RoundupListSettings). block.props is a transient hydration seed only and is
+ * never read back — reading it would show stale items while the sidebar edits,
+ * because content_json (and thus the phase-2 re-seed) does not change on a
+ * sidecar-only edit.
  */
 export const RoundupListBlock = createReactBlockSpec(
     {
@@ -58,24 +65,16 @@ export const RoundupListBlock = createReactBlockSpec(
                 isDragging,
             } = useCustomBlock(block.id, editor);
 
-            const items = useMemo<RoundupListItem[]>(() => {
-                try {
-                    const parsed = JSON.parse(block.props.itemsJson);
-                    return Array.isArray(parsed) ? parsed : [];
-                } catch {
-                    return [];
-                }
-            }, [block.props.itemsJson]);
-
-            const visibleBadges = useMemo<string[]>(() => {
-                try {
-                    const parsed = JSON.parse(block.props.visibleBadges);
-                    if (Array.isArray(parsed)) return parsed.filter((k): k is string => typeof k === 'string');
-                } catch {
-                    // fall through
-                }
-                return DEFAULT_ROUNDUP_BADGES;
-            }, [block.props.visibleBadges]);
+            // roundup_json (source-data context) is the single source of truth,
+            // kept fresh by the sidebar. Parsing it here mirrors the sidebar so
+            // the canvas stays in sync live as items/presentation are edited.
+            const { roundup_json } = useBlockEditorSourceData();
+            const model = useMemo(() => parseRoundup(roundup_json), [roundup_json]);
+            const items = model.items as RoundupListItem[];
+            const visibleBadges = model.visible_badges ?? DEFAULT_ROUNDUP_BADGES;
+            const groupTitle = model.group_title ?? '';
+            const groupDescription = model.group_description ?? '';
+            const showStats = model.show_stats !== false;
 
             const toolbar = (
                 <BlockToolbar
@@ -106,16 +105,16 @@ export const RoundupListBlock = createReactBlockSpec(
                 >
                     <div className="bg-card border rounded-2xl overflow-hidden shadow-sm transition-all hover:border-primary/20">
                         {/* Group Header */}
-                        {(block.props.title || block.props.description) ? (
+                        {(groupTitle || groupDescription) ? (
                             <div className="p-6 border-b bg-muted/10">
-                                {block.props.title && (
+                                {groupTitle && (
                                     <h3 className="text-xl font-bold text-foreground mb-2">
-                                        {block.props.title}
+                                        {groupTitle}
                                     </h3>
                                 )}
-                                {block.props.description && (
+                                {groupDescription && (
                                     <p className="text-sm text-muted-foreground leading-relaxed">
-                                        {block.props.description}
+                                        {groupDescription}
                                     </p>
                                 )}
                             </div>
@@ -191,7 +190,7 @@ export const RoundupListBlock = createReactBlockSpec(
                                                 </p>
 
                                                 {/* Stats Mini */}
-                                                {block.props.showStats && (() => {
+                                                {showStats && (() => {
                                                     const badges = resolveRoundupBadges(item as unknown as RoundupItem, visibleBadges);
                                                     if (!badges.length) return null;
                                                     return (

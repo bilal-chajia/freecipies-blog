@@ -64,8 +64,11 @@ export function serializeRoundup(model: RoundupEditModel): string {
     list_type: 'ItemList',
     items: model.items.map((it, index) => ({ ...it, position: index + 1 })),
   };
-  if (model.group_title && model.group_title.trim()) payload.group_title = model.group_title.trim();
-  if (model.group_description && model.group_description.trim()) payload.group_description = model.group_description.trim();
+  // Store raw (untrimmed): serialize runs on every keystroke, so trimming here
+  // would strip a space the instant it is typed. trim() gates inclusion only;
+  // the server normalizer trims for storage at save time.
+  if (model.group_title && model.group_title.trim()) payload.group_title = model.group_title;
+  if (model.group_description && model.group_description.trim()) payload.group_description = model.group_description;
   if (typeof model.show_stats === 'boolean') payload.show_stats = model.show_stats;
   if (model.visible_badges && model.visible_badges.length) payload.visible_badges = model.visible_badges;
   return JSON.stringify(payload, null, 2);

@@ -476,11 +476,17 @@ export function useContentEditor({ slug, contentType = 'article' }: ContentEdito
             // ids). Map each to its stored content_json type via the registry
             // instead of hardcoding editor-type literals here.
             const contentTypeOf = (type: string) => EDITOR_TYPE_TO_CONTENT_TYPE[type] ?? type;
+            const hasRoundupList = flatBlocks.some(({ block }) => contentTypeOf(block.type) === 'main_roundup');
             const hasFaqSection = flatBlocks.some(({ block }) => contentTypeOf(block.type) === 'main_faq');
 
             // roundup_json is the single source of truth, written directly by the
             // sidebar (RoundupListSettings) — finalRoundupJson already holds the
             // authoritative value, so there is no reverse derivation at save.
+            // But if the roundup block was removed from the canvas, the marker is
+            // gone and the curated list must be cleared so it stops rendering.
+            if (contentType === 'roundup' && !hasRoundupList) {
+                finalRoundupJson = '{"list_type":"ItemList","items":[]}';
+            }
             if (!hasFaqSection) {
                 finalFaqsJson = EMPTY_FAQS_DOCUMENT;
             }

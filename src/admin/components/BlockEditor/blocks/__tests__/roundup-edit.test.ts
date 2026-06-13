@@ -63,4 +63,20 @@ describe('roundup-edit', () => {
     const toggled = toggleBadge({ items: [], visible_badges: ['rating'] }, 'total_time');
     expect(toggled.visible_badges).toContain('total_time');
   });
+
+  it('preserves trailing/internal spaces in group title/description (no trim during edit)', () => {
+    // Live editing round-trips through serialize on every keystroke; trimming
+    // here would strip the space the moment it is typed (server normalizes at save).
+    const parsed = JSON.parse(serializeRoundup({
+      items: [], group_title: 'choc ', group_description: 'a b ',
+    }));
+    expect(parsed.group_title).toBe('choc ');
+    expect(parsed.group_description).toBe('a b ');
+  });
+
+  it('omits whitespace-only group title/description', () => {
+    const parsed = JSON.parse(serializeRoundup({ items: [], group_title: '   ', group_description: '' }));
+    expect(parsed.group_title).toBeUndefined();
+    expect(parsed.group_description).toBeUndefined();
+  });
 });
