@@ -21,7 +21,6 @@ export interface HeadingBlock extends BaseContentBlock {
 export interface BlockquoteBlock extends BaseContentBlock {
   type: 'blockquote';
   text: string;
-  cite?: string;
 }
 
 export interface ListBlock extends BaseContentBlock {

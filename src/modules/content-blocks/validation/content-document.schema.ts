@@ -38,7 +38,6 @@ const headingBlockSchema = baseBlockSchema.extend({
 const blockquoteBlockSchema = baseBlockSchema.extend({
   type: z.literal('blockquote'),
   text: z.string(),
-  cite: z.string().optional(),
 }).strict();
 
 const listBlockSchema = baseBlockSchema.extend({

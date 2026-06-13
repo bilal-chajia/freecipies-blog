@@ -90,7 +90,7 @@ Every stored block must follow these rules:
 | --- | --- | --- | --- | --- |
 | `paragraph` | Body text | `id`, `text` | none | `content_json` |
 | `heading` | Section heading and TOC source | `id`, `level`, `text` | none | `content_json` |
-| `blockquote` | Editorial quote | `id`, `text` | `cite` | `content_json` |
+| `blockquote` | Editorial quote | `id`, `text` | none | `content_json` |
 | `list` | Ordered, unordered, or checklist list | `id`, `style`, `items` | none | `content_json` |
 | `image` | Body image placement marker | `id`, `image_ref` | none | snapshot in `images_json.content_images` |
 | `video` | Video embed reference | `id`, `provider`, `video_id`, `aspect_ratio` | none | `content_json` |
@@ -152,14 +152,12 @@ Rules:
 {
   "id": "quote-1",
   "type": "blockquote",
-  "text": "Good dough feels soft, not sticky.",
-  "cite": "Chef note"
+  "text": "Good dough feels soft, not sticky."
 }
 ```
 
 Rules:
 
-- `cite` is optional display text.
 - Use `tip_box`, not `blockquote`, for tips, warnings, and procedural notes.
 
 ### `list`

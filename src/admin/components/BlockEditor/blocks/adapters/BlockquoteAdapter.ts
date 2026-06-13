@@ -20,11 +20,9 @@ export const BlockquoteAdapter: BlockAdapter<BlockquoteBlock> = {
     fromEditor(block: AppBlock): BlockquoteBlock | null {
         const text = extractText(block.content as any);
         if (!text.trim()) return null;
-        const props = block.props as Record<string, unknown>;
         return {
             type: 'blockquote',
             text,
-            cite: props.cite ? String(props.cite) : undefined,
         };
     },
 };
