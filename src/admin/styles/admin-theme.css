@@ -78,6 +78,25 @@
 
   [data-surface="admin"].dark,
   [data-surface="admin"] .dark {
+    /* Brand (track the dark --primary = hsl(217 91% 60%)) */
+    --brand-primary: #3b82f6;
+    --brand-primary-hover: #60a5fa;
+    --brand-primary-light: #172554;
+
+    /* Feedback (match the public-site dark palette) */
+    --success: #34d399;
+    --success-bg: #064e3b;
+    --success-text: #6ee7b7;
+    --warning: #fbbf24;
+    --warning-bg: #451a03;
+    --warning-text: #fcd34d;
+    --error: #f87171;
+    --error-bg: #450a0a;
+    --error-text: #fca5a5;
+    --info: #60a5fa;
+    --info-bg: #1e3a8a;
+    --info-text: #93c5fd;
+
     --bg: #020617;
     --bg-alt: #0f172a;
     --bg-elevated: #111827;
