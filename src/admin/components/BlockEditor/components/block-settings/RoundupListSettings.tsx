@@ -22,6 +22,21 @@ import {
     DEFAULT_ROUNDUP_BADGES,
     type RoundupBadgeGroup,
 } from '@modules/articles/utils/roundup-badges';
+import {
+    parseRoundup,
+    serializeRoundup,
+    addItem as addRoundupItem,
+    removeItem as removeRoundupItem,
+    moveItem as moveRoundupItem,
+    updateItemField as updateRoundupItemField,
+    clearItems,
+    setGroupTitle,
+    setGroupDescription,
+    setShowStats,
+    toggleBadge as toggleRoundupBadge,
+    type RoundupEditItem,
+    type RoundupEditModel,
+} from '../../blocks/roundup-edit';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -56,22 +71,11 @@ type SearchResultItem = {
     cached_tags_json?: unknown[] | string | null;
 };
 
-type RoundupListBlockProps = {
-    title?: string;
-    description?: string;
-    itemsJson?: string;
-    showStats?: boolean;
-    /** JSON-encoded string[] of badge keys to display (see ROUNDUP_BADGES). */
-    visibleBadges?: string;
-};
-
-type RoundupListSelectedBlock = {
-    props: RoundupListBlockProps;
-};
-
 type RoundupListSettingsProps = {
-    selectedBlock: RoundupListSelectedBlock;
-    updateProps: (updates: Partial<RoundupListBlockProps>) => void;
+    /** Current roundup_json (string or already-parsed object). */
+    roundup: unknown;
+    /** Persist the next roundup_json (single source of truth). */
+    onRoundupChange: (next: string) => void;
 };
 
 type RoundupItemField = 'title' | 'subtitle' | 'note';
@@ -135,8 +139,8 @@ const buildRecipeSnapshot = (recipe: JsonRecord): RoundupItemRecipeSnapshot => {
  * Handles recipe search, bulk addition, and individual item editorial notes.
  */
 function RoundupListSettings({
-    selectedBlock,
-    updateProps,
+    roundup,
+    onRoundupChange,
 }: RoundupListSettingsProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState<SearchResultItem[]>([]);
@@ -144,29 +148,20 @@ function RoundupListSettings({
     const [error, setError] = useState('');
     const [openItemId, setOpenItemId] = useState<string | number | null>(null);
 
-    const items = useMemo<RoundupListItem[]>(() => {
-        return parseJsonArray(selectedBlock.props.itemsJson) as RoundupListItem[];
-    }, [selectedBlock.props.itemsJson]);
+    // roundup_json is the single source of truth. Parse it into an editable
+    // model, apply one edit via the pure helpers, and persist the serialized
+    // result through onRoundupChange.
+    const model = useMemo<RoundupEditModel>(() => parseRoundup(roundup), [roundup]);
+    const items = model.items as RoundupListItem[];
+    const visibleBadges = model.visible_badges ?? DEFAULT_ROUNDUP_BADGES;
+    const showStats = model.show_stats !== false;
 
-    const visibleBadges = useMemo<string[]>(() => {
-        const raw = selectedBlock.props.visibleBadges;
-        if (typeof raw === 'string') {
-            try {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) return parsed.filter((k): k is string => typeof k === 'string');
-            } catch {
-                // fall through to defaults
-            }
-        }
-        return DEFAULT_ROUNDUP_BADGES;
-    }, [selectedBlock.props.visibleBadges]);
+    const commit = (next: RoundupEditModel) => onRoundupChange(serializeRoundup(next));
 
-    const toggleBadge = (key: string) => {
-        const next = visibleBadges.includes(key)
-            ? visibleBadges.filter((k) => k !== key)
-            : [...visibleBadges, key];
-        updateProps({ visibleBadges: JSON.stringify(next) });
-    };
+    const toggleBadge = (key: string) =>
+        // Seed with the resolved badges so toggling from the default set (when
+        // visible_badges is unset) removes/keeps rather than starting from [].
+        commit(toggleRoundupBadge({ ...model, visible_badges: visibleBadges }, key));
 
     // Search articles (recipes only)
     useEffect(() => {
@@ -236,32 +231,19 @@ function RoundupListSettings({
 
     const addItem = (item: SearchResultItem) => {
         if (!item?.id) return;
-        if (items.some((existing) => existing.article_id === item.id)) return;
-        const nextItems = [...items, buildItem(item)];
-        updateProps({ itemsJson: JSON.stringify(nextItems) });
-        // Keep the search term and results so the editor can add several recipes
-        // from one search. Already-added rows render disabled via `isAdded`.
+        // addRoundupItem is idempotent on article_id; the search rows also render
+        // disabled via `isAdded`, so several recipes can be added from one search.
+        commit(addRoundupItem(model, buildItem(item) as RoundupEditItem));
     };
 
-    const removeItem = (articleIdValue: string | number) => {
-        const nextItems = items.filter((item) => item.article_id !== articleIdValue);
-        updateProps({ itemsJson: JSON.stringify(nextItems) });
-    };
+    const removeItem = (articleIdValue: string | number) =>
+        commit(removeRoundupItem(model, articleIdValue));
 
-    const moveItem = (index: number, direction: -1 | 1) => {
-        const nextItems = [...items];
-        const target = index + direction;
-        if (target < 0 || target >= nextItems.length) return;
-        const [moved] = nextItems.splice(index, 1);
-        nextItems.splice(target, 0, moved);
-        updateProps({ itemsJson: JSON.stringify(nextItems) });
-    };
+    const moveItem = (index: number, direction: -1 | 1) =>
+        commit(moveRoundupItem(model, index, direction));
 
-    const updateItemField = (index: number, field: RoundupItemField, value: string) => {
-        const nextItems = [...items];
-        nextItems[index] = { ...nextItems[index], [field]: value };
-        updateProps({ itemsJson: JSON.stringify(nextItems) });
-    };
+    const updateItemField = (index: number, field: RoundupItemField, value: string) =>
+        commit(updateRoundupItemField(model, index, field, value));
 
     return (
         <div className="relative w-full">
@@ -272,8 +254,8 @@ function RoundupListSettings({
                         <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Group Title (Optional)</Label>
                         <Input
                             className="h-8 text-sm"
-                            value={selectedBlock.props.title || ''}
-                            onChange={(e) => updateProps({ title: e.target.value })}
+                            value={model.group_title || ''}
+                            onChange={(e) => commit(setGroupTitle(model, e.target.value))}
                             placeholder="e.g. Summer Salads"
                         />
                     </div>
@@ -281,8 +263,8 @@ function RoundupListSettings({
                         <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Group Description</Label>
                         <Textarea
                             className="text-xs min-h-[80px] resize-none"
-                            value={selectedBlock.props.description || ''}
-                            onChange={(e) => updateProps({ description: e.target.value })}
+                            value={model.group_description || ''}
+                            onChange={(e) => commit(setGroupDescription(model, e.target.value))}
                             placeholder="Explain why these recipes belong together..."
                         />
                     </div>
@@ -306,7 +288,7 @@ function RoundupListSettings({
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => updateProps({ itemsJson: '[]' })}
+                                onClick={() => commit(clearItems(model))}
                              >
                                 <Trash2 className="h-3 w-3 mr-1" /> Clear All
                              </Button>
@@ -461,8 +443,8 @@ function RoundupListSettings({
                         <Label className="text-xs">Show Recipe Badges</Label>
                         <input
                             type="checkbox"
-                            checked={selectedBlock.props.showStats !== false}
-                            onChange={(e) => updateProps({ showStats: e.target.checked })}
+                            checked={showStats}
+                            onChange={(e) => commit(setShowStats(model, e.target.checked))}
                             className="rounded border-border h-4 w-4"
                         />
                      </div>
@@ -470,7 +452,7 @@ function RoundupListSettings({
                         Choose which badges appear on each recipe card. Badges with no data for a given recipe are hidden automatically.
                      </p>
 
-                     {selectedBlock.props.showStats !== false && (
+                     {showStats && (
                         <div className="space-y-3">
                             {BADGE_GROUPS.map(({ group, label, badges }) => (
                                 <div key={group} className="space-y-1.5">
