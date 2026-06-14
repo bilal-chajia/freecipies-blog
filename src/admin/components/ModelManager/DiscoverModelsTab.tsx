@@ -48,8 +48,9 @@ export function DiscoverModelsTab({ provider, isCustom, existingModels, onAdded,
     fetchModels();
   }, [fetchModels]);
 
+  const existingIds = useMemo(() => new Set(existingModels.map((m) => m.id)), [existingModels]);
   const filtered = useMemo(() => filterModels(rows, query), [rows, query]);
-  const selectableChecked = rows.filter((m) => checked.has(m.id) && !m.selected).length;
+  const selectableChecked = rows.filter((m) => checked.has(m.id) && !m.selected && !existingIds.has(m.id)).length;
 
   const toggle = (id: string) => {
     setChecked((prev) => {
@@ -61,7 +62,7 @@ export function DiscoverModelsTab({ provider, isCustom, existingModels, onAdded,
   };
 
   const handleAdd = async () => {
-    const toAdd = rows.filter((m) => checked.has(m.id) && !m.selected);
+    const toAdd = rows.filter((m) => checked.has(m.id) && !m.selected && !existingIds.has(m.id));
     if (toAdd.length === 0) return;
     setSaving(true);
     try {
@@ -131,7 +132,7 @@ export function DiscoverModelsTab({ provider, isCustom, existingModels, onAdded,
       <ScrollArea className="h-64 rounded-md border">
         <div className="divide-y">
           {filtered.map((m) => {
-            const already = m.selected;
+            const already = m.selected || existingIds.has(m.id);
             return (
               <label key={m.id} className="flex items-center gap-2 p-2 text-sm cursor-pointer">
                 <Checkbox
