@@ -67,7 +67,7 @@ Before changing table shape, JSON shape, naming, images, or API contract, read o
 
 ## Design
 
-- Public site: warm editorial, Playfair Display headings, Source Sans 3 body, coral/orange brand.
+- Public site: warm editorial, Playfair Display headings, Source Sans 3 body, forest/sage green brand with golden accent (`#2a5c36` / `#6b8f71` / `#d8a43e`).
 - Admin: neutral professional dashboard, Inter, blue primary, slate dark mode.
 - Tokens live in `src/shared/design-tokens.css`, `src/site/styles/site-theme.css`, and `src/admin/styles/admin-theme.css`.
 

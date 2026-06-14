@@ -138,8 +138,6 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    overflow-x: auto;
-    display: block;
   }
 }
 

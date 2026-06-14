@@ -39,16 +39,24 @@ interface UIState {
   toggleTheme: () => void;
 }
 
-export const useUIStore = create<UIState>((set) => ({
-  sidebarOpen: true,
-  theme: 'light',
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  setTheme: (theme) => set({ theme }),
-  toggleTheme: () => set((state) => ({
-    theme: state.theme === 'light' ? 'dark' : 'light'
-  })),
-}));
+export const useUIStore = create<UIState>()(
+  persist(
+    (set) => ({
+      sidebarOpen: true,
+      theme: 'light',
+      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setTheme: (theme) => set({ theme }),
+      toggleTheme: () => set((state) => ({
+        theme: state.theme === 'light' ? 'dark' : 'light'
+      })),
+    }),
+    {
+      name: 'freecipies-ui',
+      partialize: (state) => ({ theme: state.theme, sidebarOpen: state.sidebarOpen }),
+    }
+  )
+);
 
 /* ------------------------------------------------------------------ */
 /*  Articles Store                                                    */

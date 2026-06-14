@@ -50,6 +50,7 @@ The `docs/` directory contains the canonical system contracts. **Always consult 
 | `ARTICLE_JSON_CONTRACTS.md` | `content_json`, `recipe_json`, `roundup_json` shapes |
 | `ARTICLE_CACHED_FIELDS_CONTRACT.md` | `cached_*_json` fields, card/rating snapshots |
 | `CONTENT_BLOCKS_CONTRACT.md` | Block types and editor normalization |
+| `CONTENT_JSON_CONTRACT.md` | Content JSON structure and validation |
 | `AUTHORS_TABLE_CONTRACT.md` | Author columns, `bio_json`, `images_json`, cache triggers |
 | `CATEGORIES_TABLE_CONTRACT.md` | Category hierarchy, `cached_post_count` |
 | `TAGS_TABLE_CONTRACT.md` | Tags + `articles_to_tags` junction |
@@ -60,6 +61,11 @@ The `docs/` directory contains the canonical system contracts. **Always consult 
 | `EQUIPMENT_TABLE_CONTRACT.md` | Equipment catalog |
 | `SITE_SETTINGS_TABLE_CONTRACT.md` | Key-value config registry |
 | `REDIRECTS_TABLE_CONTRACT.md` | SEO redirect rules |
+| `TEMPLATE_JSON_CONTRACT.md` | Template element serialization shapes |
+| `BLOCK_EDITOR_JSON_STRUCTURE.md` | Block editor data model and block types |
+| `BLOCK_EDITOR_REFACTOR_PLAN.md` | Block editor migration plan and status |
+| `API.md` | REST API endpoints and conventions |
+| `ARCHITECTURE.md` | System architecture and module boundaries |
 | `IMPLEMENTATION_GAPS.md` | Known drift between contracts and code |
 
 ## Critical Rules
@@ -100,10 +106,6 @@ The `docs/` directory contains the canonical system contracts. **Always consult 
 
 ## Agent Behavior
 
-### Foundational Behavior
-
-- **Start of Conversation**: At the start of every new conversation, the agent MUST immediately read [.agent/skills/karpathy-rules/SKILL.md](file:///c:/Users/Poste/Desktop/SaaS%20Astro/freecipies-blog/.agent/skills/karpathy-rules/SKILL.md) to initialize behavioral guidelines regarding assumptions, simplicity, surgical changes, and goal-driven execution.
-
 ### Research first
 
 1. Use `list_dir` and `grep_search` before reading a full file.
@@ -120,11 +122,6 @@ The `docs/` directory contains the canonical system contracts. **Always consult 
 - **Never run `pnpm build` without asking.**
 - **Never open the browser without explicit permission.**
 - **Never modify `docs/` contracts without explicit permission** — they are the architectural source of truth.
-
-### Executing Plans
-
-- **Use Caveman Mode on executing plans and thinking.** When executing steps in an approved implementation plan, and during general reasoning/response, communicate using ultra-compressed "caveman mode" (as defined in the caveman skill) to save tokens and keep updates extremely brief and direct.
-
 ## Reference Files
 
 | Purpose | File |

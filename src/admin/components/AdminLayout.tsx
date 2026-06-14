@@ -93,6 +93,7 @@ const AdminLayout: React.FC = () => {
 
   return (
     <SidebarProvider>
+      <a href="#admin-main" className="skip-link">Skip to content</a>
       <AppSidebar />
       <SidebarInset className={insetClassName}>
         {!isEditorPage && (
@@ -133,7 +134,7 @@ const AdminLayout: React.FC = () => {
           </header>
         )}
 
-        <main className={mainClassName}>
+        <main id="admin-main" tabIndex={-1} className={mainClassName}>
           <div className={contentClassName}>
             <React.Suspense fallback={<PageLoader />}>
               <AnimatedOutlet />

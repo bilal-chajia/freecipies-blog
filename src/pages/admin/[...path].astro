@@ -7,6 +7,14 @@ export const prerender = false;
 <!doctype html>
 <html lang="en" data-surface="admin">
   <head>
+    <script is:inline>
+      try {
+        const persisted = JSON.parse(localStorage.getItem('freecipies-ui') || '{}');
+        if (persisted && persisted.state && persisted.state.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (_) {}
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Panel</title>

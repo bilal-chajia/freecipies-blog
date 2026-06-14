@@ -289,51 +289,6 @@
           font-size: 10px;
         }
 
-        .bn-form-popover {
-          background-color: var(--bn-colors-menu-background, hsl(var(--background)));
-          border: var(--bn-border, 1px solid hsl(var(--border)));
-          border-radius: var(--bn-border-radius-medium, 8px);
-          box-shadow: var(--bn-shadow-medium, var(--shadow-lg));
-          color: var(--bn-colors-menu-text, hsl(var(--foreground)));
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          min-width: 180px;
-          padding: 6px;
-        }
-
-        .bn-form-popover .bn-text-input {
-          width: 300px;
-          max-width: min(20rem, 75vw);
-        }
-
-        .bn-form-popover label {
-          color: var(--bn-colors-menu-text, hsl(var(--muted-foreground)));
-          font-size: 11px;
-          margin-bottom: 2px;
-        }
-
-        .bn-form-popover input,
-        .bn-form-popover textarea,
-        .bn-form-popover select {
-          background-color: var(--bn-colors-background, hsl(var(--background)));
-          border: 1px solid var(--bn-border-color, hsl(var(--border)));
-          border-radius: 6px;
-          color: var(--bn-colors-menu-text, hsl(var(--foreground)));
-          font-size: 12px;
-          padding: 6px 36px 6px 28px;
-          width: 100%;
-        }
-
-        .bn-form-popover input::placeholder,
-        .bn-form-popover textarea::placeholder {
-          color: var(--bn-colors-menu-text, hsl(var(--muted-foreground)));
-        }
-
-        .bn-form-popover svg {
-          color: var(--bn-colors-menu-text, hsl(var(--muted-foreground)));
-        }
-
         .bn-link-submit {
           align-items: center;
           background: hsl(var(--muted));
