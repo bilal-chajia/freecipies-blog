@@ -1,0 +1,113 @@
+---
+// src/site/components/story/StoryAmp.astro
+// Standalone strict-AMP Web Story document. Rendered as the entire page body
+// by src/pages/stories/[slug].astro. Do NOT wrap in Layout.astro and do NOT add
+// scoped <style> or client scripts — AMP forbids them.
+import type { Story } from "@server/site-data";
+
+interface Props {
+  story: Story;
+  locale: string;
+}
+const { story, locale } = Astro.props;
+
+// One inlined stylesheet (brand tokens hardcoded; AMP forbids external site CSS).
+const ampCustomCss = `
+  * { box-sizing: border-box; }
+  amp-story { font-family: "Source Sans 3", system-ui, sans-serif; }
+  h1, h2 { font-family: "Playfair Display", Georgia, serif; }
+  .bg { width: 100%; height: 100%; }
+  .scrim {
+    background: linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.88) 100%);
+  }
+  .panel { padding: 56px 28px 88px; color: #fff; }
+  .panel h1, .panel h2 { margin: 0 0 12px; line-height: 1.2; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+  .panel h1 { font-size: 30px; }
+  .panel h2 { font-size: 26px; }
+  .panel p { margin: 0; font-size: 18px; line-height: 1.5; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .pill { background: rgba(216,164,62,0.92); color: #1b1b1b; font-weight: 700; font-size: 14px; padding: 6px 12px; border-radius: 999px; }
+  .ingredients { list-style: none; margin: 16px 0 0; padding: 0; }
+  .ingredients li { font-size: 18px; line-height: 1.7; border-bottom: 1px solid rgba(255,255,255,0.18); padding: 6px 0; }
+  .kicker { display: inline-block; background: #2a5c36; color: #fff; font-weight: 700; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; padding: 5px 12px; border-radius: 6px; margin-bottom: 12px; }
+`;
+
+const ldJson = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: story.title,
+  image: [story.poster_portrait_url],
+  mainEntityOfPage: story.canonical_url,
+  publisher: { "@type": "Organization", name: story.publisher, logo: { "@type": "ImageObject", url: story.publisher_logo_url } },
+};
+
+// AMP requires either the ⚡ glyph or the word "amp" as a boolean attribute on <html>.
+// Astro's HtmlHTMLAttributes type does not include "amp", so we pass it via spread
+// (widened to a record, no `any`) to avoid a TS error without touching global types.
+const ampAttr = { amp: true } as Record<string, unknown>;
+---
+<html {...ampAttr} lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <title>{story.title}</title>
+    <link rel="canonical" href={story.canonical_url} />
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1" />
+    <script async src="https://cdn.ampproject.org/v0.js"></script>
+    <script async custom-element="amp-story" src="https://cdn.ampproject.org/v0/amp-story-1.0.js"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+3:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style amp-boilerplate set:html={`body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}`}></style>
+    <noscript><style amp-boilerplate set:html={`body{-webkit-animation:none;-moz-animation:none;-ms-animation:none;animation:none}`}></style></noscript>
+    <style amp-custom set:html={ampCustomCss}></style>
+    <script type="application/ld+json" set:html={JSON.stringify(ldJson)}></script>
+  </head>
+  <body>
+    <amp-story
+      standalone
+      title={story.title}
+      publisher={story.publisher}
+      publisher-logo-src={story.publisher_logo_url}
+      poster-portrait-src={story.poster_portrait_url}
+    >
+      {story.slides.map((s) => {
+        return (
+          <amp-story-page id={s.id}>
+            {s.image && (
+              <amp-story-grid-layer template="fill">
+                <amp-img class="bg" src={s.image.url} width={s.image.width} height={s.image.height} layout="fill" alt={s.image.alt}></amp-img>
+                <div class="bg scrim"></div>
+              </amp-story-grid-layer>
+            )}
+            <amp-story-grid-layer template="vertical">
+              <div class="panel" grid-area="lower-third">
+                {s.kind === "step" && <span class="kicker">{s.heading}</span>}
+                {s.heading && s.kind !== "step" && (s.kind === "cover" ? <h1>{s.heading}</h1> : <h2>{s.heading}</h2>)}
+                {s.body && <p>{s.body}</p>}
+                {s.items && (
+                  <ul class="ingredients">
+                    {s.items.map((item) => <li>{item}</li>)}
+                  </ul>
+                )}
+                {s.meta && (
+                  <div class="meta">
+                    {s.meta.total_time && <span class="pill">&#x23F1; {s.meta.total_time}</span>}
+                    {s.meta.servings && <span class="pill">&#x1F37D; {s.meta.servings}</span>}
+                    {s.meta.rating && <span class="pill">&#x2605; {s.meta.rating}</span>}
+                  </div>
+                )}
+              </div>
+            </amp-story-grid-layer>
+            {s.kind === "cta" && (
+              <amp-story-page-outlink layout="nodisplay">
+                <a href={story.target_url}>Voir la recette compl&#xe8;te</a>
+              </amp-story-page-outlink>
+            )}
+          </amp-story-page>
+        );
+      })}
+    </amp-story>
+  </body>
+</html>
