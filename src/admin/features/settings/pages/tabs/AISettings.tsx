@@ -352,6 +352,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                             models={config.models || []}
                                             onUpdate={loadSettings}
                                             hideHeaderActions={false}
+                                            isCustom={isCustom}
                                         />
                                     </CardContent>
                                 </Card>
