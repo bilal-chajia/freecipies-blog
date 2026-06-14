@@ -29,8 +29,10 @@ Non-goals: Gemini-protocol custom providers, image generation, AWS/GCP signed au
 ## Decisions
 
 - Add two optional fields to **custom** providers only:
-  - `api_format: 'openai' | 'anthropic'` (default `'openai'`).
-  - `auth_style: 'bearer' | 'api_key'` (default `'bearer'`).
+  - `api_format: 'openai' | 'anthropic' | 'gemini'` (default `'openai'`).
+  - `auth_style: 'bearer' | 'api_key'` (default `'bearer'`) — **applies to the `openai` format only**
+    (Azure). The `anthropic` format always uses `x-api-key`; the `gemini` format puts the key in the
+    `?key=` query param — both ignore `auth_style`.
 - Backward compatible: existing custom providers (no fields) default to `openai` + `bearer` via Zod
   defaults — no data migration.
 - Include 3 **presets** (quick-fill base_url + format + auth) for NVIDIA build, Azure Foundry,
@@ -42,7 +44,7 @@ Non-goals: Gemini-protocol custom providers, image generation, AWS/GCP signed au
 
 `CustomProviderConfig` (`src/modules/ai/types.ts`) gains:
 ```ts
-export type ApiFormat = 'openai' | 'anthropic';
+export type ApiFormat = 'openai' | 'anthropic' | 'gemini';
 export type AuthStyle = 'bearer' | 'api_key';
 
 export interface CustomProviderConfig extends ProviderConfig {
@@ -66,12 +68,18 @@ Zod (`settings-schema.ts` `CustomProviderConfigSchema`): add `api_format` enum d
 - **`OpenAICompatibleProvider(provider, baseUrl, apiKey, authStyle?)`** — gains `auth_style`:
   `bearer` → `Authorization: Bearer <key>` (current); `api_key` → `api-key: <key>` header (Azure).
   Applies to generate, validate, and listModels.
+- **`GeminiCompatibleProvider(provider, baseUrl, apiKey)`** (new) — generalizes the existing
+  `GeminiProvider`: `{base}/v1beta/models/{model}:generateContent?key=<key>` for generate (body with
+  `contents` + `systemInstruction` + `generationConfig.responseMimeType: 'application/json'`),
+  `{base}/v1beta/models?key=<key>` for discovery (maps `models[].name` `models/<id>` → id). Key lives
+  in the `?key=` query (so `auth_style` is irrelevant). The current `GeminiProvider` becomes a thin
+  wrapper bound to `https://generativelanguage.googleapis.com` — built-in path unchanged.
 
 ### Factory
 
 `createProvider(provider, apiKey, baseUrl?, opts?: { apiFormat?: ApiFormat; authStyle?: AuthStyle })`:
 - Built-in ids: unchanged `switch` (opts ignored).
-- Custom (default branch): if `apiFormat === 'anthropic'` → `AnthropicCompatibleProvider(provider, baseUrl, apiKey)`; else → `OpenAICompatibleProvider(provider, baseUrl, apiKey, authStyle)`. Still throws if no `baseUrl`.
+- Custom (default branch): `apiFormat === 'anthropic'` → `AnthropicCompatibleProvider(provider, baseUrl, apiKey)`; `apiFormat === 'gemini'` → `GeminiCompatibleProvider(provider, baseUrl, apiKey)`; else → `OpenAICompatibleProvider(provider, baseUrl, apiKey, authStyle)`. Still throws if no `baseUrl`.
 
 Callers pass the config's fields:
 - `ai.service.generateContent` — reads `cfg.api_format` / `cfg.auth_style` for custom configs.
@@ -81,15 +89,15 @@ Callers pass the config's fields:
 ### Discovery
 
 Already returns `{ supported, models }` and the modal falls back to manual when `supported:false`
-or empty. OpenAI-format → `{base}/models`; Anthropic-format → `{base}/v1/models` (x-api-key). For
-gateways without a models endpoint (OpenCode Zen today) discovery returns empty → manual/bulk
-fallback (existing behavior, no change needed).
+or empty. OpenAI-format → `{base}/models`; Anthropic-format → `{base}/v1/models` (x-api-key);
+Gemini-format → `{base}/v1beta/models?key=<key>`. For gateways without a models endpoint (OpenCode
+Zen today) discovery returns empty → manual/bulk fallback (existing behavior, no change needed).
 
 ### Admin form
 
 `AISettings.tsx` custom-provider add form gains:
-- a **Select** "API format" (OpenAI-compatible / Anthropic-compatible),
-- a **Select** "Auth" (Bearer / api-key),
+- a **Select** "API format" (OpenAI-compatible / Anthropic-compatible / Gemini-compatible),
+- a **Select** "Auth" (Bearer / api-key), shown only when format is `openai` (irrelevant otherwise),
 - three **preset** buttons (NVIDIA build / Azure Foundry / OpenCode Zen) that fill
   `base_url` + `api_format` + `auth_style`.
 The create payload (`aiAPI.customProviders.create`) already forwards the whole form object, so it
@@ -107,7 +115,8 @@ just needs the two fields added to `customForm` state.
   (mock fetch) like the OpenAI one; `OpenAICompatibleProvider` sends `api-key` header when
   `auth_style:'api_key'` and `Authorization: Bearer` otherwise (assert the headers passed to a
   mocked `fetch`). `createProvider` returns the Anthropic-compatible class for
-  `api_format:'anthropic'` and the OpenAI one otherwise.
+  `api_format:'anthropic'`, the Gemini-compatible class for `api_format:'gemini'`, and the OpenAI one
+  otherwise. `GeminiCompatibleProvider.listModels` maps `{base}/v1beta/models?key=` `models/<id>` → id.
 - **Manual E2E (owner-driven):** add an Anthropic-compatible custom provider (e.g. OpenCode Zen
   `/anthropic`) → Test passes, generate works; add an Azure provider with `api-key` auth → Test
   passes; NVIDIA via preset → discover lists models.
@@ -117,6 +126,7 @@ just needs the two fields added to `customForm` state.
 - **Modify:** `src/modules/ai/types.ts` (ApiFormat/AuthStyle, CustomProviderConfig)
 - **Modify:** `src/modules/ai/settings-schema.ts`, `src/shared/validation/schemas/ai.ts` (Zod fields)
 - **Create:** `src/modules/ai/providers/anthropic-compatible.provider.ts` (+ refactor `anthropic.provider.ts` to reuse it)
+- **Create:** `src/modules/ai/providers/gemini-compatible.provider.ts` (+ refactor `gemini.provider.ts` to reuse it)
 - **Modify:** `src/modules/ai/providers/openai-compatible.provider.ts` (auth_style), `providers/index.ts`
 - **Modify:** `src/modules/ai/ai.service.ts` (`createProvider` opts + pass from config)
 - **Modify:** `src/pages/api/admin/ai/custom-providers/index.ts`, `models/[provider]/discover.ts`, `settings.ts` (forward api_format/auth_style)
