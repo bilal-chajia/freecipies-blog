@@ -40,6 +40,16 @@ interface Props {
   embedded?: boolean;
 }
 
+/** Author records may carry legacy/extra avatar fields not on the typed schema. */
+type AvatarSlotLike = {
+  url?: string;
+  variants?: { xs?: { url?: string }; sm?: { url?: string } };
+};
+type AuthorWithImageFallbacks = Author & {
+  avatar?: string | AvatarSlotLike | null;
+  image_url?: string | null;
+};
+
 const {
   article,
   recipe_json,
@@ -194,7 +204,7 @@ const navItems = [
                 itemtype="https://schema.org/Person"
               >
                 {(() => {
-                  const authorData = author as any;
+                  const authorData = author as AuthorWithImageFallbacks;
                   let authorImgUrl = "";
                   if (authorData.images_json) {
                     authorImgUrl = extractImage(authorData.images_json, "avatar").image_url || "";
