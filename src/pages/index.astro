@@ -2,7 +2,6 @@
 import { env } from 'cloudflare:workers';
 import Layout from "@layouts/Layout.astro";
 import StoriesBar from "@components/StoriesBar.astro";
-import WebStoryViewer from "@components/WebStoryViewer.astro";
 import { getArticles } from "@modules/articles";
 import { getCategories } from "@modules/categories";
 import { getAuthors } from "@modules/authors";
@@ -433,7 +432,6 @@ const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
       </div>
     </section>
   </main>
-  <WebStoryViewer />
 </Layout>
 
 <style>
