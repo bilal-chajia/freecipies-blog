@@ -29,7 +29,6 @@ export interface BlockEditorHydrationOptions {
   value: unknown;
   hydrationContext: BlockEditorHydrationContext;
   lastEmittedValueRef: React.MutableRefObject<string>;
-  lastSerializedRef: React.MutableRefObject<string>;
   activeBlockId: string | null;
   onEditorReady?: (editor: AppEditor) => void;
 }
@@ -39,7 +38,6 @@ export function useBlockEditorHydration({
   value,
   hydrationContext,
   lastEmittedValueRef,
-  lastSerializedRef,
   activeBlockId,
   onEditorReady,
 }: BlockEditorHydrationOptions) {
@@ -108,13 +106,12 @@ export function useBlockEditorHydration({
         const nextBlocks = contentJsonToBlocks(value, hydrationContext) as any;
         if (nextBlocks?.length) {
           lastEmittedValueRef.current = serializedValue;
-          lastSerializedRef.current = serializedValue;
           await mountedEditor.replaceBlocks(mountedEditor.document, nextBlocks);
         }
       }
     }
     updateContent();
-  }, [mountedEditor, value, hydrationContext, lastEmittedValueRef, lastSerializedRef]);
+  }, [mountedEditor, value, hydrationContext, lastEmittedValueRef]);
 
   useEffect(() => {
     if (!mountedEditor || !value) return;

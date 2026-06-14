@@ -63,7 +63,6 @@ interface SerializeArgs {
     blocks: Parameters<typeof blocksToContentJson>[0];
     onChange?: (serialized: string) => void;
     lastEmittedValueRef: React.MutableRefObject<string>;
-    lastSerializedRef: React.MutableRefObject<string>;
 }
 
 /**
@@ -74,13 +73,11 @@ export function emitSerializedContent({
     blocks,
     onChange,
     lastEmittedValueRef,
-    lastSerializedRef,
 }: SerializeArgs): void {
     if (onChange) {
         const serialized = JSON.stringify(blocksToContentJson(blocks), null, 2);
         if (serialized !== lastEmittedValueRef.current) {
             lastEmittedValueRef.current = serialized;
-            lastSerializedRef.current = serialized;
             onChange(serialized);
         }
     }

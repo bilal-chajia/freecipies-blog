@@ -21,7 +21,6 @@ interface EditorStateManagerProps {
      * recognize the editor's own emitted value and skip re-hydrating it.
      */
     lastEmittedValueRef: React.MutableRefObject<string>;
-    lastSerializedRef: React.MutableRefObject<string>;
 }
 
 /**
@@ -36,7 +35,6 @@ export function useEditorStateManager({
     contentType,
     activeBlockId,
     lastEmittedValueRef,
-    lastSerializedRef,
 }: EditorStateManagerProps) {
     const onChangeRef = useRef(onChange);
     const onStructureUpdateRef = useRef(onStructureUpdate);
@@ -99,7 +97,6 @@ export function useEditorStateManager({
                     blocks,
                     onChange: onChangeRef.current,
                     lastEmittedValueRef,
-                    lastSerializedRef,
                 });
             }, 800);
         };
@@ -125,6 +122,5 @@ export function useEditorStateManager({
         structureItems,
         structureItemsRef,
         lastEmittedValueRef,
-        lastSerializedRef,
     };
 }
