@@ -125,18 +125,11 @@ export class AnthropicCompatibleProvider implements IAIProvider {
 
     async validateApiKey(apiKey: string): Promise<boolean> {
         try {
-            const response = await fetch(this.url('/v1/messages'), {
-                method: 'POST',
+            const response = await fetch(this.url('/v1/models'), {
                 headers: {
-                    'Content-Type': 'application/json',
                     'x-api-key': apiKey,
                     'anthropic-version': '2023-06-01',
                 },
-                body: JSON.stringify({
-                    model: 'claude-3-haiku-20240307',
-                    max_tokens: 10,
-                    messages: [{ role: 'user', content: 'Hi' }],
-                }),
             });
             return response.ok;
         } catch {
