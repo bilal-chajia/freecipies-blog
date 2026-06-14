@@ -38,21 +38,23 @@ const { stories = [] } = Astro.props as Props;
         </div>
       </div>
 
-      <amp-story-player>
-        <script
-          type="application/json"
-          set:html={JSON.stringify({
-            behavior: { autoplay: false },
-            controls: [
-              { name: "close", position: "start" },
-              { name: "skip-to-next" },
-            ],
-          })}
-        />
-        {stories.map((story) => (
-          <a href={story.href}>{story.headline}</a>
-        ))}
-      </amp-story-player>
+      <div class="stories-lightbox" data-stories-lightbox>
+        <amp-story-player>
+          <script
+            type="application/json"
+            set:html={JSON.stringify({
+              behavior: { autoplay: false },
+              controls: [
+                { name: "close", position: "start" },
+                { name: "skip-to-next" },
+              ],
+            })}
+          />
+          {stories.map((story) => (
+            <a href={story.href}>{story.headline}</a>
+          ))}
+        </amp-story-player>
+      </div>
     </section>
   )
 }
@@ -149,10 +151,31 @@ const { stories = [] } = Astro.props as Props;
   .story-item:hover .story-title,
   .story-item:focus-visible .story-title { color: var(--brand-primary); }
 
-  /* The player renders only as a lightbox; its inline entry list stays hidden. */
-  amp-story-player { display: none; }
+  /* Fullscreen lightbox overlay; hidden (but laid out, so the player can
+     initialize) until a ring click adds .is-open. Never use display:none —
+     amp-story-player needs a sized box to render. */
+  .stories-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: #000;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .stories-lightbox.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .stories-lightbox amp-story-player {
+    width: 100%;
+    height: 100%;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .story-ring { transition: none; }
+    .stories-lightbox { transition: none; }
   }
 </style>
