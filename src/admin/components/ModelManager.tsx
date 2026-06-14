@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Power, PowerOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Power, PowerOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/ui/button';
 import ConfirmationModal from '@/ui/confirmation-modal';
 import { toast } from 'sonner';
@@ -72,9 +72,7 @@ export function ModelManager({
     isCustom = false,
 }: ModelManagerProps) {
     const [isExpanded, setIsExpanded] = useState(false);
-    const [editingModel, setEditingModel] = useState<ManagedModel | null>(null);
     const [internalIsAddDialogOpen, setInternalIsAddDialogOpen] = useState(false);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [deleteModal, setDeleteModal] = useState<DeleteModalState>({ isOpen: false, modelToDelete: null });
 
@@ -104,26 +102,6 @@ export function ModelManager({
             }
         } catch (error) {
             toast.error('Failed to add model');
-        }
-    };
-
-    const handleUpdateModel = async () => {
-        if (!editingModel) return;
-        try {
-            const response = await aiAPI.updateModel(provider, editingModel.id, {
-                name: formData.name,
-                context_window: formData.context_window ? parseInt(formData.context_window) : undefined,
-                max_tokens: formData.max_tokens ? parseInt(formData.max_tokens) : undefined,
-            });
-
-            if (response.status >= 200 && response.status < 300) {
-                setIsEditDialogOpen(false);
-                setEditingModel(null);
-                setFormData({ id: '', name: '', context_window: '', max_tokens: '' });
-                onUpdate?.();
-            }
-        } catch (error) {
-            toast.error('Failed to update model');
         }
     };
 
@@ -158,17 +136,6 @@ export function ModelManager({
             setIsDeleting(null);
             setDeleteModal({ isOpen: false, modelToDelete: null });
         }
-    };
-
-    const openEditDialog = (model: ManagedModel) => {
-        setEditingModel(model);
-        setFormData({
-            id: model.id,
-            name: model.name || model.id,
-            context_window: model.context_window?.toString() || '',
-            max_tokens: model.max_tokens?.toString() || '',
-        });
-        setIsEditDialogOpen(true);
     };
 
     return (
@@ -249,14 +216,6 @@ export function ModelManager({
                                     ) : (
                                         <PowerOff className="h-3.5 w-3.5 text-muted-foreground" />
                                     )}
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => openEditDialog(model)}
-                                    className="h-9 w-9 p-0"
-                                >
-                                    <Edit2 className="h-3.5 w-3.5" />
                                 </Button>
                                 <Button
                                     variant="ghost"
@@ -354,56 +313,6 @@ export function ModelManager({
                             </div>
                         </TabsContent>
                     </Tabs>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Model Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit Model</DialogTitle>
-                        <DialogDescription>
-                            Update model metadata for {editingModel?.id}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                        <div className="grid gap-2">
-                            <Label htmlFor="edit-model-name">Display Name *</Label>
-                            <Input
-                                id="edit-model-name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-context-window">Context Window</Label>
-                                <Input
-                                    id="edit-context-window"
-                                    type="number"
-                                    value={formData.context_window}
-                                    onChange={(e) => setFormData({ ...formData, context_window: e.target.value })}
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-max-tokens">Max Tokens</Label>
-                                <Input
-                                    id="edit-max-tokens"
-                                    type="number"
-                                    value={formData.max_tokens}
-                                    onChange={(e) => setFormData({ ...formData, max_tokens: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleUpdateModel} disabled={!formData.name}>
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

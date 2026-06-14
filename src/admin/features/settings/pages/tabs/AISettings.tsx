@@ -114,9 +114,12 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
         [settings.custom_providers],
     );
 
-    const loadSettings = useCallback(async () => {
+    const loadSettings = useCallback(async (opts?: { silent?: boolean }) => {
         try {
-            setLoading(true);
+            // Silent refreshes (after a mutation) update state in place without
+            // blanking the whole panel — keeps the UI SPA-like instead of
+            // flashing the full-section spinner on every change.
+            if (!opts?.silent) setLoading(true);
             setError(null);
             const response = await aiAPI.getSettings();
             if (response.data.success) {
@@ -133,7 +136,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
             console.error('Failed to load AI settings:', err);
             setError('Failed to load AI settings');
         } finally {
-            setLoading(false);
+            if (!opts?.silent) setLoading(false);
         }
     }, []);
 
@@ -227,7 +230,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
             if (response.data.success) {
                 toast.success('Custom provider added');
                 setCustomForm({ id: '', label: '', base_url: '', api_key: '' });
-                await loadSettings();
+                await loadSettings({ silent: true });
             }
         } catch {
             toast.error('Failed to add custom provider');
@@ -238,7 +241,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
         try {
             await aiAPI.customProviders.remove(provider);
             toast.success('Custom provider removed');
-            await loadSettings();
+            await loadSettings({ silent: true });
         } catch {
             toast.error('Failed to remove custom provider');
         }
@@ -273,7 +276,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                         <p className="text-xs text-muted-foreground">Configure write-only API keys and curated models.</p>
                     </div>
 
-                    <div className="grid gap-4">
+                    <div className="grid gap-4 lg:grid-cols-2 items-start">
                         {allProviderIds.map((provider) => {
                             const config = providerConfig(provider);
                             const isConfigured = configuredProviders.includes(provider);
@@ -350,7 +353,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                         <ModelManager
                                             provider={provider}
                                             models={config.models || []}
-                                            onUpdate={loadSettings}
+                                            onUpdate={() => loadSettings({ silent: true })}
                                             hideHeaderActions={false}
                                             isCustom={isCustom}
                                         />
