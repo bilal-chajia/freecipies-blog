@@ -372,7 +372,6 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                             provider={provider}
                                             models={config.models || []}
                                             onUpdate={() => loadSettings({ silent: true })}
-                                            hideHeaderActions={true}
                                             isAddDialogOpen={addModelOpen === provider}
                                             onAddDialogChange={(open) => setAddModelOpen(open ? provider : null)}
                                             isCustom={isCustom}

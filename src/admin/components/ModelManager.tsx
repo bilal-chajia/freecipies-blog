@@ -1,19 +1,18 @@
 /**
  * Model Manager Component
  * ========================
- * UI for managing AI models per provider
+ * All model management lives inside a modal (Selected / Discover / Manual) so
+ * the provider card keeps a fixed height and the grid never reflows.
  */
 
-import React, { useState } from 'react';
-import { Plus, Trash2, Power, PowerOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
+import { Power, PowerOff, Trash2 } from 'lucide-react';
 import { Button } from '@/ui/button';
 import ConfirmationModal from '@/ui/confirmation-modal';
 import { toast } from 'sonner';
 import { Input } from '@/ui/input';
 import { Label } from '@/ui/label';
-import { Switch } from '@/ui/switch';
 import { Badge } from '@/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -26,7 +25,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/ui/tabs';
 import { DiscoverModelsTab } from './ModelManager/DiscoverModelsTab';
 import { cn } from '@/lib/utils';
 import { aiAPI } from '@/services/api';
-import { BulkImportModels } from './BulkImportModels';
 
 export type ManagedModel = {
     id: string;
@@ -46,7 +44,6 @@ type ModelManagerProps = {
     onUpdate?: () => void | Promise<void>;
     isAddDialogOpen?: boolean;
     onAddDialogChange?: (open: boolean) => void;
-    hideHeaderActions?: boolean;
     isCustom?: boolean;
 };
 
@@ -68,16 +65,14 @@ export function ModelManager({
     onUpdate,
     isAddDialogOpen: externalIsAddOpen,
     onAddDialogChange: externalSetIsAddOpen,
-    hideHeaderActions = false,
     isCustom = false,
 }: ModelManagerProps) {
-    const [isExpanded, setIsExpanded] = useState(false);
     const [internalIsAddDialogOpen, setInternalIsAddDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [deleteModal, setDeleteModal] = useState<DeleteModalState>({ isOpen: false, modelToDelete: null });
 
-    const isAddDialogOpen = externalIsAddOpen !== undefined ? externalIsAddOpen : internalIsAddDialogOpen;
-    const setIsAddDialogOpen = externalSetIsAddOpen || setInternalIsAddDialogOpen;
+    const isDialogOpen = externalIsAddOpen !== undefined ? externalIsAddOpen : internalIsAddDialogOpen;
+    const setIsDialogOpen = externalSetIsAddOpen || setInternalIsAddDialogOpen;
 
     const [formData, setFormData] = useState<ModelFormData>({
         id: '',
@@ -96,11 +91,10 @@ export function ModelManager({
             });
 
             if (response.status >= 200 && response.status < 300) {
-                setIsAddDialogOpen(false);
                 setFormData({ id: '', name: '', context_window: '', max_tokens: '' });
                 onUpdate?.();
             }
-        } catch (error) {
+        } catch {
             toast.error('Failed to add model');
         }
     };
@@ -111,7 +105,7 @@ export function ModelManager({
             if (response.status >= 200 && response.status < 300) {
                 onUpdate?.();
             }
-        } catch (error) {
+        } catch {
             toast.error('Failed to toggle model');
         }
     };
@@ -130,7 +124,7 @@ export function ModelManager({
             if (response.status >= 200 && response.status < 300) {
                 onUpdate?.();
             }
-        } catch (error) {
+        } catch {
             toast.error('Failed to delete model');
         } finally {
             setIsDeleting(null);
@@ -139,123 +133,105 @@ export function ModelManager({
     };
 
     return (
-        <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="flex items-center gap-1.5 h-7 px-2"
-                >
-                    {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                    <span className="text-sm font-medium">Models ({models.length})</span>
-                </Button>
-                {!hideHeaderActions && (
-                    <div className="flex items-center gap-1.5">
-                        <BulkImportModels provider={provider} onSuccess={onUpdate} />
-                        <Button
-                            size="sm"
-                            onClick={() => setIsAddDialogOpen(true)}
-                            className="flex items-center gap-1.5 px-2 text-xs"
-                        >
-                            <Plus className="h-3.5 w-3.5" />
-                            Add Model
-                        </Button>
-                    </div>
-                )}
-            </div>
+        <>
+            <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDialogOpen(true)}
+                className="h-7 px-2 text-sm font-medium"
+            >
+                Models ({models.length})
+            </Button>
 
-            {isExpanded && (
-                <div className="space-y-1.5 pl-3">
-                    {models.map((model) => (
-                        <div
-                            key={model.id}
-                            className={cn(
-                                'flex items-center justify-between p-2 rounded-md border',
-                                !model.enabled && 'opacity-50 bg-muted/50'
-                            )}
-                        >
-                            <div className="flex-1">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-sm font-medium">{model.name || model.id}</span>
-                                    {model.status === 'unavailable' && (
-                                        <Badge variant="outline" className="text-xs px-1 py-0">
-                                            Unavailable
-                                        </Badge>
-                                    )}
-                                    {model.deprecated && (
-                                        <Badge variant="destructive" className="text-xs px-1 py-0">
-                                            Deprecated
-                                        </Badge>
-                                    )}
-                                    {!model.enabled && (
-                                        <Badge variant="outline" className="text-xs px-1 py-0">
-                                            Disabled
-                                        </Badge>
-                                    )}
-                                </div>
-                                <div className="text-xs text-muted-foreground space-y-0.5">
-                                    <p className="text-xs">
-                                        ID: {model.id}
-                                        {model.context_window && ` • Context: ${(model.context_window / 1024).toFixed(0)}K`}
-                                        {model.max_tokens && ` • Max: ${(model.max_tokens / 1024).toFixed(0)}K`}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-1">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleToggleModel(model.id)}
-                                    title={model.enabled ? 'Disable' : 'Enable'}
-                                    className="h-9 w-9 p-0"
-                                >
-                                    {model.enabled ? (
-                                        <Power className="h-3.5 w-3.5 text-green-600" />
-                                    ) : (
-                                        <PowerOff className="h-3.5 w-3.5 text-muted-foreground" />
-                                    )}
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteModel(model.id)}
-                                    disabled={isDeleting === model.id}
-                                    className="h-9 w-9 p-0"
-                                >
-                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Add Model Dialog */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            {/* Manage Models Dialog */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Add Model</DialogTitle>
+                        <DialogTitle>Manage models</DialogTitle>
                         <DialogDescription>
-                            Discover and select models, or add one manually, for {provider}
+                            Enable, remove, discover, or manually add models for {provider}
                         </DialogDescription>
                     </DialogHeader>
 
-                    <Tabs defaultValue="discover">
-                        <TabsList className="grid w-full grid-cols-2">
+                    <Tabs defaultValue={models.length > 0 ? 'selected' : 'discover'}>
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="selected">Selected ({models.length})</TabsTrigger>
                             <TabsTrigger value="discover">Discover</TabsTrigger>
                             <TabsTrigger value="manual">Manual</TabsTrigger>
                         </TabsList>
 
+                        <TabsContent value="selected" className="mt-3">
+                            {models.length === 0 ? (
+                                <p className="py-6 text-center text-sm text-muted-foreground">
+                                    No models yet — use Discover or Manual to add some.
+                                </p>
+                            ) : (
+                                <div className="max-h-72 space-y-1.5 overflow-y-auto pr-1">
+                                    {models.map((model) => (
+                                        <div
+                                            key={model.id}
+                                            className={cn(
+                                                'flex items-center justify-between gap-2 p-2 rounded-md border',
+                                                !model.enabled && 'opacity-50 bg-muted/50',
+                                            )}
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="truncate text-sm font-medium">{model.name || model.id}</span>
+                                                    {model.status === 'unavailable' && (
+                                                        <Badge variant="outline" className="text-xs px-1 py-0">Unavailable</Badge>
+                                                    )}
+                                                    {model.deprecated && (
+                                                        <Badge variant="destructive" className="text-xs px-1 py-0">Deprecated</Badge>
+                                                    )}
+                                                    {!model.enabled && (
+                                                        <Badge variant="outline" className="text-xs px-1 py-0">Disabled</Badge>
+                                                    )}
+                                                </div>
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    ID: {model.id}
+                                                    {model.context_window ? ` • Context: ${(model.context_window / 1024).toFixed(0)}K` : ''}
+                                                    {model.max_tokens ? ` • Max: ${(model.max_tokens / 1024).toFixed(0)}K` : ''}
+                                                </p>
+                                            </div>
+                                            <div className="flex shrink-0 items-center gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleToggleModel(model.id)}
+                                                    title={model.enabled ? 'Disable' : 'Enable'}
+                                                    className="h-9 w-9 p-0"
+                                                >
+                                                    {model.enabled ? (
+                                                        <Power className="h-3.5 w-3.5 text-green-600" />
+                                                    ) : (
+                                                        <PowerOff className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    )}
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteModel(model.id)}
+                                                    disabled={isDeleting === model.id}
+                                                    className="h-9 w-9 p-0"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </TabsContent>
+
                         <TabsContent value="discover" className="mt-3">
-                            {isAddDialogOpen && (
+                            {isDialogOpen && (
                                 <DiscoverModelsTab
                                     provider={provider}
                                     isCustom={isCustom}
                                     existingModels={models}
                                     onAdded={() => onUpdate?.()}
-                                    onClose={() => setIsAddDialogOpen(false)}
+                                    onClose={() => setIsDialogOpen(false)}
                                 />
                             )}
                         </TabsContent>
@@ -303,7 +279,7 @@ export function ModelManager({
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                                         Cancel
                                     </Button>
                                     <Button onClick={handleAddModel} disabled={!formData.id || !formData.name}>
@@ -325,6 +301,6 @@ export function ModelManager({
                 confirmText="Delete"
                 cancelText="Cancel"
             />
-        </div>
+        </>
     );
-};
+}
