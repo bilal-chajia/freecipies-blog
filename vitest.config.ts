@@ -15,6 +15,7 @@ export default defineConfig({
       '@components': resolvePath('./src/site/components'),
       '@layouts': resolvePath('./src/site/layouts'),
       '@styles': resolvePath('./src/site/styles'),
+      'cloudflare:workers': resolvePath('./src/test-stubs/cloudflare-workers.ts'),
     },
   },
 });
