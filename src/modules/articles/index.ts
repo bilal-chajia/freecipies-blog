@@ -4,3 +4,4 @@
 export * from './schema/articles.schema';
 export * from './services/articles.service';
 export * from './types/articles.types';
+export { checkPublishCompleteness } from './validation/publish-completeness';

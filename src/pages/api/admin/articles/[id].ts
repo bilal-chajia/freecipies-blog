@@ -8,7 +8,8 @@ import {
     setWorkflowStatusById,
     toggleFavoriteById,
     setArticleTagsById,
-    syncCachedFields
+    syncCachedFields,
+    checkPublishCompleteness
 } from '@modules/articles';
 import type { Env } from '@shared/types';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
@@ -178,6 +179,25 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
             }
 
             const { status: newStatus } = parseResult.data;
+
+            // Completeness guard: only fully-formed content may go live.
+            if (newStatus === 'published') {
+                const existing = await getArticleById(env.DB, id);
+                if (!existing) {
+                    const { body: errBody, status: errStatus, headers: errHeaders } = formatErrorResponse(
+                        new AppError(ErrorCodes.NOT_FOUND, 'Article not found', 404)
+                    );
+                    return new Response(errBody, { status: errStatus, headers: errHeaders });
+                }
+                const issues = checkPublishCompleteness(existing);
+                if (issues.length > 0) {
+                    const { body: errBody, status: errStatus, headers: errHeaders } = formatErrorResponse(
+                        new AppError(ErrorCodes.VALIDATION_ERROR, `Cannot publish: ${issues.join(' ')}`, 422)
+                    );
+                    return new Response(errBody, { status: errStatus, headers: errHeaders });
+                }
+            }
+
             result = await setWorkflowStatusById(env.DB, id, newStatus);
         } else if (action === 'toggle-favorite') {
             result = await toggleFavoriteById(env.DB, id);
