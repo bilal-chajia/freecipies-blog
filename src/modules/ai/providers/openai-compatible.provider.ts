@@ -1,5 +1,6 @@
 import type {
     AIProvider,
+    AuthStyle,
     DiscoveredModel,
     GenerateContentRequest,
     GenerateContentResponse,
@@ -16,12 +17,23 @@ interface OpenAICompatibleResponse {
 export class OpenAICompatibleProvider implements IAIProvider {
     readonly provider: AIProvider;
 
-    constructor(provider: string, private baseUrl: string, private apiKey: string) {
+    constructor(
+        provider: string,
+        private baseUrl: string,
+        private apiKey: string,
+        private authStyle: AuthStyle = 'bearer',
+    ) {
         this.provider = provider;
     }
 
     private url(path: string): string {
         return `${this.baseUrl.replace(/\/$/, '')}${path}`;
+    }
+
+    private authHeaders(key: string): Record<string, string> {
+        return this.authStyle === 'api_key'
+            ? { 'api-key': key }
+            : { Authorization: `Bearer ${key}` };
     }
 
     async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
@@ -51,7 +63,7 @@ export class OpenAICompatibleProvider implements IAIProvider {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`,
+                    ...this.authHeaders(this.apiKey),
                 },
                 body: JSON.stringify(body),
             });
@@ -74,9 +86,7 @@ export class OpenAICompatibleProvider implements IAIProvider {
     async validateApiKey(apiKey: string): Promise<boolean> {
         try {
             return (await fetch(this.url('/models'), {
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                },
+                headers: this.authHeaders(apiKey),
             })).ok;
         } catch {
             return false;
@@ -86,9 +96,7 @@ export class OpenAICompatibleProvider implements IAIProvider {
     async listModels(apiKey: string): Promise<{ supported: boolean; models: DiscoveredModel[] }> {
         try {
             const response = await fetch(this.url('/models'), {
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                },
+                headers: this.authHeaders(apiKey),
             });
             if (!response.ok) return { supported: true, models: [] };
             return { supported: true, models: normalizeOpenAiModels(await response.json()) };
