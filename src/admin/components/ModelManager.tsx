@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Power, PowerOff, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Trash2, Power, PowerOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/ui/button';
 import ConfirmationModal from '@/ui/confirmation-modal';
 import { toast } from 'sonner';
@@ -22,6 +22,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/ui/tabs';
+import { DiscoverModelsTab } from './ModelManager/DiscoverModelsTab';
 import { cn } from '@/lib/utils';
 import { aiAPI } from '@/services/api';
 import { BulkImportModels } from './BulkImportModels';
@@ -45,6 +47,7 @@ type ModelManagerProps = {
     isAddDialogOpen?: boolean;
     onAddDialogChange?: (open: boolean) => void;
     hideHeaderActions?: boolean;
+    isCustom?: boolean;
 };
 
 type ModelFormData = {
@@ -65,14 +68,14 @@ export function ModelManager({
     onUpdate,
     isAddDialogOpen: externalIsAddOpen,
     onAddDialogChange: externalSetIsAddOpen,
-    hideHeaderActions = false
+    hideHeaderActions = false,
+    isCustom = false,
 }: ModelManagerProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [editingModel, setEditingModel] = useState<ManagedModel | null>(null);
     const [internalIsAddDialogOpen, setInternalIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
-    const [isDiscovering, setIsDiscovering] = useState(false);
     const [deleteModal, setDeleteModal] = useState<DeleteModalState>({ isOpen: false, modelToDelete: null });
 
     const isAddDialogOpen = externalIsAddOpen !== undefined ? externalIsAddOpen : internalIsAddDialogOpen;
@@ -168,21 +171,6 @@ export function ModelManager({
         setIsEditDialogOpen(true);
     };
 
-    const handleDiscover = async () => {
-        setIsDiscovering(true);
-        try {
-            const response = await aiAPI.discoverModels(provider);
-            if (response.status >= 200 && response.status < 300) {
-                toast.success('Latest models fetched');
-                onUpdate?.();
-            }
-        } catch {
-            toast.error('Failed to fetch latest models');
-        } finally {
-            setIsDiscovering(false);
-        }
-    };
-
     return (
         <div className="space-y-1.5">
             <div className="flex items-center justify-between">
@@ -198,16 +186,6 @@ export function ModelManager({
                 {!hideHeaderActions && (
                     <div className="flex items-center gap-1.5">
                         <BulkImportModels provider={provider} onSuccess={onUpdate} />
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleDiscover}
-                            disabled={isDiscovering}
-                            className="flex items-center gap-1.5 px-2 text-xs"
-                        >
-                            <RefreshCw className={cn('h-3.5 w-3.5', isDiscovering && 'animate-spin')} />
-                            Fetch latest
-                        </Button>
                         <Button
                             size="sm"
                             onClick={() => setIsAddDialogOpen(true)}
@@ -299,61 +277,83 @@ export function ModelManager({
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Add New Model</DialogTitle>
+                        <DialogTitle>Add Model</DialogTitle>
                         <DialogDescription>
-                            Add a new AI model to {provider}
+                            Discover and select models, or add one manually, for {provider}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-3">
-                        <div className="grid gap-2">
-                            <Label htmlFor="model-id">Model ID *</Label>
-                            <Input
-                                id="model-id"
-                                value={formData.id}
-                                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                                placeholder="e.g., gpt-4o"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="model-name">Display Name *</Label>
-                            <Input
-                                id="model-name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="e.g., GPT-4o"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="context-window">Context Window</Label>
-                                <Input
-                                    id="context-window"
-                                    type="number"
-                                    value={formData.context_window}
-                                    onChange={(e) => setFormData({ ...formData, context_window: e.target.value })}
-                                    placeholder="131072"
+
+                    <Tabs defaultValue="discover">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="discover">Discover</TabsTrigger>
+                            <TabsTrigger value="manual">Manual</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="discover" className="mt-3">
+                            {isAddDialogOpen && (
+                                <DiscoverModelsTab
+                                    provider={provider}
+                                    isCustom={isCustom}
+                                    existingModels={models}
+                                    onAdded={() => onUpdate?.()}
+                                    onClose={() => setIsAddDialogOpen(false)}
                                 />
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="manual" className="mt-3">
+                            <div className="space-y-3">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="model-id">Model ID *</Label>
+                                    <Input
+                                        id="model-id"
+                                        value={formData.id}
+                                        onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                                        placeholder="e.g., gpt-4o"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="model-name">Display Name *</Label>
+                                    <Input
+                                        id="model-name"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder="e.g., GPT-4o"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="context-window">Context Window</Label>
+                                        <Input
+                                            id="context-window"
+                                            type="number"
+                                            value={formData.context_window}
+                                            onChange={(e) => setFormData({ ...formData, context_window: e.target.value })}
+                                            placeholder="131072"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="max-tokens">Max Tokens</Label>
+                                        <Input
+                                            id="max-tokens"
+                                            type="number"
+                                            value={formData.max_tokens}
+                                            onChange={(e) => setFormData({ ...formData, max_tokens: e.target.value })}
+                                            placeholder="65536"
+                                        />
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button onClick={handleAddModel} disabled={!formData.id || !formData.name}>
+                                        Add Model
+                                    </Button>
+                                </DialogFooter>
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="max-tokens">Max Tokens</Label>
-                                <Input
-                                    id="max-tokens"
-                                    type="number"
-                                    value={formData.max_tokens}
-                                    onChange={(e) => setFormData({ ...formData, max_tokens: e.target.value })}
-                                    placeholder="65536"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleAddModel} disabled={!formData.id || !formData.name}>
-                            Add Model
-                        </Button>
-                    </DialogFooter>
+                        </TabsContent>
+                    </Tabs>
                 </DialogContent>
             </Dialog>
 
