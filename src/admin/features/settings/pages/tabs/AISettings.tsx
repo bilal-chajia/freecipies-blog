@@ -13,6 +13,7 @@ import { Switch } from '@/ui/switch';
 import { Textarea } from '@/ui/textarea';
 import { ProviderIcon } from '@/components/icons/ProviderIcons';
 import { ModelManager, type ManagedModel } from '@/components/ModelManager';
+import { BulkImportModels } from '@/components/BulkImportModels';
 import { aiAPI } from '@/services/api';
 import { cn } from '@/lib/utils';
 
@@ -107,6 +108,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
     const [error, setError] = useState<string | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
     const [customForm, setCustomForm] = useState({ id: '', label: '', base_url: '', api_key: '' });
+    const [addModelOpen, setAddModelOpen] = useState<string | null>(null);
 
     const configuredProviders = useMemo(() => configuredProviderIds(settings), [settings]);
     const allProviderIds = useMemo(
@@ -114,9 +116,12 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
         [settings.custom_providers],
     );
 
-    const loadSettings = useCallback(async () => {
+    const loadSettings = useCallback(async (opts?: { silent?: boolean }) => {
         try {
-            setLoading(true);
+            // Silent refreshes (after a mutation) update state in place without
+            // blanking the whole panel — keeps the UI SPA-like instead of
+            // flashing the full-section spinner on every change.
+            if (!opts?.silent) setLoading(true);
             setError(null);
             const response = await aiAPI.getSettings();
             if (response.data.success) {
@@ -133,7 +138,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
             console.error('Failed to load AI settings:', err);
             setError('Failed to load AI settings');
         } finally {
-            setLoading(false);
+            if (!opts?.silent) setLoading(false);
         }
     }, []);
 
@@ -227,7 +232,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
             if (response.data.success) {
                 toast.success('Custom provider added');
                 setCustomForm({ id: '', label: '', base_url: '', api_key: '' });
-                await loadSettings();
+                await loadSettings({ silent: true });
             }
         } catch {
             toast.error('Failed to add custom provider');
@@ -238,7 +243,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
         try {
             await aiAPI.customProviders.remove(provider);
             toast.success('Custom provider removed');
-            await loadSettings();
+            await loadSettings({ silent: true });
         } catch {
             toast.error('Failed to remove custom provider');
         }
@@ -273,7 +278,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                         <p className="text-xs text-muted-foreground">Configure write-only API keys and curated models.</p>
                     </div>
 
-                    <div className="grid gap-4">
+                    <div className="grid gap-4 lg:grid-cols-2 items-start">
                         {allProviderIds.map((provider) => {
                             const config = providerConfig(provider);
                             const isConfigured = configuredProviders.includes(provider);
@@ -299,13 +304,29 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                                     <CardDescription className="text-xs">{providerDescription(provider)}</CardDescription>
                                                 </div>
                                             </div>
-                                            <Switch
-                                                checked={config.enabled || false}
-                                                onCheckedChange={(enabled) => (
-                                                    isCustom ? setCustomProvider(provider, { enabled }) : setProvider(provider, { enabled })
-                                                )}
-                                                disabled={!canEnable}
-                                            />
+                                            <div className="flex items-center gap-1.5">
+                                                <BulkImportModels
+                                                    provider={provider}
+                                                    onSuccess={() => loadSettings({ silent: true })}
+                                                    iconOnly
+                                                />
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-7 w-7 p-0 rounded-full"
+                                                    onClick={() => setAddModelOpen(provider)}
+                                                    title="Add model"
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                </Button>
+                                                <Switch
+                                                    checked={config.enabled || false}
+                                                    onCheckedChange={(enabled) => (
+                                                        isCustom ? setCustomProvider(provider, { enabled }) : setProvider(provider, { enabled })
+                                                    )}
+                                                    disabled={!canEnable}
+                                                />
+                                            </div>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-2">
@@ -350,8 +371,10 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                         <ModelManager
                                             provider={provider}
                                             models={config.models || []}
-                                            onUpdate={loadSettings}
-                                            hideHeaderActions={false}
+                                            onUpdate={() => loadSettings({ silent: true })}
+                                            isAddDialogOpen={addModelOpen === provider}
+                                            onAddDialogChange={(open) => setAddModelOpen(open ? provider : null)}
+                                            isCustom={isCustom}
                                         />
                                     </CardContent>
                                 </Card>
