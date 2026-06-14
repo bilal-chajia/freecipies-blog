@@ -23,6 +23,8 @@ const ProviderConfigSchema = z.object({
 const CustomProviderConfigSchema = ProviderConfigSchema.extend({
     label: z.string().min(1),
     base_url: z.string().url(),
+    api_format: z.enum(['openai', 'anthropic', 'gemini']).default('openai'),
+    auth_style: z.enum(['bearer', 'api_key']).default('bearer'),
 });
 
 export const AiSettingsSchema = z.object({

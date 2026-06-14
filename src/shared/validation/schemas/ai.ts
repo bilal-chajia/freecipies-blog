@@ -75,6 +75,8 @@ export const ValidateApiKeySchema = z.object({
     provider: z.string().min(1),
     api_key: z.string().min(1, 'API key required'),
     base_url: z.string().url().optional(),
+    api_format: z.enum(['openai', 'anthropic', 'gemini']).optional(),
+    auth_style: z.enum(['bearer', 'api_key']).optional(),
 });
 
 export const CreateCustomProviderSchema = z.object({
@@ -83,6 +85,8 @@ export const CreateCustomProviderSchema = z.object({
     label: z.string().min(1),
     base_url: z.string().url(),
     api_key: z.string().min(1),
+    api_format: z.enum(['openai', 'anthropic', 'gemini']).optional(),
+    auth_style: z.enum(['bearer', 'api_key']).optional(),
     enabled: z.boolean().optional(),
 });
 
@@ -90,5 +94,7 @@ export const UpdateCustomProviderSchema = z.object({
     label: z.string().min(1).optional(),
     base_url: z.string().url().optional(),
     api_key: z.string().optional(),
+    api_format: z.enum(['openai', 'anthropic', 'gemini']).optional(),
+    auth_style: z.enum(['bearer', 'api_key']).optional(),
     enabled: z.boolean().optional(),
 });
