@@ -10,7 +10,6 @@ import type {
   MenuFeaturedItem
 } from "@modules/menus/types/menus.types";
 import type { HydratedArticle } from "@modules/articles";
-import { extractImage, getImageSrcSet } from "@shared/utils";
 
 // --- Navigation Presenters ---
 
@@ -263,69 +262,3 @@ export function presentPopularRecipes(
     .slice(0, limit);
 }
 
-// --- Stories Presenters ---
-
-export interface StoryPreview {
-  image_url?: string;
-  imageAlt?: string;
-  imageWidth?: number;
-  imageHeight?: number;
-  imageStyle?: string;
-  srcSet?: string;
-}
-
-export type StoryPageData = HydratedArticle & {
-  storyImage?: string;
-  storyPreview: StoryPreview;
-  storyPages: Array<{
-    image_url?: string;
-    title: string;
-    text: string;
-  }>;
-};
-
-export function presentStories(stories: HydratedArticle[]): StoryPageData[] {
-  return [...stories]
-    .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
-    .map((story) => {
-      const preview = extractImage(story.images_json, "thumbnail", 120);
-      const hero = extractImage(story.images_json, "hero", 1200);
-      const storyImage = hero.image_url || preview.image_url || story.image_url;
-
-      const storyTextSource = story as HydratedArticle & { tldr?: string };
-
-      return {
-        ...story,
-        storyImage,
-        storyPreview: {
-          image_url: preview.image_url || story.image_url,
-          imageAlt: preview.imageAlt || story.headline,
-          imageWidth: preview.imageWidth || 80,
-          imageHeight: preview.imageHeight || 80,
-          imageStyle: preview.imageStyle,
-          srcSet: getImageSrcSet(story.images_json, "thumbnail"),
-        },
-        storyPages: [
-          {
-            image_url: storyImage,
-            title: story.headline,
-            text: story.short_description || storyTextSource.tldr || "",
-          },
-          ...(storyImage
-            ? [
-                {
-                  image_url: storyImage,
-                  title: "Swipe to continue",
-                  text: "Tap right to see more",
-                },
-              ]
-            : []),
-          {
-            image_url: storyImage,
-            title: story.headline,
-            text: "Ready to cook?",
-          },
-        ],
-      };
-    });
-}
