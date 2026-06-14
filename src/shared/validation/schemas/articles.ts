@@ -8,6 +8,8 @@ import { PaginationSchema } from './common';
 import { ContentDocumentInputSchema } from '@modules/content-blocks';
 import { RoundupJsonInputSchema } from '@modules/articles/validation/roundup-json.schema';
 import { RecipeJsonInputSchema } from '@modules/articles/validation/recipe-json.schema';
+import { FaqsJsonInputSchema } from '@modules/articles/validation/faqs-json.schema';
+import { ImagesJsonInputSchema } from '@modules/articles/validation/images-json.schema';
 
 /** GET /api/articles query params */
 export const ArticleListQuery = PaginationSchema.extend({
@@ -36,7 +38,8 @@ export const CreateArticleSchema = z.object({
   content_json: ContentDocumentInputSchema.optional(),
   recipe_json: RecipeJsonInputSchema.optional(),
   roundup_json: RoundupJsonInputSchema.optional(),
-  images_json: z.string().optional(),
+  images_json: ImagesJsonInputSchema.optional(),
+  faqs_json: FaqsJsonInputSchema.optional(),
   author_id: z.number().int().positive().optional(),
   category_id: z.number().int().positive().optional(),
   selectedTags: z.array(z.number().int().positive()).optional(),
