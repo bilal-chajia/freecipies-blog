@@ -37,6 +37,9 @@ export const ALL_PROVIDERS: BuiltInProvider[] = [
 export type ModelModality = 'text' | 'image' | 'audio' | 'embedding' | 'other';
 export type ModelStatus = 'available' | 'unavailable' | 'deprecated';
 
+export type ApiFormat = 'openai' | 'anthropic' | 'gemini';
+export type AuthStyle = 'bearer' | 'api_key';
+
 /** A model the provider currently offers (discovery output). */
 export interface DiscoveredModel {
     id: string;
@@ -72,6 +75,10 @@ export interface ProviderConfig {
 export interface CustomProviderConfig extends ProviderConfig {
     label: string;
     base_url: string;
+    /** Wire protocol for this custom endpoint. Default 'openai'. */
+    api_format?: ApiFormat;
+    /** Auth header style (openai format only). Default 'bearer'. */
+    auth_style?: AuthStyle;
 }
 
 /** AI settings stored in database */
