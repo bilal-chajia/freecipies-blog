@@ -70,7 +70,6 @@ export default function BlockEditor({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const lastEmittedValueRef = useRef('');
-  const lastSerializedRef = useRef('');
   const moveActionBlockIdRef = useRef<string | null>(null);
   // --- Zustand Store Bindings ---
   // The store is the single source of truth for the active block selection.
@@ -115,7 +114,6 @@ export default function BlockEditor({
     value,
     hydrationContext,
     lastEmittedValueRef,
-    lastSerializedRef,
     activeBlockId,
     onEditorReady,
   });
@@ -141,7 +139,7 @@ export default function BlockEditor({
   const { structureItems, structureItemsRef } = useEditorStateManager({
     editor: mountedEditor, onChange, onStructureUpdate, onSelectedBlockChange,
     contentType, activeBlockId,
-    lastEmittedValueRef, lastSerializedRef,
+    lastEmittedValueRef,
   });
 
   const { toolbarActionBlockIdRef } = useBlockSelection({
