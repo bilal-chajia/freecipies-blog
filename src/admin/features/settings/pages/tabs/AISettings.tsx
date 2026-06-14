@@ -13,6 +13,7 @@ import { Switch } from '@/ui/switch';
 import { Textarea } from '@/ui/textarea';
 import { ProviderIcon } from '@/components/icons/ProviderIcons';
 import { ModelManager, type ManagedModel } from '@/components/ModelManager';
+import { BulkImportModels } from '@/components/BulkImportModels';
 import { aiAPI } from '@/services/api';
 import { cn } from '@/lib/utils';
 
@@ -107,6 +108,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
     const [error, setError] = useState<string | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
     const [customForm, setCustomForm] = useState({ id: '', label: '', base_url: '', api_key: '' });
+    const [addModelOpen, setAddModelOpen] = useState<string | null>(null);
 
     const configuredProviders = useMemo(() => configuredProviderIds(settings), [settings]);
     const allProviderIds = useMemo(
@@ -302,13 +304,29 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                                     <CardDescription className="text-xs">{providerDescription(provider)}</CardDescription>
                                                 </div>
                                             </div>
-                                            <Switch
-                                                checked={config.enabled || false}
-                                                onCheckedChange={(enabled) => (
-                                                    isCustom ? setCustomProvider(provider, { enabled }) : setProvider(provider, { enabled })
-                                                )}
-                                                disabled={!canEnable}
-                                            />
+                                            <div className="flex items-center gap-1.5">
+                                                <BulkImportModels
+                                                    provider={provider}
+                                                    onSuccess={() => loadSettings({ silent: true })}
+                                                    iconOnly
+                                                />
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-7 w-7 p-0 rounded-full"
+                                                    onClick={() => setAddModelOpen(provider)}
+                                                    title="Add model"
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                </Button>
+                                                <Switch
+                                                    checked={config.enabled || false}
+                                                    onCheckedChange={(enabled) => (
+                                                        isCustom ? setCustomProvider(provider, { enabled }) : setProvider(provider, { enabled })
+                                                    )}
+                                                    disabled={!canEnable}
+                                                />
+                                            </div>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-2">
@@ -354,7 +372,9 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                             provider={provider}
                                             models={config.models || []}
                                             onUpdate={() => loadSettings({ silent: true })}
-                                            hideHeaderActions={false}
+                                            hideHeaderActions={true}
+                                            isAddDialogOpen={addModelOpen === provider}
+                                            onAddDialogChange={(open) => setAddModelOpen(open ? provider : null)}
                                             isCustom={isCustom}
                                         />
                                     </CardContent>
