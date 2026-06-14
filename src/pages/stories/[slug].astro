@@ -1,0 +1,15 @@
+---
+// src/pages/stories/[slug].astro
+import { env } from "cloudflare:workers";
+import StoryAmp from "@components/story/StoryAmp.astro";
+import { getStory, getPublicSiteIdentity } from "@server/site-data";
+
+const { slug } = Astro.params;
+if (!slug) return new Response("Slug is missing", { status: 400 });
+
+const story = await getStory(slug, { db: env.DB });
+if (!story) return Astro.redirect("/404");
+
+const identity = await getPublicSiteIdentity({ db: env.DB });
+---
+<StoryAmp story={story} locale={identity.locale} />
