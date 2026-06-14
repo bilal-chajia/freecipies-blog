@@ -21,8 +21,11 @@ export class StoriesBarController {
         // No player available → let the link navigate to the AMP page.
         if (!this.player || typeof this.player.show !== "function") return;
         event.preventDefault();
+        // amp-story-player resolves its entry <a href> list to ABSOLUTE URLs,
+        // so show() must be given the absolute URL — passing the root-relative
+        // attribute throws "Story URL not found in the player".
         const href = ring.getAttribute("data-story-href");
-        if (href) this.player.show(href);
+        if (href) this.player.show(new URL(href, window.location.origin).href);
       });
     });
 
