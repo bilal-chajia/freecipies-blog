@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { getArticles, getArticleBySlug, createArticle, setArticleTagsById, syncCachedFields } from '@modules/articles';
+import { getArticles, getArticleBySlug, createArticle, setArticleTagsById, syncCachedFields, checkPublishTransition } from '@modules/articles';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateBody, validateQuery, ArticleListQuery, CreateArticleSchema } from '@shared/validation';
 import { extractAuthContext, hasRole, AuthRoles, createAuthError } from '@modules/auth';
@@ -89,6 +89,18 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Normalization
     const transformedData = transformArticleRequestBody(rest);
+
+    // Completeness guard: a new article created directly as published must
+    // satisfy the publish criteria (the create payload is the full article).
+    if (transformedData.workflow_status === 'published') {
+      const issues = checkPublishTransition({ targetStatus: 'published', patch: transformedData });
+      if (issues.length > 0) {
+        const { body, status: httpStatus, headers } = formatErrorResponse(
+          new AppError(ErrorCodes.VALIDATION_ERROR, `Cannot publish: ${issues.join(' ')}`, 422)
+        );
+        return new Response(body, { status: httpStatus, headers });
+      }
+    }
 
     const article = await createArticle(env.DB, transformedData);
 

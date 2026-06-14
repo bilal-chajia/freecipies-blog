@@ -80,3 +80,24 @@ export function checkPublishCompleteness(article: PublishCheckInput): string[] {
 
   return issues;
 }
+
+/**
+ * Publish-transition gate shared by every write path that can set an article
+ * live (POST create, PUT update, PATCH set-workflow-status).
+ *
+ * Returns publish-blocking reasons (empty = allowed). Any transition whose
+ * target status is not `published` is unconditionally allowed — drafts stay
+ * loose. When publishing, completeness is evaluated against the RESULTING
+ * state: the existing row (if any) overlaid with the incoming patch, so
+ * "fill in the content AND publish in one save" works for both create and
+ * update, while a bare publish toggle still blocks incomplete content.
+ */
+export function checkPublishTransition(opts: {
+  targetStatus?: string | null;
+  existing?: PublishCheckInput | null;
+  patch?: PublishCheckInput | null;
+}): string[] {
+  if (opts.targetStatus !== 'published') return [];
+  const candidate: PublishCheckInput = { ...(opts.existing ?? {}), ...(opts.patch ?? {}) };
+  return checkPublishCompleteness(candidate);
+}

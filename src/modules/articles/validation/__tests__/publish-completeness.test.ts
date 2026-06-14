@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkPublishCompleteness } from '../publish-completeness';
+import { checkPublishCompleteness, checkPublishTransition } from '../publish-completeness';
 
 const hero = { media_id: 1, alt: 'a', variants: { md: { r2_key: 'media/x.webp' } } };
 const base = {
@@ -50,5 +50,53 @@ describe('checkPublishCompleteness', () => {
   it('tolerates already-parsed objects and bad JSON (bad JSON = incomplete)', () => {
     expect(checkPublishCompleteness({ ...base, type: 'recipe', recipe_json: { ingredients: ['x'], instructions: ['y'] } })).toEqual([]);
     expect(checkPublishCompleteness({ ...base, type: 'recipe', recipe_json: '{bad' }).length).toBeGreaterThan(0);
+  });
+});
+
+// Transition gate shared by every publish entry point (POST create, PUT update,
+// PATCH set-workflow-status). Evaluates the RESULTING article state (existing
+// row overlaid with the incoming patch) only when the target status is published.
+describe('checkPublishTransition', () => {
+  const completeRecipe = {
+    type: 'recipe',
+    headline: 'H',
+    slug: 's',
+    images_json: { hero },
+    recipe_json: { ingredients: ['x'], instructions: ['y'] },
+  };
+
+  it('allows any non-published transition without inspecting content', () => {
+    expect(checkPublishTransition({ targetStatus: 'draft', patch: { type: 'recipe' } })).toEqual([]);
+    expect(checkPublishTransition({ targetStatus: 'archived', existing: { type: 'recipe', recipe_json: null } })).toEqual([]);
+    expect(checkPublishTransition({ targetStatus: undefined, patch: {} })).toEqual([]);
+  });
+
+  it('blocks publishing an incomplete create payload (no existing row)', () => {
+    // The reported bug: a recipe-type article published with no recipe data.
+    const issues = checkPublishTransition({
+      targetStatus: 'published',
+      patch: { type: 'recipe', headline: 'H', slug: 's', images_json: { hero } },
+    });
+    expect(issues.join(' ')).toMatch(/recipe/i);
+  });
+
+  it('allows publishing a complete create payload', () => {
+    expect(checkPublishTransition({ targetStatus: 'published', patch: completeRecipe })).toEqual([]);
+  });
+
+  it('merges patch over existing: a patch that completes the recipe is publishable', () => {
+    const existing = { ...completeRecipe, recipe_json: { ingredients: [], instructions: [] } };
+    const patch = { recipe_json: { ingredients: ['x'], instructions: ['y'] } };
+    expect(checkPublishTransition({ targetStatus: 'published', existing, patch })).toEqual([]);
+  });
+
+  it('merges patch over existing: a patch that empties the recipe blocks publish', () => {
+    const patch = { recipe_json: { ingredients: [], instructions: [] } };
+    expect(checkPublishTransition({ targetStatus: 'published', existing: completeRecipe, patch }).join(' ')).toMatch(/ingredient/i);
+  });
+
+  it('blocks a bare publish toggle (no patch) on incomplete existing content', () => {
+    const existing = { type: 'recipe', headline: 'H', slug: 's', images_json: { hero }, recipe_json: null };
+    expect(checkPublishTransition({ targetStatus: 'published', existing }).length).toBeGreaterThan(0);
   });
 });
