@@ -59,6 +59,8 @@ interface ProviderSettings {
 interface CustomProviderSettings extends ProviderSettings {
     label: string;
     base_url: string;
+    api_format?: string;
+    auth_style?: string;
 }
 
 interface AISettingsState {
@@ -107,7 +109,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
     const [validating, setValidating] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
-    const [customForm, setCustomForm] = useState({ id: '', label: '', base_url: '', api_key: '' });
+    const [customForm, setCustomForm] = useState({ id: '', label: '', base_url: '', api_key: '', api_format: 'openai', auth_style: 'bearer' });
     const [addModelOpen, setAddModelOpen] = useState<string | null>(null);
 
     const configuredProviders = useMemo(() => configuredProviderIds(settings), [settings]);
@@ -211,7 +213,13 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
         if (!config.api_key) return;
         try {
             setValidating(provider);
-            const response = await aiAPI.validateApiKey(provider, config.api_key, 'base_url' in config ? config.base_url : undefined);
+            const cfg = config as CustomProviderSettings;
+            const response = await aiAPI.validateApiKey(
+                provider,
+                config.api_key,
+                'base_url' in config ? config.base_url : undefined,
+                'base_url' in config ? { api_format: cfg.api_format, auth_style: cfg.auth_style } : undefined,
+            );
             if (response.data.data?.valid) {
                 if (settings.custom_providers[provider]) setCustomProvider(provider, { enabled: true });
                 else setProvider(provider, { enabled: true });
@@ -231,7 +239,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
             const response = await aiAPI.customProviders.create({ ...customForm, enabled: true });
             if (response.data.success) {
                 toast.success('Custom provider added');
-                setCustomForm({ id: '', label: '', base_url: '', api_key: '' });
+                setCustomForm({ id: '', label: '', base_url: '', api_key: '', api_format: 'openai', auth_style: 'bearer' });
                 await loadSettings({ silent: true });
             }
         } catch {
@@ -389,15 +397,50 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                 Custom OpenAI-Compatible Provider
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid gap-3 md:grid-cols-4">
-                            <Input placeholder="id" value={customForm.id} onChange={(e) => setCustomForm((p) => ({ ...p, id: e.target.value }))} />
-                            <Input placeholder="label" value={customForm.label} onChange={(e) => setCustomForm((p) => ({ ...p, label: e.target.value }))} />
-                            <Input placeholder="https://host/v1" value={customForm.base_url} onChange={(e) => setCustomForm((p) => ({ ...p, base_url: e.target.value }))} />
-                            <div className="flex gap-2">
-                                <Input type="password" placeholder="api_key" value={customForm.api_key} onChange={(e) => setCustomForm((p) => ({ ...p, api_key: e.target.value }))} />
-                                <Button onClick={handleCreateCustomProvider} disabled={!customForm.id || !customForm.label || !customForm.base_url || !customForm.api_key}>
-                                    Add
+                        <CardContent className="space-y-3">
+                            <div className="flex flex-wrap gap-1.5">
+                                <Button type="button" variant="outline" size="sm" className="h-7 text-xs"
+                                    onClick={() => setCustomForm((p) => ({ ...p, base_url: 'https://integrate.api.nvidia.com/v1', api_format: 'openai', auth_style: 'bearer' }))}>
+                                    NVIDIA build
                                 </Button>
+                                <Button type="button" variant="outline" size="sm" className="h-7 text-xs"
+                                    onClick={() => setCustomForm((p) => ({ ...p, base_url: 'https://opencode.ai/zen/v1', api_format: 'openai', auth_style: 'bearer' }))}>
+                                    OpenCode Zen
+                                </Button>
+                                <Button type="button" variant="outline" size="sm" className="h-7 text-xs"
+                                    onClick={() => setCustomForm((p) => ({ ...p, api_format: 'openai', auth_style: 'api_key' }))}>
+                                    Azure Foundry
+                                </Button>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-4">
+                                <Input placeholder="id" value={customForm.id} onChange={(e) => setCustomForm((p) => ({ ...p, id: e.target.value }))} />
+                                <Input placeholder="label" value={customForm.label} onChange={(e) => setCustomForm((p) => ({ ...p, label: e.target.value }))} />
+                                <Input placeholder="https://host/v1" value={customForm.base_url} onChange={(e) => setCustomForm((p) => ({ ...p, base_url: e.target.value }))} />
+                                <Input type="password" placeholder="api_key" value={customForm.api_key} onChange={(e) => setCustomForm((p) => ({ ...p, api_key: e.target.value }))} />
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-4">
+                                <Select value={customForm.api_format} onValueChange={(v) => setCustomForm((p) => ({ ...p, api_format: v }))}>
+                                    <SelectTrigger className="h-9"><SelectValue placeholder="API format" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="openai">OpenAI-compatible</SelectItem>
+                                        <SelectItem value="anthropic">Anthropic-compatible</SelectItem>
+                                        <SelectItem value="gemini">Gemini-compatible</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {customForm.api_format === 'openai' && (
+                                    <Select value={customForm.auth_style} onValueChange={(v) => setCustomForm((p) => ({ ...p, auth_style: v }))}>
+                                        <SelectTrigger className="h-9"><SelectValue placeholder="Auth" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="bearer">Bearer</SelectItem>
+                                            <SelectItem value="api_key">api-key header</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                                <div className="md:col-span-2 flex justify-end">
+                                    <Button onClick={handleCreateCustomProvider} disabled={!customForm.id || !customForm.label || !customForm.base_url || !customForm.api_key}>
+                                        Add
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

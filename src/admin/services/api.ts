@@ -253,7 +253,8 @@ export const statsAPI = {
 export const aiAPI = {
   getSettings: () => api.get('/admin/ai/settings'),
   updateSettings: (settings: unknown) => api.put('/admin/ai/settings', settings),
-  validateApiKey: (provider: string, api_key: string, base_url?: string) => api.post('/admin/ai/settings', { provider, api_key, base_url }),
+  validateApiKey: (provider: string, api_key: string, base_url?: string, extra?: { api_format?: string; auth_style?: string }) =>
+    api.post('/admin/ai/settings', { provider, api_key, base_url, ...extra }),
   getProviders: () => api.get('/admin/ai/providers'),
   generate: (params: unknown) => api.post('/admin/ai/generate', params),
   discoverModels: (provider: string) => api.get(`/admin/ai/models/${provider}/discover`),
