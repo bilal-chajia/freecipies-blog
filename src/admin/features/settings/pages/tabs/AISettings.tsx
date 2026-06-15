@@ -242,8 +242,13 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                 setCustomForm({ id: '', label: '', base_url: '', api_key: '', api_format: 'openai', auth_style: 'bearer' });
                 await loadSettings({ silent: true });
             }
-        } catch {
-            toast.error('Failed to add custom provider');
+        } catch (err) {
+            const data = (err as { response?: { data?: { error?: unknown; details?: Record<string, unknown> } } })?.response?.data;
+            const detail = data?.details && typeof data.details === 'object'
+                ? Object.values(data.details).find((v): v is string => typeof v === 'string')
+                : undefined;
+            const message = detail ?? (typeof data?.error === 'string' ? data.error : undefined);
+            toast.error(message ?? 'Failed to add custom provider');
         }
     };
 
@@ -413,7 +418,7 @@ const AISettings = ({ activeSection = 'providers', onRegisterActions }: AISettin
                                 </Button>
                             </div>
                             <div className="grid gap-3 md:grid-cols-4">
-                                <Input placeholder="id" value={customForm.id} onChange={(e) => setCustomForm((p) => ({ ...p, id: e.target.value }))} />
+                                <Input placeholder="id (kebab-case, e.g. nvidia-build)" value={customForm.id} onChange={(e) => setCustomForm((p) => ({ ...p, id: e.target.value }))} />
                                 <Input placeholder="label" value={customForm.label} onChange={(e) => setCustomForm((p) => ({ ...p, label: e.target.value }))} />
                                 <Input placeholder="https://host/v1" value={customForm.base_url} onChange={(e) => setCustomForm((p) => ({ ...p, base_url: e.target.value }))} />
                                 <Input type="password" placeholder="api_key" value={customForm.api_key} onChange={(e) => setCustomForm((p) => ({ ...p, api_key: e.target.value }))} />
