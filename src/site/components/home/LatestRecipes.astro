@@ -1,0 +1,237 @@
+---
+import { extractImage, getImageSrcSet } from '@shared/utils';
+import { parseCachedRecipe } from '@modules/articles/utils/cached-fields';
+import type { HomepageLatestSection } from '@modules/settings/types/settings.types';
+import type { HydratedArticle } from '@modules/articles/types';
+
+interface Props {
+  section: HomepageLatestSection;
+  recipes: HydratedArticle[];
+}
+
+const { section, recipes } = Astro.props;
+
+const getRecipeImage = (recipe: HydratedArticle, targetWidth: number, prefer: 'hero' | 'thumbnail' = 'hero') => {
+  const hero = extractImage(recipe.images_json, 'hero', targetWidth);
+  const thumbnail = extractImage(recipe.images_json, 'thumbnail', targetWidth);
+  const slotName = prefer === 'hero'
+    ? (hero.image_url ? 'hero' : 'thumbnail')
+    : (thumbnail.image_url ? 'thumbnail' : 'hero');
+  const selected = slotName === 'hero' ? hero : thumbnail;
+  const srcSet = getImageSrcSet(recipe.images_json, slotName);
+  return { selected, srcSet };
+};
+
+const getRecipeUrl = (recipe: HydratedArticle) => recipe.route || `/recipes/${recipe.slug}`;
+---
+
+{recipes.length > 0 && (
+  <section class="section more-recipes-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="title-dot"></span>
+          {section.title}
+        </h2>
+        <a href="/recipes" class="view-all">
+          View All →
+        </a>
+      </div>
+      <div class="recipes-grid">
+        {recipes.map((recipe: HydratedArticle) => {
+          const { selected, srcSet } = getRecipeImage(recipe, 400, 'hero');
+          const sizes = '(max-width: 768px) 50vw, 25vw';
+          const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
+          const prepTime = cachedRecipe?.prep_time_minutes ?? null;
+          return (
+            <a href={getRecipeUrl(recipe)} class="recipe-card-vertical">
+              <div class="card-image-wrapper">
+                {(selected.image_url || recipe.image_url) && (
+                  <img
+                    src={selected.image_url || recipe.image_url}
+                    alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
+                    width={selected.imageWidth || recipe.imageWidth || 400}
+                    height={selected.imageHeight || recipe.imageHeight || 300}
+                    srcset={srcSet || undefined}
+                    sizes={srcSet ? sizes : undefined}
+                    loading="lazy"
+                    style={selected.imageStyle || undefined}
+                  />
+                )}
+                <span
+                  class="badge card-category-badge"
+                  style={`--badge-color: ${recipe.category?.color || 'var(--brand-primary)'};`}
+                >
+                  {recipe.category?.label}
+                </span>
+              </div>
+              <div class="card-body">
+                <h3 class="card-title">{recipe.headline}</h3>
+                <div class="card-meta">
+                  {prepTime && (
+                    <span class="meta-item">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 6v6l4 2" />
+                      </svg>
+                      {`${prepTime} min`}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--space-5);
+  }
+
+  .section {
+    padding: clamp(var(--space-12), 7vw, 5.5rem) 0;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.65rem, 1.25rem + 1.2vw, 2.35rem);
+    font-weight: var(--font-bold);
+    color: var(--text);
+    margin: 0;
+    letter-spacing: 0;
+  }
+
+  .title-dot {
+    display: inline-block;
+    width: var(--space-2);
+    height: var(--space-2);
+    background: var(--brand-primary);
+    border-radius: var(--radius-full);
+    margin-right: var(--space-2);
+    vertical-align: middle;
+  }
+
+  .view-all {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: var(--font-semibold);
+    font-size: var(--text-sm);
+    transition: var(--transition);
+  }
+
+  .view-all:hover {
+    color: var(--primary-hover);
+  }
+
+  .more-recipes-section {
+    background: var(--bg-alt);
+  }
+
+  /* === Vertical Recipe Cards === */
+  .recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+    gap: clamp(var(--space-4), 3vw, var(--space-6));
+  }
+
+  .recipe-card-vertical {
+    display: block;
+    background: var(--bg);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+  }
+
+  .recipe-card-vertical:hover {
+    transform: translateY(calc(-5 * var(--space-px)));
+    box-shadow: var(--shadow-hover);
+  }
+
+  .card-image-wrapper {
+    position: relative;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+  }
+
+  .card-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+  }
+
+  .recipe-card-vertical:hover .card-image-wrapper img {
+    transform: scale(1.08);
+  }
+
+  .card-category-badge {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.35),
+        rgba(0, 0, 0, 0.35)
+      ),
+      var(--badge-color, var(--primary));
+  }
+
+  .card-body {
+    padding: var(--space-4);
+  }
+
+  .recipe-card-vertical .card-title {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--text);
+    margin: 0 0 var(--space-2.5);
+    line-height: var(--leading-normal);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color var(--transition-fast);
+  }
+
+  .recipe-card-vertical:hover .card-title {
+    color: var(--primary);
+  }
+
+  .recipe-card-vertical .card-meta {
+    display: flex;
+    gap: var(--space-3);
+    color: var(--text-light);
+  }
+
+  .recipe-card-vertical .meta-item {
+    font-size: var(--text-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .recipe-card-vertical .meta-item svg {
+    width: var(--text-xs);
+    height: var(--text-xs);
+  }
+</style>
