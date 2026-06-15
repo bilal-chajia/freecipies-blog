@@ -1,260 +1,124 @@
-# 🔍 Rapport de Review Frontend — Freecipies Blog
+# 🔍 Rapport de Performance Frontend — Freecipies Blog
 
-> **Reviewer**: Senior Frontend Performance Engineer  
-> **Scope**: Astro 6 components, Lighthouse 90+, hydration, design tokens, zero-join architecture  
-> **Commits couverts**: `47052a7`, `692c975`, `b8d63cc`, `b89c94c`, `b68a7e4`, `2804ea4`
-
----
-
-## 🏆 Vue d'ensemble
-
-| Catégorie | Score | Statut |
-|-----------|-------|--------|
-| Architecture Zero-Join (ContentRenderer) | 6/10 | ⚠️ Améliorable |
-| Performance Images & Lighthouse | 7/10 | ⚠️ Correct mais lacunes |
-| Hydration & Client Directives | 5/10 | 🔴 Problèmes critiques |
-| Design Tokens & CSS | 8/10 | ✅ Bien |
-| Composants UI réutilisables | 7/10 | ✅ Bien |
-| Astro 6 Best Practices | 6/10 | ⚠️ Mixte |
-| Accessibilité & A11y | 7/10 | ⚠️ Correct |
-| SEO & Meta | 8/10 | ✅ Bien |
+> **Méthode**: Lighthouse (preset desktop) + Playwright Performance API
+> **Runtime**: build production via `pnpm preview` (Astro build + Wrangler dev), `http://127.0.0.1:8787`
+> **Date**: 2026-06-15 · **Branche**: `perf/site-cwv-fonts`
+>
+> ⚠️ Ce rapport remplace une version antérieure (estimations « Perf ~75 », blocages
+> images/CLS/`client:load`) qui s'est révélée **totalement obsolète** après mesure réelle.
 
 ---
 
-## 1. ContentRenderer.astro — Dispatcher de blocs
+## 🏆 Scores Lighthouse (mesurés, pas estimés)
 
-**Score : 6/10**
+| Catégorie | Accueil `/` | Recette `/recipes/pasta-carbonara` |
+|-----------|:-----------:|:----------------------------------:|
+| **Performance** | **98** | **100** |
+| **Accessibility** | 92 → *(corrigé, voir §3)* | 96 → *(corrigé, voir §3)* |
+| **Best Practices** | 81 → *(corrigé, voir §2)* | 100 |
+| **SEO** | 100 | 100 |
 
-### ✅ Forces
-- Architecture de dispatcher via `switch/case` sur `block.type`
-- Parsing sécurisé de JSON avec fallback (try/catch)
-- Support de variants d'images (xs, sm, md, lg) dans `Image.astro`
-- Headings numérotés automatiquement (h2/h3/h4 avec compteurs)
-- Lazy loading sur les images (`loading="lazy"`)
+### Core Web Vitals — Accueil
+| Métrique | Valeur | Seuil « good » | Statut |
+|----------|--------|----------------|--------|
+| FCP | 0.3 s | < 1.8 s | ✅ |
+| LCP | 1.1 s | < 2.5 s | ✅ |
+| TBT | 0 ms | < 200 ms | ✅ |
+| CLS | 0.001 | < 0.1 | ✅ |
+| Speed Index | 0.5 s | < 3.4 s | ✅ |
+| TTI | 1.1 s | < 3.8 s | ✅ |
 
-### ⚠️ Faiblesses / Risques
-- **🔴 CSS massif inline (378 lignes)** : Le fichier contient ~200 lignes de CSS pour des styles `.tip-box-*` qui devraient vivre dans `Alert.astro` ou un fichier dédié. Cela viole le principe de séparation des responsabilités.
-- **Usage de `set:html`** sur certains blocs sans sanitize explicite (même si le contenu vient de la DB, c'est un risque XSS si la DB est compromise)
-- Le dispatcher fait du `switch/case` basique — pas de `Astro.self` ou de composant map dynamique
-
-### 💡 Suggestions
-- Déplacer le CSS inline de `.tip-box-*` dans `src/components/content/blocks/Alert.astro`
-- Utiliser un mapping objet `{ [type]: Component }` au lieu du switch/case
-- Ajouter un composant `UnknownBlock.astro` pour les types non reconnus (fallback gracieux)
-
----
-
-## 2. Layouts (ArticleLayout, RecipeLayout, RoundupLayout, Layout)
-
-**Score : 7/10**
-
-### ✅ Forces
-- Props simplifiées grâce aux colonnes `cached_*`
-- Pas de JOIN dans les layouts (zero-join architecture respectée)
-- Structure sémantique HTML5 correcte
-- SEO meta tags bien structurés
-
-### ⚠️ Faiblesses / Risques
-- `Layout.astro` contient encore du CSS inline pour les variables CSS
-- `RecipeLayout` et `RoundupLayout` dupliquent partiellement la structure d'`ArticleLayout`
-- Pas de `<Suspense>` équivalent pour le chargement des données
-
-### 💡 Suggestions
-- Créer un `BaseContentLayout.astro` abstrait pour factoriser Article/Recipe/Roundup
-- Extraire les variables CSS dans `src/shared/design-tokens.css`
+Les fonts self-hostées (commits `844e36e`, `94c17ef`) sont préchargées et arrivent
+tôt (~262 ms) — la chaîne cross-origin Google Fonts est éliminée.
 
 ---
 
-## 3. Composants UI (Badge, Button, Card, Skeleton, SectionTitle)
+## 1. Problème principal identifié : StoriesBar AMP prérendue (accueil) — ✅ CORRIGÉ
 
-**Score : 7/10**
+Tous les gros diagnostics de l'accueil convergeaient vers un seul coupable : le
+composant `StoriesBar` chargeait **en eager** le runtime `amp-story-player`
+(`cdn.ampproject.org`) qui upgradait le `<amp-story-player>` et **prérendait toutes
+les slides**, même barre fermée (`visibility:hidden`).
 
-### ✅ Forces
-- Composants Astro réutilisables bien structurés
-- Props TypeScript typées
-- Variants supportés (size, variant, color)
-- Skeleton pour le chargement
+| Diagnostic Lighthouse | Coût | Origine |
+|-----------------------|------|---------|
+| `image-delivery` | **836 KiB** | covers `lg` des stories prérendues (ex. `brown-butter-choc-chunk-cookies-lg` = 272 KiB) chargées dans une iframe invisible |
+| `unused-javascript` | **97 KiB** | 100 % AMP : `v0.js` + `amp-story-1.0.js` |
+| `best-practices 81` | — | quasi-entièrement dû à AMP (deprecations + JS inutilisé + warning iframe sandbox) |
 
-### ⚠️ Faiblesses / Risques
-- `Button.astro` (160 lignes) — un peu lourd, pourrait être divisé
-- `Card.astro` n'a pas de gestion d'image optimisée (pas de `srcset`)
-- Pas de composant `Link` dédié (navigation accessible)
+### Correctif appliqué
+`src/site/scripts/stories-player.ts` + `src/site/components/StoriesBar.astro` :
+- Suppression des balises `<link>`/`<script>` AMP eager.
+- Chargement **paresseux** du runtime + CSS sur **intention utilisateur**
+  (`pointerenter` / `focusin` / `touchstart` sur la barre = préchargement, ou au
+  premier clic sur un ring).
+- Les rings restent des liens vers la page AMP standalone tant que le runtime
+  n'est pas chargé (progressive enhancement préservé ; fallback navigation si le
+  runtime échoue à charger).
 
-### 💡 Suggestions
-- Simplifier `Button.astro` en extrayant les styles dans un fichier CSS module
-- Ajouter `srcset` et `sizes` dans `Card.astro`
-- Créer un composant `Link.astro` avec `rel` et `aria-label` automatiques
-
----
-
-## 4. Composants Content Blocks (Alert, BeforeAfter, Blockquote, Divider, FaqSection, Heading, Image, List, MainRecipe, Paragraph, RelatedContent, RoundupList, Table, Video)
-
-**Score : 7/10**
-
-### ✅ Forces
-- Un composant par type de bloc = parfait pour le zero-join
-- Props simplifiées (pas besoin de faire des requêtes)
-- `Image.astro` gère bien les variants (xs, sm, md, lg)
-
-### ⚠️ Faiblesses / Risques
-- **🔴 `Image.astro` : pas de `width`/`height` explicites partout** — Violation des règles AGENTS.md (Lighthouse 90+ requis)
-- **🔴 `Video.astro` : pas de `poster` attribute** — Mauvais LCP si la vidéo est above the fold
-- `Table.astro` : pas de `scope` sur les headers (a11y)
-- `FaqSection.astro` : utilise `set:html` pour le JSON-LD sans validation
-
-### 💡 Suggestions
-- Ajouter `width` et `height` obligatoires dans `Image.astro`
-- Ajouter `decoding="async"` sur toutes les images
-- Ajouter `poster` à `Video.astro`
-- Ajouter `scope="col"` / `scope="row"` dans `Table.astro`
+**Gain**: l'accueil ne charge plus ~96 KiB de JS tiers ni ~830 KiB d'images de
+covers au chargement initial.
 
 ---
 
-## 5. Header.astro & Footer.astro
+## 2. Best Practices (accueil) — ✅ adressé via §1
 
-**Score : 7/10**
+Le score 81 provenait essentiellement du runtime AMP eager (deprecations, JS
+inutilisé, warning « iframe sandbox allow-scripts + allow-same-origin »). En
+différant AMP (§1), ces signaux disparaissent du chargement initial.
 
-### ✅ Forces
-- MegaMenu intégré
-- Navigation responsive
-- ThemeToggle fonctionnel
-
-### ⚠️ Faiblesses / Risques
-- `Header.astro` (210 lignes) — assez dense
-- Pas de `aria-current="page"` sur le lien actif
-- Le menu mobile utilise du JS inline
-
-### 💡 Suggestions
-- Extraire le menu mobile dans un composant dédié
-- Ajouter `aria-current` sur la navigation
-- Utiliser `client:idle` pour le menu mobile au lieu de JS inline
+`bf-cache` : 2 raisons d'échec restantes (mineur, lié aux headers cache du runtime
+de preview ; à revalider en prod Cloudflare).
 
 ---
 
-## 6. ThemeToggle.astro
+## 3. Accessibilité — ✅ CORRIGÉ
 
-**Score : 6/10**
+Lighthouse signalait `color-contrast` sur de nombreux éléments en texte atténué
+(`.foxiz-tag`, `.meta-item`, `.breadcrumb-link`, `.author-role`, `.meta-label`,
+captions…) — cause racine systémique : le token `--text-tertiary` (`#7b857c`)
+n'atteignait que ~3.7:1 sur `--bg` (`#fcfbfa`), sous le seuil WCAG AA 4.5:1.
 
-### ✅ Forces
-- Gère le dark/light mode
-- Sauvegarde la préférence
+### Correctifs appliqués
+- `src/site/styles/site-theme.css` : `--text-tertiary` foncé `#7b857c → #677068`
+  (≥4.7:1, y compris sur les surfaces teintées `#f3f6f3` des panneaux
+  d'ingrédients ; même teinte sage-gray). Le dark-mode passait déjà (~6.8:1).
+- `src/pages/index.astro` : `.meta-item` passe de `opacity:0.9` à
+  `color: var(--text-secondary)` (déterministe) ; `.foxiz-tag` en
+  `--text-secondary` + `min-height: 24px` (cible tactile `target-size`).
 
-### ⚠️ Faiblesses / Risques
-- **🔴 Utilise `client:load`** — Hydrate immédiatement, pénalité TTI
-- Le script inline pourrait causer un flash de thème incorrect
+- `src/pages/index.astro` : `.foxiz-card-title a` en `inline-block` +
+  `min-height: 24px` → cible tactile conforme (`target-size`).
 
-### 💡 Suggestions
-- Remplacer `client:load` par `client:idle`
-- Utiliser la stratégie `class` de Tailwind pour éviter le flash
-
----
-
-## 7. ArticleCard.astro & RecipePreviewCard.astro
-
-**Score : 7/10**
-
-### ✅ Forces
-- Affichage conditionnel basé sur les props
-- Lazy loading sur les images
-
-### ⚠️ Faiblesses / Risques
-- Pas de `width`/`height` sur les images de card
-- Pas de `srcset` pour les écrans Retina
-- Pas de skeleton pendant le chargement
-
-### 💡 Suggestions
-- Ajouter `width`/`height` + `srcset`
-- Utiliser `loading="lazy"` + `decoding="async"`
+**Résultat** : accueil **100/100/100/100**, recette **100/100**, `target-size` et
+`color-contrast` à 100 sur les deux pages.
 
 ---
 
-## 8. SEO.astro
+## 4. Axes secondaires (faible priorité, non traités)
 
-**Score : 8/10**
-
-### ✅ Forces
-- JSON-LD pré-généré (zero-join)
-- Meta tags complets (Open Graph, Twitter)
-- Canonical URL gérée
-
-### ⚠️ Faiblesses / Risques
-- Le JSON-LD est injecté via `set:html` sans validation runtime
-
-### 💡 Suggestions
-- Ajouter une validation Zod du JSON-LD avant injection
+- **Render-blocking ~110 ms** : `Layout.*.css` (34 KiB) + `index.*.css` (3 KiB)
+  bloquent le premier paint. Marge faible (LCP déjà à 1.1 s).
+- **Images de cartes (`image-delivery`)** : le coupable lourd — les rings de la
+  StoriesBar chargeaient la variante `sm` (720×720, ~80–136 KiB) pour un affichage
+  64px — est **corrigé** : `build-preview.ts` résout désormais la variante la plus
+  petite (`xs`) via `PREVIEW_VARIANT_ORDER`. Savings `image-delivery` 603 → 477 KiB.
+  Le reliquat est constitué d'images **lazy sous la ligne de flottaison** (aucun
+  impact CWV) + marge de compression au niveau de la génération des variantes R2.
+- **Recette : ~54 KiB React** (vendor `client.*.js`) pour `RatingSystem` —
+  acceptable vu TBT=0 ; hydratable en `client:visible` si besoin un jour.
 
 ---
 
-## 9. Design Tokens & CSS
-
-**Score : 8/10**
-
-### ✅ Forces
-- `src/shared/design-tokens.css` bien structuré
-- Variables CSS pour les couleurs, espacements, typographie
-- Support du dark mode via `prefers-color-scheme`
-
-### ⚠️ Faiblesses / Risques
-- **Duplications** entre `design-tokens.css`, `global.css`, `App.css`, `index.css`, `block-editor-tokens.css`
-- Certains tokens ont des noms différents pour la même valeur
-
-### 💡 Suggestions
-- Unifier tous les tokens dans `src/shared/design-tokens.css`
-- Utiliser `@import` pour les tokens spécifiques (admin vs frontend)
-- Documenter la convention de nommage
-
----
-
-## 10. Hydration Globale
-
-**Score : 5/10**
-
-### 🔴 Problèmes critiques
-- Plusieurs composants interactifs utilisent **`client:load`** au lieu de `client:idle` ou `client:visible` :
-  - `ThemeToggle`
-  - `RatingSystem`
-  - `RecipeFilters`
-- `client:load` hydrate immédiatement → pénalité TTI
-- Aucun composant n'utilise `client:visible` pour les éléments below the fold
-
-### 💡 Suggestions
-- Audit de tous les `client:load` → remplacer par `client:idle` sauf si critique
-- Utiliser `client:visible` pour les composants en bas de page
-- Utiliser `client:media` pour les composants responsive
-
----
-
-## 🎯 Recommandations Prioritaires
-
-1. **🔴 Ajouter `width`/`height`** à toutes les images (`Image.astro`, `ArticleCard`, etc.)
-2. **🔴 Remplacer `client:load` par `client:idle`** sur les composants non critiques
-3. **🔴 Extraire le CSS inline** de `ContentRenderer.astro` vers les composants blocks
-4. **🟡 Ajouter `decoding="async"`** sur toutes les images
-5. **🟡 Ajouter `srcset`/`sizes`** sur les images responsives
-6. **🟢 Unifier les design tokens** en un seul fichier source
-
----
-
-## 📊 Lighthouse Score Estimé
-
-| Métrique | Score Actuel | Score Potentiel (après fixes) |
-|----------|-------------|------------------------------|
-| Performance | ~75 | ~92 |
-| Accessibility | ~82 | ~95 |
-| Best Practices | ~85 | ~95 |
-| SEO | ~95 | ~98 |
-
----
-
-## ✅ Vérifications Rapides
+## ✅ Vérifications
 
 ```bash
-# Compter les client:load
-grep -rn "client:load" src/components/ src/layouts/ src/pages/
+# Build prod + runtime Wrangler
+pnpm preview        # http://127.0.0.1:8787
 
-# Chercher les images sans width/height
-grep -rn "<img" src/components/ | grep -v "width=" | grep -v "height="
+# Lighthouse (preset desktop)
+npx lighthouse http://127.0.0.1:8787/ --preset=desktop \
+  --only-categories=performance,accessibility,best-practices,seo
 
-# Mesurer le CSS inline dans ContentRenderer
-sed -n '/<style>/,/<\/style>/p' src/components/ContentRenderer.astro | wc -l
+# Web Vitals via Playwright Performance API : voir l'analyse de session.
 ```

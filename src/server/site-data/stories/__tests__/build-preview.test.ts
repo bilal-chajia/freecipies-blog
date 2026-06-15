@@ -25,6 +25,25 @@ describe("buildStoryPreview", () => {
     expect(preview?.image.url.startsWith("/api/images/")).toBe(true);
   });
 
+  it("prefers the smallest variant (xs) for the ring to keep it lightweight", () => {
+    const multi = JSON.stringify({
+      thumbnail: {
+        alt: "Thumb",
+        variants: {
+          xs: { r2_key: "t-xs.webp", width: 80, height: 80 },
+          sm: { r2_key: "t-sm.webp", width: 720, height: 720 },
+        },
+      },
+    });
+    const article = { type: "recipe", slug: "p", headline: "P", images_json: multi } as unknown as HydratedArticle;
+    expect(buildStoryPreview(article)?.image).toEqual({
+      url: "/api/images/t-xs.webp",
+      alt: "Thumb",
+      width: 80,
+      height: 80,
+    });
+  });
+
   it("returns null when no usable cover image exists", () => {
     const article = { type: "article", slug: "x", headline: "X", images_json: null } as unknown as HydratedArticle;
     expect(buildStoryPreview(article)).toBeNull();

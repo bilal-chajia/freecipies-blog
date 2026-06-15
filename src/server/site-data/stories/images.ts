@@ -6,18 +6,25 @@ import type { StoryImage } from "./types";
 /** Best-to-worst variant preference for a full-screen story background. */
 const VARIANT_ORDER = ["lg", "md", "sm", "xs"] as const;
 
+/** Smallest-first preference for tiny previews (e.g. the ~76px stories ring). */
+export const PREVIEW_VARIANT_ORDER = ["xs", "sm", "md", "lg"] as const;
+
 // Mirrors resolveVariantUrl's parameter type — both casings are handled there.
 interface RawVariant { r2_key?: string; r2Key?: string; url?: string; width?: number; height?: number; }
 interface RawSlot { alt?: string; variants?: Record<string, RawVariant | undefined>; }
 
 /** Resolve a single image slot to a public StoryImage, or null when unusable. */
-export function slotToStoryImage(slot: unknown, fallbackAlt: string): StoryImage | null {
+export function slotToStoryImage(
+  slot: unknown,
+  fallbackAlt: string,
+  order: readonly string[] = VARIANT_ORDER,
+): StoryImage | null {
   if (!slot || typeof slot !== "object") return null;
   const s = slot as RawSlot;
   const variants = s.variants;
   if (!variants || typeof variants !== "object") return null;
 
-  for (const key of VARIANT_ORDER) {
+  for (const key of order) {
     const v = variants[key];
     if (!v) continue;
     const url = resolveVariantUrl(v);
