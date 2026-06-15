@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Button } from '@/ui/button';
 import { Badge } from '@/ui/badge';
-import { Save, RefreshCw, Zap, Eye, Home } from 'lucide-react';
+import { Save, RefreshCw, Zap, Eye, Home, ChevronUp, ChevronDown } from 'lucide-react';
 import {
     LayoutPanelLeft,
     Star,
@@ -24,7 +24,7 @@ import {
     HelpCircle,
 } from 'lucide-react';
 
-// Navigation items for Homepage sections
+// Navigation metadata for Homepage sections
 const homepageSections = [
     { id: 'hero', label: 'Hero', icon: LayoutPanelLeft },
     { id: 'featured', label: 'Featured', icon: Star },
@@ -54,6 +54,7 @@ interface HomepageLayoutProps {
     onSave: () => void;
     onReset?: () => void;
     onPreview?: () => void;
+    onMoveSection?: (sectionId: string, direction: 'up' | 'down') => void;
     saving?: boolean;
     saveDisabled?: boolean;
     saveLabel?: string;
@@ -71,6 +72,7 @@ export default function HomepageLayout({
     onSave,
     onReset,
     onPreview,
+    onMoveSection,
     saving = false,
     saveDisabled = false,
     saveLabel = 'Publish',
@@ -114,16 +116,18 @@ export default function HomepageLayout({
                 {/* Nav Items */}
                 <ScrollArea className="flex-1 min-h-0">
                     <div className="structure-panel-list">
-                        {homepageSections.map((item) => {
+                        {sectionStatus.map((status, index) => {
+                            const item = homepageSections.find((candidate) => candidate.id === status.key) ?? {
+                                id: status.key,
+                                label: status.label,
+                                icon: Grid,
+                            };
                             const Icon = item.icon;
                             const is_active = currentSection === item.id;
-                            const status = sectionStatus.find(s => s.key === item.id);
 
                             return (
-                                <button
+                                <div
                                     key={item.id}
-                                    type="button"
-                                    onClick={() => handleSectionClick(item.id)}
                                     className={cn(
                                         'structure-item group relative overflow-hidden transition-colors',
                                         is_active ? 'text-foreground font-medium' : 'text-muted-foreground'
@@ -136,7 +140,11 @@ export default function HomepageLayout({
                                             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                                         />
                                     )}
-                                    <div className="flex items-center gap-2 w-full relative z-10 min-w-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSectionClick(item.id)}
+                                        className="relative z-10 flex min-w-0 flex-1 items-center gap-2 text-left"
+                                    >
                                         <Icon
                                             className={cn(
                                                 'structure-item-icon transition-all duration-200 group-hover:scale-110 shrink-0',
@@ -157,8 +165,30 @@ export default function HomepageLayout({
                                                 status.enabled ? 'bg-green-500' : 'bg-muted-foreground/30'
                                             )} />
                                         )}
-                                    </div>
-                                </button>
+                                    </button>
+                                    {onMoveSection && item.id !== 'seo' && (
+                                        <div className="relative z-10 ml-1 flex shrink-0 items-center gap-0.5">
+                                            <button
+                                                type="button"
+                                                aria-label={`Move ${item.label} up`}
+                                                disabled={index === 0}
+                                                onClick={() => onMoveSection(item.id, 'up')}
+                                                className="grid h-5 w-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-default disabled:opacity-30"
+                                            >
+                                                <ChevronUp className="h-3 w-3" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                aria-label={`Move ${item.label} down`}
+                                                disabled={index >= sectionStatus.length - 2}
+                                                onClick={() => onMoveSection(item.id, 'down')}
+                                                className="grid h-5 w-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-default disabled:opacity-30"
+                                            >
+                                                <ChevronDown className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             );
                         })}
                     </div>

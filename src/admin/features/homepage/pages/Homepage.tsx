@@ -100,18 +100,48 @@ const Homepage = () => {
   }, []);
 
   const sectionStatus = useMemo(() => {
-    const byId = new Map(formData.sections.map((item) => [item.id, item.enabled]));
-    return [
-      { key: 'hero', label: 'Hero', enabled: byId.get('hero') ?? false },
-      { key: 'featured', label: 'Featured', enabled: byId.get('featured') ?? false },
-      { key: 'categories', label: 'Categories', enabled: byId.get('categories') ?? false },
-      { key: 'collections', label: 'Collections', enabled: byId.get('collections') ?? false },
-      { key: 'latest', label: 'Latest', enabled: byId.get('latest') ?? false },
-      { key: 'about', label: 'Author', enabled: byId.get('about') ?? false },
-      { key: 'newsletter', label: 'Newsletter', enabled: byId.get('newsletter') ?? false },
-      { key: 'faq', label: 'FAQ', enabled: byId.get('faq') ?? false },
-    ];
+    const labels = new Map<string, string>([
+      ['stories', 'Stories'],
+      ['hero', 'Hero'],
+      ['featured', 'Featured'],
+      ['categories', 'Categories'],
+      ['collections', 'Collections'],
+      ['latest', 'Latest'],
+      ['about', 'Author'],
+      ['newsletter', 'Newsletter'],
+      ['faq', 'FAQ'],
+    ]);
+    const editable = formData.sections
+      .filter((item) => item.id !== 'stories')
+      .map((item) => ({
+        key: item.id,
+        label: labels.get(item.id) ?? item.id,
+        enabled: item.enabled,
+      }));
+    return [...editable, { key: 'seo', label: 'SEO', enabled: true }];
   }, [formData.sections]);
+
+  const moveSection = useCallback((sectionId: string, direction: 'up' | 'down') => {
+    setFormData((prev) => {
+      const currentIndex = prev.sections.findIndex((item) => item.id === sectionId);
+      if (currentIndex < 0) return prev;
+
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      if (targetIndex < 0 || targetIndex >= prev.sections.length) return prev;
+
+      const nextSections = [...prev.sections];
+      const current = nextSections[currentIndex];
+      const target = nextSections[targetIndex];
+      if (!current || !target) return prev;
+      nextSections[currentIndex] = target;
+      nextSections[targetIndex] = current;
+
+      return {
+        ...prev,
+        sections: nextSections,
+      };
+    });
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -187,6 +217,7 @@ const Homepage = () => {
       onSave={handleSave}
       onReset={handleReset}
       onPreview={() => window.open('/', '_blank', 'noopener,noreferrer')}
+      onMoveSection={moveSection}
       saving={saving}
       saveLabel="Publish"
     >
