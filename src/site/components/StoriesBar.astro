@@ -59,10 +59,10 @@ const { stories = [] } = Astro.props as Props;
   )
 }
 
-<link rel="stylesheet" href="https://cdn.ampproject.org/amp-story-player-v0.css" />
-<script async src="https://cdn.ampproject.org/amp-story-player-v0.js" is:inline></script>
-
 <script>
+  // The amp-story-player runtime + slide prerender are loaded lazily on first
+  // user intent (see stories-player.ts) — not at page load — to keep the
+  // homepage free of ~96 KiB AMP JS and ~830 KiB of eager cover images.
   import { initStoriesBar } from "@site/scripts/stories-player";
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initStoriesBar);

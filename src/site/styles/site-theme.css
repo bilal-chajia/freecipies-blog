@@ -35,7 +35,10 @@
 
     --text: #1e261f;
     --text-secondary: #4d564e;
-    --text-tertiary: #7b857c;
+    /* Darkened from #7b857c to meet WCAG AA (4.5:1) for small muted text, even
+       on tinted surfaces like the #f3f6f3 ingredient panels (~4.7:1); same
+       sage-gray hue. Dark-mode tertiary already passes. */
+    --text-tertiary: #677068;
     --text-inverse: #ffffff;
     --text-brand: var(--brand-primary);
 

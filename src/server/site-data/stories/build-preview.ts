@@ -1,17 +1,33 @@
 // src/server/site-data/stories/build-preview.ts
 import type { HydratedArticle } from "@modules/articles";
-import { buildImagePool, slotToStoryImage } from "./images";
+import { PREVIEW_VARIANT_ORDER, slotToStoryImage } from "./images";
 import { safeParseJson } from "@shared/utils";
 import type { StoryImage, StoryPreview } from "./types";
 
-/** Prefer the thumbnail slot for the ring; fall back to hero, then content. */
+/**
+ * Resolve the ring preview image, smallest-variant-first: the ring renders at
+ * ~76px, so serving `xs` (when available) instead of the full-screen `lg`/`sm`
+ * keeps the homepage light. Prefer the thumbnail slot, then hero, then content.
+ */
 function previewImage(article: HydratedArticle): StoryImage | null {
   const headline = article.headline ?? "";
   const parsed = safeParseJson<Record<string, unknown>>(article.images_json);
-  const thumb = parsed ? slotToStoryImage(parsed.thumbnail, headline) : null;
+  if (!parsed) return null;
+
+  const thumb = slotToStoryImage(parsed.thumbnail, headline, PREVIEW_VARIANT_ORDER);
   if (thumb) return thumb;
-  const pool = buildImagePool(article.images_json, headline);
-  return pool.hero ?? pool.content[0] ?? null;
+
+  const hero = slotToStoryImage(parsed.hero, headline, PREVIEW_VARIANT_ORDER);
+  if (hero) return hero;
+
+  const rawContent = parsed.content_images;
+  if (rawContent && typeof rawContent === "object") {
+    for (const slot of Object.values(rawContent as Record<string, unknown>)) {
+      const img = slotToStoryImage(slot, headline, PREVIEW_VARIANT_ORDER);
+      if (img) return img;
+    }
+  }
+  return null;
 }
 
 export function buildStoryPreview(article: HydratedArticle): StoryPreview | null {
