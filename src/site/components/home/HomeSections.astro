@@ -1,0 +1,38 @@
+---
+import type { HomeSectionVM } from '@site/utils/home-data';
+import StoriesBar from '@components/StoriesBar.astro';
+import HeroSection from './HeroSection.astro';
+import FeaturedRecipes from './FeaturedRecipes.astro';
+import CategoryBrowse from './CategoryBrowse.astro';
+import Collections from './Collections.astro';
+import LatestRecipes from './LatestRecipes.astro';
+import AboutAuthor from './AboutAuthor.astro';
+import NewsletterBanner from './NewsletterBanner.astro';
+
+interface Props {
+  sections: HomeSectionVM[];
+}
+const { sections } = Astro.props as Props;
+---
+{
+  sections.map((vm) => {
+    switch (vm.kind) {
+      case 'stories':
+        return <StoriesBar stories={vm.stories} />;
+      case 'hero':
+        return <HeroSection section={vm.section} recipes={vm.recipes} />;
+      case 'featured_recipes':
+        return <FeaturedRecipes section={vm.section} recipes={vm.recipes} />;
+      case 'category_browse':
+        return <CategoryBrowse section={vm.section} categories={vm.categories} />;
+      case 'collections':
+        return <Collections section={vm.section} roundups={vm.roundups} />;
+      case 'latest':
+        return <LatestRecipes section={vm.section} recipes={vm.recipes} />;
+      case 'about_author':
+        return <AboutAuthor section={vm.section} author={vm.author} />;
+      case 'newsletter':
+        return <NewsletterBanner section={vm.section} />;
+    }
+  })
+}
