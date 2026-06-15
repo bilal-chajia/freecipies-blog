@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./fonts.css";
 @import "../shared/design-tokens.css";
 @import "./site-theme.css";
 

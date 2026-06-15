@@ -113,6 +113,8 @@
     "@astrojs/check": "0.9.8",
     "@astrojs/react": "^5.0.3",
     "@cloudflare/workers-types": "^4.20260408.1",
+    "@fontsource-variable/playfair-display": "^5.2.8",
+    "@fontsource-variable/source-sans-3": "^5.2.9",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
