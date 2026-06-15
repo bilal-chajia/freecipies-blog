@@ -17,10 +17,11 @@ import {
     Star,
     Grid,
     Newspaper,
-    Sparkles,
     Mail,
-    AppWindow,
     Search,
+    BookOpen,
+    UserRound,
+    HelpCircle,
 } from 'lucide-react';
 
 // Navigation items for Homepage sections
@@ -28,10 +29,11 @@ const homepageSections = [
     { id: 'hero', label: 'Hero', icon: LayoutPanelLeft },
     { id: 'featured', label: 'Featured', icon: Star },
     { id: 'categories', label: 'Categories', icon: Grid },
+    { id: 'collections', label: 'Collections', icon: BookOpen },
     { id: 'latest', label: 'Latest', icon: Newspaper },
-    { id: 'popular', label: 'Popular', icon: Sparkles },
+    { id: 'about', label: 'Author', icon: UserRound },
     { id: 'newsletter', label: 'Newsletter', icon: Mail },
-    { id: 'banners', label: 'Banners', icon: AppWindow },
+    { id: 'faq', label: 'FAQ', icon: HelpCircle },
     { id: 'seo', label: 'SEO', icon: Search },
 ];
 

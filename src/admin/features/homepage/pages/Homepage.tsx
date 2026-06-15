@@ -1,199 +1,142 @@
 /**
  * Homepage Configuration
- * 
- * 2-panel Gutenberg-style layout using HomepageLayout wrapper
- * Each section is a separate component with unified SectionCard styling
+ *
+ * Persists the canonical homepage_settings payload through
+ * GET/PUT /api/settings/homepage.
  */
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useHomepageStore } from '../../../store/useStore';
+import api from '@admin/services/api-client';
+import type { AxiosRequestConfig } from 'axios';
 import { HomepageLayout } from '@admin/features/homepage/components';
 import {
   HeroSection,
   FeaturedSection,
   CategoriesSection,
+  CollectionsSection,
   LatestSection,
-  PopularSection,
+  AboutSection,
   NewsletterSection,
-  BannersSection,
-  SeoSection
+  FaqSection,
+  SeoSection,
 } from './sections';
 import { toast } from 'sonner';
-import type { HomepageFormData } from '../types';
+import {
+  DEFAULT_HOME_SECTIONS,
+  HOMEPAGE_SETTINGS_DEFAULTS,
+  type HomepageSection,
+  type HomepageSettings,
+  type PageSeoSettings,
+} from '@modules/settings/types/settings.types';
+
+interface HomepageSettingsResponse {
+  success: boolean;
+  data: {
+    homepage: HomepageSettings;
+  };
+}
+
+type AdminAxiosRequestConfig = AxiosRequestConfig & {
+  skipAdminCache?: boolean;
+};
+
+const cloneSettings = (settings: HomepageSettings): HomepageSettings => ({
+  seo: { ...settings.seo },
+  sections: settings.sections.map((section) => ({ ...section })),
+});
+
+const createDefaultSettings = (): HomepageSettings => cloneSettings({
+  ...HOMEPAGE_SETTINGS_DEFAULTS,
+  sections: DEFAULT_HOME_SECTIONS,
+});
 
 const Homepage = () => {
   const { section = 'hero' } = useParams();
-  const { homepage, loading, error, setHomepage } = useHomepageStore();
+  const [formData, setFormData] = useState<HomepageSettings>(() => createDefaultSettings());
+  const [lastSaved, setLastSaved] = useState<HomepageSettings>(() => createDefaultSettings());
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<HomepageFormData>({
-    // Hero Section
-    hero: {
-      enabled: true,
-      title: 'Welcome to Our Blog',
-      subtitle: 'Discover amazing recipes and cooking tips',
-      backgroundImage: '',
-      background_color: 'var(--bg-alt)',
-      ctaText: 'Explore Recipes',
-      ctaLink: '/articles?type=recipe',
-      showSearch: true,
-    },
-    // Featured Posts
-    featuredPosts: {
-      enabled: true,
-      title: 'Featured Articles',
-      subtitle: 'Handpicked content for you',
-      displayType: 'grid',
-      maxPosts: 6,
-      categoryFilter: 'all',
-      tagFilter: 'all',
-      sortBy: 'published_at',
-      sort_order: 'desc',
-    },
-    // Categories
-    categories: {
-      enabled: true,
-      title: 'Browse by Category',
-      subtitle: 'Find what interests you most',
-      displayType: 'grid',
-      maxCategories: 8,
-      showPostCount: true,
-      showDescription: false,
-    },
-    // Latest Posts
-    latestPosts: {
-      enabled: true,
-      title: 'Latest Posts',
-      subtitle: 'Stay updated with our newest content',
-      maxPosts: 12,
-      showExcerpt: true,
-      showAuthor: true,
-      showDate: true,
-      showViews: false,
-    },
-    // Popular Posts
-    popularPosts: {
-      enabled: true,
-      title: 'Most Popular',
-      subtitle: 'What everyone is reading',
-      maxPosts: 6,
-      timeRange: '30d',
-      showViews: true,
-      showExcerpt: false,
-    },
-    // Newsletter
-    newsletter: {
-      enabled: true,
-      title: 'Stay Updated',
-      subtitle: 'Get the latest recipes delivered to your inbox',
-      description: 'Subscribe for weekly recipes and tips.',
-      buttonText: 'Subscribe Now',
-      placeholderText: 'Enter your email address',
-      successMessage: 'Thank you for subscribing!',
-      privacyText: 'We respect your privacy.',
-    },
-    // Banners
-    banners: {
-      enabled: false,
-      banner1: {
-        enabled: false,
-        title: '',
-        description: '',
-        image: '',
-        link: '',
-        buttonText: 'Learn More',
-        position: 'top',
-        size: 'large',
-      },
-      banner2: {
-        enabled: false,
-        title: '',
-        description: '',
-        image: '',
-        link: '',
-        buttonText: 'Learn More',
-        position: 'middle',
-        size: 'medium',
-      },
-    },
-    // SEO
-    seo: {
-      metaTitle: 'Homepage - Delicious Recipes & Cooking Tips',
-      metaDescription: 'Discover amazing recipes and cooking tips.',
-      canonicalUrl: '',
-      ogImage: '',
-    },
-  });
-
-  // Load homepage settings
-  useEffect(() => {
-    if (homepage && Object.keys(homepage).length > 0) {
-      setFormData(prev => ({ ...prev, ...(homepage as Partial<HomepageFormData>) }));
+  const loadHomepage = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get<HomepageSettingsResponse>('/settings/homepage', {
+        skipAdminCache: true,
+      } as AdminAxiosRequestConfig);
+      const loaded = response.data.data.homepage;
+      const cloned = cloneSettings(loaded);
+      setFormData(cloned);
+      setLastSaved(cloneSettings(cloned));
+    } catch (err) {
+      console.error('Failed to load homepage settings:', err);
+      setError('Failed to load homepage settings');
+    } finally {
+      setLoading(false);
     }
-  }, [homepage]);
+  }, []);
 
-  const handleNestedInputChange = (sectionKey: keyof HomepageFormData, field: string, value: unknown) => {
-    setFormData(prev => ({
+  useEffect(() => {
+    void loadHomepage();
+  }, [loadHomepage]);
+
+  const updateSection = useCallback((id: string, updater: (section: HomepageSection) => HomepageSection) => {
+    setFormData((prev) => ({
       ...prev,
-      [sectionKey]: {
-        ...(prev[sectionKey] as Record<string, unknown>),
-        [field]: value
-      }
+      sections: prev.sections.map((item) => (item.id === id ? updater(item) : item)),
     }));
-  };
+  }, []);
+
+  const updateSeo = useCallback((patch: Partial<PageSeoSettings>) => {
+    setFormData((prev) => ({
+      ...prev,
+      seo: {
+        ...prev.seo,
+        ...patch,
+      },
+    }));
+  }, []);
+
+  const sectionStatus = useMemo(() => {
+    const byId = new Map(formData.sections.map((item) => [item.id, item.enabled]));
+    return [
+      { key: 'hero', label: 'Hero', enabled: byId.get('hero') ?? false },
+      { key: 'featured', label: 'Featured', enabled: byId.get('featured') ?? false },
+      { key: 'categories', label: 'Categories', enabled: byId.get('categories') ?? false },
+      { key: 'collections', label: 'Collections', enabled: byId.get('collections') ?? false },
+      { key: 'latest', label: 'Latest', enabled: byId.get('latest') ?? false },
+      { key: 'about', label: 'Author', enabled: byId.get('about') ?? false },
+      { key: 'newsletter', label: 'Newsletter', enabled: byId.get('newsletter') ?? false },
+      { key: 'faq', label: 'FAQ', enabled: byId.get('faq') ?? false },
+    ];
+  }, [formData.sections]);
 
   const handleSave = async () => {
     try {
       setSaving(true);
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setHomepage(formData);
+      const response = await api.put<HomepageSettingsResponse>('/settings/homepage', formData);
+      const updated = response.data.data.homepage;
+      setFormData(cloneSettings(updated));
+      setLastSaved(cloneSettings(updated));
       toast.success('Homepage configuration saved');
     } catch (err) {
-      console.error('Failed to save:', err);
-      toast.error('Failed to save configuration');
+      console.error('Failed to save homepage settings:', err);
+      toast.error('Failed to save homepage configuration');
     } finally {
       setSaving(false);
     }
   };
 
   const handleReset = () => {
-    if (homepage && Object.keys(homepage).length > 0) {
-      setFormData(prev => ({ ...prev, ...homepage }));
-      toast.success('Changes reverted');
-    }
+    setFormData(cloneSettings(lastSaved));
+    toast.success('Changes reverted');
   };
 
-  const sectionStatus = [
-    { key: 'hero', label: 'Hero', enabled: formData.hero.enabled },
-    { key: 'featured', label: 'Featured', enabled: formData.featuredPosts.enabled },
-    { key: 'categories', label: 'Categories', enabled: formData.categories.enabled },
-    { key: 'latest', label: 'Latest', enabled: formData.latestPosts.enabled },
-    { key: 'popular', label: 'Popular', enabled: formData.popularPosts.enabled },
-    { key: 'newsletter', label: 'Newsletter', enabled: formData.newsletter.enabled },
-    { key: 'banners', label: 'Banners', enabled: formData.banners.enabled },
-  ];
+  const props = { formData, updateSection, updateSeo };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-        <p>Error loading homepage settings: {error}</p>
-      </div>
-    );
-  }
-
-  // Render active section
   const renderSection = () => {
-    const props = { formData, handleNestedInputChange };
-
     switch (section) {
       case 'hero':
         return <HeroSection {...props} />;
@@ -201,14 +144,16 @@ const Homepage = () => {
         return <FeaturedSection {...props} />;
       case 'categories':
         return <CategoriesSection {...props} />;
+      case 'collections':
+        return <CollectionsSection {...props} />;
       case 'latest':
         return <LatestSection {...props} />;
-      case 'popular':
-        return <PopularSection {...props} />;
+      case 'about':
+        return <AboutSection {...props} />;
       case 'newsletter':
         return <NewsletterSection {...props} />;
-      case 'banners':
-        return <BannersSection {...props} />;
+      case 'faq':
+        return <FaqSection {...props} />;
       case 'seo':
         return <SeoSection {...props} />;
       default:
@@ -216,13 +161,32 @@ const Homepage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-md bg-destructive/10 p-4 text-destructive">
+        <p>{error}</p>
+        <button type="button" className="mt-3 text-sm underline" onClick={() => void loadHomepage()}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <HomepageLayout
       activeSection={section}
       sectionStatus={sectionStatus}
       onSave={handleSave}
       onReset={handleReset}
-      onPreview={() => window.open('/', '_blank')}
+      onPreview={() => window.open('/', '_blank', 'noopener,noreferrer')}
       saving={saving}
       saveLabel="Publish"
     >

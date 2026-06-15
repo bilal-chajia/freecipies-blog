@@ -1,108 +1,51 @@
 /**
- * Homepage Types Configuration
+ * Homepage admin types.
+ *
+ * The persisted payload is the same snake_case shape used by
+ * site_settings.homepage_settings and /api/settings/homepage.
  */
 
-export type HeroSectionData = {
-  enabled: boolean;
-  title: string;
-  subtitle: string;
-  backgroundImage: string;
-  background_color: string;
-  ctaText: string;
-  ctaLink: string;
-  showSearch: boolean;
-};
+import type {
+  HomepageAboutAuthorSection,
+  HomepageCategoryBrowseSection,
+  HomepageCollectionsSection,
+  HomepageFaqSection,
+  HomepageFeaturedRecipesSection,
+  HomepageHeroSection,
+  HomepageLatestSection,
+  HomepageNewsletterSection,
+  HomepageSection,
+  HomepageSettings,
+  HomepageStoriesSection,
+  PageSeoSettings,
+} from '@modules/settings/types/settings.types';
 
-export type FeaturedPostsData = {
-  enabled: boolean;
-  title: string;
-  subtitle: string;
-  displayType: string;
-  maxPosts: number;
-  categoryFilter: string;
-  tagFilter: string;
-  sortBy: string;
-  sort_order: string;
-};
+export type HomepageFormData = HomepageSettings;
 
-export type CategoriesSectionData = {
-  enabled: boolean;
-  title: string;
-  subtitle: string;
-  displayType: string;
-  maxCategories: number;
-  showPostCount: boolean;
-  showDescription: boolean;
-};
+export type EditableHomepageSection =
+  | HomepageStoriesSection
+  | HomepageHeroSection
+  | HomepageFeaturedRecipesSection
+  | HomepageCategoryBrowseSection
+  | HomepageCollectionsSection
+  | HomepageLatestSection
+  | HomepageAboutAuthorSection
+  | HomepageNewsletterSection
+  | HomepageFaqSection;
 
-export type LatestPostsData = {
-  enabled: boolean;
-  title: string;
-  subtitle: string;
-  maxPosts: number;
-  showExcerpt: boolean;
-  showAuthor: boolean;
-  showDate: boolean;
-  showViews: boolean;
-};
-
-export type PopularPostsData = {
-  enabled: boolean;
-  title: string;
-  subtitle: string;
-  maxPosts: number;
-  timeRange: string;
-  showViews: boolean;
-  showExcerpt: boolean;
-};
-
-export type NewsletterData = {
-  enabled: boolean;
-  title: string;
-  subtitle: string;
-  description: string;
-  buttonText: string;
-  placeholderText: string;
-  successMessage: string;
-  privacyText: string;
-};
-
-export type BannerConfigData = {
-  enabled: boolean;
-  title: string;
-  description: string;
-  image: string;
-  link: string;
-  buttonText: string;
-  position: string;
-  size: string;
-};
-
-export type BannersData = {
-  enabled: boolean;
-  banner1: BannerConfigData;
-  banner2: BannerConfigData;
-};
-
-export type SeoData = {
-  metaTitle: string;
-  metaDescription: string;
-  canonicalUrl: string;
-  ogImage: string;
-};
-
-export type HomepageFormData = {
-  hero: HeroSectionData;
-  featuredPosts: FeaturedPostsData;
-  categories: CategoriesSectionData;
-  latestPosts: LatestPostsData;
-  popularPosts: PopularPostsData;
-  newsletter: NewsletterData;
-  banners: BannersData;
-  seo: SeoData;
-};
+export type HomepageSectionId =
+  | 'stories'
+  | 'hero'
+  | 'featured'
+  | 'categories'
+  | 'collections'
+  | 'latest'
+  | 'about'
+  | 'newsletter'
+  | 'faq';
 
 export interface HomepageSectionProps {
   formData: HomepageFormData;
-  handleNestedInputChange: (sectionKey: keyof HomepageFormData, field: string, value: unknown) => void;
+  updateSection: (id: string, updater: (section: HomepageSection) => HomepageSection) => void;
+  updateSeo: (patch: Partial<PageSeoSettings>) => void;
 }
