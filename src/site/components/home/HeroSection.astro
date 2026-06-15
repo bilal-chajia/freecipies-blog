@@ -1,0 +1,452 @@
+---
+import { extractImage, getImageSrcSet } from '@shared/utils';
+import { parseCachedRecipe } from '@modules/articles/utils/cached-fields';
+import type { HomepageHeroSection } from '@modules/settings/types/settings.types';
+import type { HydratedArticle } from '@modules/articles/types';
+
+interface Props {
+  section: HomepageHeroSection;
+  recipes: HydratedArticle[];
+}
+
+const { recipes } = Astro.props;
+
+const getRecipeImage = (recipe: HydratedArticle, targetWidth: number, prefer: 'hero' | 'thumbnail' = 'hero') => {
+  const hero = extractImage(recipe.images_json, 'hero', targetWidth);
+  const thumbnail = extractImage(recipe.images_json, 'thumbnail', targetWidth);
+  const slotName = prefer === 'hero'
+    ? (hero.image_url ? 'hero' : 'thumbnail')
+    : (thumbnail.image_url ? 'thumbnail' : 'hero');
+  const selected = slotName === 'hero' ? hero : thumbnail;
+  const srcSet = getImageSrcSet(recipe.images_json, slotName);
+  return { selected, srcSet };
+};
+
+const getRecipeUrl = (recipe: HydratedArticle) => recipe.route || `/recipes/${recipe.slug}`;
+---
+
+{recipes.length > 0 && (
+  <section class="hero-grid-section">
+    <div class="hero-grid">
+      {/* Main Slider */}
+      <div class="hero-slider" id="heroSlider">
+        <div class="slider-track">
+          {recipes.slice(0, 4).map((recipe: HydratedArticle, index: number) => {
+            const { selected, srcSet } = getRecipeImage(recipe, 1200, 'hero');
+            const sizes = '(max-width: 900px) 100vw, 60vw';
+            return (
+              <a
+                href={getRecipeUrl(recipe)}
+                class:list={['slide', { active: index === 0 }]}
+                data-index={index}
+              >
+                <div class="card-image">
+                  {(selected.image_url || recipe.image_url) && (
+                    <img
+                      src={selected.image_url || recipe.image_url}
+                      alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
+                      width={selected.imageWidth || recipe.imageWidth || 1200}
+                      height={selected.imageHeight || recipe.imageHeight || 675}
+                      srcset={srcSet || undefined}
+                      sizes={srcSet ? sizes : undefined}
+                      loading={index === 0 ? 'eager' : 'lazy'}
+                      fetchpriority={index === 0 ? 'high' : 'auto'}
+                      style={selected.imageStyle || undefined}
+                    />
+                  )}
+                  <div class="card-overlay" />
+                </div>
+                <div class="card-content">
+                  <span
+                    class="badge card-category"
+                    style={`--badge-color: ${recipe.category?.color || 'var(--brand-primary)'};`}
+                  >
+                    {recipe.category?.label}
+                  </span>
+                  <h2 class="card-title">{recipe.headline}</h2>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+        {/* Navigation Dots */}
+        <div class="slider-dots">
+          {recipes.slice(0, 4).map((_: HydratedArticle, index: number) => (
+            <button
+              class:list={['dot', { active: index === 0 }]}
+              data-index={index}
+              aria-label={`Slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Side cards */}
+      <div class="hero-side-cards">
+        {recipes.slice(1, 3).map((recipe: HydratedArticle) => {
+          const { selected, srcSet } = getRecipeImage(recipe, 600, 'hero');
+          const sizes = '(max-width: 900px) 100vw, 40vw';
+          return (
+            <a
+              href={getRecipeUrl(recipe)}
+              class="recipe-card recipe-card-small"
+            >
+              <div class="card-image">
+                {(selected.image_url || recipe.image_url) && (
+                  <img
+                    src={selected.image_url || recipe.image_url}
+                    alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
+                    width={selected.imageWidth || recipe.imageWidth || 600}
+                    height={selected.imageHeight || recipe.imageHeight || 400}
+                    srcset={srcSet || undefined}
+                    sizes={srcSet ? sizes : undefined}
+                    loading="lazy"
+                    style={selected.imageStyle || undefined}
+                  />
+                )}
+                <div class="card-overlay" />
+              </div>
+              <div class="card-content">
+                <span
+                  class="badge card-category"
+                  style={`--badge-color: ${recipe.category?.color || 'var(--brand-primary)'};`}
+                >{recipe.category?.label}</span>
+                <h3 class="card-title">{recipe.headline}</h3>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  /* === Hero Grid (Foxiz style) === */
+  .hero-grid-section {
+    padding: clamp(var(--space-4), 3vw, var(--space-8));
+    background:
+      radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--brand-primary-light) 72%, transparent), transparent 28rem),
+      var(--bg);
+  }
+
+  .hero-grid {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: clamp(var(--space-4), 2vw, var(--space-6));
+  }
+
+  @media (max-width: 900px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .hero-side-cards {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  /* === Hero Slider === */
+  .hero-slider {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+    min-height: 500px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  @media (max-width: 900px) {
+    .hero-slider {
+      min-height: 350px;
+    }
+  }
+
+  .slider-track {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-slow), visibility var(--transition-slow);
+    text-decoration: none;
+  }
+
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 1;
+  }
+
+  .slide .card-image {
+    position: absolute;
+    inset: 0;
+  }
+
+  .slide .card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .slide .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.8) 0%,
+      rgba(0, 0, 0, 0.2) 50%,
+      transparent 100%
+    );
+  }
+
+  .slide .card-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-8);
+    z-index: 2;
+  }
+
+  .slide .card-category {
+    display: inline-block;
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.35),
+        rgba(0, 0, 0, 0.35)
+      ),
+      var(--badge-color, var(--primary));
+    margin-bottom: var(--space-3);
+  }
+
+  .slide .card-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.75rem, 1.25rem + 1.6vw, 3rem);
+    font-weight: var(--font-bold);
+    color: white;
+    margin: 0;
+    line-height: var(--leading-tight);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  @media (max-width: 600px) {
+    .slide .card-title {
+      font-size: var(--text-xl);
+    }
+    .slide .card-content {
+      padding: var(--space-5);
+    }
+  }
+
+  /* Slider Navigation Dots */
+  .slider-dots {
+    position: absolute;
+    bottom: var(--space-5);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: var(--space-2);
+    z-index: 10;
+  }
+
+  .dot {
+    width: var(--space-8);
+    height: var(--space-8);
+    border-radius: var(--radius-full);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-base);
+    padding: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  .dot::before {
+    content: '';
+    width: var(--space-2);
+    height: var(--space-2);
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.5);
+    transition: var(--transition-base);
+  }
+
+  .dot:hover::before,
+  .dot.active::before {
+    background: var(--text-inverse);
+    transform: scale(1.2);
+  }
+
+  /* === Recipe Cards (Overlay style) === */
+  .recipe-card {
+    position: relative;
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-md);
+  }
+
+  .recipe-card-large {
+    min-height: 500px;
+  }
+
+  .recipe-card-small {
+    min-height: 155px;
+  }
+
+  @media (max-width: 900px) {
+    .recipe-card-large {
+      min-height: 350px;
+    }
+    .recipe-card-small {
+      min-height: 200px;
+    }
+  }
+
+  .recipe-card .card-image {
+    position: absolute;
+    inset: 0;
+  }
+
+  .recipe-card .card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+  }
+
+  .recipe-card:hover .card-image img {
+    transform: scale(1.05);
+  }
+
+  .recipe-card .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.8) 0%,
+      rgba(0, 0, 0, 0.2) 50%,
+      transparent 100%
+    );
+  }
+
+  .recipe-card .card-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-6);
+    z-index: 1;
+  }
+
+  .recipe-card-small .card-content {
+    padding: var(--space-4);
+  }
+
+  .recipe-card .card-category {
+    display: inline-block;
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.35),
+        rgba(0, 0, 0, 0.35)
+      ),
+      var(--badge-color, var(--primary));
+    margin-bottom: var(--space-2.5);
+  }
+
+  .recipe-card .card-title {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    margin: 0 0 var(--space-2.5);
+    line-height: var(--leading-tight);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .recipe-card-small .card-title {
+    font-size: var(--text-base);
+    margin-bottom: var(--space-1);
+  }
+
+  .recipe-card .card-meta {
+    display: flex;
+    gap: var(--space-4);
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    opacity: 0.9;
+  }
+
+  .meta-item svg {
+    width: var(--text-sm);
+    height: var(--text-sm);
+  }
+</style>
+
+<script>
+  // Hero Slider functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const slider = document.getElementById('heroSlider');
+    if (!slider) return;
+
+    const slides = slider.querySelectorAll('.slide');
+    const dots = slider.querySelectorAll('.dot');
+    let currentIndex = 0;
+    let autoSlideInterval: ReturnType<typeof setInterval>;
+
+    function goToSlide(index: number) {
+      // Remove active from all slides and dots
+      slides.forEach(s => s.classList.remove('active'));
+      dots.forEach(d => d.classList.remove('active'));
+
+      // Add active to current
+      currentIndex = index;
+      slides[currentIndex]?.classList.add('active');
+      dots[currentIndex]?.classList.add('active');
+    }
+
+    function nextSlide() {
+      const next = (currentIndex + 1) % slides.length;
+      goToSlide(next);
+    }
+
+    function startAutoSlide() {
+      autoSlideInterval = setInterval(nextSlide, 5000);
+    }
+
+    function stopAutoSlide() {
+      clearInterval(autoSlideInterval);
+    }
+
+    // Click on dots
+    dots.forEach(dot => {
+      dot.addEventListener('click', (e) => {
+        e.preventDefault();
+        const index = parseInt((dot as HTMLElement).dataset.index || '0');
+        goToSlide(index);
+        stopAutoSlide();
+        startAutoSlide();
+      });
+    });
+
+    // Pause on hover
+    slider.addEventListener('mouseenter', stopAutoSlide);
+    slider.addEventListener('mouseleave', startAutoSlide);
+
+    // Start auto-slide
+    startAutoSlide();
+  });
+</script>
