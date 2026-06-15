@@ -10,230 +10,272 @@ interface Props {
 }
 
 const { section, recipes } = Astro.props;
+const hasCarousel = recipes.length > 1;
 
-const getRecipeImage = (recipe: HydratedArticle, targetWidth: number, prefer: 'hero' | 'thumbnail' = 'hero') => {
+const getRecipeImage = (recipe: HydratedArticle, targetWidth: number) => {
   const hero = extractImage(recipe.images_json, 'hero', targetWidth);
   const thumbnail = extractImage(recipe.images_json, 'thumbnail', targetWidth);
-  const slotName = prefer === 'hero'
-    ? (hero.image_url ? 'hero' : 'thumbnail')
-    : (thumbnail.image_url ? 'thumbnail' : 'hero');
-  const selected = slotName === 'hero' ? hero : thumbnail;
+  const slotName = hero.image_url ? 'hero' : 'thumbnail';
+  const selected = hero.image_url ? hero : thumbnail;
   const srcSet = getImageSrcSet(recipe.images_json, slotName);
   return { selected, srcSet };
 };
 
 const getRecipeUrl = (recipe: HydratedArticle) => recipe.route || `/recipes/${recipe.slug}`;
+const getCookTime = (recipe: HydratedArticle) =>
+  parseCachedRecipe(recipe.cached_recipe_json)?.cook_time_minutes ?? null;
 ---
 
 {recipes.length > 0 && (
-  <section class="section popular-recipes-section">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="title-dot"></span>
-          {section.title}
-        </h2>
+  <section class="home-rail home-rail--featured" data-fade-up>
+    <div class="home-rail__inner">
+      <div class="home-rail__header">
+        <div>
+          <h2>{section.title}</h2>
+          {section.subtitle && <p>{section.subtitle}</p>}
+        </div>
+        {hasCarousel && (
+          <div class="home-rail__controls" aria-label={`${section.title} carousel controls`}>
+            <button type="button" data-home-carousel-prev aria-label={`Previous ${section.title}`}>←</button>
+            <button type="button" data-home-carousel-next aria-label={`Next ${section.title}`}>→</button>
+          </div>
+        )}
       </div>
-      <div class="popular-grid">
-        {recipes.map((recipe: HydratedArticle) => {
-          const { selected, srcSet } = getRecipeImage(recipe, 400, 'hero');
-          const sizes = '(max-width: 600px) 100vw, (max-width: 1024px) 50vw, 25vw';
-          const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);
-          const cookTime = cachedRecipe?.cook_time_minutes ?? null;
-          return (
-            <article class="foxiz-card">
-              <a href={getRecipeUrl(recipe)} class="foxiz-card-image">
-                {(selected.image_url || recipe.image_url) && (
-                  <img
-                    src={selected.image_url || recipe.image_url}
-                    alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
-                    width={selected.imageWidth || recipe.imageWidth || 400}
-                    height={selected.imageHeight || recipe.imageHeight || 300}
-                    srcset={srcSet || undefined}
-                    sizes={srcSet ? sizes : undefined}
-                    loading="lazy"
-                    style={selected.imageStyle || undefined}
-                  />
-                )}
-                <span
-                  class="badge foxiz-badge"
-                  style={`--badge-color: ${recipe.category?.color || 'var(--brand-primary)'};`}
-                >
-                  {recipe.category?.label}
-                </span>
-              </a>
-              <div class="foxiz-card-body">
-                <h3 class="foxiz-card-title">
-                  <a href={getRecipeUrl(recipe)}>{recipe.headline}</a>
-                </h3>
-                <div class="foxiz-tags">
-                  {recipe.category?.label && (
-                    <a href={`/categories/${recipe.category?.slug}`} class="foxiz-tag">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 4h6l2 3h8v10H4z"/>
-                      </svg>
-                      {recipe.category?.label}
-                    </a>
-                  )}
-                  {cookTime && (
-                    <span class="foxiz-tag">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M12 6v6l4 2"/>
-                      </svg>
-                      {`${cookTime} min`}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </article>
-          );
-        })}
+
+      <div class="home-rail__carousel" data-home-carousel={hasCarousel ? 'slide' : undefined}>
+        <div class="home-rail__viewport" data-home-carousel-viewport={hasCarousel ? '' : undefined}>
+          <div class="home-rail__track">
+            {recipes.map((recipe: HydratedArticle, index: number) => {
+              const { selected, srcSet } = getRecipeImage(recipe, 640);
+              const cookTime = getCookTime(recipe);
+              return (
+                <article class="home-card" style={`--stagger: ${index};`}>
+                  <a href={getRecipeUrl(recipe)} class="home-card__media">
+                    {(selected.image_url || recipe.image_url) && (
+                      <img
+                        src={selected.image_url || recipe.image_url}
+                        alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
+                        width={selected.imageWidth || recipe.imageWidth || 640}
+                        height={selected.imageHeight || recipe.imageHeight || 480}
+                        srcset={srcSet || undefined}
+                        sizes={srcSet ? '(max-width: 700px) 86vw, (max-width: 1100px) 42vw, 30vw' : undefined}
+                        loading="lazy"
+                        style={selected.imageStyle || undefined}
+                      />
+                    )}
+                  </a>
+                  <div class="home-card__body">
+                    <div class="home-card__meta">
+                      {recipe.category?.label && (
+                        <a href={`/categories/${recipe.category.slug}`} class="home-card__category">
+                          {recipe.category.label}
+                        </a>
+                      )}
+                      {cookTime && <span>{cookTime} min</span>}
+                    </div>
+                    <h3><a href={getRecipeUrl(recipe)}>{recipe.headline}</a></h3>
+                    {recipe.short_description && <p>{recipe.short_description}</p>}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   </section>
 )}
 
 <style>
-  .container {
+  .home-rail {
+    padding: clamp(var(--space-10), 7vw, var(--space-16)) var(--space-5);
+    background: var(--bg-elevated);
+  }
+
+  .home-rail__inner {
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: 0 var(--space-5);
   }
 
-  .section {
-    padding: clamp(var(--space-12), 7vw, 5.5rem) 0;
-  }
-
-  .section-header {
+  .home-rail__header {
     display: flex;
+    align-items: end;
     justify-content: space-between;
-    align-items: center;
+    gap: var(--space-5);
     margin-bottom: var(--space-6);
   }
 
-  .section-title {
-    font-family: var(--font-serif);
-    font-size: clamp(1.65rem, 1.25rem + 1.2vw, 2.35rem);
-    font-weight: var(--font-bold);
-    color: var(--text);
+  .home-rail h2 {
     margin: 0;
+    color: var(--text);
+    font-family: var(--font-serif);
+    font-size: clamp(1.8rem, 1.35rem + 1.5vw, 2.75rem);
+    line-height: var(--leading-tight);
     letter-spacing: 0;
   }
 
-  .title-dot {
-    display: inline-block;
-    width: var(--space-2);
-    height: var(--space-2);
-    background: var(--brand-primary);
-    border-radius: var(--radius-full);
-    margin-right: var(--space-2);
-    vertical-align: middle;
+  .home-rail__header p {
+    max-width: 38rem;
+    margin: var(--space-2) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
   }
 
-  /* === Foxiz-style Popular Recipes Cards === */
-  .popular-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
-    gap: clamp(var(--space-4), 3vw, var(--space-6));
-  }
-
-  .foxiz-card {
+  .home-rail__controls {
     display: flex;
-    flex-direction: column;
-    background: var(--bg-elevated);
+    gap: var(--space-2);
+  }
+
+  .home-rail__controls button {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+  }
+
+  .home-rail__controls button:hover:not(:disabled) {
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+    transform: translateY(-1px);
+  }
+
+  .home-rail__controls button:disabled {
+    opacity: 0.42;
+    cursor: default;
+  }
+
+  .home-rail__viewport {
+    overflow: hidden;
+  }
+
+  .home-rail__track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(18rem, 31%);
+    gap: clamp(var(--space-4), 2vw, var(--space-6));
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .home-rail__track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-card {
+    min-width: 0;
+    overflow: hidden;
+    scroll-snap-align: start;
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
-    overflow: hidden;
+    background: var(--bg);
     box-shadow: var(--shadow-sm);
     transition: transform var(--transition-base), box-shadow var(--transition-base);
   }
 
-  .foxiz-card:hover {
+  .home-card:hover {
     transform: translateY(calc(-1 * var(--space-1)));
-    box-shadow: var(--shadow-hover);
+    box-shadow: var(--shadow-md);
   }
 
-  .foxiz-card-image {
-    position: relative;
+  .home-card__media {
     display: block;
-    border-radius: 0;
     overflow: hidden;
-    aspect-ratio: 4/3;
+    aspect-ratio: 4 / 3;
+    background: var(--bg-muted);
   }
 
-  .foxiz-card-image img {
+  .home-card__media img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform var(--transition-slow);
   }
 
-  .foxiz-card:hover .foxiz-card-image img {
-    transform: scale(1.05);
+  .home-card:hover .home-card__media img {
+    transform: scale(1.045);
   }
 
-  .foxiz-badge {
-    position: absolute;
-    bottom: var(--space-3);
-    left: var(--space-3);
-    background: linear-gradient(
-        rgba(0, 0, 0, 0.35),
-        rgba(0, 0, 0, 0.35)
-      ),
-      var(--badge-color, var(--brand-primary));
+  .home-card__body {
+    padding: var(--space-5);
   }
 
-  .foxiz-card-body {
-    padding: var(--space-4);
-  }
-
-  .foxiz-card-title {
-    font-size: var(--text-base);
-    font-weight: var(--font-bold);
-    line-height: var(--leading-snug);
-    margin: 0 0 var(--space-2.5);
-    color: var(--text);
-  }
-
-  .foxiz-card-title a {
-    color: inherit;
-    text-decoration: none;
-    transition: color var(--transition-fast);
-  }
-
-  .foxiz-card-title a:hover {
-    color: var(--primary);
-  }
-
-  .foxiz-tags {
+  .home-card__meta {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1) var(--space-4);
-  }
-
-  .foxiz-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--text-xs);
+    gap: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
     color: var(--text-tertiary);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    text-transform: uppercase;
+  }
+
+  .home-card__category {
+    color: var(--brand-primary);
     text-decoration: none;
-    transition: color var(--transition-fast);
   }
 
-  .foxiz-tag svg {
-    width: var(--text-xs);
-    height: var(--text-xs);
+  .home-card h3 {
+    margin: 0;
+    color: var(--text);
+    font-size: var(--text-xl);
+    line-height: var(--leading-snug);
   }
 
-  a.foxiz-tag:hover {
-    color: var(--primary);
+  .home-card h3 a {
+    color: inherit;
+    text-decoration: none;
   }
 
-  /* === Popular Recipes Section === */
-  .popular-recipes-section {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
+  .home-card h3 a:hover {
+    color: var(--brand-primary);
+  }
+
+  .home-card__body p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin: var(--space-3) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+  }
+
+  @media (max-width: 900px) {
+    .home-rail__track {
+      grid-auto-columns: minmax(17rem, 46%);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .home-rail {
+      padding-inline: var(--space-4);
+    }
+
+    .home-rail__header {
+      align-items: start;
+      flex-direction: column;
+    }
+
+    .home-rail__track {
+      grid-auto-columns: 86%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-card,
+    .home-card__media img,
+    .home-rail__controls button {
+      transition: none;
+    }
   }
 </style>
