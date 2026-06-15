@@ -8,6 +8,8 @@ import type { D1Database } from '@cloudflare/workers-types';
 import type {
     AIProvider,
     AiSettings,
+    ApiFormat,
+    AuthStyle,
     BuiltInProvider,
     CustomProviderConfig,
     GenerateContentRequest,
@@ -19,8 +21,10 @@ import type {
 import { ALL_PROVIDERS } from './types';
 import { getAiSettings, saveAiSettings, type AiSettingsPatch } from './settings-store';
 import {
+    AnthropicCompatibleProvider,
     AnthropicProvider,
     DeepSeekProvider,
+    GeminiCompatibleProvider,
     GeminiProvider,
     MistralProvider,
     MoonshotProvider,
@@ -57,7 +61,12 @@ function getProviderBaseUrl(settings: AiSettings, provider: AIProvider): string 
     return custom?.base_url;
 }
 
-export function createProvider(provider: AIProvider, apiKey: string, baseUrl?: string): IAIProvider {
+export function createProvider(
+    provider: AIProvider,
+    apiKey: string,
+    baseUrl?: string,
+    opts?: { apiFormat?: ApiFormat; authStyle?: AuthStyle },
+): IAIProvider {
     switch (provider) {
         case 'gemini':
             return new GeminiProvider(apiKey);
@@ -79,9 +88,12 @@ export function createProvider(provider: AIProvider, apiKey: string, baseUrl?: s
             return new MistralProvider(apiKey);
         case 'xai':
             return new XAIProvider(apiKey);
-        default:
+        default: {
             if (!baseUrl) throw new Error(`Unknown provider: ${provider}`);
-            return new OpenAICompatibleProvider(provider, baseUrl, apiKey);
+            if (opts?.apiFormat === 'anthropic') return new AnthropicCompatibleProvider(provider, baseUrl, apiKey);
+            if (opts?.apiFormat === 'gemini') return new GeminiCompatibleProvider(provider, baseUrl, apiKey);
+            return new OpenAICompatibleProvider(provider, baseUrl, apiKey, opts?.authStyle);
+        }
     }
 }
 
@@ -130,7 +142,11 @@ export async function generateContent(
     }
 
     const model = request.model || (provider === settings.default_provider ? settings.default_model : '');
-    const aiProvider = createProvider(provider, config.api_key, getProviderBaseUrl(settings, provider));
+    const customCfg = config as CustomProviderConfig;
+    const aiProvider = createProvider(provider, config.api_key, getProviderBaseUrl(settings, provider), {
+        apiFormat: customCfg.api_format,
+        authStyle: customCfg.auth_style,
+    });
 
     return aiProvider.generateContent({
         ...request,
@@ -145,8 +161,9 @@ export async function validateProviderApiKey(
     provider: AIProvider,
     apiKey: string,
     baseUrl?: string,
+    opts?: { apiFormat?: ApiFormat; authStyle?: AuthStyle },
 ): Promise<boolean> {
-    const aiProvider = createProvider(provider, apiKey, baseUrl);
+    const aiProvider = createProvider(provider, apiKey, baseUrl, opts);
     return aiProvider.validateApiKey(apiKey);
 }
 

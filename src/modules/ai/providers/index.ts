@@ -15,3 +15,5 @@ export { MoonshotProvider } from './moonshot.provider';
 export { MistralProvider } from './mistral.provider';
 export { XAIProvider } from './xai.provider';
 export { OpenAICompatibleProvider } from './openai-compatible.provider';
+export { AnthropicCompatibleProvider } from './anthropic-compatible.provider';
+export { GeminiCompatibleProvider } from './gemini-compatible.provider';
