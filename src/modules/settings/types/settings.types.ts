@@ -105,9 +105,146 @@ export interface PageSeoSettings {
   twitter_card: 'summary' | 'summary_large_image';
 }
 
+// ── Homepage section model ──
+
+export type HomepageSectionType =
+  | 'stories'
+  | 'hero'
+  | 'featured_recipes'
+  | 'category_browse'
+  | 'collections'
+  | 'latest'
+  | 'about_author'
+  | 'newsletter'
+  | 'faq';
+
+export interface HomepageRecipeRef {
+  article_id: number;
+  headline: string;
+  route: string;
+  category?: { label: string; slug: string; color?: string } | null;
+}
+
+export interface HomepageRoundupRef {
+  roundup_id: number;
+  title: string;
+  route: string;
+}
+
+export interface HomepageFaqItem {
+  question: string;
+  answer: string;
+}
+
+interface HomepageSectionBase {
+  id: string;
+  enabled: boolean;
+}
+
+export interface HomepageStoriesSection extends HomepageSectionBase {
+  type: 'stories';
+}
+
+export interface HomepageHeroSection extends HomepageSectionBase {
+  type: 'hero';
+  mode: 'slider' | 'grid';
+  show_search: boolean;
+  refs: HomepageRecipeRef[];
+}
+
+export interface HomepageFeaturedRecipesSection extends HomepageSectionBase {
+  type: 'featured_recipes';
+  title: string;
+  subtitle: string;
+  source: 'manual' | 'category' | 'latest';
+  category_slug: string | null;
+  count: number;
+  refs: HomepageRecipeRef[];
+}
+
+export interface HomepageCategoryBrowseSection extends HomepageSectionBase {
+  type: 'category_browse';
+  title: string;
+  subtitle: string;
+  max: number;
+}
+
+export interface HomepageCollectionsSection extends HomepageSectionBase {
+  type: 'collections';
+  title: string;
+  subtitle: string;
+  refs: HomepageRoundupRef[];
+}
+
+export interface HomepageLatestSection extends HomepageSectionBase {
+  type: 'latest';
+  title: string;
+  count: number;
+}
+
+export interface HomepageAboutAuthorSection extends HomepageSectionBase {
+  type: 'about_author';
+  author_id: number | null;
+}
+
+export interface HomepageNewsletterSection extends HomepageSectionBase {
+  type: 'newsletter';
+  title: string;
+  subtitle: string;
+  button_text: string;
+  placeholder_text: string;
+}
+
+export interface HomepageFaqSection extends HomepageSectionBase {
+  type: 'faq';
+  title: string;
+  items: HomepageFaqItem[];
+}
+
+export type HomepageSection =
+  | HomepageStoriesSection
+  | HomepageHeroSection
+  | HomepageFeaturedRecipesSection
+  | HomepageCategoryBrowseSection
+  | HomepageCollectionsSection
+  | HomepageLatestSection
+  | HomepageAboutAuthorSection
+  | HomepageNewsletterSection
+  | HomepageFaqSection;
+
 export interface HomepageSettings {
   seo: PageSeoSettings;
+  sections: HomepageSection[];
 }
+
+export const DEFAULT_HOME_SECTIONS: HomepageSection[] = [
+  { id: 'stories', type: 'stories', enabled: true },
+  { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
+  {
+    id: 'featured',
+    type: 'featured_recipes',
+    enabled: true,
+    title: 'Featured Recipes',
+    subtitle: 'Handpicked for you',
+    source: 'latest',
+    category_slug: null,
+    count: 4,
+    refs: [],
+  },
+  { id: 'categories', type: 'category_browse', enabled: true, title: 'Browse by Category', subtitle: '', max: 8 },
+  { id: 'collections', type: 'collections', enabled: true, title: 'Recipe Collections', subtitle: '', refs: [] },
+  { id: 'latest', type: 'latest', enabled: true, title: 'Latest Recipes', count: 8 },
+  { id: 'about', type: 'about_author', enabled: true, author_id: null },
+  {
+    id: 'newsletter',
+    type: 'newsletter',
+    enabled: true,
+    title: 'Get New Recipes Weekly',
+    subtitle: 'Subscribe to receive delicious recipes straight to your inbox.',
+    button_text: 'Subscribe',
+    placeholder_text: 'Your email address',
+  },
+];
 
 export interface OrganizationProfileSettings {
   name: string;
@@ -150,6 +287,7 @@ export const HOMEPAGE_SETTINGS_DEFAULTS: HomepageSettings = {
     og_description: 'Reliable recipes and cooking guides.',
     twitter_card: 'summary_large_image',
   },
+  sections: DEFAULT_HOME_SECTIONS,
 };
 
 export const ORGANIZATION_PROFILE_DEFAULTS: OrganizationProfileSettings = {
