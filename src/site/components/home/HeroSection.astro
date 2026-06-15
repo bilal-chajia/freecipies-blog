@@ -9,7 +9,10 @@ interface Props {
   recipes: HydratedArticle[];
 }
 
-const { recipes } = Astro.props;
+const { section, recipes } = Astro.props;
+const heroRecipes = recipes.slice(0, 4);
+const supportRecipes = recipes.slice(1, 3);
+const isSlider = section.mode === 'slider' && heroRecipes.length > 1;
 
 const getRecipeImage = (recipe: HydratedArticle, targetWidth: number, prefer: 'hero' | 'thumbnail' = 'hero') => {
   const hero = extractImage(recipe.images_json, 'hero', targetWidth);
@@ -23,430 +26,449 @@ const getRecipeImage = (recipe: HydratedArticle, targetWidth: number, prefer: 'h
 };
 
 const getRecipeUrl = (recipe: HydratedArticle) => recipe.route || `/recipes/${recipe.slug}`;
+const getCookTime = (recipe: HydratedArticle) =>
+  parseCachedRecipe(recipe.cached_recipe_json)?.cook_time_minutes ?? null;
 ---
 
-{recipes.length > 0 && (
-  <section class="hero-grid-section">
-    <div class="hero-grid">
-      {/* Main Slider */}
-      <div class="hero-slider" id="heroSlider">
-        <div class="slider-track">
-          {recipes.slice(0, 4).map((recipe: HydratedArticle, index: number) => {
-            const { selected, srcSet } = getRecipeImage(recipe, 1200, 'hero');
-            const sizes = '(max-width: 900px) 100vw, 60vw';
+{heroRecipes.length > 0 && (
+  <section class:list={['home-hero', { 'home-hero--grid': !isSlider }]} data-fade-up>
+    <div class="home-hero__inner">
+      <div
+        class="home-hero__showcase"
+        data-home-carousel={isSlider ? 'loop' : undefined}
+        data-autoplay={isSlider ? 'true' : undefined}
+      >
+        <div class="home-hero__viewport" data-home-carousel-viewport={isSlider ? '' : undefined}>
+          <div class="home-hero__track">
+            {heroRecipes.map((recipe: HydratedArticle, index: number) => {
+              const { selected, srcSet } = getRecipeImage(recipe, 1200, 'hero');
+              const cookTime = getCookTime(recipe);
+              const sizes = '(max-width: 900px) 100vw, 68vw';
+              return (
+                <article class="home-hero__slide">
+                  <a href={getRecipeUrl(recipe)} class="home-hero__card" aria-label={recipe.headline}>
+                    <div class="home-hero__media">
+                      {(selected.image_url || recipe.image_url) && (
+                        <img
+                          src={selected.image_url || recipe.image_url}
+                          alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
+                          width={selected.imageWidth || recipe.imageWidth || 1200}
+                          height={selected.imageHeight || recipe.imageHeight || 675}
+                          srcset={srcSet || undefined}
+                          sizes={srcSet ? sizes : undefined}
+                          loading={index === 0 ? 'eager' : 'lazy'}
+                          fetchpriority={index === 0 ? 'high' : 'auto'}
+                          style={selected.imageStyle || undefined}
+                        />
+                      )}
+                    </div>
+                    <div class="home-hero__content">
+                      <div class="home-hero__meta">
+                        {recipe.category?.label && (
+                          <span
+                            class="home-pill"
+                            style={`--pill-color: ${recipe.category.color || 'var(--brand-primary)'};`}
+                          >
+                            {recipe.category.label}
+                          </span>
+                        )}
+                        {cookTime && <span>{cookTime} min</span>}
+                      </div>
+                      <h2>{recipe.headline}</h2>
+                      {recipe.short_description && (
+                        <p>{recipe.short_description}</p>
+                      )}
+                    </div>
+                  </a>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+
+        {isSlider && (
+          <div class="home-hero__controls" aria-label="Featured recipe carousel controls">
+            <button type="button" data-home-carousel-prev aria-label="Previous featured recipe">
+              <span aria-hidden="true">←</span>
+            </button>
+            <div class="home-hero__dots" role="tablist" aria-label="Featured recipes">
+              {heroRecipes.map((recipe: HydratedArticle, index: number) => (
+                <button
+                  type="button"
+                  data-home-carousel-dot
+                  class:list={[{ 'is-selected': index === 0 }]}
+                  role="tab"
+                  aria-selected={index === 0 ? 'true' : 'false'}
+                  aria-label={`Show ${recipe.headline}`}
+                />
+              ))}
+            </div>
+            <button type="button" data-home-carousel-next aria-label="Next featured recipe">
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {supportRecipes.length > 0 && (
+        <aside class="home-hero__side" aria-label="More featured recipes">
+          {supportRecipes.map((recipe: HydratedArticle, index: number) => {
+            const { selected, srcSet } = getRecipeImage(recipe, 520, 'thumbnail');
+            const cookTime = getCookTime(recipe);
             return (
-              <a
-                href={getRecipeUrl(recipe)}
-                class:list={['slide', { active: index === 0 }]}
-                data-index={index}
-              >
-                <div class="card-image">
+              <a href={getRecipeUrl(recipe)} class="home-hero__mini" style={`--stagger: ${index + 1};`}>
+                <div class="home-hero__mini-media">
                   {(selected.image_url || recipe.image_url) && (
                     <img
                       src={selected.image_url || recipe.image_url}
                       alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
-                      width={selected.imageWidth || recipe.imageWidth || 1200}
-                      height={selected.imageHeight || recipe.imageHeight || 675}
+                      width={selected.imageWidth || recipe.imageWidth || 520}
+                      height={selected.imageHeight || recipe.imageHeight || 390}
                       srcset={srcSet || undefined}
-                      sizes={srcSet ? sizes : undefined}
-                      loading={index === 0 ? 'eager' : 'lazy'}
-                      fetchpriority={index === 0 ? 'high' : 'auto'}
+                      sizes={srcSet ? '(max-width: 900px) 45vw, 24vw' : undefined}
+                      loading="lazy"
                       style={selected.imageStyle || undefined}
                     />
                   )}
-                  <div class="card-overlay" />
                 </div>
-                <div class="card-content">
-                  <span
-                    class="badge card-category"
-                    style={`--badge-color: ${recipe.category?.color || 'var(--brand-primary)'};`}
-                  >
-                    {recipe.category?.label}
-                  </span>
-                  <h2 class="card-title">{recipe.headline}</h2>
+                <div>
+                  {recipe.category?.label && <span>{recipe.category.label}</span>}
+                  <h3>{recipe.headline}</h3>
+                  {cookTime && <p>{cookTime} min</p>}
                 </div>
               </a>
             );
           })}
-        </div>
-        {/* Navigation Dots */}
-        <div class="slider-dots">
-          {recipes.slice(0, 4).map((_: HydratedArticle, index: number) => (
-            <button
-              class:list={['dot', { active: index === 0 }]}
-              data-index={index}
-              aria-label={`Slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Side cards */}
-      <div class="hero-side-cards">
-        {recipes.slice(1, 3).map((recipe: HydratedArticle) => {
-          const { selected, srcSet } = getRecipeImage(recipe, 600, 'hero');
-          const sizes = '(max-width: 900px) 100vw, 40vw';
-          return (
-            <a
-              href={getRecipeUrl(recipe)}
-              class="recipe-card recipe-card-small"
-            >
-              <div class="card-image">
-                {(selected.image_url || recipe.image_url) && (
-                  <img
-                    src={selected.image_url || recipe.image_url}
-                    alt={selected.imageAlt || recipe.imageAlt || recipe.headline}
-                    width={selected.imageWidth || recipe.imageWidth || 600}
-                    height={selected.imageHeight || recipe.imageHeight || 400}
-                    srcset={srcSet || undefined}
-                    sizes={srcSet ? sizes : undefined}
-                    loading="lazy"
-                    style={selected.imageStyle || undefined}
-                  />
-                )}
-                <div class="card-overlay" />
-              </div>
-              <div class="card-content">
-                <span
-                  class="badge card-category"
-                  style={`--badge-color: ${recipe.category?.color || 'var(--brand-primary)'};`}
-                >{recipe.category?.label}</span>
-                <h3 class="card-title">{recipe.headline}</h3>
-              </div>
-            </a>
-          );
-        })}
-      </div>
+        </aside>
+      )}
     </div>
   </section>
 )}
 
 <style>
-  /* === Hero Grid (Foxiz style) === */
-  .hero-grid-section {
-    padding: clamp(var(--space-4), 3vw, var(--space-8));
+  .home-hero {
+    padding: clamp(var(--space-6), 5vw, var(--space-12)) var(--space-5) clamp(var(--space-10), 7vw, var(--space-16));
     background:
-      radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--brand-primary-light) 72%, transparent), transparent 28rem),
+      linear-gradient(180deg, color-mix(in srgb, var(--brand-primary-light) 42%, transparent), transparent 46%),
       var(--bg);
   }
 
-  .hero-grid {
+  .home-hero__inner {
     max-width: var(--container-max);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1.3fr 1fr;
-    gap: clamp(var(--space-4), 2vw, var(--space-6));
+    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.75fr);
+    gap: clamp(var(--space-4), 3vw, var(--space-7));
+    align-items: stretch;
   }
 
-  @media (max-width: 900px) {
-    .hero-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .hero-side-cards {
-    display: grid;
-    gap: var(--space-5);
-  }
-
-  /* === Hero Slider === */
-  .hero-slider {
+  .home-hero__showcase {
+    min-width: 0;
     position: relative;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-2xl);
+  }
+
+  .home-hero__viewport {
     overflow: hidden;
-    min-height: 500px;
-    box-shadow: var(--shadow-lg);
-  }
-
-  @media (max-width: 900px) {
-    .hero-slider {
-      min-height: 350px;
-    }
-  }
-
-  .slider-track {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-
-  .slide {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity var(--transition-slow), visibility var(--transition-slow);
-    text-decoration: none;
-  }
-
-  .slide.active {
-    opacity: 1;
-    visibility: visible;
-    z-index: 1;
-  }
-
-  .slide .card-image {
-    position: absolute;
-    inset: 0;
-  }
-
-  .slide .card-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .slide .card-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to top,
-      rgba(0, 0, 0, 0.8) 0%,
-      rgba(0, 0, 0, 0.2) 50%,
-      transparent 100%
-    );
-  }
-
-  .slide .card-content {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: var(--space-8);
-    z-index: 2;
-  }
-
-  .slide .card-category {
-    display: inline-block;
-    background: linear-gradient(
-        rgba(0, 0, 0, 0.35),
-        rgba(0, 0, 0, 0.35)
-      ),
-      var(--badge-color, var(--primary));
-    margin-bottom: var(--space-3);
-  }
-
-  .slide .card-title {
-    font-family: var(--font-serif);
-    font-size: clamp(1.75rem, 1.25rem + 1.6vw, 3rem);
-    font-weight: var(--font-bold);
-    color: white;
-    margin: 0;
-    line-height: var(--leading-tight);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  }
-
-  @media (max-width: 600px) {
-    .slide .card-title {
-      font-size: var(--text-xl);
-    }
-    .slide .card-content {
-      padding: var(--space-5);
-    }
-  }
-
-  /* Slider Navigation Dots */
-  .slider-dots {
-    position: absolute;
-    bottom: var(--space-5);
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: var(--space-2);
-    z-index: 10;
-  }
-
-  .dot {
-    width: var(--space-8);
-    height: var(--space-8);
-    border-radius: var(--radius-full);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: var(--transition-base);
-    padding: 0;
-    display: grid;
-    place-items: center;
-  }
-
-  .dot::before {
-    content: '';
-    width: var(--space-2);
-    height: var(--space-2);
-    border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.5);
-    transition: var(--transition-base);
-  }
-
-  .dot:hover::before,
-  .dot.active::before {
-    background: var(--text-inverse);
-    transform: scale(1.2);
-  }
-
-  /* === Recipe Cards (Overlay style) === */
-  .recipe-card {
-    position: relative;
-    display: block;
-    border: 1px solid var(--border);
     border-radius: var(--radius-xl);
+    border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+    box-shadow: var(--shadow-lg);
+    background: var(--bg-elevated);
+  }
+
+  .home-hero__track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .home-hero__track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-hero__slide {
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+
+  .home-hero__card {
+    position: relative;
+    display: grid;
+    min-height: clamp(29rem, 58vw, 40rem);
     overflow: hidden;
-    text-decoration: none;
     color: var(--text-inverse);
-    box-shadow: var(--shadow-md);
+    text-decoration: none;
+    isolation: isolate;
   }
 
-  .recipe-card-large {
-    min-height: 500px;
-  }
-
-  .recipe-card-small {
-    min-height: 155px;
-  }
-
-  @media (max-width: 900px) {
-    .recipe-card-large {
-      min-height: 350px;
-    }
-    .recipe-card-small {
-      min-height: 200px;
-    }
-  }
-
-  .recipe-card .card-image {
+  .home-hero__card::after {
+    content: '';
     position: absolute;
     inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.28) 58%, rgba(0, 0, 0, 0.05)),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.55), transparent 56%);
   }
 
-  .recipe-card .card-image img {
+  .home-hero__media {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+  }
+
+  .home-hero__media img,
+  .home-hero__mini-media img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform var(--transition-slow);
   }
 
-  .recipe-card:hover .card-image img {
-    transform: scale(1.05);
+  .home-hero__card:hover .home-hero__media img,
+  .home-hero__mini:hover .home-hero__mini-media img {
+    transform: scale(1.035);
   }
 
-  .recipe-card .card-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to top,
-      rgba(0, 0, 0, 0.8) 0%,
-      rgba(0, 0, 0, 0.2) 50%,
-      transparent 100%
-    );
+  .home-hero__content {
+    align-self: end;
+    max-width: 44rem;
+    padding: clamp(var(--space-6), 5vw, var(--space-12));
   }
 
-  .recipe-card .card-content {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: var(--space-6);
-    z-index: 1;
-  }
-
-  .recipe-card-small .card-content {
-    padding: var(--space-4);
-  }
-
-  .recipe-card .card-category {
-    display: inline-block;
-    background: linear-gradient(
-        rgba(0, 0, 0, 0.35),
-        rgba(0, 0, 0, 0.35)
-      ),
-      var(--badge-color, var(--primary));
-    margin-bottom: var(--space-2.5);
-  }
-
-  .recipe-card .card-title {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-bold);
-    margin: 0 0 var(--space-2.5);
-    line-height: var(--leading-tight);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  }
-
-  .recipe-card-small .card-title {
-    font-size: var(--text-base);
-    margin-bottom: var(--space-1);
-  }
-
-  .recipe-card .card-meta {
+  .home-hero__meta {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    color: rgba(255, 255, 255, 0.86);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+  }
+
+  .home-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--pill-color, var(--brand-primary)) 82%, black);
+    color: var(--text-inverse);
+  }
+
+  .home-hero h2 {
+    max-width: 13ch;
+    margin: 0;
+    color: var(--text-inverse);
+    font-family: var(--font-serif);
+    font-size: clamp(2.15rem, 1.3rem + 4vw, 5rem);
+    font-weight: var(--font-bold);
+    line-height: 0.98;
+    letter-spacing: 0;
+  }
+
+  .home-hero__content p {
+    max-width: 42rem;
+    margin: var(--space-4) 0 0;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+  }
+
+  .home-hero__controls {
+    position: absolute;
+    right: var(--space-5);
+    bottom: var(--space-5);
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: var(--radius-full);
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(14px);
+  }
+
+  .home-hero__controls button {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--text-inverse);
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast);
+  }
+
+  .home-hero__controls button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.24);
+    transform: translateY(-1px);
+  }
+
+  .home-hero__controls button:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .home-hero__dots {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .home-hero__dots button {
+    width: 0.55rem;
+    height: 0.55rem;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .home-hero__dots button.is-selected {
+    width: 1.35rem;
+    background: var(--text-inverse);
+  }
+
+  .home-hero__side {
+    display: grid;
     gap: var(--space-4);
   }
 
-  .meta-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--text-sm);
-    opacity: 0.9;
+  .home-hero__mini {
+    display: grid;
+    grid-template-columns: minmax(8rem, 44%) minmax(0, 1fr);
+    min-height: 12rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--bg-elevated);
+    color: var(--text);
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
   }
 
-  .meta-item svg {
-    width: var(--text-sm);
-    height: var(--text-sm);
+  .home-hero__mini:hover {
+    transform: translateY(calc(-1 * var(--space-1)));
+    box-shadow: var(--shadow-md);
+  }
+
+  .home-hero__mini-media {
+    min-height: 100%;
+    overflow: hidden;
+  }
+
+  .home-hero__mini > div:last-child {
+    display: grid;
+    align-content: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+  }
+
+  .home-hero__mini span,
+  .home-hero__mini p {
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    text-transform: uppercase;
+  }
+
+  .home-hero__mini h3 {
+    margin: 0;
+    color: var(--text);
+    font-size: var(--text-lg);
+    line-height: var(--leading-snug);
+  }
+
+  .home-hero--grid .home-hero__track {
+    grid-auto-flow: initial;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    overflow: visible;
+  }
+
+  .home-hero--grid .home-hero__card {
+    min-height: 22rem;
+    border-radius: var(--radius-xl);
+  }
+
+  .home-hero--grid .home-hero__slide:first-child {
+    grid-column: span 2;
+  }
+
+  @media (max-width: 900px) {
+    .home-hero__inner {
+      grid-template-columns: 1fr;
+    }
+
+    .home-hero__card {
+      min-height: clamp(28rem, 88vw, 34rem);
+    }
+
+    .home-hero__side {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-hero__mini {
+      grid-template-columns: 1fr;
+    }
+
+    .home-hero__mini-media {
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .home-hero {
+      padding-inline: var(--space-4);
+    }
+
+    .home-hero__card {
+      min-height: 30rem;
+    }
+
+    .home-hero__card::after {
+      background:
+        linear-gradient(0deg, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.22) 70%, rgba(0, 0, 0, 0.06)),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.42), transparent);
+    }
+
+    .home-hero h2 {
+      max-width: 12ch;
+      font-size: clamp(2rem, 14vw, 3.25rem);
+    }
+
+    .home-hero__content p {
+      display: none;
+    }
+
+    .home-hero__controls {
+      right: var(--space-4);
+      bottom: var(--space-4);
+    }
+
+    .home-hero__side,
+    .home-hero--grid .home-hero__track {
+      grid-template-columns: 1fr;
+    }
+
+    .home-hero--grid .home-hero__slide:first-child {
+      grid-column: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-hero__media img,
+    .home-hero__mini-media img,
+    .home-hero__mini,
+    .home-hero__controls button {
+      transition: none;
+    }
   }
 </style>
-
-<script>
-  // Hero Slider functionality
-  document.addEventListener('DOMContentLoaded', () => {
-    const slider = document.getElementById('heroSlider');
-    if (!slider) return;
-
-    const slides = slider.querySelectorAll('.slide');
-    const dots = slider.querySelectorAll('.dot');
-    let currentIndex = 0;
-    let autoSlideInterval: ReturnType<typeof setInterval>;
-
-    function goToSlide(index: number) {
-      // Remove active from all slides and dots
-      slides.forEach(s => s.classList.remove('active'));
-      dots.forEach(d => d.classList.remove('active'));
-
-      // Add active to current
-      currentIndex = index;
-      slides[currentIndex]?.classList.add('active');
-      dots[currentIndex]?.classList.add('active');
-    }
-
-    function nextSlide() {
-      const next = (currentIndex + 1) % slides.length;
-      goToSlide(next);
-    }
-
-    function startAutoSlide() {
-      autoSlideInterval = setInterval(nextSlide, 5000);
-    }
-
-    function stopAutoSlide() {
-      clearInterval(autoSlideInterval);
-    }
-
-    // Click on dots
-    dots.forEach(dot => {
-      dot.addEventListener('click', (e) => {
-        e.preventDefault();
-        const index = parseInt((dot as HTMLElement).dataset.index || '0');
-        goToSlide(index);
-        stopAutoSlide();
-        startAutoSlide();
-      });
-    });
-
-    // Pause on hover
-    slider.addEventListener('mouseenter', stopAutoSlide);
-    slider.addEventListener('mouseleave', startAutoSlide);
-
-    // Start auto-slide
-    startAutoSlide();
-  });
-</script>
