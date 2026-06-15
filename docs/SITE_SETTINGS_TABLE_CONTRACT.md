@@ -337,7 +337,17 @@ Shape:
     "og_title": "SaaS Blog",
     "og_description": "Reliable recipes and cooking guides.",
     "twitter_card": "summary_large_image"
-  }
+  },
+  "sections": [
+    { "id": "stories", "type": "stories", "enabled": true },
+    { "id": "hero", "type": "hero", "enabled": true, "mode": "slider", "show_search": true, "refs": [] },
+    { "id": "featured", "type": "featured_recipes", "enabled": true, "title": "Featured Recipes", "subtitle": "Handpicked for you", "source": "latest", "category_slug": null, "count": 4, "refs": [] },
+    { "id": "categories", "type": "category_browse", "enabled": true, "title": "Browse by Category", "subtitle": "", "max": 8 },
+    { "id": "collections", "type": "collections", "enabled": true, "title": "Recipe Collections", "subtitle": "", "refs": [] },
+    { "id": "latest", "type": "latest", "enabled": true, "title": "Latest Recipes", "count": 8 },
+    { "id": "about", "type": "about_author", "enabled": true, "author_id": null },
+    { "id": "newsletter", "type": "newsletter", "enabled": true, "title": "Get New Recipes Weekly", "subtitle": "Subscribe to receive delicious recipes straight to your inbox.", "button_text": "Subscribe", "placeholder_text": "Your email address" }
+  ]
 }
 ```
 
@@ -375,6 +385,34 @@ Rules:
 - Admin save of `homepage_settings` must invalidate the cached homepage settings
   payload.
 - Admin edit/preview paths can force a fresh read when needed.
+
+Section rules:
+
+- `homepage_settings.sections` is an ordered array; array order is the public render
+  order. Reordering is expressed by reordering the array.
+- Each section has `id` (stable string), `type` (from the catalog below), and `enabled`.
+- Disabled sections (`enabled = false`) are persisted but not rendered.
+- v1 section `type` values: `stories`, `hero`, `featured_recipes`, `category_browse`,
+  `collections`, `latest`, `about_author`, `newsletter`, `faq`. Additional catalog types
+  (`quick_filters`, `seasonal_spotlight`, `popular`, `social_proof`, `lead_magnet`,
+  `social_feed`, `banner`) are reserved and added in later phases; unknown types are
+  rejected by validation.
+- Manually-curated sections store light references, not image snapshots:
+  - recipe ref: `{ article_id, headline, route, category? { label, slug, color? } }`
+  - roundup ref: `{ roundup_id, title, route }`
+  - author ref: `author_id` (or `null` to use the `is_featured` author)
+- Images and heavy fields are resolved at render time from the live rows; settings must
+  not store recipe/roundup image snapshots or `r2_key` for these refs.
+- `hero.mode` is `slider` or `grid`; `hero.show_search` toggles the hero search box.
+- `featured_recipes.source` is `manual`, `category`, or `latest`. With `manual`, `refs`
+  drives the list; with `category`, `category_slug` selects the source; with `latest`,
+  the newest published recipes are used.
+- `faq.items[]` use `{ question, answer }` and are the source for homepage `FAQPage`
+  JSON-LD.
+- When `homepage_settings` is missing `sections` (legacy seo-only value), the service
+  falls back to the default section set.
+- `homepage_settings.sections` must not store Schema.org JSON-LD; JSON-LD is generated at
+  render from these sections plus `organization_profile` / `site_identity`.
 
 ### Site Identity
 
