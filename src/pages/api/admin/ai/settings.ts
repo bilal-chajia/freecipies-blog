@@ -66,8 +66,8 @@ export const POST: APIRoute = async ({ request }) => {
         const authError = await requireAdmin(request);
         if (authError) return authError;
 
-        const { provider, api_key, base_url } = await validateBody(request, ValidateApiKeySchema);
-        const isValid = await createProvider(provider, api_key, base_url).validateApiKey(api_key);
+        const { provider, api_key, base_url, api_format, auth_style } = await validateBody(request, ValidateApiKeySchema);
+        const isValid = await createProvider(provider, api_key, base_url, { apiFormat: api_format, authStyle: auth_style }).validateApiKey(api_key);
 
         const { body, status, headers } = formatSuccessResponse({
             valid: isValid,

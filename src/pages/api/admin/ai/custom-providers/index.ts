@@ -44,7 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
         if (authError) return authError;
         if (!env?.DB) throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
 
-        const { id, label, base_url, api_key, enabled } = await validateBody(request, CreateCustomProviderSchema);
+        const { id, label, base_url, api_key, enabled, api_format, auth_style } = await validateBody(request, CreateCustomProviderSchema);
         const settings = await getAiSettings(env.DB);
         if (ALL_PROVIDERS.includes(id as (typeof ALL_PROVIDERS)[number])) {
             throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Custom provider id cannot match a built-in provider', 400);
@@ -61,6 +61,8 @@ export const POST: APIRoute = async ({ request }) => {
                     api_key,
                     enabled: enabled ?? true,
                     models: [],
+                    api_format: api_format ?? 'openai',
+                    auth_style: auth_style ?? 'bearer',
                 },
             },
         });

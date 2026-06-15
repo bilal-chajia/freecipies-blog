@@ -32,7 +32,11 @@ export const GET: APIRoute = async ({ params, request }) => {
             throw new AppError(ErrorCodes.VALIDATION_ERROR, `No API key configured for ${provider}`, 400);
         }
 
-        const impl = createProvider(provider as AIProvider, cfg.api_key, (cfg as CustomProviderConfig).base_url);
+        const customCfg = cfg as CustomProviderConfig;
+        const impl = createProvider(provider as AIProvider, cfg.api_key, customCfg.base_url, {
+            apiFormat: customCfg.api_format,
+            authStyle: customCfg.auth_style,
+        });
         const { supported, models } = await impl.listModels(cfg.api_key);
         const view = reconcileSelection(cfg.models ?? [], models);
 
