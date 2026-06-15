@@ -1,0 +1,143 @@
+---
+import { extractImage, getImageSrcSet } from '@shared/utils';
+import type { HomepageCategoryBrowseSection } from '@modules/settings/types/settings.types';
+import type { HydratedCategory } from '@modules/categories/types/categories.types';
+
+interface Props {
+  section: HomepageCategoryBrowseSection;
+  categories: HydratedCategory[];
+}
+
+const { section, categories } = Astro.props;
+
+const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefer: 'hero' | 'thumbnail' = 'thumbnail') => {
+  const hero = extractImage(category.images_json, 'hero', targetWidth);
+  const thumbnail = extractImage(category.images_json, 'thumbnail', targetWidth);
+  const slotName = prefer === 'hero'
+    ? (hero.image_url ? 'hero' : 'thumbnail')
+    : (thumbnail.image_url ? 'thumbnail' : 'hero');
+  const selected = slotName === 'hero' ? hero : thumbnail;
+  const srcSet = getImageSrcSet(category.images_json, slotName);
+  return { selected, srcSet };
+};
+---
+
+{categories.length > 0 && (
+  <section class="section categories-section">
+    <div class="container">
+      <h2 class="section-title centered">{section.title}</h2>
+
+      <!-- Category Filter Buttons -->
+      <div class="category-filter-row">
+        {categories.slice(0, 4).map((category) => (
+          <a href={`/categories/${category.slug}`} class="filter-pill">
+            {category.label}
+          </a>
+        ))}
+      </div>
+
+      <!-- Category Chips with Images -->
+      <div class="category-chips-row">
+        {categories.map((category: HydratedCategory) => {
+          const { selected, srcSet } = getCategoryImage(category, 80, 'thumbnail');
+          const sizes = '80px';
+          return (
+            <a href={`/categories/${category.slug}`} class="chip-standard category-chip">
+              <div class="chip-image">
+                {(selected.image_url || category.image_url) ? (
+                  <img
+                    src={selected.image_url || category.image_url}
+                    alt={selected.imageAlt || category.imageAlt || category.label}
+                    width={selected.imageWidth || category.imageWidth || 80}
+                    height={selected.imageHeight || category.imageHeight || 80}
+                    srcset={srcSet || undefined}
+                    sizes={srcSet ? sizes : undefined}
+                    loading="lazy"
+                    style={selected.imageStyle || undefined}
+                  />
+                ) : (
+                  <div class="chip-placeholder">
+                    {category.label.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <span class="chip-label">{category.label}</span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--space-5);
+  }
+
+  .section {
+    padding: clamp(var(--space-12), 7vw, 5.5rem) 0;
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.65rem, 1.25rem + 1.2vw, 2.35rem);
+    font-weight: var(--font-bold);
+    color: var(--text);
+    margin: 0;
+    letter-spacing: 0;
+  }
+
+  .section-title.centered {
+    text-align: center;
+    margin-bottom: var(--space-8);
+  }
+
+  /* === Category Section === */
+  .categories-section {
+    background: var(--bg);
+    padding: var(--space-12) 0;
+  }
+
+  /* Category Filter Buttons */
+  .category-filter-row {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-10);
+  }
+
+  .category-chips-row {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+  }
+
+  .chip-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--brand-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-inverse);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+  }
+
+  .chip-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text);
+  }
+
+  .chip-type {
+    font-size: var(--text-xs);
+    color: var(--text-brand);
+    text-transform: uppercase;
+  }
+</style>
