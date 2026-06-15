@@ -8,86 +8,140 @@ interface Props {
 const { section } = Astro.props;
 ---
 
-<section class="newsletter-banner">
-  <div class="container">
-    <div class="newsletter-content">
+<section class="newsletter-band" data-fade-up>
+  <div class="newsletter-band__inner">
+    <div class="newsletter-band__copy">
       <h2>{section.title}</h2>
       <p>{section.subtitle}</p>
-      <form class="newsletter-form">
-        <input type="email" placeholder={section.placeholder_text} required />
-        <button type="submit">{section.button_text}</button>
-      </form>
     </div>
+    <form class="newsletter-band__form">
+      <label class="sr-only" for="homepage-newsletter-email">Email address</label>
+      <input
+        id="homepage-newsletter-email"
+        type="email"
+        name="email"
+        placeholder={section.placeholder_text}
+        autocomplete="email"
+        required
+      />
+      <button type="submit">{section.button_text}</button>
+    </form>
   </div>
 </section>
 
 <style>
-  .container {
+  .newsletter-band {
+    padding: clamp(var(--space-10), 7vw, var(--space-16)) var(--space-5);
+    background:
+      linear-gradient(135deg, rgba(0, 0, 0, 0.2), transparent 55%),
+      var(--text);
+    color: var(--text-inverse);
+  }
+
+  .newsletter-band__inner {
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: 0 var(--space-5);
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(20rem, 0.85fr);
+    gap: clamp(var(--space-6), 5vw, var(--space-12));
+    align-items: center;
   }
 
-  /* === Newsletter Banner === */
-  .newsletter-banner {
-    background:
-      radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--brand-accent) 28%, transparent), transparent 20rem),
-      var(--text);
-    padding: var(--space-14) 0;
-  }
-
-  .newsletter-content {
-    text-align: center;
+  .newsletter-band h2 {
+    max-width: 13ch;
+    margin: 0;
     color: var(--text-inverse);
-    max-width: 500px;
-    margin: 0 auto;
-  }
-
-  .newsletter-content h2 {
     font-family: var(--font-serif);
-    font-size: var(--text-3xl);
-    font-weight: var(--font-bold);
-    margin: 0 0 var(--space-2);
+    font-size: clamp(2rem, 1.4rem + 2vw, 3.5rem);
+    line-height: var(--leading-tight);
+    letter-spacing: 0;
   }
 
-  .newsletter-content p {
-    font-size: var(--text-sm);
-    opacity: 0.8;
-    margin: 0 0 var(--space-6);
+  .newsletter-band p {
+    max-width: 42rem;
+    margin: var(--space-3) 0 0;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
   }
 
-  .newsletter-form {
-    display: flex;
-    gap: var(--space-2.5);
-    flex-wrap: wrap;
-  }
-
-  .newsletter-form input {
-    flex: 1 1 200px;
-    padding: var(--space-3.5) var(--space-4.5);
-    border: 1px solid color-mix(in srgb, var(--text-inverse) 24%, transparent);
+  .newsletter-band__form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    padding: var(--space-2);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: var(--radius-full);
-    font-size: var(--text-sm);
+    background: rgba(255, 255, 255, 0.08);
   }
 
-  .newsletter-form input:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
-
-  .newsletter-form button {
-    padding: var(--space-3.5) var(--space-7);
-    background: var(--primary-hover);
-    color: var(--text-inverse);
-    border: none;
+  .newsletter-band__form input {
+    min-width: 0;
+    border: 0;
     border-radius: var(--radius-full);
-    font-size: var(--text-sm);
-    font-weight: var(--font-semibold);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-size: var(--text-base);
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .newsletter-band__form input:focus-visible,
+  .newsletter-band__form button:focus-visible {
+    outline: var(--focus-ring-width) solid var(--brand-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  .newsletter-band__form button {
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--brand-accent);
+    color: var(--neutral-950);
     cursor: pointer;
-    transition: var(--transition);
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    padding: 0 var(--space-6);
+    transition: background var(--transition-fast), transform var(--transition-fast);
   }
 
-  .newsletter-form button:hover {
-    background: var(--brand-primary);
+  .newsletter-band__form button:hover {
+    background: var(--brand-accent-hover);
+    transform: translateY(-1px);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 780px) {
+    .newsletter-band {
+      padding-inline: var(--space-4);
+    }
+
+    .newsletter-band__inner,
+    .newsletter-band__form {
+      grid-template-columns: 1fr;
+    }
+
+    .newsletter-band__form {
+      border-radius: var(--radius-xl);
+    }
+
+    .newsletter-band__form button {
+      min-height: 3.25rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .newsletter-band__form button {
+      transition: none;
+    }
   }
 </style>

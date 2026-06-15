@@ -10,58 +10,49 @@ interface Props {
 
 const { section, categories } = Astro.props;
 
-const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefer: 'hero' | 'thumbnail' = 'thumbnail') => {
+const getCategoryImage = (category: HydratedCategory, targetWidth: number) => {
   const hero = extractImage(category.images_json, 'hero', targetWidth);
   const thumbnail = extractImage(category.images_json, 'thumbnail', targetWidth);
-  const slotName = prefer === 'hero'
-    ? (hero.image_url ? 'hero' : 'thumbnail')
-    : (thumbnail.image_url ? 'thumbnail' : 'hero');
-  const selected = slotName === 'hero' ? hero : thumbnail;
+  const slotName = thumbnail.image_url ? 'thumbnail' : 'hero';
+  const selected = thumbnail.image_url ? thumbnail : hero;
   const srcSet = getImageSrcSet(category.images_json, slotName);
   return { selected, srcSet };
 };
 ---
 
 {categories.length > 0 && (
-  <section class="section categories-section">
-    <div class="container">
-      <h2 class="section-title centered">{section.title}</h2>
-
-      <!-- Category Filter Buttons -->
-      <div class="category-filter-row">
-        {categories.slice(0, 4).map((category) => (
-          <a href={`/categories/${category.slug}`} class="filter-pill">
-            {category.label}
-          </a>
-        ))}
+  <section class="category-hub" data-fade-up>
+    <div class="category-hub__inner">
+      <div class="category-hub__header">
+        <h2>{section.title}</h2>
+        {section.subtitle && <p>{section.subtitle}</p>}
       </div>
 
-      <!-- Category Chips with Images -->
-      <div class="category-chips-row">
-        {categories.map((category: HydratedCategory) => {
-          const { selected, srcSet } = getCategoryImage(category, 80, 'thumbnail');
-          const sizes = '80px';
+      <div class="category-hub__grid">
+        {categories.map((category: HydratedCategory, index: number) => {
+          const { selected, srcSet } = getCategoryImage(category, 240);
           return (
-            <a href={`/categories/${category.slug}`} class="chip-standard category-chip">
-              <div class="chip-image">
+            <a href={`/categories/${category.slug}`} class="category-tile" style={`--stagger: ${index};`}>
+              <div class="category-tile__image">
                 {(selected.image_url || category.image_url) ? (
                   <img
                     src={selected.image_url || category.image_url}
                     alt={selected.imageAlt || category.imageAlt || category.label}
-                    width={selected.imageWidth || category.imageWidth || 80}
-                    height={selected.imageHeight || category.imageHeight || 80}
+                    width={selected.imageWidth || category.imageWidth || 240}
+                    height={selected.imageHeight || category.imageHeight || 240}
                     srcset={srcSet || undefined}
-                    sizes={srcSet ? sizes : undefined}
+                    sizes={srcSet ? '(max-width: 640px) 44vw, 160px' : undefined}
                     loading="lazy"
                     style={selected.imageStyle || undefined}
                   />
                 ) : (
-                  <div class="chip-placeholder">
-                    {category.label.charAt(0)}
-                  </div>
+                  <span>{category.label.charAt(0)}</span>
                 )}
               </div>
-              <span class="chip-label">{category.label}</span>
+              <span class="category-tile__label">{category.label}</span>
+              {category.cached_post_count > 0 && (
+                <span class="category-tile__count">{category.cached_post_count} recipes</span>
+              )}
             </a>
           );
         })}
@@ -71,73 +62,117 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number, prefe
 )}
 
 <style>
-  .container {
+  .category-hub {
+    padding: clamp(var(--space-10), 7vw, var(--space-16)) var(--space-5);
+    background: var(--bg);
+  }
+
+  .category-hub__inner {
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: 0 var(--space-5);
   }
 
-  .section {
-    padding: clamp(var(--space-12), 7vw, 5.5rem) 0;
+  .category-hub__header {
+    max-width: 44rem;
+    margin: 0 auto var(--space-8);
+    text-align: center;
   }
 
-  .section-title {
-    font-family: var(--font-serif);
-    font-size: clamp(1.65rem, 1.25rem + 1.2vw, 2.35rem);
-    font-weight: var(--font-bold);
-    color: var(--text);
+  .category-hub h2 {
     margin: 0;
+    color: var(--text);
+    font-family: var(--font-serif);
+    font-size: clamp(1.8rem, 1.35rem + 1.5vw, 2.75rem);
+    line-height: var(--leading-tight);
     letter-spacing: 0;
   }
 
-  .section-title.centered {
-    text-align: center;
-    margin-bottom: var(--space-8);
+  .category-hub__header p {
+    margin: var(--space-3) 0 0;
+    color: var(--text-secondary);
+    line-height: var(--leading-relaxed);
   }
 
-  /* === Category Section === */
-  .categories-section {
-    background: var(--bg);
-    padding: var(--space-12) 0;
+  .category-hub__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: clamp(var(--space-3), 2vw, var(--space-5));
   }
 
-  /* Category Filter Buttons */
-  .category-filter-row {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
+  .category-tile {
+    display: grid;
+    justify-items: center;
     gap: var(--space-3);
-    margin-bottom: var(--space-10);
+    min-width: 0;
+    padding: var(--space-5) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--bg-elevated);
+    color: var(--text);
+    text-align: center;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
   }
 
-  .category-chips-row {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: var(--space-8);
+  .category-tile:hover {
+    transform: translateY(calc(-1 * var(--space-1)));
+    border-color: color-mix(in srgb, var(--brand-primary) 48%, var(--border));
+    box-shadow: var(--shadow-md);
   }
 
-  .chip-placeholder {
-    width: 100%;
-    height: 100%;
+  .category-tile__image {
+    display: grid;
+    place-items: center;
+    width: clamp(5rem, 12vw, 7rem);
+    height: clamp(5rem, 12vw, 7rem);
+    overflow: hidden;
+    border-radius: var(--radius-full);
     background: var(--brand-gradient);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: var(--text-inverse);
-    font-size: var(--text-2xl);
+    font-size: var(--text-3xl);
     font-weight: var(--font-bold);
   }
 
-  .chip-label {
-    font-size: var(--text-sm);
-    font-weight: var(--font-semibold);
-    color: var(--text);
+  .category-tile__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
   }
 
-  .chip-type {
+  .category-tile:hover .category-tile__image img {
+    transform: scale(1.08);
+  }
+
+  .category-tile__label {
+    color: var(--text);
+    font-size: var(--text-base);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-snug);
+  }
+
+  .category-tile__count {
+    color: var(--text-tertiary);
     font-size: var(--text-xs);
-    color: var(--text-brand);
+    font-weight: var(--font-semibold);
     text-transform: uppercase;
+  }
+
+  @media (max-width: 640px) {
+    .category-hub {
+      padding-inline: var(--space-4);
+    }
+
+    .category-hub__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .category-tile,
+    .category-tile__image img {
+      transition: none;
+    }
   }
 </style>
