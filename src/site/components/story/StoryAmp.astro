@@ -45,6 +45,12 @@ const ldJson = {
 // Astro's HtmlHTMLAttributes type does not include "amp", so we pass it via spread
 // (widened to a record, no `any`) to avoid a TS error without touching global types.
 const ampAttr = { amp: true } as Record<string, unknown>;
+
+// `standalone` is an AMP boolean attribute: it must render with no value (or an
+// empty value). A bare `standalone` in the template serializes to
+// `standalone="true"`, which the AMP validator rejects. Spread an empty-string
+// value (widened to a record, no `any`) so it renders as `standalone`.
+const storyAttr = { standalone: "" } as Record<string, unknown>;
 ---
 <html {...ampAttr} lang={locale}>
   <head>
@@ -66,7 +72,7 @@ const ampAttr = { amp: true } as Record<string, unknown>;
   </head>
   <body>
     <amp-story
-      standalone
+      {...storyAttr}
       title={story.title}
       publisher={story.publisher}
       publisher-logo-src={story.publisher_logo_url}
