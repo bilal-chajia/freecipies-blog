@@ -175,6 +175,142 @@ export const CategoryPageSettingsSchema = z
 // Image-upload schemas
 // ────────────────────────────────────────────
 
+// ────────────────────────────────────────────
+// Homepage settings schema
+// ────────────────────────────────────────────
+
+const HomepagePageSeoSchema = z
+  .object({
+    meta_title: z.string().optional(),
+    meta_description: z.string().optional(),
+    no_index: z.boolean().optional(),
+    canonical: z.string().optional(),
+    og_image: z.string().optional(),
+    og_title: z.string().optional(),
+    og_description: z.string().optional(),
+    twitter_card: z.enum(['summary', 'summary_large_image']).optional(),
+  })
+  .strict();
+
+const HomepageRecipeRefSchema = z
+  .object({
+    article_id: z.number().int().positive(),
+    headline: z.string(),
+    route: z.string().min(1),
+    category: z
+      .object({
+        label: z.string(),
+        slug: z.string(),
+        color: z.string().optional(),
+      })
+      .nullable()
+      .optional(),
+  })
+  .strict();
+
+const HomepageRoundupRefSchema = z
+  .object({
+    roundup_id: z.number().int().positive(),
+    title: z.string(),
+    route: z.string().min(1),
+  })
+  .strict();
+
+const homepageSectionBase = {
+  id: z.string().min(1),
+  enabled: z.boolean(),
+};
+
+const HomepageSectionSchema = z.discriminatedUnion('type', [
+  z.object({ ...homepageSectionBase, type: z.literal('stories') }).strict(),
+  z
+    .object({
+      ...homepageSectionBase,
+      type: z.literal('hero'),
+      mode: z.enum(['slider', 'grid']),
+      show_search: z.boolean(),
+      refs: z.array(HomepageRecipeRefSchema),
+    })
+    .strict(),
+  z
+    .object({
+      ...homepageSectionBase,
+      type: z.literal('featured_recipes'),
+      title: z.string(),
+      subtitle: z.string(),
+      source: z.enum(['manual', 'category', 'latest']),
+      category_slug: z.string().nullable(),
+      count: z.number().int().min(1).max(24),
+      refs: z.array(HomepageRecipeRefSchema),
+    })
+    .strict(),
+  z
+    .object({
+      ...homepageSectionBase,
+      type: z.literal('category_browse'),
+      title: z.string(),
+      subtitle: z.string(),
+      max: z.number().int().min(1).max(24),
+    })
+    .strict(),
+  z
+    .object({
+      ...homepageSectionBase,
+      type: z.literal('collections'),
+      title: z.string(),
+      subtitle: z.string(),
+      refs: z.array(HomepageRoundupRefSchema),
+    })
+    .strict(),
+  z
+    .object({
+      ...homepageSectionBase,
+      type: z.literal('latest'),
+      title: z.string(),
+      count: z.number().int().min(1).max(24),
+    })
+    .strict(),
+  z
+    .object({
+      ...homepageSectionBase,
+      type: z.literal('about_author'),
+      author_id: z.number().int().positive().nullable(),
+    })
+    .strict(),
+  z
+    .object({
+      ...homepageSectionBase,
+      type: z.literal('newsletter'),
+      title: z.string(),
+      subtitle: z.string(),
+      button_text: z.string(),
+      placeholder_text: z.string(),
+    })
+    .strict(),
+  z
+    .object({
+      ...homepageSectionBase,
+      type: z.literal('faq'),
+      title: z.string(),
+      items: z.array(
+        z.object({ question: z.string().min(1), answer: z.string().min(1) }).strict(),
+      ),
+    })
+    .strict(),
+]);
+
+/** PUT body for homepage settings: optional seo + optional ordered sections array. */
+export const HomepageSettingsSchema = z
+  .object({
+    seo: HomepagePageSeoSchema.optional(),
+    sections: z.array(HomepageSectionSchema).optional(),
+  })
+  .strict();
+
+// ────────────────────────────────────────────
+// Image-upload schemas
+// ────────────────────────────────────────────
+
 /** PUT body for image-upload: partial match of known defaults, types must match */
 const ImageUploadCreditAvatarVariantSchema = z.object({
   r2_key: z.string().min(1),
