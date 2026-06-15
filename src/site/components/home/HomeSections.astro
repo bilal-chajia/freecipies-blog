@@ -13,6 +13,13 @@ interface Props {
   sections: HomeSectionVM[];
 }
 const { sections } = Astro.props as Props;
+
+const hasCarousel = sections.some((vm) => {
+  if (vm.kind === 'hero') return vm.section.mode === 'slider' && vm.recipes.length > 1;
+  if (vm.kind === 'featured_recipes') return vm.recipes.length > 1;
+  if (vm.kind === 'collections') return vm.roundups.length > 1;
+  return false;
+});
 ---
 {
   sections.map((vm) => {
@@ -36,3 +43,9 @@ const { sections } = Astro.props as Props;
     }
   })
 }
+
+{hasCarousel && (
+  <script>
+    import '@site/scripts/home-carousels';
+  </script>
+)}
