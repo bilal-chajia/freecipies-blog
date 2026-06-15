@@ -64,6 +64,7 @@ Before changing table shape, JSON shape, naming, images, or API contract, read o
 - `docs/IMAGE_JSON_CONTRACT.md`
 - `docs/RECIPE_JSON_CONTRACT.md`
 - `docs/DATABASE_CONTENT_MODEL.md`
+- `docs/WEB_STORY_CONTRACT.md`
 
 ## Design
 
