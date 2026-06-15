@@ -1,0 +1,93 @@
+---
+import type { HomepageNewsletterSection } from '@modules/settings/types/settings.types';
+
+interface Props {
+  section: HomepageNewsletterSection;
+}
+
+const { section } = Astro.props;
+---
+
+<section class="newsletter-banner">
+  <div class="container">
+    <div class="newsletter-content">
+      <h2>{section.title}</h2>
+      <p>{section.subtitle}</p>
+      <form class="newsletter-form">
+        <input type="email" placeholder={section.placeholder_text} required />
+        <button type="submit">{section.button_text}</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<style>
+  .container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--space-5);
+  }
+
+  /* === Newsletter Banner === */
+  .newsletter-banner {
+    background:
+      radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--brand-accent) 28%, transparent), transparent 20rem),
+      var(--text);
+    padding: var(--space-14) 0;
+  }
+
+  .newsletter-content {
+    text-align: center;
+    color: var(--text-inverse);
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .newsletter-content h2 {
+    font-family: var(--font-serif);
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    margin: 0 0 var(--space-2);
+  }
+
+  .newsletter-content p {
+    font-size: var(--text-sm);
+    opacity: 0.8;
+    margin: 0 0 var(--space-6);
+  }
+
+  .newsletter-form {
+    display: flex;
+    gap: var(--space-2.5);
+    flex-wrap: wrap;
+  }
+
+  .newsletter-form input {
+    flex: 1 1 200px;
+    padding: var(--space-3.5) var(--space-4.5);
+    border: 1px solid color-mix(in srgb, var(--text-inverse) 24%, transparent);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+  }
+
+  .newsletter-form input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  .newsletter-form button {
+    padding: var(--space-3.5) var(--space-7);
+    background: var(--primary-hover);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .newsletter-form button:hover {
+    background: var(--brand-primary);
+  }
+</style>
