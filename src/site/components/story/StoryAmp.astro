@@ -87,7 +87,7 @@ const storyAttr = { standalone: "" } as Record<string, unknown>;
                 <div class="bg scrim"></div>
               </amp-story-grid-layer>
             )}
-            <amp-story-grid-layer template="vertical">
+            <amp-story-grid-layer template="thirds">
               <div class="panel" grid-area="lower-third">
                 {s.kind === "step" && <span class="kicker">{s.heading}</span>}
                 {s.heading && s.kind !== "step" && (s.kind === "cover" ? <h1>{s.heading}</h1> : <h2>{s.heading}</h2>)}
