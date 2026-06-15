@@ -47,14 +47,21 @@ describe("buildStory — recipe", () => {
   it("caps ingredients at 8 with a '+N autres' trailing item", () => {
     const ing = story.slides.find((s) => s.kind === "ingredients");
     expect(ing?.items).toHaveLength(9); // 8 + summary line
-    expect(ing?.items?.[8]).toBe("+2 autres");
+    expect(ing?.items?.[8]).toBe("+2 more");
   });
 
   it("caps steps at 7 and resolves a step image when present", () => {
     const steps = story.slides.filter((s) => s.kind === "step");
     expect(steps).toHaveLength(7);
     expect(steps[0].image?.url).toBe("/api/images/s1-sm.webp");
-    expect(steps[0].heading).toBe("Étape 1");
+    expect(steps[0].heading).toBe("Step 1");
+  });
+
+  it("falls back to the hero image for steps without a dedicated step image", () => {
+    const steps = story.slides.filter((s) => s.kind === "step");
+    // Only step 1 carries an image_ref ("s1"); the rest reuse the hero, never
+    // borrowing unrelated body images.
+    expect(steps[1].image?.url).toBe("/api/images/hero-md.webp");
   });
 
   it("adds a nutrition info slide before the CTA when validated", () => {

@@ -36,6 +36,14 @@ export class StoriesBarController {
     // the rings as ordinary links to the AMP pages.
     if (!this.player) return;
 
+    // Mount the lightbox at <body> level so its fixed overlay is in the root
+    // stacking context, above the sticky header — matching the official
+    // entry-point example. Nested in the stories <section> it could be trapped
+    // below higher-painted siblings.
+    if (this.lightbox && this.lightbox.parentElement !== document.body) {
+      document.body.appendChild(this.lightbox);
+    }
+
     const player = this.player;
     if (player.isReady) {
       this.bind();

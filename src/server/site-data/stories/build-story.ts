@@ -40,13 +40,15 @@ class ImageCursor {
     return null;
   }
 
-  /** Prefer an explicit step image, then a distinct content image, then hero. */
+  /** Explicit step image when present, otherwise the hero. Recipe slides stay
+   *  on-topic by never borrowing arbitrary body images (which may belong to an
+   *  unrelated subject); variety only comes from real per-step images. */
   forStep(ref: string | null | undefined): StoryImage | undefined {
     if (ref && this.pool.steps[ref]) return this.take(this.pool.steps[ref]);
-    return this.take(this.nextDistinctContent() ?? this.pool.hero);
+    return this.take(this.pool.hero);
   }
 
-  /** Next distinct content image for an info slide, falling back to hero. */
+  /** Next distinct content image for a non-recipe info slide, falling back to hero. */
   forInfo(): StoryImage | undefined {
     return this.take(this.nextDistinctContent() ?? this.pool.hero);
   }
@@ -86,7 +88,7 @@ function ingredientItems(recipe: RecipeJson): string[] {
   }
   if (flat.length <= MAX_INGREDIENTS) return flat;
   const shown = flat.slice(0, MAX_INGREDIENTS);
-  shown.push(`+${flat.length - MAX_INGREDIENTS} autres`);
+  shown.push(`+${flat.length - MAX_INGREDIENTS} more`);
   return shown;
 }
 
@@ -104,9 +106,9 @@ function nutritionSlide(recipe: RecipeJson, image: StoryImage | undefined): Stor
   if (!n || (n.status as string) !== "validated") return null;
   const parts = [
     `${n.calories} kcal`,
-    `${n.protein_g} g protéines`,
-    `${n.total_carbohydrate_g} g glucides`,
-    `${n.total_fat_g} g lipides`,
+    `${n.protein_g} g protein`,
+    `${n.total_carbohydrate_g} g carbs`,
+    `${n.total_fat_g} g fat`,
   ];
   return { id: "nutrition", kind: "info", image, heading: "Nutrition", body: parts.join(" · ") };
 }
@@ -123,7 +125,7 @@ function buildCover(article: HydratedArticle, cursor: ImageCursor, recipe: Recip
 }
 
 function buildCta(cursor: ImageCursor): StorySlide {
-  return { id: "cta", kind: "cta", image: cursor.hero(), heading: "Prête à cuisiner ?" };
+  return { id: "cta", kind: "cta", image: cursor.hero(), heading: "Ready to cook?" };
 }
 
 function buildRecipeSlides(article: HydratedArticle, recipe: RecipeJson, cursor: ImageCursor): StorySlide[] {
@@ -131,7 +133,7 @@ function buildRecipeSlides(article: HydratedArticle, recipe: RecipeJson, cursor:
 
   const items = ingredientItems(recipe);
   if (items.length > 0) {
-    slides.push({ id: "ingredients", kind: "ingredients", image: cursor.forInfo(), heading: "Ingrédients", items });
+    slides.push({ id: "ingredients", kind: "ingredients", image: cursor.hero(), heading: "Ingredients", items });
   }
 
   flatSteps(recipe).forEach((step, i) => {
@@ -140,12 +142,12 @@ function buildRecipeSlides(article: HydratedArticle, recipe: RecipeJson, cursor:
       id: `step-${i + 1}`,
       kind: "step",
       image: cursor.forStep(step.image_ref),
-      heading: step.name ? truncate(step.name, 60) : `Étape ${i + 1}`,
+      heading: step.name ? truncate(step.name, 60) : `Step ${i + 1}`,
       body: truncate(parts.join(" — "), STEP_BODY_MAX),
     });
   });
 
-  const nutrition = nutritionSlide(recipe, cursor.forInfo());
+  const nutrition = nutritionSlide(recipe, cursor.hero());
   if (nutrition) slides.push(nutrition);
 
   slides.push(buildCta(cursor));
