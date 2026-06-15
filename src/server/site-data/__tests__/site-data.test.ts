@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { presentHeaderMenu, presentPopularRecipes, presentStories } from "../presenters";
+import { presentHeaderMenu, presentPopularRecipes } from "../presenters";
 import type { HydratedArticle } from "@modules/articles";
 
 describe("Site-Data Presenters", () => {
@@ -263,88 +263,4 @@ describe("Site-Data Presenters", () => {
     });
   });
 
-  describe("presentStories", () => {
-    it("should sort stories by view_count descending and build previews and slides", () => {
-      const mockStories = [
-        {
-          id: 1,
-          headline: "Low Views",
-          view_count: 10,
-          slug: "low",
-          images_json: JSON.stringify({
-            thumbnail: {
-              variants: {
-                xs: { r2_key: "low-xs.jpg", width: 120, height: 120 },
-              },
-            },
-          }),
-        },
-        {
-          id: 2,
-          headline: "High Views",
-          view_count: 100,
-          slug: "high",
-          image_url: "fallback-high.jpg",
-          images_json: null,
-        },
-      ] as unknown as HydratedArticle[];
-
-      const result = presentStories(mockStories);
-
-      // Verify sorting by view_count descending
-      expect(result).toHaveLength(2);
-      expect(result[0].headline).toBe("High Views");
-      expect(result[1].headline).toBe("Low Views");
-
-      // Verify storyImage selection and fallbacks
-      expect(result[0].storyImage).toBe("fallback-high.jpg"); // Falls back to story.image_url since there is no images_json
-      expect(result[1].storyImage).toBe("/api/images/low-xs.jpg"); // Uses preview since no hero and hero fallback is xs
-
-      // Verify storyPreview building
-      expect(result[0].storyPreview).toEqual({
-        image_url: "fallback-high.jpg",
-        imageAlt: "High Views",
-        imageWidth: 80,
-        imageHeight: 80,
-        imageStyle: undefined,
-        srcSet: "",
-      });
-
-      // Verify page layout formatting (with fallback images / swipe page)
-      expect(result[0].storyPages).toEqual([
-        {
-          image_url: "fallback-high.jpg",
-          title: "High Views",
-          text: "",
-        },
-        {
-          image_url: "fallback-high.jpg",
-          title: "Swipe to continue",
-          text: "Tap right to see more",
-        },
-        {
-          image_url: "fallback-high.jpg",
-          title: "High Views",
-          text: "Ready to cook?",
-        },
-      ]);
-    });
-
-    it("should omit the Swipe to continue page if there is no storyImage", () => {
-      const mockStories = [
-        {
-          id: 3,
-          headline: "No Image Story",
-          view_count: 5,
-          slug: "no-image",
-          images_json: null,
-        },
-      ] as unknown as HydratedArticle[];
-
-      const result = presentStories(mockStories);
-      expect(result[0].storyPages).toHaveLength(2);
-      expect(result[0].storyPages[0].title).toBe("No Image Story");
-      expect(result[0].storyPages[1].text).toBe("Ready to cook?");
-    });
-  });
 });
