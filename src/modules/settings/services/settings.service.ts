@@ -240,6 +240,7 @@ export async function getDashboardStats(db: D1Database | DrizzleDb): Promise<{
 import { IMAGE_UPLOAD_DEFAULTS, IMAGE_SETTINGS_DB_KEY } from '../../../shared/constants/image-upload';
 import type { ImageUploadSettings } from '../../../shared/constants/image-upload';
 import {
+  DEFAULT_HOME_SECTIONS,
   HOMEPAGE_SETTINGS_DEFAULTS,
   ORGANIZATION_PROFILE_DEFAULTS,
   PUBLIC_SOCIAL_LINKS_DEFAULTS,
@@ -249,6 +250,7 @@ import {
   normalizeCategoryPageSettings,
   type CategoryPageSettings,
   type CategoryPageSettingsInput,
+  type HomepageSection,
   type HomepageSettings,
   type OrganizationProfileSettings,
   type PublicSocialLink,
@@ -380,13 +382,36 @@ export async function getHomepageSettings(
 ): Promise<HomepageSettings> {
   const stored = await getSettingValue<Partial<HomepageSettings>>(db, 'homepage_settings', options);
   return {
-    ...HOMEPAGE_SETTINGS_DEFAULTS,
-    ...(stored && typeof stored === 'object' ? stored : {}),
     seo: {
       ...HOMEPAGE_SETTINGS_DEFAULTS.seo,
       ...(stored?.seo && typeof stored.seo === 'object' ? stored.seo : {}),
     },
+    sections:
+      Array.isArray(stored?.sections) && stored.sections.length > 0
+        ? (stored.sections as HomepageSection[])
+        : DEFAULT_HOME_SECTIONS,
   };
+}
+
+export async function updateHomepageSettings(
+  db: D1Database | DrizzleDb,
+  updates: Partial<HomepageSettings>,
+  options?: SettingServiceOptions,
+): Promise<HomepageSettings> {
+  const current = await getHomepageSettings(db);
+  const merged: HomepageSettings = {
+    seo: { ...current.seo, ...(updates.seo ?? {}) },
+    sections: Array.isArray(updates.sections) ? updates.sections : current.sections,
+  };
+
+  await upsertSetting(db, 'homepage_settings', merged, {
+    description: 'Homepage sections and SEO configuration',
+    category: 'appearance',
+    type: 'json',
+    cache: options?.cache,
+  });
+
+  return merged;
 }
 
 export async function getOrganizationProfileSettings(
