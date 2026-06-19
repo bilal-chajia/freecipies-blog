@@ -50,6 +50,23 @@ export async function resolveHomeData(
     return latestCache.slice(0, count);
   };
 
+  // Distinct from latest: ranked by view_count so a hero with no curated refs
+  // surfaces the most-seen recipes instead of duplicating the latest grid below.
+  let trendingCache: HydratedArticle[] | null = null;
+  const trendingRecipes = async (count: number): Promise<HydratedArticle[]> => {
+    if (trendingCache === null) {
+      const { items } = await getArticles(db, {
+        type: 'recipe',
+        workflow_status: 'published',
+        sortBy: 'view_count',
+        sort_order: 'desc',
+        limit: 24,
+      });
+      trendingCache = items;
+    }
+    return trendingCache.slice(0, count);
+  };
+
   const vms: HomeSectionVM[] = [];
 
   for (const section of sections) {
@@ -63,7 +80,7 @@ export async function resolveHomeData(
       case 'hero': {
         const recipes = section.refs.length > 0
           ? await getArticlesByIds(db, section.refs.map((ref) => ref.article_id))
-          : await latestRecipes(4);
+          : await trendingRecipes(4);
         vms.push({ kind: 'hero', section, recipes });
         break;
       }

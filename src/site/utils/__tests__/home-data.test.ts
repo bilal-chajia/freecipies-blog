@@ -47,14 +47,18 @@ it('resolves latest recipes via getArticles and respects count', async () => {
   expect(getArticles).toHaveBeenCalledWith(DB, expect.objectContaining({ type: 'recipe', workflow_status: 'published' }));
 });
 
-it('only fetches the shared latest list once across hero + featured + latest', async () => {
+it('fetches the shared latest list once for featured + latest, plus one trending call for hero', async () => {
   const sections: HomepageSection[] = [
     { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
     { id: 'featured', type: 'featured_recipes', enabled: true, title: 'F', subtitle: '', source: 'latest', category_slug: null, count: 4, refs: [] },
     { id: 'latest', type: 'latest', enabled: true, title: 'Latest', count: 4 },
   ];
   await resolveHomeData(sections, { db: DB, stories: [] });
-  expect(getArticles).toHaveBeenCalledTimes(1);
+  // Hero fallback uses its own trending cache; featured (latest source) and
+  // latest share the latest cache — so exactly two getArticles calls total.
+  expect(getArticles).toHaveBeenCalledTimes(2);
+  const calls = (getArticles as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+  expect(calls.filter((c) => (c[1] as { sortBy?: string })?.sortBy === 'view_count')).toHaveLength(1);
 });
 
 it('picks the is_featured author when author_id is null', async () => {
@@ -83,4 +87,55 @@ it('resolves collections manual refs via getArticlesByIds', async () => {
   await resolveHomeData(sections, { db: DB, stories: [] });
   expect(getArticlesByIds).toHaveBeenCalledWith(DB, [5]);
   expect(getArticleById).not.toHaveBeenCalled();
+});
+
+describe('resolveHomeData — hero fallback', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset to distinct trending vs latest responses so tests can distinguish them.
+    getArticles.mockImplementation(async (_db: unknown, opts?: { sortBy?: string }) => {
+      if (opts?.sortBy === 'view_count') {
+        return { items: [{ id: 100, slug: 'trend', type: 'recipe', headline: 'Trend' }], total: 1 };
+      }
+      return { items: [{ id: 1, slug: 'latest', type: 'recipe', headline: 'Latest' }], total: 1 };
+    });
+  });
+
+  it('uses trending (view_count desc) when hero has no refs', async () => {
+    const sections: HomepageSection[] = [
+      { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: false, refs: [] },
+    ];
+    const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+    const hero = vms.find((v) => v.kind === 'hero') as { recipes: { id: number }[] } | undefined;
+    expect(hero).toBeDefined();
+    expect(hero!.recipes[0].id).toBe(100); // trending, not latest
+    expect(getArticles).toHaveBeenCalledWith(DB, expect.objectContaining({ sortBy: 'view_count' }));
+  });
+
+  it('returns empty recipes (no trending) when hero refs are all dead', async () => {
+    getArticlesByIds.mockResolvedValue([]); // all refs soft-deleted
+    const sections: HomepageSection[] = [
+      { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: false,
+        refs: [{ article_id: 7, headline: 'gone', route: '/recipes/gone' }] },
+    ];
+    const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+    const hero = vms.find((v) => v.kind === 'hero') as { recipes: unknown[] } | undefined;
+    expect(hero).toBeDefined();
+    expect(hero!.recipes).toEqual([]);
+    expect(getArticles).not.toHaveBeenCalledWith(DB, expect.objectContaining({ sortBy: 'view_count' }));
+  });
+
+  it('caches trending so two hero-fallback sections do one DB call', async () => {
+    getArticles.mockResolvedValue({ items: [{ id: 9, slug: 't', type: 'recipe', headline: 'T' }], total: 1 });
+    await resolveHomeData(
+      [
+        { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: false, refs: [] },
+        { id: 'hero2', type: 'hero', enabled: true, mode: 'slider', show_search: false, refs: [] },
+      ],
+      { db: DB, stories: [] },
+    );
+    const trendingCalls = (getArticles as unknown as { mock: { calls: unknown[][] } }).mock.calls
+      .filter((c) => (c[1] as { sortBy?: string })?.sortBy === 'view_count');
+    expect(trendingCalls).toHaveLength(1);
+  });
 });
