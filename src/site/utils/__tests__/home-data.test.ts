@@ -1,13 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-const { getArticles, getArticleById, getCategories, getAuthors } = vi.hoisted(() => ({
+const { getArticles, getArticleById, getArticlesByIds, getCategories, getAuthors } = vi.hoisted(() => ({
   getArticles: vi.fn(),
   getArticleById: vi.fn(),
+  getArticlesByIds: vi.fn(),
   getCategories: vi.fn(),
   getAuthors: vi.fn(),
 }));
 
-vi.mock('@modules/articles', () => ({ getArticles, getArticleById }));
+vi.mock('@modules/articles', () => ({ getArticles, getArticleById, getArticlesByIds }));
 vi.mock('@modules/categories', () => ({ getCategories }));
 vi.mock('@modules/authors', () => ({ getAuthors }));
 vi.mock('@shared/utils/hydration', () => ({ hydrateCategory: (c: unknown) => c }));
@@ -20,6 +21,10 @@ const DB = {} as never;
 beforeEach(() => {
   vi.clearAllMocks();
   getArticles.mockResolvedValue({ items: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }] });
+  // Batched resolver returns hydrated stubs in input order.
+  getArticlesByIds.mockImplementation(async (_db: unknown, ids: number[]) =>
+    ids.map((id) => ({ id }) as never),
+  );
   getCategories.mockResolvedValue([{ id: 1 }, { id: 2 }]);
   getAuthors.mockResolvedValue([{ id: 9, is_featured: true }, { id: 10, is_featured: false }]);
 });
@@ -58,4 +63,24 @@ it('picks the is_featured author when author_id is null', async () => {
   ];
   const vms = await resolveHomeData(sections, { db: DB, stories: [] });
   expect((vms[0] as { author: { id: number } }).author.id).toBe(9);
+});
+
+it('resolves hero manual refs via getArticlesByIds (no N+1 getArticleById)', async () => {
+  const sections: HomepageSection[] = [
+    { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: false,
+      refs: [{ article_id: 11, headline: 'A', route: '/recipes/a' }, { article_id: 22, headline: 'B', route: '/recipes/b' }] },
+  ];
+  const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+  expect(getArticlesByIds).toHaveBeenCalledWith(DB, [11, 22]);
+  expect(getArticleById).not.toHaveBeenCalled();
+  expect((vms[0] as { recipes: { id: number }[] }).recipes.map((r) => r.id)).toEqual([11, 22]);
+});
+
+it('resolves collections manual refs via getArticlesByIds', async () => {
+  const sections: HomepageSection[] = [
+    { id: 'collections', type: 'collections', enabled: true, title: 'Collections', subtitle: '', refs: [{ roundup_id: 5, title: 'R', route: '/roundups/r' }] },
+  ];
+  await resolveHomeData(sections, { db: DB, stories: [] });
+  expect(getArticlesByIds).toHaveBeenCalledWith(DB, [5]);
+  expect(getArticleById).not.toHaveBeenCalled();
 });

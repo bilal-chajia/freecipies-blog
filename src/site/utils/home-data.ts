@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import { getArticles, getArticleById } from '@modules/articles';
+import { getArticles, getArticlesByIds } from '@modules/articles';
 import { getCategories } from '@modules/categories';
 import { getAuthors } from '@modules/authors';
 import { hydrateCategory } from '@shared/utils/hydration';
@@ -34,11 +34,6 @@ export interface ResolveContext {
   stories: StoryPreview[];
 }
 
-async function resolveArticlesByIds(db: D1Database, ids: number[]): Promise<HydratedArticle[]> {
-  const rows = await Promise.all(ids.map((id) => getArticleById(db, id)));
-  return rows.filter((row): row is HydratedArticle => row !== null);
-}
-
 /** Turn the ordered, enabled homepage sections into ordered, data-loaded view-models. */
 export async function resolveHomeData(
   sections: HomepageSection[],
@@ -67,7 +62,7 @@ export async function resolveHomeData(
 
       case 'hero': {
         const recipes = section.refs.length > 0
-          ? await resolveArticlesByIds(db, section.refs.map((ref) => ref.article_id))
+          ? await getArticlesByIds(db, section.refs.map((ref) => ref.article_id))
           : await latestRecipes(4);
         vms.push({ kind: 'hero', section, recipes });
         break;
@@ -76,7 +71,7 @@ export async function resolveHomeData(
       case 'featured_recipes': {
         let recipes: HydratedArticle[];
         if (section.source === 'manual' && section.refs.length > 0) {
-          recipes = await resolveArticlesByIds(db, section.refs.map((ref) => ref.article_id));
+          recipes = await getArticlesByIds(db, section.refs.map((ref) => ref.article_id));
         } else if (section.source === 'category' && section.category_slug) {
           const { items } = await getArticles(db, { type: 'recipe', workflow_status: 'published', categorySlug: section.category_slug, limit: section.count });
           recipes = items;
@@ -96,7 +91,7 @@ export async function resolveHomeData(
 
       case 'collections': {
         const roundups = section.refs.length > 0
-          ? await resolveArticlesByIds(db, section.refs.map((ref) => ref.roundup_id))
+          ? await getArticlesByIds(db, section.refs.map((ref) => ref.roundup_id))
           : (await getArticles(db, { type: 'roundup', workflow_status: 'published', limit: 6 })).items;
         vms.push({ kind: 'collections', section, roundups });
         break;
