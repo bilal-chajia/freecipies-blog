@@ -1,6 +1,7 @@
 import { FormField } from '@admin/features/settings/components';
-import { SectionCard } from '@admin/features/homepage/components';
+import { SectionCard, RoundupRefList } from '@admin/features/homepage/components';
 import { BookOpen } from 'lucide-react';
+import { Label } from '@/ui/label';
 import type { HomepageCollectionsSection } from '@modules/settings/types/settings.types';
 import type { HomepageSectionProps } from '../../types';
 
@@ -39,16 +40,10 @@ const CollectionsSection = ({ formData, updateSection }: HomepageSectionProps) =
         />
       </div>
 
-      <FormField
-        id="collectionsRefs"
-        label="Manual Roundup References"
-        multiline
-        rows={5}
-        value={collections.refs.map((ref) => `${ref.roundup_id} · ${ref.title}`).join('\n')}
-        onChange={() => undefined}
-        placeholder="Roundup pickers land in the next P2 pass"
-        description="Current curated refs are preserved on save. Full roundup picker wiring is the next P2 task."
-      />
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-foreground/80">Manual Roundup References</Label>
+        <RoundupRefList refs={collections.refs} onChange={(refs) => patchCollections({ refs })} />
+      </div>
     </SectionCard>
   );
 };
