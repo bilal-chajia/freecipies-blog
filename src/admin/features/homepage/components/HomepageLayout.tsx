@@ -7,11 +7,13 @@
 
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Button } from '@/ui/button';
 import { Badge } from '@/ui/badge';
-import { Save, RefreshCw, Zap, Eye, Home, ChevronUp, ChevronDown } from 'lucide-react';
+import { Save, RefreshCw, Zap, Eye, Home } from 'lucide-react';
 import {
     LayoutPanelLeft,
     Star,
@@ -23,6 +25,7 @@ import {
     UserRound,
     HelpCircle,
 } from 'lucide-react';
+import { SortableSectionRow } from '.';
 
 // Navigation metadata for Homepage sections
 const homepageSections = [
@@ -54,7 +57,7 @@ interface HomepageLayoutProps {
     onSave: () => void;
     onReset?: () => void;
     onPreview?: () => void;
-    onMoveSection?: (sectionId: string, direction: 'up' | 'down') => void;
+    onReorderSections?: (activeId: string, overId: string) => void;
     saving?: boolean;
     saveDisabled?: boolean;
     saveLabel?: string;
@@ -72,7 +75,7 @@ export default function HomepageLayout({
     onSave,
     onReset,
     onPreview,
-    onMoveSection,
+    onReorderSections,
     saving = false,
     saveDisabled = false,
     saveLabel = 'Publish',
@@ -84,6 +87,14 @@ export default function HomepageLayout({
 
     const handleSectionClick = (sectionId: string) => {
         navigate(`/homepage/${sectionId}`);
+    };
+
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id && onReorderSections) {
+            onReorderSections(String(active.id), String(over.id));
+        }
     };
 
     const activeSections = sectionStatus.filter(s => s.enabled).length;
@@ -116,81 +127,35 @@ export default function HomepageLayout({
                 {/* Nav Items */}
                 <ScrollArea className="flex-1 min-h-0">
                     <div className="structure-panel-list">
-                        {sectionStatus.map((status, index) => {
-                            const item = homepageSections.find((candidate) => candidate.id === status.key) ?? {
-                                id: status.key,
-                                label: status.label,
-                                icon: Grid,
-                            };
-                            const Icon = item.icon;
-                            const is_active = currentSection === item.id;
-
-                            return (
-                                <div
-                                    key={item.id}
-                                    className={cn(
-                                        'structure-item group relative overflow-hidden transition-colors',
-                                        is_active ? 'text-foreground font-medium' : 'text-muted-foreground'
-                                    )}
-                                >
-                                    {is_active && (
-                                        <motion.div
-                                            layoutId="homepage-active-tab"
-                                            className="absolute inset-0 bg-[var(--primary-muted)] rounded-md z-0"
-                                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext
+                                items={sectionStatus.map((s) => s.key)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {sectionStatus.map((status) => {
+                                    const item = homepageSections.find((candidate) => candidate.id === status.key) ?? {
+                                        id: status.key,
+                                        label: status.label,
+                                        icon: Grid,
+                                    };
+                                    const Icon = item.icon;
+                                    const is_active = currentSection === item.id;
+                                    const draggable = item.id !== 'seo';
+                                    return (
+                                        <SortableSectionRow
+                                            key={item.id}
+                                            id={item.id}
+                                            label={item.label}
+                                            icon={Icon}
+                                            isActive={is_active}
+                                            enabled={status.enabled}
+                                            draggable={draggable}
+                                            onClick={() => handleSectionClick(item.id)}
                                         />
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleSectionClick(item.id)}
-                                        className="relative z-10 flex min-w-0 flex-1 items-center gap-2 text-left"
-                                    >
-                                        <Icon
-                                            className={cn(
-                                                'structure-item-icon transition-all duration-200 group-hover:scale-110 shrink-0',
-                                                is_active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                                            )}
-                                        />
-                                        <span
-                                            className={cn(
-                                                'structure-item-label transition-transform duration-200 group-hover:translate-x-0.5',
-                                                is_active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                                            )}
-                                        >
-                                            {item.label}
-                                        </span>
-                                        {status && (
-                                            <span className={cn(
-                                                'ml-auto w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-200 group-hover:scale-110',
-                                                status.enabled ? 'bg-green-500' : 'bg-muted-foreground/30'
-                                            )} />
-                                        )}
-                                    </button>
-                                    {onMoveSection && item.id !== 'seo' && (
-                                        <div className="relative z-10 ml-1 flex shrink-0 items-center gap-0.5">
-                                            <button
-                                                type="button"
-                                                aria-label={`Move ${item.label} up`}
-                                                disabled={index === 0}
-                                                onClick={() => onMoveSection(item.id, 'up')}
-                                                className="grid h-5 w-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-default disabled:opacity-30"
-                                            >
-                                                <ChevronUp className="h-3 w-3" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                aria-label={`Move ${item.label} down`}
-                                                disabled={index >= sectionStatus.length - 2}
-                                                onClick={() => onMoveSection(item.id, 'down')}
-                                                className="grid h-5 w-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-default disabled:opacity-30"
-                                            >
-                                                <ChevronDown className="h-3 w-3" />
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                    );
+                                })}
+                            </SortableContext>
+                        </DndContext>
                     </div>
                 </ScrollArea>
             </motion.div>
