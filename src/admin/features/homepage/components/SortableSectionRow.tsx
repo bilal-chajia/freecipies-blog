@@ -82,7 +82,7 @@ export default function SortableSectionRow({
         <button
           type="button"
           aria-label={`Reorder ${label}`}
-          className="relative z-10 ml-1 grid h-6 w-5 shrink-0 cursor-grab place-items-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
+          className="relative z-10 ml-1 grid h-6 w-5 shrink-0 cursor-grab touch-none place-items-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
           {...attributes}
           {...listeners}
         >
