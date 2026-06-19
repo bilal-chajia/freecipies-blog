@@ -66,6 +66,30 @@ Each phase ends with a verification barrier (`pnpm test`, `pnpm typecheck`, `pnp
 - Admin: `Homepage.tsx`, `HomepageLayout.tsx`, `pages/sections/*`, new pickers in `src/admin/components/pickers/`, new list wrappers in `src/admin/features/homepage/components/`. Admin never imports `@server/*` (boundary enforced by `pnpm check:boundaries`).
 - API: **no new endpoint.** Pickers reuse `GET /api/articles`, `GET /api/articles?type=roundup`, `GET /api/authors`. The existing `PUT /api/settings/homepage` already validates and stores refs (shape unchanged).
 
+### Blast radius & isolation
+
+This work is deliberately scoped so each unit's blast radius is near-zero. Verified by grepping consumers in `src/`:
+
+| Unit | Touched | Consumers outside the homepage? |
+|---|---|---|
+| `getArticlesByIds` (new) | add only | None — new export, no existing caller. |
+| `resolveArticlesByIds` (removed) | local | None — private helper in `home-data.ts`. |
+| `resolveHomeData` / `home-data.ts` | local | None — consumers are only `index.astro`, `HomeSections.astro`, and its test. A homepage-private utility. |
+| `trendingRecipes` (new) | add only | None — private helper in `home-data.ts`. |
+| `<h1>` band in `index.astro` | local | None — `index.astro` is the homepage only. |
+| `HomepageLayout.tsx`, `reorderSections` | local | None — only `Homepage.tsx` imports `HomepageLayout`. Homepage-feature-private. |
+| New pickers + list wrappers | add only | None — new components. (`RoundupPicker`/`AuthorPicker` live in `src/admin/components/pickers/` and are reusable later, but nothing else imports them this cycle.) |
+| Homepage section editors (`HeroSection.tsx`, etc.) | local | None — private to the homepage admin feature. |
+
+**The only shared-type touchpoint in the whole spec:** if `getArticles` does not already accept `sortBy: 'view_count'`, the `ArticleQueryOptions` interface (defined in `articles.service.ts`, consumed by `src/pages/api/recipes/index.ts`) gains an **optional** `sortBy: 'view_count'` value. Adding an optional union member is backward-compatible — existing callers are unaffected because they omit the field. This is isolated as its own task with a test.
+
+**Explicitly NOT touched (verified):**
+- Other public pages (`/recipes/*`, `/categories/*`, `/articles/*`, `/roundups/*`, `/authors/*`) call `getArticleById` (unchanged) or `getArticles` directly — never the homepage resolver.
+- No existing API endpoint is modified; pickers do read-only GETs.
+- No DB table, no `docs/` contract, no JSON shape.
+
+**Implication for the plan:** Phase A, Phase B, and Phase C are mutually independent and can be developed/reviewed in isolation. Within Phase A, the `ArticleQueryOptions` change (if needed) is the only shared touchpoint and is its own task.
+
 ---
 
 ## Section 2 — Components & responsibilities
