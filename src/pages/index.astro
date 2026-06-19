@@ -42,7 +42,10 @@ const jsonLd = buildHomeJsonLd({
   image={homepageSettings.seo.og_image}
   noindex={homepageSettings.seo.no_index}
 >
-  <h1 class="home-h1">{identity.tagline || identity.site_name}</h1>
+  <header class="home-intro" data-fade-up>
+    <p class="home-intro__eyebrow">Welcome</p>
+    <h1 class="home-intro__title">{identity.tagline || identity.site_name}</h1>
+  </header>
   <main class="homepage">
     <HomeSections sections={sectionVms} />
   </main>
@@ -52,17 +55,36 @@ const jsonLd = buildHomeJsonLd({
 </Layout>
 
 <style>
-  /* Visually-hidden semantic H1 (Phase 1b makes the hero heading the visible H1). */
-  .home-h1 {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+  .home-intro {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: clamp(var(--space-8), 6vw, var(--space-14)) var(--space-5) clamp(var(--space-4), 2vw, var(--space-6));
+    text-align: center;
+  }
+
+  .home-intro__eyebrow {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--text-lg);
+    color: var(--brand-accent);
+  }
+
+  .home-intro__title {
+    margin: 0;
+    margin-inline: auto;
+    max-width: 22ch;
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 1.4rem + 2.6vw, 3.4rem);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-tight);
+    letter-spacing: 0;
+    color: var(--text);
+  }
+
+  @media (max-width: 640px) {
+    .home-intro { text-align: left; }
+    .home-intro__title { margin-inline: 0; }
   }
 
   .homepage {
