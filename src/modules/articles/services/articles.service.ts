@@ -477,10 +477,11 @@ export async function getArticleById(
 /**
  * Get hydrated articles for a list of ids, in input order, in a single query.
  *
- * Selects source columns plus the cache fields consumed by card/list surfaces
- * (per ARTICLE_CACHED_FIELDS_CONTRACT.md Public Rendering Matrix), then hydrates.
- * Does NOT join categories/authors and does NOT regenerate caches — it reads
- * whatever cache is present and hydrateArticle resolves category/author/images/route.
+ * Selects the source article columns plus the category/author join columns used
+ * by card/list surfaces (mirroring `getArticleById`), then hydrates. Does NOT
+ * regenerate caches — it reads whatever is stored and `hydrateArticle` resolves
+ * category/author/images/route. Tags are set to `[]` because the homepage
+ * surfaces that consume this (hero/featured/collections) do not read tags.
  */
 export async function getArticlesByIds(
   db: D1Database | DrizzleDb,
