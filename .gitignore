@@ -84,6 +84,9 @@ content.json
 # System & Agent Memory caches
 .remember/
 
+# Brainstorming visual companion (local mockups)
+.superpowers/
+
 # Temporary test and audit outputs
 temp_res.html
 lighthouse-*.json
