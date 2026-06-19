@@ -475,6 +475,48 @@ export async function getArticleById(
 }
 
 /**
+ * Get hydrated articles for a list of ids, in input order, in a single query.
+ *
+ * Selects source columns plus the cache fields consumed by card/list surfaces
+ * (per ARTICLE_CACHED_FIELDS_CONTRACT.md Public Rendering Matrix), then hydrates.
+ * Does NOT join categories/authors and does NOT regenerate caches — it reads
+ * whatever cache is present and hydrateArticle resolves category/author/images/route.
+ */
+export async function getArticlesByIds(
+  db: D1Database | DrizzleDb,
+  ids: number[],
+): Promise<HydratedArticle[]> {
+  if (ids.length === 0) return [];
+
+  const drizzle = getDb(db);
+  const uniqueIds = Array.from(new Set(ids));
+
+  const rows = await drizzle
+    .select({
+      ...getTableColumns(articles),
+      categoryLabel: categories.label,
+      categorySlug: categories.slug,
+      categoryColor: categories.color,
+      authorName: authors.name,
+      authorSlug: authors.slug,
+      authorImagesJson: authors.images_json,
+    })
+    .from(articles)
+    .leftJoin(categories, eq(articles.category_id, categories.id))
+    .leftJoin(authors, eq(articles.author_id, authors.id))
+    .where(and(inArray(articles.id, uniqueIds), isNull(articles.deleted_at)));
+
+  const hydratedById = new Map<number, HydratedArticle>();
+  for (const row of rows) {
+    hydratedById.set(row.id, { ...hydrateArticle(row), tags: [] } as unknown as HydratedArticle);
+  }
+
+  return uniqueIds
+    .map((id) => hydratedById.get(id))
+    .filter((row): row is HydratedArticle => row !== undefined);
+}
+
+/**
  * Update an article by ID (admin mutations)
  */
 export async function updateArticleById(
