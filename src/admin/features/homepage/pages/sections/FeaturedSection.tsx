@@ -1,5 +1,5 @@
 import { FormField } from '@admin/features/settings/components';
-import { SectionCard } from '@admin/features/homepage/components';
+import { SectionCard, RecipeRefList } from '@admin/features/homepage/components';
 import { Star } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
 import { Label } from '@/ui/label';
@@ -78,16 +78,15 @@ const FeaturedSection = ({ formData, updateSection }: HomepageSectionProps) => {
         />
       </div>
 
-      <FormField
-        id="featuredRefs"
-        label="Manual Recipe References"
-        multiline
-        rows={5}
-        value={featured.refs.map((ref) => `${ref.article_id} · ${ref.headline}`).join('\n')}
-        onChange={() => undefined}
-        placeholder="Recipe pickers land in the next P2 pass"
-        description="Current curated refs are preserved on save. Full recipe picker wiring is the next P2 task."
-      />
+      {featured.source === 'manual' && (
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-foreground/80">Manual Recipe References</Label>
+          <RecipeRefList refs={featured.refs} onChange={(refs) => patchFeatured({ refs })} />
+        </div>
+      )}
+      {featured.source !== 'manual' && (
+        <p className="text-xs text-muted-foreground">Refs are only used when source is Manual.</p>
+      )}
     </SectionCard>
   );
 };

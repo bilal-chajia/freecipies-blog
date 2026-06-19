@@ -1,5 +1,4 @@
-import { FormField } from '@admin/features/settings/components';
-import { SectionCard } from '@admin/features/homepage/components';
+import { SectionCard, RecipeRefList } from '@admin/features/homepage/components';
 import { LayoutPanelLeft, Search } from 'lucide-react';
 import { Switch } from '@/ui/switch';
 import { Label } from '@/ui/label';
@@ -51,16 +50,10 @@ const HeroSection = ({ formData, updateSection }: HomepageSectionProps) => {
         </div>
       </div>
 
-      <FormField
-        id="heroRefs"
-        label="Manual Recipe References"
-        multiline
-        rows={5}
-        value={hero.refs.map((ref) => `${ref.article_id} · ${ref.headline}`).join('\n')}
-        onChange={() => undefined}
-        placeholder="Recipe pickers land in the next P2 pass"
-        description="Current curated refs are preserved on save. Full recipe picker wiring is the next P2 task."
-      />
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-foreground/80">Manual Recipe References</Label>
+        <RecipeRefList refs={hero.refs} onChange={(refs) => patchHero({ refs })} />
+      </div>
     </SectionCard>
   );
 };
