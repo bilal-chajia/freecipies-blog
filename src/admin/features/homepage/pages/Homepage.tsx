@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { arrayMove } from '@dnd-kit/sortable';
 import api from '@admin/services/api-client';
 import type { AxiosRequestConfig } from 'axios';
 import { HomepageLayout } from '@admin/features/homepage/components';
@@ -121,25 +122,13 @@ const Homepage = () => {
     return [...editable, { key: 'seo', label: 'SEO', enabled: true }];
   }, [formData.sections]);
 
-  const moveSection = useCallback((sectionId: string, direction: 'up' | 'down') => {
+  const reorderSections = useCallback((activeId: string, overId: string) => {
     setFormData((prev) => {
-      const currentIndex = prev.sections.findIndex((item) => item.id === sectionId);
-      if (currentIndex < 0) return prev;
-
-      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      if (targetIndex < 0 || targetIndex >= prev.sections.length) return prev;
-
-      const nextSections = [...prev.sections];
-      const current = nextSections[currentIndex];
-      const target = nextSections[targetIndex];
-      if (!current || !target) return prev;
-      nextSections[currentIndex] = target;
-      nextSections[targetIndex] = current;
-
-      return {
-        ...prev,
-        sections: nextSections,
-      };
+      const ids = prev.sections.map((s) => s.id);
+      const from = ids.indexOf(activeId);
+      const to = ids.indexOf(overId);
+      if (from === -1 || to === -1 || from === to) return prev;
+      return { ...prev, sections: arrayMove(prev.sections, from, to) };
     });
   }, []);
 
@@ -217,7 +206,7 @@ const Homepage = () => {
       onSave={handleSave}
       onReset={handleReset}
       onPreview={() => window.open('/', '_blank', 'noopener,noreferrer')}
-      onMoveSection={moveSection}
+      onReorderSections={reorderSections}
       saving={saving}
       saveLabel="Publish"
     >
