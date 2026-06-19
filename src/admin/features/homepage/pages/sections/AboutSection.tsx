@@ -1,6 +1,7 @@
-import { FormField } from '@admin/features/settings/components';
 import { SectionCard } from '@admin/features/homepage/components';
+import { AuthorPicker } from '@admin/components/pickers';
 import { UserRound } from 'lucide-react';
+import { Label } from '@/ui/label';
 import type { HomepageAboutAuthorSection } from '@modules/settings/types/settings.types';
 import type { HomepageSectionProps } from '../../types';
 
@@ -22,16 +23,14 @@ const AboutSection = ({ formData, updateSection }: HomepageSectionProps) => {
       enabled={about.enabled}
       onEnabledChange={(checked) => patchAbout({ enabled: checked })}
     >
-      <FormField
-        id="aboutAuthorId"
-        label="Author ID"
-        type="number"
-        min={1}
-        value={about.author_id ?? ''}
-        onChange={(e) => patchAbout({ author_id: e.target.value ? Number.parseInt(e.target.value, 10) : null })}
-        placeholder="Blank uses featured author"
-        description="Leave blank to use the featured author fallback. Full author picker wiring is the next P2 task."
-      />
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-foreground/80">Featured Author</Label>
+        <AuthorPicker
+          value={about.author_id}
+          onChange={(authorId) => patchAbout({ author_id: authorId })}
+        />
+        <p className="text-xs text-muted-foreground">Clear the picker to fall back to the site's featured author.</p>
+      </div>
     </SectionCard>
   );
 };
