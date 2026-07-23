@@ -416,6 +416,30 @@ const getCookTime = (recipe: HydratedArticle) =>
     grid-column: span 2;
   }
 
+  @media (min-width: 901px) {
+    .home-hero:not(.home-hero--grid) .home-hero__inner {
+      height: 66.667svh;
+    }
+
+    .home-hero:not(.home-hero--grid) .home-hero__showcase,
+    .home-hero:not(.home-hero--grid) .home-hero__viewport,
+    .home-hero:not(.home-hero--grid) .home-hero__track,
+    .home-hero:not(.home-hero--grid) .home-hero__slide,
+    .home-hero:not(.home-hero--grid) .home-hero__card {
+      height: 100%;
+    }
+
+    .home-hero:not(.home-hero--grid) .home-hero__card,
+    .home-hero:not(.home-hero--grid) .home-hero__mini {
+      min-height: 0;
+    }
+
+    .home-hero:not(.home-hero--grid) .home-hero__side {
+      min-height: 0;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   @media (max-width: 900px) {
     .home-hero__inner {
       grid-template-columns: 1fr;
