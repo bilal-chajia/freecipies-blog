@@ -151,11 +151,10 @@ const { stories = [] } = Astro.props as Props;
   .story-item:hover .story-title,
   .story-item:focus-visible .story-title { color: var(--brand-primary); }
 
-  /* Dark backdrop, mirroring the official amp-story-player entry-point example.
-     Hidden via `visibility` (NOT display:none) so the player can still
-     initialize/prerender while closed; pointer-events also keeps the closed
-     AMP shadow DOM from intercepting clicks intended for the page underneath. */
+  /* Remove the closed third-party player from layout and hit testing. AMP's
+     shadow DOM can otherwise intercept clicks even when its host is hidden. */
   .stories-lightbox {
+    display: none;
     position: fixed;
     inset: 0;
     z-index: 100000;
@@ -166,6 +165,7 @@ const { stories = [] } = Astro.props as Props;
     transition: visibility 0.2s linear, opacity 0.2s linear;
   }
   .stories-lightbox.is-open {
+    display: block;
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
