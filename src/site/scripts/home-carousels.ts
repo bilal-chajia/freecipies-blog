@@ -3,6 +3,7 @@ import Autoplay from 'embla-carousel-autoplay';
 
 const CAROUSEL_SELECTOR = '[data-home-carousel]';
 const SELECTED_CLASS = 'is-selected';
+const ENHANCED_CLASS = 'is-carousel-enhanced';
 
 type HomeCarouselNode = HTMLElement & {
   dataset: DOMStringMap & {
@@ -64,6 +65,7 @@ const initCarousel = (root: HomeCarouselNode): CarouselInstance | null => {
     },
     plugins,
   );
+  root.classList.add(ENHANCED_CLASS);
 
   const prevButton = getPrevButton(root);
   const nextButton = getNextButton(root);
@@ -103,6 +105,7 @@ const initCarousel = (root: HomeCarouselNode): CarouselInstance | null => {
     destroy: () => {
       prevButton?.removeEventListener('click', selectPrev);
       nextButton?.removeEventListener('click', selectNext);
+      root.classList.remove(ENHANCED_CLASS);
       embla.destroy();
     },
   };
