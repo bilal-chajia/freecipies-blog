@@ -410,6 +410,15 @@ const getCookTime = (recipe: HydratedArticle) =>
       height: 66.667svh;
     }
 
+    .home-hero:not(.home-hero--grid) .home-hero__content {
+      width: calc(100% - 12rem);
+      max-width: none;
+    }
+
+    .home-hero:not(.home-hero--grid) h2 {
+      max-width: none;
+    }
+
     .home-hero:not(.home-hero--grid) .home-hero__showcase,
     .home-hero:not(.home-hero--grid) .home-hero__viewport,
     .home-hero:not(.home-hero--grid) .home-hero__track,
