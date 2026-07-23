@@ -11,8 +11,9 @@ import NewsletterBanner from './NewsletterBanner.astro';
 
 interface Props {
   sections: HomeSectionVM[];
+  siteTagline: string;
 }
-const { sections } = Astro.props as Props;
+const { sections, siteTagline } = Astro.props as Props;
 
 const hasCarousel = sections.some((vm) => {
   if (vm.kind === 'hero') return vm.section.mode === 'slider' && vm.recipes.length > 1;
@@ -27,7 +28,7 @@ const hasCarousel = sections.some((vm) => {
       case 'stories':
         return <StoriesBar stories={vm.stories} />;
       case 'hero':
-        return <HeroSection section={vm.section} recipes={vm.recipes} />;
+        return <HeroSection section={vm.section} recipes={vm.recipes} tagline={siteTagline} />;
       case 'featured_recipes':
         return <FeaturedRecipes section={vm.section} recipes={vm.recipes} />;
       case 'category_browse':

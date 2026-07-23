@@ -34,6 +34,10 @@ const jsonLd = buildHomeJsonLd({
   socialLinks,
   searchUrlTemplate: `${identity.site_url}/recipes?q={search_term_string}`,
 });
+
+const hasRenderedHero = sectionVms.some(
+  (section) => section.kind === 'hero' && section.recipes.length > 0,
+);
 ---
 
 <Layout
@@ -42,12 +46,13 @@ const jsonLd = buildHomeJsonLd({
   image={homepageSettings.seo.og_image}
   noindex={homepageSettings.seo.no_index}
 >
-  <header class="home-intro" data-fade-up>
-    <p class="home-intro__eyebrow">Welcome</p>
-    <h1 class="home-intro__title">{identity.tagline || identity.site_name}</h1>
-  </header>
   <main class="homepage">
-    <HomeSections sections={sectionVms} />
+    <HomeSections sections={sectionVms} siteTagline={identity.tagline || identity.site_name} />
+    {!hasRenderedHero && (
+      <header class="home-fallback-intro" data-fade-up>
+        <h1>{identity.tagline || identity.site_name}</h1>
+      </header>
+    )}
   </main>
   {jsonLd.map((node) => (
     <script type="application/ld+json" set:html={JSON.stringify(node)} />
@@ -55,27 +60,18 @@ const jsonLd = buildHomeJsonLd({
 </Layout>
 
 <style>
-  .home-intro {
+  .home-fallback-intro {
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: clamp(var(--space-8), 6vw, var(--space-14)) var(--space-5) clamp(var(--space-4), 2vw, var(--space-6));
-    text-align: center;
+    padding: var(--space-6) var(--space-5);
+    text-align: left;
   }
 
-  .home-intro__eyebrow {
-    margin: 0 0 var(--space-2);
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-size: var(--text-lg);
-    color: var(--brand-primary);
-  }
-
-  .home-intro__title {
+  .home-fallback-intro h1 {
     margin: 0;
-    margin-inline: auto;
-    max-width: 22ch;
+    max-width: 18ch;
     font-family: var(--font-serif);
-    font-size: clamp(2rem, 1.4rem + 2.6vw, 3.4rem);
+    font-size: clamp(2rem, 1.5rem + 1.8vw, 3rem);
     font-weight: var(--font-bold);
     line-height: var(--leading-tight);
     letter-spacing: 0;
@@ -83,8 +79,14 @@ const jsonLd = buildHomeJsonLd({
   }
 
   @media (max-width: 640px) {
-    .home-intro { text-align: left; }
-    .home-intro__title { margin-inline: 0; }
+    .home-fallback-intro {
+      padding-inline: var(--space-4);
+    }
+
+    .home-fallback-intro h1 {
+      max-width: 14ch;
+      font-size: clamp(1.9rem, 9vw, 2.45rem);
+    }
   }
 
   .homepage {
