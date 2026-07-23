@@ -153,8 +153,8 @@ const { stories = [] } = Astro.props as Props;
 
   /* Dark backdrop, mirroring the official amp-story-player entry-point example.
      Hidden via `visibility` (NOT display:none) so the player can still
-     initialize/prerender while closed; visibility:hidden also removes the
-     closed overlay from hit-testing, so no pointer-events tricks are needed. */
+     initialize/prerender while closed; pointer-events also keeps the closed
+     AMP shadow DOM from intercepting clicks intended for the page underneath. */
   .stories-lightbox {
     position: fixed;
     inset: 0;
@@ -162,11 +162,13 @@ const { stories = [] } = Astro.props as Props;
     background: rgba(0, 0, 0, 0.85);
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
     transition: visibility 0.2s linear, opacity 0.2s linear;
   }
   .stories-lightbox.is-open {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
   }
   /* Centered, phone-shaped player (capped to the viewport) — never a
      viewport-filling box, so the player's prerender iframes can't overlap the
