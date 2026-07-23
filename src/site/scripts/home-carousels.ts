@@ -1,5 +1,6 @@
 import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';
 import Autoplay from 'embla-carousel-autoplay';
+import { getCircularSupportPosition } from './home-carousel-support';
 
 const CAROUSEL_SELECTOR = '[data-home-carousel]';
 const SELECTED_CLASS = 'is-selected';
@@ -31,6 +32,12 @@ const getNextButton = (root: HTMLElement) =>
 
 const getDots = (root: HTMLElement) =>
   Array.from(root.querySelectorAll<HTMLButtonElement>('[data-home-carousel-dot]'));
+
+const getSupportCards = (root: HTMLElement) =>
+  Array.from(
+    root.closest('.home-hero')
+      ?.querySelectorAll<HTMLElement>('[data-home-hero-support-card]') ?? [],
+  );
 
 const setButtonState = (button: HTMLButtonElement | null, disabled: boolean) => {
   if (!button) return;
@@ -77,6 +84,7 @@ const initCarousel = (root: HomeCarouselNode): CarouselInstance | null => {
   const prevButton = getPrevButton(root);
   const nextButton = getNextButton(root);
   const dots = getDots(root);
+  const supportCards = getSupportCards(root);
 
   const selectPrev = () => embla.scrollPrev();
   const selectNext = () => embla.scrollNext();
@@ -93,6 +101,13 @@ const initCarousel = (root: HomeCarouselNode): CarouselInstance | null => {
       dot.classList.toggle(SELECTED_CLASS, isSelected);
       dot.setAttribute('aria-selected', String(isSelected));
       dot.setAttribute('tabindex', isSelected ? '0' : '-1');
+    });
+
+    supportCards.forEach((card) => {
+      const cardIndex = Number(card.dataset.homeHeroRecipeIndex);
+      const position = getCircularSupportPosition(cardIndex, selectedIndex, dots.length);
+      card.hidden = position === null;
+      if (position !== null) card.style.order = String(position);
     });
   };
 
