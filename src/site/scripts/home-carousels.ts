@@ -66,6 +66,7 @@ const initCarousel = (root: HomeCarouselNode): CarouselInstance | null => {
     plugins,
   );
   root.classList.add(ENHANCED_CLASS);
+  embla.reInit();
 
   const prevButton = getPrevButton(root);
   const nextButton = getNextButton(root);
