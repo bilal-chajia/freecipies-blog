@@ -33,16 +33,13 @@ const getCookTime = (recipe: HydratedArticle) =>
 
 {heroRecipes.length > 0 && (
   <section class:list={['home-hero', { 'home-hero--grid': !isSlider }]} data-fade-up>
-    <header class="home-hero__intro">
-      <p>Welcome</p>
-      <h1>{tagline}</h1>
-    </header>
     <div class="home-hero__inner">
       <div
         class="home-hero__showcase"
         data-home-carousel={isSlider ? 'loop' : undefined}
         data-autoplay={isSlider ? 'true' : undefined}
       >
+        <h1 class="home-hero__site-title">{tagline}</h1>
         <div class="home-hero__viewport" data-home-carousel-viewport={isSlider ? '' : undefined}>
           <div class="home-hero__track">
             {heroRecipes.map((recipe: HydratedArticle, index: number) => {
@@ -162,31 +159,6 @@ const getCookTime = (recipe: HydratedArticle) =>
       var(--bg);
   }
 
-  .home-hero__intro {
-    max-width: 1400px;
-    margin: 0 auto var(--space-4);
-  }
-
-  .home-hero__intro p {
-    margin: 0 0 var(--space-1);
-    color: var(--brand-primary);
-    font-size: var(--text-sm);
-    font-weight: var(--font-semibold);
-    letter-spacing: 0;
-    text-transform: uppercase;
-  }
-
-  .home-hero__intro h1 {
-    max-width: 20ch;
-    margin: 0;
-    color: var(--text);
-    font-family: var(--font-serif);
-    font-size: clamp(1.75rem, 1.3rem + 1.5vw, 2.6rem);
-    font-weight: var(--font-bold);
-    line-height: var(--leading-tight);
-    letter-spacing: 0;
-  }
-
   .home-hero__inner {
     width: 100%;
     max-width: 1400px;
@@ -200,6 +172,23 @@ const getCookTime = (recipe: HydratedArticle) =>
   .home-hero__showcase {
     min-width: 0;
     position: relative;
+  }
+
+  .home-hero__site-title {
+    position: absolute;
+    top: clamp(var(--space-5), 4vw, var(--space-10));
+    left: clamp(var(--space-5), 4vw, var(--space-10));
+    z-index: 3;
+    max-width: min(62%, 22ch);
+    margin: 0;
+    color: var(--text-inverse);
+    font-family: var(--font-serif);
+    font-size: clamp(1.5rem, 1.05rem + 1.3vw, 2.3rem);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-tight);
+    letter-spacing: 0;
+    pointer-events: none;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.38);
   }
 
   .home-hero__viewport {
@@ -521,9 +510,11 @@ const getCookTime = (recipe: HydratedArticle) =>
       font-size: clamp(2rem, 9vw, 2.3rem);
     }
 
-    .home-hero__intro h1 {
+    .home-hero__site-title {
+      top: var(--space-5);
+      left: var(--space-5);
       max-width: 15ch;
-      font-size: clamp(1.7rem, 8.5vw, 2.25rem);
+      font-size: clamp(1.35rem, 7vw, 1.9rem);
     }
 
     .home-hero__showcase[data-home-carousel] .home-hero__content {
