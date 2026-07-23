@@ -175,21 +175,25 @@ const getCookTime = (recipe: HydratedArticle) =>
     background: var(--bg-elevated);
   }
 
-  .home-hero__track {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 100%;
+  .home-hero__showcase[data-home-carousel] .home-hero__viewport {
     overflow-x: auto;
+    overflow-y: hidden;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
   }
 
-  .home-hero__showcase.is-carousel-enhanced .home-hero__track {
-    overflow-x: visible;
+  .home-hero__track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 100%;
+  }
+
+  .home-hero__showcase.is-carousel-enhanced .home-hero__viewport {
+    overflow: hidden;
     scroll-snap-type: none;
   }
 
-  .home-hero__track::-webkit-scrollbar {
+  .home-hero__viewport::-webkit-scrollbar {
     display: none;
   }
 

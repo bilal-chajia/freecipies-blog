@@ -54,19 +54,25 @@ const initCarousel = (root: HomeCarouselNode): CarouselInstance | null => {
       ]
     : [];
 
-  const embla = EmblaCarousel(
-    viewport,
-    {
-      align: 'start',
-      containScroll: 'trimSnaps',
-      dragFree: false,
-      loop: shouldLoop,
-      slidesToScroll: 1,
-    },
-    plugins,
-  );
   root.classList.add(ENHANCED_CLASS);
-  embla.reInit();
+
+  let embla: EmblaCarouselType;
+  try {
+    embla = EmblaCarousel(
+      viewport,
+      {
+        align: 'start',
+        containScroll: 'trimSnaps',
+        dragFree: false,
+        loop: shouldLoop,
+        slidesToScroll: 1,
+      },
+      plugins,
+    );
+  } catch (error) {
+    root.classList.remove(ENHANCED_CLASS);
+    throw error;
+  }
 
   const prevButton = getPrevButton(root);
   const nextButton = getNextButton(root);
@@ -92,8 +98,10 @@ const initCarousel = (root: HomeCarouselNode): CarouselInstance | null => {
 
   prevButton?.addEventListener('click', selectPrev);
   nextButton?.addEventListener('click', selectNext);
-  dots.forEach((dot, index) => {
-    dot.addEventListener('click', () => selectDot(index));
+  const dotClickHandlers = dots.map((dot, index) => {
+    const handler = () => selectDot(index);
+    dot.addEventListener('click', handler);
+    return { dot, handler };
   });
 
   embla.on('init', updateControls);
@@ -106,6 +114,9 @@ const initCarousel = (root: HomeCarouselNode): CarouselInstance | null => {
     destroy: () => {
       prevButton?.removeEventListener('click', selectPrev);
       nextButton?.removeEventListener('click', selectNext);
+      dotClickHandlers.forEach(({ dot, handler }) => {
+        dot.removeEventListener('click', handler);
+      });
       root.classList.remove(ENHANCED_CLASS);
       embla.destroy();
     },
