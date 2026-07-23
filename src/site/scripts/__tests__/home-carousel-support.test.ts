@@ -14,6 +14,12 @@ describe('getCircularSupportPosition', () => {
     expect(getCircularSupportPosition(2, 3, 4)).toBeNull();
   });
 
+  it('supports admin carousels longer than four recipes', () => {
+    expect(getCircularSupportPosition(5, 4, 6)).toBe(1);
+    expect(getCircularSupportPosition(0, 4, 6)).toBe(2);
+    expect(getCircularSupportPosition(1, 4, 6)).toBeNull();
+  });
+
   it('does not expose the selected card', () => {
     expect(getCircularSupportPosition(2, 2, 4)).toBeNull();
   });

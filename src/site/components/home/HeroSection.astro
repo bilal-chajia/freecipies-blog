@@ -10,7 +10,7 @@ interface Props {
 }
 
 const { section, recipes } = Astro.props;
-const heroRecipes = recipes.slice(0, 4);
+const heroRecipes = recipes;
 const isSlider = section.mode === 'slider' && heroRecipes.length > 1;
 const supportRecipes = isSlider ? heroRecipes : recipes.slice(1, 3);
 
