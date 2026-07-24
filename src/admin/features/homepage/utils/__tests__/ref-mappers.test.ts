@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { mapArticleToRecipeRef, mapArticleToRoundupRef, addRecipeRef, addRoundupRef } from '../ref-mappers';
+import {
+  mapArticleToRecipeRef,
+  mapArticleToRoundupRef,
+  addRecipeRef,
+  addRoundupRef,
+  buildPickerSearchParams,
+} from '../ref-mappers';
 
 describe('ref mappers', () => {
   it('maps an article to a recipe ref (snake_case, route /recipes)', () => {
@@ -34,5 +40,20 @@ describe('ref mappers', () => {
     const next = addRoundupRef(existing, { roundup_id: 4, title: 'Y', route: '/roundups/y' });
     expect(next).toHaveLength(2);
     expect(next[1].roundup_id).toBe(4);
+  });
+
+  it('builds published, typed picker search params', () => {
+    expect(buildPickerSearchParams('recipe', 'pasta')).toEqual({
+      type: 'recipe',
+      workflow_status: 'published',
+      search: 'pasta',
+      limit: 8,
+    });
+    expect(buildPickerSearchParams('roundup', 'soups')).toEqual({
+      type: 'roundup',
+      workflow_status: 'published',
+      search: 'soups',
+      limit: 8,
+    });
   });
 });

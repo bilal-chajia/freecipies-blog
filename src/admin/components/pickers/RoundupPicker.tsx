@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import api from '@admin/services/api-client';
 import type { HomepageRoundupRef } from '@modules/settings/types/settings.types';
 
-interface ArticleApiItem { id: number | string; title: string; slug: string; }
+interface ArticleApiItem { id: number | string; headline: string; slug: string; }
 
 export interface RoundupPickerProps {
   value: HomepageRoundupRef | null | undefined;
@@ -23,7 +23,9 @@ const RoundupPicker: React.FC<RoundupPickerProps> = ({ value, onChange }) => {
     if (!query || query.length < 2) { setResults([]); return; }
     setIsSearching(true);
     try {
-      const res = await api.get('/articles', { params: { type: 'roundup', search: query, limit: 8 } });
+      const res = await api.get('/articles', {
+        params: { type: 'roundup', workflow_status: 'published', search: query, limit: 8 },
+      });
       const data = res.data;
       const items: ArticleApiItem[] = Array.isArray(data) ? data : (data.data || []);
       setResults(items);
@@ -40,7 +42,7 @@ const RoundupPicker: React.FC<RoundupPickerProps> = ({ value, onChange }) => {
   }, [searchQuery, handleSearch]);
 
   const handleSelect = (item: ArticleApiItem) => {
-    onChange({ roundup_id: Number(item.id), title: item.title, route: `/roundups/${item.slug}` });
+    onChange({ roundup_id: Number(item.id), title: item.headline, route: `/roundups/${item.slug}` });
     setShowDropdown(false);
     setSearchQuery('');
   };
@@ -76,7 +78,7 @@ const RoundupPicker: React.FC<RoundupPickerProps> = ({ value, onChange }) => {
                 results.map((item) => (
                   <button key={item.id} type="button" className="w-full text-left px-3 py-2 hover:bg-muted flex items-center gap-3" onClick={() => handleSelect(item)}>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.title}</p>
+                      <p className="text-sm font-medium truncate">{item.headline}</p>
                       <p className="text-xs text-muted-foreground truncate">{item.slug}</p>
                     </div>
                   </button>

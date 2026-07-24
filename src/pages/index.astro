@@ -47,12 +47,12 @@ const hasRenderedHero = sectionVms.some(
   noindex={homepageSettings.seo.no_index}
 >
   <main class="homepage">
-    <HomeSections sections={sectionVms} siteTagline={identity.tagline || identity.site_name} />
     {!hasRenderedHero && (
       <header class="home-fallback-intro" data-fade-up>
         <h1>{identity.tagline || identity.site_name}</h1>
       </header>
     )}
+    <HomeSections sections={sectionVms} siteTagline={identity.tagline || identity.site_name} />
   </main>
   {jsonLd.map((node) => (
     <script type="application/ld+json" set:html={JSON.stringify(node)} />

@@ -75,9 +75,25 @@ it('resolves hero manual refs via getArticlesByIds (no N+1 getArticleById)', asy
       refs: [{ article_id: 11, headline: 'A', route: '/recipes/a' }, { article_id: 22, headline: 'B', route: '/recipes/b' }] },
   ];
   const vms = await resolveHomeData(sections, { db: DB, stories: [] });
-  expect(getArticlesByIds).toHaveBeenCalledWith(DB, [11, 22]);
+  expect(getArticlesByIds).toHaveBeenCalledWith(DB, [11, 22], {
+    type: 'recipe',
+    workflow_status: 'published',
+  });
   expect(getArticleById).not.toHaveBeenCalled();
   expect((vms[0] as { recipes: { id: number }[] }).recipes.map((r) => r.id)).toEqual([11, 22]);
+});
+
+it('resolves featured manual refs as published recipes', async () => {
+  const sections: HomepageSection[] = [
+    { id: 'featured', type: 'featured_recipes', enabled: true, title: 'F', subtitle: '',
+      source: 'manual', category_slug: null, count: 4,
+      refs: [{ article_id: 11, headline: 'A', route: '/recipes/a' }] },
+  ];
+  await resolveHomeData(sections, { db: DB, stories: [] });
+  expect(getArticlesByIds).toHaveBeenCalledWith(DB, [11], {
+    type: 'recipe',
+    workflow_status: 'published',
+  });
 });
 
 it('resolves collections manual refs via getArticlesByIds', async () => {
@@ -85,7 +101,10 @@ it('resolves collections manual refs via getArticlesByIds', async () => {
     { id: 'collections', type: 'collections', enabled: true, title: 'Collections', subtitle: '', refs: [{ roundup_id: 5, title: 'R', route: '/roundups/r' }] },
   ];
   await resolveHomeData(sections, { db: DB, stories: [] });
-  expect(getArticlesByIds).toHaveBeenCalledWith(DB, [5]);
+  expect(getArticlesByIds).toHaveBeenCalledWith(DB, [5], {
+    type: 'roundup',
+    workflow_status: 'published',
+  });
   expect(getArticleById).not.toHaveBeenCalled();
 });
 

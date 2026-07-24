@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { SQL } from 'drizzle-orm';
+import { SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
 import { getArticlesByIds } from '../articles.service';
 
 // Mock the drizzle getDb to return a controllable stub.
@@ -7,9 +9,9 @@ import { getArticlesByIds } from '../articles.service';
 // both `leftJoin` (chainable back to the same object) and the mock `where`.
 interface MockChain {
   leftJoin: () => MockChain;
-  where: () => Promise<unknown[]>;
+  where: (condition: SQL) => Promise<unknown[]>;
 }
-const where = vi.fn(async () => [] as unknown[]);
+const where = vi.fn(async (_condition: SQL) => [] as unknown[]);
 const chain: MockChain = { leftJoin: () => chain, where };
 const from = vi.fn(() => chain);
 const select = vi.fn(() => ({ from }));
@@ -57,5 +59,19 @@ describe('getArticlesByIds', () => {
     mockRows(baseRow(1), baseRow(2));
     const result = await getArticlesByIds({} as never, [1, 1, 2]);
     expect(result.map((r) => r.id)).toEqual([1, 2]);
+  });
+
+  it('adds requested type and workflow status filters to the query', async () => {
+    await getArticlesByIds({} as never, [1, 2], {
+      type: 'recipe',
+      workflow_status: 'published',
+    });
+
+    const condition = where.mock.calls[0]?.[0];
+    expect(condition).toBeDefined();
+    const query = new SQLiteSyncDialect().sqlToQuery(condition!);
+    expect(query.sql).toContain('"articles"."type" = ?');
+    expect(query.sql).toContain('"articles"."workflow_status" = ?');
+    expect(query.params).toEqual(expect.arrayContaining(['recipe', 'published']));
   });
 });

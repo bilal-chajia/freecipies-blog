@@ -96,6 +96,8 @@ export interface PaginatedArticles {
   total: number;
 }
 
+export type ArticlesByIdsOptions = Pick<ArticleQueryOptions, 'type' | 'workflow_status'>;
+
 /**
  * Get articles with filtering and pagination
  */
@@ -482,15 +484,28 @@ export async function getArticleById(
  * regenerate caches — it reads whatever is stored and `hydrateArticle` resolves
  * category/author/images/route. Tags are set to `[]` because the homepage
  * surfaces that consume this (hero/featured/collections) do not read tags.
+ * Optional type/status constraints let public callers enforce visibility.
  */
 export async function getArticlesByIds(
   db: D1Database | DrizzleDb,
   ids: number[],
+  options?: ArticlesByIdsOptions,
 ): Promise<HydratedArticle[]> {
   if (ids.length === 0) return [];
 
   const drizzle = getDb(db);
   const uniqueIds = Array.from(new Set(ids));
+  const conditions = [
+    inArray(articles.id, uniqueIds),
+    isNull(articles.deleted_at),
+  ];
+
+  if (options?.type) {
+    conditions.push(eq(articles.type, options.type));
+  }
+  if (options?.workflow_status && options.workflow_status !== 'all') {
+    conditions.push(eq(articles.workflow_status, options.workflow_status));
+  }
 
   const rows = await drizzle
     .select({
@@ -505,7 +520,7 @@ export async function getArticlesByIds(
     .from(articles)
     .leftJoin(categories, eq(articles.category_id, categories.id))
     .leftJoin(authors, eq(articles.author_id, authors.id))
-    .where(and(inArray(articles.id, uniqueIds), isNull(articles.deleted_at)));
+    .where(and(...conditions));
 
   const hydratedById = new Map<number, HydratedArticle>();
   for (const row of rows) {

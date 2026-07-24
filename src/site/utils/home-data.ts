@@ -79,7 +79,10 @@ export async function resolveHomeData(
 
       case 'hero': {
         const recipes = section.refs.length > 0
-          ? await getArticlesByIds(db, section.refs.map((ref) => ref.article_id))
+          ? await getArticlesByIds(db, section.refs.map((ref) => ref.article_id), {
+              type: 'recipe',
+              workflow_status: 'published',
+            })
           : await trendingRecipes(4);
         vms.push({ kind: 'hero', section, recipes });
         break;
@@ -88,7 +91,10 @@ export async function resolveHomeData(
       case 'featured_recipes': {
         let recipes: HydratedArticle[];
         if (section.source === 'manual' && section.refs.length > 0) {
-          recipes = await getArticlesByIds(db, section.refs.map((ref) => ref.article_id));
+          recipes = await getArticlesByIds(db, section.refs.map((ref) => ref.article_id), {
+            type: 'recipe',
+            workflow_status: 'published',
+          });
         } else if (section.source === 'category' && section.category_slug) {
           const { items } = await getArticles(db, { type: 'recipe', workflow_status: 'published', categorySlug: section.category_slug, limit: section.count });
           recipes = items;
@@ -108,7 +114,10 @@ export async function resolveHomeData(
 
       case 'collections': {
         const roundups = section.refs.length > 0
-          ? await getArticlesByIds(db, section.refs.map((ref) => ref.roundup_id))
+          ? await getArticlesByIds(db, section.refs.map((ref) => ref.roundup_id), {
+              type: 'roundup',
+              workflow_status: 'published',
+            })
           : (await getArticles(db, { type: 'roundup', workflow_status: 'published', limit: 6 })).items;
         vms.push({ kind: 'collections', section, roundups });
         break;

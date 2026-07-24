@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X } from 'lucide-react';
 import { Input } from '@/ui/input';
 import { toast } from 'sonner';
 import api from '@admin/services/api-client';
-import { mapArticleToRoundupRef, addRoundupRef } from '../utils/ref-mappers';
+import { mapArticleToRoundupRef, addRoundupRef, buildPickerSearchParams } from '../utils/ref-mappers';
 import type { HomepageRoundupRef } from '@modules/settings/types/settings.types';
 
 interface ArticleApiItem { id: number | string; headline: string; slug: string; }
@@ -18,7 +18,7 @@ function RefRow({ ref: refItem, onRemove }: RefRowProps) {
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-2 rounded-sm border border-border bg-muted/40">
-      <button type="button" className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing" {...attributes} {...listeners}>
+      <button type="button" aria-label={`Reorder ${refItem.title}`} className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing" {...attributes} {...listeners}>
         <GripVertical className="h-4 w-4" />
       </button>
       <div className="flex-1 min-w-0">
@@ -46,7 +46,7 @@ const RoundupRefList: React.FC<RoundupRefListProps> = ({ refs, onChange }) => {
     if (!query || query.length < 2) { setResults([]); return; }
     setIsSearching(true);
     try {
-      const res = await api.get('/articles', { params: { type: 'roundup', search: query, limit: 8 } });
+      const res = await api.get('/articles', { params: buildPickerSearchParams('roundup', query) });
       const data = res.data;
       setResults(Array.isArray(data) ? data : (data.data || []));
     } catch { setResults([]); }
@@ -68,7 +68,10 @@ const RoundupRefList: React.FC<RoundupRefListProps> = ({ refs, onChange }) => {
 
   const handleRemove = (roundupId: number) => onChange(refs.filter((r) => r.roundup_id !== roundupId));
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const handleDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (over && active.id !== over.id) {

@@ -2,6 +2,15 @@ import type { HomepageRecipeRef, HomepageRoundupRef } from '@modules/settings/ty
 
 interface ArticleApiItem { id: number | string; headline: string; slug: string; }
 
+export function buildPickerSearchParams(type: 'recipe' | 'roundup', search: string) {
+  return {
+    type,
+    workflow_status: 'published' as const,
+    search,
+    limit: 8,
+  };
+}
+
 export function mapArticleToRecipeRef(item: ArticleApiItem): HomepageRecipeRef {
   return {
     article_id: Number(item.id),
