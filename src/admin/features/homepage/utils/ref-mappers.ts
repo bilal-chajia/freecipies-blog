@@ -1,11 +1,11 @@
 import type { HomepageRecipeRef, HomepageRoundupRef } from '@modules/settings/types/settings.types';
 
-interface ArticleApiItem { id: number | string; title: string; slug: string; }
+interface ArticleApiItem { id: number | string; headline: string; slug: string; }
 
 export function mapArticleToRecipeRef(item: ArticleApiItem): HomepageRecipeRef {
   return {
     article_id: Number(item.id),
-    headline: item.title,
+    headline: item.headline,
     route: `/recipes/${item.slug}`,
   };
 }
@@ -13,7 +13,7 @@ export function mapArticleToRecipeRef(item: ArticleApiItem): HomepageRecipeRef {
 export function mapArticleToRoundupRef(item: ArticleApiItem): HomepageRoundupRef {
   return {
     roundup_id: Number(item.id),
-    title: item.title,
+    title: item.headline,
     route: `/roundups/${item.slug}`,
   };
 }

@@ -3,12 +3,12 @@ import { mapArticleToRecipeRef, mapArticleToRoundupRef, addRecipeRef, addRoundup
 
 describe('ref mappers', () => {
   it('maps an article to a recipe ref (snake_case, route /recipes)', () => {
-    const ref = mapArticleToRecipeRef({ id: 12, title: 'Pasta', slug: 'pasta' });
+    const ref = mapArticleToRecipeRef({ id: 12, headline: 'Pasta', slug: 'pasta' });
     expect(ref).toEqual({ article_id: 12, headline: 'Pasta', route: '/recipes/pasta' });
   });
 
   it('maps an article to a roundup ref (snake_case, route /roundups)', () => {
-    const ref = mapArticleToRoundupRef({ id: 5, title: 'Best Soups', slug: 'best-soups' });
+    const ref = mapArticleToRoundupRef({ id: 5, headline: 'Best Soups', slug: 'best-soups' });
     expect(ref).toEqual({ roundup_id: 5, title: 'Best Soups', route: '/roundups/best-soups' });
   });
 

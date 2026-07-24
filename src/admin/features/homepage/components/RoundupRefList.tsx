@@ -9,7 +9,7 @@ import api from '@admin/services/api-client';
 import { mapArticleToRoundupRef, addRoundupRef } from '../utils/ref-mappers';
 import type { HomepageRoundupRef } from '@modules/settings/types/settings.types';
 
-interface ArticleApiItem { id: number | string; title: string; slug: string; }
+interface ArticleApiItem { id: number | string; headline: string; slug: string; }
 
 interface RefRowProps { ref: HomepageRoundupRef; onRemove: () => void; }
 
@@ -86,7 +86,7 @@ const RoundupRefList: React.FC<RoundupRefListProps> = ({ refs, onChange }) => {
             {isSearching ? <div className="p-3 text-center text-sm text-muted-foreground">Searching...</div> : (
               results.map((item) => (
                 <button key={item.id} type="button" className="w-full text-left px-3 py-2 hover:bg-muted" onClick={() => handleAdd(item)}>
-                  <p className="text-sm font-medium truncate">{item.title}</p>
+                  <p className="text-sm font-medium truncate">{item.headline}</p>
                   <p className="text-xs text-muted-foreground truncate">{item.slug}</p>
                 </button>
               ))
