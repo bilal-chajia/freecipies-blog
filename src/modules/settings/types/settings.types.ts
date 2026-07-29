@@ -244,6 +244,13 @@ export const DEFAULT_HOME_SECTIONS: HomepageSection[] = [
     button_text: 'Subscribe',
     placeholder_text: 'Your email address',
   },
+  {
+    id: 'faq',
+    type: 'faq',
+    enabled: false,
+    title: 'Frequently Asked Questions',
+    items: [],
+  },
 ];
 
 export interface OrganizationProfileSettings {

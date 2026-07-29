@@ -23,6 +23,7 @@ import {
   SeoSection,
 } from './sections';
 import { toast } from 'sonner';
+import { pinFaqLast } from '@admin/features/homepage/utils/faq-items';
 import {
   DEFAULT_HOME_SECTIONS,
   HOMEPAGE_SETTINGS_DEFAULTS,
@@ -44,7 +45,11 @@ type AdminAxiosRequestConfig = AxiosRequestConfig & {
 
 const cloneSettings = (settings: HomepageSettings): HomepageSettings => ({
   seo: { ...settings.seo },
-  sections: settings.sections.map((section) => ({ ...section })),
+  sections: pinFaqLast(settings.sections).map((section) => (
+    section.type === 'faq'
+      ? { ...section, items: section.items.map((item) => ({ ...item })) }
+      : { ...section }
+  )),
 });
 
 const createDefaultSettings = (): HomepageSettings => cloneSettings({
@@ -123,6 +128,7 @@ const Homepage = () => {
   }, [formData.sections]);
 
   const reorderSections = useCallback((activeId: string, overId: string) => {
+    if (activeId === 'faq' || overId === 'faq') return;
     setFormData((prev) => {
       const ids = prev.sections.map((s) => s.id);
       const from = ids.indexOf(activeId);

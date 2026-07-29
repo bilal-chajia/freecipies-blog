@@ -40,6 +40,29 @@ describe('HomepageSettingsSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('rejects whitespace-only FAQ questions and answers', () => {
+    const whitespaceQuestion = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'faq',
+        type: 'faq',
+        enabled: true,
+        title: 'FAQ',
+        items: [{ question: '   ', answer: 'Answer' }],
+      }],
+    });
+    const whitespaceAnswer = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'faq',
+        type: 'faq',
+        enabled: true,
+        title: 'FAQ',
+        items: [{ question: 'Question?', answer: '   ' }],
+      }],
+    });
+    expect(whitespaceQuestion.success).toBe(false);
+    expect(whitespaceAnswer.success).toBe(false);
+  });
+
   it('rejects unknown top-level keys', () => {
     const result = HomepageSettingsSchema.safeParse({ nope: true });
     expect(result.success).toBe(false);

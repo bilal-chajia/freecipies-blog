@@ -293,7 +293,7 @@ const HomepageSectionSchema = z.discriminatedUnion('type', [
       type: z.literal('faq'),
       title: z.string(),
       items: z.array(
-        z.object({ question: z.string().min(1), answer: z.string().min(1) }).strict(),
+        z.object({ question: z.string().trim().min(1), answer: z.string().trim().min(1) }).strict(),
       ),
     })
     .strict(),

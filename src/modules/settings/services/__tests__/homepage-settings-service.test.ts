@@ -27,15 +27,25 @@ describe('getHomepageSettings', () => {
     expect(result.sections).toEqual(DEFAULT_HOME_SECTIONS);
   });
 
-  it('uses stored sections when present and falls back seo to defaults', async () => {
+  it('appends one disabled FAQ to a stored legacy section list', async () => {
     const sections = [
       { id: 'hero', type: 'hero', enabled: false, mode: 'grid', show_search: false, refs: [] },
     ];
     const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
     const result = await getHomepageSettings(NO_DB, { cache });
-    expect(result.sections).toHaveLength(1);
+    expect(result.sections.map((section) => section.id)).toEqual(['hero', 'faq']);
     expect(result.sections[0].enabled).toBe(false);
+    expect(result.sections[1]).toMatchObject({ type: 'faq', enabled: false, items: [] });
     expect(result.seo.meta_title).toBe(HOMEPAGE_SETTINGS_DEFAULTS.seo.meta_title);
+  });
+
+  it('does not duplicate an existing FAQ section', async () => {
+    const sections = [
+      { id: 'faq', type: 'faq', enabled: true, title: 'Help', items: [{ question: 'Q?', answer: 'A.' }] },
+    ];
+    const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
+    const result = await getHomepageSettings(NO_DB, { cache });
+    expect(result.sections.filter((section) => section.type === 'faq')).toHaveLength(1);
   });
 
   it('exports updateHomepageSettings as a function', () => {

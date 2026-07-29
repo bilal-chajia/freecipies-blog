@@ -376,6 +376,23 @@ export async function getSeoDefaultsSettings(
   return mergeObject(SEO_DEFAULTS, stored);
 }
 
+export function normalizeHomepageSections(
+  sections: HomepageSection[] | undefined,
+): HomepageSection[] {
+  if (!Array.isArray(sections) || sections.length === 0) {
+    return DEFAULT_HOME_SECTIONS;
+  }
+
+  if (sections.some((section) => section.type === 'faq')) {
+    return sections;
+  }
+
+  const defaultFaq = DEFAULT_HOME_SECTIONS.find((section) => section.type === 'faq');
+  return defaultFaq
+    ? [...sections, { ...defaultFaq, items: [...defaultFaq.items] }]
+    : sections;
+}
+
 export async function getHomepageSettings(
   db: D1Database | DrizzleDb,
   options?: SettingServiceOptions,
@@ -386,10 +403,7 @@ export async function getHomepageSettings(
       ...HOMEPAGE_SETTINGS_DEFAULTS.seo,
       ...(stored?.seo && typeof stored.seo === 'object' ? stored.seo : {}),
     },
-    sections:
-      Array.isArray(stored?.sections) && stored.sections.length > 0
-        ? (stored.sections as HomepageSection[])
-        : DEFAULT_HOME_SECTIONS,
+    sections: normalizeHomepageSections(stored?.sections),
   };
 }
 

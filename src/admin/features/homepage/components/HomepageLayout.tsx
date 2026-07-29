@@ -143,7 +143,7 @@ export default function HomepageLayout({
                                     };
                                     const Icon = item.icon;
                                     const is_active = currentSection === item.id;
-                                    const draggable = item.id !== 'seo';
+                                    const draggable = item.id !== 'faq' && item.id !== 'seo';
                                     return (
                                         <SortableSectionRow
                                             key={item.id}
