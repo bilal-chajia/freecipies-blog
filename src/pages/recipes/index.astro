@@ -12,6 +12,10 @@ import {
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import { parseCachedRecipe } from "@modules/articles/utils/cached-fields";
 import Pagination from "@components/Pagination.astro";
+import {
+  buildRecipeListingUrl,
+  normalizeRecipeSearch,
+} from "@site/utils/recipe-listing";
 
 export const prerender = false;
 
@@ -19,6 +23,7 @@ export const prerender = false;
 const url = Astro.url;
 const categoryFilter = url.searchParams.get("category") || "";
 const tagFilter = url.searchParams.get("tag") || "";
+const searchTerm = normalizeRecipeSearch(url.searchParams.get("search"));
 const page = parseInt(url.searchParams.get("page") || "1");
 const limit = 12;
 const offset = (page - 1) * limit;
@@ -36,6 +41,7 @@ try {
       type: "recipe",
       categorySlug: categoryFilter || undefined,
       tagSlug: tagFilter || undefined,
+      search: searchTerm || undefined,
       limit,
       offset,
     });
@@ -53,25 +59,6 @@ try {
 }
 
 const totalPages = Math.ceil(totalRecipes / limit);
-
-// Helper to build filter URL
-const buildFilterUrl = (
-  newCategory?: string,
-  newTag?: string,
-  newPage?: number
-) => {
-  const params = new URLSearchParams();
-  const cat = newCategory !== undefined ? newCategory : categoryFilter;
-  const tag = newTag !== undefined ? newTag : tagFilter;
-  const p = newPage !== undefined ? newPage : page;
-
-  if (cat) params.set("category", cat);
-  if (tag) params.set("tag", tag);
-  if (p > 1) params.set("page", p.toString());
-
-  const queryString = params.toString();
-  return queryString ? `/recipes?${queryString}` : "/recipes";
-};
 
 const getRecipeImage = (
   recipe: any,
@@ -124,9 +111,12 @@ const getBadgeColors = (color?: string) => {
   return { badgeColor, badgeText };
 };
 
-const siteTitle = categoryFilter
-  ? `${categories.find((c) => c.slug === categoryFilter)?.label || "Category"} Recipes - SaaS Blog`
-  : "All Recipes - SaaS Blog";
+const listingTitle = categoryFilter
+  ? `${categories.find((c) => c.slug === categoryFilter)?.label || "Category"} Recipes`
+  : "All Recipes";
+const siteTitle = searchTerm
+  ? `${listingTitle} matching "${searchTerm}" - SaaS Blog`
+  : `${listingTitle} - SaaS Blog`;
 const siteDescription =
   "Browse all our delicious and easy-to-follow recipes. Filter by category or tag.";
 ---
@@ -139,12 +129,12 @@ const siteDescription =
         <h1 class="page-title">
           <span class="title-dot"></span>
           {
-            categoryFilter
-              ? `${categories.find((c) => c.slug === categoryFilter)?.label} Recipes`
-              : "All Recipes"
+            listingTitle
           }
         </h1>
-        <p class="recipe-count">{totalRecipes} recipes found</p>
+        <p class="recipe-count">
+          {totalRecipes} recipes found{searchTerm ? ` for "${searchTerm}"` : ""}
+        </p>
       </div>
     </section>
 
@@ -153,7 +143,7 @@ const siteDescription =
       <div class="container">
         <div class="filter-pills">
           <a
-            href="/recipes"
+            href={buildRecipeListingUrl({ search: searchTerm })}
             class:list={[
               "filter-pill",
               { active: !categoryFilter && !tagFilter },
@@ -164,11 +154,11 @@ const siteDescription =
           {
             categories.map((cat) => (
               <a
-                href={buildFilterUrl(
-                  cat.slug === categoryFilter ? "" : cat.slug,
-                  undefined,
-                  1
-                )}
+                href={buildRecipeListingUrl({
+                  category: cat.slug === categoryFilter ? "" : cat.slug,
+                  tag: tagFilter,
+                  search: searchTerm,
+                })}
                 class:list={[
                   "filter-pill",
                   { active: categoryFilter === cat.slug },
@@ -190,11 +180,11 @@ const siteDescription =
             <div class="tag-chips">
               {tags.slice(0, 8).map((tag) => (
                 <a
-                  href={buildFilterUrl(
-                    undefined,
-                    tag.slug === tagFilter ? "" : tag.slug,
-                    1
-                  )}
+                  href={buildRecipeListingUrl({
+                    category: categoryFilter,
+                    tag: tag.slug === tagFilter ? "" : tag.slug,
+                    search: searchTerm,
+                  })}
                   class:list={["chip-standard tag-chip", { active: tagFilter === tag.slug }]}
                   style={`--tag-color: ${tag.color || "var(--brand-primary)"};`}
                 >
@@ -216,7 +206,7 @@ const siteDescription =
 
     <!-- Active Filters -->
     {
-      (categoryFilter || tagFilter) && (
+      (categoryFilter || tagFilter || searchTerm) && (
         <section class="active-filters">
           <div class="container">
             <div class="filter-tags">
@@ -225,8 +215,12 @@ const siteDescription =
                   Category:{" "}
                   {categories.find((c) => c.slug === categoryFilter)?.label}
                   <a
-                    href={buildFilterUrl("", tagFilter, 1)}
+                    href={buildRecipeListingUrl({
+                      tag: tagFilter,
+                      search: searchTerm,
+                    })}
                     class="remove-filter"
+                    aria-label="Remove category filter"
                   >
                     ×
                   </a>
@@ -236,8 +230,27 @@ const siteDescription =
                 <span class="filter-tag">
                   Tag: {tags.find((t) => t.slug === tagFilter)?.label}
                   <a
-                    href={buildFilterUrl(categoryFilter, "", 1)}
+                    href={buildRecipeListingUrl({
+                      category: categoryFilter,
+                      search: searchTerm,
+                    })}
                     class="remove-filter"
+                    aria-label="Remove tag filter"
+                  >
+                    ×
+                  </a>
+                </span>
+              )}
+              {searchTerm && (
+                <span class="filter-tag">
+                  Search: "{searchTerm}"
+                  <a
+                    href={buildRecipeListingUrl({
+                      category: categoryFilter,
+                      tag: tagFilter,
+                    })}
+                    class="remove-filter"
+                    aria-label="Clear search"
                   >
                     ×
                   </a>
@@ -357,7 +370,11 @@ const siteDescription =
                 currentPage={page} 
                 totalPages={totalPages} 
                 baseUrl="/recipes" 
-                preserveParams={Object.fromEntries([...url.searchParams].filter(([k]) => k !== 'page'))}
+                preserveParams={{
+                  ...(categoryFilter ? { category: categoryFilter } : {}),
+                  ...(tagFilter ? { tag: tagFilter } : {}),
+                  ...(searchTerm ? { search: searchTerm } : {}),
+                }}
               />
             </div>
           )
