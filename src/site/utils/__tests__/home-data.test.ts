@@ -108,6 +108,25 @@ it('resolves collections manual refs via getArticlesByIds', async () => {
   expect(getArticleById).not.toHaveBeenCalled();
 });
 
+it('resolves only complete FAQ items', async () => {
+  const sections: HomepageSection[] = [{
+    id: 'faq',
+    type: 'faq',
+    enabled: true,
+    title: 'FAQ',
+    items: [
+      { question: ' Valid? ', answer: ' Yes. ' },
+      { question: '', answer: 'Missing question' },
+      { question: 'Missing answer', answer: '   ' },
+    ],
+  }];
+  const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+  expect(vms).toEqual([expect.objectContaining({
+    kind: 'faq',
+    items: [{ question: 'Valid?', answer: 'Yes.' }],
+  })]);
+});
+
 describe('resolveHomeData — hero fallback', () => {
   beforeEach(() => {
     vi.clearAllMocks();

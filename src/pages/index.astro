@@ -3,7 +3,7 @@ import { env } from 'cloudflare:workers';
 import Layout from '@layouts/Layout.astro';
 import HomeSections from '@components/home/HomeSections.astro';
 import { resolveHomeData, type HomeSectionVM } from '@site/utils/home-data';
-import { buildHomeJsonLd } from '@site/utils/home-jsonld';
+import { buildHomeJsonLd, serializeJsonLd } from '@site/utils/home-jsonld';
 import {
   getPublicHomepageSettings,
   getStories,
@@ -28,11 +28,23 @@ try {
   console.error('Error resolving homepage data:', error);
 }
 
+const jsonLdRecipes = [
+  ...sectionVms.filter((section) => section.kind === 'hero'),
+  ...sectionVms.filter((section) => section.kind === 'featured_recipes'),
+].flatMap((section) => section.recipes).map((article) => ({
+  id: article.id,
+  name: article.headline,
+  url: article.route || `/recipes/${article.slug}`,
+}));
+const faqItems = sectionVms.find((section) => section.kind === 'faq')?.items ?? [];
+
 const jsonLd = buildHomeJsonLd({
   identity,
   organization,
   socialLinks,
-  searchUrlTemplate: `${identity.site_url}/recipes?q={search_term_string}`,
+  searchUrlTemplate: `${identity.site_url.replace(/\/$/, '')}/recipes?search={search_term_string}`,
+  recipes: jsonLdRecipes,
+  faqItems,
 });
 
 const hasRenderedHero = sectionVms.some(
@@ -55,7 +67,7 @@ const hasRenderedHero = sectionVms.some(
     <HomeSections sections={sectionVms} siteTagline={identity.tagline || identity.site_name} />
   </main>
   {jsonLd.map((node) => (
-    <script type="application/ld+json" set:html={JSON.stringify(node)} />
+    <script type="application/ld+json" set:html={serializeJsonLd(node)} />
   ))}
 </Layout>
 

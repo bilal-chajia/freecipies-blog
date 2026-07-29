@@ -17,6 +17,8 @@ import type {
   HomepageLatestSection,
   HomepageAboutAuthorSection,
   HomepageNewsletterSection,
+  HomepageFaqSection,
+  HomepageFaqItem,
 } from '@modules/settings/types/settings.types';
 
 export type HomeSectionVM =
@@ -27,11 +29,20 @@ export type HomeSectionVM =
   | { kind: 'collections'; section: HomepageCollectionsSection; roundups: HydratedArticle[] }
   | { kind: 'latest'; section: HomepageLatestSection; recipes: HydratedArticle[] }
   | { kind: 'about_author'; section: HomepageAboutAuthorSection; author: Author | null }
-  | { kind: 'newsletter'; section: HomepageNewsletterSection };
+  | { kind: 'newsletter'; section: HomepageNewsletterSection }
+  | { kind: 'faq'; section: HomepageFaqSection; items: HomepageFaqItem[] };
 
 export interface ResolveContext {
   db: D1Database;
   stories: StoryPreview[];
+}
+
+export function getRenderableHomepageFaqItems(
+  section: HomepageFaqSection,
+): HomepageFaqItem[] {
+  return section.items
+    .map(({ question, answer }) => ({ question: question.trim(), answer: answer.trim() }))
+    .filter(({ question, answer }) => question.length > 0 && answer.length > 0);
 }
 
 /** Turn the ordered, enabled homepage sections into ordered, data-loaded view-models. */
@@ -142,8 +153,13 @@ export async function resolveHomeData(
         vms.push({ kind: 'newsletter', section });
         break;
 
-      case 'faq':
+      case 'faq': {
+        const items = getRenderableHomepageFaqItems(section);
+        if (items.length > 0) {
+          vms.push({ kind: 'faq', section, items });
+        }
         break;
+      }
     }
   }
 

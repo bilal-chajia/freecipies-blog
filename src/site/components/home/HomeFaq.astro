@@ -1,0 +1,38 @@
+---
+import type {
+  HomepageFaqItem,
+  HomepageFaqSection,
+} from '@modules/settings/types/settings.types';
+import FAQSection from '@site/components/content/FAQSection.astro';
+
+interface Props {
+  section: HomepageFaqSection;
+  items: HomepageFaqItem[];
+}
+
+const { section, items } = Astro.props as Props;
+---
+
+<div class="home-faq" data-fade-up>
+  <div class="home-faq__inner">
+    <FAQSection faqs={items} title={section.title} />
+  </div>
+</div>
+
+<style>
+  .home-faq {
+    padding: clamp(var(--space-10), 7vw, var(--space-16)) var(--space-5);
+  }
+
+  .home-faq__inner {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 640px) {
+    .home-faq {
+      padding-inline: var(--space-4);
+    }
+  }
+</style>

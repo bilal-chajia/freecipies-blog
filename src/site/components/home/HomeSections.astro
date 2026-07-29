@@ -8,14 +8,17 @@ import Collections from './Collections.astro';
 import LatestRecipes from './LatestRecipes.astro';
 import AboutAuthor from './AboutAuthor.astro';
 import NewsletterBanner from './NewsletterBanner.astro';
+import HomeFaq from './HomeFaq.astro';
 
 interface Props {
   sections: HomeSectionVM[];
   siteTagline: string;
 }
 const { sections, siteTagline } = Astro.props as Props;
+const faqVm = sections.find((vm) => vm.kind === 'faq');
+const orderedSections = sections.filter((vm) => vm.kind !== 'faq');
 
-const hasCarousel = sections.some((vm) => {
+const hasCarousel = orderedSections.some((vm) => {
   if (vm.kind === 'hero') return vm.section.mode === 'slider' && vm.recipes.length > 1;
   if (vm.kind === 'featured_recipes') return vm.recipes.length > 1;
   if (vm.kind === 'collections') return vm.roundups.length > 1;
@@ -23,7 +26,7 @@ const hasCarousel = sections.some((vm) => {
 });
 ---
 {
-  sections.map((vm) => {
+  orderedSections.map((vm) => {
     switch (vm.kind) {
       case 'stories':
         return <StoriesBar stories={vm.stories} />;
@@ -44,6 +47,8 @@ const hasCarousel = sections.some((vm) => {
     }
   })
 }
+
+{faqVm && <HomeFaq section={faqVm.section} items={faqVm.items} />}
 
 {hasCarousel && (
   <script>
