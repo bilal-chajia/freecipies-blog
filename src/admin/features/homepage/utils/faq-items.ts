@@ -61,6 +61,19 @@ export function createFaqEditorState(
   };
 }
 
+export function reconcileFaqEditorState(
+  state: FaqEditorState,
+  items: HomepageFaqItem[],
+  createRowId: () => string,
+): FaqEditorState {
+  if (state.items === items) return state;
+
+  const rowIds = state.rowIds.slice(0, items.length);
+  while (rowIds.length < items.length) rowIds.push(createRowId());
+
+  return { items, rowIds };
+}
+
 export function updateFaqEditorRow(
   state: FaqEditorState,
   rowId: string,

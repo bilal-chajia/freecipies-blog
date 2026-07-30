@@ -4,6 +4,7 @@ import {
   addFaqItem,
   createFaqEditorState,
   pinFaqLast,
+  reconcileFaqEditorState,
   removeFaqEditorRow,
   removeFaqItem,
   reorderFaqEditorRows,
@@ -54,6 +55,23 @@ describe('FAQ editor row identity', () => {
     expect(state.items[focusedIndex]).toEqual({ question: 'Two?', answer: 'Updated A2' });
     expect(state.rowIds).not.toContain(deletedRowId);
     expect(state.items.every((item) => !('id' in item))).toBe(true);
+  });
+
+  it('preserves row identities when a controlled parent returns cloned items', () => {
+    let nextId = 0;
+    let state = createFaqEditorState([
+      { question: 'One?', answer: 'A1' },
+      { question: 'Two?', answer: 'A2' },
+    ], () => `row-${++nextId}`);
+    const focusedRowId = state.rowIds[1];
+
+    state = reorderFaqEditorRows(state, focusedRowId, state.rowIds[0]);
+    const clonedItems = state.items.map((item) => ({ ...item }));
+    state = reconcileFaqEditorState(state, clonedItems, () => `row-${++nextId}`);
+
+    expect(state.rowIds[0]).toBe(focusedRowId);
+    expect(state.items[0]).toEqual({ question: 'Two?', answer: 'A2' });
+    expect(nextId).toBe(2);
   });
 });
 

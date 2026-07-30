@@ -28,6 +28,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import type { HomepageFaqItem } from '@modules/settings/types/settings.types';
 import {
   addFaqItem,
+  createFaqEditorState,
+  reconcileFaqEditorState,
   removeFaqEditorRow,
   reorderFaqEditorRows,
   updateFaqEditorRow,
@@ -130,29 +132,19 @@ interface FaqItemListProps {
 export default function FaqItemList({ items, onChange }: FaqItemListProps) {
   const listId = useId();
   const nextRowNumber = useRef(0);
-  const rowIdsByItem = useRef(new WeakMap<HomepageFaqItem, string>());
   const createRowId = () => `${listId}-faq-row-${nextRowNumber.current++}`;
-  const getRowId = (item: HomepageFaqItem) => {
-    const existingRowId = rowIdsByItem.current.get(item);
-    if (existingRowId) return existingRowId;
-
-    const rowId = createRowId();
-    rowIdsByItem.current.set(item, rowId);
-    return rowId;
-  };
+  const editorStateRef = useRef<FaqEditorState | null>(null);
+  editorStateRef.current = editorStateRef.current
+    ? reconcileFaqEditorState(editorStateRef.current, items, createRowId)
+    : createFaqEditorState(items, createRowId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const editorState: FaqEditorState = {
-    items,
-    rowIds: items.map(getRowId),
-  };
+  const editorState = editorStateRef.current;
   const commitEditorState = (nextState: FaqEditorState) => {
-    nextState.items.forEach((item, index) => {
-      rowIdsByItem.current.set(item, nextState.rowIds[index]);
-    });
+    editorStateRef.current = nextState;
     onChange(nextState.items);
   };
   const handleAdd = () => commitEditorState({
