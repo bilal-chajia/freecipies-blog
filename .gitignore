@@ -123,3 +123,4 @@ logs/
 /outputs/
 
 tmp-lighthouse/
+.worktrees/
