@@ -1,4 +1,8 @@
-import type { CSSProperties } from 'react';
+import {
+  useId,
+  useRef,
+  type CSSProperties,
+} from 'react';
 import {
   closestCenter,
   DndContext,
@@ -24,30 +28,31 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import type { HomepageFaqItem } from '@modules/settings/types/settings.types';
 import {
   addFaqItem,
-  removeFaqItem,
-  reorderFaqItems,
-  updateFaqItem,
+  removeFaqEditorRow,
+  reorderFaqEditorRows,
+  updateFaqEditorRow,
+  type FaqEditorState,
 } from '../utils/faq-items';
 
 interface FaqItemRowProps {
+  rowId: string;
   item: HomepageFaqItem;
   index: number;
-  onChange: (items: HomepageFaqItem[]) => void;
-  items: HomepageFaqItem[];
+  onUpdate: (rowId: string, patch: Partial<HomepageFaqItem>) => void;
+  onRemove: (rowId: string) => void;
 }
 
-function FaqItemRow({ item, index, items, onChange }: FaqItemRowProps) {
-  const sortableId = `faq-item-${index}`;
+function FaqItemRow({ rowId, item, index, onUpdate, onRemove }: FaqItemRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: sortableId,
+    id: rowId,
   });
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 10 : undefined,
   };
-  const questionId = `${sortableId}-question`;
-  const answerId = `${sortableId}-answer`;
+  const questionId = `${rowId}-question`;
+  const answerId = `${rowId}-answer`;
 
   return (
     <div
@@ -78,7 +83,7 @@ function FaqItemRow({ item, index, items, onChange }: FaqItemRowProps) {
           <Input
             id={questionId}
             value={item.question}
-            onChange={(event) => onChange(updateFaqItem(items, index, { question: event.target.value }))}
+            onChange={(event) => onUpdate(rowId, { question: event.target.value })}
             placeholder="What would readers like to know?"
             className="h-8 text-sm"
           />
@@ -90,7 +95,7 @@ function FaqItemRow({ item, index, items, onChange }: FaqItemRowProps) {
           <Textarea
             id={answerId}
             value={item.answer}
-            onChange={(event) => onChange(updateFaqItem(items, index, { answer: event.target.value }))}
+            onChange={(event) => onUpdate(rowId, { answer: event.target.value })}
             placeholder="Write a concise answer"
             rows={3}
             className="min-h-20 resize-y text-sm"
@@ -106,7 +111,7 @@ function FaqItemRow({ item, index, items, onChange }: FaqItemRowProps) {
             size="icon-sm"
             aria-label={`Delete FAQ item ${index + 1}`}
             className="mt-5 text-muted-foreground hover:text-destructive"
-            onClick={() => onChange(removeFaqItem(items, index))}
+            onClick={() => onRemove(rowId)}
           >
             <Trash2 className="size-4" />
           </Button>
@@ -123,18 +128,49 @@ interface FaqItemListProps {
 }
 
 export default function FaqItemList({ items, onChange }: FaqItemListProps) {
+  const listId = useId();
+  const nextRowNumber = useRef(0);
+  const rowIdsByItem = useRef(new WeakMap<HomepageFaqItem, string>());
+  const createRowId = () => `${listId}-faq-row-${nextRowNumber.current++}`;
+  const getRowId = (item: HomepageFaqItem) => {
+    const existingRowId = rowIdsByItem.current.get(item);
+    if (existingRowId) return existingRowId;
+
+    const rowId = createRowId();
+    rowIdsByItem.current.set(item, rowId);
+    return rowId;
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const sortableIds = items.map((_, index) => `faq-item-${index}`);
-  const handleAdd = () => onChange(addFaqItem(items));
+  const editorState: FaqEditorState = {
+    items,
+    rowIds: items.map(getRowId),
+  };
+  const commitEditorState = (nextState: FaqEditorState) => {
+    nextState.items.forEach((item, index) => {
+      rowIdsByItem.current.set(item, nextState.rowIds[index]);
+    });
+    onChange(nextState.items);
+  };
+  const handleAdd = () => commitEditorState({
+    items: addFaqItem(editorState.items),
+    rowIds: [...editorState.rowIds, createRowId()],
+  });
+  const handleUpdate = (rowId: string, patch: Partial<HomepageFaqItem>) => {
+    commitEditorState(updateFaqEditorRow(editorState, rowId, patch));
+  };
+  const handleRemove = (rowId: string) => {
+    commitEditorState(removeFaqEditorRow(editorState, rowId));
+  };
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
-    onChange(reorderFaqItems(
-      items,
-      sortableIds.indexOf(String(active.id)),
-      sortableIds.indexOf(String(over.id)),
+    commitEditorState(reorderFaqEditorRows(
+      editorState,
+      String(active.id),
+      String(over.id),
     ));
   };
 
@@ -154,15 +190,16 @@ export default function FaqItemList({ items, onChange }: FaqItemListProps) {
   return (
     <div className="overflow-hidden border border-border">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+        <SortableContext items={editorState.rowIds} strategy={verticalListSortingStrategy}>
           <div className="divide-y divide-border">
             {items.map((item, index) => (
               <FaqItemRow
-                key={`faq-item-${index}`}
+                key={editorState.rowIds[index]}
+                rowId={editorState.rowIds[index]}
                 item={item}
                 index={index}
-                items={items}
-                onChange={onChange}
+                onUpdate={handleUpdate}
+                onRemove={handleRemove}
               />
             ))}
           </div>

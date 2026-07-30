@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { HomepageSection } from '@modules/settings/types/settings.types';
 import {
   addFaqItem,
+  createFaqEditorState,
   pinFaqLast,
+  removeFaqEditorRow,
   removeFaqItem,
+  reorderFaqEditorRows,
   reorderFaqItems,
+  updateFaqEditorRow,
   updateFaqItem,
 } from '../faq-items';
 
@@ -24,6 +28,32 @@ describe('FAQ item transforms', () => {
     expect(updateFaqItem(original, -1, { question: 'No' })).toBe(original);
     expect(removeFaqItem(original, 1)).toBe(original);
     expect(reorderFaqItems(original, 0, 2)).toBe(original);
+  });
+});
+
+describe('FAQ editor row identity', () => {
+  it('keeps the focused row aligned through repeated keyboard moves, editing, and deletion', () => {
+    let nextId = 0;
+    let state = createFaqEditorState([
+      { question: 'One?', answer: 'A1' },
+      { question: 'Two?', answer: 'A2' },
+      { question: 'Three?', answer: 'A3' },
+    ], () => `row-${++nextId}`);
+    const focusedRowId = state.rowIds[1];
+
+    state = reorderFaqEditorRows(state, focusedRowId, state.rowIds[0]);
+    state = reorderFaqEditorRows(state, focusedRowId, state.rowIds[1]);
+    state = reorderFaqEditorRows(state, focusedRowId, state.rowIds[2]);
+    state = updateFaqEditorRow(state, focusedRowId, { answer: 'Updated A2' });
+
+    const deletedRowId = state.rowIds[0];
+    state = removeFaqEditorRow(state, deletedRowId);
+
+    const focusedIndex = state.rowIds.indexOf(focusedRowId);
+    expect(focusedIndex).toBeGreaterThanOrEqual(0);
+    expect(state.items[focusedIndex]).toEqual({ question: 'Two?', answer: 'Updated A2' });
+    expect(state.rowIds).not.toContain(deletedRowId);
+    expect(state.items.every((item) => !('id' in item))).toBe(true);
   });
 });
 
