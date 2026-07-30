@@ -16,6 +16,8 @@ export const getPopularRecipes = async (
 
     const result = await getArticles(db, {
       type: "recipe",
+      workflow_status: "published",
+      sortBy: "view_count",
       limit: limit + 1,
     });
 
