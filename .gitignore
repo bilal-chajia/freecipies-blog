@@ -122,4 +122,4 @@ logs/
 /tools/
 /outputs/
 
-tmp-lighthouse/
+tmp-lighthouse/.worktrees/
