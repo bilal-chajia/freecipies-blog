@@ -39,6 +39,7 @@ try {
     // Get articles with optional filter
     const result = await getArticles(env.DB, {
       type: "recipe",
+      workflow_status: "published",
       categorySlug: categoryFilter || undefined,
       tagSlug: tagFilter || undefined,
       search: searchTerm || undefined,

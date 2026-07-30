@@ -98,6 +98,10 @@ export interface PaginatedArticles {
 
 export type ArticlesByIdsOptions = Pick<ArticleQueryOptions, 'type' | 'workflow_status'>;
 
+export interface PublishedFilterOptions {
+  workflow_status?: string;
+}
+
 /**
  * Get articles with filtering and pagination
  */
@@ -226,13 +230,17 @@ export async function getArticles(
 export async function getArticleBySlug(
   db: D1Database | DrizzleDb,
   slug: string,
-  type?: 'recipe' | 'article' | 'roundup'
+  type?: 'recipe' | 'article' | 'roundup',
+  options?: PublishedFilterOptions
 ): Promise<HydratedArticle | null> {
   const drizzle = getDb(db);
 
   const conditions = [eq(articles.slug, slug), isNull(articles.deleted_at)];
   if (type) {
     conditions.push(eq(articles.type, type));
+  }
+  if (options?.workflow_status) {
+    conditions.push(eq(articles.workflow_status, options.workflow_status));
   }
 
   const result = await drizzle.query.articles.findFirst({
@@ -449,9 +457,15 @@ export async function incrementViewCount(db: D1Database | DrizzleDb, slug: strin
  */
 export async function getArticleById(
   db: D1Database | DrizzleDb,
-  id: number
+  id: number,
+  options?: PublishedFilterOptions
 ): Promise<HydratedArticle | null> {
   const drizzle = getDb(db);
+
+  const conditions = [eq(articles.id, id), isNull(articles.deleted_at)];
+  if (options?.workflow_status) {
+    conditions.push(eq(articles.workflow_status, options.workflow_status));
+  }
 
   const result = await drizzle
     .select({
@@ -466,7 +480,7 @@ export async function getArticleById(
     .from(articles)
     .leftJoin(categories, eq(articles.category_id, categories.id))
     .leftJoin(authors, eq(articles.author_id, authors.id))
-    .where(and(eq(articles.id, id), isNull(articles.deleted_at)))
+    .where(and(...conditions))
     .get();
 
   if (!result) return null;

@@ -19,13 +19,13 @@ try {
     // Smart routing: support both numeric ID and slug
     const isNumeric = /^\d+$/.test(slug);
     if (isNumeric) {
-      article = await getArticleById(env.DB, parseInt(slug));
+      article = await getArticleById(env.DB, parseInt(slug), { workflow_status: "published" });
       // Ensure it's an article
       if (article && article.type !== 'article') {
         article = null;
       }
     } else {
-      article = await getArticleBySlug(env.DB, slug, "article");
+      article = await getArticleBySlug(env.DB, slug, "article", { workflow_status: "published" });
     }
   }
 } catch (error) {

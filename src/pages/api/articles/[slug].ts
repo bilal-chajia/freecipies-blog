@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ params }) => {
             throw new AppError(ErrorCodes.INTERNAL_ERROR, 'Database not configured', 500);
         }
 
-        const article = await getArticleBySlug(db, slug);
+        const article = await getArticleBySlug(db, slug, undefined, { workflow_status: 'published' });
 
         if (!article) {
             const { body, status, headers } = formatErrorResponse(

@@ -45,7 +45,7 @@ export const GET: APIRoute = async ({ params, url }) => {
         }
 
         // Get recipe specifically
-        const article = await getArticleBySlug(db, slug, 'recipe');
+        const article = await getArticleBySlug(db, slug, 'recipe', { workflow_status: 'published' });
 
         if (!article) {
             const { body, status, headers } = formatErrorResponse(
