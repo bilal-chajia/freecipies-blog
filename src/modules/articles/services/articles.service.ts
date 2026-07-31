@@ -816,7 +816,11 @@ export async function getPopularArticles(
  * All SET expressions are evaluated against the OLD row values by SQLite,
  * so the running average is computed atomically in one UPDATE. Concurrent
  * votes serialize at the D1 write layer instead of racing in JS.
- * cached_recipe_json intentionally keeps its previous rating-free content
+ *
+ * We update `cached_card_json` as well as `recipe_json` / `cached_rating_json`
+ * so that listing/category cards (which read from `cached_card_json`) show the
+ * new rating immediately instead of waiting for the next `syncCachedFields` run.
+ * `cached_recipe_json` intentionally keeps its previous rating-free content
  * (see buildCachedRecipeJson — it does not embed aggregate_rating).
  */
 export async function addRecipeVote(
@@ -830,6 +834,7 @@ export async function addRecipeVote(
   const oldCount = sql`COALESCE(json_extract(${articles.recipe_json}, '$.aggregate_rating.rating_count'), 0)`;
   const newCount = sql`(${oldCount} + 1)`;
   const newValue = sql`ROUND(((${oldValue} * ${oldCount}) + ${rating}) / (${oldCount} + 1), 1)`;
+  const newRatingObject = sql`json_object('rating_value', ${newValue}, 'rating_count', ${newCount})`;
 
   const rows = await drizzle
     .update(articles)
@@ -838,7 +843,8 @@ export async function addRecipeVote(
         '$.aggregate_rating.rating_value', ${newValue},
         '$.aggregate_rating.rating_count', ${newCount}
       )`,
-      cached_rating_json: sql`json_object('rating_value', ${newValue}, 'rating_count', ${newCount})`,
+      cached_rating_json: newRatingObject,
+      cached_card_json: sql`json_set(COALESCE(${articles.cached_card_json}, '{}'), '$.rating', ${newRatingObject})`,
       updated_at: new Date().toISOString(),
     })
     .where(

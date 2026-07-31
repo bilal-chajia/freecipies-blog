@@ -26,6 +26,11 @@ describe('addRecipeVote (atomic)', () => {
     const compiled = dialect.sqlToQuery(setArg.recipe_json as never);
     expect(compiled.sql).toContain('json_set');
     expect(compiled.sql).toContain('aggregate_rating');
+
+    const cardJson = dialect.sqlToQuery(setArg.cached_card_json as never);
+    expect(cardJson.sql).toContain('json_set');
+    expect(cardJson.sql).toContain('cached_card_json');
+    expect(cardJson.sql).toContain('$.rating');
   });
 
   it('returns the new rating parsed from the RETURNING clause', async () => {
