@@ -68,7 +68,7 @@ beforeEach(() => {
 });
 
 describe('propagateMediaUpdate homepage snapshot synchronization', () => {
-  it('patches the matching spotlight snapshot and invalidates the homepage cache', async () => {
+  it('patches every matching P3C homepage image with one settings write and cache invalidation', async () => {
     const homepageValue = JSON.stringify({
       seo: {},
       sections: [
@@ -93,6 +93,91 @@ describe('propagateMediaUpdate homepage snapshot synchronization', () => {
           cta: { label: 'Browse', href: '/recipes' },
         },
         {
+          id: 'trusted',
+          type: 'social_proof',
+          enabled: true,
+          eyebrow: 'Trusted by home cooks',
+          title: 'Recipes that work',
+          stats: [],
+          testimonials: [],
+          logos: [
+            {
+              name: 'Featured publication',
+              image: {
+                media_id: 55,
+                alt: 'Old logo',
+                caption: 'Legacy caption',
+                credit: { type: 'author', id: 1 },
+                placeholder: 'old-logo-placeholder',
+                variants: {
+                  sm: { r2_key: 'old-logo-sm.webp', width: 720, height: 540 },
+                  md: { r2_key: 'old-logo-md.webp', width: 1200, height: 900 },
+                  lg: { r2_key: 'old-logo-lg.webp', width: 2048, height: 1536 },
+                  original: { r2_key: 'old-logo-original.webp', width: 2400, height: 1800 },
+                },
+              },
+            },
+            {
+              name: 'Unchanged publication',
+              image: {
+                media_id: 99,
+                alt: 'Unchanged logo',
+                placeholder: 'unchanged-logo-placeholder',
+                variants: {
+                  sm: { r2_key: 'unchanged-logo-sm.webp', width: 720, height: 540 },
+                },
+              },
+            },
+          ],
+        },
+        {
+          id: 'guide',
+          type: 'lead_magnet',
+          enabled: true,
+          eyebrow: 'Free guide',
+          title: 'Cook better',
+          body: 'A practical kitchen guide.',
+          image: {
+            media_id: 55,
+            alt: 'Old guide cover',
+            caption: 'Legacy caption',
+            credit: { type: 'author', id: 1 },
+            placeholder: 'old-guide-placeholder',
+            variants: {
+              sm: { r2_key: 'old-guide-sm.webp', width: 720, height: 540 },
+              md: { r2_key: 'old-guide-md.webp', width: 1200, height: 900 },
+              lg: { r2_key: 'old-guide-lg.webp', width: 2048, height: 1536 },
+              original: { r2_key: 'old-guide-original.webp', width: 2400, height: 1800 },
+            },
+          },
+          cta: { label: 'Get the guide', href: '/guides' },
+          unrelated_image: {
+            media_id: 55,
+            alt: 'This is not a homepage snapshot location',
+            placeholder: 'unrelated-placeholder',
+            variants: {
+              sm: { r2_key: 'unrelated-sm.webp', width: 720, height: 540 },
+            },
+          },
+        },
+        {
+          id: 'other-guide',
+          type: 'lead_magnet',
+          enabled: true,
+          eyebrow: 'Another guide',
+          title: 'Keep this cover',
+          body: 'This image belongs to another media record.',
+          image: {
+            media_id: 99,
+            alt: 'Unchanged guide cover',
+            placeholder: 'unchanged-guide-placeholder',
+            variants: {
+              sm: { r2_key: 'unchanged-guide-sm.webp', width: 720, height: 540 },
+            },
+          },
+          cta: { label: 'Get the guide', href: '/other-guides' },
+        },
+        {
           id: 'autumn',
           type: 'seasonal_spotlight',
           enabled: true,
@@ -103,6 +188,9 @@ describe('propagateMediaUpdate homepage snapshot synchronization', () => {
         },
       ],
     });
+    const original = JSON.parse(homepageValue) as {
+      sections: Array<Record<string, unknown>>;
+    };
     const { updates } = createDrizzle(homepageValue);
     const cache = { delete: vi.fn().mockResolvedValue(undefined) };
 
@@ -110,11 +198,13 @@ describe('propagateMediaUpdate homepage snapshot synchronization', () => {
 
     expect(result.homepageSettingsUpdated).toBe(true);
     expect(updates).toHaveLength(1);
+    expect(cache.delete).toHaveBeenCalledTimes(1);
+    expect(cache.delete).toHaveBeenCalledWith('site_settings:v1:homepage_settings');
+
     const saved = JSON.parse(String(updates[0].values.value)) as {
-      sections: Array<{ id: string; image: Record<string, unknown> }>;
+      sections: Array<Record<string, unknown>>;
     };
-    const image = saved.sections.find((section) => section.id === 'summer')?.image;
-    expect(image).toMatchObject({
+    const expectedImage = {
       media_id: 55,
       alt: 'Updated seasonal salad',
       placeholder: 'data:image/jpeg;base64,new-placeholder',
@@ -125,24 +215,63 @@ describe('propagateMediaUpdate homepage snapshot synchronization', () => {
         md: { r2_key: 'media/salad-md.webp', width: 1200, height: 900 },
         lg: { r2_key: 'media/salad-lg.webp', width: 2048, height: 1536 },
       },
-    });
-    expect(image).not.toHaveProperty('caption');
-    expect(image).not.toHaveProperty('credit');
-    expect(cache.delete).toHaveBeenCalledWith('site_settings:v1:homepage_settings');
+    };
+
+    const summer = saved.sections.find((section) => section.id === 'summer');
+    const socialProof = saved.sections.find((section) => section.id === 'trusted');
+    const leadMagnet = saved.sections.find((section) => section.id === 'guide');
+    expect(summer?.image).toEqual(expectedImage);
+    expect((socialProof?.logos as Array<Record<string, unknown>>)[0].image).toEqual(expectedImage);
+    expect(leadMagnet?.image).toEqual(expectedImage);
+
+    const originalAutumn = original.sections.find((section) => section.id === 'autumn');
+    const originalSocialProof = original.sections.find((section) => section.id === 'trusted');
+    const originalUnchangedLogo = ((originalSocialProof?.logos as Array<Record<string, unknown>>)[1].image);
+    const originalOtherGuide = original.sections.find((section) => section.id === 'other-guide');
+    const originalUnrelatedImage = original.sections.find((section) => section.id === 'guide')?.unrelated_image;
+    expect(JSON.stringify(saved.sections.find((section) => section.id === 'autumn')))
+      .toBe(JSON.stringify(originalAutumn));
+    expect(JSON.stringify((socialProof?.logos as Array<Record<string, unknown>>)[1].image))
+      .toBe(JSON.stringify(originalUnchangedLogo));
+    expect(JSON.stringify(saved.sections.find((section) => section.id === 'other-guide')))
+      .toBe(JSON.stringify(originalOtherGuide));
+    expect(JSON.stringify(leadMagnet?.unrelated_image)).toBe(JSON.stringify(originalUnrelatedImage));
   });
 
-  it('does not update or invalidate cache when no spotlight references the media', async () => {
+  it('does not update or invalidate cache when no known homepage snapshot references the media', async () => {
     const homepageValue = JSON.stringify({
       seo: {},
-      sections: [{
-        id: 'summer',
-        type: 'seasonal_spotlight',
-        enabled: true,
-        title: 'Summer cooking',
-        body: 'Fresh ideas.',
-        image: { media_id: 99, alt: 'Soup', placeholder: 'old', variants: {} },
-        cta: { label: 'Browse', href: '/recipes' },
-      }],
+      sections: [
+        {
+          id: 'summer',
+          type: 'seasonal_spotlight',
+          enabled: true,
+          title: 'Summer cooking',
+          body: 'Fresh ideas.',
+          image: { media_id: 99, alt: 'Soup', placeholder: 'old', variants: {} },
+          cta: { label: 'Browse', href: '/recipes' },
+        },
+        {
+          id: 'trusted',
+          type: 'social_proof',
+          enabled: true,
+          eyebrow: 'Trusted',
+          title: 'Recipes that work',
+          stats: [],
+          testimonials: [],
+          logos: [{ name: 'Publication', image: { media_id: 99, alt: 'Logo', placeholder: 'old', variants: {} } }],
+        },
+        {
+          id: 'guide',
+          type: 'lead_magnet',
+          enabled: true,
+          eyebrow: 'Free guide',
+          title: 'Cook better',
+          body: 'A practical kitchen guide.',
+          image: { media_id: 99, alt: 'Guide', placeholder: 'old', variants: {} },
+          cta: { label: 'Get the guide', href: '/guides' },
+        },
+      ],
     });
     const { updates } = createDrizzle(homepageValue);
     const cache = { delete: vi.fn().mockResolvedValue(undefined) };

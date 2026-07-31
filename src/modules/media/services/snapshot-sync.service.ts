@@ -139,9 +139,9 @@ function patchCachedCardJson(
 }
 
 /**
- * Patch spotlight snapshots in the single cached homepage settings document.
- * The public homepage consumes this document directly, so no media read is
- * necessary while rendering the section.
+ * Patch known structural homepage snapshots in the single cached settings
+ * document. The public homepage consumes this document directly, so no media
+ * read is necessary while rendering a section.
  */
 function patchHomepageSettings(
   value: string,
@@ -159,26 +159,46 @@ function patchHomepageSettings(
 
   if (!Array.isArray(settings.sections)) return null;
 
-  let changed = false;
-  for (const section of settings.sections) {
-    if (!section || typeof section !== 'object' || Array.isArray(section)) continue;
-
-    const spotlight = section as Record<string, unknown>;
-    if (spotlight.type !== 'seasonal_spotlight') continue;
-
-    const image = spotlight.image;
-    if (!image || typeof image !== 'object' || Array.isArray(image)) continue;
+  const patchImageSnapshot = (image: unknown): Record<string, unknown> | null => {
+    if (!image || typeof image !== 'object' || Array.isArray(image)) return null;
 
     const imageSnapshot = image as Record<string, unknown>;
-    if (imageSnapshot.media_id !== mediaId) continue;
+    if (imageSnapshot.media_id !== mediaId) return null;
 
-    spotlight.image = applyPatchToSlot(
+    return applyPatchToSlot(
       imageSnapshot,
       patch,
       HERO_ALLOWED_VARIANTS,
       { omitCaptionCredit: true },
     );
-    changed = true;
+  };
+
+  let changed = false;
+  for (const section of settings.sections) {
+    if (!section || typeof section !== 'object' || Array.isArray(section)) continue;
+
+    const homepageSection = section as Record<string, unknown>;
+    if (homepageSection.type === 'seasonal_spotlight' || homepageSection.type === 'lead_magnet') {
+      const patchedImage = patchImageSnapshot(homepageSection.image);
+      if (patchedImage) {
+        homepageSection.image = patchedImage;
+        changed = true;
+      }
+      continue;
+    }
+
+    if (homepageSection.type !== 'social_proof' || !Array.isArray(homepageSection.logos)) continue;
+
+    for (const logo of homepageSection.logos) {
+      if (!logo || typeof logo !== 'object' || Array.isArray(logo)) continue;
+
+      const logoRecord = logo as Record<string, unknown>;
+      const patchedImage = patchImageSnapshot(logoRecord.image);
+      if (patchedImage) {
+        logoRecord.image = patchedImage;
+        changed = true;
+      }
+    }
   }
 
   return changed ? JSON.stringify(settings) : null;
