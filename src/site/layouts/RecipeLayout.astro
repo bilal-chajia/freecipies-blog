@@ -18,7 +18,7 @@ import TableOfContents from "../components/content/TableOfContents.astro";
 import RatingSystem from "../components/content/RatingSystem";
 import Breadcrumb from "../components/Breadcrumb.astro";
 
-import { extractImage, getImageSrcSet } from "@shared/utils";
+import { extractImage, getImageSrcSet, resolveHeroImage } from "@shared/utils";
 import { resolveVariantUrl, getSrcSet, type ImageSlot } from "@shared/types/images";
 import { normalizeRecipeForRender } from "@site/utils/recipe-render";
 import { getReadingTimeDisplay } from "@modules/articles/utils/cached-fields";
@@ -48,13 +48,7 @@ const recipe_json = normalizeRecipeForRender(recipe.recipe_json);
 
 const readingTime = getReadingTimeDisplay(recipe);
 
-const heroSlot = extractImage(recipe.images_json, "hero", 1200);
-const heroThumb = extractImage(recipe.images_json, "thumbnail", 1200);
-const heroSlotSrcSet = getImageSrcSet(recipe.images_json, "hero");
-const thumbSrcSet = getImageSrcSet(recipe.images_json, "thumbnail");
-const useHeroSlot = heroSlot.image_url && (heroSlotSrcSet || !heroThumb.image_url);
-const heroImage = useHeroSlot ? heroSlot : heroThumb;
-const heroSrcSet = useHeroSlot ? heroSlotSrcSet : thumbSrcSet;
+const { image: heroImage, srcSet: heroSrcSet } = resolveHeroImage(recipe.images_json as string, 1200);
 const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
 let authorAvatar: {

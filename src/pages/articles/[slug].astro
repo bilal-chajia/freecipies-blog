@@ -6,7 +6,7 @@ import NotFound from "@components/NotFound.astro";
 import SEO from "@components/SEO.astro";
 import { getArticleBySlug, getArticleById } from "@modules/articles";
 import { parseJsonLdArray } from "@modules/articles/utils/cached-fields";
-import { extractImage, getImageSrcSet } from "@shared/utils";
+import { resolveHeroImage } from "@shared/utils";
 import type { Category } from "@modules/categories/schema/categories.schema";
 
 const { slug } = Astro.params;
@@ -34,12 +34,7 @@ if (!article) {
   Astro.response.status = 404;
 }
 
-const heroSlot = extractImage(article?.images_json, "hero", 1200);
-const heroThumb = extractImage(article?.images_json, "thumbnail", 1200);
-const heroSlotSrcSet = getImageSrcSet(article?.images_json, "hero");
-const thumbSrcSet = getImageSrcSet(article?.images_json, "thumbnail");
-const useHeroSlot = heroSlot.image_url && (heroSlotSrcSet || !heroThumb.image_url);
-const heroImage = useHeroSlot ? heroSlot : heroThumb;
+const { image: heroImage } = resolveHeroImage(article?.images_json, 1200);
 
 // Author and category are already hydrated via hydrateArticle() from cached JSON columns
 const author = (article?.author as Record<string, unknown> | null) ?? null;
