@@ -17,6 +17,7 @@ import type {
   HomepageLatestSection,
   HomepageNewsletterSection,
   HomepageQuickFiltersSection,
+  HomepageAdminSocialProofSection,
   HomepageAdminSeasonalSpotlightSection,
   HomepageStoriesSection,
   PageSeoSettings,
@@ -33,6 +34,7 @@ export type EditableHomepageSection =
   | HomepageCollectionsSection
   | HomepageAdminSeasonalSpotlightSection
   | HomepageLatestSection
+  | HomepageAdminSocialProofSection
   | HomepageAboutAuthorSection
   | HomepageNewsletterSection
   | HomepageFaqSection;
@@ -46,6 +48,7 @@ export type HomepageSectionId =
   | 'collections'
   | 'seasonal_spotlight'
   | 'latest'
+  | 'social_proof'
   | 'about'
   | 'newsletter'
   | 'faq';

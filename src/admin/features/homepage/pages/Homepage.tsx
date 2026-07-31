@@ -22,6 +22,7 @@ import {
   FaqSection,
   QuickFiltersSection,
   SeasonalSpotlightSection,
+  SocialProofSection,
   SeoSection,
 } from './sections';
 import { toast } from 'sonner';
@@ -30,6 +31,7 @@ import type { HomepageFormData } from '../types';
 import {
   HOMEPAGE_ADMIN_SETTINGS_DEFAULTS,
   type HomepageAdminSection,
+  type HomepageResolvedImageSnapshot,
   type PageSeoSettings,
 } from '@modules/settings/types/settings.types';
 
@@ -44,6 +46,22 @@ type AdminAxiosRequestConfig = AxiosRequestConfig & {
   skipAdminCache?: boolean;
 };
 
+const cloneHomepageImage = (
+  image: HomepageResolvedImageSnapshot | null,
+): HomepageResolvedImageSnapshot | null => (
+  image
+    ? {
+      ...image,
+      focal_point: image.focal_point ? { ...image.focal_point } : undefined,
+      variants: {
+        sm: { ...image.variants.sm },
+        md: { ...image.variants.md },
+        lg: { ...image.variants.lg },
+      },
+    }
+    : null
+);
+
 const cloneSettings = (settings: HomepageFormData): HomepageFormData => ({
   seo: { ...settings.seo },
   sections: pinFaqLast(settings.sections).map((section) => (
@@ -54,19 +72,19 @@ const cloneSettings = (settings: HomepageFormData): HomepageFormData => ({
         : section.type === 'seasonal_spotlight'
           ? {
             ...section,
-            image: section.image
-              ? {
-                ...section.image,
-                focal_point: section.image.focal_point ? { ...section.image.focal_point } : undefined,
-                variants: {
-                  sm: { ...section.image.variants.sm },
-                  md: { ...section.image.variants.md },
-                  lg: { ...section.image.variants.lg },
-                },
-              }
-              : null,
+            image: cloneHomepageImage(section.image),
             cta: { ...section.cta },
           }
+          : section.type === 'social_proof'
+            ? {
+              ...section,
+              stats: section.stats.map((stat) => ({ ...stat })),
+              testimonials: section.testimonials.map((testimonial) => ({ ...testimonial })),
+              logos: section.logos.map((logo) => ({
+                ...logo,
+                image: cloneHomepageImage(logo.image),
+              })),
+            }
       : { ...section }
   )),
 });
@@ -131,6 +149,7 @@ const Homepage = () => {
       ['collections', 'Collections'],
       ['seasonal_spotlight', 'Seasonal Spotlight'],
       ['latest', 'Latest'],
+      ['social_proof', 'Social Proof'],
       ['about', 'Author'],
       ['newsletter', 'Newsletter'],
       ['faq', 'FAQ'],
@@ -187,6 +206,8 @@ const Homepage = () => {
         return <QuickFiltersSection {...props} />;
       case 'seasonal_spotlight':
         return <SeasonalSpotlightSection {...props} />;
+      case 'social_proof':
+        return <SocialProofSection {...props} />;
       case 'featured':
         return <FeaturedSection {...props} />;
       case 'categories':
