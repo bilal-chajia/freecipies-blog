@@ -5,6 +5,11 @@ import type { ArticleQueryOptions } from '@modules/articles/services/articles.se
 import { normalizeRecipeForRender } from '@site/utils/recipe-render';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateQuery, PaginationQuery } from '@shared/validation';
+import {
+    resolvePublicRecipeAuthor,
+    resolvePublicRecipeCategory,
+    resolvePublicRecipeThumbnail,
+} from '@server/api/recipes/public-thumbnail';
 
 export const prerender = false;
 
@@ -63,18 +68,10 @@ export const GET: APIRoute = async ({ request }) => {
                 }
             }
 
-            // Parse images for thumbnail
-            let thumbnail = null;
-            if (article.images_json) {
-                try {
-                    const images = typeof article.images_json === 'string'
-                        ? JSON.parse(article.images_json)
-                        : article.images_json;
-                    thumbnail = images.thumbnail || images.hero;
-                } catch {
-                    thumbnail = null;
-                }
-            }
+            const thumbnail = resolvePublicRecipeThumbnail(
+                article.images_json,
+                article.headline,
+            );
 
             return {
                 id: article.id,
@@ -82,8 +79,8 @@ export const GET: APIRoute = async ({ request }) => {
                 headline: article.headline,
                 short_description: article.short_description,
                 thumbnail,
-                category: article.category ?? null,
-                author: article.author ?? null,
+                category: resolvePublicRecipeCategory(article.category),
+                author: resolvePublicRecipeAuthor(article.author),
                 published_at: article.published_at,
                 // Recipe-specific fields
                 total_time: recipeData?.total,

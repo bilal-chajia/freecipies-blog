@@ -14,4 +14,14 @@ describe('Header search modal', () => {
     expect(headerMarkup).not.toContain('id="search-modal"');
     expect(followingMarkup).toContain('id="search-modal"');
   });
+
+  it('provides an accessible live-results region inside the full-screen dialog', async () => {
+    const source = await readFile(headerPath, 'utf8');
+
+    expect(source).toContain('aria-labelledby="search-title"');
+    expect(source).toContain('id="search-status"');
+    expect(source).toContain('aria-live="polite"');
+    expect(source).toContain('id="search-results"');
+    expect(source).toContain('class="search-modal-results"');
+  });
 });
