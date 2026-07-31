@@ -21,6 +21,7 @@ import {
   NewsletterSection,
   FaqSection,
   QuickFiltersSection,
+  SeasonalSpotlightSection,
   SeoSection,
 } from './sections';
 import { toast } from 'sonner';
@@ -128,6 +129,7 @@ const Homepage = () => {
       ['featured', 'Featured'],
       ['categories', 'Categories'],
       ['collections', 'Collections'],
+      ['seasonal_spotlight', 'Seasonal Spotlight'],
       ['latest', 'Latest'],
       ['about', 'Author'],
       ['newsletter', 'Newsletter'],
@@ -183,6 +185,8 @@ const Homepage = () => {
         return <HeroSection {...props} />;
       case 'quick_filters':
         return <QuickFiltersSection {...props} />;
+      case 'seasonal_spotlight':
+        return <SeasonalSpotlightSection {...props} />;
       case 'featured':
         return <FeaturedSection {...props} />;
       case 'categories':

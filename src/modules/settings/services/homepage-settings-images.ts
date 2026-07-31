@@ -1,5 +1,6 @@
 import {
   extractR2KeyFromUrl,
+  type AdminMediaPayload,
   type PublicImageVariantContract,
   type StorageImageVariant,
 } from '@shared/images/image-contract';
@@ -87,6 +88,36 @@ function normalizeImage(
     ...(image.focal_point ? { focal_point: { ...image.focal_point } } : {}),
     ...(image.aspect_ratio ? { aspect_ratio: image.aspect_ratio } : {}),
     variants,
+  };
+}
+
+export function buildHomepageSpotlightImageFromAdminMedia(
+  media: AdminMediaPayload,
+): HomepageResolvedImageSnapshot {
+  const { sm, md, lg } = media.variants;
+  if (!sm || !md || !lg) {
+    throw new Error('Selected media must include sm, md, and lg variants');
+  }
+
+  const alt = media.alt_text?.trim() ?? '';
+  if (!alt) {
+    throw new Error('Selected media requires alt text');
+  }
+  if (!media.placeholder.trim()) {
+    throw new Error('Selected media requires a placeholder');
+  }
+
+  return {
+    media_id: media.id,
+    alt,
+    placeholder: media.placeholder,
+    focal_point: { ...media.focal_point },
+    ...(media.aspect_ratio ? { aspect_ratio: media.aspect_ratio } : {}),
+    variants: {
+      sm: { ...sm },
+      md: { ...md },
+      lg: { ...lg },
+    },
   };
 }
 

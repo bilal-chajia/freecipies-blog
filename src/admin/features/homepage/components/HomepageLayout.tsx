@@ -25,6 +25,7 @@ import {
     UserRound,
     HelpCircle,
     SlidersHorizontal,
+    Sun,
 } from 'lucide-react';
 import { SortableSectionRow } from '.';
 
@@ -35,6 +36,7 @@ const homepageSections = [
     { id: 'featured', label: 'Featured', icon: Star },
     { id: 'categories', label: 'Categories', icon: Grid },
     { id: 'collections', label: 'Collections', icon: BookOpen },
+    { id: 'seasonal_spotlight', label: 'Seasonal Spotlight', icon: Sun },
     { id: 'latest', label: 'Latest', icon: Newspaper },
     { id: 'about', label: 'Author', icon: UserRound },
     { id: 'newsletter', label: 'Newsletter', icon: Mail },
