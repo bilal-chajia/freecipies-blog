@@ -8,7 +8,9 @@ import CategoryBrowse from './CategoryBrowse.astro';
 import Collections from './Collections.astro';
 import SeasonalSpotlight from './SeasonalSpotlight.astro';
 import LatestRecipes from './LatestRecipes.astro';
+import SocialProof from './SocialProof.astro';
 import AboutAuthor from './AboutAuthor.astro';
+import LeadMagnet from './LeadMagnet.astro';
 import NewsletterBanner from './NewsletterBanner.astro';
 import HomeFaq from './HomeFaq.astro';
 
@@ -46,8 +48,12 @@ const hasCarousel = orderedSections.some((vm) => {
         return <SeasonalSpotlight section={vm.section} />;
       case 'latest':
         return <LatestRecipes section={vm.section} recipes={vm.recipes} />;
+      case 'social_proof':
+        return <SocialProof section={vm.section} />;
       case 'about_author':
         return <AboutAuthor section={vm.section} author={vm.author} />;
+      case 'lead_magnet':
+        return <LeadMagnet section={vm.section} />;
       case 'newsletter':
         return <NewsletterBanner section={vm.section} />;
     }

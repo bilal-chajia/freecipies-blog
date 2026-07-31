@@ -17,11 +17,14 @@ import type {
   HomepageCategoryBrowseSection,
   HomepageCollectionsSection,
   HomepageSeasonalSpotlightSection,
+  HomepageSocialProofSection,
   HomepageLatestSection,
   HomepageAboutAuthorSection,
+  HomepageLeadMagnetSection,
   HomepageNewsletterSection,
   HomepageFaqSection,
   HomepageFaqItem,
+  HomepageStoredImageSnapshot,
 } from '@modules/settings/types/settings.types';
 
 export type HomeSectionVM =
@@ -33,7 +36,9 @@ export type HomeSectionVM =
   | { kind: 'collections'; section: HomepageCollectionsSection; roundups: HydratedArticle[] }
   | { kind: 'seasonal_spotlight'; section: HomepageSeasonalSpotlightSection }
   | { kind: 'latest'; section: HomepageLatestSection; recipes: HydratedArticle[] }
+  | { kind: 'social_proof'; section: HomepageSocialProofSection }
   | { kind: 'about_author'; section: HomepageAboutAuthorSection; author: Author | null }
+  | { kind: 'lead_magnet'; section: HomepageLeadMagnetSection }
   | { kind: 'newsletter'; section: HomepageNewsletterSection }
   | { kind: 'faq'; section: HomepageFaqSection; items: HomepageFaqItem[] };
 
@@ -58,7 +63,7 @@ export function getRenderableQuickFilters(
     .filter(({ label, href }) => label.length > 0 && /^\/recipes(?:[/?#]|$)/.test(href));
 }
 
-function isSafeSpotlightCtaHref(href: string): boolean {
+function isSafeHomepageCtaHref(href: string): boolean {
   if (href.startsWith('/') && !href.startsWith('//')) return true;
 
   try {
@@ -66,6 +71,21 @@ function isSafeSpotlightCtaHref(href: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isCompleteHomepageImageSnapshot(
+  image: HomepageStoredImageSnapshot | null,
+): image is HomepageStoredImageSnapshot {
+  if (!image || !image.alt.trim() || !image.placeholder.trim()) return false;
+
+  return [image.variants?.sm, image.variants?.md, image.variants?.lg].every((variant) => (
+    typeof variant?.r2_key === 'string'
+    && variant.r2_key.length > 0
+    && Number.isInteger(variant.width)
+    && variant.width > 0
+    && Number.isInteger(variant.height)
+    && variant.height > 0
+  ));
 }
 
 export function getRenderableSeasonalSpotlight(
@@ -77,23 +97,70 @@ export function getRenderableSeasonalSpotlight(
   const ctaHref = section.cta.href.trim();
   const image = section.image;
 
-  if (!title || !body || !ctaLabel || !ctaHref || !isSafeSpotlightCtaHref(ctaHref)) {
+  if (!title || !body || !ctaLabel || !ctaHref || !isSafeHomepageCtaHref(ctaHref)) {
     return null;
   }
-  if (!image || !image.alt.trim() || !image.placeholder.trim()) return null;
-
-  const hasCompleteVariants = [image.variants?.sm, image.variants?.md, image.variants?.lg].every((variant) => (
-    typeof variant?.r2_key === 'string'
-    && variant.r2_key.length > 0
-    && Number.isInteger(variant.width)
-    && variant.width > 0
-    && Number.isInteger(variant.height)
-    && variant.height > 0
-  ));
-  if (!hasCompleteVariants) return null;
+  if (!isCompleteHomepageImageSnapshot(image)) return null;
 
   return {
     ...section,
+    title,
+    body,
+    image: { ...image, alt: image.alt.trim() },
+    cta: { label: ctaLabel, href: ctaHref },
+  };
+}
+
+export function getRenderableSocialProof(
+  section: HomepageSocialProofSection,
+): HomepageSocialProofSection | null {
+  const title = section.title.trim();
+  const stats = section.stats
+    .map(({ value, label }) => ({ value: value.trim(), label: label.trim() }))
+    .filter(({ value, label }) => value.length > 0 && label.length > 0);
+  const testimonials = section.testimonials
+    .map(({ quote, name, role }) => ({ quote: quote.trim(), name: name.trim(), role: role?.trim() }))
+    .filter(({ quote, name }) => quote.length > 0 && name.length > 0)
+    .map(({ quote, name, role }) => (role ? { quote, name, role } : { quote, name }));
+  const logos = section.logos
+    .filter((logo) => isCompleteHomepageImageSnapshot(logo.image) && logo.name.trim().length > 0)
+    .map((logo) => ({
+      name: logo.name.trim(),
+      image: { ...logo.image!, alt: logo.image!.alt.trim() },
+    }));
+
+  if (!title || (stats.length === 0 && testimonials.length === 0 && logos.length === 0)) {
+    return null;
+  }
+
+  return {
+    ...section,
+    eyebrow: section.eyebrow.trim(),
+    title,
+    stats,
+    testimonials,
+    logos,
+  };
+}
+
+export function getRenderableLeadMagnet(
+  section: HomepageLeadMagnetSection,
+): HomepageLeadMagnetSection | null {
+  const eyebrow = section.eyebrow.trim();
+  const title = section.title.trim();
+  const body = section.body.trim();
+  const ctaLabel = section.cta.label.trim();
+  const ctaHref = section.cta.href.trim();
+  const image = section.image;
+
+  if (!eyebrow || !title || !body || !ctaLabel || !ctaHref || !isSafeHomepageCtaHref(ctaHref)) {
+    return null;
+  }
+  if (!isCompleteHomepageImageSnapshot(image)) return null;
+
+  return {
+    ...section,
+    eyebrow,
     title,
     body,
     image: { ...image, alt: image.alt.trim() },
@@ -206,6 +273,14 @@ export async function resolveHomeData(
         break;
       }
 
+      case 'social_proof': {
+        const renderable = getRenderableSocialProof(section);
+        if (renderable) {
+          vms.push({ kind: 'social_proof', section: renderable });
+        }
+        break;
+      }
+
       case 'latest': {
         const recipes = await latestRecipes(section.count);
         vms.push({ kind: 'latest', section, recipes });
@@ -218,6 +293,14 @@ export async function resolveHomeData(
           ? authorsList.find((a) => a.id === section.author_id) ?? null
           : authorsList.find((a) => a.is_featured) ?? authorsList[0] ?? null;
         vms.push({ kind: 'about_author', section, author });
+        break;
+      }
+
+      case 'lead_magnet': {
+        const renderable = getRenderableLeadMagnet(section);
+        if (renderable) {
+          vms.push({ kind: 'lead_magnet', section: renderable });
+        }
         break;
       }
 

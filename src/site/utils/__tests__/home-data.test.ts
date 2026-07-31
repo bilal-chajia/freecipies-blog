@@ -215,6 +215,158 @@ it('omits incomplete seasonal spotlights', async () => {
   expect(vms).toEqual([]);
 });
 
+it('trims social proof content and omits invalid items without fetching content', async () => {
+  const sections: HomepageSection[] = [{
+    id: 'social-proof',
+    type: 'social_proof',
+    enabled: true,
+    eyebrow: ' Trusted by home cooks ',
+    title: ' Recipes that work ',
+    stats: [
+      { value: ' 500+ ', label: ' tested recipes ' },
+      { value: ' ', label: 'Missing value' },
+    ],
+    testimonials: [
+      { quote: ' Clear instructions. ', name: ' Maria D. ', role: ' Home cook ' },
+      { quote: 'Missing name', name: ' ', role: 'Home cook' },
+    ],
+    logos: [
+      {
+        name: ' Featured publication ',
+        image: {
+          media_id: 55,
+          alt: ' Publication logo ',
+          placeholder: 'data:image/jpeg;base64,placeholder',
+          variants: {
+            sm: { r2_key: 'media/logo-sm.webp', width: 720, height: 480 },
+            md: { r2_key: 'media/logo-md.webp', width: 1200, height: 800 },
+            lg: { r2_key: 'media/logo-lg.webp', width: 2048, height: 1365 },
+          },
+        },
+      },
+      { name: 'Incomplete logo', image: null },
+    ],
+  }];
+
+  const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+
+  expect(vms).toEqual([expect.objectContaining({
+    kind: 'social_proof',
+    section: expect.objectContaining({
+      eyebrow: 'Trusted by home cooks',
+      title: 'Recipes that work',
+      stats: [{ value: '500+', label: 'tested recipes' }],
+      testimonials: [{ quote: 'Clear instructions.', name: 'Maria D.', role: 'Home cook' }],
+      logos: [expect.objectContaining({ name: 'Featured publication' })],
+    }),
+  })]);
+  expect(getArticles).not.toHaveBeenCalled();
+  expect(getArticlesByIds).not.toHaveBeenCalled();
+  expect(getCategories).not.toHaveBeenCalled();
+  expect(getAuthors).not.toHaveBeenCalled();
+});
+
+it('omits social proof when its title is blank or every item group is invalid', async () => {
+  const sections: HomepageSection[] = [
+    {
+      id: 'blank-title',
+      type: 'social_proof',
+      enabled: true,
+      eyebrow: 'Trusted',
+      title: '   ',
+      stats: [{ value: '500+', label: 'Recipes' }],
+      testimonials: [],
+      logos: [],
+    },
+    {
+      id: 'empty-groups',
+      type: 'social_proof',
+      enabled: true,
+      eyebrow: 'Trusted',
+      title: 'Recipes that work',
+      stats: [{ value: '', label: 'Recipes' }],
+      testimonials: [{ quote: 'Helpful', name: '' }],
+      logos: [{ name: 'Publication', image: null }],
+    },
+  ];
+
+  await expect(resolveHomeData(sections, { db: DB, stories: [] })).resolves.toEqual([]);
+});
+
+it('resolves a complete lead magnet with a safe internal CTA without fetching content', async () => {
+  const sections: HomepageSection[] = [{
+    id: 'lead-magnet',
+    type: 'lead_magnet',
+    enabled: true,
+    eyebrow: ' Free kitchen guide ',
+    title: ' Cook with confidence ',
+    body: ' Plan dependable weeknight meals. ',
+    image: {
+      media_id: 61,
+      alt: ' Weeknight guide cover ',
+      placeholder: 'data:image/jpeg;base64,placeholder',
+      variants: {
+        sm: { r2_key: 'media/guide-sm.webp', width: 720, height: 540 },
+        md: { r2_key: 'media/guide-md.webp', width: 1200, height: 900 },
+        lg: { r2_key: 'media/guide-lg.webp', width: 2048, height: 1536 },
+      },
+    },
+    cta: { label: ' Get the guide ', href: ' /guides/weeknight-cooking ' },
+  }];
+
+  const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+
+  expect(vms).toEqual([expect.objectContaining({
+    kind: 'lead_magnet',
+    section: expect.objectContaining({
+      eyebrow: 'Free kitchen guide',
+      title: 'Cook with confidence',
+      body: 'Plan dependable weeknight meals.',
+      image: expect.objectContaining({ alt: 'Weeknight guide cover' }),
+      cta: { label: 'Get the guide', href: '/guides/weeknight-cooking' },
+    }),
+  })]);
+  expect(getArticles).not.toHaveBeenCalled();
+  expect(getArticlesByIds).not.toHaveBeenCalled();
+  expect(getCategories).not.toHaveBeenCalled();
+  expect(getAuthors).not.toHaveBeenCalled();
+});
+
+it('omits lead magnets with incomplete images or unsafe CTAs', async () => {
+  const validImage = {
+    media_id: 61,
+    alt: 'Guide cover',
+    placeholder: 'data:image/jpeg;base64,placeholder',
+    variants: {
+      sm: { r2_key: 'media/guide-sm.webp', width: 720, height: 540 },
+      md: { r2_key: 'media/guide-md.webp', width: 1200, height: 900 },
+      lg: { r2_key: 'media/guide-lg.webp', width: 2048, height: 1536 },
+    },
+  };
+  const sections: HomepageSection[] = [
+    {
+      id: 'incomplete-image', type: 'lead_magnet', enabled: true, eyebrow: 'Guide', title: 'Cook better',
+      body: 'A practical guide.', image: { ...validImage, variants: { ...validImage.variants, lg: { r2_key: '', width: 2048, height: 1536 } } },
+      cta: { label: 'Read guide', href: '/guides/cooking' },
+    },
+    {
+      id: 'unsafe-cta', type: 'lead_magnet', enabled: true, eyebrow: 'Guide', title: 'Cook better',
+      body: 'A practical guide.', image: validImage, cta: { label: 'Read guide', href: 'javascript:alert(1)' },
+    },
+    {
+      id: 'safe-https', type: 'lead_magnet', enabled: true, eyebrow: 'Guide', title: 'Cook better',
+      body: 'A practical guide.', image: validImage, cta: { label: 'Read guide', href: 'https://example.com/guide' },
+    },
+  ];
+
+  const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+
+  expect(vms).toEqual([expect.objectContaining({
+    kind: 'lead_magnet',
+    section: expect.objectContaining({ cta: { href: 'https://example.com/guide', label: 'Read guide' } }),
+  })]);
+});
+
 describe('resolveHomeData — hero fallback', () => {
   beforeEach(() => {
     vi.clearAllMocks();
