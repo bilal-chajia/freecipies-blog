@@ -17,6 +17,7 @@ import type {
   HomepageLatestSection,
   HomepageNewsletterSection,
   HomepageQuickFiltersSection,
+  HomepageAdminLeadMagnetSection,
   HomepageAdminSocialProofSection,
   HomepageAdminSeasonalSpotlightSection,
   HomepageStoriesSection,
@@ -36,6 +37,7 @@ export type EditableHomepageSection =
   | HomepageLatestSection
   | HomepageAdminSocialProofSection
   | HomepageAboutAuthorSection
+  | HomepageAdminLeadMagnetSection
   | HomepageNewsletterSection
   | HomepageFaqSection;
 
@@ -50,6 +52,7 @@ export type HomepageSectionId =
   | 'latest'
   | 'social_proof'
   | 'about'
+  | 'lead_magnet'
   | 'newsletter'
   | 'faq';
 

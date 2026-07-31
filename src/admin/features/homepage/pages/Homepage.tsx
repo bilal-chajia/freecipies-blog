@@ -23,6 +23,7 @@ import {
   QuickFiltersSection,
   SeasonalSpotlightSection,
   SocialProofSection,
+  LeadMagnetSection,
   SeoSection,
 } from './sections';
 import { toast } from 'sonner';
@@ -85,7 +86,13 @@ const cloneSettings = (settings: HomepageFormData): HomepageFormData => ({
                 image: cloneHomepageImage(logo.image),
               })),
             }
-      : { ...section }
+            : section.type === 'lead_magnet'
+              ? {
+                ...section,
+                image: cloneHomepageImage(section.image),
+                cta: { ...section.cta },
+              }
+              : { ...section }
   )),
 });
 
@@ -151,6 +158,7 @@ const Homepage = () => {
       ['latest', 'Latest'],
       ['social_proof', 'Social Proof'],
       ['about', 'Author'],
+      ['lead_magnet', 'Lead Magnet'],
       ['newsletter', 'Newsletter'],
       ['faq', 'FAQ'],
     ]);
@@ -208,6 +216,8 @@ const Homepage = () => {
         return <SeasonalSpotlightSection {...props} />;
       case 'social_proof':
         return <SocialProofSection {...props} />;
+      case 'lead_magnet':
+        return <LeadMagnetSection {...props} />;
       case 'featured':
         return <FeaturedSection {...props} />;
       case 'categories':
