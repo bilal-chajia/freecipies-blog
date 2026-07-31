@@ -972,8 +972,8 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
     closeSearchModal();
   });
 
-  searchModal?.addEventListener("click", (e) => {
-    if (e.target === searchModal) {
+  searchResults?.addEventListener("click", (e) => {
+    if (e.target === searchResults) {
       closeSearchModal();
     }
   });

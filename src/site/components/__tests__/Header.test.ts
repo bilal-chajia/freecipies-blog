@@ -38,5 +38,7 @@ describe('Header search modal', () => {
       'e.key === "Escape" && searchModal?.classList.contains("active")',
     );
     expect(source).toContain('if (!payload.success)');
+    expect(source).toContain('searchResults?.addEventListener("click"');
+    expect(source).toContain('e.target === searchResults');
   });
 });
