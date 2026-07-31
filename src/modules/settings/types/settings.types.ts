@@ -2,6 +2,11 @@
  * Settings Module - TypeScript Types
  */
 
+import type {
+  PublicImageVariantContract,
+  StorageImageVariant,
+} from '@shared/images/image-contract';
+
 export interface BrandingSettings {
   siteName?: string;
   tagline?: string;
@@ -110,9 +115,11 @@ export interface PageSeoSettings {
 export type HomepageSectionType =
   | 'stories'
   | 'hero'
+  | 'quick_filters'
   | 'featured_recipes'
   | 'category_browse'
   | 'collections'
+  | 'seasonal_spotlight'
   | 'latest'
   | 'about_author'
   | 'newsletter'
@@ -136,6 +143,42 @@ export interface HomepageFaqItem {
   answer: string;
 }
 
+export interface HomepageQuickFilter {
+  label: string;
+  href: string;
+}
+
+export interface HomepageStoredImageSnapshot {
+  media_id: number;
+  alt: string;
+  placeholder: string;
+  focal_point?: { x: number; y: number };
+  aspect_ratio?: string;
+  variants: {
+    sm: StorageImageVariant;
+    md: StorageImageVariant;
+    lg: StorageImageVariant;
+  };
+}
+
+export interface HomepageCta {
+  label: string;
+  href: string;
+}
+
+export interface HomepageResolvedImageSnapshot {
+  media_id: number;
+  alt: string;
+  placeholder: string;
+  focal_point?: { x: number; y: number };
+  aspect_ratio?: string;
+  variants: {
+    sm: PublicImageVariantContract;
+    md: PublicImageVariantContract;
+    lg: PublicImageVariantContract;
+  };
+}
+
 interface HomepageSectionBase {
   id: string;
   enabled: boolean;
@@ -150,6 +193,12 @@ export interface HomepageHeroSection extends HomepageSectionBase {
   mode: 'slider' | 'grid';
   show_search: boolean;
   refs: HomepageRecipeRef[];
+}
+
+export interface HomepageQuickFiltersSection extends HomepageSectionBase {
+  type: 'quick_filters';
+  title: string;
+  filters: HomepageQuickFilter[];
 }
 
 export interface HomepageFeaturedRecipesSection extends HomepageSectionBase {
@@ -174,6 +223,14 @@ export interface HomepageCollectionsSection extends HomepageSectionBase {
   title: string;
   subtitle: string;
   refs: HomepageRoundupRef[];
+}
+
+export interface HomepageSeasonalSpotlightSection extends HomepageSectionBase {
+  type: 'seasonal_spotlight';
+  title: string;
+  body: string;
+  image: HomepageStoredImageSnapshot | null;
+  cta: HomepageCta;
 }
 
 export interface HomepageLatestSection extends HomepageSectionBase {
@@ -204,9 +261,11 @@ export interface HomepageFaqSection extends HomepageSectionBase {
 export type HomepageSection =
   | HomepageStoriesSection
   | HomepageHeroSection
+  | HomepageQuickFiltersSection
   | HomepageFeaturedRecipesSection
   | HomepageCategoryBrowseSection
   | HomepageCollectionsSection
+  | HomepageSeasonalSpotlightSection
   | HomepageLatestSection
   | HomepageAboutAuthorSection
   | HomepageNewsletterSection
@@ -217,9 +276,28 @@ export interface HomepageSettings {
   sections: HomepageSection[];
 }
 
+export type HomepageAdminSeasonalSpotlightSection = Omit<HomepageSeasonalSpotlightSection, 'image'> & {
+  image: HomepageResolvedImageSnapshot | null;
+};
+
+export type HomepageAdminSection = Exclude<HomepageSection, HomepageSeasonalSpotlightSection>
+  | HomepageAdminSeasonalSpotlightSection;
+
+export interface HomepageAdminSettings {
+  seo: PageSeoSettings;
+  sections: HomepageAdminSection[];
+}
+
 export const DEFAULT_HOME_SECTIONS: HomepageSection[] = [
   { id: 'stories', type: 'stories', enabled: true },
   { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
+  {
+    id: 'quick_filters',
+    type: 'quick_filters',
+    enabled: false,
+    title: 'Explore recipes',
+    filters: [],
+  },
   {
     id: 'featured',
     type: 'featured_recipes',
@@ -233,6 +311,15 @@ export const DEFAULT_HOME_SECTIONS: HomepageSection[] = [
   },
   { id: 'categories', type: 'category_browse', enabled: true, title: 'Browse by Category', subtitle: '', max: 8 },
   { id: 'collections', type: 'collections', enabled: true, title: 'Recipe Collections', subtitle: '', refs: [] },
+  {
+    id: 'seasonal_spotlight',
+    type: 'seasonal_spotlight',
+    enabled: false,
+    title: 'Seasonal spotlight',
+    body: '',
+    image: null,
+    cta: { label: '', href: '' },
+  },
   { id: 'latest', type: 'latest', enabled: true, title: 'Latest Recipes', count: 8 },
   { id: 'about', type: 'about_author', enabled: true, author_id: null },
   {

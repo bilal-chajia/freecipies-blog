@@ -383,14 +383,20 @@ export function normalizeHomepageSections(
     return DEFAULT_HOME_SECTIONS;
   }
 
-  if (sections.some((section) => section.type === 'faq')) {
-    return sections;
-  }
-
+  const nonFaqSections = sections.filter((section) => section.type !== 'faq');
+  const existingFaq = sections.find((section) => section.type === 'faq');
+  const missingP3bSections = DEFAULT_HOME_SECTIONS.filter((section) => (
+    (section.type === 'quick_filters' || section.type === 'seasonal_spotlight')
+    && !nonFaqSections.some((stored) => stored.type === section.type)
+  ));
   const defaultFaq = DEFAULT_HOME_SECTIONS.find((section) => section.type === 'faq');
-  return defaultFaq
-    ? [...sections, { ...defaultFaq, items: [...defaultFaq.items] }]
-    : sections;
+  const faq = existingFaq ?? defaultFaq;
+
+  return [
+    ...nonFaqSections,
+    ...missingP3bSections,
+    ...(faq ? [faq] : []),
+  ];
 }
 
 export async function getHomepageSettings(

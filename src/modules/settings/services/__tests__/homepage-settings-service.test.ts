@@ -33,10 +33,39 @@ describe('getHomepageSettings', () => {
     ];
     const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
     const result = await getHomepageSettings(NO_DB, { cache });
-    expect(result.sections.map((section) => section.id)).toEqual(['hero', 'faq']);
+    expect(result.sections.map((section) => section.id)).toEqual([
+      'hero',
+      'quick_filters',
+      'seasonal_spotlight',
+      'faq',
+    ]);
     expect(result.sections[0].enabled).toBe(false);
-    expect(result.sections[1]).toMatchObject({ type: 'faq', enabled: false, items: [] });
+    expect(result.sections[3]).toMatchObject({ type: 'faq', enabled: false, items: [] });
     expect(result.seo.meta_title).toBe(HOMEPAGE_SETTINGS_DEFAULTS.seo.meta_title);
+  });
+
+  it('adds missing disabled P3B sections before the fixed-last FAQ', async () => {
+    const sections = [
+      { id: 'hero', type: 'hero', enabled: false, mode: 'grid', show_search: false, refs: [] },
+    ];
+    const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
+
+    const result = await getHomepageSettings(NO_DB, { cache });
+
+    expect(result.sections.map((section) => section.id)).toEqual([
+      'hero',
+      'quick_filters',
+      'seasonal_spotlight',
+      'faq',
+    ]);
+    expect(result.sections.find((section) => section.type === 'quick_filters')).toMatchObject({
+      enabled: false,
+      filters: [],
+    });
+    expect(result.sections.find((section) => section.type === 'seasonal_spotlight')).toMatchObject({
+      enabled: false,
+      image: null,
+    });
   });
 
   it('does not duplicate an existing FAQ section', async () => {
@@ -46,6 +75,30 @@ describe('getHomepageSettings', () => {
     const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
     const result = await getHomepageSettings(NO_DB, { cache });
     expect(result.sections.filter((section) => section.type === 'faq')).toHaveLength(1);
+  });
+
+  it('does not duplicate existing P3B sections', async () => {
+    const sections = [
+      { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
+      { id: 'quick_filters', type: 'quick_filters', enabled: true, title: 'Explore', filters: [] },
+      {
+        id: 'seasonal_spotlight',
+        type: 'seasonal_spotlight',
+        enabled: false,
+        title: 'Seasonal spotlight',
+        body: '',
+        image: null,
+        cta: { label: '', href: '' },
+      },
+      { id: 'faq', type: 'faq', enabled: false, title: 'FAQ', items: [] },
+    ];
+    const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
+
+    const result = await getHomepageSettings(NO_DB, { cache });
+
+    expect(result.sections.filter((section) => section.type === 'quick_filters')).toHaveLength(1);
+    expect(result.sections.filter((section) => section.type === 'seasonal_spotlight')).toHaveLength(1);
+    expect(result.sections.at(-1)?.type).toBe('faq');
   });
 
   it('exports updateHomepageSettings as a function', () => {

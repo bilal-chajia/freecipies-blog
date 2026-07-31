@@ -9,8 +9,12 @@
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import {
+  normalizeHomepageSettingsFromAdmin,
+  presentHomepageSettingsForAdmin,
+} from '@modules/settings/services/homepage-settings-images';
 import { getHomepageSettings, updateHomepageSettings } from '@modules/settings/services/settings.service';
-import type { HomepageSettings } from '@modules/settings/types/settings.types';
+import type { HomepageAdminSettings } from '@modules/settings/types/settings.types';
 import { validateBody } from '@shared/validation';
 import { HomepageSettingsSchema } from '@shared/validation/schemas/settings';
 import { formatSuccessResponse, formatErrorResponse, AppError, ErrorCodes } from '@shared/utils/error-handler';
@@ -30,7 +34,9 @@ export const GET: APIRoute = async () => {
 
     const settings = await getHomepageSettings(db, { cache: getSettingsCache() });
 
-    const { body, status, headers } = formatSuccessResponse({ homepage: settings });
+    const { body, status, headers } = formatSuccessResponse({
+      homepage: presentHomepageSettingsForAdmin(settings),
+    });
     return new Response(body, { status, headers });
   } catch (error) {
     console.error('Error fetching homepage settings:', error);
@@ -41,7 +47,7 @@ export const GET: APIRoute = async () => {
   }
 };
 
-/** PUT /api/settings/homepage — Body: Partial<HomepageSettings> */
+/** PUT /api/settings/homepage — Body: Partial<HomepageAdminSettings> */
 export const PUT: APIRoute = async ({ request }) => {
   try {
     const db = env?.DB;
@@ -53,9 +59,12 @@ export const PUT: APIRoute = async ({ request }) => {
     }
 
     const body = await validateBody(request, HomepageSettingsSchema);
-    const updated = await updateHomepageSettings(db, body as Partial<HomepageSettings>, { cache: getSettingsCache() });
+    const updates = normalizeHomepageSettingsFromAdmin(body as Partial<HomepageAdminSettings>);
+    const updated = await updateHomepageSettings(db, updates, { cache: getSettingsCache() });
 
-    const { body: responseBody, status, headers } = formatSuccessResponse({ homepage: updated });
+    const { body: responseBody, status, headers } = formatSuccessResponse({
+      homepage: presentHomepageSettingsForAdmin(updated),
+    });
     return new Response(responseBody, { status, headers });
   } catch (error) {
     console.error('Error updating homepage settings:', error);

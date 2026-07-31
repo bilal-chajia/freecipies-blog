@@ -63,6 +63,74 @@ describe('HomepageSettingsSchema', () => {
     expect(whitespaceAnswer.success).toBe(false);
   });
 
+  it('accepts quick filters and a complete resolved seasonal spotlight', () => {
+    const result = HomepageSettingsSchema.safeParse({
+      sections: [
+        {
+          id: 'quick_filters',
+          type: 'quick_filters',
+          enabled: true,
+          title: 'Explore recipes',
+          filters: [{ label: 'Quick dinners', href: '/recipes?tag=quick' }],
+        },
+        {
+          id: 'seasonal_spotlight',
+          type: 'seasonal_spotlight',
+          enabled: true,
+          title: 'Summer cooking',
+          body: 'Fresh ideas for warm days.',
+          image: {
+            media_id: 55,
+            alt: 'Seasonal salad',
+            placeholder: 'data:image/jpeg;base64,abc',
+            variants: {
+              sm: { url: '/api/images/media/salad-sm.webp', width: 720, height: 540 },
+              md: { url: '/api/images/media/salad-md.webp', width: 1200, height: 900 },
+              lg: { url: '/api/images/media/salad-lg.webp', width: 2048, height: 1536 },
+            },
+          },
+          cta: { label: 'Browse recipes', href: 'https://example.com/summer' },
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects invalid P3B section copy, URLs, and image variants', () => {
+    const invalidQuickFilter = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'quick_filters',
+        type: 'quick_filters',
+        enabled: true,
+        title: 'Explore recipes',
+        filters: [{ label: 'Quick dinners', href: '/articles?tag=quick' }],
+      }],
+    });
+    const invalidSpotlight = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'seasonal_spotlight',
+        type: 'seasonal_spotlight',
+        enabled: true,
+        title: '   ',
+        body: '   ',
+        image: {
+          media_id: 55,
+          alt: 'Seasonal salad',
+          placeholder: 'data:image/jpeg;base64,abc',
+          variants: {
+            sm: { url: '/api/images/media/salad-sm.webp', width: 720, height: 540 },
+            md: { url: '/api/images/media/salad-md.webp', width: 1200, height: 900, r2_key: 'media/salad-md.webp' },
+          },
+        },
+        cta: { label: '   ', href: 'http://example.com/summer' },
+      }],
+    });
+
+    expect(invalidQuickFilter.success).toBe(false);
+    expect(invalidSpotlight.success).toBe(false);
+  });
+
   it('rejects unknown top-level keys', () => {
     const result = HomepageSettingsSchema.safeParse({ nope: true });
     expect(result.success).toBe(false);

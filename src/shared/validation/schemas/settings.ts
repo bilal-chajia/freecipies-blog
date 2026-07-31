@@ -221,6 +221,82 @@ const homepageSectionBase = {
   enabled: z.boolean(),
 };
 
+function isRecipeListingHref(href: string): boolean {
+  return /^\/recipes(?:[/?#]|$)/.test(href);
+}
+
+function isSafeCtaHref(href: string): boolean {
+  if (href.startsWith('/') && !href.startsWith('//')) return true;
+
+  try {
+    return new URL(href).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+const HomepageQuickFilterSchema = z.object({
+  label: z.string().trim().min(1),
+  href: z.string().trim().min(1).refine(isRecipeListingHref, {
+    message: 'Quick filter URLs must begin with /recipes',
+  }),
+}).strict();
+
+const HomepageResolvedImageVariantSchema = z.object({
+  url: z.string().trim().min(1).refine((url) => url.startsWith('/api/images/'), {
+    message: 'Spotlight image variants must use a local image route',
+  }),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  size_bytes: z.number().int().nonnegative().optional(),
+}).strict();
+
+const HomepageResolvedImageSnapshotSchema = z.object({
+  media_id: z.number().int().positive(),
+  alt: z.string().trim().min(1),
+  placeholder: z.string().trim().min(1),
+  focal_point: z.object({
+    x: z.number().min(0).max(100),
+    y: z.number().min(0).max(100),
+  }).strict().optional(),
+  aspect_ratio: z.string().trim().min(1).optional(),
+  variants: z.object({
+    sm: HomepageResolvedImageVariantSchema,
+    md: HomepageResolvedImageVariantSchema,
+    lg: HomepageResolvedImageVariantSchema,
+  }).strict(),
+}).strict();
+
+const HomepageSeasonalSpotlightSchema = z.object({
+  ...homepageSectionBase,
+  type: z.literal('seasonal_spotlight'),
+  title: z.string().trim(),
+  body: z.string().trim(),
+  image: HomepageResolvedImageSnapshotSchema.nullable(),
+  cta: z.object({
+    label: z.string().trim(),
+    href: z.string().trim(),
+  }).strict(),
+}).strict().superRefine((section, context) => {
+  if (!section.enabled) return;
+
+  if (!section.title) {
+    context.addIssue({ code: 'custom', path: ['title'], message: 'Spotlight title is required' });
+  }
+  if (!section.body) {
+    context.addIssue({ code: 'custom', path: ['body'], message: 'Spotlight body is required' });
+  }
+  if (!section.image) {
+    context.addIssue({ code: 'custom', path: ['image'], message: 'Spotlight image is required' });
+  }
+  if (!section.cta.label) {
+    context.addIssue({ code: 'custom', path: ['cta', 'label'], message: 'Spotlight CTA label is required' });
+  }
+  if (!section.cta.href || !isSafeCtaHref(section.cta.href)) {
+    context.addIssue({ code: 'custom', path: ['cta', 'href'], message: 'Spotlight CTA URL must be an internal path or HTTPS URL' });
+  }
+});
+
 const HomepageSectionSchema = z.discriminatedUnion('type', [
   z.object({ ...homepageSectionBase, type: z.literal('stories') }).strict(),
   z
@@ -235,6 +311,14 @@ const HomepageSectionSchema = z.discriminatedUnion('type', [
   z
     .object({
       ...homepageSectionBase,
+      type: z.literal('quick_filters'),
+      title: z.string().trim().min(1),
+      filters: z.array(HomepageQuickFilterSchema),
+    })
+    .strict(),
+  z
+    .object({
+      ...homepageSectionBase,
       type: z.literal('featured_recipes'),
       title: z.string(),
       subtitle: z.string(),
@@ -244,6 +328,7 @@ const HomepageSectionSchema = z.discriminatedUnion('type', [
       refs: z.array(HomepageRecipeRefSchema),
     })
     .strict(),
+  HomepageSeasonalSpotlightSchema,
   z
     .object({
       ...homepageSectionBase,
