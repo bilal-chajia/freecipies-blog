@@ -11,9 +11,12 @@ import type {
   HomepageSection,
   HomepageStoriesSection,
   HomepageHeroSection,
+  HomepageQuickFilter,
+  HomepageQuickFiltersSection,
   HomepageFeaturedRecipesSection,
   HomepageCategoryBrowseSection,
   HomepageCollectionsSection,
+  HomepageSeasonalSpotlightSection,
   HomepageLatestSection,
   HomepageAboutAuthorSection,
   HomepageNewsletterSection,
@@ -24,9 +27,11 @@ import type {
 export type HomeSectionVM =
   | { kind: 'stories'; section: HomepageStoriesSection; stories: StoryPreview[] }
   | { kind: 'hero'; section: HomepageHeroSection; recipes: HydratedArticle[] }
+  | { kind: 'quick_filters'; section: HomepageQuickFiltersSection; filters: HomepageQuickFilter[] }
   | { kind: 'featured_recipes'; section: HomepageFeaturedRecipesSection; recipes: HydratedArticle[] }
   | { kind: 'category_browse'; section: HomepageCategoryBrowseSection; categories: HydratedCategory[] }
   | { kind: 'collections'; section: HomepageCollectionsSection; roundups: HydratedArticle[] }
+  | { kind: 'seasonal_spotlight'; section: HomepageSeasonalSpotlightSection }
   | { kind: 'latest'; section: HomepageLatestSection; recipes: HydratedArticle[] }
   | { kind: 'about_author'; section: HomepageAboutAuthorSection; author: Author | null }
   | { kind: 'newsletter'; section: HomepageNewsletterSection }
@@ -43,6 +48,57 @@ export function getRenderableHomepageFaqItems(
   return section.items
     .map(({ question, answer }) => ({ question: question.trim(), answer: answer.trim() }))
     .filter(({ question, answer }) => question.length > 0 && answer.length > 0);
+}
+
+export function getRenderableQuickFilters(
+  section: HomepageQuickFiltersSection,
+): HomepageQuickFilter[] {
+  return section.filters
+    .map(({ label, href }) => ({ label: label.trim(), href: href.trim() }))
+    .filter(({ label, href }) => label.length > 0 && /^\/recipes(?:[/?#]|$)/.test(href));
+}
+
+function isSafeSpotlightCtaHref(href: string): boolean {
+  if (href.startsWith('/') && !href.startsWith('//')) return true;
+
+  try {
+    return new URL(href).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export function getRenderableSeasonalSpotlight(
+  section: HomepageSeasonalSpotlightSection,
+): HomepageSeasonalSpotlightSection | null {
+  const title = section.title.trim();
+  const body = section.body.trim();
+  const ctaLabel = section.cta.label.trim();
+  const ctaHref = section.cta.href.trim();
+  const image = section.image;
+
+  if (!title || !body || !ctaLabel || !ctaHref || !isSafeSpotlightCtaHref(ctaHref)) {
+    return null;
+  }
+  if (!image || !image.alt.trim() || !image.placeholder.trim()) return null;
+
+  const hasCompleteVariants = [image.variants?.sm, image.variants?.md, image.variants?.lg].every((variant) => (
+    typeof variant?.r2_key === 'string'
+    && variant.r2_key.length > 0
+    && Number.isInteger(variant.width)
+    && variant.width > 0
+    && Number.isInteger(variant.height)
+    && variant.height > 0
+  ));
+  if (!hasCompleteVariants) return null;
+
+  return {
+    ...section,
+    title,
+    body,
+    image: { ...image, alt: image.alt.trim() },
+    cta: { label: ctaLabel, href: ctaHref },
+  };
 }
 
 /** Turn the ordered, enabled homepage sections into ordered, data-loaded view-models. */
@@ -99,6 +155,14 @@ export async function resolveHomeData(
         break;
       }
 
+      case 'quick_filters': {
+        const filters = getRenderableQuickFilters(section);
+        if (filters.length > 0) {
+          vms.push({ kind: 'quick_filters', section, filters });
+        }
+        break;
+      }
+
       case 'featured_recipes': {
         let recipes: HydratedArticle[];
         if (section.source === 'manual' && section.refs.length > 0) {
@@ -131,6 +195,14 @@ export async function resolveHomeData(
             })
           : (await getArticles(db, { type: 'roundup', workflow_status: 'published', limit: 6 })).items;
         vms.push({ kind: 'collections', section, roundups });
+        break;
+      }
+
+      case 'seasonal_spotlight': {
+        const renderable = getRenderableSeasonalSpotlight(section);
+        if (renderable) {
+          vms.push({ kind: 'seasonal_spotlight', section: renderable });
+        }
         break;
       }
 

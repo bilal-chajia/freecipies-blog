@@ -1,0 +1,104 @@
+---
+import type {
+  HomepageQuickFilter,
+  HomepageQuickFiltersSection,
+} from '@modules/settings/types/settings.types';
+
+interface Props {
+  section: HomepageQuickFiltersSection;
+  filters: HomepageQuickFilter[];
+}
+
+const { section, filters } = Astro.props;
+const headingId = `quick-filters-${section.id}`;
+---
+
+{filters.length > 0 && (
+  <section class="quick-filters" data-fade-up aria-labelledby={headingId}>
+    <div class="quick-filters__inner">
+      <h2 id={headingId}>{section.title}</h2>
+      <nav class="quick-filters__links" aria-label={section.title}>
+        {filters.map((filter) => (
+          <a href={filter.href}>{filter.label}</a>
+        ))}
+      </nav>
+    </div>
+  </section>
+)}
+
+<style>
+  .quick-filters {
+    padding: clamp(var(--space-7), 4vw, var(--space-10)) var(--space-5);
+    background: var(--bg);
+  }
+
+  .quick-filters__inner {
+    display: flex;
+    max-width: var(--container-max);
+    margin: 0 auto;
+    align-items: center;
+    gap: var(--space-5);
+  }
+
+  .quick-filters h2 {
+    flex: 0 0 auto;
+    margin: 0;
+    color: var(--text);
+    font-family: var(--font-serif);
+    font-size: clamp(1.35rem, 1.15rem + 0.7vw, 1.75rem);
+    line-height: var(--leading-tight);
+    letter-spacing: 0;
+  }
+
+  .quick-filters__links {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .quick-filters__links a {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    line-height: 1;
+    padding: 0 var(--space-4);
+    text-decoration: none;
+    transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+  }
+
+  .quick-filters__links a:hover {
+    border-color: var(--brand-primary);
+    background: var(--brand-primary-light);
+    color: var(--text-brand);
+  }
+
+  .quick-filters__links a:focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  @media (max-width: 720px) {
+    .quick-filters {
+      padding-inline: var(--space-4);
+    }
+
+    .quick-filters__inner {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quick-filters__links a {
+      transition: none;
+    }
+  }
+</style>

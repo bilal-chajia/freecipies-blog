@@ -127,6 +127,94 @@ it('resolves only complete FAQ items', async () => {
   })]);
 });
 
+it('keeps only complete internal quick filters without fetching content', async () => {
+  const sections: HomepageSection[] = [{
+    id: 'quick_filters',
+    type: 'quick_filters',
+    enabled: true,
+    title: 'Explore recipes',
+    filters: [
+      { label: ' Quick dinners ', href: ' /recipes?tag=quick ' },
+      { label: '   ', href: '/recipes?tag=empty' },
+      { label: 'External listing', href: '/articles?tag=wrong' },
+    ],
+  }];
+
+  const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+
+  expect(vms).toEqual([expect.objectContaining({
+    kind: 'quick_filters',
+    filters: [{ label: 'Quick dinners', href: '/recipes?tag=quick' }],
+  })]);
+  expect(getArticles).not.toHaveBeenCalled();
+  expect(getArticlesByIds).not.toHaveBeenCalled();
+});
+
+it('resolves a complete seasonal spotlight without a media lookup', async () => {
+  const sections: HomepageSection[] = [{
+    id: 'seasonal_spotlight',
+    type: 'seasonal_spotlight',
+    enabled: true,
+    title: 'Summer cooking',
+    body: 'Fresh ideas for warm days.',
+    image: {
+      media_id: 55,
+      alt: 'Seasonal salad',
+      placeholder: 'data:image/jpeg;base64,placeholder',
+      variants: {
+        sm: { r2_key: 'media/salad-sm.webp', width: 720, height: 540 },
+        md: { r2_key: 'media/salad-md.webp', width: 1200, height: 900 },
+        lg: { r2_key: 'media/salad-lg.webp', width: 2048, height: 1536 },
+      },
+    },
+    cta: { label: 'Browse recipes', href: '/recipes?category=summer' },
+  }];
+
+  const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+
+  expect(vms).toEqual([expect.objectContaining({ kind: 'seasonal_spotlight' })]);
+  expect(getArticles).not.toHaveBeenCalled();
+  expect(getArticlesByIds).not.toHaveBeenCalled();
+  expect(getCategories).not.toHaveBeenCalled();
+  expect(getAuthors).not.toHaveBeenCalled();
+});
+
+it('omits incomplete seasonal spotlights', async () => {
+  const sections: HomepageSection[] = [
+    {
+      id: 'missing-image',
+      type: 'seasonal_spotlight',
+      enabled: true,
+      title: 'Summer cooking',
+      body: 'Fresh ideas for warm days.',
+      image: null,
+      cta: { label: 'Browse recipes', href: '/recipes?category=summer' },
+    },
+    {
+      id: 'missing-cta',
+      type: 'seasonal_spotlight',
+      enabled: true,
+      title: 'Summer cooking',
+      body: 'Fresh ideas for warm days.',
+      image: {
+        media_id: 55,
+        alt: 'Seasonal salad',
+        placeholder: 'data:image/jpeg;base64,placeholder',
+        variants: {
+          sm: { r2_key: 'media/salad-sm.webp', width: 720, height: 540 },
+          md: { r2_key: 'media/salad-md.webp', width: 1200, height: 900 },
+          lg: { r2_key: 'media/salad-lg.webp', width: 2048, height: 1536 },
+        },
+      },
+      cta: { label: '   ', href: '' },
+    },
+  ];
+
+  const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+
+  expect(vms).toEqual([]);
+});
+
 describe('resolveHomeData — hero fallback', () => {
   beforeEach(() => {
     vi.clearAllMocks();

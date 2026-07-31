@@ -2,9 +2,11 @@
 import type { HomeSectionVM } from '@site/utils/home-data';
 import StoriesBar from '@components/StoriesBar.astro';
 import HeroSection from './HeroSection.astro';
+import QuickFilters from './QuickFilters.astro';
 import FeaturedRecipes from './FeaturedRecipes.astro';
 import CategoryBrowse from './CategoryBrowse.astro';
 import Collections from './Collections.astro';
+import SeasonalSpotlight from './SeasonalSpotlight.astro';
 import LatestRecipes from './LatestRecipes.astro';
 import AboutAuthor from './AboutAuthor.astro';
 import NewsletterBanner from './NewsletterBanner.astro';
@@ -32,12 +34,16 @@ const hasCarousel = orderedSections.some((vm) => {
         return <StoriesBar stories={vm.stories} />;
       case 'hero':
         return <HeroSection section={vm.section} recipes={vm.recipes} tagline={siteTagline} />;
+      case 'quick_filters':
+        return <QuickFilters section={vm.section} filters={vm.filters} />;
       case 'featured_recipes':
         return <FeaturedRecipes section={vm.section} recipes={vm.recipes} />;
       case 'category_browse':
         return <CategoryBrowse section={vm.section} categories={vm.categories} />;
       case 'collections':
         return <Collections section={vm.section} roundups={vm.roundups} />;
+      case 'seasonal_spotlight':
+        return <SeasonalSpotlight section={vm.section} />;
       case 'latest':
         return <LatestRecipes section={vm.section} recipes={vm.recipes} />;
       case 'about_author':
