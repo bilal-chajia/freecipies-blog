@@ -63,7 +63,9 @@ export const PATCH: APIRoute = async ({ request, params }) => {
         // 2. Propagate changes to all referencing snapshots (best-effort)
         let syncResult;
         try {
-            syncResult = await propagateMediaUpdate(env.DB, id);
+            syncResult = await propagateMediaUpdate(env.DB, id, {
+                cache: env?.SETTINGS_CACHE ?? env?.SESSION ?? null,
+            });
         } catch (syncError) {
             console.error(`Snapshot sync failed for media ${id}:`, syncError);
             syncResult = { errors: ['Snapshot sync failed — snapshots may be stale'] };

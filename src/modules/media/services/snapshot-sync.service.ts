@@ -14,13 +14,15 @@
  * regenerable from the media row."
  */
 
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Database, KVNamespace } from '@cloudflare/workers-types';
 import { eq, and, isNull, like } from 'drizzle-orm';
 import { getDb, type DrizzleDb } from '@shared/database/drizzle';
 import { media, type Media } from '../schema/media.schema';
 import { articles } from '../../articles/schema/articles.schema';
 import { authors } from '../../authors/schema/authors.schema';
 import { categories } from '../../categories/schema/categories.schema';
+import { siteSettings } from '../../settings/schema/settings.schema';
+import { invalidateSettingCache } from '../../settings/services/settings.service';
 import {
   buildSnapshotPatch,
   applyPatchToSlot,
@@ -39,7 +41,12 @@ export interface SnapshotSyncResult {
   articlesUpdated: number;
   authorsUpdated: number;
   categoriesUpdated: number;
+  homepageSettingsUpdated: boolean;
   errors: string[];
+}
+
+export interface SnapshotSyncOptions {
+  cache?: Pick<KVNamespace, 'delete'> | null;
 }
 
 // ─── Core Logic ──────────────────────────────────────────────────
@@ -131,6 +138,52 @@ function patchCachedCardJson(
   return JSON.stringify(card);
 }
 
+/**
+ * Patch spotlight snapshots in the single cached homepage settings document.
+ * The public homepage consumes this document directly, so no media read is
+ * necessary while rendering the section.
+ */
+function patchHomepageSettings(
+  value: string,
+  mediaId: number,
+  patch: SnapshotPatch,
+): string | null {
+  let settings: Record<string, unknown>;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    settings = parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+
+  if (!Array.isArray(settings.sections)) return null;
+
+  let changed = false;
+  for (const section of settings.sections) {
+    if (!section || typeof section !== 'object' || Array.isArray(section)) continue;
+
+    const spotlight = section as Record<string, unknown>;
+    if (spotlight.type !== 'seasonal_spotlight') continue;
+
+    const image = spotlight.image;
+    if (!image || typeof image !== 'object' || Array.isArray(image)) continue;
+
+    const imageSnapshot = image as Record<string, unknown>;
+    if (imageSnapshot.media_id !== mediaId) continue;
+
+    spotlight.image = applyPatchToSlot(
+      imageSnapshot,
+      patch,
+      HERO_ALLOWED_VARIANTS,
+      { omitCaptionCredit: true },
+    );
+    changed = true;
+  }
+
+  return changed ? JSON.stringify(settings) : null;
+}
+
 // ─── Public API ──────────────────────────────────────────────────
 
 /**
@@ -149,7 +202,8 @@ function patchCachedCardJson(
  */
 export async function propagateMediaUpdate(
   db: D1Database | DrizzleDb,
-  mediaId: number
+  mediaId: number,
+  options?: SnapshotSyncOptions,
 ): Promise<SnapshotSyncResult> {
   const drizzle = getDb(db);
   const result: SnapshotSyncResult = {
@@ -157,6 +211,7 @@ export async function propagateMediaUpdate(
     articlesUpdated: 0,
     authorsUpdated: 0,
     categoriesUpdated: 0,
+    homepageSettingsUpdated: false,
     errors: [],
   };
 
@@ -275,6 +330,28 @@ export async function propagateMediaUpdate(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     result.errors.push(`Categories scan failed: ${message}`);
+  }
+
+  // 5. Update the one cached homepage settings row when it references this media.
+  try {
+    const [homepageSettings] = await drizzle
+      .select({ key: siteSettings.key, value: siteSettings.value })
+      .from(siteSettings)
+      .where(eq(siteSettings.key, 'homepage_settings'));
+
+    if (homepageSettings) {
+      const patchedValue = patchHomepageSettings(homepageSettings.value, mediaId, patch);
+      if (patchedValue) {
+        await drizzle.update(siteSettings)
+          .set({ value: patchedValue, updated_at: new Date().toISOString() })
+          .where(eq(siteSettings.key, 'homepage_settings'));
+        result.homepageSettingsUpdated = true;
+        await invalidateSettingCache(options?.cache, 'homepage_settings');
+      }
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    result.errors.push(`Homepage settings sync failed: ${message}`);
   }
 
   return result;

@@ -10,6 +10,7 @@ import { siteSettings, type SiteSetting } from '../schema/settings.schema';
 import { getDb, type DrizzleDb } from '../../../shared/database/drizzle';
 
 export type SettingsCacheStore = Pick<KVNamespace, 'get' | 'put' | 'delete'>;
+export type SettingsCacheInvalidator = Pick<KVNamespace, 'delete'>;
 
 interface SettingServiceOptions {
   cache?: SettingsCacheStore | null;
@@ -35,7 +36,7 @@ function parseSettingValue<T>(value: string): T {
 }
 
 export async function invalidateSettingCache(
-  cache: SettingsCacheStore | null | undefined,
+  cache: SettingsCacheInvalidator | null | undefined,
   key: string,
 ): Promise<void> {
   if (!cache) return;
