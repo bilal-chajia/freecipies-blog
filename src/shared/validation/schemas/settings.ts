@@ -278,6 +278,9 @@ const HomepageSeasonalSpotlightSchema = z.object({
     href: z.string().trim(),
   }).strict(),
 }).strict().superRefine((section, context) => {
+  if (section.cta.href && !isSafeCtaHref(section.cta.href)) {
+    context.addIssue({ code: 'custom', path: ['cta', 'href'], message: 'Spotlight CTA URL must be an internal path or HTTPS URL' });
+  }
   if (!section.enabled) return;
 
   if (!section.title) {
@@ -292,7 +295,7 @@ const HomepageSeasonalSpotlightSchema = z.object({
   if (!section.cta.label) {
     context.addIssue({ code: 'custom', path: ['cta', 'label'], message: 'Spotlight CTA label is required' });
   }
-  if (!section.cta.href || !isSafeCtaHref(section.cta.href)) {
+  if (!section.cta.href) {
     context.addIssue({ code: 'custom', path: ['cta', 'href'], message: 'Spotlight CTA URL must be an internal path or HTTPS URL' });
   }
 });

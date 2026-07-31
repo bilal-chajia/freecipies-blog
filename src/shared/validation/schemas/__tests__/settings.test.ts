@@ -126,9 +126,21 @@ describe('HomepageSettingsSchema', () => {
         cta: { label: '   ', href: 'http://example.com/summer' },
       }],
     });
+    const disabledUnsafeCta = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'seasonal_spotlight',
+        type: 'seasonal_spotlight',
+        enabled: false,
+        title: '',
+        body: '',
+        image: null,
+        cta: { label: '', href: 'http://example.com/summer' },
+      }],
+    });
 
     expect(invalidQuickFilter.success).toBe(false);
     expect(invalidSpotlight.success).toBe(false);
+    expect(disabledUnsafeCta.success).toBe(false);
   });
 
   it('rejects unknown top-level keys', () => {
