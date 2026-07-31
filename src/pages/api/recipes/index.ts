@@ -6,9 +6,7 @@ import { normalizeRecipeForRender } from '@site/utils/recipe-render';
 import { formatErrorResponse, formatSuccessResponse, ErrorCodes, AppError } from '@shared/utils';
 import { validateQuery, PaginationQuery } from '@shared/validation';
 import {
-    resolvePublicRecipeAuthor,
-    resolvePublicRecipeCategory,
-    resolvePublicRecipeThumbnail,
+    presentRecipeListReferences,
 } from '@server/api/recipes/public-thumbnail';
 
 export const prerender = false;
@@ -35,6 +33,7 @@ export const GET: APIRoute = async ({ request }) => {
     const category = url.searchParams.get('category');
     const author = url.searchParams.get('author');
     const search = url.searchParams.get('search');
+    const liveSearchView = url.searchParams.get('view') === 'live_search';
 
     try {
         const db = env.DB;
@@ -68,9 +67,12 @@ export const GET: APIRoute = async ({ request }) => {
                 }
             }
 
-            const thumbnail = resolvePublicRecipeThumbnail(
+            const references = presentRecipeListReferences(
                 article.images_json,
                 article.headline,
+                article.category,
+                article.author,
+                liveSearchView,
             );
 
             return {
@@ -78,9 +80,9 @@ export const GET: APIRoute = async ({ request }) => {
                 slug: article.slug,
                 headline: article.headline,
                 short_description: article.short_description,
-                thumbnail,
-                category: resolvePublicRecipeCategory(article.category),
-                author: resolvePublicRecipeAuthor(article.author),
+                thumbnail: references.thumbnail,
+                category: references.category,
+                author: references.author,
                 published_at: article.published_at,
                 // Recipe-specific fields
                 total_time: recipeData?.total,

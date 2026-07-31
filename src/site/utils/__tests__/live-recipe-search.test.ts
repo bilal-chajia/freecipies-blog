@@ -16,7 +16,7 @@ describe('live recipe search', () => {
 
   it('creates a bounded encoded API request for a normalized query', () => {
     expect(buildLiveRecipeSearchUrl('chocolate & cake')).toBe(
-      '/api/recipes?search=chocolate+%26+cake&limit=100',
+      '/api/recipes?search=chocolate+%26+cake&limit=100&view=live_search',
     );
   });
 

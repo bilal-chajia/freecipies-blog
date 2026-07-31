@@ -24,4 +24,19 @@ describe('Header search modal', () => {
     expect(source).toContain('id="search-results"');
     expect(source).toContain('class="search-modal-results"');
   });
+
+  it('resets interrupted searches and only handles Escape while the dialog is open', async () => {
+    const source = await readFile(headerPath, 'utf8');
+    const closeStart = source.indexOf('const closeSearchModal = () => {');
+    const closeEnd = source.indexOf('searchBtn?.addEventListener', closeStart);
+    const closeMarkup = source.slice(closeStart, closeEnd);
+
+    expect(source).toContain('aria-label="Search recipes"');
+    expect(closeMarkup).toContain('searchInput.value = ""');
+    expect(closeMarkup).toContain('clearSearchResults()');
+    expect(source).toContain(
+      'e.key === "Escape" && searchModal?.classList.contains("active")',
+    );
+    expect(source).toContain('if (!payload.success)');
+  });
 });

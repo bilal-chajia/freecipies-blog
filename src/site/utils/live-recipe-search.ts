@@ -40,6 +40,7 @@ export function buildLiveRecipeSearchUrl(query: string): string | null {
   const params = new URLSearchParams({
     search: normalizedQuery,
     limit: String(LIVE_RECIPE_SEARCH_LIMIT),
+    view: 'live_search',
   });
 
   return `/api/recipes?${params.toString()}`;

@@ -1,5 +1,5 @@
 import type { PublicImageVariantContract } from '@shared/images/image-contract';
-import { extractImage } from '@shared/utils';
+import { extractImage, safeParseJson } from '@shared/utils';
 
 export interface PublicRecipeThumbnail extends PublicImageVariantContract {
   alt: string;
@@ -16,6 +16,12 @@ interface PublicRecipeCategory {
   label: string | null;
   slug: string | null;
   color: string | null;
+}
+
+interface PresentedRecipeListReferences {
+  thumbnail: unknown;
+  category: unknown;
+  author: unknown;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -69,5 +75,34 @@ export function resolvePublicRecipeCategory(category: unknown): PublicRecipeCate
     label: nullableString(record, 'label'),
     slug: nullableString(record, 'slug'),
     color: nullableString(record, 'color'),
+  };
+}
+
+export function presentRecipeListReferences(
+  imagesJson: unknown,
+  fallbackAlt: string,
+  category: unknown,
+  author: unknown,
+  liveSearchView: boolean,
+): PresentedRecipeListReferences {
+  if (!liveSearchView) {
+    const images = safeParseJson<Record<string, unknown>>(imagesJson);
+    return {
+      thumbnail: images?.thumbnail ?? images?.hero ?? null,
+      category: category ?? null,
+      author: author ?? null,
+    };
+  }
+
+  const serializedImages = typeof imagesJson === 'string'
+    ? imagesJson
+    : imagesJson
+      ? JSON.stringify(imagesJson)
+      : null;
+
+  return {
+    thumbnail: resolvePublicRecipeThumbnail(serializedImages, fallbackAlt),
+    category: resolvePublicRecipeCategory(category),
+    author: resolvePublicRecipeAuthor(author),
   };
 }
