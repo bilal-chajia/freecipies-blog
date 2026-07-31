@@ -20,22 +20,22 @@ import {
   AboutSection,
   NewsletterSection,
   FaqSection,
+  QuickFiltersSection,
   SeoSection,
 } from './sections';
 import { toast } from 'sonner';
 import { pinFaqLast } from '@admin/features/homepage/utils/faq-items';
+import type { HomepageFormData } from '../types';
 import {
-  DEFAULT_HOME_SECTIONS,
-  HOMEPAGE_SETTINGS_DEFAULTS,
-  type HomepageSection,
-  type HomepageSettings,
+  HOMEPAGE_ADMIN_SETTINGS_DEFAULTS,
+  type HomepageAdminSection,
   type PageSeoSettings,
 } from '@modules/settings/types/settings.types';
 
 interface HomepageSettingsResponse {
   success: boolean;
   data: {
-    homepage: HomepageSettings;
+    homepage: HomepageFormData;
   };
 }
 
@@ -43,24 +43,39 @@ type AdminAxiosRequestConfig = AxiosRequestConfig & {
   skipAdminCache?: boolean;
 };
 
-const cloneSettings = (settings: HomepageSettings): HomepageSettings => ({
+const cloneSettings = (settings: HomepageFormData): HomepageFormData => ({
   seo: { ...settings.seo },
   sections: pinFaqLast(settings.sections).map((section) => (
     section.type === 'faq'
       ? { ...section, items: section.items.map((item) => ({ ...item })) }
+      : section.type === 'quick_filters'
+        ? { ...section, filters: section.filters.map((filter) => ({ ...filter })) }
+        : section.type === 'seasonal_spotlight'
+          ? {
+            ...section,
+            image: section.image
+              ? {
+                ...section.image,
+                focal_point: section.image.focal_point ? { ...section.image.focal_point } : undefined,
+                variants: {
+                  sm: { ...section.image.variants.sm },
+                  md: { ...section.image.variants.md },
+                  lg: { ...section.image.variants.lg },
+                },
+              }
+              : null,
+            cta: { ...section.cta },
+          }
       : { ...section }
   )),
 });
 
-const createDefaultSettings = (): HomepageSettings => cloneSettings({
-  ...HOMEPAGE_SETTINGS_DEFAULTS,
-  sections: DEFAULT_HOME_SECTIONS,
-});
+const createDefaultSettings = (): HomepageFormData => cloneSettings(HOMEPAGE_ADMIN_SETTINGS_DEFAULTS);
 
 const Homepage = () => {
   const { section = 'hero' } = useParams();
-  const [formData, setFormData] = useState<HomepageSettings>(() => createDefaultSettings());
-  const [lastSaved, setLastSaved] = useState<HomepageSettings>(() => createDefaultSettings());
+  const [formData, setFormData] = useState<HomepageFormData>(() => createDefaultSettings());
+  const [lastSaved, setLastSaved] = useState<HomepageFormData>(() => createDefaultSettings());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +103,7 @@ const Homepage = () => {
     void loadHomepage();
   }, [loadHomepage]);
 
-  const updateSection = useCallback((id: string, updater: (section: HomepageSection) => HomepageSection) => {
+  const updateSection = useCallback((id: string, updater: (section: HomepageAdminSection) => HomepageAdminSection) => {
     setFormData((prev) => ({
       ...prev,
       sections: prev.sections.map((item) => (item.id === id ? updater(item) : item)),
@@ -109,6 +124,7 @@ const Homepage = () => {
     const labels = new Map<string, string>([
       ['stories', 'Stories'],
       ['hero', 'Hero'],
+      ['quick_filters', 'Quick Filters'],
       ['featured', 'Featured'],
       ['categories', 'Categories'],
       ['collections', 'Collections'],
@@ -165,6 +181,8 @@ const Homepage = () => {
     switch (section) {
       case 'hero':
         return <HeroSection {...props} />;
+      case 'quick_filters':
+        return <QuickFiltersSection {...props} />;
       case 'featured':
         return <FeaturedSection {...props} />;
       case 'categories':

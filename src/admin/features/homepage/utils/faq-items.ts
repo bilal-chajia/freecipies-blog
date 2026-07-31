@@ -1,7 +1,6 @@
 import { arrayMove } from '@dnd-kit/sortable';
 import type {
   HomepageFaqItem,
-  HomepageSection,
 } from '@modules/settings/types/settings.types';
 
 export interface FaqEditorState {
@@ -111,7 +110,7 @@ export function reorderFaqEditorRows(
   };
 }
 
-export function pinFaqLast(sections: HomepageSection[]): HomepageSection[] {
+export function pinFaqLast<T extends { type: string }>(sections: T[]): T[] {
   const faq = sections.find((section) => section.type === 'faq');
   if (!faq) return sections;
 

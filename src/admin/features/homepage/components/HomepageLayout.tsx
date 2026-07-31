@@ -24,12 +24,14 @@ import {
     BookOpen,
     UserRound,
     HelpCircle,
+    SlidersHorizontal,
 } from 'lucide-react';
 import { SortableSectionRow } from '.';
 
 // Navigation metadata for Homepage sections
 const homepageSections = [
     { id: 'hero', label: 'Hero', icon: LayoutPanelLeft },
+    { id: 'quick_filters', label: 'Quick Filters', icon: SlidersHorizontal },
     { id: 'featured', label: 'Featured', icon: Star },
     { id: 'categories', label: 'Categories', icon: Grid },
     { id: 'collections', label: 'Collections', icon: BookOpen },

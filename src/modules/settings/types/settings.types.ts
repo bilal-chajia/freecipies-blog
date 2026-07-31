@@ -384,6 +384,15 @@ export const HOMEPAGE_SETTINGS_DEFAULTS: HomepageSettings = {
   sections: DEFAULT_HOME_SECTIONS,
 };
 
+export const HOMEPAGE_ADMIN_SETTINGS_DEFAULTS: HomepageAdminSettings = {
+  seo: { ...HOMEPAGE_SETTINGS_DEFAULTS.seo },
+  sections: DEFAULT_HOME_SECTIONS.map((section): HomepageAdminSection => (
+    section.type === 'seasonal_spotlight'
+      ? { ...section, image: null }
+      : section
+  )),
+};
+
 export const ORGANIZATION_PROFILE_DEFAULTS: OrganizationProfileSettings = {
   name: SITE_IDENTITY_DEFAULTS.site_name,
   url: SITE_IDENTITY_DEFAULTS.site_url,

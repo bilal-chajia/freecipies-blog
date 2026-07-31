@@ -6,4 +6,5 @@ export { default as LatestSection } from './LatestSection';
 export { default as AboutSection } from './AboutSection';
 export { default as NewsletterSection } from './NewsletterSection';
 export { default as FaqSection } from './FaqSection';
+export { default as QuickFiltersSection } from './QuickFiltersSection';
 export { default as SeoSection } from './SeoSection';

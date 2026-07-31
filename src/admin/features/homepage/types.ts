@@ -1,12 +1,14 @@
 /**
  * Homepage admin types.
  *
- * The persisted payload is the same snake_case shape used by
- * site_settings.homepage_settings and /api/settings/homepage.
+ * The form uses the admin-safe snake_case representation returned by
+ * /api/settings/homepage. Storage-only image keys never enter this layer.
  */
 
 import type {
   HomepageAboutAuthorSection,
+  HomepageAdminSection,
+  HomepageAdminSettings,
   HomepageCategoryBrowseSection,
   HomepageCollectionsSection,
   HomepageFaqSection,
@@ -14,20 +16,22 @@ import type {
   HomepageHeroSection,
   HomepageLatestSection,
   HomepageNewsletterSection,
-  HomepageSection,
-  HomepageSettings,
+  HomepageQuickFiltersSection,
+  HomepageAdminSeasonalSpotlightSection,
   HomepageStoriesSection,
   PageSeoSettings,
 } from '@modules/settings/types/settings.types';
 
-export type HomepageFormData = HomepageSettings;
+export type HomepageFormData = HomepageAdminSettings;
 
 export type EditableHomepageSection =
   | HomepageStoriesSection
   | HomepageHeroSection
+  | HomepageQuickFiltersSection
   | HomepageFeaturedRecipesSection
   | HomepageCategoryBrowseSection
   | HomepageCollectionsSection
+  | HomepageAdminSeasonalSpotlightSection
   | HomepageLatestSection
   | HomepageAboutAuthorSection
   | HomepageNewsletterSection
@@ -36,9 +40,11 @@ export type EditableHomepageSection =
 export type HomepageSectionId =
   | 'stories'
   | 'hero'
+  | 'quick_filters'
   | 'featured'
   | 'categories'
   | 'collections'
+  | 'seasonal_spotlight'
   | 'latest'
   | 'about'
   | 'newsletter'
@@ -46,6 +52,6 @@ export type HomepageSectionId =
 
 export interface HomepageSectionProps {
   formData: HomepageFormData;
-  updateSection: (id: string, updater: (section: HomepageSection) => HomepageSection) => void;
+  updateSection: (id: string, updater: (section: HomepageAdminSection) => HomepageAdminSection) => void;
   updateSeo: (patch: Partial<PageSeoSettings>) => void;
 }
