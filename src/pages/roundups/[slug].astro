@@ -1,10 +1,13 @@
 ---
 import { env } from 'cloudflare:workers';
+import Layout from "@layouts/Layout.astro";
 import RoundupLayout from "@layouts/RoundupLayout.astro";
+import NotFound from "@components/NotFound.astro";
 import SEO from "@components/SEO.astro";
 import { getArticleBySlug, getArticleById } from "@modules/articles";
 import { extractImage } from "@shared/utils";
 import { parseJsonLdArray } from "@modules/articles/utils/cached-fields";
+import type { Category } from "@modules/categories/schema/categories.schema";
 
 export const prerender = false;
 
@@ -14,50 +17,53 @@ if (!slug) {
   return new Response("Slug is missing", { status: 400 });
 }
 
-let roundup: any = null;
+if (!env.DB) {
+  throw new Error("Database not configured");
+}
 
-try {
-  if (env.DB) {
-    // Smart routing: support both numeric ID and slug
-    const isNumeric = /^\d+$/.test(slug);
-    if (isNumeric) {
-      roundup = await getArticleById(env.DB, parseInt(slug), { workflow_status: "published" });
-      // Ensure it's a roundup
-      if (roundup && roundup.type !== 'roundup') {
-        roundup = null;
-      }
-    } else {
-      roundup = await getArticleBySlug(env.DB, slug, "roundup", { workflow_status: "published" });
-    }
-  }
-} catch (error) {
-  console.error(`Error fetching roundup (${slug}):`, error);
+// Smart routing: support both numeric ID and slug.
+// Errors are NOT swallowed: a DB failure must surface as a 500.
+const isNumeric = /^\d+$/.test(slug);
+let roundup = isNumeric
+  ? await getArticleById(env.DB, parseInt(slug), { workflow_status: "published" })
+  : await getArticleBySlug(env.DB, slug, "roundup", { workflow_status: "published" });
+
+if (roundup && isNumeric && roundup.type !== "roundup") {
+  roundup = null;
 }
 
 if (!roundup) {
-  return Astro.redirect("/404");
+  Astro.response.status = 404;
 }
 
 // Author and category are already hydrated via hydrateArticle() from cached JSON columns
-const author = (roundup as any).author || null;
-const category = (roundup as any).category || null;
+const author = (roundup?.author as Record<string, unknown> | null) ?? null;
+const category = (roundup?.category as Category | null) ?? null;
 
-const heroSlot = extractImage(roundup.images_json, "hero", 1200);
-const heroThumb = extractImage(roundup.images_json, "thumbnail", 1200);
+const heroSlot = extractImage(roundup?.images_json, "hero", 1200);
+const heroThumb = extractImage(roundup?.images_json, "thumbnail", 1200);
 const heroImage = heroSlot.image_url ? heroSlot : heroThumb;
 
-const pageTitle = roundup.metaTitle || roundup.headline;
-const pageDescription = roundup.metaDescription || roundup.short_description;
-const jsonldSchemas = parseJsonLdArray(roundup.jsonld_json);
+const pageTitle = roundup?.metaTitle || roundup?.headline || "";
+const pageDescription = roundup?.metaDescription || roundup?.short_description || "";
+const jsonldSchemas = roundup ? parseJsonLdArray(roundup.jsonld_json) : [];
 ---
 
-<RoundupLayout article={roundup} author={author} category={category}>
-  <SEO
-    slot="head"
-    title={pageTitle}
-    description={pageDescription}
-    image={heroImage.image_url || roundup.image_url || ""}
-    imageAlt={heroImage.imageAlt || roundup.imageAlt || undefined}
-    schemas={jsonldSchemas}
-  />
-</RoundupLayout>
+{
+  !roundup ? (
+    <Layout title="Page Not Found" description="The page you're looking for doesn't exist.">
+      <NotFound />
+    </Layout>
+  ) : (
+    <RoundupLayout article={roundup as unknown as Record<string, unknown>} author={author} category={category}>
+      <SEO
+        slot="head"
+        title={pageTitle}
+        description={pageDescription}
+        image={heroImage.image_url || roundup.image_url || ""}
+        imageAlt={heroImage.imageAlt || roundup.imageAlt || undefined}
+        schemas={jsonldSchemas}
+      />
+    </RoundupLayout>
+  )
+}
