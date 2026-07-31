@@ -350,7 +350,8 @@ Shape:
     { "id": "social_proof", "type": "social_proof", "enabled": false, "eyebrow": "", "title": "", "stats": [], "testimonials": [], "logos": [] },
     { "id": "about", "type": "about_author", "enabled": true, "author_id": null },
     { "id": "lead_magnet", "type": "lead_magnet", "enabled": false, "eyebrow": "", "title": "", "body": "", "image": null, "cta": { "label": "", "href": "" } },
-    { "id": "newsletter", "type": "newsletter", "enabled": true, "title": "Get New Recipes Weekly", "subtitle": "Subscribe to receive delicious recipes straight to your inbox.", "button_text": "Subscribe", "placeholder_text": "Your email address" }
+    { "id": "newsletter", "type": "newsletter", "enabled": true, "title": "Get New Recipes Weekly", "subtitle": "Subscribe to receive delicious recipes straight to your inbox.", "button_text": "Subscribe", "placeholder_text": "Your email address" },
+    { "id": "faq", "type": "faq", "enabled": false, "title": "Frequently Asked Questions", "items": [] }
   ]
 }
 ```
@@ -428,7 +429,7 @@ Section rules:
   stored snapshot keys at the server boundary.
 - Media propagation synchronizes matching homepage structural snapshots in
   `seasonal_spotlight.image`, `social_proof.logos[].image`, and `lead_magnet.image`.
-- CTA URLs accept internal paths beginning with `/` except `//`, or absolute `https:` URLs.
+- CTA URLs accept internal paths beginning with `/` except `//` and `/\\`, or absolute `https:` URLs.
 - `featured_recipes.source` is `manual`, `category`, or `latest`. With `manual`, `refs`
   drives the list; with `category`, `category_slug` selects the source; with `latest`,
   the newest published recipes are used.

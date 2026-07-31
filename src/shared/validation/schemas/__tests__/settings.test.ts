@@ -256,6 +256,26 @@ describe('HomepageSettingsSchema', () => {
     expect(unexpectedField.success).toBe(false);
   });
 
+  it('rejects backslash-normalizable CTA paths while accepting internal and HTTPS URLs', () => {
+    const parseLeadMagnetCta = (href: string) => HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'lead-magnet',
+        type: 'lead_magnet',
+        enabled: true,
+        eyebrow: 'Free guide',
+        title: 'Plan dinner faster',
+        body: 'Get practical recipes.',
+        image: resolvedImage,
+        cta: { label: 'Get the guide', href },
+      }],
+    });
+
+    expect(parseLeadMagnetCta('/guides/weeknight-dinners').success).toBe(true);
+    expect(parseLeadMagnetCta('https://example.com/guides/weeknight-dinners').success).toBe(true);
+    expect(parseLeadMagnetCta('/\\evil.example').success).toBe(false);
+    expect(parseLeadMagnetCta('/\\').success).toBe(false);
+  });
+
   it('rejects unknown top-level keys', () => {
     const result = HomepageSettingsSchema.safeParse({ nope: true });
     expect(result.success).toBe(false);
