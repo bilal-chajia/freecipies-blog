@@ -1,4 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { readFile } from 'node:fs/promises';
+
+vi.mock('@modules/media', () => {
+  throw new Error('P3C homepage sections must not depend on the media loader');
+});
 
 const { getArticles, getArticleById, getArticlesByIds, getCategories, getAuthors } = vi.hoisted(() => ({
   getArticles: vi.fn(),
@@ -14,6 +19,7 @@ vi.mock('@modules/authors', () => ({ getAuthors }));
 vi.mock('@shared/utils/hydration', () => ({ hydrateCategory: (c: unknown) => c }));
 
 import { resolveHomeData } from '../home-data';
+import { isExternalHomepageCtaHref } from '../homepage-cta';
 import type { HomepageSection } from '@modules/settings/types/settings.types';
 
 const DB = {} as never;
@@ -354,6 +360,10 @@ it('omits lead magnets with incomplete images or unsafe CTAs', async () => {
       body: 'A practical guide.', image: validImage, cta: { label: 'Read guide', href: 'javascript:alert(1)' },
     },
     {
+      id: 'unsafe-backslash-path', type: 'lead_magnet', enabled: true, eyebrow: 'Guide', title: 'Cook better',
+      body: 'A practical guide.', image: validImage, cta: { label: 'Read guide', href: '/\\evil.example' },
+    },
+    {
       id: 'safe-https', type: 'lead_magnet', enabled: true, eyebrow: 'Guide', title: 'Cook better',
       body: 'A practical guide.', image: validImage, cta: { label: 'Read guide', href: 'https://example.com/guide' },
     },
@@ -365,6 +375,48 @@ it('omits lead magnets with incomplete images or unsafe CTAs', async () => {
     kind: 'lead_magnet',
     section: expect.objectContaining({ cta: { href: 'https://example.com/guide', label: 'Read guide' } }),
   })]);
+});
+
+it('identifies uppercase HTTPS CTAs as external while keeping internal paths local', () => {
+  expect(isExternalHomepageCtaHref('HTTPS://example.com/guide')).toBe(true);
+  expect(isExternalHomepageCtaHref('/guides/weeknight-cooking')).toBe(false);
+});
+
+it('uses URL-based HTTPS classification for LeadMagnet link attributes', async () => {
+  const source = await readFile(new URL('../../components/home/LeadMagnet.astro', import.meta.url), 'utf8');
+
+  expect(source).toContain("import { isExternalHomepageCtaHref } from '@site/utils/homepage-cta';");
+  expect(source).toContain('const isExternalCta = isExternalHomepageCtaHref(section.cta.href);');
+  expect(source).toContain("target={isExternalCta ? '_blank' : undefined}");
+  expect(source).toContain("rel={isExternalCta ? 'noopener noreferrer' : undefined}");
+});
+
+it('resolves P3C sections without a media-loader dependency', async () => {
+  const sections: HomepageSection[] = [
+    {
+      id: 'social-proof', type: 'social_proof', enabled: true, eyebrow: 'Trusted', title: 'Home cooks return',
+      stats: [{ value: '4.9', label: 'Average rating' }], testimonials: [], logos: [],
+    },
+    {
+      id: 'lead-magnet', type: 'lead_magnet', enabled: true, eyebrow: 'Free guide', title: 'Cook better',
+      body: 'A practical guide.', image: {
+        media_id: 61,
+        alt: 'Guide cover',
+        placeholder: 'data:image/jpeg;base64,placeholder',
+        variants: {
+          sm: { r2_key: 'media/guide-sm.webp', width: 720, height: 540 },
+          md: { r2_key: 'media/guide-md.webp', width: 1200, height: 900 },
+          lg: { r2_key: 'media/guide-lg.webp', width: 2048, height: 1536 },
+        },
+      },
+      cta: { label: 'Read guide', href: '/guides/cooking' },
+    },
+  ];
+
+  await expect(resolveHomeData(sections, { db: DB, stories: [] })).resolves.toEqual([
+    expect.objectContaining({ kind: 'social_proof' }),
+    expect.objectContaining({ kind: 'lead_magnet' }),
+  ]);
 });
 
 describe('resolveHomeData — hero fallback', () => {

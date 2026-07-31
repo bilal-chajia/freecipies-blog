@@ -64,7 +64,7 @@ export function getRenderableQuickFilters(
 }
 
 function isSafeHomepageCtaHref(href: string): boolean {
-  if (href.startsWith('/') && !href.startsWith('//')) return true;
+  if (href.startsWith('/') && !href.startsWith('//') && !href.startsWith('/\\')) return true;
 
   try {
     return new URL(href).protocol === 'https:';

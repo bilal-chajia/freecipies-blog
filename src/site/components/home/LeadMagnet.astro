@@ -1,6 +1,7 @@
 ---
 import { resolveVariantUrl } from '@shared/types/images';
 import type { HomepageLeadMagnetSection } from '@modules/settings/types/settings.types';
+import { isExternalHomepageCtaHref } from '@site/utils/homepage-cta';
 
 interface Props {
   section: HomepageLeadMagnetSection;
@@ -20,7 +21,7 @@ const srcSet = [
 const imageStyle = image.focal_point
   ? `object-position: ${image.focal_point.x}% ${image.focal_point.y}%;`
   : undefined;
-const isExternalCta = section.cta.href.startsWith('https://');
+const isExternalCta = isExternalHomepageCtaHref(section.cta.href);
 ---
 
 {src && (
