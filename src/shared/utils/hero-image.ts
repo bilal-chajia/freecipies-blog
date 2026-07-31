@@ -6,37 +6,22 @@
  * thumbnail is available), otherwise fall back to `thumbnail`.
  */
 
-import { extractImage, getImageSrcSet, getImageSlot, type ExtractedImage } from './hydration';
-import { resolveVariantUrl, type ImageSlot } from '@shared/types/images';
+import {
+  extractImage,
+  getImageSrcSet,
+  getImageSlot,
+  toCssAspectRatio,
+  buildImageStyle,
+  type ResolvedImageSlot,
+  type ExtractedImage,
+} from './hydration';
+import { resolveVariantUrl } from '@shared/types/images';
 
 export interface ResolvedHeroImage {
   image: ExtractedImage;
   srcSet: string;
   slot: 'hero' | 'thumbnail';
 }
-
-const toCssAspectRatio = (value?: string): string | undefined => {
-  if (!value) return undefined;
-  if (value.includes('/')) return value;
-  if (value.includes(':')) return value.replace(':', ' / ');
-  return value;
-};
-
-const buildImageStyle = (imageSlot?: ImageSlot): string | undefined => {
-  if (!imageSlot) return undefined;
-  const styles: string[] = [];
-
-  if (imageSlot.focal_point) {
-    styles.push(`object-position: ${imageSlot.focal_point.x}% ${imageSlot.focal_point.y}%`);
-  }
-
-  const aspectRatio = toCssAspectRatio(imageSlot.aspect_ratio);
-  if (aspectRatio) {
-    styles.push(`aspect-ratio: ${aspectRatio}`);
-  }
-
-  return styles.length ? styles.join('; ') : undefined;
-};
 
 /**
  * Extract an image from a slot, falling back to the `original` variant when no

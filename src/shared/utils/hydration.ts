@@ -8,13 +8,13 @@
 import type {
   ImageVariant,
   ImageVariants,
-  ImageSlot,
+  ResolvedImageSlot,
   ImagesJson,
 } from '@shared/types/images';
 import { resolveVariantUrl, getSrcSet, pickVariantByWidth } from '@shared/types/images';
 
-// Re-export for backwards compatibility
-export type { ImageVariant, ImageVariants, ImageSlot };
+// Re-export for backwards compatibility (legacy alias)
+export type { ImageVariant, ImageVariants, ResolvedImageSlot as ImageSlot };
 
 // ============================================================================
 // JSON Parsing Helpers
@@ -48,14 +48,14 @@ export interface ExtractedImage {
 
 type HydratableImageSlot = 'hero' | 'thumbnail' | 'avatar';
 
-function resolveImageSlot(images: ImagesJson, slot: HydratableImageSlot): ImageSlot | null {
-  return (images as Partial<Record<HydratableImageSlot, ImageSlot>>)[slot] ?? null;
+function resolveImageSlot(images: ImagesJson, slot: HydratableImageSlot): ResolvedImageSlot | null {
+  return (images as Partial<Record<HydratableImageSlot, ResolvedImageSlot>>)[slot] ?? null;
 }
 
 export function getImageSlot(
   images_json: string | null | undefined,
   slot: HydratableImageSlot = 'thumbnail'
-): ImageSlot | null {
+): ResolvedImageSlot | null {
   const images = safeParseJson<ImagesJson>(images_json);
   if (!images) return null;
   return resolveImageSlot(images, slot);
@@ -65,14 +65,14 @@ export function getImageSlot(
 
 // buildSrcSet removed — use getSrcSet(slot) from @shared/types/images (C1)
 
-const toCssAspectRatio = (value?: string): string | undefined => {
+export const toCssAspectRatio = (value?: string): string | undefined => {
   if (!value) return undefined;
   if (value.includes('/')) return value;
   if (value.includes(':')) return value.replace(':', ' / ');
   return value;
 };
 
-const buildImageStyle = (imageSlot?: ImageSlot): string | undefined => {
+export const buildImageStyle = (imageSlot?: ResolvedImageSlot): string | undefined => {
   if (!imageSlot) return undefined;
   const styles: string[] = [];
 
