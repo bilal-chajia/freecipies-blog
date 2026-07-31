@@ -390,12 +390,36 @@ export function normalizeHomepageSections(
     (section.type === 'quick_filters' || section.type === 'seasonal_spotlight')
     && !nonFaqSections.some((stored) => stored.type === section.type)
   ));
+  const sectionsWithP3bDefaults = [...nonFaqSections, ...missingP3bSections];
+  const insertMissingP3cSection = (
+    current: HomepageSection[],
+    type: 'social_proof' | 'lead_magnet',
+    anchorType: 'latest' | 'about_author',
+  ): HomepageSection[] => {
+    if (current.some((section) => section.type === type)) return current;
+
+    const defaultSection = DEFAULT_HOME_SECTIONS.find((section) => section.type === type);
+    if (!defaultSection) return current;
+
+    const anchorIndex = current.findIndex((section) => section.type === anchorType);
+    if (anchorIndex < 0) return [...current, defaultSection];
+
+    return [
+      ...current.slice(0, anchorIndex + 1),
+      defaultSection,
+      ...current.slice(anchorIndex + 1),
+    ];
+  };
+  const sectionsWithP3cDefaults = insertMissingP3cSection(
+    insertMissingP3cSection(sectionsWithP3bDefaults, 'social_proof', 'latest'),
+    'lead_magnet',
+    'about_author',
+  );
   const defaultFaq = DEFAULT_HOME_SECTIONS.find((section) => section.type === 'faq');
   const faq = existingFaq ?? defaultFaq;
 
   return [
-    ...nonFaqSections,
-    ...missingP3bSections,
+    ...sectionsWithP3cDefaults,
     ...(faq ? [faq] : []),
   ];
 }
@@ -422,7 +446,9 @@ export async function updateHomepageSettings(
   const current = await getHomepageSettings(db);
   const merged: HomepageSettings = {
     seo: { ...current.seo, ...(updates.seo ?? {}) },
-    sections: Array.isArray(updates.sections) ? updates.sections : current.sections,
+    sections: normalizeHomepageSections(
+      Array.isArray(updates.sections) ? updates.sections : current.sections,
+    ),
   };
 
   await upsertSetting(db, 'homepage_settings', merged, {

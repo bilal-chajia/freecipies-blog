@@ -12,7 +12,7 @@ import type {
 import type {
   HomepageAdminSeasonalSpotlightSection,
 } from '@modules/settings/types/settings.types';
-import { buildHomepageSpotlightImageFromAdminMedia } from '@modules/settings/services/homepage-settings-images';
+import { buildHomepageImageFromAdminMedia } from '@modules/settings/services/homepage-settings-images';
 import type { HomepageSectionProps } from '../../types';
 
 function isAdminMediaPayload(value: unknown): value is AdminMediaPayload {
@@ -50,7 +50,7 @@ const SeasonalSpotlightSection = ({ formData, updateSection }: HomepageSectionPr
     }
 
     try {
-      patchSpotlight({ image: buildHomepageSpotlightImageFromAdminMedia(media) });
+      patchSpotlight({ image: buildHomepageImageFromAdminMedia(media) });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to select media';
       toast.error(message);

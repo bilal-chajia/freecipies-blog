@@ -121,7 +121,9 @@ export type HomepageSectionType =
   | 'collections'
   | 'seasonal_spotlight'
   | 'latest'
+  | 'social_proof'
   | 'about_author'
+  | 'lead_magnet'
   | 'newsletter'
   | 'faq';
 
@@ -233,6 +235,36 @@ export interface HomepageSeasonalSpotlightSection extends HomepageSectionBase {
   cta: HomepageCta;
 }
 
+export interface HomepageSocialProofStat {
+  value: string;
+  label: string;
+}
+
+export interface HomepageSocialProofTestimonial {
+  quote: string;
+  name: string;
+  role?: string;
+}
+
+export interface HomepageSocialProofLogo {
+  name: string;
+  image: HomepageStoredImageSnapshot | null;
+}
+
+export interface HomepageResolvedSocialProofLogo {
+  name: string;
+  image: HomepageResolvedImageSnapshot | null;
+}
+
+export interface HomepageSocialProofSection extends HomepageSectionBase {
+  type: 'social_proof';
+  eyebrow: string;
+  title: string;
+  stats: HomepageSocialProofStat[];
+  testimonials: HomepageSocialProofTestimonial[];
+  logos: HomepageSocialProofLogo[];
+}
+
 export interface HomepageLatestSection extends HomepageSectionBase {
   type: 'latest';
   title: string;
@@ -242,6 +274,15 @@ export interface HomepageLatestSection extends HomepageSectionBase {
 export interface HomepageAboutAuthorSection extends HomepageSectionBase {
   type: 'about_author';
   author_id: number | null;
+}
+
+export interface HomepageLeadMagnetSection extends HomepageSectionBase {
+  type: 'lead_magnet';
+  eyebrow: string;
+  title: string;
+  body: string;
+  image: HomepageStoredImageSnapshot | null;
+  cta: HomepageCta;
 }
 
 export interface HomepageNewsletterSection extends HomepageSectionBase {
@@ -267,7 +308,9 @@ export type HomepageSection =
   | HomepageCollectionsSection
   | HomepageSeasonalSpotlightSection
   | HomepageLatestSection
+  | HomepageSocialProofSection
   | HomepageAboutAuthorSection
+  | HomepageLeadMagnetSection
   | HomepageNewsletterSection
   | HomepageFaqSection;
 
@@ -280,8 +323,20 @@ export type HomepageAdminSeasonalSpotlightSection = Omit<HomepageSeasonalSpotlig
   image: HomepageResolvedImageSnapshot | null;
 };
 
-export type HomepageAdminSection = Exclude<HomepageSection, HomepageSeasonalSpotlightSection>
-  | HomepageAdminSeasonalSpotlightSection;
+export type HomepageAdminSocialProofSection = Omit<HomepageSocialProofSection, 'logos'> & {
+  logos: HomepageResolvedSocialProofLogo[];
+};
+
+export type HomepageAdminLeadMagnetSection = Omit<HomepageLeadMagnetSection, 'image'> & {
+  image: HomepageResolvedImageSnapshot | null;
+};
+
+export type HomepageAdminSection = Exclude<
+  HomepageSection,
+  HomepageSeasonalSpotlightSection | HomepageSocialProofSection | HomepageLeadMagnetSection
+> | HomepageAdminSeasonalSpotlightSection
+  | HomepageAdminSocialProofSection
+  | HomepageAdminLeadMagnetSection;
 
 export interface HomepageAdminSettings {
   seo: PageSeoSettings;
@@ -321,7 +376,27 @@ export const DEFAULT_HOME_SECTIONS: HomepageSection[] = [
     cta: { label: '', href: '' },
   },
   { id: 'latest', type: 'latest', enabled: true, title: 'Latest Recipes', count: 8 },
+  {
+    id: 'social_proof',
+    type: 'social_proof',
+    enabled: false,
+    eyebrow: '',
+    title: '',
+    stats: [],
+    testimonials: [],
+    logos: [],
+  },
   { id: 'about', type: 'about_author', enabled: true, author_id: null },
+  {
+    id: 'lead_magnet',
+    type: 'lead_magnet',
+    enabled: false,
+    eyebrow: '',
+    title: '',
+    body: '',
+    image: null,
+    cta: { label: '', href: '' },
+  },
   {
     id: 'newsletter',
     type: 'newsletter',
@@ -387,9 +462,11 @@ export const HOMEPAGE_SETTINGS_DEFAULTS: HomepageSettings = {
 export const HOMEPAGE_ADMIN_SETTINGS_DEFAULTS: HomepageAdminSettings = {
   seo: { ...HOMEPAGE_SETTINGS_DEFAULTS.seo },
   sections: DEFAULT_HOME_SECTIONS.map((section): HomepageAdminSection => (
-    section.type === 'seasonal_spotlight'
+    section.type === 'seasonal_spotlight' || section.type === 'lead_magnet'
       ? { ...section, image: null }
-      : section
+      : section.type === 'social_proof'
+        ? { ...section, logos: [] }
+        : section
   )),
 };
 

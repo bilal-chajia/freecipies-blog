@@ -17,6 +17,37 @@ function cacheReturning(value: string | null) {
 
 const NO_DB = {} as never;
 
+function legacySections() {
+  return [
+    { id: 'stories', type: 'stories', enabled: true },
+    { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
+    { id: 'quick_filters', type: 'quick_filters', enabled: false, title: 'Explore recipes', filters: [] },
+    { id: 'featured', type: 'featured_recipes', enabled: true, title: 'Featured Recipes', subtitle: 'Handpicked for you', source: 'latest', category_slug: null, count: 4, refs: [] },
+    { id: 'categories', type: 'category_browse', enabled: true, title: 'Browse by Category', subtitle: '', max: 8 },
+    { id: 'collections', type: 'collections', enabled: true, title: 'Recipe Collections', subtitle: '', refs: [] },
+    { id: 'seasonal_spotlight', type: 'seasonal_spotlight', enabled: false, title: 'Seasonal spotlight', body: '', image: null, cta: { label: '', href: '' } },
+    { id: 'latest', type: 'latest', enabled: true, title: 'Latest Recipes', count: 8 },
+    { id: 'about', type: 'about_author', enabled: true, author_id: null },
+    { id: 'newsletter', type: 'newsletter', enabled: true, title: 'Get New Recipes Weekly', subtitle: 'Subscribe to receive delicious recipes straight to your inbox.', button_text: 'Subscribe', placeholder_text: 'Your email address' },
+    { id: 'faq', type: 'faq', enabled: false, title: 'Frequently Asked Questions', items: [] },
+  ];
+}
+
+function createHomepageSettingsDb(persisted: { value?: string }) {
+  return {
+    query: {
+      siteSettings: {
+        findFirst: async () => null,
+      },
+    },
+    insert: () => ({
+      values: async (value: { value: string }) => {
+        persisted.value = value.value;
+      },
+    }),
+  } as never;
+}
+
 describe('getHomepageSettings', () => {
   it('defaults sections when the stored value is seo-only (back-compat)', async () => {
     const cache = cacheReturning(
@@ -37,10 +68,12 @@ describe('getHomepageSettings', () => {
       'hero',
       'quick_filters',
       'seasonal_spotlight',
+      'social_proof',
+      'lead_magnet',
       'faq',
     ]);
     expect(result.sections[0].enabled).toBe(false);
-    expect(result.sections[3]).toMatchObject({ type: 'faq', enabled: false, items: [] });
+    expect(result.sections[5]).toMatchObject({ type: 'faq', enabled: false, items: [] });
     expect(result.seo.meta_title).toBe(HOMEPAGE_SETTINGS_DEFAULTS.seo.meta_title);
   });
 
@@ -56,6 +89,8 @@ describe('getHomepageSettings', () => {
       'hero',
       'quick_filters',
       'seasonal_spotlight',
+      'social_proof',
+      'lead_magnet',
       'faq',
     ]);
     expect(result.sections.find((section) => section.type === 'quick_filters')).toMatchObject({
@@ -101,7 +136,71 @@ describe('getHomepageSettings', () => {
     expect(result.sections.at(-1)?.type).toBe('faq');
   });
 
-  it('exports updateHomepageSettings as a function', () => {
-    expect(typeof updateHomepageSettings).toBe('function');
+  it('inserts disabled P3C defaults at their catalog anchors without changing legacy order', async () => {
+    const cache = cacheReturning(JSON.stringify({ sections: legacySections() })) as unknown as SettingsCacheStore;
+
+    const result = await getHomepageSettings(NO_DB, { cache });
+
+    expect(result.sections.map((section) => section.id)).toEqual([
+      'stories', 'hero', 'quick_filters', 'featured', 'categories', 'collections',
+      'seasonal_spotlight', 'latest', 'social_proof', 'about', 'lead_magnet',
+      'newsletter', 'faq',
+    ]);
+    expect(result.sections.find((section) => section.type === 'social_proof')).toMatchObject({
+      enabled: false,
+      eyebrow: '',
+      title: '',
+      stats: [],
+      testimonials: [],
+      logos: [],
+    });
+    expect(result.sections.find((section) => section.type === 'lead_magnet')).toMatchObject({
+      enabled: false,
+      eyebrow: '',
+      title: '',
+      body: '',
+      image: null,
+      cta: { label: '', href: '' },
+    });
+    expect(result.sections.at(-1)?.type).toBe('faq');
+  });
+
+  it('preserves an existing P3C section once while inserting the missing catalog peer at its anchor', async () => {
+    const sections = [
+      { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
+      { id: 'latest', type: 'latest', enabled: true, title: 'Latest Recipes', count: 8 },
+      { id: 'social_proof', type: 'social_proof', enabled: true, eyebrow: 'Trusted', title: 'Home cooks return', stats: [{ value: '4.9', label: 'Average rating' }], testimonials: [], logos: [] },
+      { id: 'about', type: 'about_author', enabled: true, author_id: null },
+      { id: 'newsletter', type: 'newsletter', enabled: true, title: 'Get New Recipes Weekly', subtitle: 'Subscribe to receive delicious recipes straight to your inbox.', button_text: 'Subscribe', placeholder_text: 'Your email address' },
+      { id: 'faq', type: 'faq', enabled: false, title: 'Frequently Asked Questions', items: [] },
+    ];
+    const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
+
+    const result = await getHomepageSettings(NO_DB, { cache });
+
+    expect(result.sections.map((section) => section.id)).toEqual([
+      'hero', 'latest', 'social_proof', 'about', 'lead_magnet', 'newsletter',
+      'quick_filters', 'seasonal_spotlight', 'faq',
+    ]);
+    expect(result.sections.filter((section) => section.type === 'social_proof')).toHaveLength(1);
+    expect(result.sections.filter((section) => section.type === 'lead_magnet')).toHaveLength(1);
+    expect(result.sections.at(-1)?.type).toBe('faq');
+  });
+
+  it('normalizes direct saves before returning and persisting them', async () => {
+    const persisted: { value?: string } = {};
+    const result = await updateHomepageSettings(
+      createHomepageSettingsDb(persisted),
+      { sections: legacySections() as never },
+    );
+    const stored = JSON.parse(persisted.value ?? '{}') as { sections: Array<{ id: string }> };
+    const expected = [
+      'stories', 'hero', 'quick_filters', 'featured', 'categories', 'collections',
+      'seasonal_spotlight', 'latest', 'social_proof', 'about', 'lead_magnet',
+      'newsletter', 'faq',
+    ];
+
+    expect(result.sections.map((section) => section.id)).toEqual(expected);
+    expect(stored.sections.map((section) => section.id)).toEqual(expected);
   });
 });

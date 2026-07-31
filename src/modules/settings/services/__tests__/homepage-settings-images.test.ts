@@ -5,11 +5,25 @@ import {
   HOMEPAGE_SETTINGS_DEFAULTS,
   type HomepageAdminSettings,
 } from '../../types/settings.types';
-import {
-  buildHomepageSpotlightImageFromAdminMedia,
+import * as homepageSettingsImages from '../homepage-settings-images';
+
+const {
   normalizeHomepageSettingsFromAdmin,
   presentHomepageSettingsForAdmin,
-} from '../homepage-settings-images';
+} = homepageSettingsImages;
+
+const storedSpotlightImage = {
+  media_id: 55,
+  alt: 'Seasonal salad',
+  placeholder: 'data:image/jpeg;base64,placeholder',
+  focal_point: { x: 50, y: 50 },
+  aspect_ratio: '4:3',
+  variants: {
+    sm: { r2_key: 'media/salad-sm.webp', width: 720, height: 540 },
+    md: { r2_key: 'media/salad-md.webp', width: 1200, height: 900 },
+    lg: { r2_key: 'media/salad-lg.webp', width: 2048, height: 1536 },
+  },
+};
 
 const stored: HomepageSettings = {
   seo: { ...HOMEPAGE_SETTINGS_DEFAULTS.seo },
@@ -19,23 +33,73 @@ const stored: HomepageSettings = {
     enabled: true,
     title: 'Summer cooking',
     body: 'Fresh recipes for warm days.',
-    image: {
-      media_id: 55,
-      alt: 'Seasonal salad',
-      placeholder: 'data:image/jpeg;base64,placeholder',
-      focal_point: { x: 50, y: 50 },
-      aspect_ratio: '4:3',
-      variants: {
-        sm: { r2_key: 'media/salad-sm.webp', width: 720, height: 540 },
-        md: { r2_key: 'media/salad-md.webp', width: 1200, height: 900 },
-        lg: { r2_key: 'media/salad-lg.webp', width: 2048, height: 1536 },
-      },
-    },
+    image: storedSpotlightImage,
     cta: { label: 'Browse recipes', href: '/recipes?tag=summer' },
   }],
 };
 
+const storedWithP3cImages = {
+  seo: { ...HOMEPAGE_SETTINGS_DEFAULTS.seo },
+  sections: [
+    ...stored.sections,
+    {
+      id: 'social_proof',
+      type: 'social_proof',
+      enabled: true,
+      eyebrow: 'Trusted',
+      title: 'Home cooks return',
+      stats: [],
+      testimonials: [],
+      logos: [
+        { name: 'Recipe Weekly', image: storedSpotlightImage },
+        { name: 'Dinner Club', image: storedSpotlightImage },
+      ],
+    },
+    {
+      id: 'lead_magnet',
+      type: 'lead_magnet',
+      enabled: true,
+      eyebrow: 'Free guide',
+      title: 'Plan dinner faster',
+      body: 'Get practical recipes.',
+      image: storedSpotlightImage,
+      cta: { label: 'Get the guide', href: '/guides/weeknight-dinners' },
+    },
+  ],
+} as unknown as HomepageSettings;
+
 describe('homepage spotlight image API boundary', () => {
+  it('round trips every known homepage image location without exposing storage keys', () => {
+    const presented = presentHomepageSettingsForAdmin(storedWithP3cImages);
+
+    expect(JSON.stringify(presented)).not.toContain('r2_key');
+    expect(JSON.stringify(presented).match(/\/api\/images\//g)).toHaveLength(12);
+    expect(normalizeHomepageSettingsFromAdmin(presented)).toEqual(storedWithP3cImages);
+  });
+
+  it('rejects foreign and incomplete P3C image URLs during normalization', () => {
+    const presented = presentHomepageSettingsForAdmin(storedWithP3cImages) as unknown as {
+      seo: HomepageSettings['seo'];
+      sections: Array<{
+        type: string;
+        logos?: Array<{ image: { variants: { sm: { url: string }; md: { url: string }; lg: { url: string } } } | null }>;
+        image?: { variants: { sm: { url: string }; md: { url: string }; lg: { url: string } } } | null;
+      }>;
+    };
+    const socialProof = presented.sections.find((section) => section.type === 'social_proof');
+    const leadMagnet = presented.sections.find((section) => section.type === 'lead_magnet');
+    if (!socialProof?.logos?.[0]?.image || !leadMagnet?.image) {
+      throw new Error('Expected P3C images');
+    }
+    socialProof.logos[0].image.variants.md.url = 'https://cdn.example.test/logo.webp';
+    const { lg: _lg, ...incompleteVariants } = leadMagnet.image.variants;
+    leadMagnet.image = { variants: incompleteVariants } as never;
+
+    expect(() => normalizeHomepageSettingsFromAdmin(presented as never)).toThrow('local image route');
+    socialProof.logos[0].image.variants.md.url = '/api/images/media/salad-md.webp';
+    expect(() => normalizeHomepageSettingsFromAdmin(presented as never)).toThrow();
+  });
+
   it('presents public URLs and restores the storage snapshot on save', () => {
     const presented = presentHomepageSettingsForAdmin(stored);
 
@@ -76,7 +140,7 @@ describe('homepage spotlight image API boundary', () => {
     expect(() => normalizeHomepageSettingsFromAdmin(malformed)).toThrow();
   });
 
-  it('builds an admin-safe spotlight snapshot from a Media Library payload', () => {
+  it('builds an admin-safe homepage snapshot from a Media Library payload', () => {
     const media: AdminMediaPayload = {
       id: 55,
       name: 'seasonal-salad.webp',
@@ -99,7 +163,12 @@ describe('homepage spotlight image API boundary', () => {
       deleted_at: null,
     };
 
-    const image = buildHomepageSpotlightImageFromAdminMedia(media);
+    const buildHomepageImageFromAdminMedia = (homepageSettingsImages as unknown as {
+      buildHomepageImageFromAdminMedia: (payload: AdminMediaPayload) => unknown;
+    }).buildHomepageImageFromAdminMedia;
+
+    expect(typeof buildHomepageImageFromAdminMedia).toBe('function');
+    const image = buildHomepageImageFromAdminMedia(media);
 
     expect(image).toEqual({
       media_id: 55,

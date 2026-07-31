@@ -341,11 +341,15 @@ Shape:
   "sections": [
     { "id": "stories", "type": "stories", "enabled": true },
     { "id": "hero", "type": "hero", "enabled": true, "mode": "slider", "show_search": true, "refs": [] },
+    { "id": "quick_filters", "type": "quick_filters", "enabled": false, "title": "Explore recipes", "filters": [] },
     { "id": "featured", "type": "featured_recipes", "enabled": true, "title": "Featured Recipes", "subtitle": "Handpicked for you", "source": "latest", "category_slug": null, "count": 4, "refs": [] },
     { "id": "categories", "type": "category_browse", "enabled": true, "title": "Browse by Category", "subtitle": "", "max": 8 },
     { "id": "collections", "type": "collections", "enabled": true, "title": "Recipe Collections", "subtitle": "", "refs": [] },
+    { "id": "seasonal_spotlight", "type": "seasonal_spotlight", "enabled": false, "title": "Seasonal spotlight", "body": "", "image": null, "cta": { "label": "", "href": "" } },
     { "id": "latest", "type": "latest", "enabled": true, "title": "Latest Recipes", "count": 8 },
+    { "id": "social_proof", "type": "social_proof", "enabled": false, "eyebrow": "", "title": "", "stats": [], "testimonials": [], "logos": [] },
     { "id": "about", "type": "about_author", "enabled": true, "author_id": null },
+    { "id": "lead_magnet", "type": "lead_magnet", "enabled": false, "eyebrow": "", "title": "", "body": "", "image": null, "cta": { "label": "", "href": "" } },
     { "id": "newsletter", "type": "newsletter", "enabled": true, "title": "Get New Recipes Weekly", "subtitle": "Subscribe to receive delicious recipes straight to your inbox.", "button_text": "Subscribe", "placeholder_text": "Your email address" }
   ]
 }
@@ -392,11 +396,10 @@ Section rules:
   order. Reordering is expressed by reordering the array.
 - Each section has `id` (stable string), `type` (from the catalog below), and `enabled`.
 - Disabled sections (`enabled = false`) are persisted but not rendered.
-- v1 section `type` values: `stories`, `hero`, `featured_recipes`, `category_browse`,
-  `collections`, `latest`, `about_author`, `newsletter`, `faq`. Additional catalog types
-  (`quick_filters`, `seasonal_spotlight`, `popular`, `social_proof`, `lead_magnet`,
-  `social_feed`, `banner`) are reserved and added in later phases; unknown types are
-  rejected by validation.
+- Active section `type` values: `stories`, `hero`, `quick_filters`, `featured_recipes`,
+  `category_browse`, `collections`, `seasonal_spotlight`, `latest`, `social_proof`,
+  `about_author`, `lead_magnet`, `newsletter`, and `faq`. `popular`, `social_feed`, and
+  `banner` remain reserved; unknown types are rejected by validation.
 - Manually-curated sections store light references, not image snapshots:
   - recipe ref: `{ article_id, headline, route, category? { label, slug, color? } }`
   - roundup ref: `{ roundup_id, title, route }`
@@ -404,6 +407,28 @@ Section rules:
 - Images and heavy fields are resolved at render time from the live rows; settings must
   not store recipe/roundup image snapshots or `r2_key` for these refs.
 - `hero.mode` is `slider` or `grid`; `hero.show_search` toggles the hero search box.
+- `quick_filters` is disabled by default after `hero`; `seasonal_spotlight` is disabled by
+  default after `collections`.
+- `social_proof` is disabled by default immediately after `latest` and stores:
+  `{ eyebrow, title, stats[], testimonials[], logos[] }`, where `stats[]` items are
+  `{ value, label }`, `testimonials[]` items are `{ quote, name, role? }`, and `logos[]`
+  items are `{ name, image }`. Enabled social proof requires non-empty eyebrow/title and
+  at least one stat, testimonial, or logo. It permits at most four stats, six testimonials,
+  and six logos.
+- `lead_magnet` is disabled by default immediately after `about_author` and stores:
+  `{ eyebrow, title, body, image, cta: { label, href } }`. Enabled lead magnets require
+  every copy field, a structural image snapshot, and a CTA label plus a safe CTA URL.
+- Homepage structural image snapshots for `seasonal_spotlight.image`,
+  `social_proof.logos[].image`, and `lead_magnet.image` store `media_id`, `alt`,
+  `placeholder`, optional `focal_point` and `aspect_ratio`, and exactly `sm`, `md`, and
+  `lg` variants with storage `r2_key`, width, height, and optional `size_bytes`. They omit
+  `caption`, `credit`, and `original`.
+- Admin/API payloads resolve those same structural snapshots to local `/api/images/` URLs
+  and never expose `r2_key`. Admin saves accept only local image routes and reconstruct the
+  stored snapshot keys at the server boundary.
+- Media propagation synchronizes matching homepage structural snapshots in
+  `seasonal_spotlight.image`, `social_proof.logos[].image`, and `lead_magnet.image`.
+- CTA URLs accept internal paths beginning with `/` except `//`, or absolute `https:` URLs.
 - `featured_recipes.source` is `manual`, `category`, or `latest`. With `manual`, `refs`
   drives the list; with `category`, `category_slug` selects the source; with `latest`,
   the newest published recipes are used.

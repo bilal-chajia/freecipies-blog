@@ -91,7 +91,7 @@ function normalizeImage(
   };
 }
 
-export function buildHomepageSpotlightImageFromAdminMedia(
+export function buildHomepageImageFromAdminMedia(
   media: AdminMediaPayload,
 ): HomepageResolvedImageSnapshot {
   const { sm, md, lg } = media.variants;
@@ -127,9 +127,17 @@ export function presentHomepageSettingsForAdmin(
   return {
     seo: { ...settings.seo },
     sections: settings.sections.map((section): HomepageAdminSection => (
-      section.type === 'seasonal_spotlight'
+      section.type === 'seasonal_spotlight' || section.type === 'lead_magnet'
         ? { ...section, image: presentImage(section.image) }
-        : { ...section }
+        : section.type === 'social_proof'
+          ? {
+            ...section,
+            logos: section.logos.map((logo) => ({
+              ...logo,
+              image: presentImage(logo.image),
+            })),
+          }
+          : { ...section }
     )),
   };
 }
@@ -141,10 +149,18 @@ export function normalizeHomepageSettingsFromAdmin(
     ...(settings.seo ? { seo: { ...settings.seo } } : {}),
     ...(settings.sections
       ? {
-        sections: settings.sections.map((section) => (
-          section.type === 'seasonal_spotlight'
+        sections: settings.sections.map((section): HomepageSettings['sections'][number] => (
+          section.type === 'seasonal_spotlight' || section.type === 'lead_magnet'
             ? { ...section, image: normalizeImage(section.image) }
-            : { ...section }
+            : section.type === 'social_proof'
+              ? {
+                ...section,
+                logos: section.logos.map((logo) => ({
+                  ...logo,
+                  image: normalizeImage(logo.image),
+                })),
+              }
+              : { ...section }
         )),
       }
       : {}),

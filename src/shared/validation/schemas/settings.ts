@@ -300,6 +300,105 @@ const HomepageSeasonalSpotlightSchema = z.object({
   }
 });
 
+const HomepageSocialProofStatSchema = z.object({
+  value: z.string().trim(),
+  label: z.string().trim(),
+}).strict();
+
+const HomepageSocialProofTestimonialSchema = z.object({
+  quote: z.string().trim(),
+  name: z.string().trim(),
+  role: z.string().trim().optional(),
+}).strict();
+
+const HomepageSocialProofLogoSchema = z.object({
+  name: z.string().trim(),
+  image: HomepageResolvedImageSnapshotSchema.nullable(),
+}).strict();
+
+const HomepageSocialProofSchema = z.object({
+  ...homepageSectionBase,
+  type: z.literal('social_proof'),
+  eyebrow: z.string().trim(),
+  title: z.string().trim(),
+  stats: z.array(HomepageSocialProofStatSchema).max(4),
+  testimonials: z.array(HomepageSocialProofTestimonialSchema).max(6),
+  logos: z.array(HomepageSocialProofLogoSchema).max(6),
+}).strict().superRefine((section, context) => {
+  if (!section.enabled) return;
+
+  if (!section.eyebrow) {
+    context.addIssue({ code: 'custom', path: ['eyebrow'], message: 'Social proof eyebrow is required' });
+  }
+  if (!section.title) {
+    context.addIssue({ code: 'custom', path: ['title'], message: 'Social proof title is required' });
+  }
+  if (section.stats.length + section.testimonials.length + section.logos.length === 0) {
+    context.addIssue({ code: 'custom', path: ['stats'], message: 'Social proof requires a stat, testimonial, or logo' });
+  }
+  section.stats.forEach((stat, index) => {
+    if (!stat.value) {
+      context.addIssue({ code: 'custom', path: ['stats', index, 'value'], message: 'Social proof stat value is required' });
+    }
+    if (!stat.label) {
+      context.addIssue({ code: 'custom', path: ['stats', index, 'label'], message: 'Social proof stat label is required' });
+    }
+  });
+  section.testimonials.forEach((testimonial, index) => {
+    if (!testimonial.quote) {
+      context.addIssue({ code: 'custom', path: ['testimonials', index, 'quote'], message: 'Social proof testimonial quote is required' });
+    }
+    if (!testimonial.name) {
+      context.addIssue({ code: 'custom', path: ['testimonials', index, 'name'], message: 'Social proof testimonial name is required' });
+    }
+  });
+  section.logos.forEach((logo, index) => {
+    if (!logo.name) {
+      context.addIssue({ code: 'custom', path: ['logos', index, 'name'], message: 'Social proof logo name is required' });
+    }
+    if (!logo.image) {
+      context.addIssue({ code: 'custom', path: ['logos', index, 'image'], message: 'Social proof logo image is required' });
+    }
+  });
+});
+
+const HomepageLeadMagnetSchema = z.object({
+  ...homepageSectionBase,
+  type: z.literal('lead_magnet'),
+  eyebrow: z.string().trim(),
+  title: z.string().trim(),
+  body: z.string().trim(),
+  image: HomepageResolvedImageSnapshotSchema.nullable(),
+  cta: z.object({
+    label: z.string().trim(),
+    href: z.string().trim(),
+  }).strict(),
+}).strict().superRefine((section, context) => {
+  if (section.cta.href && !isSafeCtaHref(section.cta.href)) {
+    context.addIssue({ code: 'custom', path: ['cta', 'href'], message: 'Lead magnet CTA URL must be an internal path or HTTPS URL' });
+  }
+  if (!section.enabled) return;
+
+  if (!section.eyebrow) {
+    context.addIssue({ code: 'custom', path: ['eyebrow'], message: 'Lead magnet eyebrow is required' });
+  }
+  if (!section.title) {
+    context.addIssue({ code: 'custom', path: ['title'], message: 'Lead magnet title is required' });
+  }
+  if (!section.body) {
+    context.addIssue({ code: 'custom', path: ['body'], message: 'Lead magnet body is required' });
+  }
+  if (!section.image) {
+    context.addIssue({ code: 'custom', path: ['image'], message: 'Lead magnet image is required' });
+  }
+  if (!section.cta.label) {
+    context.addIssue({ code: 'custom', path: ['cta', 'label'], message: 'Lead magnet CTA label is required' });
+  }
+  if (!section.cta.href) {
+    context.addIssue({ code: 'custom', path: ['cta', 'href'], message: 'Lead magnet CTA URL must be an internal path or HTTPS URL' });
+  }
+});
+
 const HomepageSectionSchema = z.discriminatedUnion('type', [
   z.object({ ...homepageSectionBase, type: z.literal('stories') }).strict(),
   z
@@ -332,6 +431,7 @@ const HomepageSectionSchema = z.discriminatedUnion('type', [
     })
     .strict(),
   HomepageSeasonalSpotlightSchema,
+  HomepageSocialProofSchema,
   z
     .object({
       ...homepageSectionBase,
@@ -365,6 +465,7 @@ const HomepageSectionSchema = z.discriminatedUnion('type', [
       author_id: z.number().int().positive().nullable(),
     })
     .strict(),
+  HomepageLeadMagnetSchema,
   z
     .object({
       ...homepageSectionBase,
