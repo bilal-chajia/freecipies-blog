@@ -55,6 +55,8 @@ All stored keys are `snake_case`.
 
 The image follows the shared structural image snapshot contract: `caption` and `credit` are omitted; `original` is never copied. Snapshot variants retain internal `r2_key` values only in stored settings. Server rendering turns them into public URLs and emits width, height, `srcset`, `sizes`, and `loading="lazy"`.
 
+The admin Homepage API has a separate resolved representation of this snapshot: each stored `r2_key` is returned as a public `url`. On save, the server validates the resolved image payload and converts each allowed public image URL back into its storage key before calling the settings service. The browser never receives or submits an `r2_key`.
+
 ## Admin Behavior
 
 Quick filters have immutable add, edit, delete, and drag-reorder operations. Each saved filter must have a nonblank label and a valid internal recipe URL beginning with `/recipes`.
