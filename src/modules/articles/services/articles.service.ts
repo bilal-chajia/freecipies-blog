@@ -19,7 +19,6 @@ import { hydrateArticle, hydrateArticles, hydrateTag, safeParseJson, type Hydrat
 import { generateJsonLd, type ArticleRow } from '../utils/jsonld';
 import type { HydratedArticle, ArticleContent, RecipeContent, RoundupContent } from '../types/articles.types';
 import { extractTocFromContentDocument } from '../../content-blocks';
-import { buildCachedRatingJson, buildCachedRecipeJson, normalizeRecipeJson } from '../utils/article-json-contract';
 import {
   buildAuthorCache,
   buildCategoryCache,
@@ -812,7 +811,13 @@ export async function getPopularArticles(
 }
 
 /**
- * Add a vote to a recipe (Express Method: updates JSON directly)
+ * Add a vote to a recipe — atomic single-statement version.
+ *
+ * All SET expressions are evaluated against the OLD row values by SQLite,
+ * so the running average is computed atomically in one UPDATE. Concurrent
+ * votes serialize at the D1 write layer instead of racing in JS.
+ * cached_recipe_json intentionally keeps its previous rating-free content
+ * (see buildCachedRecipeJson — it does not embed aggregate_rating).
  */
 export async function addRecipeVote(
   db: D1Database | DrizzleDb,
@@ -821,44 +826,39 @@ export async function addRecipeVote(
 ): Promise<{ ratingValue: number; ratingCount: number } | null> {
   const drizzle = getDb(db);
 
-  // 1. Get current article
-  const article = await drizzle.query.articles.findFirst({
-    where: and(eq(articles.id, article_id), isNull(articles.deleted_at)),
-    columns: { recipe_json: true, cached_rating_json: true }
-  });
+  const oldValue = sql`COALESCE(json_extract(${articles.recipe_json}, '$.aggregate_rating.rating_value'), 0)`;
+  const oldCount = sql`COALESCE(json_extract(${articles.recipe_json}, '$.aggregate_rating.rating_count'), 0)`;
+  const newCount = sql`(${oldCount} + 1)`;
+  const newValue = sql`ROUND(((${oldValue} * ${oldCount}) + ${rating}) / (${oldCount} + 1), 1)`;
 
-  if (!article) return null;
-
-  // 2. Parse current rating
-  const recipe = safeParseJson<any>(article.recipe_json);
-  if (!recipe) return null;
-
-  const normalizedRecipe = normalizeRecipeJson(recipe);
-  const currentValue = normalizedRecipe.aggregate_rating?.rating_value || 0;
-  const currentCount = normalizedRecipe.aggregate_rating?.rating_count || 0;
-
-  // 3. Calculate exact average
-  const newCount = currentCount + 1;
-  const newValue = Number(((currentValue * currentCount + rating) / newCount).toFixed(1));
-
-  const newRating = {
-    rating_value: newValue,
-    rating_count: newCount
-  };
-
-  // 4. Update recipe_json
-  normalizedRecipe.aggregate_rating = newRating;
-  const recipe_json = JSON.stringify(normalizedRecipe);
-
-  // 5. Update database (and cache)
-  await drizzle.update(articles)
+  const rows = await drizzle
+    .update(articles)
     .set({
-      recipe_json,
-      cached_rating_json: JSON.stringify(newRating),
-      cached_recipe_json: JSON.stringify(buildCachedRecipeJson(normalizedRecipe, 'recipe')),
-      updated_at: new Date().toISOString()
+      recipe_json: sql`json_set(${articles.recipe_json},
+        '$.aggregate_rating.rating_value', ${newValue},
+        '$.aggregate_rating.rating_count', ${newCount}
+      )`,
+      cached_rating_json: sql`json_object('rating_value', ${newValue}, 'rating_count', ${newCount})`,
+      updated_at: new Date().toISOString(),
     })
-    .where(eq(articles.id, article_id));
+    .where(
+      and(
+        eq(articles.id, article_id),
+        isNull(articles.deleted_at),
+        eq(articles.type, 'recipe'),
+        sql`${articles.recipe_json} IS NOT NULL`
+      )
+    )
+    .returning({ recipe_json: articles.recipe_json });
 
-  return { ratingValue: newValue, ratingCount: newCount };
+  const updated = rows[0];
+  if (!updated) return null;
+
+  const recipe = safeParseJson<{ aggregate_rating?: { rating_value?: number; rating_count?: number } }>(
+    updated.recipe_json
+  );
+  return {
+    ratingValue: recipe?.aggregate_rating?.rating_value ?? 0,
+    ratingCount: recipe?.aggregate_rating?.rating_count ?? 0,
+  };
 }
