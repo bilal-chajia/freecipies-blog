@@ -399,7 +399,7 @@ Section rules:
 - Disabled sections (`enabled = false`) are persisted but not rendered.
 - Active section `type` values: `stories`, `hero`, `quick_filters`, `featured_recipes`,
   `category_browse`, `collections`, `seasonal_spotlight`, `latest`, `social_proof`,
-  `about_author`, `lead_magnet`, `newsletter`, and `faq`. `popular`, `social_feed`, and
+  `social_feed`, `about_author`, `lead_magnet`, `newsletter`, and `faq`. `popular` and
   `banner` remain reserved; unknown types are rejected by validation.
 - Manually-curated sections store light references, not image snapshots:
   - recipe ref: `{ article_id, headline, route, category? { label, slug, color? } }`
@@ -417,11 +417,20 @@ Section rules:
   non-empty title and at least one valid stat, testimonial, or logo; every retained item
   must satisfy its required fields. It permits at most four stats, six testimonials, and
   six logos.
+- `social_feed` is disabled by default immediately after `social_proof`; if that anchor is
+  absent, normalization inserts it before `about_author`, or before `newsletter` when
+  `about_author` is also absent. It stores `{ id, type, enabled, eyebrow, title, items }`.
+  Each item is `{ network, caption, href, image }`, where `network` is exactly
+  `instagram`, `facebook`, or `pinterest`. An enabled social feed requires a non-empty
+  title and three to twelve valid items; disabled drafts permit zero to twelve items.
+  Every enabled item requires an absolute `https:` post URL and a complete structural image
+  snapshot with non-empty `alt`. Internal paths, protocol-relative URLs, JavaScript URLs,
+  unknown networks, missing images, and missing image alt text are rejected.
 - `lead_magnet` is disabled by default immediately after `about_author` and stores:
   `{ eyebrow, title, body, image, cta: { label, href } }`. Enabled lead magnets require
   every copy field, a structural image snapshot, and a CTA label plus a safe CTA URL.
 - Homepage structural image snapshots for `seasonal_spotlight.image`,
-  `social_proof.logos[].image`, and `lead_magnet.image` store `media_id`, `alt`,
+  `social_proof.logos[].image`, `social_feed.items[].image`, and `lead_magnet.image` store `media_id`, `alt`,
   `placeholder`, optional `focal_point` and `aspect_ratio`, and exactly `sm`, `md`, and
   `lg` variants with storage `r2_key`, width, height, and optional `size_bytes`. They omit
   `caption`, `credit`, and `original`.
@@ -429,7 +438,8 @@ Section rules:
   and never expose `r2_key`. Admin saves accept only local image routes and reconstruct the
   stored snapshot keys at the server boundary.
 - Media propagation synchronizes matching homepage structural snapshots in
-  `seasonal_spotlight.image`, `social_proof.logos[].image`, and `lead_magnet.image`.
+  `seasonal_spotlight.image`, `social_proof.logos[].image`, `social_feed.items[].image`,
+  and `lead_magnet.image`.
 - CTA URLs accept internal paths beginning with `/` except `//` and `/\\`, or absolute `https:` URLs.
 - `featured_recipes.source` is `manual`, `category`, or `latest`. With `manual`, `refs`
   drives the list; with `category`, `category_slug` selects the source; with `latest`,
@@ -439,6 +449,10 @@ Section rules:
 - `faq` is the only fixed-position homepage section and MUST be final. Read and update
   normalization MUST move an existing FAQ to the final position, or append the default FAQ
   when it is missing, without changing the relative order of other existing sections.
+- Social feed SSR renders the configured local-image fallback grid first and does not make a
+  provider request. Official provider embeds load only after session-local consent stored in
+  `sessionStorage` under `homepage-social-feed-consent`. Provider loading is deferred until
+  consent; any provider failure leaves the fallback link usable.
 - When `homepage_settings` is missing `sections` (legacy seo-only value), the service
   falls back to the default section set.
 - `homepage_settings.sections` must not store Schema.org JSON-LD; JSON-LD is generated at

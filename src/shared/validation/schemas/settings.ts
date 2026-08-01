@@ -235,6 +235,14 @@ function isSafeCtaHref(href: string): boolean {
   }
 }
 
+function isSafeExternalHttpsHref(href: string): boolean {
+  try {
+    return new URL(href).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 const HomepageQuickFilterSchema = z.object({
   label: z.string().trim().min(1),
   href: z.string().trim().min(1).refine(isRecipeListingHref, {
@@ -359,6 +367,38 @@ const HomepageSocialProofSchema = z.object({
   });
 });
 
+const HomepageSocialFeedItemSchema = z.object({
+  network: z.enum(['instagram', 'facebook', 'pinterest']),
+  caption: z.string().trim(),
+  href: z.string().trim(),
+  image: HomepageResolvedImageSnapshotSchema.nullable(),
+}).strict();
+
+const HomepageSocialFeedSchema = z.object({
+  ...homepageSectionBase,
+  type: z.literal('social_feed'),
+  eyebrow: z.string().trim(),
+  title: z.string().trim(),
+  items: z.array(HomepageSocialFeedItemSchema).max(12),
+}).strict().superRefine((section, context) => {
+  if (!section.enabled) return;
+
+  if (!section.title) {
+    context.addIssue({ code: 'custom', path: ['title'], message: 'Social feed title is required' });
+  }
+  if (section.items.length < 3) {
+    context.addIssue({ code: 'custom', path: ['items'], message: 'Social feed requires at least three items' });
+  }
+  section.items.forEach((item, index) => {
+    if (!isSafeExternalHttpsHref(item.href)) {
+      context.addIssue({ code: 'custom', path: ['items', index, 'href'], message: 'Social feed URLs must be HTTPS URLs' });
+    }
+    if (!item.image) {
+      context.addIssue({ code: 'custom', path: ['items', index, 'image'], message: 'Social feed image is required' });
+    }
+  });
+});
+
 const HomepageLeadMagnetSchema = z.object({
   ...homepageSectionBase,
   type: z.literal('lead_magnet'),
@@ -429,6 +469,7 @@ const HomepageSectionSchema = z.discriminatedUnion('type', [
     .strict(),
   HomepageSeasonalSpotlightSchema,
   HomepageSocialProofSchema,
+  HomepageSocialFeedSchema,
   z
     .object({
       ...homepageSectionBase,

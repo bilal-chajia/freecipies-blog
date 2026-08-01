@@ -386,6 +386,7 @@ export function normalizeHomepageSections(
 
   const nonFaqSections = sections.filter((section) => section.type !== 'faq');
   const existingFaq = sections.find((section) => section.type === 'faq');
+  const hasStoredSocialProof = nonFaqSections.some((section) => section.type === 'social_proof');
   const missingP3bSections = DEFAULT_HOME_SECTIONS.filter((section) => (
     (section.type === 'quick_filters' || section.type === 'seasonal_spotlight')
     && !nonFaqSections.some((stored) => stored.type === section.type)
@@ -393,16 +394,18 @@ export function normalizeHomepageSections(
   const sectionsWithP3bDefaults = [...nonFaqSections, ...missingP3bSections];
   const insertMissingP3cSection = (
     current: HomepageSection[],
-    type: 'social_proof' | 'lead_magnet',
-    afterType: 'latest' | 'about_author',
-    beforeType: 'about_author' | 'newsletter',
+    type: 'social_proof' | 'social_feed' | 'lead_magnet',
+    afterType: 'latest' | 'social_proof' | 'about_author' | undefined,
+    beforeTypes: Array<'about_author' | 'newsletter'>,
   ): HomepageSection[] => {
     if (current.some((section) => section.type === type)) return current;
 
     const defaultSection = DEFAULT_HOME_SECTIONS.find((section) => section.type === type);
     if (!defaultSection) return current;
 
-    const afterIndex = current.findIndex((section) => section.type === afterType);
+    const afterIndex = afterType
+      ? current.findIndex((section) => section.type === afterType)
+      : -1;
     if (afterIndex >= 0) {
       return [
         ...current.slice(0, afterIndex + 1),
@@ -411,7 +414,7 @@ export function normalizeHomepageSections(
       ];
     }
 
-    const beforeIndex = current.findIndex((section) => section.type === beforeType);
+    const beforeIndex = current.findIndex((section) => beforeTypes.some((type) => section.type === type));
     if (beforeIndex < 0) return [...current, defaultSection];
 
     return [
@@ -425,17 +428,23 @@ export function normalizeHomepageSections(
       sectionsWithP3bDefaults,
       'social_proof',
       'latest',
-      'about_author',
+      ['about_author'],
     ),
+    'social_feed',
+    hasStoredSocialProof ? 'social_proof' : undefined,
+    ['about_author', 'newsletter'],
+  );
+  const sectionsWithP3dDefaults = insertMissingP3cSection(
+    sectionsWithP3cDefaults,
     'lead_magnet',
     'about_author',
-    'newsletter',
+    ['newsletter'],
   );
   const defaultFaq = DEFAULT_HOME_SECTIONS.find((section) => section.type === 'faq');
   const faq = existingFaq ?? defaultFaq;
 
   return [
-    ...sectionsWithP3cDefaults,
+    ...sectionsWithP3dDefaults,
     ...(faq ? [faq] : []),
   ];
 }

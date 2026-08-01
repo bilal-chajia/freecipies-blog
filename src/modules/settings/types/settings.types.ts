@@ -122,6 +122,7 @@ export type HomepageSectionType =
   | 'seasonal_spotlight'
   | 'latest'
   | 'social_proof'
+  | 'social_feed'
   | 'about_author'
   | 'lead_magnet'
   | 'newsletter'
@@ -256,6 +257,19 @@ export interface HomepageResolvedSocialProofLogo {
   image: HomepageResolvedImageSnapshot | null;
 }
 
+export type HomepageSocialNetwork = 'instagram' | 'facebook' | 'pinterest';
+
+export interface HomepageSocialFeedItem {
+  network: HomepageSocialNetwork;
+  caption: string;
+  href: string;
+  image: HomepageStoredImageSnapshot | null;
+}
+
+export interface HomepageResolvedSocialFeedItem extends Omit<HomepageSocialFeedItem, 'image'> {
+  image: HomepageResolvedImageSnapshot | null;
+}
+
 export interface HomepageSocialProofSection extends HomepageSectionBase {
   type: 'social_proof';
   eyebrow: string;
@@ -263,6 +277,13 @@ export interface HomepageSocialProofSection extends HomepageSectionBase {
   stats: HomepageSocialProofStat[];
   testimonials: HomepageSocialProofTestimonial[];
   logos: HomepageSocialProofLogo[];
+}
+
+export interface HomepageSocialFeedSection extends HomepageSectionBase {
+  type: 'social_feed';
+  eyebrow: string;
+  title: string;
+  items: HomepageSocialFeedItem[];
 }
 
 export interface HomepageLatestSection extends HomepageSectionBase {
@@ -309,6 +330,7 @@ export type HomepageSection =
   | HomepageSeasonalSpotlightSection
   | HomepageLatestSection
   | HomepageSocialProofSection
+  | HomepageSocialFeedSection
   | HomepageAboutAuthorSection
   | HomepageLeadMagnetSection
   | HomepageNewsletterSection
@@ -327,15 +349,23 @@ export type HomepageAdminSocialProofSection = Omit<HomepageSocialProofSection, '
   logos: HomepageResolvedSocialProofLogo[];
 };
 
+export type HomepageAdminSocialFeedSection = Omit<HomepageSocialFeedSection, 'items'> & {
+  items: HomepageResolvedSocialFeedItem[];
+};
+
 export type HomepageAdminLeadMagnetSection = Omit<HomepageLeadMagnetSection, 'image'> & {
   image: HomepageResolvedImageSnapshot | null;
 };
 
 export type HomepageAdminSection = Exclude<
   HomepageSection,
-  HomepageSeasonalSpotlightSection | HomepageSocialProofSection | HomepageLeadMagnetSection
+  HomepageSeasonalSpotlightSection
+  | HomepageSocialProofSection
+  | HomepageSocialFeedSection
+  | HomepageLeadMagnetSection
 > | HomepageAdminSeasonalSpotlightSection
   | HomepageAdminSocialProofSection
+  | HomepageAdminSocialFeedSection
   | HomepageAdminLeadMagnetSection;
 
 export interface HomepageAdminSettings {
@@ -385,6 +415,14 @@ export const DEFAULT_HOME_SECTIONS: HomepageSection[] = [
     stats: [],
     testimonials: [],
     logos: [],
+  },
+  {
+    id: 'social_feed',
+    type: 'social_feed',
+    enabled: false,
+    eyebrow: '',
+    title: '',
+    items: [],
   },
   { id: 'about', type: 'about_author', enabled: true, author_id: null },
   {
@@ -466,6 +504,8 @@ export const HOMEPAGE_ADMIN_SETTINGS_DEFAULTS: HomepageAdminSettings = {
       ? { ...section, image: null }
       : section.type === 'social_proof'
         ? { ...section, logos: [] }
+        : section.type === 'social_feed'
+          ? { ...section, items: [] }
         : section
   )),
 };
