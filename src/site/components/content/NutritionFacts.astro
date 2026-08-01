@@ -195,14 +195,16 @@ const fiberPct = autoDvPct(
 );
 
 // Check which secondary/vitamin items exist
-const hasMicros =
-  data.sodium || data.potassium || data.calcium || data.cholesterol;
-const hasVitamins =
+const hasMicros = Boolean(
+  data.sodium || data.potassium || data.calcium || data.cholesterol,
+);
+const hasVitamins = Boolean(
   data.vitaminD ||
-  data.vitaminC ||
-  data.iron ||
-  data.totalSugars ||
-  data.dietaryFiber;
+    data.vitaminC ||
+    data.iron ||
+    data.totalSugars ||
+    data.dietaryFiber,
+);
 ---
 
 {
@@ -227,7 +229,7 @@ const hasVitamins =
       </div>
 
       {/* ── Energy Summary (Calorie Ring + Text) ── */}
-      {data.calories && (
+      {Boolean(data.calories) && (
         <div class="nf-energy">
           <div class="nf-ring-wrap">
             <svg class="nf-ring" viewBox="0 0 100 100">
@@ -271,7 +273,7 @@ const hasVitamins =
 
       {/* ── 4 Macro Cards ── */}
       <div class="nf-macros-grid">
-        {data.protein && (
+        {Boolean(data.protein) && (
           <div class="nf-macro-card">
             <div class="nf-macro-icon nf-icon-protein">
               <Icon name="lock" />
@@ -290,7 +292,7 @@ const hasVitamins =
           </div>
         )}
 
-        {data.totalFat && (
+        {Boolean(data.totalFat) && (
           <div class="nf-macro-card">
             <div class="nf-macro-icon nf-icon-fat">
               <Icon name="shield" />
@@ -307,7 +309,7 @@ const hasVitamins =
           </div>
         )}
 
-        {data.totalCarbohydrates && (
+        {Boolean(data.totalCarbohydrates) && (
           <div class="nf-macro-card">
             <div class="nf-macro-icon nf-icon-carbs">
               <Icon name="scale" />
@@ -324,7 +326,7 @@ const hasVitamins =
           </div>
         )}
 
-        {data.dietaryFiber && (
+        {Boolean(data.dietaryFiber) && (
           <div class="nf-macro-card">
             <div class="nf-macro-icon nf-icon-fiber">
               <Icon name="leaf-alt" />
@@ -343,30 +345,30 @@ const hasVitamins =
       </div>
 
       {/* ── Two-column Micronutrients & Vitamins ── */}
-      {(hasMicros || hasVitamins) && (
+      {Boolean(hasMicros || hasVitamins) && (
         <div class="nf-details-grid">
           {/* Left column */}
           <div class="nf-detail-col">
             <h4 class="nf-detail-heading">Micronutrients</h4>
-            {data.sodium && (
+            {Boolean(data.sodium) && (
               <div class="nf-detail-row">
                 <span class="nf-detail-name">Sodium</span>
                 <span class="nf-detail-val">{fmt(data.sodium, "mg")}</span>
               </div>
             )}
-            {data.potassium && (
+            {Boolean(data.potassium) && (
               <div class="nf-detail-row">
                 <span class="nf-detail-name">Potassium</span>
                 <span class="nf-detail-val">{fmt(data.potassium, "mg")}</span>
               </div>
             )}
-            {data.calcium && (
+            {Boolean(data.calcium) && (
               <div class="nf-detail-row">
                 <span class="nf-detail-name">Calcium</span>
                 <span class="nf-detail-val">{fmt(data.calcium, "mg")}</span>
               </div>
             )}
-            {data.cholesterol && (
+            {Boolean(data.cholesterol) && (
               <div class="nf-detail-row">
                 <span class="nf-detail-name">Cholesterol</span>
                 <span class="nf-detail-val">{fmt(data.cholesterol, "mg")}</span>
@@ -377,31 +379,31 @@ const hasVitamins =
           {/* Right column */}
           <div class="nf-detail-col">
             <h4 class="nf-detail-heading">Vitamins & Others</h4>
-            {data.vitaminD && (
+            {Boolean(data.vitaminD) && (
               <div class="nf-detail-row">
                 <span class="nf-detail-name">Vitamin D</span>
                 <span class="nf-detail-val">{fmt(data.vitaminD, "mcg")}</span>
               </div>
             )}
-            {data.iron && (
+            {Boolean(data.iron) && (
               <div class="nf-detail-row">
                 <span class="nf-detail-name">Iron</span>
                 <span class="nf-detail-val">{fmt(data.iron, "mg")}</span>
               </div>
             )}
-            {data.totalSugars && (
+            {Boolean(data.totalSugars) && (
               <div class="nf-detail-row">
                 <span class="nf-detail-name">Sugars</span>
                 <span class="nf-detail-val">{fmt(data.totalSugars)}</span>
               </div>
             )}
-            {data.vitaminC && (
+            {Boolean(data.vitaminC) && (
               <div class="nf-detail-row">
                 <span class="nf-detail-name">Vitamin C</span>
                 <span class="nf-detail-val">{fmt(data.vitaminC, "mg")}</span>
               </div>
             )}
-            {data.saturatedFat && (
+            {Boolean(data.saturatedFat) && (
               <div class="nf-detail-row">
                 <span class="nf-detail-name">Sat. Fat</span>
                 <span class="nf-detail-val">{fmt(data.saturatedFat)}</span>
@@ -448,13 +450,13 @@ const hasVitamins =
             </span>
             <span class="nutrient-val">{fmt(data.totalFat)}</span>
           </div>
-          {data.saturatedFat && (
+          {Boolean(data.saturatedFat) && (
             <div class="nutrient-row sub">
               <span class="nutrient-name">– Saturated Fat</span>
               <span class="nutrient-val">{fmt(data.saturatedFat)}</span>
             </div>
           )}
-          {data.transFat && (
+          {Boolean(data.transFat) && (
             <div class="nutrient-row sub">
               <span class="nutrient-name">– Trans Fat</span>
               <span class="nutrient-val">{fmt(data.transFat)}</span>
@@ -478,13 +480,13 @@ const hasVitamins =
             </span>
             <span class="nutrient-val">{fmt(data.totalCarbohydrates)}</span>
           </div>
-          {data.dietaryFiber && (
+          {Boolean(data.dietaryFiber) && (
             <div class="nutrient-row sub">
               <span class="nutrient-name">– Dietary Fiber</span>
               <span class="nutrient-val">{fmt(data.dietaryFiber)}</span>
             </div>
           )}
-          {data.totalSugars && (
+          {Boolean(data.totalSugars) && (
             <div class="nutrient-row sub">
               <span class="nutrient-name">– Sugars</span>
               <span class="nutrient-val">{fmt(data.totalSugars)}</span>
@@ -496,7 +498,7 @@ const hasVitamins =
             </span>
             <span class="nutrient-val">{fmt(data.protein)}</span>
           </div>
-          {data.vitaminD && (
+          {Boolean(data.vitaminD) && (
             <div class="nutrient-row">
               <span class="nutrient-name">Vitamin D</span>
               <span class="nutrient-val">
@@ -507,13 +509,13 @@ const hasVitamins =
               </span>
             </div>
           )}
-          {data.potassium && (
+          {Boolean(data.potassium) && (
             <div class="nutrient-row">
               <span class="nutrient-name">Potassium</span>
               <span class="nutrient-val">{fmt(data.potassium, "mg")}</span>
             </div>
           )}
-          {data.calcium && (
+          {Boolean(data.calcium) && (
             <div class="nutrient-row">
               <span class="nutrient-name">Calcium</span>
               <span class="nutrient-val">
@@ -524,7 +526,7 @@ const hasVitamins =
               </span>
             </div>
           )}
-          {data.iron && (
+          {Boolean(data.iron) && (
             <div class="nutrient-row">
               <span class="nutrient-name">Iron</span>
               <span class="nutrient-val">
@@ -544,11 +546,11 @@ const hasVitamins =
     </section>
   ) : variant === "compact" ? (
     <div class="nutrition-compact">
-      {data.calories && <span class="nutrition-pill">{data.calories} cal</span>}
-      {data.protein && (
+      {Boolean(data.calories) && <span class="nutrition-pill">{data.calories} cal</span>}
+      {Boolean(data.protein) && (
         <span class="nutrition-pill">{fmt(data.protein)} protein</span>
       )}
-      {data.totalFat && (
+      {Boolean(data.totalFat) && (
         <span class="nutrition-pill">{fmt(data.totalFat)} fat</span>
       )}
     </div>
@@ -576,13 +578,13 @@ const hasVitamins =
         </span>
         <span class="nutrient-val">{fmt(data.totalFat)}</span>
       </div>
-      {data.saturatedFat && (
+      {Boolean(data.saturatedFat) && (
         <div class="nutrient-row sub">
           <span class="nutrient-name">– Saturated Fat</span>
           <span class="nutrient-val">{fmt(data.saturatedFat)}</span>
         </div>
       )}
-      {data.transFat && (
+      {Boolean(data.transFat) && (
         <div class="nutrient-row sub">
           <span class="nutrient-name">– Trans Fat</span>
           <span class="nutrient-val">{fmt(data.transFat)}</span>
@@ -606,13 +608,13 @@ const hasVitamins =
         </span>
         <span class="nutrient-val">{fmt(data.totalCarbohydrates)}</span>
       </div>
-      {data.dietaryFiber && (
+      {Boolean(data.dietaryFiber) && (
         <div class="nutrient-row sub">
           <span class="nutrient-name">– Dietary Fiber</span>
           <span class="nutrient-val">{fmt(data.dietaryFiber)}</span>
         </div>
       )}
-      {data.totalSugars && (
+      {Boolean(data.totalSugars) && (
         <div class="nutrient-row sub">
           <span class="nutrient-name">– Sugars</span>
           <span class="nutrient-val">{fmt(data.totalSugars)}</span>
@@ -624,7 +626,7 @@ const hasVitamins =
         </span>
         <span class="nutrient-val">{fmt(data.protein)}</span>
       </div>
-      {data.vitaminD && (
+      {Boolean(data.vitaminD) && (
         <div class="nutrient-row">
           <span class="nutrient-name">Vitamin D</span>
           <span class="nutrient-val">
@@ -635,13 +637,13 @@ const hasVitamins =
           </span>
         </div>
       )}
-      {data.potassium && (
+      {Boolean(data.potassium) && (
         <div class="nutrient-row">
           <span class="nutrient-name">Potassium</span>
           <span class="nutrient-val">{fmt(data.potassium, "mg")}</span>
         </div>
       )}
-      {data.calcium && (
+      {Boolean(data.calcium) && (
         <div class="nutrient-row">
           <span class="nutrient-name">Calcium</span>
           <span class="nutrient-val">
@@ -652,7 +654,7 @@ const hasVitamins =
           </span>
         </div>
       )}
-      {data.iron && (
+      {Boolean(data.iron) && (
         <div class="nutrient-row">
           <span class="nutrient-name">Iron</span>
           <span class="nutrient-val">

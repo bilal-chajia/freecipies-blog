@@ -34,14 +34,14 @@ const { showJumpButton, collapsible, accentColor = "var(--info)" } = Astro.props
     
     <div class="toc-header-actions">
         {
-            showJumpButton && (
+            Boolean(showJumpButton) && (
                 <a href="#recipe-card" class="toc-jump-btn">
                     Jump
                 </a>
             )
         }
         {
-            collapsible && (
+            Boolean(collapsible) && (
                 <button
                     type="button"
                     class="toc-toggle-btn toc-show-more-btn"
