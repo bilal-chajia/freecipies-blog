@@ -68,7 +68,7 @@ beforeEach(() => {
 });
 
 describe('propagateMediaUpdate homepage snapshot synchronization', () => {
-  it('patches every matching P3C homepage image with one settings write and cache invalidation', async () => {
+  it('patches every matching P3C and P3D homepage image with one settings write and cache invalidation', async () => {
     const homepageValue = JSON.stringify({
       seo: {},
       sections: [
@@ -161,6 +161,58 @@ describe('propagateMediaUpdate homepage snapshot synchronization', () => {
           },
         },
         {
+          id: 'social-feed',
+          type: 'social_feed',
+          enabled: true,
+          eyebrow: 'Follow along',
+          title: 'From our kitchen',
+          items: [
+            {
+              network: 'instagram',
+              caption: 'Updated salad post',
+              href: 'https://www.instagram.com/p/updated-salad',
+              image: {
+                media_id: 55,
+                alt: 'Old social post',
+                placeholder: 'old-social-placeholder',
+                variants: {
+                  sm: { r2_key: 'old-social-sm.webp', width: 720, height: 540 },
+                  md: { r2_key: 'old-social-md.webp', width: 1200, height: 900 },
+                  lg: { r2_key: 'old-social-lg.webp', width: 2048, height: 1536 },
+                },
+              },
+            },
+            {
+              network: 'pinterest',
+              caption: 'Updated dinner ideas',
+              href: 'https://www.pinterest.com/pin/updated-dinner',
+              image: {
+                media_id: 55,
+                alt: 'Old social pin',
+                placeholder: 'old-social-pin-placeholder',
+                variants: {
+                  sm: { r2_key: 'old-social-pin-sm.webp', width: 720, height: 540 },
+                  md: { r2_key: 'old-social-pin-md.webp', width: 1200, height: 900 },
+                  lg: { r2_key: 'old-social-pin-lg.webp', width: 2048, height: 1536 },
+                },
+              },
+            },
+            {
+              network: 'facebook',
+              caption: 'Unchanged social post',
+              href: 'https://www.facebook.com/freecipes/posts/unchanged',
+              image: {
+                media_id: 99,
+                alt: 'Unchanged social post',
+                placeholder: 'unchanged-social-placeholder',
+                variants: {
+                  sm: { r2_key: 'unchanged-social-sm.webp', width: 720, height: 540 },
+                },
+              },
+            },
+          ],
+        },
+        {
           id: 'other-guide',
           type: 'lead_magnet',
           enabled: true,
@@ -220,15 +272,20 @@ describe('propagateMediaUpdate homepage snapshot synchronization', () => {
     const summer = saved.sections.find((section) => section.id === 'summer');
     const socialProof = saved.sections.find((section) => section.id === 'trusted');
     const leadMagnet = saved.sections.find((section) => section.id === 'guide');
+    const socialFeed = saved.sections.find((section) => section.id === 'social-feed');
     expect(summer?.image).toEqual(expectedImage);
     expect((socialProof?.logos as Array<Record<string, unknown>>)[0].image).toEqual(expectedImage);
     expect(leadMagnet?.image).toEqual(expectedImage);
+    expect((socialFeed?.items as Array<Record<string, unknown>>)[0].image).toEqual(expectedImage);
+    expect((socialFeed?.items as Array<Record<string, unknown>>)[1].image).toEqual(expectedImage);
 
     const originalAutumn = original.sections.find((section) => section.id === 'autumn');
     const originalSocialProof = original.sections.find((section) => section.id === 'trusted');
     const originalUnchangedLogo = ((originalSocialProof?.logos as Array<Record<string, unknown>>)[1].image);
     const originalOtherGuide = original.sections.find((section) => section.id === 'other-guide');
     const originalUnrelatedImage = original.sections.find((section) => section.id === 'guide')?.unrelated_image;
+    const originalSocialFeed = original.sections.find((section) => section.id === 'social-feed');
+    const originalUnchangedSocialFeedImage = (originalSocialFeed?.items as Array<Record<string, unknown>>)[2].image;
     expect(JSON.stringify(saved.sections.find((section) => section.id === 'autumn')))
       .toBe(JSON.stringify(originalAutumn));
     expect(JSON.stringify((socialProof?.logos as Array<Record<string, unknown>>)[1].image))
@@ -236,6 +293,8 @@ describe('propagateMediaUpdate homepage snapshot synchronization', () => {
     expect(JSON.stringify(saved.sections.find((section) => section.id === 'other-guide')))
       .toBe(JSON.stringify(originalOtherGuide));
     expect(JSON.stringify(leadMagnet?.unrelated_image)).toBe(JSON.stringify(originalUnrelatedImage));
+    expect(JSON.stringify((socialFeed?.items as Array<Record<string, unknown>>)[2].image))
+      .toBe(JSON.stringify(originalUnchangedSocialFeedImage));
   });
 
   it('does not update or invalidate cache when no known homepage snapshot references the media', async () => {

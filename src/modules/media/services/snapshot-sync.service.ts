@@ -187,6 +187,20 @@ function patchHomepageSettings(
       continue;
     }
 
+    if (homepageSection.type === 'social_feed' && Array.isArray(homepageSection.items)) {
+      for (const item of homepageSection.items) {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+
+        const itemRecord = item as Record<string, unknown>;
+        const patchedImage = patchImageSnapshot(itemRecord.image);
+        if (patchedImage) {
+          itemRecord.image = patchedImage;
+          changed = true;
+        }
+      }
+      continue;
+    }
+
     if (homepageSection.type !== 'social_proof' || !Array.isArray(homepageSection.logos)) continue;
 
     for (const logo of homepageSection.logos) {

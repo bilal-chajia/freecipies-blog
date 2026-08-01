@@ -65,6 +65,27 @@ const storedWithP3cImages = {
       image: storedSpotlightImage,
       cta: { label: 'Get the guide', href: '/guides/weeknight-dinners' },
     },
+    {
+      id: 'social_feed',
+      type: 'social_feed',
+      enabled: true,
+      eyebrow: 'Follow along',
+      title: 'From our kitchen',
+      items: [
+        {
+          network: 'instagram',
+          caption: 'Seasonal salad prep',
+          href: 'https://www.instagram.com/p/salad-prep',
+          image: storedSpotlightImage,
+        },
+        {
+          network: 'pinterest',
+          caption: 'Summer cooking ideas',
+          href: 'https://www.pinterest.com/pin/summer-cooking',
+          image: storedSpotlightImage,
+        },
+      ],
+    },
   ],
 } as unknown as HomepageSettings;
 
@@ -73,30 +94,30 @@ describe('homepage spotlight image API boundary', () => {
     const presented = presentHomepageSettingsForAdmin(storedWithP3cImages);
 
     expect(JSON.stringify(presented)).not.toContain('r2_key');
-    expect(JSON.stringify(presented).match(/\/api\/images\//g)).toHaveLength(12);
+    expect(JSON.stringify(presented).match(/\/api\/images\//g)).toHaveLength(18);
     expect(normalizeHomepageSettingsFromAdmin(presented)).toEqual(storedWithP3cImages);
   });
 
-  it('rejects foreign and incomplete P3C image URLs during normalization', () => {
+  it('rejects foreign and incomplete social-feed image URLs during normalization', () => {
     const presented = presentHomepageSettingsForAdmin(storedWithP3cImages) as unknown as {
       seo: HomepageSettings['seo'];
       sections: Array<{
         type: string;
         logos?: Array<{ image: { variants: { sm: { url: string }; md: { url: string }; lg: { url: string } } } | null }>;
+        items?: Array<{ image: { variants: { sm: { url: string }; md: { url: string }; lg: { url: string } } } | null }>;
         image?: { variants: { sm: { url: string }; md: { url: string }; lg: { url: string } } } | null;
       }>;
     };
-    const socialProof = presented.sections.find((section) => section.type === 'social_proof');
-    const leadMagnet = presented.sections.find((section) => section.type === 'lead_magnet');
-    if (!socialProof?.logos?.[0]?.image || !leadMagnet?.image) {
-      throw new Error('Expected P3C images');
+    const socialFeed = presented.sections.find((section) => section.type === 'social_feed');
+    if (!socialFeed?.items?.[0]?.image || !socialFeed.items[1]?.image) {
+      throw new Error('Expected social-feed images');
     }
-    socialProof.logos[0].image.variants.md.url = 'https://cdn.example.test/logo.webp';
-    const { lg: _lg, ...incompleteVariants } = leadMagnet.image.variants;
-    leadMagnet.image = { variants: incompleteVariants } as never;
+    socialFeed.items[0].image.variants.md.url = 'https://cdn.example.test/social-feed.webp';
+    const { lg: _lg, ...incompleteVariants } = socialFeed.items[1].image.variants;
+    socialFeed.items[1].image = { variants: incompleteVariants } as never;
 
     expect(() => normalizeHomepageSettingsFromAdmin(presented as never)).toThrow('local image route');
-    socialProof.logos[0].image.variants.md.url = '/api/images/media/salad-md.webp';
+    socialFeed.items[0].image.variants.md.url = '/api/images/media/salad-md.webp';
     expect(() => normalizeHomepageSettingsFromAdmin(presented as never)).toThrow();
   });
 
