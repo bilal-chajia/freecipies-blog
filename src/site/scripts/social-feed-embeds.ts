@@ -13,6 +13,7 @@ const SOCIAL_FEED_MOUNT_SELECTOR = '[data-social-feed-mount]';
 const SOCIAL_FEED_CONSENT_SELECTOR = '[data-social-feed-consent]';
 
 const providerLoads = new Map<HomepageSocialNetwork, Promise<void>>();
+const sectionHydrations = new WeakMap<HTMLElement, Promise<void>>();
 
 interface SocialFeedCard extends HTMLElement {
   dataset: DOMStringMap & {
@@ -144,6 +145,15 @@ const hydrateNetwork = async (root: HTMLElement, network: HomepageSocialNetwork)
 };
 
 const hydrateSocialFeed = async (root: HTMLElement): Promise<void> => {
+  const existingHydration = sectionHydrations.get(root);
+  if (existingHydration) return existingHydration;
+
+  const hydration = hydrateSocialFeedOnce(root);
+  sectionHydrations.set(root, hydration);
+  return hydration;
+};
+
+const hydrateSocialFeedOnce = async (root: HTMLElement): Promise<void> => {
   const networks = collectSocialFeedNetworks(
     Array.from(root.querySelectorAll<SocialFeedCard>(SOCIAL_FEED_CARD_SELECTOR), (card) => card.dataset.socialNetwork),
   );
@@ -156,13 +166,21 @@ const initSocialFeedEmbeds = (): void => {
   if (!root) return;
 
   const consentButton = root.querySelector<HTMLButtonElement>(SOCIAL_FEED_CONSENT_SELECTOR);
+  const startHydration = (): void => {
+    if (consentButton) {
+      consentButton.disabled = true;
+      consentButton.setAttribute('aria-disabled', 'true');
+    }
+    void hydrateSocialFeed(root);
+  };
+
   consentButton?.addEventListener('click', () => {
     sessionStorage.setItem(SOCIAL_FEED_CONSENT_KEY, 'granted');
-    void hydrateSocialFeed(root);
+    startHydration();
   });
 
   if (sessionStorage.getItem(SOCIAL_FEED_CONSENT_KEY) === 'granted') {
-    void hydrateSocialFeed(root);
+    startHydration();
   }
 };
 

@@ -1,11 +1,157 @@
 import { readFile } from 'node:fs/promises';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   collectSocialFeedNetworks,
   isSupportedSocialFeedNetwork,
   SOCIAL_FEED_CONSENT_KEY,
   SOCIAL_FEED_PROVIDER_SOURCES,
 } from '../social-feed-embed-support';
+
+type FakeListener = () => void;
+
+class FakeNode {
+  readonly attributes = new Map<string, string>();
+  readonly children: FakeNode[] = [];
+  readonly dataset: Record<string, string | undefined> = {};
+  readonly listeners = new Map<string, Set<FakeListener>>();
+  hidden = false;
+  disabled = false;
+  async = false;
+  src = '';
+  tagName: string;
+
+  constructor(tagName = 'div') {
+    this.tagName = tagName;
+  }
+
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value);
+    if (name.startsWith('data-')) {
+      const datasetName = name.slice(5).replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase());
+      this.dataset[datasetName] = value;
+    }
+  }
+
+  addEventListener(type: string, listener: FakeListener): void {
+    const listeners = this.listeners.get(type) ?? new Set<FakeListener>();
+    listeners.add(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  dispatch(type: string): void {
+    this.listeners.get(type)?.forEach((listener) => listener());
+  }
+
+  append(...nodes: FakeNode[]): void {
+    this.children.push(...nodes);
+  }
+
+  replaceChildren(...nodes: FakeNode[]): void {
+    this.children.splice(0, this.children.length, ...nodes);
+  }
+
+  querySelector<T extends FakeNode>(selector: string): T | null {
+    return this.querySelectorAll<T>(selector)[0] ?? null;
+  }
+
+  querySelectorAll<T extends FakeNode>(selector: string): T[] {
+    const matches: FakeNode[] = [];
+    const visit = (node: FakeNode): void => {
+      node.children.forEach((child) => {
+        if (child.attributes.has(selector.slice(1, -1))) matches.push(child);
+        visit(child);
+      });
+    };
+    visit(this);
+    return matches as T[];
+  }
+}
+
+class FakeDocument extends FakeNode {
+  readonly head = new FakeNode('head');
+  readonly scripts: FakeNode[] = [];
+  readonly readyState = 'complete';
+
+  constructor(root: FakeNode) {
+    super('#document');
+    this.append(root);
+    const appendHeadNode = this.head.append.bind(this.head);
+    this.head.append = (...nodes: FakeNode[]) => {
+      this.scripts.push(...nodes);
+      appendHeadNode(...nodes);
+    };
+  }
+
+  createElement(tagName: string): FakeNode {
+    return new FakeNode(tagName);
+  }
+}
+
+class FakeSessionStorage {
+  readonly values = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    return this.values.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.values.set(key, value);
+  }
+}
+
+const createHarness = (networks: string[]) => {
+  const root = new FakeNode('section');
+  root.setAttribute('data-social-feed', '');
+  const cards = networks.map((network, index) => {
+    const card = new FakeNode('li');
+    card.setAttribute('data-social-feed-card', '');
+    card.setAttribute('data-social-network', network);
+    card.setAttribute('data-social-post-href', `https://example.com/${network}/${index}`);
+
+    const fallback = new FakeNode('a');
+    fallback.setAttribute('data-social-feed-fallback', '');
+    const mount = new FakeNode('div');
+    mount.setAttribute('data-social-feed-mount', '');
+    mount.hidden = true;
+    card.append(fallback, mount);
+    root.append(card);
+    return { card, fallback, mount };
+  });
+  const consent = new FakeNode('button');
+  consent.setAttribute('data-social-feed-consent', '');
+  root.append(consent);
+
+  const document = new FakeDocument(root);
+  const sessionStorage = new FakeSessionStorage();
+  const providers = {
+    instagramProcess: vi.fn(),
+    facebookParse: vi.fn(),
+    pinterestBuild: vi.fn(),
+  };
+  const window = {
+    instgrm: { Embeds: { process: providers.instagramProcess } },
+    FB: { XFBML: { parse: providers.facebookParse } },
+    PinUtils: { build: providers.pinterestBuild },
+  };
+
+  return { cards, consent, document, providers, root, sessionStorage, window };
+};
+
+const loadSocialFeedEmbeds = async (harness: ReturnType<typeof createHarness>): Promise<void> => {
+  vi.stubGlobal('document', harness.document);
+  vi.stubGlobal('sessionStorage', harness.sessionStorage);
+  vi.stubGlobal('window', harness.window);
+  vi.resetModules();
+  await import('../social-feed-embeds');
+};
+
+const settleEmbedHydration = async (): Promise<void> => {
+  for (let index = 0; index < 5; index += 1) await Promise.resolve();
+};
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('social feed embed support', () => {
   it('collects each supported network once in first-seen order', () => {
@@ -49,5 +195,104 @@ describe('social feed SSR boundary', () => {
     const matches = source.match(/import '@site\/scripts\/social-feed-embeds';/g) ?? [];
 
     expect(matches).toHaveLength(1);
+  });
+
+  it('renders the social-feed root attribute consumed by the browser module', async () => {
+    const source = await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8');
+
+    expect(source).toContain('<section class="social-feed" data-social-feed');
+  });
+});
+
+describe('social feed embed DOM lifecycle', () => {
+  it('does not append provider scripts before consent', async () => {
+    const harness = createHarness(['instagram']);
+
+    await loadSocialFeedEmbeds(harness);
+
+    expect(harness.document.scripts).toHaveLength(0);
+    expect(harness.cards[0]?.fallback.hidden).toBe(false);
+    expect(harness.cards[0]?.mount.hidden).toBe(true);
+  });
+
+  it('finds the social-feed root and attaches its consent handler', async () => {
+    const harness = createHarness(['instagram']);
+
+    await loadSocialFeedEmbeds(harness);
+    harness.consent.dispatch('click');
+
+    expect(harness.sessionStorage.getItem(SOCIAL_FEED_CONSENT_KEY)).toBe('granted');
+    expect(harness.document.scripts).toHaveLength(1);
+  });
+
+  it('hydrates automatically for granted sessions after the provider loads', async () => {
+    const harness = createHarness(['instagram']);
+    harness.sessionStorage.setItem(SOCIAL_FEED_CONSENT_KEY, 'granted');
+
+    await loadSocialFeedEmbeds(harness);
+
+    expect(harness.document.scripts).toHaveLength(1);
+    expect(harness.cards[0]?.fallback.hidden).toBe(false);
+    expect(harness.cards[0]?.mount.hidden).toBe(true);
+
+    harness.document.scripts[0]?.dispatch('load');
+    await settleEmbedHydration();
+
+    expect(harness.providers.instagramProcess).toHaveBeenCalledTimes(1);
+    expect(harness.cards[0]?.fallback.hidden).toBe(true);
+    expect(harness.cards[0]?.mount.hidden).toBe(false);
+  });
+
+  it('loads one provider script per network and initializes each network once after repeated clicks', async () => {
+    const harness = createHarness(['instagram', 'instagram', 'facebook', 'pinterest']);
+
+    await loadSocialFeedEmbeds(harness);
+    harness.consent.dispatch('click');
+    harness.consent.dispatch('click');
+
+    expect(harness.document.scripts.map((script) => script.src)).toEqual([
+      'https://www.instagram.com/embed.js',
+      'https://connect.facebook.net/en_US/sdk.js',
+      'https://assets.pinterest.com/js/pinit.js',
+    ]);
+    expect(harness.consent.disabled).toBe(true);
+
+    harness.document.scripts.forEach((script) => script.dispatch('load'));
+    await settleEmbedHydration();
+    harness.consent.dispatch('click');
+    await settleEmbedHydration();
+
+    expect(harness.providers.instagramProcess).toHaveBeenCalledTimes(1);
+    expect(harness.providers.facebookParse).toHaveBeenCalledTimes(1);
+    expect(harness.providers.pinterestBuild).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the fallback visible and mount hidden when a provider script fails', async () => {
+    const harness = createHarness(['facebook']);
+
+    await loadSocialFeedEmbeds(harness);
+    harness.consent.dispatch('click');
+    harness.document.scripts[0]?.dispatch('error');
+    await settleEmbedHydration();
+
+    expect(harness.cards[0]?.fallback.hidden).toBe(false);
+    expect(harness.cards[0]?.mount.hidden).toBe(true);
+    expect(harness.cards[0]?.mount.children).toHaveLength(0);
+  });
+
+  it('keeps the fallback visible and mount hidden when provider initialization fails', async () => {
+    const harness = createHarness(['pinterest']);
+    harness.providers.pinterestBuild.mockImplementation(() => {
+      throw new Error('provider unavailable');
+    });
+
+    await loadSocialFeedEmbeds(harness);
+    harness.consent.dispatch('click');
+    harness.document.scripts[0]?.dispatch('load');
+    await settleEmbedHydration();
+
+    expect(harness.cards[0]?.fallback.hidden).toBe(false);
+    expect(harness.cards[0]?.mount.hidden).toBe(true);
+    expect(harness.cards[0]?.mount.children).toHaveLength(0);
   });
 });

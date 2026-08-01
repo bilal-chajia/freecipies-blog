@@ -9,7 +9,7 @@ interface Props {
 const { section } = Astro.props as Props;
 ---
 
-<section class="social-feed" data-fade-up aria-labelledby={`social-feed-${section.id}`}>
+<section class="social-feed" data-social-feed data-fade-up aria-labelledby={`social-feed-${section.id}`}>
   <div class="social-feed__inner">
     <header class="social-feed__header">
       {section.eyebrow && <p class="social-feed__eyebrow">{section.eyebrow}</p>}
