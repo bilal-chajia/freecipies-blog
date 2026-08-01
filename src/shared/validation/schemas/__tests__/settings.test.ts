@@ -185,9 +185,35 @@ describe('HomepageSettingsSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('accepts enabled social proof without an eyebrow when it has a title and valid item', () => {
+    const result = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social-proof-enabled',
+        type: 'social_proof',
+        enabled: true,
+        eyebrow: '   ',
+        title: 'Recipes that work',
+        stats: [{ value: '500+', label: 'Tested recipes' }],
+        testimonials: [],
+        logos: [],
+      }],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it('rejects incomplete enabled P3C content and oversized item lists', () => {
-    const missingSocialContent = HomepageSettingsSchema.safeParse({
-      sections: [{ id: 'social-proof', type: 'social_proof', enabled: true, eyebrow: '', title: '   ', stats: [], testimonials: [], logos: [] }],
+    const blankSocialTitle = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social-proof', type: 'social_proof', enabled: true, eyebrow: '', title: '   ',
+        stats: [{ value: '500+', label: 'Tested recipes' }], testimonials: [], logos: [],
+      }],
+    });
+    const missingSocialItems = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social-proof', type: 'social_proof', enabled: true, eyebrow: '', title: 'Recipes that work',
+        stats: [], testimonials: [], logos: [],
+      }],
     });
     const tooManyStats = HomepageSettingsSchema.safeParse({
       sections: [{
@@ -224,7 +250,8 @@ describe('HomepageSettingsSchema', () => {
       sections: [{ id: 'lead-magnet', type: 'lead_magnet', enabled: true, eyebrow: 'Free guide', title: '', body: '', image: null, cta: { label: '', href: '' } }],
     });
 
-    expect(missingSocialContent.success).toBe(false);
+    expect(blankSocialTitle.success).toBe(false);
+    expect(missingSocialItems.success).toBe(false);
     expect(tooManyStats.success).toBe(false);
     expect(tooManyTestimonials.success).toBe(false);
     expect(tooManyLogos.success).toBe(false);

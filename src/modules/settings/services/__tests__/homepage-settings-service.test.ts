@@ -187,6 +187,40 @@ describe('getHomepageSettings', () => {
     expect(result.sections.at(-1)?.type).toBe('faq');
   });
 
+  it('inserts social proof before about author when a partial setting omits latest', async () => {
+    const sections = [
+      { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
+      { id: 'about', type: 'about_author', enabled: true, author_id: null },
+      { id: 'newsletter', type: 'newsletter', enabled: true, title: 'Weekly recipes', subtitle: '', button_text: 'Subscribe', placeholder_text: 'Email' },
+      { id: 'faq', type: 'faq', enabled: false, title: 'FAQ', items: [] },
+    ];
+    const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
+
+    const result = await getHomepageSettings(NO_DB, { cache });
+
+    expect(result.sections.map((section) => section.id)).toEqual([
+      'hero', 'social_proof', 'about', 'lead_magnet', 'newsletter',
+      'quick_filters', 'seasonal_spotlight', 'faq',
+    ]);
+  });
+
+  it('inserts lead magnet before newsletter when a partial setting omits about author', async () => {
+    const sections = [
+      { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
+      { id: 'latest', type: 'latest', enabled: true, title: 'Latest Recipes', count: 8 },
+      { id: 'newsletter', type: 'newsletter', enabled: true, title: 'Weekly recipes', subtitle: '', button_text: 'Subscribe', placeholder_text: 'Email' },
+      { id: 'faq', type: 'faq', enabled: false, title: 'FAQ', items: [] },
+    ];
+    const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
+
+    const result = await getHomepageSettings(NO_DB, { cache });
+
+    expect(result.sections.map((section) => section.id)).toEqual([
+      'hero', 'latest', 'social_proof', 'lead_magnet', 'newsletter',
+      'quick_filters', 'seasonal_spotlight', 'faq',
+    ]);
+  });
+
   it('normalizes direct saves before returning and persisting them', async () => {
     const persisted: { value?: string } = {};
     const result = await updateHomepageSettings(
@@ -198,6 +232,29 @@ describe('getHomepageSettings', () => {
       'stories', 'hero', 'quick_filters', 'featured', 'categories', 'collections',
       'seasonal_spotlight', 'latest', 'social_proof', 'about', 'lead_magnet',
       'newsletter', 'faq',
+    ];
+
+    expect(result.sections.map((section) => section.id)).toEqual(expected);
+    expect(stored.sections.map((section) => section.id)).toEqual(expected);
+  });
+
+  it('applies partial-setting fallback ordering to direct saves and persisted settings', async () => {
+    const persisted: { value?: string } = {};
+    const sections = [
+      { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
+      { id: 'about', type: 'about_author', enabled: true, author_id: null },
+      { id: 'newsletter', type: 'newsletter', enabled: true, title: 'Weekly recipes', subtitle: '', button_text: 'Subscribe', placeholder_text: 'Email' },
+      { id: 'faq', type: 'faq', enabled: false, title: 'FAQ', items: [] },
+    ];
+
+    const result = await updateHomepageSettings(
+      createHomepageSettingsDb(persisted),
+      { sections: sections as never },
+    );
+    const stored = JSON.parse(persisted.value ?? '{}') as { sections: Array<{ id: string }> };
+    const expected = [
+      'hero', 'social_proof', 'about', 'lead_magnet', 'newsletter',
+      'quick_filters', 'seasonal_spotlight', 'faq',
     ];
 
     expect(result.sections.map((section) => section.id)).toEqual(expected);

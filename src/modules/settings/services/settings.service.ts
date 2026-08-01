@@ -394,26 +394,42 @@ export function normalizeHomepageSections(
   const insertMissingP3cSection = (
     current: HomepageSection[],
     type: 'social_proof' | 'lead_magnet',
-    anchorType: 'latest' | 'about_author',
+    afterType: 'latest' | 'about_author',
+    beforeType: 'about_author' | 'newsletter',
   ): HomepageSection[] => {
     if (current.some((section) => section.type === type)) return current;
 
     const defaultSection = DEFAULT_HOME_SECTIONS.find((section) => section.type === type);
     if (!defaultSection) return current;
 
-    const anchorIndex = current.findIndex((section) => section.type === anchorType);
-    if (anchorIndex < 0) return [...current, defaultSection];
+    const afterIndex = current.findIndex((section) => section.type === afterType);
+    if (afterIndex >= 0) {
+      return [
+        ...current.slice(0, afterIndex + 1),
+        defaultSection,
+        ...current.slice(afterIndex + 1),
+      ];
+    }
+
+    const beforeIndex = current.findIndex((section) => section.type === beforeType);
+    if (beforeIndex < 0) return [...current, defaultSection];
 
     return [
-      ...current.slice(0, anchorIndex + 1),
+      ...current.slice(0, beforeIndex),
       defaultSection,
-      ...current.slice(anchorIndex + 1),
+      ...current.slice(beforeIndex),
     ];
   };
   const sectionsWithP3cDefaults = insertMissingP3cSection(
-    insertMissingP3cSection(sectionsWithP3bDefaults, 'social_proof', 'latest'),
+    insertMissingP3cSection(
+      sectionsWithP3bDefaults,
+      'social_proof',
+      'latest',
+      'about_author',
+    ),
     'lead_magnet',
     'about_author',
+    'newsletter',
   );
   const defaultFaq = DEFAULT_HOME_SECTIONS.find((section) => section.type === 'faq');
   const faq = existingFaq ?? defaultFaq;

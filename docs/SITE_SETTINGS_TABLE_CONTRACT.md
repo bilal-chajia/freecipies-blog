@@ -413,9 +413,10 @@ Section rules:
 - `social_proof` is disabled by default immediately after `latest` and stores:
   `{ eyebrow, title, stats[], testimonials[], logos[] }`, where `stats[]` items are
   `{ value, label }`, `testimonials[]` items are `{ quote, name, role? }`, and `logos[]`
-  items are `{ name, image }`. Enabled social proof requires non-empty eyebrow/title and
-  at least one stat, testimonial, or logo. It permits at most four stats, six testimonials,
-  and six logos.
+  items are `{ name, image }`. The eyebrow is optional. Enabled social proof requires a
+  non-empty title and at least one valid stat, testimonial, or logo; every retained item
+  must satisfy its required fields. It permits at most four stats, six testimonials, and
+  six logos.
 - `lead_magnet` is disabled by default immediately after `about_author` and stores:
   `{ eyebrow, title, body, image, cta: { label, href } }`. Enabled lead magnets require
   every copy field, a structural image snapshot, and a CTA label plus a safe CTA URL.
@@ -435,6 +436,9 @@ Section rules:
   the newest published recipes are used.
 - `faq.items[]` use `{ question, answer }` and are the source for homepage `FAQPage`
   JSON-LD.
+- `faq` is the only fixed-position homepage section and MUST be final. Read and update
+  normalization MUST move an existing FAQ to the final position, or append the default FAQ
+  when it is missing, without changing the relative order of other existing sections.
 - When `homepage_settings` is missing `sections` (legacy seo-only value), the service
   falls back to the default section set.
 - `homepage_settings.sections` must not store Schema.org JSON-LD; JSON-LD is generated at

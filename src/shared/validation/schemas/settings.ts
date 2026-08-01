@@ -327,9 +327,6 @@ const HomepageSocialProofSchema = z.object({
 }).strict().superRefine((section, context) => {
   if (!section.enabled) return;
 
-  if (!section.eyebrow) {
-    context.addIssue({ code: 'custom', path: ['eyebrow'], message: 'Social proof eyebrow is required' });
-  }
   if (!section.title) {
     context.addIssue({ code: 'custom', path: ['title'], message: 'Social proof title is required' });
   }
