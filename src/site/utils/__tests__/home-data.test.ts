@@ -299,6 +299,119 @@ it('omits social proof when its title is blank or every item group is invalid', 
   await expect(resolveHomeData(sections, { db: DB, stories: [] })).resolves.toEqual([]);
 });
 
+it('resolves a valid mixed social feed from stored snapshots without database calls', async () => {
+  const sections: HomepageSection[] = [{
+    id: 'social-feed',
+    type: 'social_feed',
+    enabled: true,
+    eyebrow: ' Follow along ',
+    title: ' From our kitchen ',
+    items: [
+      {
+        network: 'instagram',
+        caption: ' Fresh pasta night ',
+        href: ' https://www.instagram.com/p/pasta/ ',
+        image: {
+          media_id: 71,
+          alt: 'Pasta on a plate',
+          placeholder: 'data:image/jpeg;base64,placeholder',
+          variants: {
+            sm: { r2_key: 'media/pasta-sm.webp', width: 720, height: 720 },
+            md: { r2_key: 'media/pasta-md.webp', width: 1200, height: 1200 },
+            lg: { r2_key: 'media/pasta-lg.webp', width: 2048, height: 2048 },
+          },
+        },
+      },
+      {
+        network: 'facebook',
+        caption: ' Sunday bake ',
+        href: 'https://www.facebook.com/example/posts/123',
+        image: {
+          media_id: 72,
+          alt: 'Fresh bread',
+          placeholder: 'data:image/jpeg;base64,placeholder',
+          variants: {
+            sm: { r2_key: 'media/bread-sm.webp', width: 720, height: 540 },
+            md: { r2_key: 'media/bread-md.webp', width: 1200, height: 900 },
+            lg: { r2_key: 'media/bread-lg.webp', width: 2048, height: 1536 },
+          },
+        },
+      },
+      {
+        network: 'pinterest',
+        caption: ' Summer salad ',
+        href: 'https://www.pinterest.com/pin/123',
+        image: {
+          media_id: 73,
+          alt: 'Summer salad',
+          placeholder: 'data:image/jpeg;base64,placeholder',
+          variants: {
+            sm: { r2_key: 'media/salad-sm.webp', width: 720, height: 540 },
+            md: { r2_key: 'media/salad-md.webp', width: 1200, height: 900 },
+            lg: { r2_key: 'media/salad-lg.webp', width: 2048, height: 1536 },
+          },
+        },
+      },
+    ],
+  }];
+
+  const vms = await resolveHomeData(sections, { db: DB, stories: [] });
+
+  expect(vms).toEqual([expect.objectContaining({
+    kind: 'social_feed',
+    section: expect.objectContaining({
+      eyebrow: 'Follow along',
+      title: 'From our kitchen',
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          network: 'instagram',
+          caption: 'Fresh pasta night',
+          href: 'https://www.instagram.com/p/pasta/',
+        }),
+      ]),
+    }),
+  })]);
+  expect(getArticles).not.toHaveBeenCalled();
+  expect(getArticlesByIds).not.toHaveBeenCalled();
+  expect(getCategories).not.toHaveBeenCalled();
+  expect(getAuthors).not.toHaveBeenCalled();
+});
+
+it('omits social feeds with incomplete snapshots or unsafe links', async () => {
+  const image = {
+    media_id: 71,
+    alt: 'Pasta on a plate',
+    placeholder: 'data:image/jpeg;base64,placeholder',
+    variants: {
+      sm: { r2_key: 'media/pasta-sm.webp', width: 720, height: 720 },
+      md: { r2_key: 'media/pasta-md.webp', width: 1200, height: 1200 },
+      lg: { r2_key: 'media/pasta-lg.webp', width: 2048, height: 2048 },
+    },
+  };
+  const sections: HomepageSection[] = [{
+    id: 'social-feed',
+    type: 'social_feed',
+    enabled: true,
+    eyebrow: 'Follow along',
+    title: 'From our kitchen',
+    items: [
+      { network: 'instagram', caption: 'Valid post', href: 'https://www.instagram.com/p/pasta/', image },
+      { network: 'facebook', caption: 'Unsafe post', href: 'javascript:alert(1)', image },
+      { network: 'pinterest', caption: 'Incomplete image', href: 'https://www.pinterest.com/pin/123', image: { ...image, variants: { ...image.variants, lg: { r2_key: '', width: 2048, height: 2048 } } } },
+    ],
+  }];
+
+  await expect(resolveHomeData(sections, { db: DB, stories: [] })).resolves.toEqual([]);
+});
+
+it('dispatches social feed view models to the SSR fallback component', async () => {
+  const source = await readFile(new URL('../../components/home/HomeSections.astro', import.meta.url), 'utf8');
+
+  expect(source).toContain("import SocialFeed from './SocialFeed.astro';");
+  expect(source).toContain("case 'social_feed':");
+  expect(source).toContain('<SocialFeed section={vm.section} />');
+});
+
 it('resolves a complete lead magnet with a safe internal CTA without fetching content', async () => {
   const sections: HomepageSection[] = [{
     id: 'lead-magnet',
