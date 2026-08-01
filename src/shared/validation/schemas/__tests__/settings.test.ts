@@ -209,6 +209,34 @@ describe('HomepageSettingsSchema', () => {
     expect(fullDraft.success).toBe(true);
   });
 
+  it('rejects malformed retained cards in disabled social feeds', () => {
+    const disabledSection = (item: unknown) => HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed',
+        type: 'social_feed',
+        enabled: false,
+        eyebrow: '',
+        title: '',
+        items: [item],
+      }],
+    });
+
+    const unknownNetwork = disabledSection({ ...socialFeedItems[0], network: 'youtube' });
+    const internalHref = disabledSection({ ...socialFeedItems[0], href: '/recipes/salad' });
+    const missingImage = disabledSection({ ...socialFeedItems[0], image: null });
+    const missingAlt = disabledSection({ ...socialFeedItems[0], image: { ...resolvedImage, alt: '   ' } });
+    const untrustedImage = disabledSection({
+      ...socialFeedItems[0],
+      image: { ...resolvedImage, variants: { ...resolvedImage.variants, md: { ...resolvedImage.variants.md, r2_key: 'media/salad-md.webp' } } },
+    });
+
+    expect(unknownNetwork.success).toBe(false);
+    expect(internalHref.success).toBe(false);
+    expect(missingImage.success).toBe(false);
+    expect(missingAlt.success).toBe(false);
+    expect(untrustedImage.success).toBe(false);
+  });
+
   it('rejects incomplete enabled social feeds and unsafe social feed items', () => {
     const tooFewItems = HomepageSettingsSchema.safeParse({
       sections: [{

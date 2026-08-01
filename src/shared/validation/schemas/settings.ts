@@ -381,14 +381,6 @@ const HomepageSocialFeedSchema = z.object({
   title: z.string().trim(),
   items: z.array(HomepageSocialFeedItemSchema).max(12),
 }).strict().superRefine((section, context) => {
-  if (!section.enabled) return;
-
-  if (!section.title) {
-    context.addIssue({ code: 'custom', path: ['title'], message: 'Social feed title is required' });
-  }
-  if (section.items.length < 3) {
-    context.addIssue({ code: 'custom', path: ['items'], message: 'Social feed requires at least three items' });
-  }
   section.items.forEach((item, index) => {
     if (!isSafeExternalHttpsHref(item.href)) {
       context.addIssue({ code: 'custom', path: ['items', index, 'href'], message: 'Social feed URLs must be HTTPS URLs' });
@@ -397,6 +389,14 @@ const HomepageSocialFeedSchema = z.object({
       context.addIssue({ code: 'custom', path: ['items', index, 'image'], message: 'Social feed image is required' });
     }
   });
+  if (!section.enabled) return;
+
+  if (!section.title) {
+    context.addIssue({ code: 'custom', path: ['title'], message: 'Social feed title is required' });
+  }
+  if (section.items.length < 3) {
+    context.addIssue({ code: 'custom', path: ['items'], message: 'Social feed requires at least three items' });
+  }
 });
 
 const HomepageLeadMagnetSchema = z.object({
