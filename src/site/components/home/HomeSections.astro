@@ -29,6 +29,7 @@ const hasCarousel = orderedSections.some((vm) => {
   if (vm.kind === 'collections') return vm.roundups.length > 1;
   return false;
 });
+const hasSocialFeed = orderedSections.some((vm) => vm.kind === 'social_feed');
 ---
 {
   orderedSections.map((vm) => {
@@ -68,5 +69,11 @@ const hasCarousel = orderedSections.some((vm) => {
 {hasCarousel && (
   <script>
     import '@site/scripts/home-carousels';
+  </script>
+)}
+
+{hasSocialFeed && (
+  <script>
+    import '@site/scripts/social-feed-embeds';
   </script>
 )}
