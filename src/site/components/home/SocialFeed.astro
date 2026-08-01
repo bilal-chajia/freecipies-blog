@@ -43,7 +43,12 @@ const { section } = Astro.props as Props;
               />
               {item.caption && <span>{item.caption}</span>}
             </a>
-            <div data-social-feed-mount hidden aria-live="polite"></div>
+            <div
+              data-social-feed-mount
+              style={`--social-feed-mount-ratio: ${image.variants.md.width} / ${image.variants.md.height};`}
+              hidden
+              aria-live="polite"
+            ></div>
           </li>
         );
       })}
@@ -100,6 +105,12 @@ const { section } = Astro.props as Props;
 
   .social-feed__grid li {
     min-width: 0;
+  }
+
+  .social-feed__grid [data-social-feed-mount] {
+    display: block;
+    width: 100%;
+    aspect-ratio: var(--social-feed-mount-ratio);
   }
 
   .social-feed__grid a {

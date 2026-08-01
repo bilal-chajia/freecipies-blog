@@ -202,17 +202,27 @@ describe('social feed SSR boundary', () => {
 
     expect(source).toContain('<section class="social-feed" data-social-feed');
   });
+
+  it('reserves the provider mount ratio from the SSR image snapshot', async () => {
+    const source = await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8');
+
+    expect(source).toContain('style={`--social-feed-mount-ratio: ${image.variants.md.width} / ${image.variants.md.height};`}');
+    expect(source).toContain('aspect-ratio: var(--social-feed-mount-ratio);');
+  });
 });
 
 describe('social feed embed DOM lifecycle', () => {
   it('does not append provider scripts before consent', async () => {
-    const harness = createHarness(['instagram']);
+    const harness = createHarness(['instagram', 'facebook']);
 
     await loadSocialFeedEmbeds(harness);
 
     expect(harness.document.scripts).toHaveLength(0);
-    expect(harness.cards[0]?.fallback.hidden).toBe(false);
-    expect(harness.cards[0]?.mount.hidden).toBe(true);
+    harness.cards.forEach(({ fallback, mount }) => {
+      expect(fallback.hidden).toBe(false);
+      expect(mount.hidden).toBe(true);
+      expect(mount.children).toHaveLength(0);
+    });
   });
 
   it('finds the social-feed root and attaches its consent handler', async () => {
@@ -234,6 +244,7 @@ describe('social feed embed DOM lifecycle', () => {
     expect(harness.document.scripts).toHaveLength(1);
     expect(harness.cards[0]?.fallback.hidden).toBe(false);
     expect(harness.cards[0]?.mount.hidden).toBe(true);
+    expect(harness.cards[0]?.mount.children).toHaveLength(1);
 
     harness.document.scripts[0]?.dispatch('load');
     await settleEmbedHydration();
