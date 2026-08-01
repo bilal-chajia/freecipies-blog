@@ -404,6 +404,58 @@ it('omits social feeds with incomplete snapshots or unsafe links', async () => {
   await expect(resolveHomeData(sections, { db: DB, stories: [] })).resolves.toEqual([]);
 });
 
+it('omits three social cards when any required variant key is whitespace-only', async () => {
+  const image = {
+    media_id: 71,
+    alt: 'Pasta on a plate',
+    placeholder: 'data:image/jpeg;base64,placeholder',
+    variants: {
+      sm: { r2_key: 'media/pasta-sm.webp', width: 720, height: 720 },
+      md: { r2_key: 'media/pasta-md.webp', width: 1200, height: 1200 },
+      lg: { r2_key: 'media/pasta-lg.webp', width: 2048, height: 2048 },
+    },
+  };
+  const sections: HomepageSection[] = [{
+    id: 'social-feed',
+    type: 'social_feed',
+    enabled: true,
+    eyebrow: 'Follow along',
+    title: 'From our kitchen',
+    items: [
+      {
+        network: 'instagram',
+        caption: 'Whitespace sm key',
+        href: 'https://www.instagram.com/p/pasta/',
+        image: { ...image, variants: { ...image.variants, sm: { ...image.variants.sm, r2_key: '   ' } } },
+      },
+      {
+        network: 'facebook',
+        caption: 'Whitespace md key',
+        href: 'https://www.facebook.com/example/posts/123',
+        image: { ...image, variants: { ...image.variants, md: { ...image.variants.md, r2_key: '\t' } } },
+      },
+      {
+        network: 'pinterest',
+        caption: 'Whitespace lg key',
+        href: 'https://www.pinterest.com/pin/123',
+        image: { ...image, variants: { ...image.variants, lg: { ...image.variants.lg, r2_key: '  ' } } },
+      },
+    ],
+  }];
+
+  await expect(resolveHomeData(sections, { db: DB, stories: [] })).resolves.toEqual([]);
+});
+
+it('renders responsive social feed source selection for all stored variants', async () => {
+  const source = await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8');
+
+  expect(source).toContain('const smUrl = resolveVariantUrl(image.variants.sm);');
+  expect(source).toContain('const mdUrl = resolveVariantUrl(image.variants.md);');
+  expect(source).toContain('const lgUrl = resolveVariantUrl(image.variants.lg);');
+  expect(source).toContain('srcset={srcSet || undefined}');
+  expect(source).toContain('sizes={srcSet ?');
+});
+
 it('dispatches social feed view models to the SSR fallback component', async () => {
   const source = await readFile(new URL('../../components/home/HomeSections.astro', import.meta.url), 'utf8');
 

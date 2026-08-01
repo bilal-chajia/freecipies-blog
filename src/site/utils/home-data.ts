@@ -83,7 +83,7 @@ function isCompleteHomepageImageSnapshot(
 
   return [image.variants?.sm, image.variants?.md, image.variants?.lg].every((variant) => (
     typeof variant?.r2_key === 'string'
-    && variant.r2_key.length > 0
+    && variant.r2_key.trim().length > 0
     && Number.isInteger(variant.width)
     && variant.width > 0
     && Number.isInteger(variant.height)

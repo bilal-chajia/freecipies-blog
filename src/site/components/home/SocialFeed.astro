@@ -19,12 +19,28 @@ const { section } = Astro.props as Props;
     <ul class="social-feed__grid">
       {section.items.map((item) => {
         const image = item.image!;
-        const src = resolveVariantUrl(image.variants.md);
+        const smUrl = resolveVariantUrl(image.variants.sm);
+        const mdUrl = resolveVariantUrl(image.variants.md);
+        const lgUrl = resolveVariantUrl(image.variants.lg);
+        const src = mdUrl ?? lgUrl ?? smUrl;
+        const srcSet = [
+          smUrl ? `${smUrl} ${image.variants.sm.width}w` : '',
+          mdUrl ? `${mdUrl} ${image.variants.md.width}w` : '',
+          lgUrl ? `${lgUrl} ${image.variants.lg.width}w` : '',
+        ].filter(Boolean).join(', ');
 
         return src && (
           <li data-social-feed-card data-social-network={item.network} data-social-post-href={item.href}>
             <a data-social-feed-fallback href={item.href} target="_blank" rel="noopener noreferrer">
-              <img src={src} alt={image.alt} width={image.variants.md.width} height={image.variants.md.height} loading="lazy" />
+              <img
+                src={src}
+                alt={image.alt}
+                width={image.variants.md.width}
+                height={image.variants.md.height}
+                srcset={srcSet || undefined}
+                sizes={srcSet ? '(max-width: 900px) 50vw, 33vw' : undefined}
+                loading="lazy"
+              />
               {item.caption && <span>{item.caption}</span>}
             </a>
             <div data-social-feed-mount hidden aria-live="polite"></div>
