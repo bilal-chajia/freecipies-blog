@@ -209,6 +209,14 @@ describe('social feed SSR boundary', () => {
     expect(source).toContain('style={`--social-feed-mount-ratio: ${image.variants.md.width} / ${image.variants.md.height};`}');
     expect(source).toContain('aspect-ratio: var(--social-feed-mount-ratio);');
   });
+
+  it('forces hidden provider mounts to remain out of layout', async () => {
+    const source = await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8');
+
+    expect(source).toContain(`.social-feed__grid [data-social-feed-mount][hidden] {
+    display: none;
+  }`);
+  });
 });
 
 describe('social feed embed DOM lifecycle', () => {

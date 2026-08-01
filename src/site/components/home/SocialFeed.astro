@@ -113,6 +113,10 @@ const { section } = Astro.props as Props;
     aspect-ratio: var(--social-feed-mount-ratio);
   }
 
+  .social-feed__grid [data-social-feed-mount][hidden] {
+    display: none;
+  }
+
   .social-feed__grid a {
     display: block;
     color: inherit;
