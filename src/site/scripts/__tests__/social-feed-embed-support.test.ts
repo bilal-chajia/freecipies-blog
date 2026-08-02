@@ -309,6 +309,12 @@ describe('social feed embed DOM lifecycle', () => {
     FakeMutationObserver.flush();
     await settleEmbedHydration();
 
+    expect(harness.cards[0]?.fallback.hidden).toBe(false);
+    expect(harness.cards[0]?.mount.hidden).toBe(true);
+
+    renderedFrame.dispatch('load');
+    await settleEmbedHydration();
+
     expect(harness.cards[0]?.fallback.hidden).toBe(true);
     expect(harness.cards[0]?.mount.hidden).toBe(false);
   });
@@ -328,6 +334,9 @@ describe('social feed embed DOM lifecycle', () => {
     FakeMutationObserver.flush();
     await settleEmbedHydration();
 
+    renderedFrame.dispatch('load');
+    await settleEmbedHydration();
+
     expect(harness.cards[0]?.fallback.hidden).toBe(true);
     expect(harness.cards[0]?.mount.hidden).toBe(false);
     expect(harness.cards[1]?.fallback.hidden).toBe(false);
@@ -338,6 +347,21 @@ describe('social feed embed DOM lifecycle', () => {
     expect(harness.cards[1]?.fallback.hidden).toBe(false);
     expect(harness.cards[1]?.mount.hidden).toBe(true);
     expect(harness.cards[1]?.mount.children).toHaveLength(0);
+  });
+
+  it('restores the fallback when a provider script stalls', async () => {
+    vi.useFakeTimers();
+    const harness = createHarness(['instagram']);
+
+    await loadSocialFeedEmbeds(harness);
+    harness.consent.dispatch('click');
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await settleEmbedHydration();
+
+    expect(harness.cards[0]?.fallback.hidden).toBe(false);
+    expect(harness.cards[0]?.mount.hidden).toBe(true);
+    expect(harness.cards[0]?.mount.children).toHaveLength(0);
   });
 
   it('loads one provider script per network and initializes each network once after repeated clicks', async () => {

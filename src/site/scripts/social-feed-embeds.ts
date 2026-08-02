@@ -12,6 +12,7 @@ const SOCIAL_FEED_FALLBACK_SELECTOR = '[data-social-feed-fallback]';
 const SOCIAL_FEED_MOUNT_SELECTOR = '[data-social-feed-mount]';
 const SOCIAL_FEED_CONSENT_SELECTOR = '[data-social-feed-consent]';
 const SOCIAL_FEED_RENDER_TIMEOUT_MS = 10_000;
+const SOCIAL_FEED_SCRIPT_TIMEOUT_MS = 10_000;
 
 const providerLoads = new Map<HomepageSocialNetwork, Promise<void>>();
 const sectionHydrations = new WeakMap<HTMLElement, Promise<void>>();
@@ -47,10 +48,22 @@ const loadSocialFeedProvider = (network: HomepageSocialNetwork): Promise<void> =
 
   const load = new Promise<void>((resolve, reject) => {
     const script = document.createElement('script');
+    const timeoutId = setTimeout(() => {
+      reject(new Error(`Timed out loading ${network} embeds.`));
+    }, SOCIAL_FEED_SCRIPT_TIMEOUT_MS);
+    const resolveLoad = (): void => {
+      clearTimeout(timeoutId);
+      resolve();
+    };
+    const rejectLoad = (): void => {
+      clearTimeout(timeoutId);
+      reject(new Error(`Unable to load ${network} embeds.`));
+    };
+
     script.src = SOCIAL_FEED_PROVIDER_SOURCES[network];
     script.async = true;
-    script.addEventListener('load', () => resolve(), { once: true });
-    script.addEventListener('error', () => reject(new Error(`Unable to load ${network} embeds.`)), { once: true });
+    script.addEventListener('load', resolveLoad, { once: true });
+    script.addEventListener('error', rejectLoad, { once: true });
     document.head.append(script);
   });
 
@@ -145,35 +158,40 @@ const matchesProviderFrame = (network: HomepageSocialNetwork, frame: HTMLIFrameE
   }
 };
 
-const hasRenderedProviderMarkup = (
+const findProviderFrame = (
   network: HomepageSocialNetwork,
   mount: HTMLElement,
-): boolean => Array.from(mount.querySelectorAll<HTMLIFrameElement>('iframe'))
-  .some((frame) => matchesProviderFrame(network, frame));
+): HTMLIFrameElement | null => Array.from(mount.querySelectorAll<HTMLIFrameElement>('iframe'))
+  .find((frame) => matchesProviderFrame(network, frame)) ?? null;
 
 const waitForProviderMarkup = (
   network: HomepageSocialNetwork,
   mount: HTMLElement,
 ): Promise<boolean> => new Promise((resolve) => {
-  if (hasRenderedProviderMarkup(network, mount)) {
-    resolve(true);
-    return;
-  }
-
   let settled = false;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const observer = new MutationObserver(() => {
-    if (hasRenderedProviderMarkup(network, mount)) finish(true);
-  });
+  let observer: MutationObserver | undefined;
+  let observedFrame: HTMLIFrameElement | null = null;
   const finish = (rendered: boolean): void => {
     if (settled) return;
     settled = true;
-    observer.disconnect();
+    observer?.disconnect();
     if (timeoutId !== undefined) clearTimeout(timeoutId);
     resolve(rendered);
   };
 
+  const observeProviderFrame = (): void => {
+    const frame = findProviderFrame(network, mount);
+    if (!frame || frame === observedFrame) return;
+
+    observedFrame = frame;
+    frame.addEventListener('load', () => finish(true), { once: true });
+    frame.addEventListener('error', () => finish(false), { once: true });
+  };
+
+  observer = new MutationObserver(observeProviderFrame);
   observer.observe(mount, { childList: true, subtree: true, attributes: true });
+  observeProviderFrame();
   timeoutId = setTimeout(() => finish(false), SOCIAL_FEED_RENDER_TIMEOUT_MS);
 });
 
