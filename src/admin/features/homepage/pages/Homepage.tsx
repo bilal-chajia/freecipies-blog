@@ -10,6 +10,7 @@ import { useParams } from 'react-router-dom';
 import { arrayMove } from '@dnd-kit/sortable';
 import api from '@admin/services/api-client';
 import type { AxiosRequestConfig } from 'axios';
+import { getHomepageSaveError } from '@admin/features/homepage/utils/homepage-save-error';
 import { HomepageLayout } from '@admin/features/homepage/components';
 import {
   HeroSection,
@@ -203,7 +204,8 @@ const Homepage = () => {
       toast.success('Homepage configuration saved');
     } catch (err) {
       console.error('Failed to save homepage settings:', err);
-      toast.error('Failed to save homepage configuration');
+      const saveError = getHomepageSaveError(err);
+      toast.error(saveError.message, { description: saveError.description });
     } finally {
       setSaving(false);
     }

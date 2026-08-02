@@ -183,7 +183,7 @@ export function getRenderableSocialFeed(
     }];
   });
 
-  if (!title || items.length < 3) return null;
+  if (!title || items.length < 3 || items.length > 12) return null;
 
   return {
     ...section,

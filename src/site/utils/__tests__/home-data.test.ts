@@ -18,9 +18,12 @@ vi.mock('@modules/categories', () => ({ getCategories }));
 vi.mock('@modules/authors', () => ({ getAuthors }));
 vi.mock('@shared/utils/hydration', () => ({ hydrateCategory: (c: unknown) => c }));
 
-import { resolveHomeData } from '../home-data';
+import { getRenderableSocialFeed, resolveHomeData } from '../home-data';
 import { isExternalHomepageCtaHref } from '../homepage-cta';
-import type { HomepageSection } from '@modules/settings/types/settings.types';
+import type {
+  HomepageSection,
+  HomepageSocialFeedSection,
+} from '@modules/settings/types/settings.types';
 
 const DB = {} as never;
 
@@ -446,6 +449,34 @@ it('omits three social cards when any required variant key is whitespace-only', 
   await expect(resolveHomeData(sections, { db: DB, stories: [] })).resolves.toEqual([]);
 });
 
+it('omits a mutated social feed with more than twelve valid cards after filtering', () => {
+  const image = {
+    media_id: 71,
+    alt: 'Pasta on a plate',
+    placeholder: 'data:image/jpeg;base64,placeholder',
+    variants: {
+      sm: { r2_key: 'media/pasta-sm.webp', width: 720, height: 720 },
+      md: { r2_key: 'media/pasta-md.webp', width: 1200, height: 1200 },
+      lg: { r2_key: 'media/pasta-lg.webp', width: 2048, height: 2048 },
+    },
+  };
+  const section: HomepageSocialFeedSection = {
+    id: 'social-feed',
+    type: 'social_feed',
+    enabled: true,
+    eyebrow: 'Follow along',
+    title: 'From our kitchen',
+    items: Array.from({ length: 13 }, (_, index) => ({
+      network: 'instagram',
+      caption: `Post ${index + 1}`,
+      href: `https://www.instagram.com/p/post-${index + 1}/`,
+      image: { ...image, media_id: index + 1 },
+    })),
+  };
+
+  expect(getRenderableSocialFeed(section)).toBeNull();
+});
+
 it('renders responsive social feed source selection for all stored variants', async () => {
   const source = await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8');
 
@@ -454,6 +485,17 @@ it('renders responsive social feed source selection for all stored variants', as
   expect(source).toContain('const lgUrl = resolveVariantUrl(image.variants.lg);');
   expect(source).toContain('srcset={srcSet || undefined}');
   expect(source).toContain('sizes={srcSet ?');
+});
+
+it('renders a visible accessible network name on every social feed fallback card', async () => {
+  const source = await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8');
+
+  expect(source).toContain("instagram: 'Instagram'");
+  expect(source).toContain("facebook: 'Facebook'");
+  expect(source).toContain("pinterest: 'Pinterest'");
+  expect(source).toContain('class="social-feed__network"');
+  expect(source).toContain('aria-label={`Social network: ${networkName}`}');
+  expect(source).toContain('{networkName}');
 });
 
 it('dispatches social feed view models to the SSR fallback component', async () => {

@@ -11,6 +11,7 @@ const SOCIAL_FEED_CARD_SELECTOR = '[data-social-feed-card]';
 const SOCIAL_FEED_FALLBACK_SELECTOR = '[data-social-feed-fallback]';
 const SOCIAL_FEED_MOUNT_SELECTOR = '[data-social-feed-mount]';
 const SOCIAL_FEED_CONSENT_SELECTOR = '[data-social-feed-consent]';
+const SOCIAL_FEED_RENDER_TIMEOUT_MS = 10_000;
 
 const providerLoads = new Map<HomepageSocialNetwork, Promise<void>>();
 const sectionHydrations = new WeakMap<HTMLElement, Promise<void>>();
@@ -124,23 +125,87 @@ const showEmbed = (card: SocialFeedCard): void => {
   if (mount) mount.hidden = false;
 };
 
-const hydrateNetwork = async (root: HTMLElement, network: HomepageSocialNetwork): Promise<void> => {
-  const cards = getCardsForNetwork(root, network);
-
+const matchesProviderFrame = (network: HomepageSocialNetwork, frame: HTMLIFrameElement): boolean => {
   try {
-    for (const card of cards) {
-      const href = card.dataset.socialPostHref;
-      const mount = card.querySelector<HTMLElement>(SOCIAL_FEED_MOUNT_SELECTOR);
-      if (!href || !mount) throw new Error(`Invalid ${network} social feed card.`);
+    const url = new URL(frame.src);
 
-      mount.replaceChildren(buildProviderElement(network, href));
+    if (network === 'instagram') {
+      return (url.hostname === 'instagram.com' || url.hostname.endsWith('.instagram.com'))
+        && url.pathname.includes('/embed');
     }
 
+    if (network === 'facebook') {
+      return (url.hostname === 'facebook.com' || url.hostname.endsWith('.facebook.com'))
+        && url.pathname.startsWith('/plugins/post');
+    }
+
+    return url.hostname === 'assets.pinterest.com' && url.pathname.startsWith('/ext/embed');
+  } catch {
+    return false;
+  }
+};
+
+const hasRenderedProviderMarkup = (
+  network: HomepageSocialNetwork,
+  mount: HTMLElement,
+): boolean => Array.from(mount.querySelectorAll<HTMLIFrameElement>('iframe'))
+  .some((frame) => matchesProviderFrame(network, frame));
+
+const waitForProviderMarkup = (
+  network: HomepageSocialNetwork,
+  mount: HTMLElement,
+): Promise<boolean> => new Promise((resolve) => {
+  if (hasRenderedProviderMarkup(network, mount)) {
+    resolve(true);
+    return;
+  }
+
+  let settled = false;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const observer = new MutationObserver(() => {
+    if (hasRenderedProviderMarkup(network, mount)) finish(true);
+  });
+  const finish = (rendered: boolean): void => {
+    if (settled) return;
+    settled = true;
+    observer.disconnect();
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    resolve(rendered);
+  };
+
+  observer.observe(mount, { childList: true, subtree: true, attributes: true });
+  timeoutId = setTimeout(() => finish(false), SOCIAL_FEED_RENDER_TIMEOUT_MS);
+});
+
+const hydrateNetwork = async (root: HTMLElement, network: HomepageSocialNetwork): Promise<void> => {
+  const cards = getCardsForNetwork(root, network);
+  const preparedCards = cards.flatMap((card) => {
+    const href = card.dataset.socialPostHref;
+    const mount = card.querySelector<HTMLElement>(SOCIAL_FEED_MOUNT_SELECTOR);
+
+    if (!href || !mount) {
+      showFallback(card);
+      return [];
+    }
+
+    mount.replaceChildren(buildProviderElement(network, href));
+    return [{ card, mount }];
+  });
+
+  if (preparedCards.length === 0) return;
+
+  try {
     await loadSocialFeedProvider(network);
     initializeProvider(network, root);
-    cards.forEach(showEmbed);
+    await Promise.all(preparedCards.map(async ({ card, mount }) => {
+      if (await waitForProviderMarkup(network, mount)) {
+        showEmbed(card);
+      } else {
+        showFallback(card);
+      }
+    }));
   } catch {
-    cards.forEach(showFallback);
+    preparedCards.forEach(({ card }) => showFallback(card));
   }
 };
 

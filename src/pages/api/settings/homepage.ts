@@ -69,7 +69,9 @@ export const PUT: APIRoute = async ({ request }) => {
   } catch (error) {
     console.error('Error updating homepage settings:', error);
     const { body, status, headers } = formatErrorResponse(
-      new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to update homepage settings', 500),
+      error instanceof AppError
+        ? error
+        : new AppError(ErrorCodes.INTERNAL_ERROR, 'Failed to update homepage settings', 500),
     );
     return new Response(body, { status, headers });
   }

@@ -1,12 +1,20 @@
 ---
 import { resolveVariantUrl } from '@shared/types/images';
-import type { HomepageSocialFeedSection } from '@modules/settings/types/settings.types';
+import type {
+  HomepageSocialFeedSection,
+  HomepageSocialNetwork,
+} from '@modules/settings/types/settings.types';
 
 interface Props {
   section: HomepageSocialFeedSection;
 }
 
 const { section } = Astro.props as Props;
+const SOCIAL_NETWORK_NAMES: Record<HomepageSocialNetwork, string> = {
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+  pinterest: 'Pinterest',
+};
 ---
 
 <section class="social-feed" data-social-feed data-fade-up aria-labelledby={`social-feed-${section.id}`}>
@@ -23,6 +31,7 @@ const { section } = Astro.props as Props;
         const mdUrl = resolveVariantUrl(image.variants.md);
         const lgUrl = resolveVariantUrl(image.variants.lg);
         const src = mdUrl ?? lgUrl ?? smUrl;
+        const networkName = SOCIAL_NETWORK_NAMES[item.network];
         const srcSet = [
           smUrl ? `${smUrl} ${image.variants.sm.width}w` : '',
           mdUrl ? `${mdUrl} ${image.variants.md.width}w` : '',
@@ -41,7 +50,10 @@ const { section } = Astro.props as Props;
                 sizes={srcSet ? '(max-width: 900px) 50vw, 33vw' : undefined}
                 loading="lazy"
               />
-              {item.caption && <span>{item.caption}</span>}
+              <span class="social-feed__network" aria-label={`Social network: ${networkName}`}>
+                {networkName}
+              </span>
+              {item.caption && <span class="social-feed__caption">{item.caption}</span>}
             </a>
             <div
               data-social-feed-mount
@@ -131,9 +143,20 @@ const { section } = Astro.props as Props;
     object-fit: cover;
   }
 
-  .social-feed__grid span {
-    display: block;
+  .social-feed__network {
+    display: inline-block;
     margin-top: var(--space-2);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: var(--font-bold);
+    line-height: var(--leading-normal);
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .social-feed__caption {
+    display: block;
+    margin-top: var(--space-1);
     color: var(--text-secondary);
     font-size: var(--text-sm);
     line-height: var(--leading-normal);

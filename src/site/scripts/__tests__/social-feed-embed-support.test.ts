@@ -38,6 +38,10 @@ class FakeNode {
     this.listeners.set(type, listeners);
   }
 
+  getAttribute(name: string): string | null {
+    return this.attributes.get(name) ?? null;
+  }
+
   dispatch(type: string): void {
     this.listeners.get(type)?.forEach((listener) => listener());
   }
@@ -58,12 +62,44 @@ class FakeNode {
     const matches: FakeNode[] = [];
     const visit = (node: FakeNode): void => {
       node.children.forEach((child) => {
-        if (child.attributes.has(selector.slice(1, -1))) matches.push(child);
+        const isAttributeSelector = selector.startsWith('[') && selector.endsWith(']');
+        const matchesSelector = isAttributeSelector
+          ? child.attributes.has(selector.slice(1, -1))
+          : child.tagName.toLowerCase() === selector.toLowerCase();
+        if (matchesSelector) matches.push(child);
         visit(child);
       });
     };
     visit(this);
     return matches as T[];
+  }
+}
+
+class FakeMutationObserver {
+  private static readonly instances = new Set<FakeMutationObserver>();
+  private observed = false;
+
+  constructor(private readonly callback: () => void) {
+    FakeMutationObserver.instances.add(this);
+  }
+
+  observe(): void {
+    this.observed = true;
+  }
+
+  disconnect(): void {
+    this.observed = false;
+    FakeMutationObserver.instances.delete(this);
+  }
+
+  static flush(): void {
+    FakeMutationObserver.instances.forEach((observer) => {
+      if (observer.observed) observer.callback();
+    });
+  }
+
+  static reset(): void {
+    FakeMutationObserver.instances.clear();
   }
 }
 
@@ -141,6 +177,7 @@ const loadSocialFeedEmbeds = async (harness: ReturnType<typeof createHarness>): 
   vi.stubGlobal('document', harness.document);
   vi.stubGlobal('sessionStorage', harness.sessionStorage);
   vi.stubGlobal('window', harness.window);
+  vi.stubGlobal('MutationObserver', FakeMutationObserver);
   vi.resetModules();
   await import('../social-feed-embeds');
 };
@@ -150,6 +187,8 @@ const settleEmbedHydration = async (): Promise<void> => {
 };
 
 afterEach(() => {
+  FakeMutationObserver.reset();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -243,8 +282,12 @@ describe('social feed embed DOM lifecycle', () => {
     expect(harness.document.scripts).toHaveLength(1);
   });
 
-  it('hydrates automatically for granted sessions after the provider loads', async () => {
-    const harness = createHarness(['instagram']);
+  it.each([
+    ['instagram', 'https://www.instagram.com/embed/captioned/'],
+    ['facebook', 'https://www.facebook.com/plugins/post.php?href=example'],
+    ['pinterest', 'https://assets.pinterest.com/ext/embed.html?id=123'],
+  ])('reveals a %s card only after provider-rendered DOM appears', async (network, renderedSrc) => {
+    const harness = createHarness([network]);
     harness.sessionStorage.setItem(SOCIAL_FEED_CONSENT_KEY, 'granted');
 
     await loadSocialFeedEmbeds(harness);
@@ -257,9 +300,44 @@ describe('social feed embed DOM lifecycle', () => {
     harness.document.scripts[0]?.dispatch('load');
     await settleEmbedHydration();
 
-    expect(harness.providers.instagramProcess).toHaveBeenCalledTimes(1);
+    expect(harness.cards[0]?.fallback.hidden).toBe(false);
+    expect(harness.cards[0]?.mount.hidden).toBe(true);
+
+    const renderedFrame = new FakeNode('iframe');
+    renderedFrame.src = renderedSrc;
+    harness.cards[0]?.mount.append(renderedFrame);
+    FakeMutationObserver.flush();
+    await settleEmbedHydration();
+
     expect(harness.cards[0]?.fallback.hidden).toBe(true);
     expect(harness.cards[0]?.mount.hidden).toBe(false);
+  });
+
+  it('reveals successful cards independently and restores timed-out cards to fallback', async () => {
+    vi.useFakeTimers();
+    const harness = createHarness(['instagram', 'instagram']);
+
+    await loadSocialFeedEmbeds(harness);
+    harness.consent.dispatch('click');
+    harness.document.scripts[0]?.dispatch('load');
+    await settleEmbedHydration();
+
+    const renderedFrame = new FakeNode('iframe');
+    renderedFrame.src = 'https://www.instagram.com/embed/captioned/';
+    harness.cards[0]?.mount.append(renderedFrame);
+    FakeMutationObserver.flush();
+    await settleEmbedHydration();
+
+    expect(harness.cards[0]?.fallback.hidden).toBe(true);
+    expect(harness.cards[0]?.mount.hidden).toBe(false);
+    expect(harness.cards[1]?.fallback.hidden).toBe(false);
+    expect(harness.cards[1]?.mount.hidden).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    expect(harness.cards[1]?.fallback.hidden).toBe(false);
+    expect(harness.cards[1]?.mount.hidden).toBe(true);
+    expect(harness.cards[1]?.mount.children).toHaveLength(0);
   });
 
   it('loads one provider script per network and initializes each network once after repeated clicks', async () => {

@@ -348,6 +348,7 @@ Shape:
     { "id": "seasonal_spotlight", "type": "seasonal_spotlight", "enabled": false, "title": "Seasonal spotlight", "body": "", "image": null, "cta": { "label": "", "href": "" } },
     { "id": "latest", "type": "latest", "enabled": true, "title": "Latest Recipes", "count": 8 },
     { "id": "social_proof", "type": "social_proof", "enabled": false, "eyebrow": "", "title": "", "stats": [], "testimonials": [], "logos": [] },
+    { "id": "social_feed", "type": "social_feed", "enabled": false, "eyebrow": "", "title": "", "items": [] },
     { "id": "about", "type": "about_author", "enabled": true, "author_id": null },
     { "id": "lead_magnet", "type": "lead_magnet", "enabled": false, "eyebrow": "", "title": "", "body": "", "image": null, "cta": { "label": "", "href": "" } },
     { "id": "newsletter", "type": "newsletter", "enabled": true, "title": "Get New Recipes Weekly", "subtitle": "Subscribe to receive delicious recipes straight to your inbox.", "button_text": "Subscribe", "placeholder_text": "Your email address" },
