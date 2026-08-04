@@ -12,7 +12,6 @@ import {
   getImageSlot,
   toCssAspectRatio,
   buildImageStyle,
-  type ResolvedImageSlot,
   type ExtractedImage,
 } from './hydration';
 import { resolveVariantUrl } from '@shared/types/images';

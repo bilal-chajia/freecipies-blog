@@ -7,9 +7,9 @@ const dialect = new SQLiteSyncDialect();
 const returning = vi.fn(async () => [
   { recipe_json: JSON.stringify({ aggregate_rating: { rating_value: 4.5, rating_count: 3 } }) },
 ]);
-const where = vi.fn(() => ({ returning }));
-const set = vi.fn(() => ({ where }));
-const update = vi.fn(() => ({ set }));
+const where = vi.fn((_condition?: unknown) => ({ returning }));
+const set = vi.fn((_values?: unknown) => ({ where }));
+const update = vi.fn((_table?: unknown) => ({ set }));
 
 vi.mock('../../../../shared/database/drizzle', () => ({
   getDb: () => ({ update }),
@@ -21,7 +21,9 @@ describe('addRecipeVote (atomic)', () => {
   it('performs a single UPDATE with json_set expressions (no read-modify-write)', async () => {
     await addRecipeVote({} as never, 7, 5);
     expect(update).toHaveBeenCalledTimes(1);
-    const setArg = set.mock.calls[0][0] as Record<string, unknown>;
+    const values = set.mock.calls[0]?.[0];
+    expect(values).toBeDefined();
+    const setArg = values as Record<string, unknown>;
     // recipe_json and cached_rating_json must be SQL expressions, not JS-computed strings
     const compiled = dialect.sqlToQuery(setArg.recipe_json as never);
     expect(compiled.sql).toContain('json_set');
@@ -46,7 +48,8 @@ describe('addRecipeVote (atomic)', () => {
 
   it('restricts the UPDATE to non-deleted recipes', async () => {
     await addRecipeVote({} as never, 7, 5);
-    const condition = where.mock.calls[0][0];
+    const condition = where.mock.calls[0]?.[0];
+    expect(condition).toBeDefined();
     const { sql, params } = dialect.sqlToQuery(condition as never);
     expect(sql).toContain('"deleted_at"');
     expect(sql).toContain('"type"');

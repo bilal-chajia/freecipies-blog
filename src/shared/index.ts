@@ -12,3 +12,4 @@ export * from './utils';
 
 // Types
 export * from './types';
+export type { ImageSlot } from './types/images';
