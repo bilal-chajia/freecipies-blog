@@ -5,11 +5,10 @@ import { getArticles } from "@modules/articles";
 import { getCategories } from "@modules/categories";
 import { getTags } from "@modules/tags";
 import {
-  hydrateArticles,
   hydrateCategories,
   hydrateTags,
 } from "@shared/utils/hydration";
-import { extractImage, getImageSrcSet } from "@shared/utils";
+import { resolveHeroImage } from "@shared/utils";
 import { parseCachedRecipe } from "@modules/articles/utils/cached-fields";
 import Pagination from "@components/Pagination.astro";
 import {
@@ -39,6 +38,7 @@ try {
     // Get articles with optional filter
     const result = await getArticles(env.DB, {
       type: "recipe",
+      workflow_status: "published",
       categorySlug: categoryFilter || undefined,
       tagSlug: tagFilter || undefined,
       search: searchTerm || undefined,
@@ -59,26 +59,6 @@ try {
 }
 
 const totalPages = Math.ceil(totalRecipes / limit);
-
-const getRecipeImage = (
-  recipe: any,
-  targetWidth: number,
-  prefer: "hero" | "thumbnail" = "hero"
-) => {
-  const hero = extractImage(recipe.images_json, "hero", targetWidth);
-  const thumbnail = extractImage(recipe.images_json, "thumbnail", targetWidth);
-  const slotName =
-    prefer === "hero"
-      ? hero.image_url
-        ? "hero"
-        : "thumbnail"
-      : thumbnail.image_url
-        ? "thumbnail"
-        : "hero";
-  const selected = slotName === "hero" ? hero : thumbnail;
-  const srcSet = getImageSrcSet(recipe.images_json, slotName);
-  return { selected, srcSet };
-};
 
 const parseHexColor = (value?: string) => {
   if (!value) return null;
@@ -273,7 +253,7 @@ const siteDescription =
           recipes.length > 0 ? (
             <div class="recipes-grid">
               {recipes.map((recipe) => {
-                const { selected, srcSet } = getRecipeImage(recipe, 400, "hero");
+                const { image: selected, srcSet } = resolveHeroImage(recipe.images_json, 400);
                 const sizes = "(max-width: 768px) 50vw, 25vw";
                 const { badgeColor, badgeText } = getBadgeColors(recipe.category?.color);
                 const cachedRecipe = parseCachedRecipe(recipe.cached_recipe_json);

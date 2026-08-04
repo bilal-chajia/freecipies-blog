@@ -21,7 +21,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     if (slug) {
-      const article = await getArticleBySlug(db, slug, type || undefined);
+      const article = await getArticleBySlug(db, slug, type || undefined, { workflow_status: 'published' });
 
       if (!article) {
         const { body, status: httpStatus, headers } = formatErrorResponse(

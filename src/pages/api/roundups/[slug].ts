@@ -45,7 +45,7 @@ export const GET: APIRoute = async ({ params, url }) => {
         }
 
         // Get roundup specifically
-        const article = await getArticleBySlug(db, slug, 'roundup');
+        const article = await getArticleBySlug(db, slug, 'roundup', { workflow_status: 'published' });
 
         if (!article) {
             const { body, status, headers } = formatErrorResponse(
